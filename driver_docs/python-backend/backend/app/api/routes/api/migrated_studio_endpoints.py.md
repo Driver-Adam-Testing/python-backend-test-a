@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines FastAPI endpoints for chat streaming, primary assets, contents, codebase tree, and document sets.
+Defines API endpoints for chat streaming, primary assets, contents, codebase tree, and document sets.
 
 # Purpose
-The code defines a FastAPI router that provides several API endpoints for handling requests related to chat, primary assets, contents, codebase trees, and document sets. The endpoints are organized under the `APIRouter` instance named `router`, which facilitates the integration of these routes into a larger FastAPI application. Each endpoint is associated with a specific HTTP method and path, and they utilize various imported components to process requests and return responses.
+The code defines a FastAPI router that provides several HTTP endpoints for interacting with a system that manages chat requests, primary assets, content listings, codebase trees, and document sets. The router is configured with endpoints that handle both `POST` and `GET` requests, each serving a specific purpose within the application.
 
-The [`create_streaming_post_endpoint`](<#create_streaming_post_endpoint>) function handles POST requests to the `/chat` path, creating a streaming response for chat-related operations. The [`get_primary_assets_endpoint`](<#get_primary_assets_endpoint>) and [`get_contents_endpoint`](<#get_contents_endpoint>) functions handle GET requests to the `/primary_assets` and `/contents` paths, respectively, returning paginated lists of primary assets and content details. The [`get_tree_endpoint`](<#get_tree_endpoint>) function provides a GET endpoint at `/tree` to retrieve a structured representation of a codebase tree. Lastly, the [`get_document_set_endpoint`](<#get_document_set_endpoint>) function handles GET requests to the `/document_set` path, returning detailed information about a document set. These endpoints rely on various utility functions and classes imported from other modules, such as `ApiKeyToken`, `CurrentSession`, and `Pagination`, to manage authentication, session handling, and pagination.
+The [`create_streaming_post_endpoint`](<#create_streaming_post_endpoint>) function handles `POST` requests to the `/chat` endpoint, creating a streaming response for chat interactions. The [`get_primary_assets_endpoint`](<#get_primary_assets_endpoint>), [`get_contents_endpoint`](<#get_contents_endpoint>), [`get_tree_endpoint`](<#get_tree_endpoint>), and [`get_document_set_endpoint`](<#get_document_set_endpoint>) functions handle `GET` requests to their respective endpoints, returning data models that include primary asset details, content details, codebase tree structures, and document set information. These endpoints utilize various imported modules and classes to process requests and return structured data, ensuring that the application can manage and serve complex data sets efficiently.
 # Imports and Dependencies
 
 ---
@@ -34,8 +34,8 @@ The [`create_streaming_post_endpoint`](<#create_streaming_post_endpoint>) functi
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: Initializes an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage the routing of HTTP requests to specific endpoints in the application.
-- **Use**: Used to register and handle HTTP routes for the application, allowing the definition of endpoints and their corresponding request methods.
+- **Description**: Defines an instance of the `APIRouter` class from the FastAPI framework. This instance is used to create and manage API routes for the application.
+- **Use**: Used to register and handle HTTP endpoints for the application.
 
 
 # Functions
@@ -44,17 +44,17 @@ The [`create_streaming_post_endpoint`](<#create_streaming_post_endpoint>) functi
 ### create\_streaming\_post\_endpoint<!-- {{#callable:python-backend/backend/app/api/routes/api/migrated_studio_endpoints.create_streaming_post_endpoint}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/api/migrated_studio_endpoints.py#L21>)
 
-Creates a streaming POST endpoint for chat requests.
+Creates a streaming POST endpoint for chat requests that returns a streaming response.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: The current session object, which manages the state and context of the user's interaction.
+    - `session`: The current session object, which provides context for the request.
     - `user`: An API key token object representing the authenticated user making the request.
     - `payload`: A `ChatHttpRequest` object containing the chat request data, including user prompt and other identifiers.
 - **Logic and Control Flow**:
     - Creates a [`ChatPipelineRequest`](<../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#chatpipelinerequest>) object using data from the `payload` and `user` inputs.
     - Initializes the [`ChatPipelineRequest`](<../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#chatpipelinerequest>) with user prompt, node IDs, page node ID, organization ID, user ID, relative paths, and LLM session ID.
-    - Returns a `StreamingResponse` object that streams the request data as a text/event-stream.
-- **Output**: A `StreamingResponse` object that streams the chat request data as a text/event-stream.
+    - Returns a `StreamingResponse` object that streams the result of the `request.stream()` method with a media type of 'text/event-stream'.
+- **Output**: A `StreamingResponse` object that streams chat data as an event stream.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest`](<../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#chatpipelinerequest>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<../../../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>)
@@ -68,13 +68,13 @@ Retrieves a list of primary assets with pagination and optional tag filtering.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `request`: The HTTP request object.
-    - `session`: The current database session.
+    - `session`: The current session object.
     - `user`: The API key token representing the user.
-    - `pagination`: The pagination parameters for the request.
+    - `pagination`: The pagination object to control the number of results.
     - `tag_ids`: Optional string of tag IDs to filter the primary assets.
 - **Logic and Control Flow**:
     - Calls the [`_list_primary_assets`](<../v2/primary_assets.py.md#_list_primary_assets>) function with the provided arguments to retrieve the primary assets.
-- **Output**: A `ListWithCount` object containing `PrimaryAssetDetailRead` items.
+- **Output**: Returns a `ListWithCount` object containing `PrimaryAssetDetailRead` items.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/primary_assets._list_primary_assets`](<../v2/primary_assets.py.md#_list_primary_assets>)
 
@@ -135,10 +135,10 @@ Retrieves a document set based on the provided parameters and returns its detail
     - `path`: A string representing the path to the document set.
     - `versionId`: A string representing the version ID of the document set.
 - **Logic and Control Flow**:
-    - Calls the [`get_document_set`](<../legacy/document_set.py.md#get_document_set>) function with the provided parameters to retrieve the document set.
-    - Extracts various attributes from the `document_set` object such as `source_content_id`, `architecture`, `architecture_document`, `long`, `long_document`, `short`, `quickstart`, `chunk_descriptions`, `code`, `toplevel`, and `application_notes`.
-    - Returns a dictionary containing the extracted attributes.
-- **Output**: A dictionary containing details of the document set, including its source content ID, architecture, documents, and other related information.
+    - Calls the [`get_document_set`](<../legacy/document_set.py.md#get_document_set>) function with the provided parameters and additional hardcoded values.
+    - Extracts various attributes from the `document_set` object returned by [`get_document_set`](<../legacy/document_set.py.md#get_document_set>).
+    - Returns a dictionary containing the extracted attributes from the `document_set`.
+- **Output**: A dictionary containing details of the document set, including source content ID, architecture, documents, and other related information.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/legacy/document_set.get_document_set`](<../legacy/document_set.py.md#get_document_set>)
 

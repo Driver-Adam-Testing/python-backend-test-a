@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements GitLab OAuth strategy for token management and user authentication.
+Implements GitLab OAuth strategy for token management and authorization URL generation.
 
 
 ## Files
-- **[gitlab_oauth_strategy.py](gitlab_oauth_strategy.py.md)**: Implements GitLab OAuth strategy for token management and user authentication.
+- **[gitlab_oauth_strategy.py](gitlab_oauth_strategy.py.md)**: Implements GitLab OAuth strategy for token management and authorization URL generation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

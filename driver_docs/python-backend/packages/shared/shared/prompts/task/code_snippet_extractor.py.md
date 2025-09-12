@@ -6,21 +6,21 @@
 Extracts code examples, CLI commands, and snippets from a document.
 
 # Purpose
-The code defines a constant `PROMPT` that contains a string message intended for use in a software engineering context. This message instructs a user to identify and extract code examples, CLI commands, source code, and code snippets from a document. Additionally, the code creates a dictionary `MESSAGE` with two keys: `role` and `content`. The `role` key is set to `"system"`, and the `content` key is assigned the value of the `PROMPT` string. This setup is likely used in a system where messages are structured with roles and content, possibly for a chatbot or automated documentation tool.
+The code defines a constant `PROMPT` that contains a string with instructions for a software engineer to identify and extract code examples from a document. This string specifies the task of finding CLI commands, code examples, source code, and code snippets. The `MESSAGE` variable is a dictionary with two keys: `role` and `content`. The `role` key has the value `"system"`, and the `content` key holds the `PROMPT` string. This code is likely part of a larger system where `MESSAGE` is used to communicate instructions to a component responsible for processing or analyzing documents.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that gives instructions to identify and extract code examples from a document. It specifies the types of code elements to find, such as CLI commands, code examples, source code, and code snippets.
-- **Use**: Used as a prompt for a system message to guide the extraction of code elements from a document.
+- **Description**: A multi-line string that provides instructions for identifying and extracting code examples from a document. It specifies the types of code elements to find, such as CLI commands, code examples, source code, and code snippets.
+- **Use**: Used as a prompt or instruction set for a system or function to guide the extraction of code-related elements from a document.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: A dictionary with two key-value pairs: `role` and `content`. The `role` key has a string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
-- **Use**: Used to store a structured message with a role and content, likely for communication or configuration purposes.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system role information and a prompt message for further processing.
 
 
 

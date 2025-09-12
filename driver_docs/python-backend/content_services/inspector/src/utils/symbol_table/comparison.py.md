@@ -6,9 +6,9 @@
 Utilities for timing, comparing, and reporting on symbol table construction and visibility map approaches.
 
 # Purpose
-The code provides utilities for timing and comparing different approaches to constructing symbol tables, specifically focusing on visibility maps. It includes classes and functions to measure and report the performance of two methods: Depth-First Search (DFS) and topological sorting. The `TimingInfo` class stores timing data for various phases of symbol table construction, while the `ComparisonResult` class holds the results of comparing two visibility maps, including whether they are equal and the timing information for each approach.
+The code provides utilities for timing and comparing different approaches to constructing symbol tables, specifically focusing on visibility maps. It includes data structures and functions to measure and report the performance of two methods: Depth-First Search (DFS) and topological sorting. The `TimingInfo` and `ComparisonResult` data classes store timing information and comparison results, respectively. The [`compare_visibility_maps`](<#compare_visibility_maps>) function compares two visibility maps for equality and generates a detailed report of any differences. The [`timer`](<#timer>) context manager is used to measure execution time for various phases of symbol table construction.
 
-The code defines several functions to facilitate the comparison and reporting of visibility maps. The [`compare_visibility_maps`](<#compare_visibility_maps>) function checks for equality between two visibility maps and generates a detailed report of any differences. The [`print_timing_comparison`](<#print_timing_comparison>) and [`print_comparison_result`](<#print_comparison_result>) functions format and display the results of these comparisons, including performance metrics and differences found. Additionally, the code includes functions to calculate and print statistics about a given visibility map, such as the total number of files, dependencies, and average dependencies per file. The use of context managers and ANSI color codes enhances the readability and usability of the output.
+The code also includes functions to print formatted results and statistics. [`print_timing_comparison`](<#print_timing_comparison>) and [`print_comparison_result`](<#print_comparison_result>) provide detailed output of the timing and comparison results, using ANSI color codes for enhanced readability. The [`calculate_visibility_stats`](<#calculate_visibility_stats>) function computes statistics about a given visibility map, such as total files, dependencies, and average dependencies per file. The [`print_visibility_stats`](<#print_visibility_stats>) function outputs these statistics in a formatted manner. This code is intended to be used as a utility module for analyzing and comparing the performance of different symbol table construction methods, rather than as a standalone script.
 # Imports and Dependencies
 
 ---
@@ -42,19 +42,12 @@ The code defines several functions to facilitate the comparison and reporting of
 #### TimingInfo\.\_\_add\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo.__add__}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/comparison.py#L22>)
 
-Implements the addition operation for `TimingInfo` objects by summing corresponding timing attributes.
+Adds the timing information of two `TimingInfo` objects together.
 - **Inputs**:
-    - `self`: The current instance of `TimingInfo`.
-    - `other`: Another instance of `TimingInfo` to add to the current instance.
+    - `other`: A `TimingInfo` object to add to the current instance.
 - **Logic and Control Flow**:
-    - Creates a new `TimingInfo` instance.
-    - Sums the `parsing_time` of `self` and `other` and assigns it to the new instance.
-    - Sums the `visibility_time` of `self` and `other` and assigns it to the new instance.
-    - Sums the `linking_time` of `self` and `other` and assigns it to the new instance.
-    - Sums the `reification_time` of `self` and `other` and assigns it to the new instance.
-    - Sums the `total_time` of `self` and `other` and assigns it to the new instance.
-    - Returns the new `TimingInfo` instance with summed attributes.
-- **Output**: A new `TimingInfo` instance with summed timing attributes from `self` and `other`.
+    - Create a new `TimingInfo` object with each timing attribute being the sum of the corresponding attributes from `self` and `other`.
+- **Output**: A new `TimingInfo` object with combined timing information.
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<#timinginfo>)  (Base Class)
 
 
@@ -82,13 +75,13 @@ Implements the addition operation for `TimingInfo` objects by summing correspond
 #### ComparisonResult\.speedup\_ratio<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/comparison.ComparisonResult.speedup_ratio}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/comparison.py#L43>)
 
-Calculates the speedup ratio by dividing DFS visibility time by topological visibility time.
+Calculates the speedup ratio by dividing the DFS visibility time by the topological visibility time.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Check if `topological_timing.visibility_time` is greater than 0.
-    - If true, calculate the speedup ratio by dividing `dfs_timing.visibility_time` by `topological_timing.visibility_time`.
-    - If false, return 1.0 as the speedup ratio.
+    - Checks if `topological_timing.visibility_time` is greater than 0.
+    - If true, returns the division of `dfs_timing.visibility_time` by `topological_timing.visibility_time`.
+    - If false, returns 1.0.
 - **Output**: A float representing the speedup ratio of DFS time to topological time.
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.ComparisonResult`](<#comparisonresult>)  (Base Class)
 
@@ -101,8 +94,8 @@ Calculates the time saved in seconds by comparing the visibility times of DFS an
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Subtracts `topological_timing.visibility_time` from `dfs_timing.visibility_time`.
-- **Output**: Returns the difference in visibility times as a float, representing the time saved in seconds.
+    - Subtracts `topological_timing.visibility_time` from `dfs_timing.visibility_time` to compute the time saved.
+- **Output**: Returns a float representing the time saved in seconds.
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.ComparisonResult`](<#comparisonresult>)  (Base Class)
 
 
@@ -117,10 +110,10 @@ Measures the execution time of a code block using a context manager.
 - **Decorators**: `@contextmanager`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initializes a dictionary `timing` with keys `start`, `end`, and `elapsed`, where `start` is set to the current time using `time.time()`, and `end` and `elapsed` are initialized to 0.0.
-    - Yields the `timing` dictionary to the context block, allowing the user to access and modify it if needed.
-    - In the `finally` block, updates the `end` key in the `timing` dictionary with the current time and calculates the `elapsed` time by subtracting `start` from `end`.
-- **Output**: A dictionary containing the start time, end time, and elapsed time of the code block executed within the context.
+    - Initializes a dictionary `timing` with keys `start`, `end`, and `elapsed`, setting `start` to the current time and the others to 0.0.
+    - Yields the `timing` dictionary to the context block.
+    - In the `finally` block, updates `end` with the current time and calculates `elapsed` as the difference between `end` and `start`.
+- **Output**: A dictionary containing the start time, end time, and elapsed time of the code block execution.
 
 
 ---
@@ -129,18 +122,19 @@ Measures the execution time of a code block using a context manager.
 
 Compares two visibility maps for exact equality and generates a detailed report of differences.
 - **Inputs**:
-    - `dfs_map`: A dictionary where each key is a `Path` object representing a file, and each value is a set of `Path` objects representing the dependencies of that file, generated using a DFS approach.
-    - `topological_map`: A dictionary where each key is a `Path` object representing a file, and each value is a set of `Path` objects representing the dependencies of that file, generated using a topological sort approach.
+    - `dfs_map`: A dictionary representing the visibility map from the DFS approach, where keys are file paths and values are sets of file paths representing dependencies.
+    - `topological_map`: A dictionary representing the visibility map from the topological sort approach, where keys are file paths and values are sets of file paths representing dependencies.
 - **Logic and Control Flow**:
     - Initialize an empty list `differences` to store any differences found between the maps.
     - Calculate `total_files` as the number of keys in `dfs_map`.
     - Calculate `total_dependencies` as the sum of the lengths of all dependency sets in `dfs_map`.
     - Convert the keys of `dfs_map` and `topological_map` to sets `dfs_files` and `topo_files`, respectively.
     - Check if `dfs_files` and `topo_files` are equal; if not, identify and record files missing in each map.
-    - For each file present in both maps, compare their dependency sets; if they differ, record the differences.
+    - Identify common files in both maps by intersecting `dfs_files` and `topo_files`.
+    - For each common file, compare the dependency sets from both maps; if they differ, record the differences.
     - Determine if the maps are equal by checking if `differences` is empty.
-    - Return a [`ComparisonResult`](<#comparisonresult>) object containing the equality status, total files, total dependencies, and any differences found.
-- **Output**: A [`ComparisonResult`](<#comparisonresult>) object containing the equality status, total files, total dependencies, and a list of differences between the two maps.
+    - Return a [`ComparisonResult`](<#comparisonresult>) object with the comparison results, including timing information placeholders.
+- **Output**: A [`ComparisonResult`](<#comparisonresult>) object containing the comparison results, including whether the maps are equal, total files, total dependencies, and a list of differences.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.ComparisonResult`](<#comparisonresult>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<#timinginfo>)
@@ -158,24 +152,25 @@ Prints a formatted comparison of timing results between DFS and topological appr
     - Print the header for the performance comparison section.
     - Print the timing results table header with columns for phase, DFS time, topological time, and speedup.
     - Define a nested function `format_speedup` to format the speedup value based on the comparison of DFS and topological times.
-    - Print the timing results for the 'Visibility' and 'Total' phases using the `format_speedup` function to display speedup values with appropriate color coding.
-    - Print the summary statistics including total files processed, total dependencies, time saved, and overall speedup or performance comparison.
-- **Output**: None, as the function's purpose is to print formatted output to the console.
+    - Print the timing results for the 'Visibility' and 'Total' phases using the `format_speedup` function to display speedup values.
+    - Print the summary statistics including total files processed, total dependencies, time saved, and overall speedup or performance status.
+- **Output**: None, but prints formatted timing comparison information to the console.
 
 
 ---
 ### print\_comparison\_result<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/comparison.print_comparison_result}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/comparison.py#L189>)
 
-Prints a formatted comparison result based on the equality of two approaches.
+Prints a formatted comparison result based on the equality of two approaches and their differences.
 - **Inputs**:
     - `result`: An instance of `ComparisonResult` containing the comparison data between two approaches.
 - **Logic and Control Flow**:
-    - Prints a header for the parity check results.
-    - Checks if the `are_equal` attribute of `result` is `True`.
-    - If `are_equal` is `True`, prints a success message in green color.
-    - If `are_equal` is `False`, prints a failure message in red color and lists the differences in yellow color.
-    - Calls the [`print_timing_comparison`](<#print_timing_comparison>) function to print timing comparison details.
+    - Define ANSI color codes for formatting the output.
+    - Print a header for the parity check results.
+    - Check if the `are_equal` attribute of `result` is `True`.
+    - If `are_equal` is `True`, print a success message in green.
+    - If `are_equal` is `False`, print a failure message in red and list the differences in yellow.
+    - Call the [`print_timing_comparison`](<#print_timing_comparison>) function to print timing comparison details.
 - **Output**: No return value; the function outputs formatted text to the console.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.print_timing_comparison`](<#print_timing_comparison>)
@@ -191,8 +186,8 @@ Calculates statistics about a visibility map, including total files, dependencie
 - **Logic and Control Flow**:
     - Check if `visibility_map` is empty; if true, return a dictionary with all statistics set to zero.
     - Calculate the number of dependencies for each file in `visibility_map` and store these counts in `dep_counts`.
-    - Return a dictionary containing the total number of files, total dependencies, average dependencies per file, maximum dependencies for a file, minimum dependencies for a file, and the number of files with no external dependencies.
-- **Output**: A dictionary with keys 'total_files', 'total_dependencies', 'avg_dependencies', 'max_dependencies', 'min_dependencies', and 'files_with_no_deps', each providing a specific statistic about the visibility map.
+    - Return a dictionary containing the total number of files, total dependencies, average dependencies per file, maximum dependencies for a file, minimum dependencies for a file, and the number of files with no external dependencies (only self-dependency).
+- **Output**: A dictionary with keys 'total_files', 'total_dependencies', 'avg_dependencies', 'max_dependencies', 'min_dependencies', and 'files_with_no_deps', each providing respective statistics about the visibility map.
 
 
 ---
@@ -208,8 +203,7 @@ Prints formatted visibility statistics from a given statistics dictionary.
     - Print the title in bold cyan color.
     - Print a separator line of dashes.
     - Print each statistic from the 'stats' dictionary with a descriptive label.
-    - Format the 'avg_dependencies' value to one decimal place.
-- **Output**: None, as the function only prints the formatted statistics to the console.
+- **Output**: None; the function outputs formatted text to the console.
 
 
 

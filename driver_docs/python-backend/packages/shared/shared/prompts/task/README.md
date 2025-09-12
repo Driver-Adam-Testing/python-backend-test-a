@@ -9,13 +9,13 @@ Task-related prompts and modules for technical document creation, code verificat
 ## Files
 - **[__init__.py](__init__.py.md)**: Imports modules for task-related functionalities in the shared prompts package.
 - **[app_note_section_planner.py](app_note_section_planner.py.md)**: A prompt for creating sections of a detailed technical document called an app note.
-- **[app_note_section_writer.py](app_note_section_writer.py.md)**: A prompt for writing a detailed technical document section called an app note, requiring in-depth codebase understanding.
-- **[code_critic_verifier.py](code_critic_verifier.py.md)**: A prompt for verifying, detecting errors, correcting, and documenting code snippets.
+- **[app_note_section_writer.py](app_note_section_writer.py.md)**: A prompt for writing detailed technical document sections in markdown for app notes.
+- **[code_critic_verifier.py](code_critic_verifier.py.md)**: A system message prompt for verifying, detecting errors, correcting, and documenting code snippets.
 - **[code_snippet_extractor.py](code_snippet_extractor.py.md)**: Extracts code examples, CLI commands, and snippets from a document.
 - **[codeblock_syntax_mermaid.py](codeblock_syntax_mermaid.py.md)**: A prompt for reviewing and correcting mermaid.js code blocks to ensure proper rendering and syntax.
-- **[edit_document.py](edit_document.py.md)**: A prompt for a technical document editor to execute tools for context or modify language as needed.
+- **[edit_document.py](edit_document.py.md)**: A prompt for a technical document editor to expand or reduce text based on user requests.
 - **[prompt_augmentation.py](prompt_augmentation.py.md)**: Defines a system message for enhancing user prompts to improve LLM responses in technical documentation.
-- **[selected_text.py](selected_text.py.md)**: Defines a system message prompt for generating markdown-compatible replacement or appendable text.
+- **[selected_text.py](selected_text.py.md)**: Defines a system message prompt for generating markdown-compatible text replacements or additions.
 - **[smart_instruction_run.py](smart_instruction_run.py.md)**: Defines a system message prompt template for generating smart instructions in a document.
 
 ---

@@ -6,7 +6,7 @@
 A pre-commit script to run mypy on tracked Python files, ignoring import-untyped errors.
 
 # Purpose
-This script is a Bash executable that checks Python files in a Git repository for type consistency using the `mypy` tool. It first retrieves a list of tracked files in the repository that have a `.py` extension. If no such files are found, the script outputs a message and exits. If Python files are present, it runs `mypy` on these files, while ignoring errors related to missing type information in imports. This script provides a narrow functionality focused on type checking for Python files in a version-controlled environment.
+This script is a Bash executable that checks Python files in a Git repository for type errors using the `mypy` tool. It first retrieves a list of tracked files with a `.py` extension using `git ls-files` and filters them with `grep`. If no Python files are found, the script outputs a message and exits. If Python files are present, it runs `mypy` on these files, ignoring errors related to missing type information in imports. This script is useful for maintaining type safety in Python codebases by integrating type checking into the development workflow.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

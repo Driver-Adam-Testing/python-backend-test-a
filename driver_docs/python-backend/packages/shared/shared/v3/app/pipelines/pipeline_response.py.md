@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a Pydantic model for pipeline responses with post-processing for mermaid syntax and reference handling.
+Defines a Pydantic model for pipeline responses with post-processing for references and mermaid syntax.
 
 # Purpose
-The code defines a class `PipelineResponse` that extends `BaseModel` from the Pydantic library, which is used for data validation and settings management using Python type annotations. The `PipelineResponse` class models a response from a pipeline, containing a `final_response` string and a list of `Reference` objects. The constructor of the class processes the input data to ensure that the `references` attribute is converted into a `ReferenceSet` if it is a list, and it applies a syntax correction function `fix_mermaid_syntax_in_response` to the `final_response` if it contains Mermaid diagram syntax. This code provides narrow functionality focused on handling and processing pipeline response data.
+The code defines a class `PipelineResponse` that extends `BaseModel` from the Pydantic library. This class models a response from a pipeline, containing a `final_response` string and a list of `Reference` objects. The constructor of `PipelineResponse` processes the input data by converting the `references` list into a `ReferenceSet` and applies a syntax fix to the `final_response` if it contains Mermaid diagram syntax. This code provides narrow functionality, specifically for handling and processing pipeline responses with potential Mermaid syntax and reference management.
 # Imports and Dependencies
 
 ---
@@ -24,8 +24,8 @@ The code defines a class `PipelineResponse` that extends `BaseModel` from the Py
 
 - **Members**:
     - `final_response`: Stores the final response as a string.
-    - `references`: Contains a list of `Reference` objects.
-- **Description**: Represents a response from a pipeline, including a final response string and a list of references. The constructor processes the `references` to ensure they are stored as a `ReferenceSet` and corrects any mermaid syntax in the `final_response`.
+    - `references`: Holds a list of `Reference` objects.
+- **Description**: Represents a response from a pipeline, containing a final response string and a list of references. The constructor processes the `references` to ensure they are stored as a `ReferenceSet` and corrects any mermaid syntax in the `final_response`.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_response.PipelineResponse.__init__`](<#pipelineresponse__init__>)
 - **Inherits From**:
@@ -42,13 +42,13 @@ Initializes a `PipelineResponse` object by processing `references` and `final_re
     - `data`: A dictionary containing initialization data, including `references` and `final_response`.
 - **Logic and Control Flow**:
     - Checks if `references` in `data` is a list, and if so, converts it to a [`ReferenceSet`](<../../utils/references.py.md#referenceset>) with a set of references.
-    - Checks if the string '```mermaid' is in `final_response`, and if so, applies [`fix_mermaid_syntax_in_response`](<../../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response>) to correct the syntax.
-    - Calls the parent class [`__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>) method with the processed `data`.
+    - Checks if the string '```mermaid' is in `final_response`, and if so, applies [`fix_mermaid_syntax_in_response`](<../../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response>) to `final_response`.
+    - Calls the parent class [`__init__`](<../../utils/parse_response_string.py.md#parseoutputerror__init__>) method with the processed `data`.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<../../utils/references.py.md#referenceset>)
     - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid.fix_mermaid_syntax_in_response`](<../../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse.__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>)
+    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.ParseOutputError.__init__`](<../../utils/parse_response_string.py.md#parseoutputerror__init__>)
 - **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_response.PipelineResponse`](<#pipelineresponse>)  (Base Class)
 
 

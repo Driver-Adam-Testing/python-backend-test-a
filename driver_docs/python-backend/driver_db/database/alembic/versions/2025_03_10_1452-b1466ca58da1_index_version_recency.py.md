@@ -6,7 +6,7 @@
 Alembic migration script to add and remove an index on `v2_version` for version recency.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates a non-unique index named `ix_version_primary_asset_id_updated_at_desc` on the `v2_version` table, using the columns `primary_asset_id` and a descending order of `updated_at`. The [`downgrade`](<#downgrade>) function removes this index, allowing for the reversal of the schema change if needed. The script includes revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates a non-unique index named `ix_version_primary_asset_id_updated_at_desc` on the `v2_version` table, using the columns `primary_asset_id` and a descending order of `updated_at`. The [`downgrade`](<#downgrade>) function removes this index, allowing for the reversal of the schema change if necessary. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -26,8 +26,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in a migration script. It is used by Alembic to determine the order of migrations.
-- **Use**: Used to track the predecessor of the current database schema revision in Alembic migrations.
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of database migrations.
 
 
 ---
@@ -41,7 +41,7 @@ This code is a database migration script using Alembic, a database migration too
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migrations.
 
 
 # Functions
@@ -54,19 +54,19 @@ Creates an index on the `v2_version` table to optimize queries based on `primary
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls `op.create_index` to create an index named `ix_version_primary_asset_id_updated_at_desc` on the `v2_version` table.
-    - Specifies the columns `primary_asset_id` and `updated_at` (in descending order) for the index.
+    - Specifies the index columns as `primary_asset_id` and a literal column `updated_at DESC` to sort in descending order.
     - Sets the `unique` parameter to `False`, indicating that the index does not enforce uniqueness.
-- **Output**: No output is returned.
+- **Output**: No return value; modifies the database schema by adding an index.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_03_10_1452-b1466ca58da1_index_version_recency.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_03_10_1452-b1466ca58da1_index_version_recency.py#L30>)
 
-Removes the specified index from the 'v2_version' table.
+Removes an index from the 'v2_version' table in the database.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `drop_index` method from the `op` module to remove the index named 'ix_version_primary_asset_id_updated_at_desc' from the 'v2_version' table.
+    - Calls the `drop_index` function from the `op` module to remove the index named 'ix_version_primary_asset_id_updated_at_desc' from the 'v2_version' table.
 - **Output**: No output is returned.
 
 

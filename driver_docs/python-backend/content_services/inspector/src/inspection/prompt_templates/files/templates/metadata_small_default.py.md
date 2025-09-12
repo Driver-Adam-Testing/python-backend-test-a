@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a metadata template with prompts and style instructions for small system purposes.
+Defines a metadata template with specific style instructions for small system prompts.
 
 # Purpose
-The code defines a configuration for a metadata template named `METADATA_SMALL_TEMPLATE`. It imports several components and prompts from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.metadata`. The template is a list containing a tuple that specifies a single prompt text with a header `# Purpose`. It uses the `Prompt` class to create and append components and instructions, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`, to form structured prompt strings. This setup is likely used to generate or manage metadata with specific style and formatting instructions.
+The code defines a configuration for a metadata template named `METADATA_SMALL_TEMPLATE`. It imports several components and prompts from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.metadata`, to construct the template. The template is a list containing a tuple that specifies a single prompt text, a section header `"# Purpose"`, and two `Prompt` objects. These `Prompt` objects are constructed by appending various components and instructions, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`, to form structured strings. The purpose of this code is to create a structured metadata template that adheres to specific style instructions for generating documentation.
 # Imports and Dependencies
 
 ---
@@ -25,8 +25,8 @@ The code defines a configuration for a metadata template named `METADATA_SMALL_T
 ---
 ### METADATA\_SMALL\_TEMPLATE
 - **Type**: ``list``
-- **Description**: A list containing a single tuple that defines a structured prompt template. The tuple includes a prompt type, a section header, and two formatted prompt strings created using the `Prompt` class and `Component` instances. These strings are constructed by appending various components and instructions, and then converting them into strings using the `into_str()` method.
-- **Use**: Used to define a structured prompt template for metadata with specific style instructions.
+- **Description**: Contains a list of tuples, each representing a structured prompt template for metadata. Each tuple includes a prompt type, a section header, and two formatted prompt strings created by appending components and instructions to an empty prompt.
+- **Use**: Used to define structured prompt templates for metadata processing.
 
 
 

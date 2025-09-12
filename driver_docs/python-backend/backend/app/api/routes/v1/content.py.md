@@ -6,15 +6,15 @@
 API routes for managing content, including listing, retrieving, updating, deleting, and exporting content.
 
 # Purpose
-The code defines a FastAPI router that provides a set of API endpoints for managing and interacting with content. The primary functionality includes listing content, retrieving content by ID, downloading content, updating content, and deleting content. The endpoints also allow for retrieving associated document sources and tags, as well as exporting Markdown content to reStructuredText (RST) format. The endpoints are secured with permissions, such as `ContentReadonlyPermission` and `ContentEditorPermission`, to control access based on user roles.
+The code defines a FastAPI router that provides a set of API endpoints for managing and interacting with content. The endpoints allow users to perform various operations on content, such as listing content with specific filter criteria, retrieving content by its unique identifier, downloading content, and obtaining associated document sources and tags. The endpoints also support updating and deleting content, as well as exporting Markdown content to reStructuredText (RST) format. The code uses `ContentService` to handle the business logic for these operations, ensuring that the API endpoints remain focused on request handling and response formatting.
 
-The code uses the `ContentService` class to handle the business logic for each operation, ensuring that the API endpoints remain focused on request handling and response formatting. The endpoints accept various query parameters and path variables to filter and identify content, such as `content_id`, `node_id`, and other filtering criteria. The use of `CurrentSession` and `UserToken` indicates that the operations are performed in the context of a user session, ensuring that actions are performed with the appropriate user and organizational context. The API is designed to be part of a larger application, likely serving as a backend service for a content management system.
+The API endpoints are secured with permissions, such as `ContentReadonlyPermission` and `ContentEditorPermission`, to control access based on user roles. The endpoints use path parameters and query parameters to receive input data, and they return structured responses, such as `ListContentResults`, `DerivedContent`, `ContentSourceResponse`, and `ContentTagsResponse`. The code is structured to be part of a larger application, with dependencies on other modules for authentication, session management, and schema definitions. The use of FastAPI's `APIRouter` allows for modular organization of the API routes, facilitating integration into a broader application architecture.
 # Imports and Dependencies
 
 ---
 - `typing.Annotated`
 - `uuid.UUID`
-- `database.models_v1.DerivedContent`
+- `database.models.DerivedContent`
 - `fastapi.APIRouter`
 - `fastapi.Query`
 - `fastapi.responses.StreamingResponse`
@@ -36,8 +36,8 @@ The code uses the `ContentService` class to handle the business logic for each o
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: Initializes an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage the routing of HTTP requests to the appropriate endpoint functions in the application.
-- **Use**: Used to register and organize the API endpoints for handling HTTP requests in the application.
+- **Description**: Defines a router instance using FastAPI's `APIRouter` class. This instance is used to define and manage the API routes for the application.
+- **Use**: Used to register and organize the API endpoints for handling content-related operations.
 
 
 # Functions
@@ -54,15 +54,15 @@ Lists content that matches the provided filter criteria.
     - `latest_version_only`: A boolean flag to indicate if only the latest version of content should be listed. Defaults to False.
     - `limit`: The maximum number of content items to return. Defaults to 20.
     - `offset`: The number of content items to skip before starting to collect the result set. Defaults to 0.
-    - `content_type_name`: A list of content type names to filter the content. Can be None.
+    - `content_type_name`: A list of content type names to filter the content. It is optional.
     - `order`: An integer to specify the order of the content.
-    - `sort_by`: A string to specify the field by which to sort the content. Can be None.
+    - `sort_by`: A string to specify the field by which to sort the content.
     - `sort_direction`: A string to specify the direction of sorting, either 'ASC' or 'DESC'. Defaults to 'ASC'.
-    - `status`: A string to filter content by its status. Can be None.
-    - `tag`: A list of tags to filter the content. Can be None.
-    - `tag_id`: A list of tag IDs to filter the content. Can be None.
-    - `text`: A string to filter content by text. Can be None.
-    - `version_id`: A list of version IDs to filter the content. Can be None.
+    - `status`: A string to filter content by its status.
+    - `tag`: A list of tags to filter the content. It is optional.
+    - `tag_id`: A list of tag IDs to filter the content. It is optional.
+    - `text`: A string to filter content by text.
+    - `version_id`: A list of version IDs to filter the content. It is optional.
 - **Logic and Control Flow**:
     - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
     - Call the [`get_list_content`](<../../../services/content_service.py.md#contentserviceget_list_content>) method of [`ContentService`](<../../../services/content_service.py.md#contentservice>) with the user's organization ID and a [`ListContentInput`](<../../../schemas/content_schema.py.md#listcontentinput>) object containing all the filter criteria.
@@ -87,7 +87,7 @@ Retrieves content details by a given content ID.
     - `content_id`: The UUID of the content to retrieve.
 - **Logic and Control Flow**:
     - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
-    - Call the [`get_content_by_id`](<../../../services/content_service.py.md#contentserviceget_content_by_id>) method of the [`ContentService`](<../../../services/content_service.py.md#contentservice>) instance, passing `content_id` and `user.organization_id` as arguments.
+    - Call the [`get_content_by_id`](<../../../services/content_service.py.md#contentserviceget_content_by_id>) method of [`ContentService`](<../../../services/content_service.py.md#contentservice>) with `content_id` and `user.organization_id` as arguments.
     - Return the result of the [`get_content_by_id`](<../../../services/content_service.py.md#contentserviceget_content_by_id>) method call.
 - **Output**: An instance of `DerivedContent` containing the content details.
 - **Functions Called**:
@@ -107,10 +107,9 @@ Retrieves a download URL from S3 for a given node ID.
     - `user`: The current user object.
     - `node_id`: The UUID of the node for which to get the download URL.
 - **Logic and Control Flow**:
-    - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
-    - Call the [`get_content_download_url`](<../../../services/content_service.py.md#contentserviceget_content_download_url>) method on the `content_service` instance, passing `node_id` and `user.organization_id` as arguments.
-    - Return the result of the [`get_content_download_url`](<../../../services/content_service.py.md#contentserviceget_content_download_url>) method call.
-- **Output**: A `DownloadContentResponse` object containing the download URL details.
+    - Creates an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
+    - Calls the [`get_content_download_url`](<../../../services/content_service.py.md#contentserviceget_content_download_url>) method of [`ContentService`](<../../../services/content_service.py.md#contentservice>) with `node_id` and `user.organization_id` to retrieve the download URL.
+- **Output**: Returns a `DownloadContentResponse` containing the download URL details.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#contentservice>)
@@ -129,9 +128,9 @@ Retrieves the root codebase content record for a specified content ID.
     - `content_id`: The UUID of the content.
 - **Logic and Control Flow**:
     - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
-    - Call the `get_content_root_by_id` method of [`ContentService`](<../../../services/content_service.py.md#contentservice>) with `content_id` and `user.organization_id` as arguments.
+    - Call the `get_content_root_by_id` method of the [`ContentService`](<../../../services/content_service.py.md#contentservice>) instance with `content_id` and `user.organization_id` as arguments.
     - Return the result of the `get_content_root_by_id` method call.
-- **Output**: An instance of `DerivedContent` representing the root codebase content details.
+- **Output**: Returns a `DerivedContent` object containing the root codebase content details.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#contentservice>)
@@ -149,7 +148,7 @@ Retrieves sources associated with a specific document using the content ID.
     - `content_id`: The UUID of the content for which to retrieve sources.
 - **Logic and Control Flow**:
     - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
-    - Call the `get_content_sources` method on the `content_service` instance, passing `content_id` and `user.organization_id` as arguments.
+    - Call the `get_content_sources` method on the [`ContentService`](<../../../services/content_service.py.md#contentservice>) instance, passing `content_id` and `user.organization_id` as arguments.
     - Return the result of the `get_content_sources` method call.
 - **Output**: A `ContentSourceResponse` object containing details of the document sources.
 - **Functions Called**:
@@ -164,14 +163,13 @@ Retrieves sources associated with a specific document using the content ID.
 Updates content by ID using the provided update data.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: The current session object.
-    - `user`: The current user token object.
+    - `session`: The current session object, which manages the database connection and transaction.
+    - `user`: The current user object, which contains user-related information such as the organization ID.
     - `content_id`: The UUID of the content to update.
     - `update_data`: A dictionary containing the data to update the content with.
 - **Logic and Control Flow**:
-    - Creates an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
-    - Calls the `edit_content` method of [`ContentService`](<../../../services/content_service.py.md#contentservice>) with `user.organization_id`, `content_id`, and `update_data` as arguments.
-    - Returns the result of the `edit_content` method call.
+    - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
+    - Call the `edit_content` method of [`ContentService`](<../../../services/content_service.py.md#contentservice>) with the `user.organization_id`, `content_id`, and `update_data` to update the content.
 - **Output**: Returns a `DerivedContent` object representing the updated content.
 - **Functions Called**:
     - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#contentservice>)
@@ -181,11 +179,11 @@ Updates content by ID using the provided update data.
 ### delete\_content<!-- {{#callable:python-backend/backend/app/api/routes/v1/content.delete_content}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v1/content.py#L181>)
 
-Deletes content identified by a given UUID from the database.
+Deletes content identified by a UUID from the database.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: The current session object used to interact with the database.
-    - `user`: The current user token containing user information and permissions.
+    - `session`: The current database session object.
+    - `user`: The user token object representing the current user.
     - `content_id`: The UUID of the content to delete.
 - **Logic and Control Flow**:
     - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
@@ -201,7 +199,7 @@ Deletes content identified by a given UUID from the database.
 ### get\_content\_tags<!-- {{#callable:python-backend/backend/app/api/routes/v1/content.get_content_tags}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v1/content.py#L194>)
 
-Retrieves tags associated with a specific content item using its UUID.
+Retrieves tags associated with a specific content item.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: The current session object.
@@ -225,13 +223,13 @@ Retrieves tags associated with a specific content item using its UUID.
 Converts Markdown content to RST format and returns it as a downloadable file.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: The current session object, which provides context for the operation.
-    - `request`: An `ExportSingleRequest` object containing the Markdown content to convert.
+    - `session`: The current session object used to interact with the content service.
+    - `request`: An instance of `ExportSingleRequest` containing the Markdown content to convert.
 - **Logic and Control Flow**:
     - Create an instance of [`ContentService`](<../../../services/content_service.py.md#contentservice>) using the provided `session`.
-    - Call [`convert_markdown_to_rst`](<../../../services/content_service.py.md#contentserviceconvert_markdown_to_rst>) on the `content_service` instance with the Markdown content from `request`.
-    - Return a `StreamingResponse` with the converted RST content, specifying the media type as `text/x-rst` and setting the `Content-Disposition` header to prompt a file download named `exported_content.rst`.
-- **Output**: A `StreamingResponse` object containing the converted RST content, ready for download.
+    - Call the [`convert_markdown_to_rst`](<../../../services/content_service.py.md#contentserviceconvert_markdown_to_rst>) method of [`ContentService`](<../../../services/content_service.py.md#contentservice>) with the Markdown content from `request` to get the RST content.
+    - Return a `StreamingResponse` with the RST content, specifying the media type as 'text/x-rst' and setting the content disposition header to indicate a file attachment named 'exported_content.rst'.
+- **Output**: A `StreamingResponse` object containing the converted RST content, ready for download as a file.
 - **Functions Called**:
     - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#contentservice>)
     - [`python-backend/backend/app/services/content_service.ContentService.convert_markdown_to_rst`](<../../../services/content_service.py.md#contentserviceconvert_markdown_to_rst>)

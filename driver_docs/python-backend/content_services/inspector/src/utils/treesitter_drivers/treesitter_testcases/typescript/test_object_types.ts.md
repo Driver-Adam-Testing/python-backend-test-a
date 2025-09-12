@@ -6,7 +6,7 @@
 TypeScript type definitions for aliases, unions, intersections, tuples, functions, objects, mapped types, and more.
 
 # Purpose
-This TypeScript code file defines a comprehensive set of type aliases and utility types, providing a broad range of type functionalities. It includes basic type aliases for primitive types, union and intersection types, tuple types, and function types. The code also defines object types with optional and readonly properties, mapped types for transforming object properties, and conditional types for type inference and manipulation. Additionally, it includes template literal types, intrinsic string manipulation types, and utility types such as `Partial`, `Readonly`, and `Record`. The file also covers complex type constructs like recursive types, discriminated unions, type guards, and predicates, as well as generic constraints and distributive conditional types. These type definitions are useful for creating flexible and type-safe TypeScript applications.
+This TypeScript code file defines a comprehensive set of type aliases that demonstrate various TypeScript type features. It includes basic type aliases for primitive types, union and intersection types, tuple types, and function types. The code also defines object types with optional and readonly properties, mapped types for transforming object properties, and conditional types for type inference and manipulation. Additionally, it includes template literal types, intrinsic string manipulation types, and utility types such as `Partial`, `Readonly`, and `Record`. The file further explores complex type constructs like recursive types, discriminated unions, type guards, and generic constraints. These type definitions provide a broad range of functionality for type safety and flexibility in TypeScript applications.
 # Types
 
 ---
@@ -14,9 +14,9 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L12>)
 
 - **Members**:
-    - `firstName`: The first name of a person as a string.
-    - `lastName`: The last name of a person as a string.
-- **Description**: The `PersonName` type defines an object structure with two properties: `firstName` and `lastName`, both of which are strings. This type represents the basic name information of a person, ensuring that any object conforming to this type will have these two string properties.
+    - `firstName`: The first name of the person as a string.
+    - `lastName`: The last name of the person as a string.
+- **Description**: The `PersonName` type alias defines an object structure with two properties: `firstName` and `lastName`, both of which are strings. This type represents the basic structure for storing a person's name.
 
 
 ---
@@ -25,7 +25,7 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 
 - **Members**:
     - `age`: The `age` property is a number that represents a person's age.
-- **Description**: The `PersonAge` type is a TypeScript type alias that defines an object structure with a single property, `age`, which is a number. This type is used to represent the age attribute of a person and can be combined with other types, such as `PersonName`, to form more complex types like `Person`.
+- **Description**: The `PersonAge` type is an alias for an object that contains a single property, `age`, which is a number. This type defines the shape of an object that includes age information for a person. It is used in conjunction with other types, such as `PersonName`, to form more complex types like `Person`, which represents a complete person with both name and age properties.
 
 
 ---
@@ -35,7 +35,7 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 - **Members**:
     - `(x: string): string`: Defines a function signature that takes a string and returns a string.
     - `(x: number): number`: Defines a function signature that takes a number and returns a number.
-- **Description**: The `OverloadedFunction` type alias defines a function type that can accept either a string or a number as an argument and returns a value of the same type as the argument. This type provides a contract for functions that need to handle both string and number inputs, ensuring that the return type matches the input type.
+- **Description**: The `OverloadedFunction` type alias defines a function type that can accept either a string or a number as an argument and returns a value of the same type. This type provides a contract for functions that need to handle both string and number inputs, ensuring that the return type matches the input type.
 
 
 ---
@@ -45,7 +45,7 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 - **Members**:
     - `x`: The x-coordinate of the point.
     - `y`: The y-coordinate of the point.
-- **Description**: The `Point` type defines a simple object structure with two properties, `x` and `y`, both of which are numbers. This type represents a point in a two-dimensional space, where `x` is the horizontal coordinate and `y` is the vertical coordinate.
+- **Description**: The `Point` type alias defines an object structure with two properties, `x` and `y`, both of which are numbers. This type represents a point in a two-dimensional space, where `x` is the horizontal coordinate and `y` is the vertical coordinate.
 
 
 ---
@@ -53,9 +53,9 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L40>)
 
 - **Members**:
-    - `x`: The x-coordinate of the point, which is read-only.
-    - `y`: The y-coordinate of the point, which is read-only.
-- **Description**: The `ReadonlyPoint` type defines an object structure with two numeric properties, `x` and `y`, both of which are read-only. This type ensures that once a `ReadonlyPoint` object is created, its `x` and `y` values cannot be changed, providing immutability for these coordinates.
+    - `x`: The x-coordinate of the point, which is a read-only number.
+    - `y`: The y-coordinate of the point, which is a read-only number.
+- **Description**: The `ReadonlyPoint` type defines an object structure with two properties, `x` and `y`, both of which are numbers and are read-only. This means that once a `ReadonlyPoint` object is created, its `x` and `y` values cannot be changed. This type is useful for representing a point in a 2D space where the coordinates should remain constant after initialization.
 
 
 ---
@@ -75,7 +75,7 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 - **Members**:
     - `[P in keyof T]`: Iterates over each property key in the type `T`.
     - `readonly`: Makes each property in the resulting type read-only.
-- **Description**: The `Readonly<T>` type alias creates a mapped type that takes an object type `T` and transforms it into a new type where all properties are read-only. This means that once an object of this type is created, its properties cannot be modified. It is useful for ensuring immutability in TypeScript objects.
+- **Description**: The `Readonly` type alias in TypeScript creates a mapped type that takes a generic type `T` and transforms it into a new type where all properties are read-only. This means that once an object of this type is created, its properties cannot be modified. It is useful for ensuring immutability in objects, preventing accidental changes to the data structure.
 
 
 ---
@@ -83,10 +83,8 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L55>)
 
 - **Members**:
-    - `[P in keyof T]`: Represents each property `P` in the type `T`.
-    - `?`: Indicates that each property `P` is optional.
-    - `T[P]`: Represents the type of the property `P` in the type `T`.
-- **Description**: The `Partial<T>` type alias creates a new type where all properties of the type `T` are optional. This means that any object of type `Partial<T>` can have zero or more of the properties defined in `T`, and each property can be omitted. This is useful for scenarios where you want to work with objects that may not have all the properties of a given type `T`.
+    - `[P in keyof T]`: Defines a mapped type where each property `P` in `T` is optional and of type `T[P]`.
+- **Description**: The `Partial<T>` type alias creates a mapped type that makes all properties of the type `T` optional. It iterates over each property `P` in `T` and marks it as optional by appending a question mark (`?`) to the property name. This type is useful when you want to create a version of a type where all properties are optional, allowing for partial updates or configurations.
 
 
 ---
@@ -94,8 +92,9 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L59>)
 
 - **Members**:
-    - `[P in keyof T]`: Maps each property of type `T` to a type that can be either the original type or `null`.
-- **Description**: The `Nullable<T>` type alias creates a mapped type where each property of the given type `T` can be either its original type or `null`. This type is useful when you want to allow `null` values for all properties of an object type, effectively making all properties nullable.
+    - `[P in keyof T]`: Iterates over each property key in the type `T`.
+    - `T[P] | null`: Defines each property value as either its original type or `null`.
+- **Description**: The `Nullable<T>` type alias creates a mapped type where each property of the type `T` can be `null` in addition to its original type. This type is useful when you want to allow `null` values for all properties of an object type, effectively making each property optional in terms of its value presence.
 
 
 ---
@@ -104,7 +103,7 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 
 - **Members**:
     - `[P in keyof T as `get${Capitalize<string & P>}`]`: Defines a getter method for each property in `T`, with the method name prefixed by 'get' and the property name capitalized.
-- **Description**: The `Getters` type alias creates a mapped type that transforms each property of a given type `T` into a getter method. Each method is named by prefixing 'get' to the capitalized property name and returns the property's type. This type alias is useful for defining a consistent interface for accessing properties of an object through getter methods.
+- **Description**: The `Getters` type alias creates a mapped type that transforms each property of a given type `T` into a getter method. Each method is named by prefixing 'get' to the capitalized property name and returns the property's type. This type defines a contract for objects to have getter methods for each of their properties, allowing for encapsulated access to the properties.
 
 
 ---
@@ -113,7 +112,8 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 
 - **Members**:
     - `P`: Represents each property key in the type `T`.
-- **Description**: The `RemovePrefix` type alias defines a mapped type that transforms the keys of a given type `T`. It removes a leading underscore (`_`) from each key if present, while preserving the original value type. This type is useful for creating a new object type where prefixed keys are normalized by removing the underscore.
+    - `R`: Represents the inferred part of the property key after removing the underscore prefix.
+- **Description**: The `RemovePrefix` type alias defines a mapped type that transforms the keys of a given type `T`. It removes the leading underscore from any key that starts with an underscore, while keeping the rest of the keys unchanged. This type is useful for creating a new type with modified property names, particularly when dealing with objects that have prefixed keys.
 
 
 ---
@@ -123,7 +123,7 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 - **Members**:
     - `value`: Holds a value of type `T` which must extend `Lengthwise`.
     - `getLength`: A method that returns the length of the `value`.
-- **Description**: The `ConstrainedGeneric` type alias defines an object structure where the `value` is of a generic type `T` that must extend the `Lengthwise` interface, ensuring it has a `length` property. This type also includes a `getLength` method that returns the length of the `value`, enforcing that any type used with `ConstrainedGeneric` must have a measurable length.
+- **Description**: The `ConstrainedGeneric` type alias defines an object structure that requires a `value` of a generic type `T`, which must extend the `Lengthwise` interface. This ensures that the `value` has a `length` property. The type also includes a `getLength` method that returns the length of the `value`. This type is useful for creating objects that need to handle values with a measurable length.
 
 
 ---
@@ -133,7 +133,7 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 - **Members**:
     - `value`: Holds the data of the current node in the linked list.
     - `next`: Points to the next node in the linked list, or is undefined if there is no next node.
-- **Description**: The `LinkedList<T>` type defines a recursive data structure for a singly linked list, where each node contains a `value` of generic type `T` and an optional `next` property that points to the next node in the list. This structure allows for the creation of a chain of nodes, where each node can hold data and reference the subsequent node, facilitating operations like traversal and insertion.
+- **Description**: The `LinkedList<T>` type defines a recursive data structure for a singly linked list where each node contains a `value` of generic type `T` and an optional `next` property that points to the next node in the list. This structure allows for the creation of a chain of nodes, where each node can store a value and reference the subsequent node, facilitating operations like traversal and insertion.
 
 
 ---
@@ -141,9 +141,9 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L155>)
 
 - **Members**:
-    - `method`: A method that returns the current instance of the object.
-    - `chain`: A method that returns the current instance of the object.
-- **Description**: The `FluentInterface` type defines an object structure that supports method chaining by returning the current instance (`this`) from its methods. This allows for a sequence of method calls on the same object instance, facilitating a fluent and readable coding style.
+    - `method`: Returns the current instance of the object.
+    - `chain`: Returns the current instance of the object.
+- **Description**: The `FluentInterface` type defines a contract for objects that support method chaining. It includes two methods, `method` and `chain`, both of which return the current instance of the object (`this`). This allows for a fluent interface pattern, where multiple method calls can be chained together in a single statement.
 
 
 ---
@@ -151,11 +151,11 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L160>)
 
 - **Members**:
-    - `data`: Holds the payload of the response, which is of a generic type `T`.
+    - `data`: Contains the payload of the response, which is of a generic type `T`.
     - `status`: Represents the HTTP status code of the response as a number.
-    - `headers`: Contains the HTTP headers of the response as a record with string keys and values.
-    - `timestamp`: Records the date and time when the response was generated as a `Date` object.
-- **Description**: The `APIResponse` type is a generic TypeScript type alias that defines the structure of an API response object. It includes a `data` field of a generic type `T` to hold the response payload, a `status` field to represent the HTTP status code, a `headers` field to store HTTP headers as key-value pairs, and a `timestamp` field to indicate when the response was generated. This type provides a standardized way to represent API responses in TypeScript applications.
+    - `headers`: Holds the HTTP headers of the response as a record with string keys and values.
+    - `timestamp`: Indicates the date and time when the response was generated as a `Date` object.
+- **Description**: The `APIResponse` type alias defines the structure of an object that represents a response from an API. It includes a generic `data` field for the response payload, a `status` field for the HTTP status code, a `headers` field for the HTTP headers, and a `timestamp` field for the time the response was created. This type provides a standard format for handling API responses in TypeScript.
 
 
 ---
@@ -163,9 +163,9 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L173>)
 
 - **Members**:
-    - `[P in keyof T]`: Iterates over each property `P` in the type `T`.
-    - `T[P] extends object ? DeepPartial<T[P]> : T[P]`: Recursively applies `DeepPartial` to nested objects, otherwise keeps the property type as is.
-- **Description**: The `DeepPartial` type alias creates a new type where all properties of the given type `T` are optional, and if any property is an object, it recursively applies the same transformation to make all nested properties optional as well. This type is useful for creating partial versions of complex nested objects, allowing for flexibility in specifying only a subset of properties at any depth.
+    - `[P in keyof T]`: Iterates over each key in the type `T`.
+    - `T[P] extends object ? DeepPartial<T[P]> : T[P]`: Recursively applies `DeepPartial` to nested objects, otherwise keeps the type as is.
+- **Description**: The `DeepPartial` type alias creates a new type where all properties of the given type `T` are optional, and if any property is an object, it recursively applies the same transformation to make all nested properties optional as well. This type is useful for creating partial versions of complex nested objects.
 
 
 ---
@@ -173,8 +173,10 @@ This TypeScript code file defines a comprehensive set of type aliases and utilit
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L177>)
 
 - **Members**:
-    - `DeepReadonly`: A mapped type that recursively makes all properties of an object type `T` deeply readonly.
-- **Description**: The `DeepReadonly` type alias defines a recursive mapped type that makes all properties of an object type `T` deeply readonly. This means that not only the top-level properties of `T` are readonly, but also all nested properties within any object properties of `T` are recursively made readonly. This type is useful for ensuring that an object and all its nested objects cannot be modified.
+    - `[P in keyof T]`: Iterates over each property `P` in the type `T`.
+    - `readonly`: Makes each property `P` in the type `T` read-only.
+    - `T[P] extends object ? DeepReadonly<T[P]> : T[P]`: Recursively applies `DeepReadonly` to nested objects, otherwise keeps the property type as is.
+- **Description**: The `DeepReadonly` type alias creates a deeply immutable version of a given type `T`. It makes all properties of `T` and any nested objects within `T` read-only, ensuring that the entire structure cannot be modified. This is useful for creating immutable data structures where no part of the object can be changed after its creation.
 
 
 

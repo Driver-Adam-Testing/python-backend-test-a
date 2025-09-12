@@ -6,9 +6,9 @@
 Script for migrating database records and copying S3 bucket contents between environments.
 
 # Purpose
-This code is a script designed to perform data migration between two databases and two S3 storage environments. It first migrates data from a source database to a target database by iterating over a list of models (`Workspace`, `Codebase`, `DerivedContentType`, `DerivedContent`). For each model, it retrieves all records from the source database, creates new records with the same attributes, and commits them to the target database. The script uses SQLAlchemy and SQLModel to manage database connections and sessions.
+This code is a script designed to perform data migration between two databases and two S3 storage environments. It first establishes connections to a source and a target database using SQLAlchemy, and then iterates over a list of database models (`Workspace`, `Codebase`, `DerivedContentType`, `DerivedContent`). For each model, it retrieves all records from the source database, creates equivalent records in the target database, and commits these records. The script handles exceptions during the migration process and logs the progress and any errors encountered.
 
-In addition to database migration, the script also handles the migration of S3 buckets and their contents. It connects to a source S3 environment and a target S3 environment, listing all buckets in the source. For each bucket, it checks if a corresponding bucket exists in the target; if not, it creates one. It then lists all objects in each source bucket and copies them to the target bucket, skipping any objects that already exist in the target. The script uses the `boto3` library to interact with AWS S3 services and handles potential errors such as missing credentials.
+In addition to database migration, the script also manages the transfer of data between two S3 storage environments. It uses the `boto3` library to configure clients for both the source and target S3 services. The script lists all buckets in the source S3, skips certain buckets based on naming conventions, and checks for the existence of corresponding buckets in the target S3. If a target bucket does not exist, it creates one and proceeds to copy objects from the source bucket to the target bucket, ensuring that objects are not duplicated. The script logs the progress of the S3 operations and handles potential errors, such as missing credentials.
 # Imports and Dependencies
 
 ---
@@ -44,14 +44,14 @@ In addition to database migration, the script also handles the migration of S3 b
 ---
 ### source\_engine
 - **Type**: ``Engine``
-- **Description**: Represents a SQLAlchemy engine instance for the source database. It is created using the `create_engine` function with the `source_database_url` as its parameter.
-- **Use**: Used to establish a connection to the source database for executing SQL queries and managing transactions.
+- **Description**: Represents a SQLAlchemy engine instance for the source database connection. It is created using the `create_engine` function with the `source_database_url` as its parameter.
+- **Use**: Used to establish a connection to the source database for data migration operations.
 
 
 ---
 ### target\_engine
 - **Type**: ``Engine``
-- **Description**: Represents a SQLAlchemy `Engine` object that connects to the target database. It is created using the `create_engine` function with the `target_database_url` as its parameter.
+- **Description**: Represents a SQLAlchemy engine instance for the target database. It is created using the `create_engine` function with the `target_database_url` as its parameter.
 - **Use**: Used to establish a connection to the target database for executing SQL operations during data migration.
 
 
@@ -65,14 +65,14 @@ In addition to database migration, the script also handles the migration of S3 b
 ---
 ### source\_s3
 - **Type**: ``boto3.client``
-- **Description**: Creates an S3 client using the `boto3` library. It uses AWS credentials and region information from environment variables to configure the client.
-- **Use**: Used to interact with the source AWS S3 service for operations such as listing buckets and copying objects.
+- **Description**: Represents an AWS S3 client configured with credentials and region information. It uses the `boto3` library to interact with AWS S3 services.
+- **Use**: Used to perform operations on AWS S3, such as listing buckets and copying objects from source to target buckets.
 
 
 ---
 ### target\_s3
 - **Type**: ``boto3.client``
-- **Description**: Represents an S3 client configured to interact with a local S3-compatible service, such as LocalStack or Minio. It uses credentials and region information from environment variables to authenticate and connect to the service.
+- **Description**: Represents an S3 client configured to interact with a local S3-compatible service, such as LocalStack or Minio. It uses credentials and endpoint details from environment variables to establish the connection.
 - **Use**: Used to perform operations on the target S3 service, such as creating buckets and copying objects from a source S3 service.
 
 

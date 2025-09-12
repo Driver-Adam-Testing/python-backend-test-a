@@ -6,9 +6,9 @@
 Implements classes and functions for extracting and documenting Ruby classes and modules using static analysis.
 
 # Purpose
-The code defines a system for generating documentation for Ruby code, focusing on classes, modules, methods, and attributes. It uses classes such as `RubyMethodData`, `RubyAttributeData`, `RubyClassData`, and `RubyModuleData` to represent different Ruby constructs. These classes provide methods to create system and user prompts for documentation purposes, using JSON schemas to ensure consistent output. The code also includes collections like `RubyClassCollection` and `RubyModuleCollection` to manage multiple instances of these constructs.
+The code defines a set of classes and functions for processing and documenting Ruby code, specifically focusing on classes, modules, methods, and attributes. It uses static analysis to extract symbols from Ruby source code files and organizes them into structured data representations. The classes `RubyMethodData`, `RubyAttributeData`, `RubyClassData`, and `RubyModuleData` are responsible for generating prompts for documenting Ruby methods, attributes, classes, and modules, respectively. These classes use the `pydantic` library to define data structures and manage the conversion of raw symbol data into intermediate representations (`IrData`).
 
-The code uses static analysis to extract symbols from Ruby source code files, utilizing `ctags` to identify classes, modules, methods, and attributes. It organizes these symbols into collections, such as `RubyClassRawSymbolCollection` and `RubyModuleRawSymbolCollection`, which are then used to generate structured documentation. The system is designed to work with a language model (`ChatOpenAI`) to produce detailed and structured documentation for Ruby code, adhering to specific style instructions and JSON schemas.
+The code also includes collections such as `RubyClassCollection` and `RubyModuleCollection`, which manage groups of class and module data. The `RubyClassRawSymbolCollection` and `RubyModuleRawSymbolCollection` classes handle the extraction of raw symbols from Ruby code using the `ctags` tool, organizing them into hierarchical structures. The code is designed to be part of a larger system that automates the generation of technical documentation for Ruby code, providing a structured approach to analyzing and describing the components of Ruby programs.
 # Imports and Dependencies
 
 ---
@@ -42,15 +42,15 @@ The code uses static analysis to extract symbols from Ruby source code files, ut
 ---
 ### RUBY\_CLASSES
 - **Type**: `set`
-- **Description**: Contains a single string element, 'class', which represents the keyword used to define classes in Ruby.
-- **Use**: Used to identify and categorize Ruby class symbols during code analysis.
+- **Description**: Contains a single string element, 'class', which represents Ruby class symbols. This set is used to identify and categorize Ruby class symbols in the code.
+- **Use**: Used to identify Ruby class symbols during static analysis.
 
 
 ---
 ### RUBY\_MODULES
 - **Type**: `set`
-- **Description**: Contains a single string element 'module'. This set is used to categorize or identify Ruby modules in the code.
-- **Use**: Used to identify Ruby modules during static analysis or symbol extraction.
+- **Description**: Contains a set with a single string element 'module'. This set is used to identify Ruby modules in the code.
+- **Use**: Used to categorize and identify Ruby modules during static analysis or processing of Ruby code.
 
 
 ---
@@ -63,43 +63,43 @@ The code uses static analysis to extract symbols from Ruby source code files, ut
 ---
 ### RUBY\_INSTANCE\_METHODS
 - **Type**: `set`
-- **Description**: Contains a single string element 'method'. This set is likely used to categorize or identify Ruby instance methods.
+- **Description**: Contains a set with a single string element 'method'. This set is used to categorize or identify Ruby instance methods.
 - **Use**: Used to identify or categorize Ruby instance methods in the code.
 
 
 ---
 ### RUBY\_ATTRIBUTES
 - **Type**: `set`
-- **Description**: Contains a single string element 'accessor'. This set is likely used to categorize or identify Ruby attributes related to accessors.
-- **Use**: Used to define or identify Ruby attributes that are accessors.
+- **Description**: Contains a single string element 'accessor'. This set is used to categorize or identify Ruby attributes related to accessors.
+- **Use**: Used to define or check for Ruby attributes that are accessors.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_RUBY
-- **Type**: `str`
-- **Description**: This variable is a multi-line string that serves as a system prompt for a large Ruby system. It instructs the user to write detailed documentation for Ruby code, focusing on explaining technical details and the key conceptual components and purpose of the software.
-- **Use**: Used as a prompt to guide users in documenting Ruby code with a focus on technical details and software purpose.
+- **Type**: ``str``
+- **Description**: A multi-line string that serves as a system prompt for a large Ruby code documentation task. It instructs the user to write detailed documentation for Ruby code, focusing on explaining technical details and key conceptual components.
+- **Use**: Used as a prompt to guide the documentation process for large Ruby codebases.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_RUBY
 - **Type**: `str`
-- **Description**: This variable is a string that contains a system prompt for a Ruby programming expert. It instructs the expert to write detailed documentation for small and short Ruby source code files, emphasizing clarity and brevity.
+- **Description**: This variable is a string that contains a detailed prompt for a Ruby programmer and documentation expert. It instructs the user to write documentation for small and short Ruby source code files, emphasizing clarity and brevity.
 - **Use**: Used as a system prompt to guide the documentation process for small Ruby source code files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A string variable that contains a user prompt template for explaining the purpose of a source code file. The prompt guides the user to consider specific questions about the code's functionality, components, and interfaces.
-- **Use**: Used to provide a structured prompt for users to explain the purpose of a source code file.
+- **Description**: A string variable that contains a user prompt template for explaining the purpose of a source code file. The prompt guides the user to consider specific questions about the code's functionality and components.
+- **Use**: Used to provide a template for generating user prompts that explain the purpose of a source code file.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A string variable that contains a prompt for users to explain the purpose of a given code snippet. It guides users to consider the scope of functionality provided by the code.
-- **Use**: Used to instruct users on how to describe the purpose of a code snippet in a concise manner.
+- **Description**: The `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` variable is a string that contains a prompt for explaining the purpose of a given piece of code. It instructs the user to provide a concise explanation of the code's purpose, focusing on whether the code provides narrow or broad functionality.
+- **Use**: Used to guide users in summarizing the purpose of small code snippets.
 
 
 ---
@@ -111,8 +111,8 @@ The code uses static analysis to extract symbols from Ruby source code files, ut
 
 ---
 ### METHODS\_FOUND\_USER\_PROMPT
-- **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for summarizing a method in a given code. It includes guidelines on describing the method's inputs, control flow, logic, and output, with an emphasis on matching the explanation's detail to the method's complexity.
+- **Type**: `str`
+- **Description**: A multi-line string that provides instructions for summarizing a method in a given code. It includes guidelines on describing the inputs, control flow, logic, and output of the method.
 - **Use**: Used as a prompt template for generating method documentation.
 
 
@@ -120,42 +120,42 @@ The code uses static analysis to extract symbols from Ruby source code files, ut
 ### ATTRIBUTES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
 - **Description**: A multi-line string that provides instructions for documenting Ruby attributes. It includes a JSON schema that specifies how to format the documentation for attributes.
-- **Use**: Used as a system prompt to guide the documentation process for Ruby attributes.
+- **Use**: Used as a template or guideline for generating documentation for Ruby attributes.
 
 
 ---
 ### ATTRIBUTES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A multi-line string that provides instructions for summarizing an attribute in a given code. It includes guidelines on how to describe attributes based on their complexity.
-- **Use**: Used as a prompt to guide users in documenting attributes in code.
+- **Description**: A multi-line string that provides instructions for summarizing an attribute in a code snippet. It includes guidelines on how to describe attributes based on their complexity.
+- **Use**: Used as a prompt template for generating documentation for attributes in code.
 
 
 ---
 ### CLASSES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: Contains a JSON-formatted string that provides instructions for documenting Ruby classes. The instructions specify the format and content required for the documentation, including details about class inheritance, included modules, extended modules, and prepended modules.
-- **Use**: Used to guide the generation of structured documentation for Ruby classes.
+- **Description**: A multi-line string that provides instructions for documenting Ruby classes. It includes a JSON schema that specifies how to describe a class, including its description, inheritance, and module relationships.
+- **Use**: Used as a template for generating documentation for Ruby classes.
 
 
 ---
 ### CLASSES\_FOUND\_USER\_PROMPT
-- **Type**: `str`
+- **Type**: ``str``
 - **Description**: A multi-line string that provides instructions for summarizing a class in a given code. It includes guidelines on how to describe classes based on their complexity.
-- **Use**: Used as a prompt to guide users in documenting classes in code.
+- **Use**: Used as a prompt for users to summarize classes in code.
 
 
 ---
 ### MODULES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: A multi-line string that provides instructions for documenting Ruby modules. It includes guidelines for writing technical documentation and specifies a JSON schema for the output.
-- **Use**: Used as a system prompt to guide the documentation process for Ruby modules.
+- **Description**: A multi-line string that provides instructions for documenting Ruby modules. It includes a JSON schema that specifies how to describe a module, including its description, included modules, extended modules, and prepended modules.
+- **Use**: Used as a template for generating documentation for Ruby modules.
 
 
 ---
 ### MODULES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A multi-line string that serves as a template for prompting users to summarize a module in the provided code. It includes instructions on how to describe the module based on its complexity.
-- **Use**: Used to prompt users to provide a detailed or concise summary of a module, depending on its complexity.
+- **Description**: A multi-line string that provides instructions for summarizing a module in a given code. It includes guidelines on how to describe the module based on its complexity.
+- **Use**: Used as a prompt template for users to summarize modules in code.
 
 
 # Classes
@@ -164,7 +164,7 @@ The code uses static analysis to extract symbols from Ruby source code files, ut
 ### RubyMethodData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyMethodData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L185>)
 
-- **Description**: Represents a specialized data structure for handling Ruby method data, inheriting from `FnData`. It provides class methods to generate system and user prompts for documenting Ruby methods, ensuring adherence to specific style instructions. The class also includes methods to handle child elements, although it raises `NotImplementedError` for children, as methods should not have children in this context.
+- **Description**: Represents a specialized data structure for handling Ruby method data, inheriting from `FnData`. It provides class methods to generate system and user prompts for documenting Ruby methods, and raises `NotImplementedError` for methods related to child handling, indicating that methods should not have children.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyMethodData.system_prompt`](<#rubymethoddatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyMethodData.user_prompt`](<#rubymethoddatauser_prompt>)
@@ -189,7 +189,7 @@ Generates a system prompt string for documenting Ruby methods.
     - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
     - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
     - Converts the `Prompt` into a string using `into_str()` and returns it.
-- **Output**: A string that represents the system prompt for documenting Ruby methods.
+- **Output**: A string representing the system prompt for documenting Ruby methods.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -202,14 +202,14 @@ Generates a system prompt string for documenting Ruby methods.
 #### RubyMethodData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyMethodData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L196>)
 
-Generates a user prompt string based on the provided symbol data.
+Generates a user prompt string based on the provided `RawSymbolData`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` containing the symbol's name, code, and optionally the full file code.
 - **Logic and Control Flow**:
-    - Create an empty `Prompt` object and append a component with the user prompt and symbol name.
-    - Append a component with no restatement style instruction for symbols.
-    - Append a component with the method code from the symbol data.
+    - Create an empty `Prompt` object and append a component with the user prompt and the symbol's name.
+    - Append a component with a no-restatement style instruction for symbols.
+    - Append a component with the method code from the `symbol` object.
     - Check if `symbol.file_code` is present; if so, append a component with the full file code.
     - Convert the `Prompt` object into a string and return it.
 - **Output**: A string representing the user prompt.
@@ -228,10 +228,10 @@ Generates a user prompt string based on the provided symbol data.
 Raises a NotImplementedError indicating that methods should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol data.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol data to process.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with the message 'Methods should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
+    - Raises a `NotImplementedError` with the message 'Methods should not have children'.
+- **Output**: None, as the method raises an exception and does not return a value.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyMethodData`](<#rubymethoddata>)  (Base Class)
 
 
@@ -245,7 +245,7 @@ Raises a NotImplementedError indicating that methods should not have children.
     - `child`: An instance of `RawSymbolData` representing a child symbol.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'Methods should not have children'.
-- **Output**: This method does not return a value as it raises an exception.
+- **Output**: Does not return a value; it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyMethodData`](<#rubymethoddata>)  (Base Class)
 
 
@@ -254,7 +254,7 @@ Raises a NotImplementedError indicating that methods should not have children.
 ### RubyAttributeData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyAttributeData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L219>)
 
-- **Description**: Represents a specialized data structure for handling Ruby attribute data within a larger system. It inherits from `VariableData` and provides class methods to generate system and user prompts based on `RawSymbolData`. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that attributes should not have children in this context.
+- **Description**: Represents a specialized data structure for handling Ruby attribute data within a larger system. Inherits from `VariableData` and provides class methods to generate system and user prompts for Ruby attributes. It raises `NotImplementedError` for methods related to child elements, indicating that attributes should not have children.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyAttributeData.system_prompt`](<#rubyattributedatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyAttributeData.user_prompt`](<#rubyattributedatauser_prompt>)
@@ -278,7 +278,7 @@ Generates a system prompt string for Ruby attribute data documentation.
     - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
     - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
     - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Convert the `Prompt` to a string using `into_str()` and return it.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
 - **Output**: A string representing the system prompt for Ruby attribute data documentation.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -297,12 +297,12 @@ Generates a user prompt string based on the provided `RawSymbolData`.
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` containing the symbol's name, symbol code, and optionally file code.
 - **Logic and Control Flow**:
-    - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes `ATTRIBUTES_FOUND_USER_PROMPT` and the symbol's name.
-    - Append `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS` to the `Prompt`.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the symbol's code labeled as 'Attribute Code'.
-    - Check if `symbol.file_code` is present; if so, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the file code labeled as 'Full File Code'.
+    - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the user's prompt and the symbol's name.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a no-restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the attribute code from the symbol.
+    - Check if the symbol has file code; if true, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code.
     - Convert the `Prompt` object into a string and return it.
-- **Output**: A string that represents the user prompt, constructed from the symbol's data.
+- **Output**: A string that represents the user prompt.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -320,8 +320,8 @@ Raises a NotImplementedError indicating that attributes should not have children
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing a symbol.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with the message 'Attributes should not have children'.
-- **Output**: None, as the method raises an exception and does not return a value.
+    - Raises a `NotImplementedError` with the message 'Attributes should not have children'.
+- **Output**: None, as the method raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyAttributeData`](<#rubyattributedata>)  (Base Class)
 
 
@@ -335,7 +335,7 @@ Raises a NotImplementedError indicating that attributes should not have children
     - `child`: An instance of `RawSymbolData` representing a child symbol.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'Attributes should not have children'.
-- **Output**: This method does not return a value as it raises an exception.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyAttributeData`](<#rubyattributedata>)  (Base Class)
 
 
@@ -345,13 +345,13 @@ Raises a NotImplementedError indicating that attributes should not have children
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L253>)
 
 - **Members**:
-    - `description`: Stores a description using `FieldNameWithRawContent`.
-    - `inherits_from`: Holds a list of classes this class inherits from using `ListedRawContentNoNone`.
-    - `includes`: Contains a list of modules included by this class using `ListedRawContentNoNone`.
-    - `extends`: Contains a list of modules extended by this class using `ListedRawContentNoNone`.
-    - `prepends`: Contains a list of modules prepended by this class using `ListedRawContentNoNone`.
-    - `_supported_child_ordering`: Defines the order of supported child elements as a private attribute.
-- **Description**: Represents a data structure for Ruby class information, inheriting from `IrData`. It manages metadata about Ruby classes, including descriptions, inheritance, and module relationships. The class also provides class methods to generate system and user prompts, map child symbols to intermediate representations, and create default instances. It uses private attributes to define the order of child elements, such as attributes and methods.
+    - `description`: Holds a description using `FieldNameWithRawContent`.
+    - `inherits_from`: Stores inheritance information using `ListedRawContentNoNone`.
+    - `includes`: Contains included modules using `ListedRawContentNoNone`.
+    - `extends`: Holds extended modules using `ListedRawContentNoNone`.
+    - `prepends`: Stores prepended modules using `ListedRawContentNoNone`.
+    - `_supported_child_ordering`: Defines the order of supported child elements as a list of strings.
+- **Description**: Represents a data structure for Ruby class information, inheriting from `IrData`. It manages metadata about Ruby classes, including descriptions, inheritance, and module relationships. The class also provides methods to generate system and user prompts for class documentation and to map child symbols to their respective internal representations.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassData.system_prompt`](<#rubyclassdatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassData.user_prompt`](<#rubyclassdatauser_prompt>)
@@ -373,10 +373,10 @@ Generates a system prompt string for Ruby class documentation.
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
-    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Convert the `Prompt` to a string using `into_str()` and return it.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()`.
 - **Output**: A string representing the system prompt for Ruby class documentation.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -393,14 +393,14 @@ Generates a system prompt string for Ruby class documentation.
 Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing the name, symbol code, and optionally file code of a Ruby class or module.
+    - `symbol`: An instance of `RawSymbolData` containing the symbol's name, symbol code, and optionally file code.
 - **Logic and Control Flow**:
-    - Create an empty `Prompt` object and append a component with the user prompt string and the symbol's name.
+    - Create an empty `Prompt` object and append a component with the user prompt message and the symbol's name.
     - Append a component with a no-restatement style instruction for symbols.
     - Append a component with the class code from the symbol's `symbol_code`.
-    - Check if the symbol has `file_code`; if it does, append a component with the full file code.
+    - Check if the symbol has `file_code`; if true, append a component with the full file code.
     - Convert the `Prompt` object into a string and return it.
-- **Output**: A string representing the user prompt, which includes the class name, class code, and optionally the full file code.
+- **Output**: A string representing the user prompt, constructed from the symbol's data.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -416,11 +416,12 @@ Generates a user prompt string based on the provided symbol data.
 Maps a `RawSymbolData` object to its corresponding intermediate representation class based on its symbol kind.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: A `RawSymbolData` object representing a symbol with a specific kind.
+    - `symbol`: A `RawSymbolData` object that contains information about a symbol, including its kind.
 - **Logic and Control Flow**:
-    - Defines a mapping between `SymbolKind` and corresponding IR classes (`RubyMethodData` for `SymbolKind.CALLABLE` and `RubyAttributeData` for `SymbolKind.VARIABLE`).
-    - Uses the `symbol_kind` attribute of the `symbol` to retrieve the corresponding IR class from the mapping.
-- **Output**: Returns the corresponding IR class (`RubyMethodData` or `RubyAttributeData`) for the given symbol kind, or `None` if the symbol kind is not in the mapping.
+    - Defines a mapping between `SymbolKind.CALLABLE` and `RubyMethodData`, and `SymbolKind.VARIABLE` and `RubyAttributeData`.
+    - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding class from the mapping.
+    - Returns the class associated with the `symbol_kind` if it exists in the mapping, otherwise returns `None`.
+- **Output**: Returns an `IrData` class corresponding to the symbol kind of the input `symbol`, or `None` if no mapping exists.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassData`](<#rubyclassdata>)  (Base Class)
 
 
@@ -428,13 +429,13 @@ Maps a `RawSymbolData` object to its corresponding intermediate representation c
 #### RubyClassData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L299>)
 
-Maps a `RawSymbolData` child's `scope_relation` to a corresponding `ScopeRelation` value.
+Maps a `RawSymbolData` object's `scope_relation` to a corresponding `ScopeRelation` value.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a child symbol with a `scope_relation` attribute.
+    - `child`: A `RawSymbolData` object whose `scope_relation` attribute is to be mapped.
 - **Logic and Control Flow**:
-    - Define a mapping dictionary that maps `ScopeRelation` values to themselves.
-    - Use the `get` method on the mapping dictionary to retrieve the value corresponding to the `child.scope_relation`.
+    - Defines a dictionary `mapping` that maps `ScopeRelation` values to themselves.
+    - Uses the `get` method on the `mapping` dictionary to retrieve the value corresponding to `child.scope_relation`.
 - **Output**: A `ScopeRelation` value corresponding to the `child.scope_relation`, or `None` if no match is found.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassData`](<#rubyclassdata>)  (Base Class)
 
@@ -443,13 +444,13 @@ Maps a `RawSymbolData` child's `scope_relation` to a corresponding `ScopeRelatio
 #### RubyClassData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L308>)
 
-Creates and returns a default instance of the `RubyClassData` class with empty or default attributes.
+Creates a default instance of the `RubyClassData` class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
 - **Logic and Control Flow**:
     - Calls the class constructor `cls` with default or empty values for the attributes `description`, `inherits_from`, `includes`, `extends`, and `prepends`.
-- **Output**: A new instance of `RubyClassData` with default attribute values.
+- **Output**: Returns an instance of `RubyClassData` with default attribute values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
@@ -463,7 +464,7 @@ Creates and returns a default instance of the `RubyClassData` class with empty o
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `RubyClassData` or lists of `RubyClassData`.
-- **Description**: Manages a collection of Ruby class data, inheriting from `IrCollection`. It provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols, facilitating the integration of Ruby class data with language model outputs.
+- **Description**: Manages a collection of Ruby class data, inheriting from `IrCollection`. It provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassCollection.from_llm`](<#rubyclasscollectionfrom_llm>)
 - **Inherits From**:
@@ -475,15 +476,14 @@ Creates and returns a default instance of the `RubyClassData` class with empty o
 #### RubyClassCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L322>)
 
-Creates an instance of the class using LLM and symbol data.
+Creates an instance of the class using data from a language model and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used for language model operations.
-    - `symbols_list`: A `RawSymbolCollection` containing symbols to be processed.
+    - `llm`: An instance of `ChatOpenAI` representing the language model to use.
+    - `symbols_list`: A `RawSymbolCollection` containing the list of symbols to process.
 - **Logic and Control Flow**:
-    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `RubyClassData`, `llm`, and `symbols_list` as arguments.
-    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class (`Self`) created using the provided LLM and symbol data.
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method on the class with `RubyClassData`, `llm`, and `symbols_list` as arguments.
+- **Output**: An instance of the class (`Self`) created using the provided language model and symbols list.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassCollection`](<#rubyclasscollection>)  (Base Class)
@@ -495,12 +495,12 @@ Creates an instance of the class using LLM and symbol data.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L327>)
 
 - **Members**:
-    - `description`: Stores a description using `FieldNameWithRawContent`.
-    - `includes`: Holds a list of included modules using `ListedRawContentNoNone`.
-    - `extends`: Holds a list of extended modules using `ListedRawContentNoNone`.
-    - `prepends`: Holds a list of prepended modules using `ListedRawContentNoNone`.
-    - `_supported_child_ordering`: Defines the order of supported child elements as a list of strings.
-- **Description**: Represents data related to a Ruby module, including its description, included, extended, and prepended modules. It also specifies the order of child elements it supports, such as attributes, module methods, and instance methods. This class provides methods to generate system and user prompts, convert child symbols to intermediate representations, and create default instances.
+    - `description`: Holds a description of the Ruby module.
+    - `includes`: Stores a list of modules included by the Ruby module.
+    - `extends`: Stores a list of modules extended by the Ruby module.
+    - `prepends`: Stores a list of modules prepended to the Ruby module.
+    - `_supported_child_ordering`: Defines the order of supported child elements in the module.
+- **Description**: Represents data related to a Ruby module, including its description, included modules, extended modules, and prepended modules. It also defines the order of child elements such as attributes, module methods, and instance methods. The class provides methods to generate system and user prompts for documentation purposes and maps child symbols to their respective internal representations.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleData.system_prompt`](<#rubymoduledatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleData.user_prompt`](<#rubymoduledatauser_prompt>)
@@ -516,17 +516,17 @@ Creates an instance of the class using LLM and symbol data.
 #### RubyModuleData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L340>)
 
-Generates a system prompt string for a given symbol using predefined components and instructions.
+Generates a system prompt string for Ruby module data documentation.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
     - Creates an empty `Prompt` object.
     - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `MODULES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
-    - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Appends `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Appends `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
     - Converts the `Prompt` into a string using `into_str()` and returns it.
-- **Output**: A string representing the system prompt for the given symbol.
+- **Output**: A string representing the system prompt for documenting Ruby module data.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -546,9 +546,9 @@ Generates a user prompt string based on the provided symbol data.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the user prompt message and the symbol's name.
     - Append another [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the module code from the symbol's `symbol_code`.
-    - Check if the symbol has `file_code`. If it does, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code.
+    - Check if the symbol has `file_code`; if it does, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code.
     - Convert the `Prompt` object into a string and return it.
-- **Output**: A string that represents the user prompt, including the symbol's name, module code, and optionally the full file code.
+- **Output**: A string representing the user prompt, which includes the symbol's name, module code, and optionally the full file code.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -564,11 +564,11 @@ Generates a user prompt string based on the provided symbol data.
 Maps a `RawSymbolData` object to its corresponding intermediate representation class based on its symbol kind.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: A `RawSymbolData` object that contains information about a symbol, including its kind.
+    - `symbol`: A `RawSymbolData` object representing a symbol with a specific kind.
 - **Logic and Control Flow**:
-    - Defines a mapping between `SymbolKind.CALLABLE` and `RubyMethodData`, and `SymbolKind.VARIABLE` and `RubyAttributeData`.
-    - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding class from the mapping.
-- **Output**: Returns the class `RubyMethodData` or `RubyAttributeData` based on the symbol kind, or `None` if the symbol kind is not in the mapping.
+    - Define a mapping dictionary that associates `SymbolKind.CALLABLE` with `RubyMethodData` and `SymbolKind.VARIABLE` with `RubyAttributeData`.
+    - Use the `get` method on the mapping dictionary to retrieve the corresponding class for the `symbol.symbol_kind`.
+- **Output**: Returns an `IrData` class corresponding to the symbol kind of the input `symbol`, or `None` if no match is found.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleData`](<#rubymoduledata>)  (Base Class)
 
 
@@ -576,14 +576,14 @@ Maps a `RawSymbolData` object to its corresponding intermediate representation c
 #### RubyModuleData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L371>)
 
-Maps a `RawSymbolData` object's `scope_relation` to a corresponding `ScopeRelation` value.
+Maps a `RawSymbolData` child's `scope_relation` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object whose `scope_relation` attribute is used for mapping.
+    - `child`: A `RawSymbolData` object representing a child symbol with a `scope_relation` attribute.
 - **Logic and Control Flow**:
-    - Defines a `mapping` dictionary that maps `ScopeRelation` values to themselves.
-    - Uses the `get` method on the `mapping` dictionary to retrieve the value corresponding to `child.scope_relation`.
-- **Output**: Returns a `ScopeRelation` value corresponding to the `child.scope_relation` or `None` if not found.
+    - Define a `mapping` dictionary that maps `ScopeRelation` values to themselves.
+    - Use the `get` method on the `mapping` dictionary to retrieve the field name corresponding to the `child.scope_relation`.
+- **Output**: A string representing the field name corresponding to the `child`'s `scope_relation`, or `None` if the `scope_relation` is not in the mapping.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleData`](<#rubymoduledata>)  (Base Class)
 
 
@@ -594,10 +594,10 @@ Maps a `RawSymbolData` object's `scope_relation` to a corresponding `ScopeRelati
 Creates a default instance of the class with empty content for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
 - **Logic and Control Flow**:
     - Calls the class constructor `cls` with default empty values for `description`, `includes`, `extends`, and `prepends`.
-- **Output**: An instance of the class with default values for its attributes.
+- **Output**: Returns an instance of the class with initialized attributes having empty content.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
@@ -611,7 +611,7 @@ Creates a default instance of the class with empty content for its attributes.
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `RubyModuleData` or lists of `RubyModuleData`.
-- **Description**: Manages a collection of Ruby module data, allowing for the organization and retrieval of module-related information. It provides a class method `from_llm` to create an instance from a language model and a list of raw symbols, utilizing `RubyModuleData` for internal representation.
+- **Description**: Manages a collection of Ruby module data, allowing for the organization and retrieval of module-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance from a language model and a list of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleCollection.from_llm`](<#rubymodulecollectionfrom_llm>)
 - **Inherits From**:
@@ -627,11 +627,11 @@ Creates an instance of the class using LLM and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for language model operations.
-    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be processed.
+    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to process.
 - **Logic and Control Flow**:
     - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `RubyModuleData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class that is created using the provided LLM and symbols list.
+- **Output**: An instance of the class (`Self`) created using the provided LLM and symbols list.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleCollection`](<#rubymodulecollection>)  (Base Class)
@@ -644,7 +644,7 @@ Creates an instance of the class using LLM and a list of symbols.
 
 - **Members**:
     - `data`: Stores a dictionary mapping Ruby class names to `RawSymbolData` objects.
-- **Description**: Collects and organizes raw symbol data for Ruby classes using static analysis. It extracts symbols from Ruby code, identifies classes, attributes, and methods, and creates `RawSymbolData` objects for each. The class supports static analysis through the `from_static_analysis` method, which processes the code and populates the `data` dictionary with relevant symbol information. The class does not support LLM-based analysis and raises a `NotImplementedError` if attempted.
+- **Description**: Represents a collection of raw symbol data for Ruby classes, inheriting from `RawSymbolCollection`. It provides methods to create instances from static analysis of Ruby code, extracting class symbols and their associated attributes and methods using ctags. The class does not support creation from LLM and raises a `NotImplementedError` for such attempts.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassRawSymbolCollection.from_static_analysis`](<#rubyclassrawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassRawSymbolCollection.from_llm`](<#rubyclassrawsymbolcollectionfrom_llm>)
@@ -658,19 +658,19 @@ Creates an instance of the class using LLM and a list of symbols.
 #### RubyClassRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L401>)
 
-Creates a `RubyClassRawSymbolCollection` instance from static analysis of Ruby code, extracting class and method symbols using ctags.
+Creates a `RubyClassRawSymbolCollection` instance from static analysis of Ruby code using ctags.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string containing the Ruby source code to analyze.
-    - `root_rel_path`: A `Path` object representing the root-relative path of the file being analyzed.
+    - `root_rel_path`: A `Path` object representing the root relative path of the file being analyzed.
 - **Logic and Control Flow**:
     - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code` as the argument.
     - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>), passing `root_rel_path` and `code` as arguments.
     - Initialize an empty dictionary `class_raw_symbol_data` to store raw symbol data for classes.
-    - Iterate over each symbol in `symbols`. If the symbol's kind is in `RUBY_CLASSES`, create a raw symbol using [`create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>) and store it in `class_raw_symbol_data` with the class name as the key.
-    - Iterate over each symbol in `symbols` again. For each symbol, check if it has a scope and belongs to a Ruby class. Depending on the symbol's kind, append a raw symbol to the appropriate class's children in `class_raw_symbol_data`.
-    - Return `None` if `class_raw_symbol_data` is empty; otherwise, return a new instance of `cls` initialized with `class_raw_symbol_data`.
-- **Output**: Returns a `RubyClassRawSymbolCollection` instance containing the extracted class and method symbols, or `None` if no class symbols are found.
+    - Iterate over each symbol in `symbols` to identify Ruby classes and create raw symbol data using [`create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>), storing it in `class_raw_symbol_data`.
+    - Iterate over each symbol again to identify Ruby attributes, class/module methods, and instance methods, appending their raw symbol data to the corresponding class in `class_raw_symbol_data`.
+    - Return `None` if `class_raw_symbol_data` is empty; otherwise, return a new instance of `RubyClassRawSymbolCollection` initialized with `class_raw_symbol_data`.
+- **Output**: Returns a `RubyClassRawSymbolCollection` instance containing raw symbol data for Ruby classes, or `None` if no classes are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>)
@@ -687,10 +687,10 @@ Raises a NotImplementedError indicating that static analysis should be used for 
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the Ruby code to analyze.
-    - `root_rel_path`: A string representing the root relative path of the code file.
+    - `root_rel_path`: A string representing the root relative path of the file containing the Ruby code.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with a message indicating that static analysis should be used for Ruby classes.
-- **Output**: This method does not return any output as it raises an exception.
+    - Raises a NotImplementedError with the message 'static analysis should be used for Ruby classes'.
+- **Output**: This method does not return any value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassRawSymbolCollection`](<#rubyclassrawsymbolcollection>)  (Base Class)
 
 
@@ -704,7 +704,7 @@ Returns the `data` attribute of the class as a dictionary.
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the class.
     - Returns the `data` attribute.
-- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyClassRawSymbolCollection`](<#rubyclassrawsymbolcollection>)  (Base Class)
 
 
@@ -715,7 +715,7 @@ Returns the `data` attribute of the class as a dictionary.
 
 - **Members**:
     - `data`: Stores a dictionary mapping symbol names to `RawSymbolData` objects.
-- **Description**: Collects and organizes raw symbol data for Ruby modules extracted from code using static analysis. It processes symbols identified as Ruby modules and their associated attributes and methods, storing them in a structured format. The class provides a method to convert the collected data into a dictionary format, but does not support creation from language model outputs, as static analysis is required for Ruby modules.
+- **Description**: Collects and organizes raw symbol data for Ruby modules extracted from code using static analysis. It processes symbols to identify Ruby modules and their associated attributes and methods, storing them in a structured format. The class provides methods to create instances from static analysis and to convert the stored data into a dictionary format.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleRawSymbolCollection.from_static_analysis`](<#rubymodulerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleRawSymbolCollection.from_llm`](<#rubymodulerawsymbolcollectionfrom_llm>)
@@ -729,19 +729,20 @@ Returns the `data` attribute of the class as a dictionary.
 #### RubyModuleRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ruby.py#L492>)
 
-Creates a collection of raw symbol data from Ruby module code using static analysis.
+Creates a `RubyModuleRawSymbolCollection` instance from static analysis of Ruby code, extracting module symbols and their related attributes and methods.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string containing the Ruby module code to analyze.
+    - `code`: A string containing the Ruby code to analyze.
     - `root_rel_path`: A `Path` object representing the root relative path of the file containing the code.
 - **Logic and Control Flow**:
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code` as the argument.
-    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>), passing `root_rel_path` and `code` as arguments.
-    - Initialize an empty dictionary `module_raw_symbol_data` to store raw symbol data for modules.
-    - Iterate over each symbol in `symbols`. If the symbol's kind is in `RUBY_MODULES`, create a raw symbol using [`create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>) and store it in `module_raw_symbol_data` with the symbol's name as the key.
-    - For each symbol, check if it has a scope and its kind is in `RUBY_ATTRIBUTES`, `RUBY_CLASS_AND_MODULE_METHODS`, or `RUBY_INSTANCE_METHODS`, and its scope kind is in `RUBY_MODULES`. If so, append a new raw symbol to the children of the corresponding module in `module_raw_symbol_data`.
-    - Return `None` if `module_raw_symbol_data` is empty; otherwise, return an instance of the class with `module_raw_symbol_data` as the data.
-- **Output**: An instance of the class containing the raw symbol data for Ruby modules, or `None` if no module symbols are found.
+    - Call [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) to determine if the code requires multi-prompt processing.
+    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>).
+    - Initialize an empty dictionary `module_raw_symbol_data` to store module symbols.
+    - Iterate over the extracted symbols to identify and store module symbols in `module_raw_symbol_data`.
+    - For each symbol, check its kind and scope to determine if it is an attribute, class/module method, or instance method within a module.
+    - Append the created raw symbol to the appropriate module's children in `module_raw_symbol_data`.
+    - Return `None` if no module symbols are found, otherwise return a new `RubyModuleRawSymbolCollection` instance with the collected data.
+- **Output**: Returns a `RubyModuleRawSymbolCollection` instance containing the extracted module symbols and their related attributes and methods, or `None` if no module symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>)
@@ -760,8 +761,8 @@ Raises a NotImplementedError indicating that static analysis should be used for 
     - `code`: A string representing the Ruby code to analyze.
     - `root_rel_path`: A string representing the root relative path of the Ruby code file.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with a message indicating that static analysis should be used for Ruby modules.
-- **Output**: There is no output as the method raises an exception.
+    - Raises a NotImplementedError with the message 'static analysis should be used for Ruby modules'.
+- **Output**: No output is produced as the method raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ruby.RubyModuleRawSymbolCollection`](<#rubymodulerawsymbolcollection>)  (Base Class)
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating structured prompts for large Verilog source code analysis.
+Templates for generating multi-prompt structures for large Verilog source code analysis.
 
 # Purpose
-This code defines a configuration for a multi-prompt template specifically designed for Verilog source code analysis. It imports several components and instructions from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`, to construct a structured template. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG`, is a list of tuples that specify different sections, such as "# Purpose", "# Modules", and "# Functions and Tasks". Each section uses specific prompts and collections to facilitate the analysis and documentation of Verilog code, leveraging both static analysis and language model outputs. The configuration is intended to guide the generation of structured documentation for Verilog source code by using predefined instructions and components.
+The code defines a configuration for a multi-prompt template specifically designed for Verilog source code analysis. It imports several components and instructions from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization`, to construct a structured template. The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG` variable is a list of tuples, each representing a different aspect of the template, such as purpose, modules, and functions/tasks. Each tuple contains a combination of static analysis and language model-based methods to extract and organize information about Verilog code. This setup is used to generate structured prompts that help in understanding and documenting the purpose and structure of large Verilog source code files.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ This code defines a configuration for a multi-prompt template specifically desig
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_VERILOG
 - **Type**: ``list``
-- **Description**: A list of tuples that define structured prompts for Verilog code analysis and documentation. Each tuple contains a string identifier, a description, and a series of components or functions that generate or process Verilog code prompts.
-- **Use**: Used to organize and define structured prompts for analyzing and documenting Verilog code.
+- **Description**: A list of tuples that define structured prompts for Verilog code analysis. Each tuple contains a prompt type, a description, and a series of components or functions that generate or process Verilog code prompts.
+- **Use**: Used to configure and generate structured prompts for analyzing Verilog code in different contexts.
 
 
 

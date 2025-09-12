@@ -6,7 +6,7 @@
 Instructions for copying database and S3 records to a local destination with example commands.
 
 # Purpose
-The document describes a process for copying database and S3 records for a specific organization and codebase ID to a local destination. It includes instructions for using a Python script, `copy_data.py`, with the `poetry` tool to execute the data copying operation. The document provides examples of command-line usage, including options to skip downloading database or S3 records. Additionally, it outlines an example `.env` configuration file that specifies environment variables such as `LOG_LEVEL`, AWS credentials, and database URLs, which are necessary for the script to function correctly. The script currently supports only localhost as a target due to AWS cross-account permissions limitations.
+The content describes a process for copying database and S3 records for a specific organization and codebase ID to a destination. This operation is limited to using localhost as the target due to AWS cross-account permissions issues. The examples provided demonstrate how to execute the data copying script using `poetry` and the `copy_data.py` script, with options to skip downloading database or S3 records. The `.env` configuration section specifies environment variables necessary for the operation, including logging level, AWS region, and credentials for both source and target systems. These configurations ensure the script can authenticate and connect to the necessary resources for data transfer.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

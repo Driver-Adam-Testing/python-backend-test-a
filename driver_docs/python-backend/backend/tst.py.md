@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for `LlmConfig` methods including `default` and `from_name` with valid and invalid inputs.
+Tests for `LlmConfig` methods, including default and `from_name` with valid and invalid model names.
 
 # Purpose
-This code is a test script for the `LlmConfig` class, which is imported from the `shared.v3.llms.llm` module. It defines a function [`test_llm_config_methods`](<#test_llm_config_methods>) that tests the functionality of two methods within the `LlmConfig` class: `default` and `from_name`. The script verifies that the `default` method returns an instance of `LlmConfig` and that the `from_name` method correctly handles both valid and invalid model names. The script uses assertions to confirm expected behavior and prints messages to indicate the success or failure of each test case. The function is executed at the end of the script to run the tests.
+This code is a test script for the `LlmConfig` class, which is imported from the `shared.v3.llms.llm` module. The script defines a function [`test_llm_config_methods`](<#test_llm_config_methods>) that tests the functionality of two methods within the `LlmConfig` class: `default` and `from_name`. The `default` method is tested to ensure it returns an instance of `LlmConfig`. The `from_name` method is tested with both a valid model name, "gpt_4o", and an invalid model name, "invalid_model_name", to verify that it correctly returns an instance of `LlmConfig` for valid names and raises a `ValueError` for invalid names. The script executes these tests by calling the [`test_llm_config_methods`](<#test_llm_config_methods>) function.
 # Imports and Dependencies
 
 ---
@@ -24,13 +24,11 @@ Tests the `default` and `from_name` methods of the `LlmConfig` class for correct
 - **Logic and Control Flow**:
     - Call the `default` method of `LlmConfig` and assert that the result is an instance of `LlmConfig`.
     - Print a success message if the `default` method test passes.
-    - Call the `from_name` method of `LlmConfig` with a valid model name (`gpt_4o`) and assert that the result is an instance of `LlmConfig`.
-    - Print a success message if the `from_name` method test with a valid model name passes.
-    - Catch a `ValueError` if the `from_name` method with a valid model name fails and print an error message.
-    - Call the `from_name` method of `LlmConfig` with an invalid model name and expect a `ValueError`.
-    - Print a failure message if no exception is raised for the invalid model name.
-    - Print a success message if a `ValueError` is raised as expected for the invalid model name.
-- **Output**: No return value; prints messages indicating the success or failure of each test.
+    - Call the `from_name` method of `LlmConfig` with a valid model name `gpt_4o` and assert that the result is an instance of `LlmConfig`.
+    - Print a success message if the `from_name` method test with a valid model name passes, otherwise catch a `ValueError` and print a failure message.
+    - Call the `from_name` method of `LlmConfig` with an invalid model name and expect a `ValueError` to be raised.
+    - Print a success message if the `from_name` method test with an invalid model name passes, otherwise print a failure message.
+- **Output**: Prints messages indicating the success or failure of each test case.
 
 
 

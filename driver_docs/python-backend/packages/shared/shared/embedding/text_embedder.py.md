@@ -6,14 +6,15 @@
 Functions for synchronous and asynchronous text embedding using OpenAI models with error handling.
 
 # Purpose
-This code provides functionality for embedding text using OpenAI's text embedding models. It defines two main functions: [`batch_embed_text`](<#batch_embed_text>) and [`async_batch_embed_text`](<#async_batch_embed_text>). These functions take a list of text chunks, which can be either strings or instances of `TextChunk`, and return a list of embeddings. The [`batch_embed_text`](<#batch_embed_text>) function operates synchronously, while [`async_batch_embed_text`](<#async_batch_embed_text>) is asynchronous and uses a retry mechanism with exponential backoff to handle specific API errors. The code supports a specific model, `text-embedding-3-small`, and checks for model compatibility before processing.
+This code provides functionality for embedding text using OpenAI's text embedding models. It defines two main functions: [`batch_embed_text`](<#batch_embed_text>) and [`async_batch_embed_text`](<#async_batch_embed_text>). Both functions take a list of text chunks, which can be either strings or `TextChunk` objects, and return a list of embeddings. The [`batch_embed_text`](<#batch_embed_text>) function operates synchronously, while [`async_batch_embed_text`](<#async_batch_embed_text>) is asynchronous and uses a retry mechanism with exponential backoff to handle specific API errors. The code supports a specific OpenAI model, defined by the `TEXT_EMBEDDING_MODEL` environment variable, and checks if the model is supported before proceeding with the embedding process.
 
-The code imports necessary modules and classes, including error handling classes from the OpenAI library and utility functions for batching and retrying operations. It uses environment variables to configure the default text embedding model and defines a batch size for processing text chunks. The [`_prepare_text_chunks`](<#_prepare_text_chunks>) helper function ensures that the input text chunks are in the correct format before embedding. The code is structured to be part of a larger application, likely intended to be imported and used as a library for text embedding tasks.
+The code imports necessary modules and classes, including error handling classes from the OpenAI library and utility functions for batching and retrying operations. The [`_prepare_text_chunks`](<#_prepare_text_chunks>) helper function ensures that the input text chunks are in the correct format before processing. The [`async_batch_embed_text`](<#async_batch_embed_text>) function includes additional error handling for `BadRequestError`, adjusting the batch size to prevent token count mismatches. The code is structured to be used as part of a larger application, likely for tasks involving text processing and analysis, and it defines a public API for embedding text with OpenAI models.
 # Imports and Dependencies
 
 ---
 - `os`
 - `itertools.batched`
+- `json.decoder.JSONDecodeError`
 - `openai.APIConnectionError`
 - `openai.APITimeoutError`
 - `openai.AsyncOpenAI`
@@ -30,55 +31,55 @@ The code imports necessary modules and classes, including error handling classes
 ---
 ### TEXT\_EMBEDDING\_MODEL
 - **Type**: ``str``
-- **Description**: The `TEXT_EMBEDDING_MODEL` variable is a string that holds the name of the text embedding model to use. It retrieves its value from the environment variable `TEXT_EMBEDDING_MODEL`, defaulting to "text-embedding-3-small" if the environment variable is not set.
-- **Use**: Specifies the default text embedding model for functions that perform text embedding operations.
+- **Description**: The `TEXT_EMBEDDING_MODEL` variable is a string that specifies the default text embedding model to use. It retrieves its value from the environment variable `TEXT_EMBEDDING_MODEL`, or defaults to "text-embedding-3-small" if the environment variable is not set.
+- **Use**: Used as the default model parameter in functions that perform text embedding operations.
 
 
 ---
 ### SUPPORTED\_OPENAI\_MODELS
 - **Type**: ``list``
-- **Description**: Contains a list of model names that are supported by the OpenAI API for embedding operations. Currently, it includes only one model, `text-embedding-3-small`. This list is used to validate the model parameter in embedding functions.
-- **Use**: Used to check if a specified model is supported before performing text embedding operations.
+- **Description**: Contains a list of model names that are supported for use with OpenAI's embedding services. The list currently includes only one model, `text-embedding-3-small`. This list is used to validate if a specified model is supported before attempting to create embeddings.
+- **Use**: Used to check if a specified model is supported in the `batch_embed_text` and `async_batch_embed_text` functions.
 
 
 ---
 ### BATCH\_SIZE
 - **Type**: ``int``
-- **Description**: Defines the number of text chunks to process in a single batch when creating embeddings with the OpenAI API. The value is set to 500, which is calculated to stay within the OpenAI's maximum token limit of 300,000 tokens per batch.
-- **Use**: Used to determine the size of each batch of text chunks sent to the OpenAI API for embedding.
+- **Description**: Defines the number of text chunks to process in a single batch when creating embeddings. The value is set to 500, which is calculated to ensure the total number of tokens does not exceed OpenAI's maximum batch limit of 300,000 tokens.
+- **Use**: Used to determine the size of each batch when processing text chunks for embedding creation.
 
 
 # Functions
 
 ---
 ### \_prepare\_text\_chunks<!-- {{#callable:python-backend/packages/shared/shared/embedding/text_embedder._prepare_text_chunks}} -->
-[View Source →](<../../../../../../packages/shared/shared/embedding/text_embedder.py#L21>)
+[View Source →](<../../../../../../packages/shared/shared/embedding/text_embedder.py#L22>)
 
-Prepares a list of text chunks by ensuring all elements are either strings or `TextChunk` objects and returns a list of strings.
+Prepares a list of text chunks by ensuring they are all strings or converting `TextChunk` objects to strings.
 - **Inputs**:
-    - `text_chunks`: A list containing elements that are either strings or `TextChunk` objects.
+    - `text_chunks`: A list of elements, each of which is either a string or a `TextChunk` object.
 - **Logic and Control Flow**:
     - Checks if all elements in `text_chunks` are instances of `TextChunk`.
-    - If all elements are `TextChunk` instances, returns a list of their `text` attributes.
-    - If not all elements are strings, raises a `TypeError`.
-    - If all elements are strings, returns the original `text_chunks` list.
-- **Output**: A list of strings derived from the input `text_chunks`.
+    - If all elements are `TextChunk` instances, converts each `TextChunk` to its text representation and returns the list of strings.
+    - If not all elements are strings, raises a `TypeError` indicating that `text_chunks` must be a list of strings or `TextChunk` objects.
+    - If all elements are strings, returns the original list of strings.
+- **Output**: A list of strings, either converted from `TextChunk` objects or the original strings.
 
 
 ---
 ### batch\_embed\_text<!-- {{#callable:python-backend/packages/shared/shared/embedding/text_embedder.batch_embed_text}} -->
-[View Source →](<../../../../../../packages/shared/shared/embedding/text_embedder.py#L29>)
+[View Source →](<../../../../../../packages/shared/shared/embedding/text_embedder.py#L30>)
 
 Generates embeddings for a list of text chunks using a specified OpenAI model.
 - **Inputs**:
-    - `text_chunks`: A list of text chunks, which can be either strings or `TextChunk` objects, to be embedded.
-    - `model`: A string specifying the OpenAI model to use for embedding, defaulting to `TEXT_EMBEDDING_MODEL`.
+    - `text_chunks`: A list of text chunks, which can be strings or `TextChunk` objects, to embed.
+    - `model`: The name of the OpenAI model to use for embedding, defaulting to `TEXT_EMBEDDING_MODEL`.
 - **Logic and Control Flow**:
-    - Checks if the specified `model` is in the list of `SUPPORTED_OPENAI_MODELS`; raises a `ValueError` if not.
-    - Initializes an `OpenAI` client instance.
-    - Calls the [`_prepare_text_chunks`](<#_prepare_text_chunks>) function to convert `TextChunk` objects to strings if necessary.
+    - Checks if the specified model is in the list of supported models; raises a `ValueError` if not.
+    - Initializes an `OpenAI` client to interact with the OpenAI API.
+    - Calls the [`_prepare_text_chunks`](<#_prepare_text_chunks>) function to ensure all text chunks are in string format.
     - Uses the `OpenAI` client to create embeddings for the prepared text chunks with the specified model.
-    - Returns a list of embeddings extracted from the response data.
+    - Returns a list of embeddings extracted from the API response.
 - **Output**: A list of embeddings corresponding to the input text chunks.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/embedding/text_embedder._prepare_text_chunks`](<#_prepare_text_chunks>)
@@ -86,21 +87,21 @@ Generates embeddings for a list of text chunks using a specified OpenAI model.
 
 ---
 ### async\_batch\_embed\_text<!-- {{#callable:python-backend/packages/shared/shared/embedding/text_embedder.async_batch_embed_text}} -->
-[View Source →](<../../../../../../packages/shared/shared/embedding/text_embedder.py#L45>)
+[View Source →](<../../../../../../packages/shared/shared/embedding/text_embedder.py#L46>)
 
-Asynchronously processes text chunks to generate embeddings using a specified OpenAI model with retry logic for handling specific API errors.
+Asynchronously processes text chunks to generate embeddings using a specified model, with retry logic for handling specific API errors.
 - **Decorators**: `@async_retry_with_exponential_backoff`
 - **Inputs**:
-    - `text_chunks`: A list of text data, which can be strings or `TextChunk` objects, to be embedded.
-    - `model`: A string specifying the OpenAI model to use for embedding, defaulting to `TEXT_EMBEDDING_MODEL`.
+    - `text_chunks`: A list of text chunks, which can be strings or `TextChunk` objects, to be embedded.
+    - `model`: A string specifying the model to use for embedding, defaulting to `TEXT_EMBEDDING_MODEL`.
 - **Logic and Control Flow**:
     - Checks if the specified model is supported; raises a `ValueError` if not.
     - Initializes an `AsyncOpenAI` client for making API requests.
     - Prepares the text chunks by converting `TextChunk` objects to strings if necessary.
     - Attempts to create embeddings for the text chunks in batches, using the specified model.
-    - Handles `BadRequestError` by retrying with smaller batch sizes to mitigate token count mismatches.
-    - Returns the list of embeddings generated from the text chunks.
-- **Output**: A list of embeddings corresponding to the input text chunks.
+    - Handles `BadRequestError` by retrying with smaller batch sizes if there is a token mismatch.
+    - Collects and returns the embeddings from the API responses.
+- **Output**: A list of embeddings generated from the input text chunks.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/utils/decorators.async_retry_with_exponential_backoff`](<../utils/decorators.py.md#async_retry_with_exponential_backoff>)
     - [`python-backend/packages/shared/shared/embedding/text_embedder._prepare_text_chunks`](<#_prepare_text_chunks>)

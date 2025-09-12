@@ -6,7 +6,7 @@
 Calculates and prints Fibonacci numbers using a recursive function.
 
 # Purpose
-This script defines a function [`fib`](<#fib>) that calculates the Fibonacci number for a given integer `n` using a recursive approach. The [`main`](<#main>) function demonstrates the use of [`fib`](<#fib>) by printing the 11th Fibonacci number and the first five Fibonacci numbers in sequence. The script executes the [`main`](<#main>) function when run as a standalone program, as indicated by the `if __name__ == "__main__":` construct. This code provides narrow functionality focused on computing and displaying Fibonacci numbers.
+This script defines a function [`fib`](<#fib>) that calculates the Fibonacci number for a given integer `n` using a recursive approach. The [`main`](<#main>) function demonstrates the use of [`fib`](<#fib>) by printing the Fibonacci number for 11 and the first five Fibonacci numbers. The script executes the [`main`](<#main>) function when run as a standalone program, indicated by the `if __name__ == "__main__":` construct. This code provides narrow functionality focused on computing and displaying Fibonacci numbers.
 # Functions
 
 ---

@@ -6,7 +6,7 @@
 Alembic migration script to make `workspace_id` and `codebase_id` columns nullable.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the `runtimelogagentinstance` table. The [`upgrade`](<#upgrade>) function alters the `workspace_id` and `codebase_id` columns to allow null values by setting `nullable=True`. Conversely, the [`downgrade`](<#downgrade>) function reverts these changes by setting `nullable=False`, making the columns non-nullable again. The script includes metadata such as `revision`, `down_revision`, and `Create Date` for version control and tracking of database schema changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It modifies the `runtimelogagentinstance` table by altering the `workspace_id` and `codebase_id` columns to allow `NULL` values during the [`upgrade`](<#upgrade>) process. The [`downgrade`](<#downgrade>) function reverses these changes, making the columns non-nullable again. The script includes metadata such as `revision`, `down_revision`, and `Create Date` to track the migration's version and dependencies.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific state of the database schema that this migration script represents.
-- **Use**: Used by Alembic to identify the current migration version.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
-- **Use**: Used by Alembic to identify the parent revision of the current migration.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Used by Alembic to track the previous revision in the migration sequence.
 
 
 ---
@@ -40,8 +40,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: Represents a global variable set to `None`, indicating that there are no dependencies for the current Alembic migration script.
-- **Use**: Used by Alembic to specify that this migration script does not depend on any other migration.
+- **Description**: Represents a global variable that is set to `None`. It is used in the context of Alembic migrations to indicate that there are no dependencies on other migrations.
+- **Use**: Used to specify that the current migration does not depend on any other migration.
 
 
 # Functions
@@ -50,12 +50,12 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_23_0834-2641ed3d784a_make_workspace_adn_codebase_nullable.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_23_0834-2641ed3d784a_make_workspace_adn_codebase_nullable.py#L19>)
 
-Modifies the `runtimelogagentinstance` table to allow `workspace_id` and `codebase_id` columns to be nullable.
+Modifies the database schema to make the 'workspace_id' and 'codebase_id' columns nullable in the 'runtimelogagentinstance' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.alter_column` to change the `workspace_id` column in the `runtimelogagentinstance` table to be nullable.
-    - Calls `op.alter_column` to change the `codebase_id` column in the `runtimelogagentinstance` table to be nullable.
-- **Output**: No output is returned.
+    - Calls `op.alter_column` to change the 'workspace_id' column in the 'runtimelogagentinstance' table to be nullable.
+    - Calls `op.alter_column` to change the 'codebase_id' column in the 'runtimelogagentinstance' table to be nullable.
+- **Output**: No output is returned; the function modifies the database schema as a side effect.
 
 
 ---
@@ -67,7 +67,7 @@ Reverts the nullable property of the 'workspace_id' and 'codebase_id' columns in
 - **Logic and Control Flow**:
     - Calls `op.alter_column` to modify the 'workspace_id' column in the 'runtimelogagentinstance' table, setting `nullable` to `False`.
     - Calls `op.alter_column` to modify the 'codebase_id' column in the 'runtimelogagentinstance' table, setting `nullable` to `False`.
-- **Output**: No return value; modifies the database schema.
+- **Output**: No output is returned.
 
 
 

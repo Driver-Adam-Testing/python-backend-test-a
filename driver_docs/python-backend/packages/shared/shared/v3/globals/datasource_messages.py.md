@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Classes for creating and managing messages related to the DataSource structure for tool usage.
+Defines classes for creating and managing messages related to the DataSource structure for tool usage.
 
 # Purpose
-The code defines a set of classes that extend the `LlmMessage` class to provide structured messages related to the `DataSource` class from `datasource.py`. The primary purpose of these classes is to facilitate the communication of information about `DataSource` objects in a human-readable format for tools that iterate over data sources. The `DataSourceMessage` class includes a method [`from_context`](<#datasourcemessagefrom_context>) that constructs a message containing a description of a `DataSource` object, using a character limit to ensure concise content.
-
-Additionally, the code includes `DataSourceSystemMessage` and `DataSourceTuningSystemMessage` classes, which provide detailed system messages about the `DataSource` class. These messages describe the role of `DataSource` in organizing and curating references to files and directories, emphasizing its use in guiding tools to relevant information while avoiding irrelevant content. The `DataSourceTuningSystemMessage` further explains the concept of "tuning" a `DataSource`, which involves selecting specific paths to improve the precision of queries and reduce irrelevant search results. These classes are intended for internal use by tools and are not meant to disclose system knowledge to users.
+The code defines three classes, `DataSourceMessage`, `DataSourceSystemMessage`, and `DataSourceTuningSystemMessage`, which extend the `LlmMessage` class. These classes are used to create messages that describe the `DataSource` structure from `datasource.py` for internal tool usage. The `DataSourceMessage` class provides a method [`from_context`](<#datasourcemessagefrom_context>) to generate a message containing human-readable information about a `DataSource` instance. The `DataSourceSystemMessage` and `DataSourceTuningSystemMessage` classes provide system messages that describe the purpose and functionality of the `DataSource` class, emphasizing its role in organizing and curating references to files and directories for efficient access and usage by tools. These messages are intended for internal use by tools to guide their operations and improve the precision of queries and documentation generation.
 # Imports and Dependencies
 
 ---
@@ -24,7 +22,7 @@ Additionally, the code includes `DataSourceSystemMessage` and `DataSourceTuningS
 ### DataSourceMessage<!-- {{#class:python-backend/packages/shared/shared/v3/globals/datasource_messages.DataSourceMessage}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/globals/datasource_messages.py#L6>)
 
-- **Description**: Describes the structure of a `DataSource` for tools to use, providing human-readable information about the `DataSource` for iteration-based usage.
+- **Description**: Represents a message that describes the `DataSource` structure for tools to use, inheriting from `LlmMessage`. The class provides a class method `from_context` to create a `DataSourceMessage` with human-readable information about a given `DataSource`, formatted for iteration-based usage.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/globals/datasource_messages.DataSourceMessage.from_context`](<#datasourcemessagefrom_context>)
 - **Inherits From**:
@@ -39,11 +37,11 @@ Additionally, the code includes `DataSourceSystemMessage` and `DataSourceTuningS
 Builds a `DataSourceMessage` with human-readable information about a given `DataSource` for iteration-based usage.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `datasource`: An instance of the `DataSource` class that provides the data to be included in the message.
+    - `datasource`: An instance of the `DataSource` class that provides the data to be described in the message.
 - **Logic and Control Flow**:
-    - Concatenate the description from `DATA_SOURCES` with the wrapped description of the `datasource` limited to 10,000 characters.
-    - Create a new instance of `DataSourceMessage` with `message_kind` set to `MessageKind.DEVELOPER` and the constructed content.
-- **Output**: Returns an instance of `DataSourceMessage` containing the constructed message content.
+    - Concatenate the description from `DATA_SOURCES` with a wrapped description of the `datasource` limited to 10,000 characters.
+    - Create a `DataSourceMessage` instance with `message_kind` set to `MessageKind.DEVELOPER` and the constructed content.
+- **Output**: Returns a `DataSourceMessage` instance containing a human-readable description of the `DataSource`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<glossary.py.md#glossarydefinitionwrap>)
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.describe_contents_char_limit`](<../utils/datasource.py.md#datasourcedescribe_contents_char_limit>)
@@ -57,8 +55,8 @@ Builds a `DataSourceMessage` with human-readable information about a given `Data
 
 - **Members**:
     - `message_kind`: Specifies the kind of message as `MessageKind.DEVELOPER`.
-    - `content`: Contains a detailed description of the `DataSource` class and its purpose.
-- **Description**: Provides a system message with an expanded description of the `DataSource` class, emphasizing its role in managing references to files, directories, and resources while ensuring tools access only relevant information. The message is intended for internal use by tools to determine context adequacy without disclosing system knowledge to users.
+    - `content`: Contains a detailed description of the `DataSource` class and its purpose for internal tool use.
+- **Description**: Provides a system message with an expanded description of the `DataSource` class, emphasizing its role in managing references to files and directories for tools, while ensuring that this information remains internal and not disclosed to users.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 
@@ -68,9 +66,9 @@ Builds a `DataSourceMessage` with human-readable information about a given `Data
 [View Source →](<../../../../../../../packages/shared/shared/v3/globals/datasource_messages.py#L40>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as 'DEVELOPER'.
-    - `content`: Contains a detailed description of how to tune a DataSource for better precision in queries.
-- **Description**: Provides an expanded description of the `DataSource` class, focusing on how to tune it for more precise queries by selecting specific files and directories. Tuning a DataSource involves creating a list of nodes and their descendants, which helps in reducing irrelevant search results and improving documentation quality.
+    - `message_kind`: Specifies the kind of message as `MessageKind.DEVELOPER`.
+    - `content`: Contains a detailed description of how DataSources can be tuned for better precision in queries.
+- **Description**: Provides an expanded description of the `DataSource` class, focusing on how DataSources can be tuned to improve query precision by selecting specific paths and directories. Tuning involves creating a list of nodes and their descendants, allowing users to refine the DataSource by selecting or deselecting files and directories. This process aims to enhance the quality of internal searches and documentation generation by reducing irrelevant results.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 

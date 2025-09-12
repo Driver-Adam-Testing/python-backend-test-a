@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-API routes for inline editing and content generation with support for remote and local execution.
+Defines FastAPI routes for inline editing and content generation with support for remote execution.
 
 # Purpose
-The code defines a FastAPI application that provides endpoints for content generation and inline editing. It uses the `APIRouter` from FastAPI to define routes and handle HTTP requests. The primary functionality includes performing inline edits and generating content based on user input and context. The code uses Pydantic models to validate and parse incoming request data, such as `InlineEditHttpRequest` and `GenerateHttpRequest`. These models ensure that the required fields are present and correctly formatted.
+The code defines a FastAPI application that provides endpoints for content generation and inline editing. It uses the `APIRouter` from FastAPI to define routes for HTTP POST and GET requests. The primary functionality includes performing inline edits on text and generating content based on user prompts and context. The code uses Pydantic models to validate and parse incoming request data, such as `InlineEditHttpRequest` and `GenerateHttpRequest`. These models ensure that the required fields are present and correctly formatted.
 
-The application supports both local and remote execution of tasks, with options for synchronous and asynchronous processing. It uses the `modal` library to manage remote function calls, allowing for streaming responses when necessary. The code defines several enumerations, such as `PipelineKind`, `ExecutionType`, and `RemoteFunctions`, to categorize different types of processing pipelines and execution methods. The `_PIPELINE_BUILDERS` and `_REMOTE_FUNCTION_NAMES` dictionaries map pipeline kinds and execution types to specific request models and remote function names, facilitating dynamic request handling based on the input parameters.
+The application supports both local and remote execution of tasks, with options for synchronous and asynchronous processing. It uses the `modal` library to handle remote function calls, allowing for streaming responses when necessary. The code also defines several enumerations, such as `PipelineKind`, `ExecutionType`, and `RemoteFunctions`, to manage different types of processing pipelines and execution methods. The endpoints are protected by a dependency on `ContentEditorPermission`, ensuring that only authorized users can access the functionality.
 # Imports and Dependencies
 
 ---
@@ -34,21 +34,21 @@ The application supports both local and remote execution of tasks, with options 
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API endpoints in the application.
-- **Use**: Used to register and organize API routes and their corresponding request handlers.
+- **Description**: Provides routing functionality for the FastAPI application. It allows the definition of routes and their associated request handling logic.
+- **Use**: Used to define and manage API endpoints for the application.
 
 
 ---
 ### \_PIPELINE\_BUILDERS
-- **Type**: ``dict[PipelineKind, Callable[[GenerateHttpRequest, UserToken], BaseModel]]``
-- **Description**: Maps each `PipelineKind` to a callable function that takes a `GenerateHttpRequest` and a `UserToken` as arguments and returns a `BaseModel` instance. The dictionary defines how to construct specific pipeline request models based on the type of pipeline operation requested.
-- **Use**: Used to determine the appropriate request model to build for each type of pipeline operation.
+- **Type**: ``dict``
+- **Description**: A dictionary that maps `PipelineKind` enum values to callable functions. Each callable function takes a `GenerateHttpRequest` and a `UserToken` as arguments and returns an instance of a subclass of `BaseModel`. The dictionary is used to determine which request model to build for each type of pipeline operation.
+- **Use**: Used to map pipeline kinds to their corresponding request model builders.
 
 
 ---
 ### \_REMOTE\_FUNCTION\_NAMES
 - **Type**: ``dict[tuple[PipelineKind, bool], str]``
-- **Description**: Maps combinations of `PipelineKind` and a boolean indicating streaming to corresponding remote function names as strings. The keys are tuples where the first element is a `PipelineKind` enum and the second is a boolean indicating whether the operation is a stream. The values are strings representing the names of remote functions to be called.
+- **Description**: Maps combinations of `PipelineKind` and a boolean indicating streaming to corresponding remote function names as strings. The keys are tuples where the first element is a `PipelineKind` enum and the second is a boolean indicating whether the function is a stream. The values are strings representing the function names.
 - **Use**: Used to determine the appropriate remote function name based on the pipeline kind and whether streaming is enabled.
 
 
@@ -62,11 +62,11 @@ The application supports both local and remote execution of tasks, with options 
     - `prompt`: Stores the user prompt for the inline edit request.
     - `page_content_before_cursor`: Holds the content of the page before the cursor position.
     - `page_content_after_cursor`: Holds the content of the page after the cursor position.
-    - `cursor_selection`: Contains the text selected by the cursor.
-    - `node_ids`: Lists the UUIDs of nodes involved in the request.
-    - `remote_execution`: Indicates if the request should execute remotely, default is True.
-    - `stream`: Indicates if the response should be streamed, default is True.
-- **Description**: Defines the structure for an HTTP request to perform inline editing operations, including details about the prompt, page content, cursor selection, node identifiers, and execution preferences.
+    - `cursor_selection`: Represents the text selected by the cursor.
+    - `node_ids`: Contains a list of UUIDs representing node identifiers.
+    - `remote_execution`: Indicates if the execution should occur remotely, defaulting to True.
+    - `stream`: Specifies if the response should be streamed, defaulting to True.
+- **Description**: Defines the structure for an HTTP request to perform inline editing, including details about the prompt, page content, cursor selection, node identifiers, and execution preferences.
 - **Inherits From**:
     - `BaseModel`
 
@@ -75,7 +75,7 @@ The application supports both local and remote execution of tasks, with options 
 ### PipelineKind<!-- {{#class:python-backend/backend/app/api/routes/v2/generate.PipelineKind}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v2/generate.py#L97>)
 
-- **Description**: Defines different types of pipelines as string-based enumeration values, including `INLINE_EDIT`, `SMART_INSTRUCTION`, `REFORMAT`, and `CHAT`.
+- **Description**: Defines different types of pipelines as enumeration values, each represented as a string. The available pipeline kinds are `INLINE_EDIT`, `SMART_INSTRUCTION`, `REFORMAT`, and `CHAT`.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -85,7 +85,11 @@ The application supports both local and remote execution of tasks, with options 
 ### ExecutionType<!-- {{#class:python-backend/backend/app/api/routes/v2/generate.ExecutionType}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v2/generate.py#L104>)
 
-- **Description**: Defines different types of execution modes for operations, including `REMOTE_ASYNC`, `REMOTE_SYNC`, and `LOCAL`.
+- **Members**:
+    - `REMOTE_ASYNC`: Represents asynchronous remote execution.
+    - `REMOTE_SYNC`: Represents synchronous remote execution.
+    - `LOCAL`: Represents local execution.
+- **Description**: Defines different types of execution modes for operations, including remote asynchronous, remote synchronous, and local execution.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -95,16 +99,7 @@ The application supports both local and remote execution of tasks, with options 
 ### RemoteFunctions<!-- {{#class:python-backend/backend/app/api/routes/v2/generate.RemoteFunctions}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v2/generate.py#L110>)
 
-- **Members**:
-    - `INLINE_EDIT_RUN`: Represents the remote function name for inline edit run.
-    - `INLINE_EDIT_STREAM`: Represents the remote function name for inline edit stream.
-    - `SMART_INSTRUCTION_RUN`: Represents the remote function name for smart instruction run.
-    - `SMART_INSTRUCTION_STREAM`: Represents the remote function name for smart instruction stream.
-    - `REFORMAT_RUN`: Represents the remote function name for reformat run.
-    - `REFORMAT_STREAM`: Represents the remote function name for reformat stream.
-    - `CHAT_RUN`: Represents the remote function name for chat run.
-    - `CHAT_STREAM`: Represents the remote function name for chat stream.
-- **Description**: Defines a set of string constants that represent different remote function names used for various operations such as inline editing, smart instruction, reformatting, and chat, each with options for run and stream modes.
+- **Description**: Defines a set of string constants representing different remote function names used for various operations such as inline editing, smart instruction, reformatting, and chat, each with options for run and stream modes.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -124,7 +119,7 @@ The application supports both local and remote execution of tasks, with options 
     - `stream`: Indicates whether to stream the response as a boolean.
     - `pipeline_kind`: Defines the pipeline kind using the `PipelineKind` enumeration.
     - `execution_type`: Specifies the execution type using the `ExecutionType` enumeration.
-- **Description**: Defines the structure for an HTTP request to generate content, including user prompt, cursor context, node identifiers, and execution parameters.
+- **Description**: Represents an HTTP request model for generating content, including user prompt, page content, cursor selection, node identifiers, and configuration options for format, streaming, pipeline, and execution type.
 - **Inherits From**:
     - `BaseModel`
 
@@ -152,15 +147,17 @@ Performs inline editing on selected text based on user input and execution prefe
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `input`: An `InlineEditHttpRequest` object containing the prompt, page content, cursor selection, node IDs, and execution preferences.
+    - `input`: An `InlineEditHttpRequest` object containing the details of the inline edit request, such as prompt, page content, node IDs, and execution preferences.
 - **Logic and Control Flow**:
     - Creates an `InlineEditPipelineRequest` object from the input data and user information.
     - Checks if the `stream` attribute in the input is `True`.
-    - If `stream` is `True` and `remote_execution` is `True`, returns a `StreamingResponse` with a remote generation function call.
-    - If `stream` is `True` and `remote_execution` is `False`, returns a `StreamingResponse` with a local stream function call.
-    - If `stream` is `False` and `remote_execution` is `True`, returns the result of a remote function call.
-    - If `stream` is `False` and `remote_execution` is `False`, returns the result of a local function call.
-- **Output**: Returns an `InlineEditPipelineResponse` object or `None`, depending on the execution path.
+    - If `stream` is `True`, prints the stream status and checks if `remote_execution` is `True`.
+    - If both `stream` and `remote_execution` are `True`, returns a `StreamingResponse` with a remote generation function call.
+    - If `stream` is `True` but `remote_execution` is `False`, returns a `StreamingResponse` with a local stream function call.
+    - If `stream` is `False`, checks if `remote_execution` is `True`.
+    - If `remote_execution` is `True`, returns a remote function call for inline editing.
+    - If `remote_execution` is `False`, returns the result of a local run function call.
+- **Output**: Returns an `InlineEditPipelineResponse` object or `None`, depending on the execution path and input parameters.
 
 
 ---
@@ -172,9 +169,9 @@ Attaches to a modal function call and returns a streaming or non-streaming respo
 - **Inputs**:
     - `user`: A `UserToken` object representing the authenticated user.
     - `call_id`: A string representing the unique identifier of the function call to attach to.
-    - `stream`: A boolean indicating whether to return a streaming response (default is `True`).
+    - `stream`: A boolean indicating whether to stream the response (default is `True`).
 - **Logic and Control Flow**:
-    - Create a `FunctionCall` object from the `call_id` using `modal.FunctionCall.from_id`, with `is_generator` set to the value of `stream`.
+    - Create a `FunctionCall` object using `modal.FunctionCall.from_id` with `call_id` and `is_generator` set to `stream`.
     - If `stream` is `True`, return a `StreamingResponse` with the generator obtained from `function_call.get_gen()` and set the media type to `text/event-stream`.
     - If `stream` is `False`, return the result of `function_call.get()`.
 - **Output**: Returns a `StreamingResponse` if `stream` is `True`, otherwise returns the result of `function_call.get()`. The function does not return `None` as indicated in the signature.
@@ -188,15 +185,15 @@ Generates content based on user input and execution context, supporting both loc
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `user`: A `UserToken` object representing the authenticated user.
-    - `input`: A `GenerateHttpRequest` object containing the prompt, context, and execution parameters.
+    - `input`: A `GenerateHttpRequest` object containing the prompt, context, and execution parameters for content generation.
 - **Logic and Control Flow**:
     - Parse the input using the appropriate pipeline builder based on `input.pipeline_kind`.
     - Check if `input.execution_type` is `ExecutionType.LOCAL`. If true, execute the pipeline locally and return a `StreamingResponse` if `input.stream` is true, otherwise return the result of `parsed_input.run()`.
     - If `input.execution_type` is not local, determine the remote function name using `_REMOTE_FUNCTION_NAMES` based on `input.pipeline_kind` and `input.stream`.
     - Create a `modal.Function` object using the determined remote function name.
-    - If `input.stream` is true, return a `StreamingResponse` with the result of `fn.remote_gen(parsed_input.model_dump())`.
-    - If `input.execution_type` is `ExecutionType.REMOTE_ASYNC`, return the result of `fn.spawn(parsed_input.model_dump())`.
-    - Otherwise, return the result of `fn.remote(parsed_input.model_dump())`.
+    - If `input.stream` is true, call `fn.remote_gen` with the parsed input and return a `StreamingResponse`.
+    - If `input.stream` is false and `input.execution_type` is `ExecutionType.REMOTE_ASYNC`, call `fn.spawn` with the parsed input and return the result.
+    - If `input.stream` is false and `input.execution_type` is not `ExecutionType.REMOTE_ASYNC`, call `fn.remote` with the parsed input and return the result.
 - **Output**: Returns an `AsyncCallResponse`, `PipelineResponse`, or `None` depending on the execution path and input parameters.
 
 

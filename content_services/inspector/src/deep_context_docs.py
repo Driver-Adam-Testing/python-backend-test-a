@@ -55,8 +55,8 @@ deep_context_image = (
     # whitelist this IP with ScaleGrid for our DB.
     proxy=(
         modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-        else None
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
     ),
     timeout=60 * 60,
     region="us-east",
@@ -126,9 +126,11 @@ async def make_changelog(
     secrets=[
         modal.Secret.from_name("db"),
     ],
-    proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    proxy=(
+        modal.Proxy.from_name("my-proxy")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
+    ),
     memory=4096,
     timeout=3600 * 12,
     region="us-east",

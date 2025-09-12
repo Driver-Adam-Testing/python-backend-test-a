@@ -6,7 +6,9 @@
 Test cases for C# using directives, including aliases, static, global, and file-scoped namespaces.
 
 # Purpose
-The code demonstrates various ways to use `using` directives in C#. It includes examples of standard `using` directives, aliasing, static imports, and global `using` directives, which are available from C# 10 onwards. The `UsingExamples` class contains a method [`UseImports`](<#usingexamplesuseimports>) that illustrates the practical application of these directives by creating instances of types and calling methods from the imported namespaces. This code is part of a C# file intended to show how to manage namespace imports effectively, and it is not an executable on its own. The use of aliases and global namespace references helps to avoid naming conflicts and improve code readability.
+The code demonstrates various ways to use `using` directives in C#. It includes examples of standard `using` directives, aliasing, static `using`, global `using`, and file-scoped namespace `using`. The `UsingExamples` class contains a method [`UseImports`](<#usingexamplesuseimports>) that illustrates how these directives are applied in practice. The method creates instances of several types from the .NET library, such as `List`, `DateTime`, and `Task`, and uses aliases for `Dictionary` and `StringBuilder`. It also demonstrates the use of static methods from the `System.Math` and `System.Console` classes, and shows how to serialize an object using `JsonSerializer` with a global namespace reference.
+
+The code is structured to provide a comprehensive overview of the different `using` directive capabilities in C#. It serves as an educational example for developers to understand how to manage namespaces and type references efficiently. The use of aliases and global `using` directives helps to avoid namespace conflicts and simplify code readability. This file is not intended to be an executable or a library for import but rather a demonstration of syntax and usage patterns for `using` directives in C#.
 # Imports and Dependencies
 
 ---
@@ -27,7 +29,7 @@ The code demonstrates various ways to use `using` directives in C#. It includes 
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Demonstrates the use of various C# `using` directives, including standard imports, aliases, static imports, and global imports. The `UseImports` method shows how to declare and use different types and methods from the `System` namespace and other namespaces, utilizing aliases and static methods for concise code.
+- **Description**: Demonstrates the use of various C# `using` directives, including standard imports, aliases, static imports, and global imports. The `UseImports` method shows how to create instances of types from different namespaces, use static methods, and handle global namespace references. This class serves as an example of how to organize and utilize different `using` directives in a C# application.
 - **Methods**:
     - [`Com.Example.Usings.UsingExamples.UseImports`](<#usingexamplesuseimports>)
 
@@ -37,21 +39,21 @@ The code demonstrates various ways to use `using` directives in C#. It includes 
 #### UsingExamples\.UseImports<!-- {{#callable:Com.Example.Usings.UsingExamples.UseImports}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_usings.cs#L29>)
 
-Demonstrates the use of various C# import directives and aliases within a method.
+Demonstrates the use of various C# using directives and aliases to create and manipulate objects and call methods.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Creates a list of strings using `List<string>`.
-    - Gets the current date and time using `DateTime.Now`.
-    - Creates a dictionary using the alias `Dict` for `Dictionary<string, object>`.
-    - Creates a `StringBuilder` instance using the alias `StringBuilder`.
-    - Calculates the square root of 16 using the static method `Sqrt` from `System.Math`.
-    - Writes 'Hello World' to the console using the static method `WriteLine` from `System.Console`.
-    - Creates a completed task using `Task.CompletedTask` from the global using directive.
-    - Creates a concurrent dictionary using the alias `MyAlias` for `ConcurrentDictionary<string, int>`.
-    - Creates a `JsonSerializerOptions` instance using the global namespace reference `global::System.Text.Json`.
-    - Serializes an anonymous object to JSON using the alias `JsonSerializer` for `global::System.Text.Json.JsonSerializer`.
-- **Output**: No output is returned as the method has a `void` return type.
+    - Create a `List<string>` object and assign it to `list`.
+    - Get the current date and time using `DateTime.Now` and assign it to `date`.
+    - Create a `Dictionary<string, object>` object using the alias `Dict` and assign it to `dict`.
+    - Create a `StringBuilder` object using the alias `StringBuilder` and assign it to `sb`.
+    - Calculate the square root of 16 using the static method `Sqrt` and assign the result to `result`.
+    - Print 'Hello World' to the console using the static method `WriteLine`.
+    - Assign `Task.CompletedTask` to `task` using the global using directive.
+    - Create a `ConcurrentDictionary<string, int>` object using the alias `MyAlias` and assign it to `concurrent`.
+    - Create a `JsonSerializerOptions` object and assign it to `jsonOptions`.
+    - Serialize an anonymous object to a JSON string using `JsonSerializer.Serialize` and assign it to `json`.
+- **Output**: No return value; the method performs operations using various imported types and methods.
 - **See also**: [`Com.Example.Usings.UsingExamples`](<#usingexamples>)  (Base Class)
 
 

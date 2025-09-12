@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add and remove indexes for database tables.
+Alembic migration script to add and remove indexes for database tables related to nodes and assets.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an [`upgrade`](<#upgrade>) function to add several indexes to tables in a database schema, specifically targeting tables such as `v2_node`, `v2_primary_asset`, `v2_primary_asset_tag`, and `v2_version`. These indexes are intended to optimize query performance by allowing faster data retrieval based on specific columns like `version_id`, `display_name`, `kind`, `organization_id`, `primary_asset_id`, `tag_id`, and `updated_at`. The script also includes a [`downgrade`](<#downgrade>) function to remove these indexes, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an [`upgrade`](<#upgrade>) function and a [`downgrade`](<#downgrade>) function to manage the database schema changes. The [`upgrade`](<#upgrade>) function creates several indexes on different tables, such as `v2_node`, `v2_primary_asset`, `v2_primary_asset_tag`, and `v2_version`. These indexes are intended to optimize query performance by allowing faster data retrieval based on specific columns like `version_id`, `display_name`, `kind`, `organization_id`, `primary_asset_id`, `tag_id`, and `updated_at`.
 
-The script uses Alembic's operations module (`op`) to create and drop indexes, ensuring that the database schema can be modified in a controlled manner. The `revision` and `down_revision` identifiers are used by Alembic to track the migration's position in the sequence of database changes. This script is part of a broader database migration process, allowing developers to manage schema changes over time. It does not define public APIs or external interfaces, as its primary purpose is to modify the database schema directly.
+The [`downgrade`](<#downgrade>) function reverses the changes made by the [`upgrade`](<#upgrade>) function by dropping the indexes that were created. This allows the database schema to be reverted to its previous state if necessary. The script uses Alembic's operations module to define these changes, ensuring that the migration process is consistent and can be applied or rolled back as needed. The script includes revision identifiers, which help track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -21,29 +21,29 @@ The script uses Alembic's operations module (`op`) to create and drop indexes, e
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script. This identifier is used to track changes and manage database schema versions.
-- **Use**: Used by Alembic to identify the current revision of the database schema.
+- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Indicates the immediate predecessor revision in the migration history.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations and to apply them correctly.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Use**: Used to define branch labels for the migration script, but currently not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migrations.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -55,37 +55,37 @@ The script uses Alembic's operations module (`op`) to create and drop indexes, e
 Creates several database indexes on specified tables to optimize query performance.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.create_index` to create an index named `idx_node_version_id_relative_path_length` on the `v2_node` table using `version_id` and the length of `relative_path` as columns.
-    - Creates an index `ix_node_version_id_relative_path_pattern_ops` on the `v2_node` table using `version_id` with PostgreSQL text pattern operations on `relative_path`.
-    - Creates an index `ix_v2_node_version_id` on the `v2_node` table using `version_id`.
-    - Creates an index `ix_v2_primary_asset_display_name` on the `v2_primary_asset` table using `display_name`.
-    - Creates an index `ix_v2_primary_asset_kind` on the `v2_primary_asset` table using `kind`.
-    - Creates an index `ix_v2_primary_asset_organization_id` on the `v2_primary_asset` table using `organization_id`.
-    - Creates an index `ix_v2_primary_asset_tag_primary_asset_id` on the `v2_primary_asset_tag` table using `primary_asset_id`.
-    - Creates an index `ix_v2_primary_asset_tag_tag_id` on the `v2_primary_asset_tag` table using `tag_id`.
-    - Creates an index `ix_v2_version_primary_asset_id` on the `v2_version` table using `primary_asset_id`.
-    - Creates an index `ix_v2_version_updated_at` on the `v2_version` table using `updated_at`.
-- **Output**: No output is returned.
+    - Uses `op.create_index` to create an index named `idx_node_version_id_relative_path_length` on the `v2_node` table with columns `version_id` and a calculated length of `relative_path`.
+    - Creates an index `ix_node_version_id_relative_path_pattern_ops` on the `v2_node` table with `version_id` and applies PostgreSQL text pattern operations on `relative_path`.
+    - Creates an index `ix_v2_node_version_id` on the `v2_node` table with the `version_id` column.
+    - Creates an index `ix_v2_primary_asset_display_name` on the `v2_primary_asset` table with the `display_name` column.
+    - Creates an index `ix_v2_primary_asset_kind` on the `v2_primary_asset` table with the `kind` column.
+    - Creates an index `ix_v2_primary_asset_organization_id` on the `v2_primary_asset` table with the `organization_id` column.
+    - Creates an index `ix_v2_primary_asset_tag_primary_asset_id` on the `v2_primary_asset_tag` table with the `primary_asset_id` column.
+    - Creates an index `ix_v2_primary_asset_tag_tag_id` on the `v2_primary_asset_tag` table with the `tag_id` column.
+    - Creates an index `ix_v2_version_primary_asset_id` on the `v2_version` table with the `primary_asset_id` column.
+    - Creates an index `ix_v2_version_updated_at` on the `v2_version` table with the `updated_at` column.
+- **Output**: No return value; modifies the database schema by adding indexes.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_11_1648-a8b7cafaa51f_add_pa_and_node_parentage_indexes.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_02_11_1648-a8b7cafaa51f_add_pa_and_node_parentage_indexes.py#L76>)
 
-Removes specific database indexes to revert schema changes.
+Removes specific database indexes as part of a database schema downgrade.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.drop_index` to remove the index `ix_v2_version_updated_at` from the `v2_version` table.
-    - Calls `op.drop_index` to remove the index `ix_v2_version_primary_asset_id` from the `v2_version` table.
-    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_tag_tag_id` from the `v2_primary_asset_tag` table.
-    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_tag_primary_asset_id` from the `v2_primary_asset_tag` table.
-    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_organization_id` from the `v2_primary_asset` table.
-    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_kind` from the `v2_primary_asset` table.
-    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_display_name` from the `v2_primary_asset` table.
-    - Calls `op.drop_index` to remove the index `ix_v2_node_version_id` from the `v2_node` table.
-    - Calls `op.drop_index` to remove the index `ix_node_version_id_relative_path_pattern_ops` from the `v2_node` table with specific PostgreSQL operations.
-    - Calls `op.drop_index` to remove the index `idx_node_version_id_relative_path_length` from the `v2_node` table.
-- **Output**: None
+    - Calls `op.drop_index` to remove the index `ix_v2_version_updated_at` from the table `v2_version`.
+    - Calls `op.drop_index` to remove the index `ix_v2_version_primary_asset_id` from the table `v2_version`.
+    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_tag_tag_id` from the table `v2_primary_asset_tag`.
+    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_tag_primary_asset_id` from the table `v2_primary_asset_tag`.
+    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_organization_id` from the table `v2_primary_asset`.
+    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_kind` from the table `v2_primary_asset`.
+    - Calls `op.drop_index` to remove the index `ix_v2_primary_asset_display_name` from the table `v2_primary_asset`.
+    - Calls `op.drop_index` to remove the index `ix_v2_node_version_id` from the table `v2_node`.
+    - Calls `op.drop_index` to remove the index `ix_node_version_id_relative_path_pattern_ops` from the table `v2_node` with specific PostgreSQL operations.
+    - Calls `op.drop_index` to remove the index `idx_node_version_id_relative_path_length` from the table `v2_node`.
+- **Output**: No return value; modifies the database schema by removing indexes.
 
 
 

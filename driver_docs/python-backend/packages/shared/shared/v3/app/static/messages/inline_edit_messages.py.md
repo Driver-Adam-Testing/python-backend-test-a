@@ -6,9 +6,7 @@
 Defines message classes for inline text editing, including system and user messages for a technical writing assistant.
 
 # Purpose
-The code defines a set of classes that extend the `LlmMessage` class, which is part of a system for handling inline text editing requests. These classes are `InlineEditSystemMessage`, `InlineEditToolUseMessage`, and `InlineEditUserMessage`. Each class represents a different type of message in the context of a document editing system that uses a language model to refine text based on user input. The `InlineEditSystemMessage` class is designed to instruct the language model on how to process user prompts and selected text within a document. It specifies how the model should interpret and replace the selected text based on the user's instructions.
-
-The `InlineEditToolUseMessage` class provides guidance for situations where the user prompt requires additional context not present in the document. It indicates that tools should be used to gather necessary information from external sources. The `InlineEditUserMessage` class includes a class method [`from_context`](<#inlineeditusermessagefrom_context>) that constructs a message by wrapping the user prompt and document content around the cursor position. This method facilitates the creation of a structured message that the language model can use to understand the user's editing request. The code is part of a broader system that likely involves user interaction and automated text processing, and it defines specific message types for communication within this system.
+This code defines a set of classes for handling inline editing messages in a document editing system. It imports several constants and classes from shared modules, which are used to structure and format messages related to user interactions with a document. The `InlineEditSystemMessage` class is a subclass of `LlmMessage` and provides a system-level message template that instructs a technical writer on how to refine text based on user input, using specific markers to denote different parts of the document. The `InlineEditToolUseMessage` class also extends `LlmMessage` and provides guidance on using tools to gather additional context when the user prompt requires information not present in the document. The `InlineEditUserMessage` class, another subclass of `LlmMessage`, includes a class method [`from_context`](<#inlineeditusermessagefrom_context>) that constructs a user message by wrapping the user prompt and document content around the cursor, facilitating the inline editing process.
 # Imports and Dependencies
 
 ---
@@ -29,9 +27,9 @@ The `InlineEditToolUseMessage` class provides guidance for situations where the 
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/inline_edit_messages.py#L12>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as a system message.
-    - `content`: Contains instructions for refining text based on a user prompt.
-- **Description**: Represents a system message for inline editing, providing instructions for refining text in response to a user prompt, with specific markers for user prompt, selected text, and document content before and after the cursor.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
+    - `content`: Contains a detailed instruction for a technical writer to refine text based on a user prompt.
+- **Description**: Facilitates inline editing by providing instructions to a technical writer for refining text in response to a user prompt, with specific markers indicating the user prompt, selected text, and document content before and after the cursor.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -42,8 +40,8 @@ The `InlineEditToolUseMessage` class provides guidance for situations where the 
 
 - **Members**:
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
-    - `content`: Contains a string instructing the use of tools to obtain context from source code or documentation when user prompts lack explicit information.
-- **Description**: Inherits from `LlmMessage` and provides a system message that instructs the use of tools to obtain context from source code or documentation when the user prompt lacks explicit information in the document.
+    - `content`: Contains a string instructing the use of tools to obtain context from source code or documentation when the user prompt lacks explicit information.
+- **Description**: Extends `LlmMessage` to provide a system message that instructs the use of tools to gather context from source code or documentation when the user prompt does not explicitly contain the necessary information.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -53,8 +51,8 @@ The `InlineEditToolUseMessage` class provides guidance for situations where the 
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/inline_edit_messages.py#L33>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as a user message.
-- **Description**: Represents a user message in an inline editing context, allowing the creation of a message instance from given context parameters such as user prompt and document content around a cursor.
+    - `message_kind`: Specifies the type of message as `MessageKind.USER`.
+- **Description**: Represents a user message in an inline editing context, allowing the construction of a message from a user prompt and surrounding document content.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage.from_context`](<#inlineeditusermessagefrom_context>)
 - **Inherits From**:
@@ -66,7 +64,7 @@ The `InlineEditToolUseMessage` class provides guidance for situations where the 
 #### InlineEditUserMessage\.from\_context<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage.from_context}} -->
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/inline_edit_messages.py#L36>)
 
-Creates an `InlineEditUserMessage` instance using the provided user prompt and document content around the cursor.
+Creates an `InlineEditUserMessage` instance using the provided context of user prompt and document content around the cursor.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `InlineEditUserMessage` itself, used to create a new instance.
@@ -75,11 +73,11 @@ Creates an `InlineEditUserMessage` instance using the provided user prompt and d
     - `selected_text`: A string representing the text selected by the user.
     - `page_content_after_cursor`: A string representing the content of the document after the cursor.
 - **Logic and Control Flow**:
-    - Wraps the `user_prompt` with `USER_PROMPT.wrap` to format it appropriately.
-    - Concatenates and wraps the `page_content_before_cursor`, `selected_text`, and `page_content_after_cursor` using `DOCUMENT_CONTENT_BEFORE_CURSOR.wrap`, `CURSOR.wrap`, `CURSOR_SELECTION.wrap`, and `DOCUMENT_CONTENT_AFTER_CURSOR.wrap` to format them.
-    - Wraps the entire document content with `WORKING_DOCUMENT_CONTENT.wrap`.
-    - Creates and returns a new `InlineEditUserMessage` instance with the formatted content.
-- **Output**: An instance of `InlineEditUserMessage` with the formatted content.
+    - Uses the `USER_PROMPT.wrap` method to wrap the `user_prompt` string.
+    - Concatenates the wrapped `page_content_before_cursor`, `selected_text`, and `page_content_after_cursor` using their respective wrapping methods.
+    - Uses `WORKING_DOCUMENT_CONTENT.wrap` to wrap the concatenated document content.
+    - Creates a new `InlineEditUserMessage` instance with the constructed content string.
+- **Output**: An instance of `InlineEditUserMessage` with the content constructed from the provided context.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#glossarydefinitionwrap>)
 - **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage`](<#inlineeditusermessage>)  (Base Class)

@@ -3,29 +3,28 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for AWS CDK application with context settings and file watch exclusions.
+Configuration for AWS CDK app execution and context settings in a development stack.
 
 # Purpose
-This JSON configuration file is used to define settings for an AWS CDK (Cloud Development Kit) application. The `app` key specifies the command to execute the main application script, `python3 cdk_dev_stack_app.py`. The `watch` section includes patterns for files to monitor for changes, with `include` and `exclude` lists to specify which files or directories should trigger a rebuild or be ignored, respectively. The `context` section contains a series of key-value pairs that configure various AWS CDK features and behaviors, such as enabling or disabling specific AWS service features, setting default policies, and defining resource management preferences. These settings help customize the deployment and management of AWS resources within the application, ensuring that the infrastructure behaves according to specified requirements.
+This JSON configuration file is used to define settings for an AWS CDK (Cloud Development Kit) application. The `app` key specifies the command to execute the main application script, `python3 cdk_dev_stack_app.py`. The `watch` section includes patterns for files to monitor for changes, with `include` and `exclude` lists to specify which files or directories should trigger a rebuild or be ignored, respectively. The `context` section contains a series of key-value pairs that configure various AWS CDK features and behaviors, such as enabling or disabling specific AWS service features, setting default policies, and managing resource configurations. These settings help customize the deployment and management of AWS resources within the application, ensuring that the infrastructure behaves according to specified requirements.
 # Content Summary
-The provided JSON configuration file is used to define settings for a software application, specifically for a project using the AWS Cloud Development Kit (CDK). The file contains three main sections: `app`, `watch`, and `context`.
+The provided JSON file is a configuration file for a software application, specifically for a project using the AWS Cloud Development Kit (CDK). The file contains three main sections: `app`, `watch`, and `context`.
 
 1. **App Section**: 
    - The `app` key specifies the command to run the application, which is `python3 cdk_dev_stack_app.py`. This indicates that the application is a Python script named `cdk_dev_stack_app.py`.
 
 2. **Watch Section**: 
-   - The `watch` section includes two keys: `include` and `exclude`.
-   - The `include` key contains a list with a wildcard pattern `"**"`, which means all files and directories should be monitored for changes.
-   - The `exclude` key lists specific files and directories to ignore during monitoring. These include `README.md`, files matching `cdk*.json`, `requirements*.txt`, `source.bat`, Python initialization files (`**/__init__.py`), Python cache directories (`**/__pycache__`), and the `tests` directory.
+   - The `watch` section defines the file patterns to include and exclude during file watching. 
+   - The `include` key contains a pattern `"**"`, which means all files and directories are included for watching.
+   - The `exclude` key lists specific files and patterns to exclude from watching, such as `README.md`, files matching `cdk*.json`, `requirements*.txt`, `source.bat`, Python initialization files (`**/__init__.py`), Python cache directories (`**/__pycache__`), and the `tests` directory.
 
 3. **Context Section**: 
    - The `context` section contains a series of key-value pairs that configure various AWS CDK features and behaviors.
    - Each key represents a specific AWS CDK feature or setting, and the boolean values (`true` or `false`) enable or disable these features.
-   - Some notable configurations include enabling the recognition of Lambda layer versions, checking secret usage, enabling default log drivers for ECS service extensions, and minimizing IAM policies.
-   - Other settings involve security enhancements, such as restricting default security groups, denying anonymous access to EFS, and reducing cross-account region policy scope for KMS.
-   - The context also includes settings for specific AWS services like RDS, S3, API Gateway, and more, which adjust their default behaviors or enable specific features.
+   - Examples include enabling the recognition of Lambda layer versions, checking secret usage, setting target partitions for AWS services, and configuring logging and security settings for various AWS services like S3, EC2, Lambda, and more.
+   - Some settings are specific to AWS service configurations, such as enabling multi-AZ for OpenSearch, using the latest runtime version for Lambda Node.js, and setting policies for RDS and DynamoDB.
 
-This configuration file is essential for developers working with AWS CDK, as it defines how the application should be executed, which files to monitor for changes, and how various AWS services and CDK features should behave.
+This configuration file is essential for developers working with AWS CDK, as it defines how the application should behave and interact with AWS services during development and deployment.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

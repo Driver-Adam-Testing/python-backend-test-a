@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions and classes for computing and logging the size of code differences in bytes using Git.
+Utilities for computing and logging the size of code differences in bytes, with balance checks and metadata updates.
 
 # Purpose
-The code provides functionality for calculating and logging the size of code differences between two versions of files in a codebase. It defines a `CodeDiffParams` class using Pydantic to encapsulate parameters needed for the computation, such as paths to the previous and current versions of the codebase and a list of changed nodes. The function [`git_diff_size_bytes_per_file`](<#git_diff_size_bytes_per_file>) calculates the size of differences between two files using the `git diff` command, returning the size in bytes. The [`compute_and_log_code_diff_size_in_bytes`](<#compute_and_log_code_diff_size_in_bytes>) function orchestrates the process by iterating over changed nodes, calculating the total difference size, and checking if the organization has sufficient balance to process the updates. If the balance is insufficient, it raises an `InsufficientBalanceError`.
+The code provides functionality for calculating and logging the size of code differences between two versions of files in a codebase. It defines a `CodeDiffParams` class using Pydantic to encapsulate parameters needed for the computation, such as the codebase name, version ID, and paths to the previous and current file versions. The [`git_diff_size_bytes_per_file`](<#git_diff_size_bytes_per_file>) function calculates the size of differences between two files using the `git diff` command, returning the size in bytes. This function handles cases where files are added or deleted.
 
-The code also includes functions for logging usage and updating metadata. The [`log_code_diff_usage`](<#log_code_diff_usage>) function logs the usage of code differences by creating a usage metric and committing it to a session. The [`update_root_node_metadata`](<#update_root_node_metadata>) function updates the metadata of the root node in the database with the calculated code difference size in bytes and source lines of code (SLOC). The code imports several modules and classes, indicating dependencies on external libraries and internal modules, such as `subprocess`, `pydantic`, and database models. This code is intended to be part of a larger system that manages codebase versions and tracks usage metrics, likely as a library file to be imported and used by other components.
+The [`compute_and_log_code_diff_size_in_bytes`](<#compute_and_log_code_diff_size_in_bytes>) function orchestrates the process by iterating over changed nodes, calculating the total difference size, and checking if the organization has sufficient balance to process the updates. If the balance is insufficient, it raises an `InsufficientBalanceError`. The function also logs the usage of code differences by calling [`log_code_diff_usage`](<#log_code_diff_usage>), which records the event in a usage session. Additionally, [`update_root_node_metadata`](<#update_root_node_metadata>) updates the metadata of the root node in the database with the calculated difference size. The code is structured to be part of a larger system, likely a library, as it imports modules from other parts of the system and does not define a standalone script.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ The code also includes functions for logging usage and updating metadata. The [`
 - `utils.db.get_usage_balance_in_bytes`
 - `datetime.UTC`
 - `datetime.datetime`
-- `database.models_v1.UsageEventType`
+- `database.models.UsageEventType`
 - `shared.interfaces.usage.event_metadata.UsageEventMetadata`
 - `shared.interfaces.usage.event_metadata.UsageMetric`
 - `shared.interfaces.usage.event_metadata.UsageSessionMetadata`
 - `shared.usage.llm_session.LLMUsageSession`
 - `shared.usage.utils.bytes_to_sloc`
 - `database.db.engine`
-- `database.models_v2.Node`
-- `database.models_v2.NodeKind`
+- `database.models.Node`
+- `database.models.NodeKind`
 - `sqlalchemy.orm.attributes.flag_modified`
 - `sqlmodel.Session`
 - `sqlmodel.select`
@@ -39,7 +39,7 @@ The code also includes functions for logging usage and updating metadata. The [`
 ### InsufficientBalanceError<!-- {{#class:python-backend/content_services/inspector/src/utils/git_diff.InsufficientBalanceError}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/git_diff.py#L9>)
 
-- **Description**: Defines a custom exception for cases where a balance is insufficient for a required operation.
+- **Description**: Defines a custom exception for cases where an operation cannot proceed due to insufficient balance.
 - **Inherits From**:
     - `Exception`
 
@@ -48,15 +48,15 @@ The code also includes functions for logging usage and updating metadata. The [`
 ### CodeDiffParams<!-- {{#class:python-backend/content_services/inspector/src/utils/git_diff.CodeDiffParams}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/git_diff.py#L13>)
 
-- **Decorators**: `@dataclass`
+- **Decorators**: `@pydantic.dataclasses.dataclass`
 - **Members**:
-    - `codebase_name`: Stores the name of the codebase.
-    - `version_id`: Stores the version identifier.
-    - `primary_asset_id`: Stores the primary asset identifier.
-    - `org_id`: Stores the organization identifier.
-    - `previous_download_root`: Stores the path to the previous download root.
-    - `download_root`: Stores the path to the current download root.
-    - `changed_nodes`: Stores a list of changed nodes.
+    - `codebase_name`: Name of the codebase.
+    - `version_id`: Identifier for the version.
+    - `primary_asset_id`: Identifier for the primary asset.
+    - `org_id`: Identifier for the organization.
+    - `previous_download_root`: Path to the previous download root.
+    - `download_root`: Path to the current download root.
+    - `changed_nodes`: List of changed nodes.
 - **Description**: Defines parameters for code difference operations, including codebase details, versioning, and paths to download roots.
 - **Inherits From**:
     - `BaseModel`
@@ -68,7 +68,7 @@ The code also includes functions for logging usage and updating metadata. The [`
 ### git\_diff\_size\_bytes\_per\_file<!-- {{#callable:python-backend/content_services/inspector/src/utils/git_diff.git_diff_size_bytes_per_file}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/git_diff.py#L23>)
 
-Calculates the size of the differences in bytes between two files using `git diff`.
+Calculates the size of the difference in bytes between two files using `git diff`.
 - **Inputs**:
     - `file_a`: A `Path` object representing the first file to compare.
     - `file_b`: A `Path` object representing the second file to compare.
@@ -78,31 +78,32 @@ Calculates the size of the differences in bytes between two files using `git dif
     - Iterate over each line of the `git diff` output, skipping lines that start with '+++', '---', or '@@'.
     - For lines starting with '+', add the length of the line (excluding the '+') to `file_diff_bytes`.
     - For lines starting with '-', subtract the length of the line (excluding the '-') from `file_diff_bytes`.
-    - Return the absolute value of `file_diff_bytes` if both files exist.
+    - Return the absolute value of `file_diff_bytes` as the size of the difference in bytes.
     - If only `file_b` exists, return the size of `file_b` in bytes as it is a new file.
     - If only `file_a` exists, return the size of `file_a` in bytes as it is a deleted file.
     - Raise `FileNotFoundError` if neither file exists.
-- **Output**: An integer representing the absolute size of the differences in bytes between the two files.
+- **Output**: An integer representing the absolute size of the difference in bytes between the two files.
 
 
 ---
 ### compute\_and\_log\_code\_diff\_size\_in\_bytes<!-- {{#callable:python-backend/content_services/inspector/src/utils/git_diff.compute_and_log_code_diff_size_in_bytes}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/git_diff.py#L58>)
 
-Calculates the size of code differences in bytes and logs the usage while checking for sufficient balance.
+Calculates the size of code differences in bytes, updates metadata, and logs usage while checking for sufficient balance.
 - **Inputs**:
     - `code_diff_params`: An instance of `CodeDiffParams` containing details about the codebase, version, organization, and changed nodes.
 - **Logic and Control Flow**:
-    - Initialize `diff_size_in_bytes` to zero.
+    - Initialize `diff_size_in_bytes` to 0.
     - Iterate over each node in `changed_nodes`.
     - For each node, compute the file paths for the previous and current versions.
-    - Call [`git_diff_size_bytes_per_file`](<#git_diff_size_bytes_per_file>) to calculate the difference in bytes for each file and add it to `diff_size_in_bytes`.
-    - Print the difference in bytes for each file and the total difference for the version.
+    - Calculate the difference in bytes between the two file versions using [`git_diff_size_bytes_per_file`](<#git_diff_size_bytes_per_file>).
+    - Add the computed file difference size to `diff_size_in_bytes`.
+    - Print the total difference size for the version.
     - Retrieve the current usage balance in bytes for the organization using [`get_usage_balance_in_bytes`](<db.py.md#get_usage_balance_in_bytes>).
-    - Update the root node metadata with the calculated difference in bytes using [`update_root_node_metadata`](<#update_root_node_metadata>).
-    - Check if the current balance is less than the difference in bytes; if so, raise [`InsufficientBalanceError`](<#insufficientbalanceerror>).
+    - Update the root node metadata with the computed difference size using [`update_root_node_metadata`](<#update_root_node_metadata>).
+    - Check if the current balance is less than the difference size; if so, raise [`InsufficientBalanceError`](<#insufficientbalanceerror>).
     - Log the code difference usage with [`log_code_diff_usage`](<#log_code_diff_usage>).
-- **Output**: No return value; the function performs logging and may raise an [`InsufficientBalanceError`](<#insufficientbalanceerror>).
+- **Output**: No return value; the function performs logging and may raise an [`InsufficientBalanceError`](<#insufficientbalanceerror>) if the balance is insufficient.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/git_diff.git_diff_size_bytes_per_file`](<#git_diff_size_bytes_per_file>)
     - [`python-backend/content_services/inspector/src/utils/db.get_usage_balance_in_bytes`](<db.py.md#get_usage_balance_in_bytes>)
@@ -127,9 +128,9 @@ Logs the usage of code differences by creating a usage event with metadata and c
     - Creates a [`UsageSessionMetadata`](<../../../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagesessionmetadata>) object with the provided content details.
     - Initializes an [`LLMUsageSession`](<../../../../packages/shared/shared/usage/llm_session.py.md#llmusagesession>) with the organization ID, a user ID of 'SYSTEM', and the session metadata.
     - Within the session, creates a [`UsageMetric`](<../../../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagemetric>) object with details about the usage event, including the session ID, organization ID, and the size of the code difference in bytes.
-    - Converts the byte size of the code difference to source lines of code (SLOC) using [`bytes_to_sloc`](<../../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>).
-    - Commits the usage event immediately using the [`commit_event_now`](<../../../../packages/shared/shared/usage/llm_session.py.md#llmusagesessioncommit_event_now>) method of the session.
-- **Output**: None
+    - Converts the byte size of the code difference to source lines of code (SLOC) using the [`bytes_to_sloc`](<../../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function.
+    - Commits the usage event immediately to the session using [`commit_event_now`](<../../../../packages/shared/shared/usage/llm_session.py.md#llmusagesessioncommit_event_now>).
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](<../../../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagesessionmetadata>)
     - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<../../../../packages/shared/shared/usage/llm_session.py.md#llmusagesession>)
@@ -148,13 +149,13 @@ Updates the metadata of the root node in the database with code difference infor
     - `version_id`: A string that identifies the version of the codebase.
     - `diff_size_in_bytes`: An integer representing the size of the code difference in bytes.
 - **Logic and Control Flow**:
-    - Import necessary modules and classes for database operations and utility functions.
-    - Open a session with the database using `Session(engine)` and begin a transaction.
-    - Create a SQL query to select the root node from the `Node` table where the node kind is `CODEBASE_DIRECTORY`, the version ID matches `version_id`, and the node depth is 0.
-    - Execute the query to retrieve the root node; if no node is found, raise a `ValueError`.
-    - Update the `misc_metadata` of the root node with `code_diff_bytes` and `code_diff_sloc` using the provided `diff_size_in_bytes`.
-    - Mark the `misc_metadata` attribute as modified using `flag_modified`.
-    - Commit the transaction to save changes to the database.
+    - Imports necessary modules and classes for database operations and utility functions.
+    - Opens a session with the database using SQLAlchemy's `Session` and begins a transaction.
+    - Constructs a SQL query to select the root node from the `Node` table where the node kind is `CODEBASE_DIRECTORY`, the version ID matches the given `version_id`, and the node depth is 0.
+    - Executes the query to retrieve the root node; raises a `ValueError` if the root node is not found.
+    - Updates the `misc_metadata` dictionary of the root node with the `code_diff_bytes` and `code_diff_sloc` values.
+    - Marks the `misc_metadata` attribute as modified using `flag_modified` to ensure SQLAlchemy detects the change.
+    - Commits the transaction to save the changes to the database.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<../../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>)

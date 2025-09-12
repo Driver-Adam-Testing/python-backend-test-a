@@ -6,7 +6,7 @@
 Alembic migration script to make `source_content_id` nullable in `derived_contents` table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script modifies the database schema by altering the `source_content_id` column in the `derived_contents` table to be nullable, which is part of the [`upgrade`](<#upgrade>) function. It also removes an index and a foreign key constraint from the `source_contents` table. The [`downgrade`](<#downgrade>) function reverses these changes by restoring the foreign key constraint and index, and setting the `source_content_id` column back to non-nullable. The script includes metadata such as `revision`, `down_revision`, and `Create Date` to track the migration's version and dependencies.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script modifies the database schema by altering the `source_content_id` column in the `derived_contents` table to be nullable, which is part of the [`upgrade`](<#upgrade>) function. It also removes an index and a foreign key constraint from the `source_contents` table. The [`downgrade`](<#downgrade>) function reverses these changes by restoring the foreign key constraint and index, and setting the `source_content_id` column back to non-nullable. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script. This identifier is used to track the specific version of the database schema that the migration script applies to.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
@@ -34,7 +34,7 @@ This code is a database migration script using Alembic, a database migration too
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no specific branch labels associated with this migration script.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
@@ -53,10 +53,10 @@ This code is a database migration script using Alembic, a database migration too
 Modifies the database schema by altering a column, dropping an index, and removing a foreign key constraint.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Alter the column `source_content_id` in the `derived_contents` table to be nullable.
-    - Drop the index `ix_source_contents_content_type_id` from the `source_contents` table.
-    - Remove the foreign key constraint `source_contents_source_content_type_id_fkey` from the `source_contents` table.
-- **Output**: No output is returned as this function performs schema modifications.
+    - Alters the `source_content_id` column in the `derived_contents` table to allow null values.
+    - Drops the index `ix_source_contents_content_type_id` from the `source_contents` table.
+    - Removes the foreign key constraint `source_contents_source_content_type_id_fkey` from the `source_contents` table.
+- **Output**: No return value; the function performs database schema modifications.
 
 
 ---
@@ -66,10 +66,10 @@ Modifies the database schema by altering a column, dropping an index, and removi
 Reverts database schema changes by recreating a foreign key, an index, and altering a column to be non-nullable.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates a foreign key constraint named `source_contents_source_content_type_id_fkey` on the `source_contents` table referencing the `source_content_types` table.
-    - Creates an index named `ix_source_contents_content_type_id` on the `content_type_id` column of the `source_contents` table, which is not unique.
-    - Alters the `source_content_id` column in the `derived_contents` table to be non-nullable.
-- **Output**: No output is returned.
+    - Creates a foreign key constraint named `source_contents_source_content_type_id_fkey` on the `source_contents` table, referencing the `source_content_types` table with the `content_type_id` column mapping to the `id` column.
+    - Creates an index named `ix_source_contents_content_type_id` on the `source_contents` table for the `content_type_id` column, ensuring it is not unique.
+    - Alters the `source_content_id` column in the `derived_contents` table to be non-nullable, specifying its type as `UUID`.
+- **Output**: No output is returned as this function performs database schema operations.
 
 
 

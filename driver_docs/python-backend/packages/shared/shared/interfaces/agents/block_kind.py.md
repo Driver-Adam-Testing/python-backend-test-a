@@ -26,7 +26,7 @@ The code defines an enumeration class `BlockKind` that inherits from both `str` 
     - `CODE`: Represents a block kind for code blocks.
     - `TEXT`: Represents a block kind for text blocks.
     - `ANY`: Represents a block kind that can be any type.
-- **Description**: Defines different kinds of blocks as enumeration members, each represented by a string value.
+- **Description**: Defines an enumeration for different types of block kinds, inheriting from `str` and `enum.Enum`, with each member representing a specific type of block.
 - **Inherits From**:
     - `str`
     - `enum.Enum`

@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for formatting and parsing, document querying and summarization, and LLM configuration management.
+Functions for formatting and parsing, OpenAI API queries, and language model configurations.
 
 ## Folders
 - **[claude](claude/README.md)**: Functions for formatting tool prompts and results, and parsing tool calls from XML responses.
-- **[openai](openai/README.md)**: Queries and summarizes documents using OpenAI's API with file search and code interpreter tools.
+- **[openai](openai/README.md)**: Queries files using OpenAI's API to summarize key points with optional assistant configuration.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[llm_model_config.toml](llm_model_config.toml.md)**: Configuration for various language models with details on model ID, provider, and token limits.
-- **[llm_models.py](llm_models.py.md)**: Defines model configurations and providers for LLMs with methods to load configurations from a TOML file.
+- **[llm_models.py](llm_models.py.md)**: Defines model configurations and providers for language models, with methods to load configurations from a TOML file.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

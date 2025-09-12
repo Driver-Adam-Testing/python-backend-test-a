@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines API routes that do not require JWT authentication for uptime checks, web-hooks, and sandbox tools.
+Defines API endpoints that do not require JWT authentication, including health checks and webhooks.
 
 # Purpose
-The code defines an `APIRouter` instance named `unprotected_router` using the FastAPI framework. This router is responsible for handling API endpoints that do not require JSON Web Token (JWT) authentication. These endpoints are part of the main API under the `/studio/v1` prefix but are excluded from authentication to allow for operations such as uptime checks, web-hooks, and local sandbox tooling to function without requiring user authentication.
-
-The `unprotected_router` includes several internal routers, each associated with specific functionality. It includes routers for health checks, Git provider webhooks and OAuth callbacks, onboarding processes, and subscription management. Additionally, if the environment is not set to production, it includes a router for a local GraphQL sandbox, which is used for development and testing purposes. The `unprotected_router` is exported for use in other parts of the application, specifically in `main.py`, where it can be mounted to handle the specified unauthenticated routes.
+The `unprotected_router.py` file defines a set of API endpoints using FastAPI's `APIRouter` that do not require JSON Web Token (JWT) authentication. These endpoints are part of the main studio APIs and are accessible under the same URL prefix (e.g., `/studio/v1`). The purpose of these routes is to support functionalities such as uptime checks, webhooks, and local sandbox tools, which need to operate without user authentication. The file includes routers for various services like health checks, Git provider webhooks, onboarding, subscription, and optionally signup and a local GraphQL sandbox, depending on configuration settings. The `unprotected_router` is exported for use in the main application, allowing these routes to be integrated into the broader API infrastructure.
 # Imports and Dependencies
 
 ---
@@ -17,6 +15,7 @@ The `unprotected_router` includes several internal routers, each associated with
 - `app.api.routes.v1.git_provider`
 - `app.api.routes.v1.healthcheck`
 - `app.api.routes.v1.onboarding`
+- `app.api.routes.v1.signup`
 - `app.api.routes.v1.subscription`
 - `app.core.config.settings`
 
@@ -26,15 +25,15 @@ The `unprotected_router` includes several internal routers, each associated with
 ---
 ### unprotected\_router
 - **Type**: ``APIRouter``
-- **Description**: The `unprotected_router` is an instance of `APIRouter` from the FastAPI framework. It is used to define a set of API routes that do not require authentication via JWT. These routes are intended for operations such as health checks, webhooks, and local sandbox tooling.
-- **Use**: It is used to include various route modules like `healthcheck`, `git_provider`, `onboarding`, and `subscription` under a common router without authentication.
+- **Description**: An instance of `APIRouter` from the FastAPI framework. It is used to define a set of API routes that do not require authentication via JWT. These routes are intended for operations such as health checks, webhooks, and local sandbox tooling.
+- **Use**: Used to include various route modules that are accessible without authentication, facilitating operations like health checks and webhooks.
 
 
 ---
 ### \_\_all\_\_
 - **Type**: ``list``
 - **Description**: Contains the string name of the `unprotected_router` variable. This list is used to define the public API of the module, specifying which symbols are available for import when the module is imported using a wildcard import statement.
-- **Use**: Defines the public API of the module by listing `unprotected_router` as an exportable symbol.
+- **Use**: Defines the public API of the module by listing the `unprotected_router` as an exportable symbol.
 
 
 

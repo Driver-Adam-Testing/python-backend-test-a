@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test cases for C, C++, C#, Java, Python, and TypeScript covering various language constructs.
+Test cases for C, C++, C#, Java, Python, and TypeScript language features.
 
 ## Folders
 - **[c](c/README.md)**: C test cases for enums, function calls, declarations, definitions, globals, structs, and unions.
-- **[cpp](cpp/README.md)**: C++ test cases demonstrating classes, enums, functions, includes, inheritance, structs, unions, and variables.
-- **[csharp](csharp/README.md)**: Test cases for C# class, enum, interface, method, namespace, struct definitions, invocations, and using directives.
+- **[cpp](cpp/README.md)**: C++ test cases demonstrating features like classes, enums, functions, includes, inheritance, structs, unions, and variables.
+- **[csharp](csharp/README.md)**: Test cases for C# class, enum, interface, method, namespace, struct definitions, and using directives.
 - **[java](java/README.md)**: Java test cases demonstrating classes, enums, imports, interfaces, methods, and variables.
 - **[python](python/README.md)**: Test cases for Python function calls, classes, functions, imports, methods, and variables.
 - **[typescript](typescript/README.md)**: TypeScript test cases for functions, classes, enums, imports, interfaces, methods, modules, object types, and variables.

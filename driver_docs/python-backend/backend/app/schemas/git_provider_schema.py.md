@@ -3,17 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines schemas for Git provider configurations, access tokens, repositories, and webhook information.
+Defines schemas for Git provider configurations, access tokens, repositories, and related data models.
 
 # Purpose
-The code defines a set of data models and enumerations related to Git providers and access tokens, using the `pydantic` library for data validation and settings management. The `TokenType` enumeration specifies different types of access tokens, such as `GROUP_ACCESS_TOKEN` and `WORKSPACE_ACCESS_TOKEN`, which are used to categorize tokens based on their scope and usage. The `AccessTokenData` class provides a unified model for access tokens, including attributes like `token_type`, `token`, and optional metadata. It also includes a method [`is_access_token`](<#accesstokendatais_access_token>) to check if the token type is one of the specified access tokens.
-
-The code also includes several `pydantic` models that represent different entities related to Git providers. These include `GitProvider`, which holds basic information about a Git provider, and `GitRepository`, which contains details about a specific repository, such as its name, organization, and metadata. The `GitProviderAppConfig` model defines configuration settings for a Git provider application, including `base_url`, `client_id`, and `client_secret`. Additionally, the code defines request and secret models, such as `CreateGitProviderAppRequest`, `GitProviderAppSecret`, and `GitProviderAppTokenSecret`, which are used for managing Git provider applications and their associated secrets. The `WebhookInfo` model provides a structure for webhook configuration, including callback URLs and triggers. Overall, the code serves as a library file intended to be imported and used in applications that interact with Git providers and manage access tokens.
+This code defines a set of data models and enumerations for managing access tokens and configurations related to Git providers and repositories. It uses the `pydantic` library to create models such as `AccessTokenData`, `GitProvider`, `GitRepository`, and others, which help in structuring and validating data related to Git services. The `TokenType` enumeration specifies different types of access tokens, such as `GROUP_ACCESS_TOKEN` and `WORKSPACE_ACCESS_TOKEN`, which are used in the `AccessTokenData` model to identify the token type. The `GitProviderAppConfig` and `CreateGitProviderAppRequest` models handle configuration details for Git provider applications, including client credentials and redirect URIs. Additionally, the `WebhookInfo` model defines the structure for webhook configurations, including callback URLs and security settings. This code provides a narrow functionality focused on modeling and managing data related to Git service integrations.
 # Imports and Dependencies
 
 ---
 - `enum.Enum`
-- `database.models_v1.GitProviderKind`
+- `database.models.GitProviderKind`
 - `pydantic.BaseModel`
 - `pydantic.Field`
 
@@ -29,7 +27,7 @@ The code also includes several `pydantic` models that represent different entiti
     - `WORKSPACE_ACCESS_TOKEN`: Represents a Bitbucket workspace access token.
     - `PROJECT_ACCESS_TOKEN`: Represents a Bitbucket project access token.
     - `REPOSITORY_ACCESS_TOKEN`: Represents a Bitbucket repository access token.
-- **Description**: Defines different types of access tokens for GitLab and Bitbucket, inheriting from `str` and `Enum` to allow for string representation and enumeration of token types.
+- **Description**: Defines different types of access tokens as enumeration values, each associated with a specific type of access in GitLab or Bitbucket.
 - **Methods**:
     - [`python-backend/backend/app/schemas/git_provider_schema.TokenType.__str__`](<#tokentype__str__>)
 - **Inherits From**:
@@ -59,11 +57,11 @@ Returns the name of the enum member as a string.
 
 - **Members**:
     - `token_type`: Specifies the type of the access token, defaulting to `TokenType.GROUP_ACCESS_TOKEN`.
-    - `token`: Holds the access token string.
-    - `workspace_or_group`: Optionally specifies the workspace or group associated with the token.
-    - `name`: Optionally holds the name associated with the token.
-    - `metadata`: Stores additional metadata as a dictionary.
-- **Description**: Represents a unified model for access tokens, providing attributes to define the token type, the token itself, and optional metadata, workspace or group, and name information.
+    - `token`: Holds the actual access token string.
+    - `workspace_or_group`: Indicates the workspace or group associated with the token, if any.
+    - `name`: Stores the name associated with the token, if any.
+    - `metadata`: Contains additional metadata related to the token as a dictionary.
+- **Description**: Represents a unified model for access tokens, providing attributes to store token details and metadata, and includes a method to verify if the token is a group or workspace access token.
 - **Methods**:
     - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData.is_access_token`](<#accesstokendatais_access_token>)
 - **Inherits From**:
@@ -73,7 +71,7 @@ Returns the name of the enum member as a string.
 
 ---
 #### AccessTokenData\.is\_access\_token<!-- {{#callable:python-backend/backend/app/schemas/git_provider_schema.AccessTokenData.is_access_token}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L26>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L27>)
 
 Checks if the token type is either a group or workspace access token.
 - **Inputs**: None
@@ -87,12 +85,13 @@ Checks if the token type is either a group or workspace access token.
 
 ---
 ### GitProvider<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.GitProvider}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L30>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L34>)
 
+- **Decorators**: `@dataclass`
 - **Members**:
     - `display_name`: Stores the display name of the Git provider.
     - `name`: Stores the name of the Git provider.
-    - `logo_url`: Stores the URL of the logo for the Git provider.
+    - `logo_url`: Stores the URL of the Git provider's logo.
 - **Description**: Represents a Git provider with attributes for display name, name, and logo URL.
 - **Inherits From**:
     - `BaseModel`
@@ -100,74 +99,73 @@ Checks if the token type is either a group or workspace access token.
 
 ---
 ### GitRepository<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.GitRepository}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L36>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L40>)
 
 - **Members**:
-    - `provider_name`: Name of the Git provider.
-    - `provider_kind`: Type of the Git provider, which can be `None`.
-    - `repo_name`: Name of the repository.
-    - `org`: Organization associated with the repository.
-    - `last_updated`: Timestamp of the last update to the repository.
-    - `metadata`: Dictionary containing additional metadata about the repository.
-    - `latest_commit`: Dictionary containing information about the latest commit, which can be `None`.
-    - `default_branch`: Name of the default branch, which can be `None`.
-    - `installation_id`: ID of the installation, which can be `None`.
-- **Description**: Represents a Git repository with attributes for provider details, repository name, organization, last update time, metadata, latest commit, default branch, and installation ID.
+    - `provider_name`: Specifies the name of the Git provider.
+    - `provider_kind`: Indicates the kind of Git provider, which can be `None`.
+    - `repo_name`: Holds the name of the repository.
+    - `org`: Contains the organization name associated with the repository.
+    - `last_updated`: Records the last updated timestamp of the repository.
+    - `metadata`: Stores additional metadata as a dictionary.
+    - `latest_commit`: Contains information about the latest commit, which can be `None`.
+    - `default_branch`: Specifies the default branch of the repository, which can be `None`.
+    - `installation_id`: Holds the installation ID, which can be `None`.
+- **Description**: Represents a Git repository with attributes for provider details, repository information, and metadata.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### GitProviderAppConfig<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.GitProviderAppConfig}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L48>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L52>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
     - `base_url`: Specifies the base URL for the Git provider application.
     - `client_id`: Holds the client ID for authentication with the Git provider.
     - `client_secret`: Stores the client secret for secure communication with the Git provider.
     - `redirect_uri`: Defines the URI to redirect to after authentication.
     - `scope`: Indicates the scope of access requested, which can be optional.
-- **Description**: Configures the necessary parameters for a Git provider application, including authentication and access details.
+- **Description**: Defines the configuration settings for a Git provider application, including authentication and access parameters.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### GroupAccessToken<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.GroupAccessToken}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L56>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L60>)
 
 - **Members**:
     - `name`: Optional name of the group access token.
     - `token`: String representation of the access token.
-    - `token_type`: Type of the token, set to `TokenType.GROUP_ACCESS_TOKEN` by default.
-- **Description**: Inherits from `AccessTokenData` and represents a group access token with specific attributes such as `name`, `token`, and `token_type`. It is used to manage access tokens specifically for groups, with the token type predefined as `GROUP_ACCESS_TOKEN`.
+    - `token_type`: Type of the token, set to `TokenType.GROUP_ACCESS_TOKEN`.
+- **Description**: Inherits from `AccessTokenData` and represents a group access token with specific attributes such as `name`, `token`, and `token_type`. The `token_type` is predefined as `TokenType.GROUP_ACCESS_TOKEN`, indicating its specific use case for group access in a GitLab context.
 - **Inherits From**:
     - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<#accesstokendata>)
 
 
 ---
 ### CreateGitProviderAppRequest<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.CreateGitProviderAppRequest}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L62>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L66>)
 
 - **Members**:
-    - `organization_id`: Stores the organization ID with a serialization alias 'owner_organization_id'.
-    - `name`: Stores the name of the Git provider app.
-    - `provider_kind`: Indicates the kind of Git provider.
+    - `organization_id`: Stores the ID of the organization with a serialization alias 'owner_organization_id'.
+    - `name`: Holds the name of the Git provider app.
+    - `provider_kind`: Specifies the kind of Git provider.
     - `shared_provider`: Indicates if the provider is shared, defaulting to False.
-    - `base_url`: Stores the base URL of the Git provider app.
+    - `base_url`: Contains the base URL for the Git provider app.
     - `client_id`: Stores the client ID, which can be None.
-    - `client_secret`: Stores the client secret, which can be None.
-    - `redirect_uri`: Stores the redirect URI, which can be None.
-    - `scopes`: Stores a list of scopes, defaulting to an empty list.
-- **Description**: Defines the structure for creating a request to set up a Git provider application, including details like organization ID, app name, provider kind, and optional authentication parameters.
+    - `client_secret`: Holds the client secret, which can be None.
+    - `redirect_uri`: Contains the redirect URI, which can be None.
+    - `scopes`: Lists the scopes for the Git provider app, defaulting to an empty list.
+- **Description**: Defines a request model for creating a Git provider application, including details such as organization ID, app name, provider kind, and optional authentication parameters.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### GitProviderAppSecret<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.GitProviderAppSecret}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L74>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L78>)
 
 - **Members**:
     - `client_secret`: Stores the client secret as a string or None.
@@ -178,28 +176,28 @@ Checks if the token type is either a group or workspace access token.
 
 ---
 ### GitProviderAppTokenSecret<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.GitProviderAppTokenSecret}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L78>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L82>)
 
 - **Members**:
     - `token`: Stores the token as a string.
     - `secret_token`: Stores the secret token as a string or None.
-- **Description**: Stores a token and an optional secret token for a Git provider application.
+- **Description**: Represents a model for storing a token and an optional secret token, inheriting from `BaseModel`.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### WebhookInfo<!-- {{#class:python-backend/backend/app/schemas/git_provider_schema.WebhookInfo}} -->
-[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L83>)
+[View Source →](<../../../../../backend/app/schemas/git_provider_schema.py#L87>)
 
-- **Decorators**: `@dataclass`
+- **Decorators**: `@BaseModel`
 - **Members**:
     - `callback_url`: Specifies the URL to which the webhook sends data.
     - `custom_headers`: Contains custom headers to include in the webhook request.
     - `secret_token`: Holds a token for verifying the webhook's authenticity.
-    - `ssl_verification`: Indicates if SSL verification is required for the webhook.
+    - `ssl_verification`: Indicates if SSL verification is enabled for the webhook.
     - `triggers`: Lists the events that trigger the webhook.
-- **Description**: Defines the structure for webhook configuration, including the callback URL, custom headers, secret token for verification, SSL verification requirement, and the list of events that trigger the webhook.
+- **Description**: Defines the structure for webhook configuration, including the callback URL, custom headers, secret token, SSL verification, and event triggers.
 - **Inherits From**:
     - `BaseModel`
 

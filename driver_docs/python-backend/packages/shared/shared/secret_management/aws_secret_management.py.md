@@ -8,7 +8,7 @@ Manages AWS Secrets Manager operations including writing, reading, and deleting 
 # Purpose
 The code defines a class `AWSSecretManagementStrategy` that provides functionality for managing secrets in AWS Secrets Manager. It uses the `boto3` library to interact with AWS services and requires an `AWSClientConfig` object for configuration, which includes AWS credentials and region information. The class includes methods to write, read, and delete secrets. The [`write_secret`](<#awssecretmanagementstrategywrite_secret>) method either updates an existing secret or creates a new one, while the [`read_secret`](<#awssecretmanagementstrategyread_secret>) method retrieves the value of a secret and returns it as a dictionary. The [`delete_secret`](<#awssecretmanagementstrategydelete_secret>) method removes a secret with a specified recovery window.
 
-Additionally, the code includes a utility function [`format_secret_name`](<#format_secret_name>) that constructs a secret name by combining a prefix and a suffix. The module uses logging to report errors, particularly when operations on secrets fail. This code is intended to be part of a larger application where AWS secret management is required, and it provides a clear interface for interacting with AWS Secrets Manager.
+Additionally, the code includes a utility function [`format_secret_name`](<#format_secret_name>) that constructs a secret name by combining a prefix and a suffix. The logging module is used to log errors and exceptions, providing feedback in case of failures during secret operations. This code is intended to be part of a larger application where AWS secret management is required, and it can be imported and used as a library for handling secrets in AWS.
 # Imports and Dependencies
 
 ---
@@ -24,7 +24,7 @@ Additionally, the code includes a utility function [`format_secret_name`](<#form
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name.
+- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the `logging` module. It is configured to use the module's name as its logger name.
 - **Use**: Used to log error and exception messages within the `AWSSecretManagementStrategy` class methods.
 
 
@@ -37,7 +37,7 @@ Additionally, the code includes a utility function [`format_secret_name`](<#form
 - **Members**:
     - `config`: Stores the AWS client configuration.
     - `client`: Represents the Boto3 client for AWS Secrets Manager.
-- **Description**: Manages AWS Secrets Manager operations such as writing, reading, and deleting secrets. It uses a Boto3 client to interact with AWS Secrets Manager, configured with credentials and region information from an `AWSClientConfig` object.
+- **Description**: Manages AWS Secrets Manager operations such as writing, reading, and deleting secrets using a Boto3 client. It initializes with an `AWSClientConfig` object to configure the AWS session and client.
 - **Methods**:
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<#awssecretmanagementstrategy__init__>)
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.write_secret`](<#awssecretmanagementstrategywrite_secret>)
@@ -68,14 +68,15 @@ Initializes an instance of the `AWSSecretManagementStrategy` class with AWS clie
 
 Writes a secret to AWS Secrets Manager, updating it if it exists or creating it if it does not.
 - **Inputs**:
-    - `secret_name`: The name of the secret to write.
-    - `secret_value`: The value of the secret to write.
+    - `secret_name`: The name of the secret to write or update.
+    - `secret_value`: The value of the secret to write or update.
 - **Logic and Control Flow**:
     - Reads the current value of the secret using [`read_secret`](<#awssecretmanagementstrategyread_secret>) method.
     - If the secret exists, updates the secret using `update_secret` method of the AWS Secrets Manager client.
     - If the secret does not exist, creates a new secret using `create_secret` method of the AWS Secrets Manager client.
-    - Checks if the response from AWS Secrets Manager is not successful, logs an error message, and raises an exception.
-- **Output**: Does not return a value; raises an exception if writing the secret fails.
+    - Checks if the response from AWS Secrets Manager is not successful.
+    - Logs an error message and raises an exception if the write operation fails.
+- **Output**: Does not return a value; raises an exception if the operation fails.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<#awssecretmanagementstrategyread_secret>)
 - **See also**: [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<#awssecretmanagementstrategy>)  (Base Class)
@@ -92,8 +93,8 @@ Retrieves a secret from AWS Secrets Manager and returns it as a dictionary or No
     - Attempts to retrieve the secret value using `self.client.get_secret_value` with `SecretId` set to `secret_name`.
     - Checks if the `response` is empty; if so, logs an error and returns `None`.
     - Extracts `SecretString` from the `response`.
-    - Checks if `secret_str` is a string; if true, parses it as JSON to get `secret_value`.
-    - Returns `secret_value` if successful.
+    - Checks if `secret_str` is a string; if true, parses it as JSON to `secret_value`, otherwise assigns `secret_str` to `secret_value`.
+    - Returns `secret_value`.
     - Catches `ClientError` exceptions, logs the exception, and returns `None`.
 - **Output**: A dictionary containing the secret value if successful, or `None` if the secret does not exist or an error occurs.
 - **See also**: [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<#awssecretmanagementstrategy>)  (Base Class)
@@ -107,8 +108,9 @@ Deletes a secret from AWS Secrets Manager with a specified recovery window.
 - **Inputs**:
     - `secret_name`: The name of the secret to delete.
 - **Logic and Control Flow**:
-    - Calls the `delete_secret` method on the `client` object with `SecretId` set to `secret_name` and `RecoveryWindowInDays` set to 7.
-- **Output**: No output is returned as the method returns `None`.
+    - Calls the `delete_secret` method on the `self.client` object, which is an instance of the AWS Secrets Manager client.
+    - Passes `SecretId` as `secret_name` and sets `RecoveryWindowInDays` to 7, which specifies the number of days before the secret is permanently deleted.
+- **Output**: No output is returned as the method's return type is `None`.
 - **See also**: [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<#awssecretmanagementstrategy>)  (Base Class)
 
 
@@ -121,11 +123,11 @@ Deletes a secret from AWS Secrets Manager with a specified recovery window.
 
 Formats a secret name by concatenating a prefix and a suffix with a slash separator.
 - **Inputs**:
-    - `prefix`: The prefix part of the secret name.
-    - `suffix`: The suffix part of the secret name.
+    - `prefix`: A string that represents the prefix of the secret name.
+    - `suffix`: A string that represents the suffix of the secret name.
 - **Logic and Control Flow**:
     - Concatenates the `prefix` and `suffix` with a '/' character in between.
-- **Output**: A string that represents the formatted secret name.
+- **Output**: A string that combines the `prefix` and `suffix` with a '/' separator.
 
 
 

@@ -6,7 +6,7 @@
 Configuration for a Python project using Poetry, specifying dependencies and build system details.
 
 # Purpose
-The file configures a Python project using Poetry, a dependency management tool. It specifies the project metadata, including the `name` as `agent`, `version` as `0.1.0`, and `authors` with contact information. The `readme` file is set to `README.md`. The `dependencies` section defines the required Python version as between 3.12 and 3.13 and includes a local package `shared` for development. The `build-system` section indicates that `poetry-core` is required and sets the build backend to `poetry.core.masonry.api`.
+The `pyproject.toml` file configures the Python project using Poetry. It specifies the project metadata, including the `name` as `agent`, `version` as `0.1.0`, and `authors`. It also defines the `readme` file as `README.md`. The dependencies section requires Python version `>=3.12,<3.13` and includes a local package `shared` for development. The build system section specifies `poetry-core` as a requirement and uses `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

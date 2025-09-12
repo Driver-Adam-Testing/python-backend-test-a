@@ -21,14 +21,14 @@ The [`upgrade`](<#upgrade>) function implements the schema change by adding the 
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes in a version-controlled manner.
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
 - **Use**: Used by Alembic to determine the order of database schema migrations.
 
 
@@ -36,14 +36,14 @@ The [`upgrade`](<#upgrade>) function implements the schema change by adding the 
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no specific branch labels associated with this migration script.
+- **Use**: Used to define branch labels for the migration script, but currently not assigned any value.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migrations.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -56,19 +56,19 @@ Adds a new column to the 'v2_primary_asset' table and updates existing rows with
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Adds a new column named 'codebase_settings_auto_commit_docs' of type Boolean to the 'v2_primary_asset' table, allowing null values.
-    - Executes an SQL update statement to set the 'codebase_settings_auto_commit_docs' column to FALSE for all rows where the 'kind' column is equal to 'CODEBASE'.
-- **Output**: No output is returned as the function is of type None.
+    - Executes an SQL update statement to set the 'codebase_settings_auto_commit_docs' column to FALSE for all rows where the 'kind' column is 'CODEBASE'.
+- **Output**: No output is returned as the function returns None.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_05_15_1050-00db4f3a9545_codebase_settings_auto_commit_docs.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_05_15_1050-00db4f3a9545_codebase_settings_auto_commit_docs.py#L36>)
 
-Removes the `codebase_settings_auto_commit_docs` column from the `v2_primary_asset` table.
+Removes the 'codebase_settings_auto_commit_docs' column from the 'v2_primary_asset' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.drop_column` to remove the `codebase_settings_auto_commit_docs` column from the `v2_primary_asset` table.
-- **Output**: No output is returned as the function returns `None`.
+    - Calls the 'drop_column' method from the 'op' module to remove the 'codebase_settings_auto_commit_docs' column from the 'v2_primary_asset' table.
+- **Output**: No output is returned as the function returns 'None'.
 
 
 

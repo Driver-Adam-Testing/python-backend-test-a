@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A text file with instructions for summarizing folder contents based on given descriptions.
+Instructions for summarizing folder contents based on given descriptions of files and subfolders.
 
 # Purpose
 Chunk of child descriptions for folder `config` in codebase `webapp`:
@@ -16,7 +16,7 @@ Chunk of child descriptions for folder `config` in codebase `webapp`:
 
 ---
 
-The `config` folder in the `webapp` codebase contains essential configuration files that manage various aspects of the web application's operation. The `database.yml` file specifies the database connection settings, including details such as host, port, username, and password, which are necessary for the application to connect to its database. The `routes.json` file defines the URL routing rules, mapping specific URLs to corresponding controller actions, which directs the flow of requests within the application. The `application.yml` file holds global application settings, including environment variables, logging levels, and API keys, which are used to configure the application's behavior across different environments.
+The `config` folder in the `webapp` codebase contains essential configuration files that manage various aspects of the web application's operation. The `database.yml` file specifies the database connection settings, including details such as the host, port, username, and password, which are necessary for the application to connect to its database. The `routes.json` file defines the URL routing rules, mapping specific URLs to corresponding controller actions, which directs the flow of requests within the application. The `application.yml` file holds global application settings, including environment variables, logging levels, and API keys, which are used to configure the application's behavior across different environments.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

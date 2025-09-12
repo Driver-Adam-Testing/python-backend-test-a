@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files for library installation, dependency graphs, license, manifest, and documentation for uctags.
+Configuration files for library installation, dependency graphs, license text, release notes, and package metadata.
 
 ## Folders
-- **[dependencies](dependencies/README.md)**: Configuration files for installing and configuring libraries: libiconv, libjansson, libxml2, libyaml, and libz.
+- **[dependencies](dependencies/README.md)**: Configuration files for installing and configuring libraries: libiconv, libjansson, libxml2, libyaml, libz.
 
 ## Files
-- **[COPYING](COPYING.md)**: GNU General Public License Version 2 text for software distribution and modification terms.
-- **[dependencies.box](dependencies.box.md)**: A dependency graph for the `uctags` component, showing its relationships with various libraries.
+- **[COPYING](COPYING.md)**: GNU General Public License Version 2 text, detailing terms for copying, distribution, and modification.
+- **[dependencies.box](dependencies.box.md)**: A dependency graph for various libraries including libyaml, libjansson, uctags, libz, libxml2, and libiconv.
 - **[dependencies.d2](dependencies.d2.md)**: Dependency graph for uctags and its related libraries.
-- **[dependencies.dot](dependencies.dot.md)**: A graph representation of dependencies for the `uctags` component.
-- **[MANIFEST.txt](MANIFEST.txt.md)**: A manifest file listing directory and file hashes for binaries in the `bin/` directory.
-- **[NEWS.rst](NEWS.rst.md)**: Documenting changes in version 6.?.0, including new options, parser updates, and merged pull requests.
+- **[dependencies.dot](dependencies.dot.md)**: A graph representation of dependencies between uctags and various libraries.
+- **[MANIFEST.txt](MANIFEST.txt.md)**: Lists files and directories with their hash values in the `bin` directory.
+- **[NEWS.rst](NEWS.rst.md)**: Release notes detailing changes, new options, parsers, and merged pull requests for version 6.?.0.
 - **[README.md](README.md.md)**: Documentation for Universal Ctags, detailing features, installation, and differences from Exuberant Ctags.
 - **[RECEIPT.yml](RECEIPT.yml.md)**: Package metadata for the uctags executable, including version, dependencies, and build details.
 

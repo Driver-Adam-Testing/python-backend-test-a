@@ -3,11 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Populates and truncates the `content_name` field for application notes and PDFs in the database.
+Defines `DeepContextDocKind` enum, `DeepContextDoc` model, and prompts for deep context documents.
 
 
 ## Files
-- **[populate_app_note_content_name.py](populate_app_note_content_name.py.md)**: Populates and truncates the `content_name` field for application notes and PDFs in the database.
+- **[deep_context.py](deep_context.py.md)**: Defines `DeepContextDocKind` enum and `DeepContextDoc` model for managing document types and content.
+- **[deep_context_prompts.py](deep_context_prompts.py.md)**: Defines prompts for creating deep context documents to aid LLM agents in understanding codebases.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

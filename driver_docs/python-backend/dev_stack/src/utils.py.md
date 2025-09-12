@@ -6,9 +6,9 @@
 Functions to load a wordlist, generate a webhook secret, and load secrets from a JSON file.
 
 # Purpose
-The code provides functionality for generating a secure webhook secret using a wordlist from the Electronic Frontier Foundation (EFF). It defines a function [`load_eff_wordlist`](<#load_eff_wordlist>) that retrieves and processes a wordlist from a specified URL. This wordlist is used by the [`generate_webhook_secret`](<#generate_webhook_secret>) function to create a secret consisting of a specified number of words, which are randomly selected and joined by a delimiter. The default number of words is 16, and the default delimiter is a space.
+This code provides functionality for generating a secure webhook secret using a wordlist from the Electronic Frontier Foundation (EFF) Diceware list. It includes functions to load the wordlist from a specified URL and to generate a secret by selecting a specified number of random words from this list. The [`generate_webhook_secret`](<#generate_webhook_secret>) function allows customization of the number of words and the delimiter used to join them, providing flexibility in the format of the generated secret.
 
-Additionally, the code includes a function [`load_secrets_from_json`](<#load_secrets_from_json>) that reads and returns JSON data from a specified file within a directory. The script can be executed directly, and when run, it prints a generated webhook secret to the console. The code is structured to be used both as a standalone script and as a module that can be imported into other Python programs.
+Additionally, the code includes a function to load secrets from a JSON file, which is expected to be located in a specific directory path. This function reads the JSON file and returns its contents, facilitating the management of secrets stored in JSON format. The script is designed to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which prints a generated webhook secret when the script runs.
 # Imports and Dependencies
 
 ---
@@ -22,8 +22,8 @@ Additionally, the code includes a function [`load_secrets_from_json`](<#load_sec
 ---
 ### EFF\_DICEWARE\_URL
 - **Type**: ``str``
-- **Description**: A string that contains the URL to the EFF's large wordlist file used for Diceware passphrase generation.
-- **Use**: Used to access the EFF wordlist file over the internet for generating secure passphrases.
+- **Description**: A string that contains the URL to the EFF's large wordlist file. This file is used for generating secure passphrases using the Diceware method.
+- **Use**: Used to access the EFF's wordlist file over the internet for generating random passphrases.
 
 
 # Functions
@@ -35,13 +35,13 @@ Additionally, the code includes a function [`load_secrets_from_json`](<#load_sec
 Loads a wordlist from the EFF Diceware URL and returns it as a list of words.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Opens a URL connection to the EFF Diceware wordlist using `urllib.request.urlopen`.
-    - Initializes an empty list `wordlist` to store words.
-    - Iterates over each line in the file obtained from the URL.
+    - Opens a URL connection to the EFF Diceware wordlist file.
+    - Initializes an empty list named `wordlist`.
+    - Iterates over each line in the file.
     - Decodes each line, strips whitespace, and splits it into parts.
-    - Checks if the line contains exactly two parts.
-    - Appends the second part of the line to the `wordlist` if the condition is met.
-    - Returns the `wordlist` containing the words.
+    - Checks if the line has exactly two parts.
+    - Appends the second part (the word) to the `wordlist`.
+    - Returns the `wordlist` containing all the words.
 - **Output**: A list of words extracted from the EFF Diceware wordlist.
 
 
@@ -49,15 +49,15 @@ Loads a wordlist from the EFF Diceware URL and returns it as a list of words.
 ### generate\_webhook\_secret<!-- {{#callable:python-backend/dev_stack/src/utils.generate_webhook_secret}} -->
 [View Source →](<../../../../dev_stack/src/utils.py#L18>)
 
-Generates a webhook secret by selecting random words from the EFF Diceware wordlist.
+Generates a secret string composed of random words from the EFF Diceware wordlist.
 - **Inputs**:
     - `num_words`: The number of words to include in the generated secret; defaults to 16.
-    - `delimiter`: The string used to separate the words in the generated secret; defaults to a space (' ').
+    - `delimiter`: The string used to separate words in the generated secret; defaults to a space (' ').
 - **Logic and Control Flow**:
-    - Loads the EFF Diceware wordlist using the [`load_eff_wordlist`](<#load_eff_wordlist>) function.
-    - Selects a specified number of random words from the wordlist using `random.choices`.
-    - Joins the selected words into a single string using the specified delimiter.
-- **Output**: A string that represents the generated webhook secret, composed of randomly selected words separated by the specified delimiter.
+    - Calls [`load_eff_wordlist`](<#load_eff_wordlist>) to retrieve the EFF Diceware wordlist.
+    - Selects `num_words` random words from the wordlist using `random.choices`.
+    - Joins the selected words into a single string using the specified `delimiter`.
+- **Output**: A string composed of randomly selected words from the EFF Diceware wordlist, separated by the specified delimiter.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/utils.load_eff_wordlist`](<#load_eff_wordlist>)
 

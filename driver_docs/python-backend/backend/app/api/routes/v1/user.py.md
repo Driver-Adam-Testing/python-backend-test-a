@@ -6,9 +6,9 @@
 API routes for changing user passwords and retrieving user organizations using FastAPI and Auth0.
 
 # Purpose
-This code defines a FastAPI router that provides endpoints for user-related operations, specifically for changing a user's password and retrieving a list of organizations associated with a user. The router is created using FastAPI's `APIRouter` and includes two main endpoints: a `PUT` endpoint at `/password` for changing a user's password and a `GET` endpoint at `/organizations` for fetching the user's organizations. Both endpoints require a `UserToken` object, which likely contains user authentication information, and they utilize the `Auth0Service` to interact with an external authentication service.
+This code defines a FastAPI router that provides endpoints for user-related operations, specifically password management and organization retrieval. The [`change_password`](<#change_password>) function is a PUT endpoint that allows users to change their passwords. It requires a `UserToken` and an optional `authorization` header. The function uses the `Auth0Service` to handle the password change process and logs the operation. If an error occurs, it raises an HTTP 500 exception.
 
-The [`change_password`](<#change_password>) function handles password reset requests by extracting the access token from the `Authorization` header and calling the `change_self_password` method of the `Auth0Service`. The [`get_organizations`](<#get_organizations>) function retrieves the organizations associated with the user by calling the `list_organizations` method of the `Auth0Service`. Both functions include error handling to log errors and raise HTTP exceptions if operations fail. The code uses logging to record significant events, such as user requests and errors, which aids in monitoring and debugging.
+The code also defines several Pydantic models: `Branding`, `Metadata`, `Organization`, and `OrganizationsResponse`. These models structure the data related to organizations, including branding and metadata information. The [`get_organizations`](<#get_organizations>) function is a GET endpoint that retrieves a list of organizations associated with a user. It uses the `Auth0Service` to fetch the data and returns it in the form of an `OrganizationsResponse`. The router is set up to handle requests related to user authentication and organization management, integrating with an external authentication service.
 # Imports and Dependencies
 
 ---
@@ -16,6 +16,7 @@ The [`change_password`](<#change_password>) function handles password reset requ
 - `fastapi.APIRouter`
 - `fastapi.Header`
 - `fastapi.HTTPException`
+- `pydantic.BaseModel`
 - `app.api.auth.UserToken`
 - `app.schemas.user_schema.MessageResponse`
 - `app.services.auth0_service.Auth0Service`
@@ -25,37 +26,89 @@ The [`change_password`](<#change_password>) function handles password reset requ
 
 ---
 ### router
-- **Type**: ``APIRouter``
-- **Description**: Creates an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage API routes for the application.
-- **Use**: Used to register and handle HTTP routes such as `PUT /password` and `GET /organizations` in the application.
+- **Type**: `APIRouter`
+- **Description**: The `router` is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage API routes within the application.
+- **Use**: Used to register and handle HTTP routes for the application, such as `PUT /password` and `GET /organizations`.
 
 
 ---
 ### logger
 - **Type**: ``Logger``
 - **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
-- **Use**: Used to log error messages when exceptions occur in the `change_password` and `get_organizations` functions.
+- **Use**: Used to log error messages and other information within the module.
+
+
+# Classes
+
+---
+### Branding<!-- {{#class:python-backend/backend/app/api/routes/v1/user.Branding}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L37>)
+
+- **Members**:
+    - `logo_url`: A URL string or None for the logo.
+    - `colors`: A dictionary mapping color names to their string values or None.
+- **Description**: Represents branding information with optional logo URL and color scheme.
+- **Inherits From**:
+    - `BaseModel`
+
+
+---
+### Metadata<!-- {{#class:python-backend/backend/app/api/routes/v1/user.Metadata}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L42>)
+
+- **Members**:
+    - `org_logo_url`: Stores the URL of the organization's logo as a string or None.
+- **Description**: Represents metadata information for an organization, specifically storing the organization's logo URL.
+- **Inherits From**:
+    - `BaseModel`
+
+
+---
+### Organization<!-- {{#class:python-backend/backend/app/api/routes/v1/user.Organization}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L46>)
+
+- **Members**:
+    - `id`: Unique identifier for the organization.
+    - `display_name`: Human-readable name for the organization.
+    - `name`: Canonical name for the organization.
+    - `branding`: Optional branding information for the organization.
+    - `metadata`: Optional metadata associated with the organization.
+- **Description**: Represents an organization with attributes for identification, display, and optional branding and metadata.
+- **Inherits From**:
+    - `BaseModel`
+
+
+---
+### OrganizationsResponse<!-- {{#class:python-backend/backend/app/api/routes/v1/user.OrganizationsResponse}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L54>)
+
+- **Members**:
+    - `results`: A list of `Organization` objects.
+    - `total_count`: An integer representing the total number of organizations.
+- **Description**: Represents a response containing a list of organizations and the total count of these organizations.
+- **Inherits From**:
+    - `BaseModel`
 
 
 # Functions
 
 ---
 ### change\_password<!-- {{#callable:python-backend/backend/app/api/routes/v1/user.change_password}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L14>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L15>)
 
 Handles a password change request for a user by interacting with the Auth0 service.
 - **Decorators**: `@router.put`
 - **Inputs**:
     - `user`: An instance of `UserToken` representing the authenticated user requesting the password change.
-    - `authorization`: An optional string from the request header containing the Bearer token for authorization.
+    - `authorization`: An optional string from the request header containing the authorization token, defaulting to `None`.
 - **Logic and Control Flow**:
     - Logs the password reset request with the user's subject information.
     - Extracts the access token from the `authorization` header by removing the 'Bearer ' prefix.
     - Initializes an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
-    - Attempts to change the user's password using the [`change_self_password`](<../../../services/auth0_service.py.md#auth0servicechange_self_password>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) with the user and access token as arguments.
+    - Attempts to change the user's password using the [`change_self_password`](<../../../services/auth0_service.py.md#auth0servicechange_self_password>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) with the user and access token.
     - Returns a dictionary with a success message if the password change is successful.
     - Catches any exceptions, logs an error message, and raises an `HTTPException` with a 500 status code if an error occurs.
-- **Output**: A `MessageResponse` object containing a message about the password change operation.
+- **Output**: A `MessageResponse` containing a message about the password change operation.
 - **Functions Called**:
     - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
     - [`python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password`](<../../../services/auth0_service.py.md#auth0servicechange_self_password>)
@@ -63,20 +116,23 @@ Handles a password change request for a user by interacting with the Auth0 servi
 
 ---
 ### get\_organizations<!-- {{#callable:python-backend/backend/app/api/routes/v1/user.get_organizations}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L36>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L59>)
 
-Fetches a list of organizations associated with the authenticated user.
+Retrieves a list of organizations associated with a user and returns it in a structured response.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
+    - `user`: A `UserToken` object representing the authenticated user for whom the organizations are being retrieved.
 - **Logic and Control Flow**:
-    - Logs an informational message indicating a user-requested password reset from the user's subject.
-    - Initializes an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
-    - Attempts to call `list_organizations` on the [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) instance with the `user` as an argument.
-    - If an exception occurs, logs an error message and raises an `HTTPException` with a 500 status code and an error message.
-- **Output**: Returns the result of `auth0_service.list_organizations(user)`, which is expected to be a list of organizations.
+    - Instantiate an [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) object to interact with the Auth0 service.
+    - Call the [`list_user_organizations`](<../../../services/auth0_service.py.md#auth0servicelist_user_organizations>) method of the [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) object, passing the `user` token to retrieve the organizations data.
+    - Extract the list of organizations from the `organizations_data` dictionary using the key `organizations`, defaulting to an empty list if not present.
+    - Extract the total count of organizations from the `organizations_data` dictionary using the key `total`, defaulting to 0 if not present.
+    - Return an [`OrganizationsResponse`](<#organizationsresponse>) object containing the list of organizations and the total count.
+- **Output**: An [`OrganizationsResponse`](<#organizationsresponse>) object containing a list of `Organization` objects and the total count of organizations.
 - **Functions Called**:
     - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_user_organizations`](<../../../services/auth0_service.py.md#auth0servicelist_user_organizations>)
+    - [`python-backend/backend/app/api/routes/v1/user.OrganizationsResponse`](<#organizationsresponse>)
 
 
 

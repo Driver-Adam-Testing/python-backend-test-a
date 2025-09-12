@@ -6,7 +6,7 @@
 Generates a symbol map from a source file using ctags and provides a CLI for symbol detection.
 
 # Purpose
-The code is a Python module designed to generate a symbol map from a source file using the `ctags` tool. It requires the installation of universal `ctags` to function. The primary function, [`extract_symbols_w_ctags`](<#extract_symbols_w_ctags>), takes a file path and its content as input, writes the content to a temporary file, and then executes a `ctags` command to extract symbols in JSON format. The function returns a list of dictionaries, each representing a symbol with its associated metadata.
+The code is a Python module designed to generate a symbol map from a source file using the `ctags` tool. It requires the installation of universal `ctags` to function. The primary function, [`extract_symbols_w_ctags`](<#extract_symbols_w_ctags>), takes a file path and its content as input, writes the content to a temporary file, and then executes a `ctags` command to extract symbol information in JSON format. The function returns a list of dictionaries, each representing a symbol with its associated metadata.
 
 Additionally, the module includes a command-line interface (CLI) for symbol detection. When executed as a script, it uses the `argparse` library to parse the path of the target source file. It reads the file content, extracts symbols using the [`extract_symbols_w_ctags`](<#extract_symbols_w_ctags>) function, and sorts them by line number. The script then prints each symbol's kind and location, along with a snippet of the source code where the symbol is defined. The CLI output is color-coded using ANSI escape sequences for better readability.
 # Imports and Dependencies
@@ -26,14 +26,14 @@ Additionally, the module includes a command-line interface (CLI) for symbol dete
 ### GREEN
 - **Type**: ``str``
 - **Description**: A string that contains the ANSI escape code for setting the text color to green in terminal output.
-- **Use**: Used to format terminal output text in green color.
+- **Use**: Used to format terminal output text in green color for better visibility or emphasis.
 
 
 ---
 ### RESET
 - **Type**: ``str``
-- **Description**: A string that contains the ANSI escape code to reset terminal text formatting to default settings.
-- **Use**: Used to reset text formatting after applying color or other styles in terminal output.
+- **Description**: A string that contains the ANSI escape code to reset terminal text formatting to default settings. This escape code is used to clear any previous text color or style applied in the terminal.
+- **Use**: Used to reset terminal text formatting after colored output.
 
 
 # Functions
@@ -48,11 +48,11 @@ Extracts symbols from a source file using ctags and returns them as a list of di
     - `file_content`: A string containing the content of the source file.
 - **Logic and Control Flow**:
     - Create a temporary file with the same suffix as the source file and write the `file_content` to it.
-    - Construct a command to run ctags with specific options to generate JSON output from the temporary file.
+    - Construct a command to run `ctags` with specific options to output JSON format.
     - Execute the command using `subprocess.run` and capture the output.
     - If a `subprocess.CalledProcessError` occurs, print the error message and raise the exception.
     - Remove the temporary file after the command execution, regardless of success or failure.
-    - Parse the JSON output from ctags and return it as a list of dictionaries, each representing a symbol.
+    - Parse the JSON output from `ctags` and return it as a list of dictionaries, each representing a symbol.
 - **Output**: A list of dictionaries, where each dictionary contains information about a symbol extracted from the source file.
 
 

@@ -6,7 +6,7 @@
 Defines a Pydantic model for creating tag content with tag and content IDs and an include flag.
 
 # Purpose
-The code defines a Pydantic model named `TagContentCreate`, which is used for data validation and serialization. This model includes three fields: `tag_id`, `content_id`, and `include`. Both `tag_id` and `content_id` are of type `UUID`, ensuring that these fields store universally unique identifiers. The `include` field is a boolean that indicates whether the content should be included. This model is useful for applications that need to manage relationships between tags and content, ensuring that the data conforms to the specified structure and types.
+The code defines a Pydantic model named `TagContentCreate`, which is used for data validation and serialization. This model includes three fields: `tag_id`, `content_id`, and `include`. Both `tag_id` and `content_id` are of type `UUID`, ensuring that these fields store valid universally unique identifiers. The `include` field is a boolean that indicates whether the content is included or not. This model is useful for applications that need to manage relationships between tags and content, ensuring that the data conforms to the specified structure and types.
 # Imports and Dependencies
 
 ---
@@ -22,9 +22,9 @@ The code defines a Pydantic model named `TagContentCreate`, which is used for da
 [View Source →](<../../../../../backend/app/schemas/tag_contents_schema.py#L6>)
 
 - **Members**:
-    - `tag_id`: A unique identifier for the tag.
-    - `content_id`: A unique identifier for the content.
-    - `include`: A boolean flag to indicate if the tag is included.
+    - `tag_id`: Stores the unique identifier for the tag.
+    - `content_id`: Stores the unique identifier for the content.
+    - `include`: Indicates whether to include the content with the tag.
 - **Description**: Defines a data structure for associating a tag with content, including a flag to specify inclusion.
 - **Inherits From**:
     - `BaseModel`

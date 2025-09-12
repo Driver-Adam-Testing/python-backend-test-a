@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A Bash script to run tests with coverage reporting and generate an HTML report.
+A Bash script to run tests with coverage reporting for the Python backend.
 
 # Purpose
-The script is a Bash executable that automates the process of running tests and generating code coverage reports for a Python application. It uses the `coverage` tool to execute tests with `pytest` while tracking which parts of the code are executed. The `--source=app` option specifies that the coverage analysis should focus on the `app` directory. The script generates a coverage report in the terminal and an HTML report, with the title customizable via command-line arguments. The `set -e` and `set -x` commands ensure that the script stops execution on errors and prints each command before executing it, respectively.
+The script is a Bash executable that automates the process of running tests and generating code coverage reports for a Python application. It uses the `coverage` tool to execute tests with `pytest`, specifying the `app` directory as the source for coverage analysis. The script then generates a coverage report, displaying any missing coverage in the terminal, and creates an HTML report with a customizable title. The `set -e` and `set -x` commands ensure that the script stops execution on errors and prints each command before executing it, respectively.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

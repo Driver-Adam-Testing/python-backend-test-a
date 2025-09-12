@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Imports modules `fifth_grader` and `software_engineer`.
+Imports modules for fifth_grader and software_engineer.
 
 # Purpose
-The code imports two modules, `fifth_grader` and `software_engineer`, from the current package. This indicates that the file is part of a larger package structure and relies on these two modules for its functionality. The `flake8: noqa` comment at the top of the file instructs the `flake8` linter to ignore all style and linting errors in this file. This file serves as a connector or initializer within the package, facilitating access to the `fifth_grader` and `software_engineer` modules.
+This code imports two modules, `fifth_grader` and `software_engineer`, from the current package. It does not perform any additional operations or define any functions or classes. The presence of the `# flake8: noqa` comment indicates that linting checks are disabled for this file, which may be used to suppress warnings about unused imports. The primary purpose of this file is to make the `fifth_grader` and `software_engineer` modules available for use in other parts of the package.
 # Imports and Dependencies
 
 ---

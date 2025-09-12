@@ -3,24 +3,25 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-FastAPI and GraphQL APIs, authentication, configuration, Git provider management, repositories, schemas, services, tests, utilities, and database initialization.
+API routes, authentication, configuration, Git provider tools, repository management, Pydantic models, services, tests, utilities, and FastAPI setup.
 
 ## Folders
-- **[api](api/README.md)**: FastAPI and GraphQL API routes, authentication, logging middleware, and database session management.
-- **[auth](auth/README.md)**: Middleware for API key and JWT validation, Pydantic models for authentication, and permission strings.
+- **[api](api/README.md)**: API routes for various services, authentication, logging, session management, and unprotected endpoints using FastAPI.
+- **[auth](auth/README.md)**: Asynchronous API key verification, JWT middleware, Pydantic models, permissions, and cache tests.
 - **[core](core/README.md)**: Configuration settings, logger setup, and an empty initializer file for a Python backend application.
-- **[git_providers](git_providers/README.md)**: Git provider configuration, interfaces, OAuth strategy, provider functionality, API resource management, and utilities.
-- **[repositories](repositories/README.md)**: Generic repository class for SQLModel, Git provider app management, and GithubAppInstallation handling.
+- **[git_providers](git_providers/README.md)**: Git provider configurations, interfaces, OAuth strategies, providers, resources, and utilities.
+- **[mcp](mcp/README.md)**: Authentication middleware, code map generation, codebase retrieval, and FastMCP server tools.
+- **[repositories](repositories/README.md)**: Repository classes for CRUD operations on SQLModel entities and management of Git provider apps and installations.
 - **[schemas](schemas/README.md)**: Pydantic models and tests for user roles, codebase analysis, content management, Git configurations, and uploads.
-- **[services](services/README.md)**: Auth0, codebase, content, GitLab provider, tag, and upload services with corresponding tests, plus utility functions for `DerivedContent` objects.
+- **[services](services/README.md)**: Auth0 and Git provider services, codebase and content management, tag and upload services, and related tests.
 - **[tests](tests/README.md)**: Tests for CRUD operations in BaseRepository and utility to fetch Auth0 access token.
 - **[utils](utils/README.md)**: Utilities for AWS S3, AWS Secrets Manager, and GitHub operations.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[backend_pre_start.py](backend_pre_start.py.md)**: Initializes the database connection and configures extensions with retry logic and logging.
-- **[conftest.py](conftest.py.md)**: Defines pytest fixtures for database session management and mock user authentication.
-- **[initial_data.py](initial_data.py.md)**: Initializes database with initial data based on environment settings.
+- **[conftest.py](conftest.py.md)**: Defines pytest fixtures for mocking user tokens with different organization details.
+- **[initial_data.py](initial_data.py.md)**: Initializes database with initial data in a local environment using SQLModel.
 - **[main.py](main.py.md)**: FastAPI application setup with routers, logging, Sentry configuration, and global error handling.
 - **[tests_pre_start.py](tests_pre_start.py.md)**: Retries database connection initialization until successful or timeout.
 

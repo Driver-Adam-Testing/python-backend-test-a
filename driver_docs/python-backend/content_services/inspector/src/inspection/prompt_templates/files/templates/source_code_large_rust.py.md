@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates and prompts for inspecting and structuring large Rust source code files.
+Templates for generating structured prompts and analyzing Rust code components like functions and macros.
 
 # Purpose
-This code is a configuration file that defines a template for processing and analyzing Rust source code. It imports various components and utilities from different modules to facilitate structured prompting and language specialization for Rust. The `SOURCE_CODE_LARGE_TEMPLATE_RUST` list contains tuples that specify different sections of the template, such as "Purpose", "Imports and Dependencies", "Global Variables", "Macros", "Traits", "Data Structures", and "Functions". Each section uses specific functions and collections to extract and process relevant information from Rust code, enabling detailed analysis and documentation generation. The code provides narrow functionality focused on Rust source code analysis and documentation.
+The code defines a structured template for analyzing and documenting Rust source code. It imports several components and utilities from different modules, which are used to create a template named `SOURCE_CODE_LARGE_TEMPLATE_RUST`. This template is a list of tuples, each representing a section of the documentation for Rust code, such as "Purpose", "Imports and Dependencies", "Global Variables", "Macros", "Traits", "Data Structures", and "Functions". Each tuple contains a section identifier, a title, and a series of instructions or functions that help generate the content for that section.
+
+The template uses various collections and functions to extract and organize information from Rust source code. For example, it uses `RustVariablesRawSymbolCollection` and `RustVariableCollection` to handle global variables, and similar collections for macros, traits, data structures, and functions. The template also includes style instructions, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`, to ensure that the generated documentation adheres to specific formatting guidelines. This code is intended to be part of a larger system that processes and documents Rust code, providing a structured and consistent way to present information about the code's components and dependencies.
 # Imports and Dependencies
 
 ---
@@ -36,8 +38,8 @@ This code is a configuration file that defines a template for processing and ana
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_RUST
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of instructions or functions related to Rust code analysis and generation. Each tuple is structured to facilitate the processing of different aspects of Rust code, such as purpose, imports, global variables, macros, traits, data structures, and functions.
-- **Use**: Used to define a template for processing and analyzing large Rust codebases by organizing different code components and their related instructions.
+- **Description**: A list of tuples that define structured prompts and their processing logic for Rust code analysis. Each tuple contains a prompt type, a description, a prompt generation logic, and optional processing functions for Rust code components.
+- **Use**: Used to define and organize structured prompts for analyzing and processing Rust code components.
 
 
 

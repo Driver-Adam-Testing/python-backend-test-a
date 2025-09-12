@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements PDF preprocessing and embedding functions, including exception handling and database persistence.
+Processes PDF files by creating and embedding summaries, handling exceptions, and managing database updates.
 
 # Purpose
-The code defines a Modal application for processing PDF files, specifically for creating and embedding summaries. It uses the `modal` library to configure and deploy functions in a cloud environment. The application is configured with a custom Docker image and various secrets for accessing external services. The primary function, [`create_and_embed_pdf_summaries`](<#create_and_embed_pdf_summaries>), downloads a PDF from a presigned URL, sanitizes it using Ghostscript, and uploads both sanitized and unsanitized versions to an S3 bucket. It then processes the PDF to extract content, splits the text for embedding, and stores the results in a database. The function uses concurrent processing to handle multiple tasks efficiently, such as embedding text and persisting data to the database.
+The code defines a Modal application for processing PDF files, specifically for creating and embedding summaries. It uses the `modal` library to configure and manage the application environment, including setting up a Docker image with necessary dependencies and secrets. The application includes two main functions: [`send_exception_email`](<#send_exception_email>) and [`create_and_embed_pdf_summaries`](<#create_and_embed_pdf_summaries>). The [`send_exception_email`](<#send_exception_email>) function sends an email notification using SendGrid when an exception occurs, while the [`create_and_embed_pdf_summaries`](<#create_and_embed_pdf_summaries>) function handles the main task of downloading a PDF from a presigned URL, sanitizing it using Ghostscript, and then uploading both sanitized and unsanitized versions to an S3 bucket. It also processes the PDF content to generate text embeddings, which are then stored in a database.
 
-Additionally, the code includes a function [`send_exception_email`](<#send_exception_email>) to notify support via email if an exception occurs during the PDF processing. This function uses the SendGrid API to send emails, and it is configured with specific secrets for authentication. The code also defines a helper function [`sanitize_pdf_with_ghostscript`](<#sanitize_pdf_with_ghostscript>) to sanitize PDF files using the Ghostscript command-line tool. The overall purpose of the code is to automate the processing and embedding of PDF content, with error handling and notification mechanisms in place to ensure reliability.
+The code integrates with several external services and libraries, such as AWS S3 for file storage, SQLAlchemy for database interactions, and concurrent futures for parallel processing. It uses a structured approach to handle exceptions, ensuring that errors are logged and communicated via email. The [`create_and_embed_pdf_summaries`](<#create_and_embed_pdf_summaries>) function is configured with a timeout and specific resource allocations, indicating its role as a potentially long-running task. The code also includes a helper function, [`sanitize_pdf_with_ghostscript`](<#sanitize_pdf_with_ghostscript>), which uses the Ghostscript command-line tool to sanitize PDF files. Overall, the code is designed to automate the processing and embedding of PDF summaries within a cloud-based environment.
 # Imports and Dependencies
 
 ---
@@ -25,13 +25,13 @@ Additionally, the code includes a function [`send_exception_email`](<#send_excep
 - `hashlib.sha256`
 - `tempfile.NamedTemporaryFile`
 - `database.db.engine`
-- `database.models_v1.ChunkAndEmbedding`
-- `database.models_v1.DerivedContent`
-- `database.models_v2.Node`
-- `database.models_v2.Version`
-- `database.models_v2_enums.ContentKind`
-- `database.models_v2_enums.NodeKind`
-- `database.models_v2_enums.VersionStatus`
+- `database.models.ChunkAndEmbedding`
+- `database.models.DerivedContent`
+- `database.models.Node`
+- `database.models.Version`
+- `database.models_enums.ContentKind`
+- `database.models_enums.NodeKind`
+- `database.models_enums.VersionStatus`
 - `shared.chunking.text_splitter.split_text`
 - `shared.embedding.text_embedder.batch_embed_text`
 - `shared.file_storage.aws_s3_client.AWSS3Client`
@@ -50,21 +50,21 @@ Additionally, the code includes a function [`send_exception_email`](<#send_excep
 ### app
 - **Type**: ``modal.App``
 - **Description**: Represents an instance of a `modal.App` with the name 'pdf-summary-embedding'. This instance is used to define and manage functions and configurations related to the application.
-- **Use**: Used to create and manage the application context for defining functions and configurations in the Modal framework.
+- **Use**: Used to create and manage the application context for defining functions and configurations in the `modal` framework.
 
 
 ---
 ### image\_jve
 - **Type**: ``modal.Image``
-- **Description**: Represents a `modal.Image` object configured with a Debian Slim base image using Python 3.12. It includes local directories added to specific remote paths, installs dependencies from a `pyproject.toml` file, and installs additional packages using `apt`.
-- **Use**: Used to configure the environment for the `pdf_preprocessing_modal_config` and other functions that require this specific image setup.
+- **Description**: Represents a `modal.Image` object configured with a Debian Slim base image using Python 3.12. It includes local directories added to the image, installs dependencies from a `pyproject.toml` file, and installs additional packages using the APT package manager.
+- **Use**: Used to define the environment configuration for the `pdf-summary-embedding` application.
 
 
 ---
 ### pdf\_preprocessing\_modal\_config
 - **Type**: ``dict``
 - **Description**: Contains configuration settings for the PDF preprocessing modal. It includes an image configuration, a list of secrets, a proxy setting based on the environment, and a maximum number of containers.
-- **Use**: Used to configure the `create_and_embed_pdf_summaries` function with necessary resources and settings for processing PDFs.
+- **Use**: Used to configure the `create_and_embed_pdf_summaries` function with necessary resources and settings for PDF processing.
 
 
 # Functions
@@ -73,17 +73,18 @@ Additionally, the code includes a function [`send_exception_email`](<#send_excep
 ### send\_exception\_email<!-- {{#callable:python-backend/content_services/pdf_preprocessing/src/main.send_exception_email}} -->
 [View Source →](<../../../../../content_services/pdf_preprocessing/src/main.py#L36>)
 
-Sends an email with exception details using the SendGrid API.
+Sends an email notification about an exception using the SendGrid service.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `exception_details`: A string containing details about the exception that occurred.
 - **Logic and Control Flow**:
-    - Imports necessary modules and classes from the SendGrid library.
-    - Retrieves environment variables `ENV_NAME` and `SENDGRID_API_KEY` to configure the email client.
-    - Initializes the SendGrid API client with the retrieved API key.
-    - Sets up the email details including sender, recipient, subject, and content using the provided exception details.
-    - Attempts to send the email using the SendGrid client and prints the response status code if successful.
-    - Catches any exceptions during the email sending process and prints an error message.
+    - Imports necessary modules from the SendGrid library to construct and send an email.
+    - Retrieves environment variables `ENV_NAME` and `SENDGRID_API_KEY` to configure the email client and message.
+    - Creates a `SendGridAPIClient` instance using the API key.
+    - Defines the sender and recipient email addresses, subject, and content of the email.
+    - Constructs a `Mail` object with the specified email details.
+    - Attempts to send the email using the `SendGridAPIClient` and prints the response status code if successful.
+    - Catches and prints any exceptions that occur during the email sending process.
 - **Output**: Does not return any value.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<../../../packages/shared/shared/agent/models/llm_models.py.md#modelconfigfrom_name>)
@@ -104,7 +105,7 @@ Processes a PDF file from a presigned URL, sanitizes it, embeds its content, and
     - Hash the organization ID to create a unique bucket name.
     - Open a database session to retrieve the version and primary asset ID using the provided version ID.
     - Download the PDF file from the presigned URL to a temporary file.
-    - Sanitize the PDF file using Ghostscript and upload both sanitized and unsanitized versions to S3.
+    - Sanitize the PDF file using Ghostscript and upload both sanitized and unsanitized versions to AWS S3.
     - Update the version status to 'GENERATING' and create a new node in the database.
     - Read the PDF file content and process it to extract text and metadata.
     - Use a thread pool to embed the text content in parallel, handling any exceptions that occur.
@@ -118,16 +119,16 @@ Processes a PDF file from a presigned URL, sanitizes it, embeds its content, and
     - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.download_file_from_presigned_url`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#awss3clientdownload_file_from_presigned_url>)
     - [`python-backend/content_services/pdf_preprocessing/src/main.sanitize_pdf_with_ghostscript`](<#sanitize_pdf_with_ghostscript>)
     - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_file_to_s3`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#awss3clientupload_file_to_s3>)
-    - [`python-backend/driver_db/database/models_v2.Node`](<../../../driver_db/database/models_v2.py.md#node>)
+    - [`python-backend/driver_db/database/models.Node`](<../../../driver_db/database/models.py.md#node>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.run_process_pdf`](<../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py.md#run_process_pdf>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>)
-    - [`python-backend/driver_db/database/models_v1.ChunkAndEmbedding`](<../../../driver_db/database/models_v1.py.md#chunkandembedding>)
+    - [`python-backend/driver_db/database/models.DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>)
+    - [`python-backend/driver_db/database/models.ChunkAndEmbedding`](<../../../driver_db/database/models.py.md#chunkandembedding>)
 
 
 ---
 ### sanitize\_pdf\_with\_ghostscript<!-- {{#callable:python-backend/content_services/pdf_preprocessing/src/main.sanitize_pdf_with_ghostscript}} -->
-[View Source →](<../../../../../content_services/pdf_preprocessing/src/main.py#L267>)
+[View Source →](<../../../../../content_services/pdf_preprocessing/src/main.py#L266>)
 
 Executes a Ghostscript command to sanitize a PDF file by writing it to a specified destination path.
 - **Inputs**:
@@ -139,7 +140,7 @@ Executes a Ghostscript command to sanitize a PDF file by writing it to a specifi
     - Attempts to run the Ghostscript command using `subprocess.run` with error checking and output capture.
     - Catches `subprocess.CalledProcessError` if the command fails, prints error details, and raises the exception.
     - Prints a success message if the command executes without errors.
-- **Output**: Does not return a value; performs its operation as a side effect by writing the sanitized PDF to the specified destination path.
+- **Output**: Does not return a value; raises an exception if the Ghostscript command fails.
 
 
 

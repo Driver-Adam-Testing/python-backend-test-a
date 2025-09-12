@@ -6,7 +6,7 @@
 Provides a language provider for JavaScript and TypeScript with parser and resolver functionalities.
 
 # Purpose
-The code defines a class `JsTsLanguageProvider` that extends the `LanguageProvider` class. It specifies the language as "js_ts" and provides two class methods, [`get_parser`](<#jstslanguageproviderget_parser>) and [`get_resolver`](<#jstslanguageproviderget_resolver>), which return instances of `JsTsParser` and `JsTsResolver`, respectively. This class is part of a system that manages language-specific operations, specifically for JavaScript and TypeScript, by providing the necessary parser and resolver components. The code imports the required classes from the `utils.symbol_table` package, indicating a modular design for handling different programming languages.
+The `JsTsLanguageProvider` class extends the `LanguageProvider` class to support JavaScript and TypeScript language features. It defines the `language` attribute as `js_ts`, indicating its focus on these languages. The class provides two class methods: [`get_parser`](<#jstslanguageproviderget_parser>) and [`get_resolver`](<#jstslanguageproviderget_resolver>). The [`get_parser`](<#jstslanguageproviderget_parser>) method returns an instance of `JsTsParser`, which is responsible for parsing JavaScript and TypeScript code. The [`get_resolver`](<#jstslanguageproviderget_resolver>) method returns an instance of `JsTsResolver`, which handles the resolution of imports in JavaScript and TypeScript code. This code provides a narrow functionality focused on language-specific parsing and import resolution for JavaScript and TypeScript.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ The code defines a class `JsTsLanguageProvider` that extends the `LanguageProvid
 
 - **Members**:
     - `language`: Specifies the language as 'js_ts'.
-- **Description**: Provides language-specific functionality for JavaScript and TypeScript by implementing methods to obtain a parser and a resolver for these languages.
+- **Description**: Provides language-specific functionality for JavaScript and TypeScript by implementing methods to return a parser and a resolver for these languages.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_parser`](<#jstslanguageproviderget_parser>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_resolver`](<#jstslanguageproviderget_resolver>)
@@ -41,8 +41,8 @@ Returns an instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#
 - **Inputs**:
     - `cls`: Represents the class `JsTsLanguageProvider` itself, not an instance of the class.
 - **Logic and Control Flow**:
-    - Creates a new instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) class.
-    - Returns the created [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) instance.
+    - Calls the constructor of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) class.
+    - Returns a new instance of [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>).
 - **Output**: An instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) class.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/js_ts_parser.JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>)
@@ -58,8 +58,8 @@ Returns an instance of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.m
 - **Inputs**:
     - `cls`: Represents the class `JsTsLanguageProvider` itself, not an instance of the class.
 - **Logic and Control Flow**:
-    - Call the constructor of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>).
-    - Return the newly created [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>) instance.
+    - Calls the constructor of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>).
+    - Returns a new instance of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>).
 - **Output**: An instance of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>).
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>)

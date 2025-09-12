@@ -6,7 +6,7 @@
 Templates for generating Verilog code prompts and analyzing Verilog modules and functions.
 
 # Purpose
-The code defines a template for generating documentation related to small Verilog source code files. It imports components and prompts from various modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`, to construct structured prompts and instructions. The `SOURCE_CODE_SMALL_TEMPLATE_VERILOG` variable is a list of tuples, each representing a different section of the documentation template. These sections include instructions for writing the purpose of the code, identifying Verilog modules, and listing functions and tasks. The template uses components like `Prompt` and `Component` to build and format the documentation content, ensuring it adheres to specific style instructions such as using backticks for code references.
+This code defines a configuration for generating structured prompts related to Verilog source code. It imports components and instructions from various modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`, to create a template named `SOURCE_CODE_SMALL_TEMPLATE_VERILOG`. The template consists of tuples that specify how to generate prompts for different sections, such as "Purpose", "Modules", and "Functions and Tasks". Each tuple includes a prompt type, a section header, and instructions or methods for generating content. The code uses collections and methods to analyze Verilog code and generate relevant documentation or prompts based on the analysis.
 # Imports and Dependencies
 
 ---
@@ -29,8 +29,8 @@ The code defines a template for generating documentation related to small Verilo
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_VERILOG
 - **Type**: ``list``
-- **Description**: A list of tuples that define structured prompts for Verilog code analysis and documentation. Each tuple contains a prompt type, a description, and components or functions related to Verilog modules and functions.
-- **Use**: Used to configure and generate structured prompts for analyzing and documenting Verilog code.
+- **Description**: Contains a list of tuples, each representing a structured prompt template for Verilog code analysis. Each tuple includes a prompt type, a section header, and components for generating or processing Verilog code prompts.
+- **Use**: Used to define structured prompt templates for analyzing Verilog code, including sections for purpose, modules, and functions/tasks.
 
 
 

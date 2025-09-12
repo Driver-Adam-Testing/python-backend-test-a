@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Initialization file for the shared prompts tools package and defines an empty string constant named PROMPT.
+Initialization file and empty string constant PROMPT definition in the `tools` package.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: Initialization file for the shared prompts tools package.
+- **[__init__.py](__init__.py.md)**: Initialization file for the `tools` package in the `shared.prompts` module.
 - **[think.py](think.py.md)**: Defines an empty string constant named PROMPT.
 
 ---

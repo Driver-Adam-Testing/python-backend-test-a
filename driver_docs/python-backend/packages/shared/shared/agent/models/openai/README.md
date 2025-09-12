@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Queries and summarizes documents using OpenAI's API with file search and code interpreter tools.
+Queries files using OpenAI's API to summarize key points with optional assistant configuration.
 
 
 ## Files
-- **[file_search.py](file_search.py.md)**: Queries and summarizes documents using OpenAI's API with file search and code interpreter tools.
+- **[file_search.py](file_search.py.md)**: Queries a file using OpenAI's API to summarize its key points with optional assistant configuration.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

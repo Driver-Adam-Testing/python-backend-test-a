@@ -6,16 +6,16 @@
 SQL script for migrating pages and templates to new database tables with versioning and node updates.
 
 # Purpose
-The code is a SQL script designed to migrate data from a table named `derived_contents` to several new tables: `v2_primary_asset`, `v2_version`, and `v2_node`. The script processes records with specific `content_kind` values ('application_note' and 'template') and ensures that each record has a unique `content_name`. It uses a Common Table Expression (CTE) to handle duplicate `content_name` entries by assigning a row number (`rn`) to differentiate them.
+The code is a SQL script designed to migrate data from a table named `derived_contents` to several new tables: `v2_primary_asset`, `v2_version`, and `v2_node`. The script uses Common Table Expressions (CTEs) to structure the migration process. It first selects relevant data from `derived_contents` and `workspaces` to create a temporary table called `pages`. This table includes a row number to handle duplicate `content_name` entries within the same organization.
 
-The script performs several operations: it inserts records into `v2_primary_asset` using the `id` from `derived_contents` as the primary key, assigns a `display_name` based on the `content_name` and row number, and categorizes the content as either 'PAGE_TEMPLATE' or 'PAGE'. It then inserts corresponding records into `v2_version` and `v2_node`, reusing the same `id` for consistency across tables. Finally, it updates the `derived_contents` table to set the `node_id` to its own `id`, ensuring that the migration maintains referential integrity. The script concludes by selecting all updated records from `derived_contents`.
+The script then inserts data into the `v2_primary_asset` table, using the `id` from `derived_contents` as the primary key. It assigns a `display_name` based on the `content_name` and differentiates duplicates by appending a suffix. The `kind` field is determined by the `content_kind` of the original data. Subsequent CTEs insert data into `v2_version` and `v2_node`, again reusing the `id` from `derived_contents` for consistency across tables. Finally, the script updates the `derived_contents` table to set the `node_id` to its own `id`, ensuring that the migration maintains referential integrity. The script concludes by selecting all columns from the updated `derived_contents` table.
 # Global Variables
 
 ---
 ### MIGRATE\_PAGES
 - **Type**: ``str``
-- **Description**: Contains a SQL script that performs a series of operations to migrate data from the `derived_contents` table to new tables `v2_primary_asset`, `v2_version`, and `v2_node`. The script uses common table expressions (CTEs) to select and transform data, insert it into the new tables, and update the original table with new identifiers.
-- **Use**: Used to execute a SQL migration process that organizes and updates content data across multiple tables.
+- **Description**: Defines a SQL query as a string that performs a series of operations to migrate pages from the `derived_contents` table to new tables such as `v2_primary_asset`, `v2_version`, and `v2_node`. The query uses common table expressions (CTEs) to organize the migration process into logical steps, including selecting pages, inserting primary assets, versions, and nodes, and updating the original table.
+- **Use**: Used to store the SQL query string for migrating page data across different tables in a database.
 
 
 

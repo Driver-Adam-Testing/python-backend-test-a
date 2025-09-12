@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A prompt for verifying, detecting errors, correcting, and documenting code snippets.
+A system message prompt for verifying, detecting errors, correcting, and documenting code snippets.
 
 # Purpose
-The code defines a constant `PROMPT` and a dictionary `MESSAGE` that contains a structured prompt for analyzing and verifying source code snippets. The `PROMPT` string outlines a multi-step process for source verification, error detection, correction, and documentation. It instructs users to review source code for correctness, identify errors, and make necessary corrections with supporting evidence. The `MESSAGE` dictionary assigns the role of "system" to the content, which is the `PROMPT` string. This code provides a narrow functionality, serving as a template or guideline for code analysis and verification tasks.
+The code defines a constant `PROMPT` and a dictionary `MESSAGE` that are used for analyzing and verifying input code snippets. The `PROMPT` is a multi-line string that outlines a structured process for source verification, error detection, correction, and documentation. It instructs on how to confirm the correctness of input code by reviewing necessary source code, detecting errors, and making corrections if needed. The `MESSAGE` dictionary contains a key `role` with the value `"system"` and a key `content` with the value of the `PROMPT` string. This setup is likely used in a system that processes code snippets to ensure their accuracy and correctness, providing a framework for error checking and validation.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: ``PROMPT``
+- **Type**: `str`
 - **Description**: A multi-line string that provides detailed instructions for analyzing an input code snippet. It includes steps for source verification, error detection, correction process, evidence and documentation, and final reporting.
 - **Use**: Used as a template or guideline for performing code analysis and verification tasks.
 
@@ -19,8 +19,8 @@ The code defines a constant `PROMPT` and a dictionary `MESSAGE` that contains a 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key holds a multi-line string from the `PROMPT` variable.
-- **Use**: Used to store system-level information and instructions for processing code snippets.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key is assigned the string value `system`, and the `content` key is assigned the value of the `PROMPT` variable, which is a multi-line string detailing steps for analyzing and correcting code snippets.
+- **Use**: Used to store system role information and detailed instructions for code analysis and correction.
 
 
 

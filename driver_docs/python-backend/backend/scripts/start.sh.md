@@ -3,10 +3,68 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Shell script to configure and start a Gunicorn server with optional prestart script execution.
+Shell script to configure and start a Python application using Gunicorn with optional prestart script execution.
 
 # Purpose
-This script is a shell script intended to configure and start a Gunicorn server for a Python application. It checks for the presence of specific Python files to determine the default module name and sets environment variables such as `APP_MODULE`, `GUNICORN_CONF`, and `WORKER_CLASS` with default values if they are not already set. The script also looks for a `prestart.sh` script in the `/app` directory and executes it if found, allowing for any necessary pre-startup tasks. Finally, it executes the Gunicorn server with the specified worker class and configuration file, using the determined application module.
+This script is a shell script intended to configure and start a Gunicorn server for a Python application. It checks for the presence of specific Python files to determine the default module name and sets the `APP_MODULE` environment variable accordingly. The script also configures the Gunicorn server by setting the `GUNICORN_CONF` environment variable based on the location of a `gunicorn_conf.py` file. Additionally, it specifies the worker class for Gunicorn, defaulting to `uvicorn.workers.UvicornWorker`. Before starting the server, the script checks for and optionally executes a `prestart.sh` script if it exists in the specified path. Finally, it executes the Gunicorn server with the configured settings.
+# Global Variables
+
+---
+### DEFAULT\_MODULE\_NAME
+- **Type**: `string`
+- **Description**: Contains the default module name for the application, which is set based on the presence of specific Python files in the application directory. If `/app/app/main.py` exists, it is set to `app.main`; otherwise, if `/app/main.py` exists, it is set to `main`. This variable helps in determining the entry point of the application.
+- **Use**: Used to set the `MODULE_NAME` variable, which is part of the configuration for starting the application with Gunicorn.
+
+
+---
+### MODULE\_NAME
+- **Type**: `string`
+- **Description**: `MODULE_NAME` is a string variable that holds the name of the module to be used by the application. It is set to the value of the environment variable `MODULE_NAME` if it exists; otherwise, it defaults to the value of `DEFAULT_MODULE_NAME`, which is determined based on the presence of specific Python files in the application directory.
+- **Use**: Used to specify the module name for the application, which is part of the `APP_MODULE` environment variable configuration.
+
+
+---
+### VARIABLE\_NAME
+- **Type**: `string`
+- **Description**: `VARIABLE_NAME` is a global variable that holds the name of the application module to be used by Gunicorn. It defaults to 'app' if not set by the user.
+- **Use**: Used to specify the application module name in the `APP_MODULE` environment variable for Gunicorn.
+
+
+---
+### APP\_MODULE
+- **Type**: `string`
+- **Description**: `APP_MODULE` is a global environment variable that defines the module and variable name for the application to run with Gunicorn. It is constructed using the `MODULE_NAME` and `VARIABLE_NAME` variables, which are determined based on the presence of specific Python files in the application directory.
+- **Use**: Used to specify the application module and variable for Gunicorn to execute.
+
+
+---
+### DEFAULT\_GUNICORN\_CONF
+- **Type**: `string`
+- **Description**: Specifies the default file path for the Gunicorn configuration file. The variable is set based on the existence of specific files in the file system, prioritizing '/app/gunicorn_conf.py', then '/app/app/gunicorn_conf.py', and finally defaulting to '/gunicorn_conf.py' if neither of the first two files exist.
+- **Use**: Used to determine the configuration file path for Gunicorn when starting the server.
+
+
+---
+### GUNICORN\_CONF
+- **Type**: `string`
+- **Description**: Specifies the path to the Gunicorn configuration file. The variable is set to the path of the `gunicorn_conf.py` file if it exists in the `/app`, `/app/app`, or root directory, in that order of preference.
+- **Use**: Used to configure Gunicorn by providing the path to its configuration file when starting the server.
+
+
+---
+### WORKER\_CLASS
+- **Type**: ``string``
+- **Description**: Specifies the class of worker to use with Gunicorn. The default value is set to `uvicorn.workers.UvicornWorker`, which is a worker class that integrates Uvicorn with Gunicorn for running ASGI applications.
+- **Use**: Used to define the worker class for Gunicorn when starting the server.
+
+
+---
+### PRE\_START\_PATH
+- **Type**: ``string``
+- **Description**: A string variable that specifies the path to a pre-start script. This script is intended to run before the main application starts.
+- **Use**: Used to define the path to a script that executes before the application starts, defaulting to `/app/prestart.sh` if not set.
+
+
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

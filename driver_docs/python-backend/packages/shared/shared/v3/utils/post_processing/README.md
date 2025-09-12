@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions to validate and repair Mermaid diagrams in text using a language model client.
+Functions to validate and repair Mermaid code blocks in text using a language model client.
 
 
 ## Files
-- **[mermaid.py](mermaid.py.md)**: Functions to validate and repair Mermaid diagrams in text using a language model client.
+- **[mermaid.py](mermaid.py.md)**: Functions to validate and repair Mermaid code blocks in text using a language model client.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

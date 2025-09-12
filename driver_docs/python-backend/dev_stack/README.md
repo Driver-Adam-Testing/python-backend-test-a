@@ -3,21 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS Lambda constructs, deployment scripts, authentication tools, Ngrok management, and configuration files.
+AWS Lambda constructs, deployment scripts, authentication tools, web interface, and configuration files.
 
 ## Folders
-- **[cdk](cdk/README.md)**: AWS Lambda constructs for asset onboarding and metrics processing, and a development stack for infrastructure deployment.
+- **[cdk](cdk/README.md)**: AWS Lambda constructs for asset onboarding and metrics processing, and a CDK stack for development infrastructure.
 - **[scripts](scripts/README.md)**: Bash script for deploying services to a specified environment using Poetry and Modal.
-- **[src](src/README.md)**: Authentication tools with FastAPI, CLI interfaces, Auth0 management, developer setup, and ngrok management.
-- **[static](static/README.md)**: HTML page for managing Ngrok tunnels with controls and WebSocket connectivity.
+- **[src](src/README.md)**: Auth0 and OAuth2 authentication tools, CLI tools, environment and secret management, developer setup, GitHub and ngrok management, and data models.
+- **[static](static/README.md)**: Web interface for managing Ngrok tunnels with controls for status, start, and stop actions.
 
 ## Files
-- **[.env.example](.env.example.md)**: Example environment configuration file for AWS, NGROK, Auth0, PostgreSQL, and OpenAI API keys.
+- **[.env.example](.env.example.md)**: Example environment configuration file with placeholders for AWS, NGROK, Auth0, PostgreSQL, and OpenAI keys.
 - **[.gitignore](.gitignore.md)**: Specifies files and directories for Git to ignore in the `python-backend` development stack.
-- **[cdk.json](cdk.json.md)**: Configuration for AWS CDK application with context settings and file watch exclusions.
-- **[cdk_dev_stack_app.py](cdk_dev_stack_app.py.md)**: Deploys a CDK stack using environment variables and configuration from a JSON file.
-- **[poetry.lock](poetry.lock.md)**: Specifies exact versions of dependencies and sub-dependencies for consistent Python project environments.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies and build system details.
+- **[cdk.json](cdk.json.md)**: Configuration for AWS CDK app execution and context settings in a development stack.
+- **[cdk_dev_stack_app.py](cdk_dev_stack_app.py.md)**: Sets up and deploys a development stack using AWS CDK with environment configurations.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry package manager, specifying project metadata and dependencies.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).
 
 ---

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Docker Compose configuration for deploying a GitLab service with specified ports and volumes.
+Docker Compose configuration for deploying a GitLab service with specified ports, volumes, and environment.
 
 # Purpose
-This Docker Compose file defines a service for running a GitLab instance using the `gitlab/gitlab-ee:17.3.5-ee.0` image on a Linux/AMD64 platform. The service is named `gitlab` and is configured to restart automatically. It sets the hostname to `gitlab.local` and maps ports 80, 443, and 22 from the host to the container. The file specifies volume mappings for configuration, logs, and data directories using environment variables prefixed with `$GITLAB_HOME`. Additionally, it sets the `GITLAB_ROOT_PASSWORD` environment variable to a specified secure password.
+The file is a Docker Compose configuration that defines a service for running a GitLab instance. It specifies the use of the `gitlab/gitlab-ee:17.3.5-ee.0` image on the `linux/amd64` platform and sets the container name to `gitlab`. The service is configured to always restart and is accessible via the hostname `gitlab.local`. It maps ports 80, 443, and 22 from the host to the container. The configuration also mounts host directories to the container for configuration, logs, and data storage, using environment variables to define the paths. Additionally, it sets the `GITLAB_ROOT_PASSWORD` environment variable to establish the root password for GitLab.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

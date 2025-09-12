@@ -6,25 +6,69 @@
 Configuration for generating a structured README for an ADI driver in the `no-OS` codebase.
 
 # Purpose
-This configuration file defines the structure and content requirements for generating a README document for a driver in the `no-OS` codebase by ADI. It specifies the use of different language models for various tasks such as tagging, section initialization, and copy editing, indicating a structured approach to document generation. The file outlines several sections, each with specific instructions and content structures, such as "Supported Devices," "Overview," "Applications," and "Device Configuration." Each section has detailed instructions on how to gather and format the content, ensuring consistency and completeness in the documentation. The file also includes requirements for a "Driver Initialization Example," which provides a code snippet illustrating the initialization process, adhering to specific coding standards and formatting rules. This configuration ensures that the README is comprehensive and follows a standardized format, facilitating easier understanding and use of the driver by developers.
+This configuration file defines the structure and content of a README document for a driver in the `no-OS` codebase by ADI. It specifies the models and versions of language models to use for different sections, such as `tag_model`, `section_init_model`, and `copy_editor_model`. The document's goal is to create a structured README with defined sections, such as "Supported Devices", "Overview", "Applications", and others, each with specific instructions and content structures. The file outlines the requirements for each section, including whether they are mandatory, the method of content creation, and the format of the content, such as lists, paragraphs, or tables. This configuration ensures that the README is comprehensive and follows a consistent format, facilitating easier understanding and use of the driver by developers.
 # Content Summary
-The provided configuration file is structured to guide the creation of a README document for a driver in the `no-OS` codebase by Analog Devices, Inc. (ADI). The file is divided into sections, each with specific instructions and models to use for generating content. The key components are as follows:
+The provided configuration file is structured to guide the creation of a README document for a driver in the `no-OS` codebase by Analog Devices, Inc. (ADI). The file specifies models and methods for generating different sections of the README, using various language models for specific tasks.
 
-1. **Language Models Configuration**: The `[llm]` section specifies different models for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing. The models used include "gpt-4o" and "o3-mini".
+### Language Models Configuration
+- **Tag Model**: `gpt-4o`
+- **Section Initialization Model**: `o3-mini`
+- **Section Update Model**: `gpt-4o`
+- **Section Format Model**: `o3-mini`
+- **Assembly Model**: `o3-mini`
+- **Copy Editor Model**: `gpt-4o`
 
-2. **Document Metadata**: The `[document]` section outlines the goal of the document, which is to write a structured README. It specifies the format as "defined_sections", enables tagging, and provides a configuration name and version.
+### Document Configuration
+- **Goal**: To write a structured README for a driver.
+- **Format**: Defined sections.
+- **Use Tagging**: Enabled.
+- **Configuration Name**: `ADI-Driver-README`
+- **Configuration Version**: `[V1]`
 
-3. **Sections Definition**: The file defines multiple sections, each with a title, level, requirement status, instructions, content structure, and creation method. Key sections include:
-   - **Supported Devices**: Requires a list of device models supported by the driver, hyperlinked to the ADI product page, without descriptions.
-   - **Overview**: Provides a general description of the device from the PDF data sheet, using content from "Features" or "General Description" sections.
-   - **Applications**: Lists applications supported by the device, copied from the "Applications" section of the data sheet.
-   - **Operation Modes**: Optionally describes operation modes in a table format, focusing on modes configurable through the driver header interface.
-   - **Device Configuration**: Groups public functions from the driver's header file by category, providing a descriptive paragraph for each category.
-   - **Driver Initialization Example**: Provides a detailed code example for initializing the device, including required includes, structure population, error handling, and status print statements.
+### Sections Details
+1. **Supported Devices**
+   - **Level**: 1
+   - **Required**: Yes
+   - **Instruction**: List device models supported by the driver, hyperlinked to ADI product pages, without descriptions.
+   - **Content Structure**: Simple list of device models.
+   - **Creation Method**: Sequential edit.
 
-4. **Commented Section**: A section titled "Driver Structure" is commented out, indicating it is not currently required. It would illustrate the file tree for the driver directory in an ASCII diagram format.
+2. **Overview**
+   - **Level**: 1
+   - **Required**: Yes
+   - **Instruction**: Provide a 4-5 sentence description from the 'Features' or 'General Description' sections of the device's PDF.
+   - **Content Structure**: Single paragraph description.
+   - **Creation Method**: Scatter gather.
 
-Each section is designed to ensure that the README is comprehensive and follows a structured format, with specific instructions for content creation and formatting. The document aims to provide clear and concise information about the driver, its supported devices, applications, and configuration details.
+3. **Applications**
+   - **Level**: 1
+   - **Required**: Yes
+   - **Instruction**: List applications from the 'Applications' section of the data sheet.
+   - **Content Structure**: Unordered list.
+   - **Creation Method**: Scatter gather.
+
+4. **Operation Modes**
+   - **Level**: 1
+   - **Required**: No
+   - **Instruction**: Describe operation modes in a table format, referencing configuration bits from the driver header.
+   - **Content Structure**: Table with columns for Mode Name, Description, Configuration Bits, and Typical Use Case.
+   - **Creation Method**: Scatter gather.
+
+5. **Device Configuration**
+   - **Level**: 1
+   - **Required**: Yes
+   - **Instruction**: Group public functions from the driver's header file by category, with descriptions.
+   - **Content Structure**: Descriptive paragraphs for each function category.
+   - **Creation Method**: Sequential edit.
+
+6. **Driver Initialization Example**
+   - **Level**: 1
+   - **Required**: Yes
+   - **Instruction**: Provide a code example for device initialization, including error handling and status print statements.
+   - **Content Structure**: Markdown code block with detailed initialization procedure.
+   - **Creation Method**: Sequential edit.
+
+This configuration file is essential for developers to understand the structure and content requirements for creating a README document for a driver, ensuring consistency and completeness in documentation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

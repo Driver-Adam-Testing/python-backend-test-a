@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utilities and classes for rendering markdown from symbol data, including functions for string manipulation and concurrent processing.
+Utilities for rendering markdown from structured data, including classes for handling symbol data and markdown formatting.
 
 # Purpose
-The code defines a framework for rendering markdown documentation from structured data, particularly focusing on symbol data and their relationships. It includes several classes that inherit from `MdRenderable`, an abstract base class, which requires implementing a [`render_markdown`](<#mdrenderablerender_markdown>) method. These classes, such as `RawContent`, `FieldNameWithBackTickContent`, and `ListedBacktickNameRawContentNoNone`, are designed to format different types of content into markdown, handling various data structures and ensuring proper formatting, such as enclosing names in backticks or creating bullet lists.
+The code defines a set of classes and functions for rendering markdown content from structured data. It includes a series of classes that inherit from `MdRenderable`, an abstract base class, which requires the implementation of a [`render_markdown`](<#mdrenderablerender_markdown>) method. These classes, such as `RawContent`, `FieldNameWithBackTickContent`, and `ListedBacktickNameRawContentNoNone`, are designed to format and render different types of content into markdown strings. The code also includes utility functions like [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>) and [`ensure_enclosed_with_backticks`](<#ensure_enclosed_with_backticks>) to assist in formatting strings.
 
-Additionally, the code includes classes like `IrData` and `IrCollection`, which are abstract base classes for handling intermediate representation (IR) data. These classes provide methods for generating markdown from symbol data, managing child symbols, and linking to source code. The `IrData` class includes methods for processing symbol data, applying bespoke data processing, and rendering markdown with links to source code and symbol relationships. The `IrCollection` class manages collections of `IrData` instances, facilitating the generation of markdown documentation for multiple symbols. The code also includes utility functions for string manipulation and computing the number of workers for concurrent processing, indicating that the framework is designed to handle large datasets efficiently.
+Additionally, the code defines abstract base classes like `IrData` and `IrCollection` for handling intermediate representation (IR) data. These classes provide methods for creating instances from language model (LLM) responses and rendering them into markdown. The `IrData` class includes methods for processing child elements and rendering links to source code, while `IrCollection` manages a collection of `IrData` instances. The code is structured to support the generation of markdown documentation from structured data, with a focus on handling symbols and their relationships in a programming context.
 # Imports and Dependencies
 
 ---
@@ -41,14 +41,14 @@ Additionally, the code includes classes like `IrData` and `IrCollection`, which 
 ### MAX\_SYMBOLS\_PER\_WORKER
 - **Type**: `int`
 - **Description**: Defines the maximum number of symbols that a single worker can process.
-- **Use**: Used to calculate the number of workers needed for processing symbols in the `compute_num_workers` function.
+- **Use**: Used in the `compute_num_workers` function to calculate the number of workers needed based on the number of symbols.
 
 
 ---
 ### MAX\_WORKERS\_FOR\_SYMBOLS
 - **Type**: `int`
 - **Description**: Defines the maximum number of worker threads that can be used for processing symbols.
-- **Use**: Used to limit the number of concurrent workers in the `compute_num_workers` function.
+- **Use**: Used in the `compute_num_workers` function to limit the number of workers.
 
 
 ---
@@ -64,7 +64,7 @@ Additionally, the code includes classes like `IrData` and `IrCollection`, which 
 ### MdRenderable<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L62>)
 
-- **Decorators**: `@abc`
+- **Decorators**: `@abc.abstractmethod`
 - **Description**: Defines an abstract base class for objects that can render themselves as Markdown. It requires subclasses to implement the `render_markdown` method, which takes a `doc_label` as input and returns a Markdown-formatted string.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable.render_markdown`](<#mdrenderablerender_markdown>)
@@ -81,7 +81,7 @@ Additionally, the code includes classes like `IrData` and `IrCollection`, which 
 Defines an abstract method for rendering markdown content.
 - **Decorators**: `@abc.abstractmethod`
 - **Inputs**:
-    - `doc_label`: A string label for the document to be rendered.
+    - `doc_label`: A string label for the document to render.
 - **Logic and Control Flow**:
     - The method is abstract and does not contain any implementation.
     - Subclasses must implement this method to provide specific markdown rendering logic.
@@ -95,7 +95,7 @@ Defines an abstract method for rendering markdown content.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L68>)
 
 - **Members**:
-    - `content`: Stores the raw string content to render.
+    - `content`: Holds the raw string content to render.
 - **Description**: Represents a class that holds raw string content and provides a method to render it as markdown.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent.render_markdown`](<#rawcontentrender_markdown>)
@@ -110,12 +110,12 @@ Defines an abstract method for rendering markdown content.
 
 Returns the `content` attribute followed by a newline character.
 - **Inputs**:
-    - `doc_label`: A string label for the document, which is not used in the method.
+    - `doc_label`: A string label for the document, not used in the method logic.
 - **Logic and Control Flow**:
-    - Accesses the `content` attribute of the instance.
-    - Appends a newline character to the `content`.
+    - Accesses the `content` attribute of the `RawContent` class instance.
+    - Appends a newline character to the `content` attribute.
     - Returns the resulting string.
-- **Output**: A string that consists of the `content` attribute followed by a newline character.
+- **Output**: A string that is the `content` attribute followed by a newline character.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<#rawcontent>)  (Base Class)
 
 
@@ -125,8 +125,8 @@ Returns the `content` attribute followed by a newline character.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L75>)
 
 - **Members**:
-    - `content`: Stores a string value.
-- **Description**: Represents a markdown renderable object that includes a string content, which is formatted with backticks when rendered.
+    - `content`: Stores a string value to be rendered in markdown.
+- **Description**: Represents a markdown renderable object that includes a string content, which is enclosed in backticks when rendered.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent.render_markdown`](<#fieldnamewithbacktickcontentrender_markdown>)
 - **Inherits From**:
@@ -138,14 +138,14 @@ Returns the `content` attribute followed by a newline character.
 #### FieldNameWithBackTickContent\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L78>)
 
-Generates a Markdown-formatted string for a given document label and content.
+Renders the content as a Markdown string with a label.
 - **Inputs**:
-    - `doc_label`: A string representing the label for the document section to be rendered in Markdown format.
+    - `doc_label`: A string representing the label to use in the Markdown output.
 - **Logic and Control Flow**:
-    - Checks if the `content` attribute of the class instance is empty.
-    - If `content` is empty, returns an empty string.
-    - If `content` is not empty, formats the `doc_label` using [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>) and returns a Markdown-formatted string with the label and `content`.
-- **Output**: A string formatted in Markdown, containing the document label and content, or an empty string if the content is empty.
+    - Check if `self.content` is empty; if true, return an empty string.
+    - Convert `doc_label` from snake_case to a spaced string using [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>).
+    - Return a formatted Markdown string with the label and `self.content` enclosed in backticks.
+- **Output**: A formatted Markdown string with the label and content, or an empty string if `self.content` is empty.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<#fieldnamewithbacktickcontent>)  (Base Class)
@@ -157,8 +157,8 @@ Generates a Markdown-formatted string for a given document label and content.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L84>)
 
 - **Members**:
-    - `content`: Stores the content to render as a string.
-- **Description**: Generates a bulleted markdown representation of a field name and its content, with the field name converted from snake_case to a spaced string.
+    - `content`: Stores the content to render as a bulleted list item.
+- **Description**: Represents a markdown renderable object that formats its content as a bulleted list item with a label.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBulletedContent.render_markdown`](<#fieldnamewithbulletedcontentrender_markdown>)
 - **Inherits From**:
@@ -170,13 +170,13 @@ Generates a Markdown-formatted string for a given document label and content.
 #### FieldNameWithBulletedContent\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBulletedContent.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L87>)
 
-Formats a markdown string with a given document label and content.
+Generates a Markdown-formatted string with a bulleted list item for a given document label and content.
 - **Inputs**:
-    - `doc_label`: A string representing the document label to be formatted in the markdown output.
+    - `doc_label`: A string representing the label of the document, which will be converted from snake_case to a spaced string format.
 - **Logic and Control Flow**:
-    - Calls the [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>) function to convert the `doc_label` from snake_case to a spaced string.
-    - Formats the markdown string by embedding the converted `doc_label` and the instance's `content` attribute into a specific markdown structure.
-- **Output**: A formatted markdown string that includes the document label and content.
+    - Converts the `doc_label` from snake_case to a spaced string using the [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>) function.
+    - Formats the converted label and the instance's `content` attribute into a Markdown string with a bulleted list item.
+- **Output**: A string formatted in Markdown with a bulleted list item containing the document label and content.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBulletedContent`](<#fieldnamewithbulletedcontent>)  (Base Class)
@@ -188,8 +188,8 @@ Formats a markdown string with a given document label and content.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L93>)
 
 - **Members**:
-    - `content`: Stores a string value.
-- **Description**: Represents a field with raw content that can be rendered as a markdown list item with a label and content.
+    - `content`: Holds a string value to be rendered in markdown format.
+- **Description**: Represents a markdown renderable field with a name and raw content, allowing the content to be formatted and displayed with a label in markdown.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent.render_markdown`](<#fieldnamewithrawcontentrender_markdown>)
 - **Inherits From**:
@@ -201,14 +201,14 @@ Formats a markdown string with a given document label and content.
 #### FieldNameWithRawContent\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L96>)
 
-Generates a Markdown-formatted string based on the provided document label and content.
+Renders the content as a Markdown string with a formatted label.
 - **Inputs**:
-    - `doc_label`: A string representing the label for the document, which will be converted from snake_case to a spaced string format.
+    - `doc_label`: A string representing the label to use in the Markdown output.
 - **Logic and Control Flow**:
     - Check if the `content` attribute is empty; if true, return an empty string.
-    - Convert the `doc_label` from snake_case to a spaced string using the [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>) function.
-    - Format and return a Markdown string that includes the converted `doc_label` and the `content`.
-- **Output**: A string formatted in Markdown, or an empty string if the `content` is empty.
+    - Convert the `doc_label` from snake_case to a spaced string using [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>).
+    - Format and return the Markdown string with the converted label and the `content`.
+- **Output**: A formatted Markdown string or an empty string if `content` is empty.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<#fieldnamewithrawcontent>)  (Base Class)
@@ -220,9 +220,9 @@ Generates a Markdown-formatted string based on the provided document label and c
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L102>)
 
 - **Members**:
-    - `name`: Stores the name of the content.
-    - `content`: Holds the content associated with the name.
-- **Description**: Represents a named content item that can be rendered in Markdown format.
+    - `name`: Stores the name as a string.
+    - `content`: Stores the content as a string.
+- **Description**: Represents a markdown renderable entity with a name and content, providing a method to render these as a markdown list item.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NamedContent.render_markdown`](<#namedcontentrender_markdown>)
 - **Inherits From**:
@@ -234,12 +234,12 @@ Generates a Markdown-formatted string based on the provided document label and c
 #### NamedContent\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NamedContent.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L106>)
 
-Generates a markdown string representation of the object's name and content.
+Generates a markdown string representation of the `NamedContent` instance.
 - **Inputs**:
-    - `doc_label`: A string label for the document, not used in this method.
+    - `doc_label`: A string label for the document, not used in the method body.
 - **Logic and Control Flow**:
-    - Returns a formatted string that includes the object's name and content in markdown format.
-- **Output**: A string formatted as a markdown list item with the object's name and content.
+    - Returns a formatted string that includes the `name` and `content` attributes of the `NamedContent` instance.
+- **Output**: A string formatted as a markdown list item with the `name` and `content` of the instance.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NamedContent`](<#namedcontent>)  (Base Class)
 
 
@@ -252,7 +252,7 @@ Generates a markdown string representation of the object's name and content.
     - `name`: Stores the name of the content.
     - `content`: Holds the content as a string.
     - `type`: Specifies the type of the content.
-- **Description**: Represents a named content item with an associated type, allowing for markdown rendering of its details.
+- **Description**: Represents a named and typed content item that can render itself in Markdown format, including its name, type, and content.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NamedTypedContent.render_markdown`](<#namedtypedcontentrender_markdown>)
 - **Inherits From**:
@@ -264,12 +264,13 @@ Generates a markdown string representation of the object's name and content.
 #### NamedTypedContent\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NamedTypedContent.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L115>)
 
-Generates a markdown string representation of the object's name, type, and content.
+Generates a Markdown-formatted string for a named and typed content item.
 - **Inputs**:
-    - `doc_label`: A string label for the document, not used in this method.
+    - `doc_label`: A string label for the document, not used in the method body.
 - **Logic and Control Flow**:
-    - Formats the object's `name`, `type`, and `content` into a markdown string with a specific format.
-- **Output**: A formatted markdown string that includes the object's name, type, and content.
+    - Formats a string using the instance's `name`, `type`, and `content` attributes.
+    - Returns the formatted string with Markdown syntax.
+- **Output**: A string formatted in Markdown, representing the named and typed content.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NamedTypedContent`](<#namedtypedcontent>)  (Base Class)
 
 
@@ -279,8 +280,8 @@ Generates a markdown string representation of the object's name, type, and conte
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L119>)
 
 - **Members**:
-    - `content`: A list of `NamedContent` objects.
-- **Description**: Manages a list of `NamedContent` objects and provides a method to render them as markdown with a specified document label.
+    - `content`: Holds a list of `NamedContent` objects.
+- **Description**: Represents a markdown renderable object that contains a list of named content items. The `render_markdown` method generates a markdown string representation of the content, formatted with a label and each item's markdown rendering.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameTypeRawContentNoNone.render_markdown`](<#listedbackticknametyperawcontentnononerender_markdown>)
 - **Inherits From**:
@@ -292,43 +293,7 @@ Generates a markdown string representation of the object's name, type, and conte
 #### ListedBacktickNameTypeRawContentNoNone\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameTypeRawContentNoNone.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L122>)
 
-Generates a Markdown-formatted string representation of the content list with a given document label.
-- **Inputs**:
-    - `doc_label`: A string label used to describe the document section in Markdown format.
-- **Logic and Control Flow**:
-    - Initialize an empty string `output_str`.
-    - Check if the `content` list is not empty.
-    - If not empty, append a formatted string with the document label converted to spaced string format to `output_str`.
-    - Iterate over each item in the `content` list.
-    - For each item, call its [`render_markdown`](<#mdrenderablerender_markdown>) method with `doc_label` and append the result to `output_str`.
-    - Return the `output_str`.
-- **Output**: A string containing the Markdown representation of the content list.
-- **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable.render_markdown`](<#mdrenderablerender_markdown>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameTypeRawContentNoNone`](<#listedbackticknametyperawcontentnonone>)  (Base Class)
-
-
-
----
-### ListedBacktickNameRawContentNoNone<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone}} -->
-[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L131>)
-
-- **Members**:
-    - `content`: Holds a list of `NamedContent` objects.
-- **Description**: Implements a markdown rendering mechanism for a list of `NamedContent` objects, ensuring each item is formatted with a backtick-enclosed name and its content.
-- **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone.render_markdown`](<#listedbackticknamerawcontentnononerender_markdown>)
-- **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable`](<#mdrenderable>)
-
-**Methods**
-
----
-#### ListedBacktickNameRawContentNoNone\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone.render_markdown}} -->
-[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L134>)
-
-Generates a markdown string representation of the content list with a given document label.
+Renders a markdown representation of the content list with a given document label.
 - **Inputs**:
     - `doc_label`: A string representing the document label to use in the markdown output.
 - **Logic and Control Flow**:
@@ -342,6 +307,42 @@ Generates a markdown string representation of the content list with a given docu
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable.render_markdown`](<#mdrenderablerender_markdown>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameTypeRawContentNoNone`](<#listedbackticknametyperawcontentnonone>)  (Base Class)
+
+
+
+---
+### ListedBacktickNameRawContentNoNone<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L131>)
+
+- **Members**:
+    - `content`: Holds a list of `NamedContent` objects.
+- **Description**: Represents a data structure that stores a list of `NamedContent` objects and provides a method to render them as markdown.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone.render_markdown`](<#listedbackticknamerawcontentnononerender_markdown>)
+- **Inherits From**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable`](<#mdrenderable>)
+
+**Methods**
+
+---
+#### ListedBacktickNameRawContentNoNone\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone.render_markdown}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L134>)
+
+Renders the content of the object as a Markdown string with a given document label.
+- **Inputs**:
+    - `doc_label`: A string label used to describe the document section in the Markdown output.
+- **Logic and Control Flow**:
+    - Initialize an empty string `output_str`.
+    - Check if the `content` attribute of the object is not empty.
+    - If not empty, append a formatted string with the document label converted to spaced string format to `output_str`.
+    - Iterate over each item in the `content` list.
+    - For each item, call its [`render_markdown`](<#mdrenderablerender_markdown>) method with `doc_label` and append the result to `output_str`.
+    - Return the `output_str`.
+- **Output**: A string containing the rendered Markdown content.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable.render_markdown`](<#mdrenderablerender_markdown>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<#listedbackticknamerawcontentnonone>)  (Base Class)
 
 
@@ -351,8 +352,8 @@ Generates a markdown string representation of the content list with a given docu
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L143>)
 
 - **Members**:
-    - `content`: A list of `NamedContent` objects.
-- **Description**: Implements a markdown rendering mechanism for a list of `NamedContent` objects, appending 'None' if the list is empty.
+    - `content`: Holds a list of `NamedContent` objects.
+- **Description**: Represents a markdown renderable object that contains a list of `NamedContent` items. If the list is empty, the markdown output will indicate 'None'. The `render_markdown` method generates a markdown string with a label and the rendered content of each `NamedContent` item.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone.render_markdown`](<#listedbackticknamerawcontentwithnonerender_markdown>)
 - **Inherits From**:
@@ -364,17 +365,17 @@ Generates a markdown string representation of the content list with a given docu
 #### ListedBacktickNameRawContentWithNone\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L146>)
 
-Generates a Markdown-formatted string representation of the content with a given document label.
+Renders a markdown representation of the content with a given document label.
 - **Inputs**:
-    - `doc_label`: A string representing the document label to be used in the Markdown output.
+    - `doc_label`: A string representing the document label to be used in the markdown rendering.
 - **Logic and Control Flow**:
     - Initialize an empty string `output_str`.
-    - Append a formatted string with the document label converted to spaced string format to `output_str`.
+    - Append a formatted string with the document label converted from snake_case to spaced string to `output_str`.
     - Check if `self.content` has elements.
     - If `self.content` is not empty, append a newline to `output_str` and iterate over each item in `self.content`.
     - For each item, call its [`render_markdown`](<#mdrenderablerender_markdown>) method with `doc_label` and append the result to `output_str`.
-    - If `self.content` is empty, append ' None' followed by a newline to `output_str`.
-- **Output**: A string containing the Markdown representation of the content, formatted with the document label and its associated items or 'None' if there are no items.
+    - If `self.content` is empty, append ' None\n' to `output_str`.
+- **Output**: A string containing the markdown representation of the content.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable.render_markdown`](<#mdrenderablerender_markdown>)
@@ -388,7 +389,7 @@ Generates a Markdown-formatted string representation of the content with a given
 
 - **Members**:
     - `content`: A list of strings to be rendered in markdown format.
-- **Description**: Implements a markdown rendering mechanism for a list of strings, ensuring each string is enclosed in backticks and separated by commas, with the last item followed by a newline.
+- **Description**: Represents a markdown renderable object that formats a list of strings by enclosing each string in backticks and separating them with commas.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedCommaCombinedBackTickRawContentNoNone.render_markdown`](<#listedcommacombinedbacktickrawcontentnononerender_markdown>)
 - **Inherits From**:
@@ -402,15 +403,15 @@ Generates a Markdown-formatted string representation of the content with a given
 
 Generates a Markdown-formatted string from a list of content items.
 - **Inputs**:
-    - `doc_label`: A string label for the document section, which will be converted from snake_case to a spaced string format.
+    - `doc_label`: A string label for the document, which is converted from snake_case to a spaced string format.
 - **Logic and Control Flow**:
     - Initialize an empty string `output_str`.
-    - Check if `self.content` has elements; if true, proceed to format the content.
-    - Convert `doc_label` from snake_case to a spaced string and append it to `output_str` with Markdown bold formatting.
-    - Iterate over all items in `self.content` except the last one, appending each item enclosed in backticks and followed by a comma to `output_str`.
-    - Append the last item in `self.content`, enclosed in backticks, to `output_str` without a trailing comma.
-    - Return the constructed `output_str`.
-- **Output**: A string formatted in Markdown, listing the content items with the given document label.
+    - Check if the `content` list is not empty.
+    - If not empty, append a formatted string with the `doc_label` converted to a spaced string and bolded.
+    - Iterate over all items in the `content` list except the last one, appending each item enclosed in backticks and followed by a comma to `output_str`.
+    - Append the last item in the `content` list enclosed in backticks to `output_str` followed by a newline character.
+    - Return the `output_str`.
+- **Output**: A string formatted in Markdown, listing the content items with the document label.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ensure_enclosed_with_backticks`](<#ensure_enclosed_with_backticks>)
@@ -424,7 +425,7 @@ Generates a Markdown-formatted string from a list of content items.
 
 - **Members**:
     - `content`: A list of strings to be rendered in markdown format.
-- **Description**: Generates a markdown string from a list of strings, enclosing each string in backticks and separating them with commas. If the list is empty, it outputs 'None'.
+- **Description**: Extends `MdRenderable` to render a list of strings as a markdown list, with each item enclosed in backticks and separated by commas. If the list is empty, it outputs 'None'.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedCommaCombinedBackTickRawContentWithNone.render_markdown`](<#listedcommacombinedbacktickrawcontentwithnonerender_markdown>)
 - **Inherits From**:
@@ -442,8 +443,9 @@ Generates a markdown string representation of the content list with a given docu
 - **Logic and Control Flow**:
     - Initialize an empty string `output_str`.
     - Convert `doc_label` from snake_case to a spaced string and append it to `output_str` with markdown bold formatting.
-    - Check if `self.content` has elements; if true, iterate over all elements except the last one, appending each enclosed in backticks followed by a comma to `output_str`.
-    - Append the last element of `self.content` enclosed in backticks to `output_str` followed by a newline.
+    - Check if `self.content` has elements.
+    - If `self.content` is not empty, iterate over all elements except the last one, appending each item enclosed in backticks and followed by a comma to `output_str`.
+    - Append the last item of `self.content` enclosed in backticks to `output_str` followed by a newline.
     - If `self.content` is empty, append 'None' followed by a newline to `output_str`.
 - **Output**: A string formatted in markdown, representing the content list with the given document label.
 - **Functions Called**:
@@ -459,7 +461,7 @@ Generates a markdown string representation of the content list with a given docu
 
 - **Members**:
     - `content`: A list of strings to render as markdown content.
-- **Description**: Renders a list of strings as markdown, ensuring each string is enclosed in backticks and formatted as a bulleted list.
+- **Description**: Represents a markdown renderable object that processes a list of strings, ensuring each string is enclosed in backticks and formatted as a bulleted list under a given document label.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBackTickRawContentNoNone.render_markdown`](<#listedbacktickrawcontentnononerender_markdown>)
 - **Inherits From**:
@@ -494,7 +496,7 @@ Generates a Markdown-formatted string from a list of content items.
 
 - **Members**:
     - `content`: A list of strings to render as markdown content.
-- **Description**: Implements markdown rendering for a list of strings, ensuring each item is enclosed in backticks and handling empty lists by appending 'None' to the output.
+- **Description**: Represents a markdown renderable object that processes a list of strings, rendering each item enclosed in backticks, or 'None' if the list is empty.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBackTickRawContentWithNone.render_markdown`](<#listedbacktickrawcontentwithnonerender_markdown>)
 - **Inherits From**:
@@ -508,15 +510,15 @@ Generates a Markdown-formatted string from a list of content items.
 
 Generates a Markdown-formatted string representation of the content list with a given document label.
 - **Inputs**:
-    - `doc_label`: A string representing the label for the document section to be rendered in Markdown.
+    - `doc_label`: A string that represents the label for the document section to be rendered in Markdown format.
 - **Logic and Control Flow**:
     - Initialize an empty string `output_str`.
-    - Convert the `doc_label` from snake_case to a spaced string and append it to `output_str` with Markdown bold formatting.
+    - Convert `doc_label` from snake_case to a spaced string and append it to `output_str` with Markdown bold formatting.
     - Check if the `content` list is not empty.
     - If `content` is not empty, append a newline to `output_str` and iterate over each item in `content`.
-    - For each item, enclose it with backticks and append it as a Markdown list item to `output_str`.
+    - For each item in `content`, enclose it with backticks and append it to `output_str` as a Markdown list item.
     - If `content` is empty, append ' None' followed by a newline to `output_str`.
-- **Output**: A string formatted in Markdown, representing the content list with the specified document label.
+- **Output**: A string formatted in Markdown that represents the content list with the specified document label.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ensure_enclosed_with_backticks`](<#ensure_enclosed_with_backticks>)
@@ -530,7 +532,7 @@ Generates a Markdown-formatted string representation of the content list with a 
 
 - **Members**:
     - `content`: A list of strings to render as markdown content.
-- **Description**: Implements a markdown rendering mechanism for a list of strings, where each string is rendered as a bullet point under a specified document label.
+- **Description**: Represents a markdown renderable object that contains a list of strings. The `render_markdown` method generates a markdown-formatted string with each item in the list as a bullet point under a specified document label.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone.render_markdown`](<#listedrawcontentnononerender_markdown>)
 - **Inherits From**:
@@ -544,14 +546,13 @@ Generates a Markdown-formatted string representation of the content list with a 
 
 Generates a Markdown-formatted string from a list of content items with a given document label.
 - **Inputs**:
-    - `doc_label`: A string representing the label for the document section to be rendered in Markdown.
+    - `doc_label`: A string that represents the label for the document section in snake_case format.
 - **Logic and Control Flow**:
     - Initialize an empty string `output_str`.
     - Check if the `content` list is not empty.
-    - If not empty, append a formatted string with the document label converted to spaced string format to `output_str`.
-    - Iterate over each item in the `content` list.
-    - For each item, append it as a bullet point to `output_str`.
-- **Output**: A string formatted in Markdown, containing the document label and a bulleted list of content items.
+    - If not empty, convert `doc_label` from snake_case to a spaced string and append it to `output_str` with Markdown formatting.
+    - Iterate over each item in the `content` list and append each item to `output_str` as a Markdown bullet point.
+- **Output**: A string formatted in Markdown, representing the content list with the given document label.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<#listedrawcontentnonone>)  (Base Class)
@@ -564,7 +565,7 @@ Generates a Markdown-formatted string from a list of content items with a given 
 
 - **Members**:
     - `content`: A list of strings to render as markdown content.
-- **Description**: Implements markdown rendering for a list of strings, adding bullet points for each item or indicating 'None' if the list is empty.
+- **Description**: Implements markdown rendering for a list of strings, appending 'None' if the list is empty.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone.render_markdown`](<#listedrawcontentwithnonerender_markdown>)
 - **Inherits From**:
@@ -576,16 +577,16 @@ Generates a Markdown-formatted string from a list of content items with a given 
 #### ListedRawContentWithNone\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L230>)
 
-Generates a markdown string representation of the content list with a given document label.
+Generates a markdown-formatted string representation of the content list with a given document label.
 - **Inputs**:
-    - `doc_label`: A string representing the label for the document section.
+    - `doc_label`: A string that represents the label for the document section to be rendered in markdown.
 - **Logic and Control Flow**:
     - Initialize an empty string `output_str`.
-    - Convert the `doc_label` from snake_case to a spaced string and append it to `output_str` with markdown bold formatting.
+    - Append a formatted string with the document label converted from snake_case to spaced string format to `output_str`.
     - Check if the `content` list is not empty.
-    - If `content` is not empty, append a newline to `output_str` and iterate over each item in `content`, appending each item as a markdown list item.
-    - If `content` is empty, append ' None' to `output_str`.
-- **Output**: A string formatted in markdown representing the content list with the given document label.
+    - If the `content` list is not empty, append a newline to `output_str` and iterate over each item in `content`, appending each item as a bullet point to `output_str`.
+    - If the `content` list is empty, append ' None' followed by a newline to `output_str`.
+- **Output**: A string formatted in markdown that includes the document label and a bulleted list of content items or 'None' if the content list is empty.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<#listedrawcontentwithnone>)  (Base Class)
@@ -597,8 +598,8 @@ Generates a markdown string representation of the content list with a given docu
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L242>)
 
 - **Members**:
-    - `content`: A list of lists containing strings.
-- **Description**: Represents a structure that holds nested lists of strings and provides a method to render these lists into a markdown format with a specific label.
+    - `content`: A nested list of strings.
+- **Description**: Represents a markdown renderable content structure that contains a nested list of strings. The `render_markdown` method generates a markdown representation of the nested list, organizing it into blocks and sub-items.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NestedListedRawContent.render_markdown`](<#nestedlistedrawcontentrender_markdown>)
 - **Inherits From**:
@@ -615,11 +616,12 @@ Generates a markdown string representation of nested list content with a given d
     - `doc_label`: A string label for the document, which is converted from snake_case to a spaced string format.
 - **Logic and Control Flow**:
     - Initialize an empty string `output_str`.
-    - Convert `doc_label` from snake_case to a spaced string and append it to `output_str` with markdown formatting.
+    - Append the formatted document label to `output_str` using [`snake_case_to_spaced_string`](<#snake_case_to_spaced_string>) to convert the label.
     - Check if `self.content` has elements; if true, append a newline to `output_str`.
-    - Iterate over each item in `self.content`, appending a block number and its subitems to `output_str` with markdown formatting.
+    - Iterate over each item in `self.content` with its index, appending 'Block' followed by the index to `output_str`.
+    - For each subitem in the current item, append it to `output_str` with additional indentation.
     - If `self.content` is empty, append 'None' to `output_str`.
-- **Output**: A markdown formatted string representing the content of the nested list with the specified document label.
+- **Output**: A string formatted in markdown, representing the nested list content with the given document label.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.snake_case_to_spaced_string`](<#snake_case_to_spaced_string>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.NestedListedRawContent`](<#nestedlistedrawcontent>)  (Base Class)
@@ -630,8 +632,9 @@ Generates a markdown string representation of nested list content with a given d
 ### ListData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L259>)
 
+- **Decorators**: `@classmethod`
 - **Members**:
-    - `data`: Stores a list of strings.
+    - `data`: A list of strings.
 - **Description**: Represents a data structure that holds a list of strings and provides methods to create an instance from a language model response and to render the data in markdown format.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListData.from_llm`](<#listdatafrom_llm>)
@@ -646,18 +649,18 @@ Generates a markdown string representation of nested list content with a given d
 #### ListData\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListData.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L262>)
 
-Creates an instance of the class by generating a response from a language model using provided prompts and code.
+Creates an instance of the class from a language model response.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate a response.
-    - `system_prompt`: A string representing the system prompt for the language model.
-    - `user_prompt`: A string representing the user prompt for the language model.
+    - `system_prompt`: A string containing the system prompt for the language model.
+    - `user_prompt`: A string containing the user prompt for the language model.
     - `code`: A string containing code to include in the user prompt.
 - **Logic and Control Flow**:
     - Concatenates `user_prompt` and `code` into `user_prompt_complete`.
-    - Calls `llm.generate_response` with `system_prompt`, `user_prompt_complete`, and an output configuration to get `content_raw`.
+    - Calls `llm.generate_response` with `system_prompt`, `user_prompt_complete`, and an [`OutputConfig`](<../models.py.md#outputconfig>) to get `content_raw`.
     - Parses `content_raw` using `cls.parse_raw` to create an instance of the class.
-- **Output**: An instance of the class (`Self`) created from the parsed response.
+- **Output**: An instance of the class created from the parsed language model response.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../models.py.md#chatopenaigenerate_response>)
     - [`python-backend/content_services/inspector/src/utils/models.OutputConfig`](<../models.py.md#outputconfig>)
@@ -668,16 +671,16 @@ Creates an instance of the class by generating a response from a language model 
 #### ListData\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListData.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L275>)
 
-Generates a markdown-formatted string representation of the list of dependencies.
+Generates a markdown-formatted string representation of the `data` list.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize an empty string `output`.
     - Append a markdown horizontal rule (`\n---\n`) to `output`.
-    - Iterate over each dependency in `self.data`.
-    - For each dependency, append a markdown list item with the dependency name enclosed in backticks to `output`.
+    - Iterate over each element `dep` in `self.data`.
+    - For each `dep`, append a markdown list item with the element enclosed in backticks to `output`.
     - Append a newline character to `output`.
     - Return the `output` string.
-- **Output**: A string formatted in markdown, representing the list of dependencies.
+- **Output**: A string formatted in markdown, representing the elements of `data` as a list.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListData`](<#listdata>)  (Base Class)
 
 
@@ -704,9 +707,9 @@ Returns a string representation of the object by rendering it as markdown.
 - **Decorators**: `@abc.ABC`
 - **Members**:
     - `_children`: Stores a list of child elements.
-    - `_supported_child_ordering`: Defines the order in which child fields should be rendered.
+    - `_supported_child_ordering`: Defines the order in which child elements should be rendered.
     - `_reified_symbol`: Holds a reified symbol or None.
-- **Description**: Represents an abstract base class for intermediate representation (IR) data, providing methods for handling system and user prompts, child-to-IR conversion, and rendering markdown. It manages child elements and their ordering, and supports bespoke data processing in subclasses.
+- **Description**: Represents an abstract base class for handling intermediate representation (IR) data, providing methods for generating system and user prompts, converting child symbols to IR data, and rendering markdown. It manages child elements and their order, and supports bespoke data processing in subclasses.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData.system_prompt`](<#irdatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData.user_prompt`](<#irdatauser_prompt>)
@@ -731,8 +734,9 @@ Defines an abstract method to generate a system prompt from a given symbol.
 - **Inputs**:
     - `symbol`: A `RawSymbolData` object that contains information about the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
-    - The method is abstract and must be implemented by subclasses of `IrData`.
-- **Output**: A string representing the system prompt generated from the given symbol.
+    - The method is abstract and must be implemented by subclasses.
+    - It takes a `RawSymbolData` object as input and returns a string.
+- **Output**: A string representing the system prompt.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<#irdata>)  (Base Class)
 
 
@@ -743,10 +747,10 @@ Defines an abstract method to generate a system prompt from a given symbol.
 Defines an abstract method to generate a user prompt based on a given symbol.
 - **Decorators**: `@classmethod`, `@abc.abstractmethod`
 - **Inputs**:
-    - `symbol`: A `RawSymbolData` object that contains information about the symbol for which the user prompt is generated.
+    - `symbol`: An instance of `RawSymbolData` that provides the necessary data to generate the user prompt.
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses.
-    - The method takes a `RawSymbolData` object as input and returns a string.
+    - The method takes a `RawSymbolData` object as input to generate a user prompt.
 - **Output**: A string representing the user prompt.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<#irdata>)  (Base Class)
 
@@ -773,10 +777,10 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type or returns `Non
 Maps a child symbol to its corresponding field name.
 - **Decorators**: `@classmethod`, `@abc.abstractmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing the child symbol to map.
+    - `child`: An instance of `RawSymbolData` representing the child symbol to map to a field name.
 - **Logic and Control Flow**:
     - This method is abstract and must be implemented by subclasses.
-    - The method takes a `RawSymbolData` object as input and returns a string.
+    - The method takes a `RawSymbolData` object as input and returns a string representing the field name.
 - **Output**: A string representing the field name corresponding to the given child symbol.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<#irdata>)  (Base Class)
 
@@ -788,10 +792,10 @@ Maps a child symbol to its corresponding field name.
 Defines a method to return a default instance of the class.
 - **Decorators**: `@classmethod`, `@abc.abstractmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that can be used to provide additional symbol information for the instance.
+    - `reified_symbol`: An optional `ReifiedSymbol` object that can be used to provide additional context or data for the instance creation.
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses.
-    - The method is a class method, meaning it is called on the class rather than an instance.
+    - The method is a class method, meaning it is called on the class itself rather than an instance of the class.
 - **Output**: Returns an instance of the class (`Self`).
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<#irdata>)  (Base Class)
 
@@ -800,11 +804,11 @@ Defines a method to return a default instance of the class.
 #### IrData\.\_apply\_bespoke\_data<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData._apply_bespoke_data}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L325>)
 
-Allows subclasses to implement custom data processing.
+Allows subclasses to override and apply custom data processing specific to the subclass.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - The method is defined as a placeholder for subclasses to override.
-    - No specific logic is implemented in this method.
+    - No specific logic or control flow is implemented in this method.
 - **Output**: No output is returned as the method returns `None`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<#irdata>)  (Base Class)
 
@@ -813,22 +817,23 @@ Allows subclasses to implement custom data processing.
 #### IrData\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L331>)
 
-Creates an instance of the class from a language model (LLM) and symbol data.
+Creates an instance of the class from a language model (LLM) response based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of [`ChatOpenAI`](<../models.py.md#chatopenai>) used to generate responses.
     - `symbol`: An instance of `RawSymbolData` representing the symbol to process.
 - **Logic and Control Flow**:
-    - Check if `symbol.symbol_code` is `None` to handle C++ classes defined in headers by creating a default instance.
-    - If `symbol.symbol_code` is not `None`, generate a system prompt using `cls.system_prompt(symbol)` and adjust it if the LLM model is `gpt-4o-mini`.
+    - Check if `symbol.symbol_code` is `None`; if true, create a default instance using `symbol.reified_symbol`.
+    - If `symbol.symbol_code` is not `None`, generate a system prompt using `cls.system_prompt(symbol)`.
+    - Check if the LLM model is `gpt-4o-mini`; if true, append additional instructions to the system prompt.
     - Generate a response from the LLM using the system prompt, user prompt, and output configuration.
-    - Catch `openai.LengthFinishReasonError` and return `None` if it occurs.
+    - Handle `openai.LengthFinishReasonError` by printing an error message and returning `None`.
     - Parse the raw content from the LLM response to create a class instance.
     - If `symbol.reified_symbol` is not `None`, assign it to the instance's `_reified_symbol` attribute.
-    - If `symbol.children` is not empty, compute the number of workers and use a thread pool executor to process each child symbol concurrently.
-    - For each child symbol, determine its IR class and either append it to `_children` or submit it for concurrent processing.
-    - Collect and sort results from futures, appending them to `_children` in the correct order.
-- **Output**: An instance of the class, constructed from the LLM response and symbol data.
+    - If `symbol.children` is not empty, compute the number of workers and create a thread pool executor.
+    - For each child symbol, determine the corresponding IR class and submit a task to process it using the LLM.
+    - Collect results from the futures and append them to the instance's `_children` attribute.
+- **Output**: Returns an instance of the class populated with data from the LLM response.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData.default_instance`](<#irdatadefault_instance>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData.system_prompt`](<#irdatasystem_prompt>)
@@ -846,20 +851,21 @@ Creates an instance of the class from a language model (LLM) and symbol data.
 #### IrData\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L404>)
 
-Generates a Markdown representation of the current object, including links to source code and child elements.
+Renders the markdown representation of the current object, including links to source code and child elements.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls [`_apply_bespoke_data`](<#irdata_apply_bespoke_data>) to apply any subclass-specific data processing.
-    - Initializes an empty string `output` to store the Markdown content.
+    - Initializes an empty string `output` to store the markdown content.
     - Checks if `_reified_symbol` is not `None` and adds a link to the source code to `output`.
-    - Iterates over the object's annotations, rendering each `MdRenderable` attribute to Markdown and appending it to `output`.
+    - Iterates over the object's annotations and renders markdown for each `MdRenderable` attribute.
     - If `_reified_symbol` is a callable and has calls, it replaces function names in the rendered content with links to their definitions.
-    - If `_reified_symbol` is not `None`, it adds sections for functions called, related implementations, and parent class links to `output`.
-    - Creates a dictionary `child_dictionary` to store rendered Markdown for child elements, ordered by `_supported_child_ordering`.
-    - Iterates over `_children`, rendering each child to Markdown and appending it to the corresponding entry in `child_dictionary`.
+    - Appends the rendered content to `output`.
+    - If `_reified_symbol` is not `None`, it adds sections for functions called, related implementations, and parent class links based on the symbol's kind and relationships.
+    - Creates a dictionary `child_dictionary` to store rendered markdown for child elements based on `_supported_child_ordering`.
+    - Iterates over `_children`, rendering markdown for each child and appending it to the corresponding entry in `child_dictionary`.
     - Appends the content of `child_dictionary` to `output`.
-    - Returns the complete Markdown content in `output`.
-- **Output**: A string containing the Markdown representation of the object, including links to source code and child elements.
+    - Returns the complete `output` string.
+- **Output**: A string containing the markdown representation of the object, including links to source code and child elements.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData._apply_bespoke_data`](<#irdata_apply_bespoke_data>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable.render_markdown`](<#mdrenderablerender_markdown>)
@@ -877,8 +883,8 @@ Generates a Markdown representation of the current object, including links to so
 
 - **Decorators**: `@abc.ABC`
 - **Members**:
-    - `data`: Stores a dictionary mapping strings to `IrData` or lists of `IrData`.
-- **Description**: Represents a collection of intermediate representation (IR) data, providing methods to create instances from language model (LLM) data and render the collection as markdown. It uses a dictionary to store IR data associated with string keys, and includes class methods for constructing instances from LLM data and abstract methods for subclass implementation.
+    - `data`: Holds a dictionary mapping strings to `IrData` or lists of `IrData`.
+- **Description**: Represents a collection of intermediate representation (IR) data, providing methods to create instances from language model (LLM) data and render the collection as markdown. Inherits from `BaseModel` and `abc.ABC`, indicating it is an abstract base class that requires implementation of certain methods in subclasses.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<#ircollectionfrom_llm_with_ir_data>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm`](<#ircollectionfrom_llm>)
@@ -894,24 +900,23 @@ Generates a Markdown representation of the current object, including links to so
 #### IrCollection\.from\_llm\_with\_ir\_data<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L587>)
 
-Creates an instance of the class by processing raw symbol data using a language model and an intermediate representation (IR) data type.
+Creates an instance of the class by processing raw symbol data using a language model and an intermediate representation data type.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `ir_data`: A type of `IrData` that defines how to process raw symbol data.
-    - `llm`: An instance of [`ChatOpenAI`](<../models.py.md#chatopenai>) used to process the raw symbol data.
-    - `symbols_list`: A `RawSymbolCollection` containing the raw symbol data to be processed.
+    - `ir_data`: A type of `IrData` used to process raw symbol data.
+    - `llm`: An instance of [`ChatOpenAI`](<../models.py.md#chatopenai>) used for language model processing.
+    - `symbols_list`: A `RawSymbolCollection` containing raw symbol data to process.
 - **Logic and Control Flow**:
-    - Initialize empty dictionaries `symbols_dict` and `futures` to store processed symbols and future tasks respectively.
-    - Compute the number of workers needed based on the size of `symbols_list` and print the number of workers.
-    - Select the language model to use based on the number of workers; use the provided `llm` if only one worker is needed, otherwise use a different model configuration.
-    - Create a [`FastShutdownThreadPoolExecutor`](<../threadpool.py.md#fastshutdownthreadpoolexecutor>) with the computed number of workers to manage concurrent processing.
-    - Iterate over each item in `symbols_list.data`, checking if it is a list or a `RawSymbolData` instance.
-    - For each raw symbol data, check if its name is not already in `symbols_dict`; if not, initialize an empty list for it in `symbols_dict`.
-    - Submit a task to the executor to process each raw symbol data using `ir_data.from_llm` and store the future object in `futures` with the symbol name as the key.
-    - Raise a `ValueError` if an unsupported type is found in `symbols_list`.
-    - Iterate over the completed futures, retrieve the result, and append it to the corresponding list in `symbols_dict` if the result is not `None`.
-    - Print the progress of processed symbols.
-    - Return a new instance of the class with `symbols_dict` as its data.
+    - Initialize an empty dictionary `symbols_dict` and an empty dictionary `futures`.
+    - Compute the number of workers needed based on the length of `symbols_list.data`.
+    - Select the language model to use based on the number of workers.
+    - Create a [`FastShutdownThreadPoolExecutor`](<../threadpool.py.md#fastshutdownthreadpoolexecutor>) with the computed number of workers.
+    - Iterate over each item in `symbols_list.data`.
+    - For each item, check if it is a list or a `RawSymbolData` and process accordingly.
+    - Submit tasks to the executor to process each symbol using `ir_data.from_llm` and store futures.
+    - Raise a `ValueError` if an unsupported type is found in `RawSymbolCollection`.
+    - Iterate over completed futures, retrieve results, and append them to `symbols_dict`.
+    - Return a new instance of the class with `symbols_dict` as the data.
 - **Output**: An instance of the class with processed symbol data stored in `symbols_dict`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.compute_num_workers`](<#compute_num_workers>)
@@ -927,13 +932,13 @@ Creates an instance of the class by processing raw symbol data using a language 
 Defines an abstract method to create an instance of the class from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`, `@abc.abstractmethod`
 - **Inputs**:
-    - `cls`: The class that calls this method.
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to use.
-    - `symbols_list`: A `RawSymbolCollection` object containing the symbols to process.
+    - `cls`: The class that this method is a part of.
+    - `llm`: An instance of `ChatOpenAI` representing the language model to use.
+    - `symbols_list`: A `RawSymbolCollection` containing the symbols to process.
 - **Logic and Control Flow**:
     - This method is abstract and must be implemented by subclasses.
     - The method signature indicates it will return an instance of the class (`Self`).
-- **Output**: An instance of the class (`Self`) that implements this method.
+- **Output**: An instance of the class (`Self`) created from the language model and symbols.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<#ircollection>)  (Base Class)
 
 
@@ -941,16 +946,17 @@ Defines an abstract method to create an instance of the class from a language mo
 #### IrCollection\.render\_markdown<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.render_markdown}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L642>)
 
-Generates a markdown representation of the data in the `IrCollection` instance.
+Renders the markdown representation of the data in the `IrCollection` class.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize an empty string `output` to store the markdown content.
     - Iterate over each key-value pair in `self.data`.
     - Escape markdown characters in the key using [`escape_markdown_characters`](<#escape_markdown_characters>).
     - For each item in the value list, check if `_reified_symbol` is not `None`.
-    - If `_reified_symbol` is present, construct an `id_comment` using the symbol's kind and fully qualified name.
+    - If `_reified_symbol` is present, construct `kind_part` and `name_part` from the symbol's kind and fully qualified name, respectively, and create an `id_comment`.
     - Append a markdown header with the key and `id_comment` to `output`.
     - Call [`render_markdown`](<#mdrenderablerender_markdown>) on the item and append the result to `output`.
+    - Return the complete `output` string.
 - **Output**: A string containing the markdown representation of the data.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.escape_markdown_characters`](<#escape_markdown_characters>)
@@ -963,12 +969,12 @@ Generates a markdown representation of the data in the `IrCollection` instance.
 #### IrCollection\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.__str__}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L658>)
 
-Converts the object to a Markdown string representation.
+Converts the object to a markdown string representation.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the [`render_markdown`](<#mdrenderablerender_markdown>) method of the object.
     - Returns the result of the [`render_markdown`](<#mdrenderablerender_markdown>) method.
-- **Output**: A string that represents the object in Markdown format.
+- **Output**: A string that represents the object in markdown format.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.MdRenderable.render_markdown`](<#mdrenderablerender_markdown>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<#ircollection>)  (Base Class)
@@ -982,8 +988,8 @@ Converts the object to a Markdown string representation.
 - **Members**:
     - `type`: Holds the type information with backtick-enclosed content.
     - `description`: Contains a raw content description.
-    - `use`: Describes the use with raw content.
-- **Description**: Represents a data structure that extends `IrData` and includes fields for type, description, and use, each represented by specific content classes. It provides a class method `default_instance` to create a default instance with empty content for each field.
+    - `use`: Specifies the use of the variable with raw content.
+- **Description**: Extends `IrData` to represent variable data with specific fields for type, description, and use, each encapsulated in specialized content classes.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData.default_instance`](<#variabledatadefault_instance>)
 - **Inherits From**:
@@ -998,9 +1004,9 @@ Converts the object to a Markdown string representation.
 Creates a default instance of the `VariableData` class with empty content fields.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that can be `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which can be used to provide additional symbol information.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with default empty content for `type`, `description`, and `use` fields.
+    - Calls the constructor of the `VariableData` class with default empty content for `type`, `description`, and `use` fields.
 - **Output**: A new instance of the `VariableData` class with default values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<#fieldnamewithbacktickcontent>)
@@ -1013,12 +1019,11 @@ Creates a default instance of the `VariableData` class with empty content fields
 ### DataStructureData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.DataStructureData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L677>)
 
-- **Decorators**: `@abc.ABC`
 - **Members**:
     - `type`: Holds the type information with backtick-enclosed content.
     - `members`: Contains a list of named content without 'None' values.
     - `description`: Provides a raw content description of the data structure.
-- **Description**: Represents an abstract base class for data structures, inheriting from `IrData` and `abc.ABC`, and includes type, members, and description attributes. It provides a class method `default_instance` to create a default instance with empty or default values for its attributes.
+- **Description**: Represents an abstract data structure that extends `IrData` and `abc.ABC`, with attributes for type, members, and description. It includes a class method `default_instance` to create a default instance of the class with empty or default values for its attributes.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.DataStructureData.default_instance`](<#datastructuredatadefault_instance>)
 - **Inherits From**:
@@ -1030,14 +1035,13 @@ Creates a default instance of the `VariableData` class with empty content fields
 #### DataStructureData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.DataStructureData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L682>)
 
-Creates a default instance of the `DataStructureData` class with empty content fields.
+Creates a default instance of the class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that can be `None`, used to provide additional symbol information.
+    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with default values for `type`, `members`, and `description` fields.
-    - Returns a new instance of the class with these default values.
-- **Output**: A new instance of the `DataStructureData` class with default values for its fields.
+    - Calls the class constructor `cls` with default values for `type`, `members`, and `description`.
+- **Output**: A new instance of the class with default attribute values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<#fieldnamewithbacktickcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<#listedbackticknamerawcontentnonone>)
@@ -1067,13 +1071,14 @@ Creates a default instance of the `DataStructureData` class with empty content f
 #### FnDeclData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnDeclData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L697>)
 
-Creates and returns a default instance of the `FnDeclData` class.
+Creates a default instance of the `FnDeclData` class with empty content fields.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that can be used to provide additional symbol information for the instance.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which can be used to provide additional symbol information.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with default values for `single_sentence`, `description`, `inputs`, and `output`.
-- **Output**: A new instance of the `FnDeclData` class with default values.
+    - Calls the class constructor `cls` with default empty values for `single_sentence`, `description`, `inputs`, and `output` fields.
+    - Returns the newly created instance of the class.
+- **Output**: A new instance of the `FnDeclData` class with default empty content fields.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<#rawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<#fieldnamewithrawcontent>)
@@ -1087,11 +1092,11 @@ Creates and returns a default instance of the `FnDeclData` class.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L707>)
 
 - **Members**:
-    - `single_sentence`: Stores a single sentence description as `RawContent`.
-    - `inputs`: Holds input data as `ListedBacktickNameRawContentWithNone`.
-    - `logic_and_control_flow`: Contains logic and control flow information as `ListedRawContentWithNone`.
-    - `output`: Represents the output data as `FieldNameWithRawContent`.
-- **Description**: Represents a function's data structure, including a single sentence description, inputs, logic and control flow, and output. Inherits from `IrData` and `abc.ABC`, providing a default instance method to create an instance with default values.
+    - `single_sentence`: Holds a single sentence description of the function.
+    - `inputs`: Contains a list of inputs for the function.
+    - `logic_and_control_flow`: Represents the logic and control flow of the function.
+    - `output`: Describes the output of the function.
+- **Description**: Represents function data, including a single sentence description, inputs, logic and control flow, and output. Inherits from `IrData` and `abc.ABC`, and provides a class method `default_instance` to create a default instance of the class.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData.default_instance`](<#fndatadefault_instance>)
 - **Inherits From**:
@@ -1106,7 +1111,7 @@ Creates and returns a default instance of the `FnDeclData` class.
 Creates and returns a default instance of the `FnData` class.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that can be used to provide additional symbol information for the instance.
+    - `reified_symbol`: An optional `ReifiedSymbol` object that can be `None`.
 - **Logic and Control Flow**:
     - Calls the class constructor `cls` with default values for `single_sentence`, `inputs`, `logic_and_control_flow`, and `output`.
 - **Output**: A new instance of the `FnData` class with default values.
@@ -1124,8 +1129,8 @@ Creates and returns a default instance of the `FnData` class.
 
 - **Decorators**: `@classmethod`
 - **Members**:
-    - `type`: Specifies the type of the class.
-    - `members`: Contains a list of members of the class.
+    - `type`: Specifies the type of the class data.
+    - `members`: Contains a list of members associated with the class.
     - `description`: Provides a description of the class.
     - `_supported_child_ordering`: Defines the order of supported child elements.
 - **Description**: Represents a class that extends `IrData` and `abc.ABC`, providing a structure for class data with type, members, and description attributes, and supports child ordering.
@@ -1140,14 +1145,13 @@ Creates and returns a default instance of the `FnData` class.
 #### ClassData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ClassData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L731>)
 
-Creates and returns a default instance of the `ClassData` class.
+Creates a default instance of the `ClassData` class with predefined attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `reified_symbol`: An optional `ReifiedSymbol` object that can be `None`.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with predefined default values for `description`, `type`, `members`, and `inherits_from`.
-    - Returns the newly created instance of the class.
-- **Output**: A new instance of the `ClassData` class with default values.
+    - Calls the class constructor `cls` with specific default values for `description`, `type`, `members`, and `inherits_from`.
+- **Output**: A new instance of the `ClassData` class with default attribute values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<#fieldnamewithrawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<#fieldnamewithbacktickcontent>)
@@ -1167,28 +1171,29 @@ Converts a snake_case string to a spaced and capitalized string.
 - **Inputs**:
     - `snake_case`: A string in snake_case format to convert.
 - **Logic and Control Flow**:
-    - Initialize an empty list `items` to store processed words.
-    - Split the input string `snake_case` by underscores ('_') into a list `split_str`.
-    - If `split_str` is not empty, capitalize the first element and add it to `items`.
-    - Iterate over the remaining elements in `split_str`.
-    - For each element, check if it is in the `NON_CAPITALIZED_SET` after stripping and converting to lowercase.
-    - If it is in the set, append it as is to `items`; otherwise, capitalize it and append to `items`.
-    - Join the elements in `items` with spaces and return the resulting string after stripping any leading or trailing spaces.
-- **Output**: A string with words separated by spaces, where the first word is capitalized and subsequent words are capitalized unless they are in the `NON_CAPITALIZED_SET`.
+    - Initializes an empty list `items` to store processed words.
+    - Splits the input `snake_case` string by underscores into a list `split_str`.
+    - Checks if `split_str` is not empty, then capitalizes the first element and appends it to `items`.
+    - Iterates over the remaining elements in `split_str`.
+    - For each element, checks if it is in `NON_CAPITALIZED_SET` after stripping and converting to lowercase.
+    - If it is in `NON_CAPITALIZED_SET`, appends the element as is to `items`.
+    - Otherwise, capitalizes the element and appends it to `items`.
+    - Joins the elements in `items` with spaces and returns the resulting string after stripping any leading or trailing spaces.
+- **Output**: A string with words separated by spaces, where each word is capitalized unless it is in `NON_CAPITALIZED_SET`.
 
 
 ---
 ### ensure\_enclosed\_with\_backticks<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ensure_enclosed_with_backticks}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L43>)
 
-Ensures a string is enclosed with backticks.
+Ensures a string is enclosed with backticks if not already.
 - **Inputs**:
-    - `raw_str`: The input string to check and possibly modify.
+    - `raw_str`: The input string to check and possibly enclose with backticks.
 - **Logic and Control Flow**:
     - Checks if `raw_str` starts with a backtick; if not, sets `start` to a backtick, otherwise sets it to an empty string.
     - Checks if `raw_str` ends with a backtick; if not, sets `end` to a backtick, otherwise sets it to an empty string.
     - Concatenates `start`, `raw_str`, and `end` to form the result.
-- **Output**: A string that is guaranteed to be enclosed with backticks at both the start and end.
+- **Output**: A string that is enclosed with backticks at both ends if it was not already.
 
 
 ---
@@ -1197,18 +1202,18 @@ Ensures a string is enclosed with backticks.
 
 Calculates the number of workers needed based on the number of symbols.
 - **Inputs**:
-    - `num_symbols`: The total number of symbols that need processing.
+    - `num_symbols`: The total number of symbols to process.
 - **Logic and Control Flow**:
-    - Calculates the ceiling of the division of `num_symbols` by `MAX_SYMBOLS_PER_WORKER` to determine the minimum number of workers needed.
-    - Compares the calculated number of workers with `MAX_WORKERS_FOR_SYMBOLS` and returns the smaller value.
-- **Output**: The function returns an integer representing the number of workers required.
+    - Divides the number of symbols by `MAX_SYMBOLS_PER_WORKER` and rounds up to the nearest integer using `ceil`.
+    - Compares the result with `MAX_WORKERS_FOR_SYMBOLS` and returns the smaller value.
+- **Output**: An integer representing the number of workers needed.
 
 
 ---
 ### escape\_markdown\_characters<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.escape_markdown_characters}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/ir_common.py#L56>)
 
-Escapes special characters in a string for Markdown compatibility.
+Escapes special characters in a string for Markdown formatting.
 - **Inputs**:
     - `text`: A string that possibly contains Markdown special characters.
 - **Logic and Control Flow**:

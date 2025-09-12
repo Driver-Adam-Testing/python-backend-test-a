@@ -6,7 +6,7 @@
 GitHub Actions workflow for automatically updating interdependent packages with Dependabot.
 
 # Purpose
-The configuration file defines a GitHub Actions workflow named `Dependabot Auto Update`. This workflow automates the process of updating downstream packages when Dependabot updates a dependency. It triggers on pull requests that are opened or synchronized, and can also be manually triggered via `workflow_dispatch`. The workflow runs on the `ubuntu-latest` environment and includes several steps: checking out the code, setting up Python version 3.12, installing Poetry, installing required Python packages, updating interdependent packages using a Python script, and committing and pushing any changes back to the repository. The workflow uses the `GITHUB_TOKEN` secret to authenticate the commit and push operations.
+The `Dependabot Auto Update` configuration file defines a GitHub Actions workflow that automates the process of updating downstream packages when Dependabot updates a dependency. It grants write permissions for `id-token` and `contents`, and triggers on pull requests that are opened or synchronized, as well as on manual workflow dispatch. The workflow includes a job named `update_lock_files`, which runs on the latest Ubuntu environment and executes only if the actor is Dependabot. The job consists of several steps: checking out the code, setting up Python version 3.12, installing Poetry, installing required Python packages using `pip`, updating interdependent packages with a Python script, and committing and pushing any changes back to the repository. The workflow uses the `GITHUB_TOKEN` secret to authenticate the commit and push operations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

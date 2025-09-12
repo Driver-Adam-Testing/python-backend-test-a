@@ -3,22 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for a getting started guide and instructions for summarizing and describing codebases.
+Template prompts for getting started guides and instructions for summarizing codebase descriptions.
 
 ## Folders
-- **[templates](templates/README.md)**: Template for a getting started guide with prompts for codebase purpose, user information, and technical overview.
+- **[templates](templates/README.md)**: Template prompts for creating a comprehensive getting started guide for a codebase.
 
 ## Files
-- **[chunk_description.txt](chunk_description.txt.md)**: Instructions for summarizing module descriptions in the `python-backend` codebase.
-- **[compress_chunks.txt](compress_chunks.txt.md)**: Template for summarizing codebase contents and identifying business logic and APIs.
+- **[chunk_description.txt](chunk_description.txt.md)**: Instructions for summarizing module descriptions in a codebase.
+- **[compress_chunks.txt](compress_chunks.txt.md)**: A text file related to prompt templates for compressing chunks in the inspection module.
 - **[long_from_chunk_descriptions.txt](long_from_chunk_descriptions.txt.md)**: Instructions for writing a detailed description of a software codebase by combining module subset descriptions.
 - **[long_from_long_descriptions.txt](long_from_long_descriptions.txt.md)**: Instructions for writing detailed descriptions of a software codebase, including purpose, logic, and APIs.
 - **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: Instructions for writing a concise paragraph summarizing a software codebase from module descriptions.
-- **[single_paragraph_from_long_descriptions.txt](single_paragraph_from_long_descriptions.txt.md)**: Instructions for writing a concise paragraph describing a software codebase using detailed module descriptions.
-- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: Instructions for writing a single sentence description of a codebase using overlapping subcomponent descriptions.
+- **[single_paragraph_from_long_descriptions.txt](single_paragraph_from_long_descriptions.txt.md)**: Instructions for writing a concise paragraph describing a software codebase based on detailed module descriptions.
+- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: Instructions for writing a single sentence description of a codebase using provided module subset descriptions.
 - **[single_sentence_from_long_descriptions.txt](single_sentence_from_long_descriptions.txt.md)**: Instructions for writing a single sentence description of a codebase using detailed module descriptions.
-- **[terse_sentence_from_chunk_descriptions.txt](terse_sentence_from_chunk_descriptions.txt.md)**: A guide for writing concise descriptions of codebases based on overlapping subcomponent descriptions.
-- **[terse_sentence_from_long_descriptions.txt](terse_sentence_from_long_descriptions.txt.md)**: Generates concise descriptions for codebases from detailed module information.
+- **[terse_sentence_from_chunk_descriptions.txt](terse_sentence_from_chunk_descriptions.txt.md)**: A guide for writing concise, high-level descriptions of codebases based on overlapping module descriptions.
+- **[terse_sentence_from_long_descriptions.txt](terse_sentence_from_long_descriptions.txt.md)**: Instructions for writing concise codebase descriptions from detailed module descriptions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

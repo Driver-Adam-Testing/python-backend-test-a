@@ -6,12 +6,11 @@
 Tests for the DataSource class methods from_node_ids, from_page_id, and is_in_scope.
 
 # Purpose
-This code is a test suite for the `DataSource` class, which is imported from the `shared.v3.utils.datasource` module. It contains three test functions that verify different functionalities of the `DataSource` class. The [`test_data_source_from_node_ids`](<#test_data_source_from_node_ids>) function checks the creation of a `DataSource` instance using the `from_node_ids` method, ensuring that the `node_ids` and `organization_id` attributes are correctly set. The [`test_data_source_from_page_id`](<#test_data_source_from_page_id>) function tests the `from_page_id` method to confirm that it returns a `DataSource` instance with the correct `organization_id`, although it does not perform actual database calls. The [`test_data_source_is_in_scope`](<#test_data_source_is_in_scope>) function evaluates the `is_in_scope` method by simulating a scenario where a `DataSource` instance checks if a given path is within the scope of its cached nodes, using a mock node with a specific `relative_path`.
+This code is a test suite for the `DataSource` class, which is imported from the `shared.v3.utils.datasource` module. It contains three test functions that verify different functionalities of the `DataSource` class. The [`test_data_source_from_node_ids`](<#test_data_source_from_node_ids>) function checks the creation of a `DataSource` instance using the `from_node_ids` method, ensuring that the `node_ids` and `organization_id` attributes are correctly set. The [`test_data_source_from_page_id`](<#test_data_source_from_page_id>) function tests the `from_page_id` method to confirm that it returns a `DataSource` instance with the correct `organization_id`, although it does not test database interactions. The [`test_data_source_is_in_scope`](<#test_data_source_is_in_scope>) function verifies the `is_in_scope` method by simulating a scenario where a `DataSource` instance checks if a given path is within the scope of its cached nodes.
 # Imports and Dependencies
 
 ---
 - `uuid.UUID`
-- `database.models_v1.Tag`
 - `shared.v3.utils.datasource.DataSource`
 
 
@@ -19,27 +18,27 @@ This code is a test suite for the `DataSource` class, which is imported from the
 
 ---
 ### FakeNode<!-- {{#class:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_is_in_scope.FakeNode}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L43>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L42>)
 
 - **Members**:
     - `relative_path`: Stores the relative path as 'docs'.
-- **Description**: Represents a mock node with a predefined relative path used for testing purposes.
+- **Description**: Represents a node with a fixed relative path used for testing purposes.
 
 
 # Functions
 
 ---
 ### test\_data\_source\_from\_node\_ids<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_from_node_ids}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L7>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L6>)
 
-Tests the creation of a `DataSource` object from a list of `node_ids` and an `organization_id`.
+Tests the creation of a `DataSource` object using [`from_node_ids`](<../utils/datasource.py.md#datasourcefrom_node_ids>) method with specified `node_ids` and `organization_id`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initializes a list `node_ids` with a single UUID value.
-    - Sets `organization_id` to the string 'test_org'.
-    - Calls `DataSource.from_node_ids` with `node_ids` and `organization_id` to create a `DataSource` object `ds`.
-    - Asserts that `ds.node_ids` is equal to the initialized `node_ids`.
-    - Asserts that `ds.organization_id` is equal to the initialized `organization_id`.
+    - Initialize `node_ids` with a list containing a single `UUID`.
+    - Set `organization_id` to a string 'test_org'.
+    - Call `DataSource.from_node_ids` with `node_ids` and `organization_id` to create a `DataSource` object `ds`.
+    - Assert that `ds.node_ids` is equal to the initialized `node_ids`.
+    - Assert that `ds.organization_id` is equal to the initialized `organization_id`.
 - **Output**: No output is returned as the function is a test function that uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<../utils/datasource.py.md#datasourcefrom_node_ids>)
@@ -47,15 +46,15 @@ Tests the creation of a `DataSource` object from a list of `node_ids` and an `or
 
 ---
 ### test\_data\_source\_from\_page\_id<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_from_page_id}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L20>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L19>)
 
 Tests the `DataSource.from_page_id` method to ensure it can be called and returns a `DataSource` instance.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initialize `page_node_id` with a UUID value '11111111-1111-1111-1111-111111111111'.
-    - Set `organization_id` to the string 'test_org'.
-    - Call `DataSource.from_page_id` with `page_node_id` and `organization_id` as arguments, and assign the result to `ds`.
-    - Assert that the `organization_id` attribute of `ds` is equal to the `organization_id` variable.
+    - Initialize `page_node_id` with a UUID value.
+    - Set `organization_id` to a test string value.
+    - Call `DataSource.from_page_id` with `page_node_id` and `organization_id` to create a `DataSource` instance.
+    - Assert that the `organization_id` of the returned `DataSource` instance matches the expected `organization_id`.
 - **Output**: No output is returned as the function is a test function with assertions.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_page_id`](<../utils/datasource.py.md#datasourcefrom_page_id>)
@@ -63,16 +62,16 @@ Tests the `DataSource.from_page_id` method to ensure it can be called and return
 
 ---
 ### test\_data\_source\_is\_in\_scope<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_is_in_scope}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L35>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L34>)
 
-Checks if the `is_in_scope` method returns the expected boolean value based on the prefix of a given path.
+Tests if the `is_in_scope` method of [`DataSource`](<../utils/datasource.py.md#datasource>) returns the correct boolean value based on the prefix of a given `child_path`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Create a [`DataSource`](<../utils/datasource.py.md#datasource>) instance with an empty list of `node_ids` and an `organization_id` of 'test_org'.
+    - Create an instance of [`DataSource`](<../utils/datasource.py.md#datasource>) with an empty list of `node_ids` and an `organization_id` of 'test_org'.
     - Define a [`FakeNode`](<#fakenode>) class with a `relative_path` attribute set to 'docs'.
-    - Assign a list containing a [`FakeNode`](<#fakenode>) instance to the `_cached_nodes` attribute of the [`DataSource`](<../utils/datasource.py.md#datasource>) instance.
-    - Call `is_in_scope` with a path starting with 'docs/' and assert that it returns `True`.
-    - Call `is_in_scope` with a path not starting with 'docs/' and assert that it returns `False`.
+    - Assign a list containing an instance of [`FakeNode`](<#fakenode>) to the `_cached_nodes` attribute of the [`DataSource`](<../utils/datasource.py.md#datasource>) instance.
+    - Call `is_in_scope` with a `child_path` that starts with 'docs/' and assert that it returns `True`.
+    - Call `is_in_scope` with a `child_path` that does not start with 'docs/' and assert that it returns `False`.
 - **Output**: No output is returned as this is a test function that uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource`](<../utils/datasource.py.md#datasource>)

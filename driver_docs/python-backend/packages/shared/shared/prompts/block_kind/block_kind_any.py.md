@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A Pydantic model for a copy editor agent handling markdown content.
+Defines a Pydantic model for a copy editor agent handling markdown content.
 
 # Purpose
-This code defines a class `BlockKindCopyEditorAny` using the Pydantic library, which is a data validation and settings management library in Python. The class inherits from `BaseModel`, indicating that it is a Pydantic model designed to handle structured data. The class is intended to represent a structured response for a copy editor agent that processes content in markdown format. It includes a single attribute, `response`, which is a string expected to contain markdown content. The method [`to_markdown`](<#blockkindcopyeditoranyto_markdown>) returns the value of the `response` attribute, providing a way to access the markdown representation of the content. The code also defines two global variables, `PROMPT` and `MESSAGE`, which are placeholders for content and a message dictionary, respectively.
+The code defines a class `BlockKindCopyEditorAny` using the Pydantic library, which is a data validation and settings management library in Python. This class inherits from `BaseModel` and is designed to handle structured responses for a copy editor agent that processes content in markdown format. The class contains a single attribute, `response`, which is a string expected to hold markdown content. The method [`to_markdown`](<#blockkindcopyeditoranyto_markdown>) returns the value of the `response` attribute, providing a way to access the markdown content stored in the class instance. The code also includes a global variable `MESSAGE`, which is a dictionary with a key `role` set to "system" and a key `content` set to an empty string `PROMPT`.
 # Imports and Dependencies
 
 ---
@@ -18,15 +18,15 @@ This code defines a class `BlockKindCopyEditorAny` using the Pydantic library, w
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A string variable that contains a multi-line string, which is currently empty.
-- **Use**: Used to store a multi-line string, potentially for use in other parts of the code.
+- **Description**: A string variable that contains a multi-line string, which is currently empty. It is defined at the top level of the code and is intended to be used as a template or placeholder for content.
+- **Use**: Used as a template or placeholder for content in the application.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: A dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
-- **Use**: Stores system role information and content prompt for further processing.
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to define a message structure with a specific role and content for further processing.
 
 
 # Classes
@@ -35,10 +35,10 @@ This code defines a class `BlockKindCopyEditorAny` using the Pydantic library, w
 ### BlockKindCopyEditorAny<!-- {{#class:python-backend/packages/shared/shared/prompts/block_kind/block_kind_any.BlockKindCopyEditorAny}} -->
 [View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_any.py#L9>)
 
-- **Decorators**: `@dataclass`
+- **Decorators**: `@pydantic`
 - **Members**:
     - `response`: A markdown representation of the content.
-- **Description**: Represents a structured response for a copy editor agent that deals with any type of content in markdown format.
+- **Description**: Represents a structured response for a copy editor agent that handles any type of content in markdown format.
 - **Methods**:
     - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_any.BlockKindCopyEditorAny.to_markdown`](<#blockkindcopyeditoranyto_markdown>)
 - **Inherits From**:

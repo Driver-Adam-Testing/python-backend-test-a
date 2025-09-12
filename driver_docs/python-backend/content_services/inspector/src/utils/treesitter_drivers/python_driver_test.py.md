@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for the `PyDriverTree` class to verify extraction of imports, functions, classes, global variables, methods, and function calls from Python code.
+Tests for extracting and verifying Python code elements like imports, functions, classes, global variables, methods, and calls using the `PyDriverTree` class.
 
 # Purpose
-The code is a test suite for verifying the functionality of a Python code analysis tool, specifically focusing on the extraction of various code elements such as imports, functions, classes, global variables, methods, and function calls. It uses the `pytest` framework to define and execute tests. The tests are organized into different sections, each targeting a specific type of code element. For each section, the code reads test cases from separate files, processes them using the `PyDriverTree` class from the `python_driver` module, and asserts that the extracted elements match expected values.
+The code is a test suite that uses the `pytest` framework to validate the functionality of a Python code analysis tool, specifically the `PyDriverTree` class. This class is responsible for parsing Python code to extract various elements such as imports, functions, classes, global variables, methods, and function calls. The test suite is organized into several test functions, each focusing on a specific aspect of the code analysis.
 
-The test suite includes fixtures to load test code from files and parameterized tests to check multiple expected outcomes. The `PyDriverTree` class is used to parse the code and extract elements like imports, functions, classes, and calls. The tests verify the number of extracted elements and their properties, such as names and line ranges. The suite ensures that the tool correctly identifies and extracts these elements, and it checks for duplications and unsupported imports. The tests are comprehensive, covering a wide range of scenarios to validate the tool's accuracy and reliability in code analysis.
+The test functions use `pytest` fixtures to load test code from files located in a `treesitter_testcases` directory. These fixtures provide the test code as strings to the test functions. The test functions then create instances of `PyDriverTree` using this code and call methods to extract specific elements. Assertions are used to verify that the extracted elements match expected values, which are defined using `pytest.mark.parametrize` for parameterized testing. This approach ensures that the `PyDriverTree` class correctly identifies and extracts the expected elements from the Python code, validating its accuracy and reliability.
 # Imports and Dependencies
 
 ---
@@ -38,14 +38,14 @@ Reads and returns the content of a specific Python test file as a string.
 ### test\_extract\_import\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_import_duplications}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L20>)
 
-Tests the extraction of import statements from Python code and verifies the number of imports.
+Verifies that the number of imports extracted from the given Python code is exactly 41.
 - **Inputs**:
     - `imports_test_code`: A string containing Python code from which to extract import statements.
 - **Logic and Control Flow**:
-    - Create a `PyDriverTree` object from the `imports_test_code` string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
-    - Call the [`extract_imports`](<python_driver.py.md#pydrivertreeextract_imports>) method on the `driver_tree` object to get a list of import statements.
-    - Assert that the length of the `imports` list is equal to 41.
-- **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
+    - Creates a `PyDriverTree` object from the `imports_test_code` string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Calls the [`extract_imports`](<python_driver.py.md#pydrivertreeextract_imports>) method on the `driver_tree` object to retrieve a list of import statements.
+    - Asserts that the length of the `imports` list is equal to 41.
+- **Output**: No output is returned as the function is a test case that raises an assertion error if the condition is not met.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_imports`](<python_driver.py.md#pydrivertreeextract_imports>)
@@ -55,19 +55,19 @@ Tests the extraction of import statements from Python code and verifies the numb
 ### test\_extract\_import<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_import}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L29>)
 
-Validates that the [`extract_imports`](<python_driver.py.md#pydrivertreeextract_imports>) method of `PyDriverTree` correctly identifies and extracts import statements from a given Python code string.
+Validates that the [`extract_imports`](<python_driver.py.md#pydrivertreeextract_imports>) method correctly identifies and extracts import statements from a given Python code string.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
     - `imports_test_code`: A string containing the Python code to test for import extraction.
     - `expected_import_name`: The name of the import statement expected to be found in the code.
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the import statement in the code.
 - **Logic and Control Flow**:
-    - Create a `PyDriverTree` object from the provided `imports_test_code` string.
+    - Create a `PyDriverTree` object from the `imports_test_code` string.
     - Call the [`extract_imports`](<python_driver.py.md#pydrivertreeextract_imports>) method on the `PyDriverTree` object to get a list of import statements.
     - Transform the list of import statements into a list of tuples containing the import name and its line range.
-    - Check if the tuple `(expected_import_name, expected_line_range)` is present in the transformed list of extracted imports.
-    - If the expected import is not found, raise an assertion error with a message indicating the missing import and the list of extracted imports.
-- **Output**: The function does not return a value; it raises an assertion error if the expected import is not found in the extracted imports.
+    - Check if the tuple `(expected_import_name, expected_line_range)` is in the list of extracted import tuples.
+    - If the expected import is not found, raise an assertion error with a message indicating the missing import.
+- **Output**: No output is returned; the function raises an assertion error if the expected import is not found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_imports`](<python_driver.py.md#pydrivertreeextract_imports>)
@@ -81,7 +81,7 @@ Verifies that certain import names are not present in the extracted imports from
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
     - `imports_test_code`: A string containing the code to test for imports.
-    - `expected_not_included_import_name`: The name of the import that should not be found in the extracted imports.
+    - `expected_not_included_import_name`: The name of the import that should not be present in the extracted imports.
 - **Logic and Control Flow**:
     - Create a `PyDriverTree` object from the `imports_test_code` string.
     - Extract imports from the `PyDriverTree` object.
@@ -98,29 +98,29 @@ Verifies that certain import names are not present in the extracted imports from
 ### functions\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.functions_test_code}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L111>)
 
-Reads and returns the content of a Python test file for functions.
+Reads and returns the content of a Python test file named 'tst_functions.py' located in a specific directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Constructs the file path to the test file `tst_functions.py` located in the `treesitter_testcases/python` directory relative to the current file.
-    - Opens the file at the constructed path with UTF-8 encoding.
+    - Constructs the file path by navigating to the 'treesitter_testcases/python' directory relative to the current file's directory.
+    - Opens the file 'tst_functions.py' in read mode with UTF-8 encoding.
     - Reads the entire content of the file.
-    - Returns the read content as a string.
-- **Output**: A string containing the content of the `tst_functions.py` file.
+    - Returns the content as a string.
+- **Output**: A string containing the content of the 'tst_functions.py' file.
 
 
 ---
 ### test\_extract\_functions\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_functions_duplications}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L123>)
 
-Verifies that the number of function definitions extracted from the given code is exactly 22.
+Verifies that the number of function definitions extracted from the provided code is exactly 22.
 - **Inputs**:
-    - `functions_test_code`: A string containing the Python code to test for function definitions.
+    - `functions_test_code`: A string containing Python code from which function definitions will be extracted.
 - **Logic and Control Flow**:
-    - Creates a `PyDriverTree` object from the provided `functions_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
-    - Extracts function definitions from the `driver_tree` using the [`extract_function_definitions`](<python_driver.py.md#pydrivertreeextract_function_definitions>) method.
-    - Asserts that the number of extracted function definitions is equal to 22.
-- **Output**: No output is returned as the function is a test and uses assertions to validate conditions.
+    - Create a `PyDriverTree` object from the `functions_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract function definitions from the `driver_tree` using the [`extract_function_definitions`](<python_driver.py.md#pydrivertreeextract_function_definitions>) method.
+    - Assert that the number of extracted functions is equal to 22.
+- **Output**: No output is returned as the function is a test and will raise an assertion error if the condition is not met.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_function_definitions`](<python_driver.py.md#pydrivertreeextract_function_definitions>)
@@ -135,14 +135,14 @@ Tests if the function definitions extracted from the given code match the expect
 - **Inputs**:
     - `functions_test_code`: A string containing the code from which function definitions are extracted.
     - `expected_function_name`: The name of the function expected to be found in the extracted definitions.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the function definition in the code.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the function definition in the code.
 - **Logic and Control Flow**:
-    - Create a `PyDriverTree` object from the provided `functions_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Create a `PyDriverTree` object from the `functions_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
     - Extract function definitions from the `driver_tree` using the [`extract_function_definitions`](<python_driver.py.md#pydrivertreeextract_function_definitions>) method.
     - Create a list of tuples containing function names and their line ranges from the extracted functions.
-    - Assert that the tuple `(expected_function_name, expected_line_range)` is present in the list of extracted functions.
+    - Assert that the tuple `(expected_function_name, expected_line_range)` is in the list of extracted functions.
     - If the assertion fails, raise an error with a message indicating the expected function and line range not found in the extracted functions.
-- **Output**: The function does not return a value; it raises an assertion error if the expected function definition is not found in the extracted data.
+- **Output**: None, but raises an assertion error if the expected function and line range are not found in the extracted functions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_function_definitions`](<python_driver.py.md#pydrivertreeextract_function_definitions>)
@@ -152,14 +152,15 @@ Tests if the function definitions extracted from the given code match the expect
 ### class\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.class_test_code}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L180>)
 
-Provides the content of a Python test file for class definitions as a string.
+Reads and returns the content of a Python test file for class definitions.
 - **Decorators**: `@pytest.fixture`
-- **Inputs**: None
+- **Inputs**:
+    - `scope`: Specifies the scope of the fixture, set to 'module'.
 - **Logic and Control Flow**:
     - Constructs the file path to the 'tst_classes.py' file located in the 'treesitter_testcases/python' directory relative to the current file.
     - Opens the file at the constructed path with UTF-8 encoding.
-    - Reads the entire content of the file into a string.
-    - Returns the string containing the file content.
+    - Reads the entire content of the file.
+    - Returns the read content as a string.
 - **Output**: A string containing the content of the 'tst_classes.py' file.
 
 
@@ -167,15 +168,14 @@ Provides the content of a Python test file for class definitions as a string.
 ### test\_extract\_classes\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_classes_duplications}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L192>)
 
-Checks if the number of class definitions extracted from the given code matches the expected count.
-- **Decorators**: `@pytest.fixture`
+Tests if the number of class definitions extracted from the given code is exactly 17.
 - **Inputs**:
     - `class_test_code`: A string containing Python code to test for class definitions.
 - **Logic and Control Flow**:
     - Create a `PyDriverTree` object from the given `class_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
     - Extract class definitions from the `driver_tree` using the [`extract_class_definitions`](<python_driver.py.md#pydrivertreeextract_class_definitions>) method.
     - Assert that the number of extracted class definitions is equal to 17.
-- **Output**: No output is returned; the function raises an assertion error if the number of class definitions is not 17.
+- **Output**: No output is returned as the function is a test and will raise an assertion error if the condition is not met.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_class_definitions`](<python_driver.py.md#pydrivertreeextract_class_definitions>)
@@ -185,18 +185,18 @@ Checks if the number of class definitions extracted from the given code matches 
 ### test\_extract\_classes<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_classes}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L201>)
 
-Tests if the [`extract_class_definitions`](<python_driver.py.md#pydrivertreeextract_class_definitions>) method correctly identifies and extracts class definitions from a given code string.
+Validates that the [`extract_class_definitions`](<python_driver.py.md#pydrivertreeextract_class_definitions>) method correctly identifies and extracts class definitions from a given code string.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
     - `class_test_code`: A string containing the code to test for class definitions.
     - `expected_class_name`: The name of the class expected to be found in the code.
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the class definition in the code.
 - **Logic and Control Flow**:
-    - Creates a `PyDriverTree` object from the provided `class_test_code` string.
-    - Calls the [`extract_class_definitions`](<python_driver.py.md#pydrivertreeextract_class_definitions>) method on the `PyDriverTree` object to get a list of class definitions.
-    - Transforms the list of class definitions into a list of tuples containing class names and their line ranges.
-    - Asserts that the tuple of `expected_class_name` and `expected_line_range` is present in the list of extracted class definitions.
-- **Output**: No output is returned, but the test will pass if the expected class is found in the extracted classes, otherwise it will raise an assertion error.
+    - Create a `PyDriverTree` object from the `class_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Call the [`extract_class_definitions`](<python_driver.py.md#pydrivertreeextract_class_definitions>) method on the `driver_tree` object to get a list of class definitions.
+    - Extract the class names and their line ranges from the list of class definitions.
+    - Assert that the tuple `(expected_class_name, expected_line_range)` is present in the extracted class definitions.
+- **Output**: No output is returned; the function raises an assertion error if the expected class is not found in the extracted classes.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_class_definitions`](<python_driver.py.md#pydrivertreeextract_class_definitions>)
@@ -221,15 +221,14 @@ Reads and returns the content of a Python test file for global variables.
 ### test\_extract\_global\_vars\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_global_vars_duplications}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L248>)
 
-Verifies that the number of global variables extracted from the given code is exactly 16.
-- **Decorators**: `@pytest.mark.parametrize`
+Tests the extraction of global variables from a given Python code string and verifies the count of extracted variables.
 - **Inputs**:
-    - `global_vars_test_code`: A string containing the Python code from which to extract global variables.
+    - `global_vars_test_code`: A string containing Python code from which global variables will be extracted.
 - **Logic and Control Flow**:
-    - Creates a `PyDriverTree` object from the provided `global_vars_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
-    - Extracts global variables from the `driver_tree` using the [`extract_variables`](<python_driver.py.md#pydrivertreeextract_variables>) method.
-    - Asserts that the length of the extracted global variables list is 16.
-- **Output**: No output is returned as the function is a test case that raises an assertion error if the condition is not met.
+    - Create a `PyDriverTree` object from the `global_vars_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract global variables from the `driver_tree` using the [`extract_variables`](<python_driver.py.md#pydrivertreeextract_variables>) method.
+    - Assert that the number of extracted global variables is 16.
+- **Output**: This function does not return any value; it raises an assertion error if the number of extracted global variables is not 16.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_variables`](<python_driver.py.md#pydrivertreeextract_variables>)
@@ -239,7 +238,7 @@ Verifies that the number of global variables extracted from the given code is ex
 ### test\_extract\_global\_vars<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_global_vars}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L257>)
 
-Validates that the extracted global variables from a given code match the expected names and line ranges.
+Tests if the [`extract_variables`](<python_driver.py.md#pydrivertreeextract_variables>) method correctly identifies and extracts global variables from a given code string.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
     - `global_vars_test_code`: A string containing the code to test for global variable extraction.
@@ -247,11 +246,11 @@ Validates that the extracted global variables from a given code match the expect
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the global variable in the code.
 - **Logic and Control Flow**:
     - Create a `PyDriverTree` object from the provided `global_vars_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
-    - Extract global variables from the `driver_tree` using the [`extract_variables`](<python_driver.py.md#pydrivertreeextract_variables>) method.
-    - Create a list of tuples `extracted` containing the name and line range of each extracted global variable.
-    - Check if the tuple `(expected_gbl_var_name, expected_line_range)` is in the `extracted` list.
+    - Call the [`extract_variables`](<python_driver.py.md#pydrivertreeextract_variables>) method on the `driver_tree` object to get a list of global variables.
+    - Transform the list of global variables into a list of tuples containing the variable name and its line range.
+    - Check if the tuple `(expected_gbl_var_name, expected_line_range)` is in the list of extracted global variables.
     - If the expected global variable is not found, raise an assertion error with a message indicating the missing variable and the extracted variables.
-- **Output**: No output is returned; the function raises an assertion error if the expected global variable is not found.
+- **Output**: None, but raises an assertion error if the expected global variable is not found in the extracted list.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_variables`](<python_driver.py.md#pydrivertreeextract_variables>)
@@ -276,19 +275,19 @@ Reads and returns the content of the 'tst_methods.py' file as a string.
 ### test\_extract\_methods<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_methods}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L305>)
 
-Tests if the [`extract_method_definitions`](<python_driver.py.md#pydrivertreeextract_method_definitions>) function correctly identifies and extracts method definitions from a given code string.
+Tests the extraction of method definitions from a given code string and verifies their presence and line ranges.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `methods_test_code`: A string containing the code to test for method extraction.
-    - `expected_method_name`: The name of the method expected to be found in the code.
-    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the method in the code.
+    - `methods_test_code`: A string containing the code from which to extract method definitions.
+    - `expected_method_name`: The name of the method expected to be found in the extracted methods.
+    - `expected_line_range`: A tuple representing the expected start and end line numbers of the method in the code.
 - **Logic and Control Flow**:
     - Create a `PyDriverTree` object from the `methods_test_code` string.
-    - Call the [`extract_method_definitions`](<python_driver.py.md#pydrivertreeextract_method_definitions>) method on the `PyDriverTree` object to get a list of method definitions.
-    - Extract the name and line range of each method from the list of method definitions.
+    - Call [`extract_method_definitions`](<python_driver.py.md#pydrivertreeextract_method_definitions>) on the `PyDriverTree` object to get a list of method definitions.
+    - Create a list of tuples containing method names and their line ranges from the extracted methods.
     - Check if the tuple `(expected_method_name, expected_line_range)` is in the list of extracted methods.
-    - If the expected method is not found, raise an assertion error with a message indicating the missing method and the list of extracted methods.
-- **Output**: The function does not return a value; it raises an assertion error if the expected method is not found in the extracted methods.
+    - If the expected method and line range are not found, raise an assertion error with a message indicating the missing method and the extracted methods.
+- **Output**: The function does not return a value; it raises an assertion error if the expected method and line range are not found in the extracted methods.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_method_definitions`](<python_driver.py.md#pydrivertreeextract_method_definitions>)
@@ -298,7 +297,7 @@ Tests if the [`extract_method_definitions`](<python_driver.py.md#pydrivertreeext
 ### test\_extract\_methods\_duplications\_and\_no\_free\_fns<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_methods_duplications_and_no_free_fns}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L365>)
 
-Validates that the method extraction from the provided code results in exactly 40 method definitions.
+Tests the extraction of method definitions from code and verifies the count of extracted methods.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
     - `methods_test_code`: A string containing the code to test for method extraction.
@@ -306,7 +305,7 @@ Validates that the method extraction from the provided code results in exactly 4
     - Create a `PyDriverTree` object from the `methods_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
     - Extract method definitions from the `driver_tree` using the [`extract_method_definitions`](<python_driver.py.md#pydrivertreeextract_method_definitions>) method.
     - Assert that the number of extracted methods is equal to 40.
-- **Output**: No output is returned; the function raises an assertion error if the number of methods is not 40.
+- **Output**: No output is returned as the function is a test function that uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_method_definitions`](<python_driver.py.md#pydrivertreeextract_method_definitions>)
@@ -331,19 +330,20 @@ Reads and returns the content of a specific test file as a string.
 ### test\_extract\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver_test.test_extract_calls}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L386>)
 
-Tests the extraction of function calls from Python code and verifies their presence and attributes.
+Tests if the [`extract_calls`](<python_driver.py.md#pydrivertreeextract_calls>) method of `PyDriverTree` correctly identifies and extracts function calls from a given code string.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `calls_test_code`: A string containing the Python code to test for function call extraction.
+    - `calls_test_code`: A string containing the code to test for function call extraction.
     - `expected_name`: The expected name of the function or method call to be extracted.
     - `expected_kind`: The expected kind of the function or method call, such as 'built-in', 'object_method', or 'class_constructor'.
     - `expected_line_range`: A tuple indicating the expected start and end line numbers where the function or method call occurs.
 - **Logic and Control Flow**:
-    - Creates a `PyDriverTree` object from the provided `calls_test_code` string.
-    - Calls the [`extract_calls`](<python_driver.py.md#pydrivertreeextract_calls>) method on the `PyDriverTree` object to get the symbols and kinds of function calls.
-    - Zips the extracted symbols and kinds into a list of tuples containing the name, kind, and line range of each call.
-    - Asserts that the expected call (name, kind, and line range) is present in the extracted list, raising an error if not found.
-- **Output**: No output is returned; the function raises an assertion error if the expected call is not found in the extracted calls.
+    - Create a `PyDriverTree` object from the `calls_test_code` string.
+    - Use the [`extract_calls`](<python_driver.py.md#pydrivertreeextract_calls>) method of `PyDriverTree` to get the list of call symbols and their kinds.
+    - Create a list of tuples containing the name, kind, and line range of each extracted call.
+    - Check if the expected call (name, kind, and line range) is in the list of extracted calls.
+    - If the expected call is not found, raise an assertion error with a message indicating the missing call.
+- **Output**: None, but raises an assertion error if the expected call is not found in the extracted calls.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_calls`](<python_driver.py.md#pydrivertreeextract_calls>)
@@ -354,13 +354,14 @@ Tests the extraction of function calls from Python code and verifies their prese
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver_test.py#L483>)
 
 Verifies that the number of extracted call symbols from the provided test code is exactly 61.
+- **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `calls_test_code`: A string containing the source code to test for call symbol extraction.
+    - `calls_test_code`: A string containing the test code from which to extract call symbols.
 - **Logic and Control Flow**:
     - Creates a `PyDriverTree` object from the provided `calls_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
-    - Extracts call symbols from the `driver_tree` using the [`extract_calls`](<python_driver.py.md#pydrivertreeextract_calls>) method, which returns a tuple where the first element is the list of call symbols.
-    - Asserts that the length of the `calls_symbols` list is 61.
-- **Output**: No output is returned as the function is a test function that uses assertions to validate behavior.
+    - Extracts call symbols from the `driver_tree` using the [`extract_calls`](<python_driver.py.md#pydrivertreeextract_calls>) method.
+    - Asserts that the length of the extracted call symbols list is 61.
+- **Output**: No output is returned as the function is a test case that raises an assertion error if the condition is not met.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_calls`](<python_driver.py.md#pydrivertreeextract_calls>)

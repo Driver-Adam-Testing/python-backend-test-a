@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines an abstract base class for tools with a method to create a schema based on subclass parameters.
+Defines an abstract base class for strict tool execution and schema generation using Pydantic.
 
 # Purpose
-The code defines an abstract base class `ToolStrict` that inherits from both `BaseModel` from the Pydantic library and Python's `ABC` (Abstract Base Class). The primary purpose of `ToolStrict` is to serve as a blueprint for creating subclasses that must implement the [`execute`](<#toolstrictexecute>) method. This method is abstract and must be overridden in any subclass, ensuring that each subclass provides its own specific implementation of the [`execute`](<#toolstrictexecute>) functionality. The [`execute`](<#toolstrictexecute>) method is designed to take an `agent` and additional keyword arguments, returning a string.
+The code defines an abstract base class `ToolStrict` that inherits from both `BaseModel` from the Pydantic library and `ABC` from the `abc` module. The primary purpose of this class is to serve as a blueprint for creating subclasses that must implement the [`execute`](<#toolstrictexecute>) method. This method is abstract and must be overridden in any subclass, ensuring that each subclass provides its own specific implementation of the [`execute`](<#toolstrictexecute>) functionality. The [`execute`](<#toolstrictexecute>) method is designed to take an `agent` and additional keyword arguments, returning a string.
 
-Additionally, `ToolStrict` provides a class method [`anthropic_tool_schema`](<#toolstrictanthropic_tool_schema>) that generates a JSON schema based on the fields defined in the subclass. This schema includes details such as the type, description, and default values of each field. The method iterates over the model fields, determining the appropriate JSON schema type based on the field's annotation and other attributes like `enum` and `list`. The schema also specifies which fields are required, based on whether they have default values. This functionality is useful for validating data structures and ensuring that they conform to the expected format defined by the subclass.
+Additionally, the `ToolStrict` class provides a class method [`anthropic_tool_schema`](<#toolstrictanthropic_tool_schema>), which generates a schema dictionary. This schema describes the fields of the subclass in a structured format, including their types, descriptions, and any constraints such as enumerations or default values. The method iterates over the fields defined in the subclass, constructing a JSON schema that specifies the expected data types and requirements for each field. This schema can be used for validation or documentation purposes, ensuring that the subclass adheres to a defined structure.
 # Imports and Dependencies
 
 ---
@@ -41,9 +41,9 @@ Defines an abstract method that must be implemented by subclasses to perform an 
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
     - `agent`: The agent that the method will use to perform its action.
-    - `**kwargs`: Additional keyword arguments that can be used by the method.
+    - `kwargs`: Additional keyword arguments that can be used by the method.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError to indicate that subclasses must implement this method.
+    - Raises a `NotImplementedError` to enforce implementation in subclasses.
 - **Output**: A string that represents the result of the execution.
 - **See also**: [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](<#toolstrict>)  (Base Class)
 
@@ -58,12 +58,13 @@ Creates a JSON schema based on the fields of the `ToolStrict` subclass.
 - **Logic and Control Flow**:
     - Initialize an empty dictionary `properties` and an empty list `required`.
     - Iterate over each field in `cls.model_fields.items()`.
-    - Determine the field type based on its annotation and set the `type` in `field_info`.
-    - Set the `description` in `field_info` using the field's description or a default message.
-    - Check if the field has an `enum` attribute and set the `enum` and `type` in `field_info` accordingly.
-    - Check if the field has a `list` attribute and set the `type` and `items` in `field_info` accordingly.
-    - If the field has a default value, set it in `field_info`; otherwise, if it has no default or default factory, add the field name to `required`.
-    - Add the `field_info` to `properties` with the field name as the key.
+    - Determine the field type (`string`, `number`, `boolean`, or `object`) based on the field's annotation.
+    - Set the field description using the field's description or a default message.
+    - Check if the field has an `enum` attribute and add it to `field_info` if present.
+    - Check if the field has a `list` attribute and adjust `field_info` to represent an array if present.
+    - Add a `default` value to `field_info` if the field has a default value.
+    - Add the field name to the `required` list if it has no default value and no default factory.
+    - Add the `field_info` to the `properties` dictionary with the field name as the key.
     - Create a `schema` dictionary with `type` set to `object`, and include `properties` and `required`.
 - **Output**: A dictionary representing the JSON schema for the `ToolStrict` subclass.
 - **See also**: [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](<#toolstrict>)  (Base Class)

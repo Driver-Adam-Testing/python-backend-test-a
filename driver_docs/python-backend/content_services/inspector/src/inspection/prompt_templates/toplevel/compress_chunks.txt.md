@@ -3,24 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Template for summarizing codebase contents and identifying business logic and APIs.
+A text file related to prompt templates for compressing chunks in the inspection module.
 
 # Purpose
 Chunk of module subset descriptions for codebase `codebase_name`:
 
 Content subset 1 description for codebase `codebase_name`:
 
-The `authentication` module contains functions and classes that manage user login and session handling. It includes the `User` class, which stores user credentials and session information. The `login` function verifies user credentials and initiates a session. The `logout` function terminates the user session. The module also provides a `SessionManager` class to handle session creation, validation, and expiration.
+The `config.json` file contains key-value pairs that define the application's runtime settings. It includes parameters such as `database_url`, `port`, and `log_level`, which are used to configure the database connection, server port, and logging verbosity, respectively. The file ensures that the application can be easily configured without modifying the source code.
 
 Content subset 2 description for codebase `codebase_name`:
 
-The `database` module is responsible for data storage and retrieval. It includes the `DatabaseConnection` class, which establishes and manages connections to the database. The `execute_query` function allows for executing SQL queries and returning results. The module also contains a `DataModel` class that defines the structure of the data and provides methods for CRUD (Create, Read, Update, Delete) operations.
+The `api` folder contains modules that define the application's RESTful API endpoints. It includes files such as `user.py` and `product.py`, which handle HTTP requests related to user management and product information. The main business logic involves processing requests, interacting with the database, and returning appropriate responses. Critical APIs include functions like `get_user`, `create_user`, `get_product`, and `update_product`, which are responsible for CRUD operations on users and products.
 
----
+Summary for codebase `codebase_name`:
 
-The `authentication` module in the `codebase_name` codebase is designed to manage user authentication and session handling. It includes the `User` class for storing user credentials and session data, and the `SessionManager` class for managing session lifecycle, including creation, validation, and expiration. Key functions such as `login` and `logout` are responsible for verifying user credentials and managing session states.
-
-The `database` module handles data storage and retrieval operations. It features the `DatabaseConnection` class, which manages database connections, and the `execute_query` function for executing SQL queries. The `DataModel` class within this module defines the data structure and provides methods for performing CRUD operations, facilitating interaction with the database. These modules together form the core business logic for user management and data handling in the `codebase_name` codebase.
+The `codebase_name` codebase is structured to facilitate easy configuration and API management. The `config.json` file plays a crucial role in defining the application's runtime settings, allowing for adjustments to database connections, server ports, and logging levels without altering the source code. This separation of configuration from code enhances maintainability and flexibility. The `api` folder is central to the application's functionality, containing modules that define RESTful API endpoints for user and product management. The main business logic within these modules involves handling HTTP requests, performing database interactions, and generating responses. Key APIs such as `get_user`, `create_user`, `get_product`, and `update_product` are essential for executing CRUD operations, ensuring that the application can manage user and product data effectively.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

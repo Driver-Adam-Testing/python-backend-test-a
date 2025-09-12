@@ -8,7 +8,7 @@ Development and production database public key certificates for secure communica
 
 ## Files
 - **[dev_db_public_key.cert](dev_db_public_key.cert.md)**: Development database public key certificate for secure communication.
-- **[prod_db_public_key.cert](prod_db_public_key.cert.md)**: Public key certificate for the production database in the Python backend.
+- **[prod_db_public_key.cert](prod_db_public_key.cert.md)**: Production database public key certificate for secure communication.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Handles concurrent sending of usage events for an LLM session, with error handling and status reporting.
+Handles concurrent sending of usage events for LLM sessions, including error handling and status reporting.
 
 # Purpose
-The code is a script designed to manage and send usage events related to a language model session, specifically for the `infinity-core` codebase. It utilizes the `LLMUsageSession` class to track and send events that detail interactions with the language model. The script includes functions to send events both concurrently and sequentially. The [`send_event`](<#send_event>) function constructs a `UsageMetric` object with metadata and attempts to send it using the `llm_session` object. The [`send_events_concurrently`](<#send_events_concurrently>) function uses a `ThreadPoolExecutor` to send multiple events in parallel, tracking the number of successful and failed attempts. The [`send_events`](<#send_events>) function sends events sequentially, generating responses from the language model and adjusting the temperature parameter for each request.
+The code is a script designed to manage and send usage events related to a language model session, specifically for the Infinity AI platform. It imports necessary modules and classes, such as `LLMUsageSession`, `UsageEventMetadata`, and `UsageMetric`, to facilitate the creation and transmission of event data. The script defines several functions, including [`send_event`](<#send_event>), which constructs a usage event and attempts to send it through the session, handling any exceptions that occur. The [`send_events_concurrently`](<#send_events_concurrently>) function uses a `ThreadPoolExecutor` to send multiple events concurrently, tracking the success and failure counts of these operations. Additionally, the [`send_events`](<#send_events>) function generates responses from the language model session, iterating over a specified number of times and adjusting the temperature parameter for each request.
 
-The [`main`](<#main>) function initializes a `UsageSessionMetadata` object and creates an `LLMUsageSession` to manage the session's lifecycle. It then calls the [`send_events_concurrently`](<#send_events_concurrently>) function to execute the event-sending process. The script is intended to be run as a standalone program, taking the number of events to send as a command-line argument. The use of concurrent execution and detailed logging of success and failure counts indicates a focus on efficiently handling large volumes of event data.
+The [`main`](<#main>) function initializes a `UsageSessionMetadata` object and creates a `LLMUsageSession` context to execute the event-sending functions. The script is intended to be run as a standalone program, taking a command-line argument to specify the number of events to send. The primary purpose of this script is to automate the process of sending usage events to the Infinity AI platform, providing a mechanism to test and validate the functionality of the language model session and its associated event handling capabilities.
 # Imports and Dependencies
 
 ---
@@ -17,7 +17,7 @@ The [`main`](<#main>) function initializes a `UsageSessionMetadata` object and c
 - `concurrent.futures.as_completed`
 - `datetime.UTC`
 - `datetime.datetime`
-- `database.models_v1.UsageEventType`
+- `database.models.UsageEventType`
 - `shared.agent.chat_openai.OutputConfig`
 - `shared.interfaces.usage.event_metadata.UsageEventMetadata`
 - `shared.interfaces.usage.event_metadata.UsageMetric`
@@ -38,7 +38,7 @@ Sends a usage event to a session and handles any exceptions that occur during th
     - Creates a [`UsageEventMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usageeventmetadata>) object with detailed input data about the codebase and its files.
     - Initializes a [`UsageMetric`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagemetric>) object with event details such as event type, session ID, organization ID, user ID, and metadata.
     - Attempts to send the event using the [`send_event`](<../../packages/shared/shared/usage/llm_session.py.md#llmusagesessionsend_event>) method of the `llm_session` object.
-    - Catches and prints any exceptions that occur during the event sending process, then re-raises the exception.
+    - Catches any exceptions that occur during the event sending process, prints an error message, and re-raises the exception.
 - **Output**: Returns a dictionary response from the [`send_event`](<../../packages/shared/shared/usage/llm_session.py.md#llmusagesessionsend_event>) method of the `llm_session` object.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageEventMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usageeventmetadata>)
@@ -56,32 +56,32 @@ Executes multiple event sending operations concurrently using a thread pool.
     - `llm_session`: An instance of `LLMUsageSession` used to send events.
 - **Logic and Control Flow**:
     - Initialize `success_count` and `failure_count` to zero to track the number of successful and failed event sends.
-    - Create a `ThreadPoolExecutor` with a maximum of 10 worker threads to manage concurrent execution.
+    - Create a `ThreadPoolExecutor` with a maximum of 10 worker threads.
     - Submit `n` tasks to the executor, each task calling the `send_event` function with `llm_session` as an argument.
-    - Iterate over the completed futures using `as_completed` to process each result as it becomes available.
-    - For each completed future, attempt to retrieve the result; if successful, increment `success_count`, otherwise increment `failure_count`.
+    - Iterate over the completed futures using `as_completed` to process each future as it completes.
+    - For each future, attempt to get the result; if successful, increment `success_count`, otherwise increment `failure_count`.
     - Print the current status of successful and failed sends on the same line after processing each future.
-    - After all futures are processed, print a final summary of the successful and failed event sends.
-- **Output**: No return value; prints the status of event sending operations to the console.
+    - After all futures are processed, print a final summary of the successful and failed sends.
+- **Output**: Does not return any value; prints the status of event sending operations.
 
 
 ---
 ### send\_events<!-- {{#callable:python-backend/lambdas/metrics_handler/event_client.send_events}} -->
 [View Source →](<../../../../lambdas/metrics_handler/event_client.py#L77>)
 
-Generates responses using an LLM session for a specified number of iterations and prints the results.
+Generates responses from an LLM session for a specified number of iterations and prints the results.
 - **Inputs**:
     - `n`: The number of iterations to perform, indicating how many responses to generate.
     - `llm_session`: An instance of `LLMUsageSession` used to generate responses and track usage.
 - **Logic and Control Flow**:
     - Initialize `success_count` and `failure_count` to zero to track the number of successful and failed operations.
-    - Set `system_prompt` and `user_prompt` with predefined strings to guide the LLM response generation.
+    - Set `system_prompt` and `user_prompt` to predefined strings to guide the LLM response generation.
     - Initialize `temp` to 0.0 to control the temperature parameter for the LLM response generation.
-    - Iterate `n` times, each time generating a response using the `llm_session.generate_response` method with specified parameters including `system_prompt`, `user_prompt`, `OutputConfig.default()`, model, temperature, and request timeout.
+    - Iterate `n` times, generating a response from the `llm_session` using the specified prompts and configuration.
     - Print the iteration index, temperature, and the generated response for each iteration.
     - Increment the temperature by 0.2 after each iteration to vary the response generation conditions.
-    - After completing all iterations, print the final count of successfully sent and failed responses.
-- **Output**: No output is returned; the function prints the generated responses and a summary of success and failure counts.
+    - Print the final count of successfully sent and failed operations, although the counts are not updated in the loop.
+- **Output**: No return value; the function prints the generated responses and a summary of operations.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.generate_response`](<../../packages/shared/shared/usage/llm_session.py.md#llmusagesessiongenerate_response>)
     - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](<../../packages/shared/shared/agent/chat_openai.py.md#outputconfigdefault>)
@@ -93,12 +93,11 @@ Generates responses using an LLM session for a specified number of iterations an
 
 Initializes a usage session and sends events concurrently using a specified number of threads.
 - **Inputs**:
-    - `n`: The number of events to send concurrently.
+    - `n`: An integer representing the number of events to send.
 - **Logic and Control Flow**:
-    - Creates a [`UsageSessionMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagesessionmetadata>) object with content type 'codebase' and a specific content ID.
-    - Initializes an [`LLMUsageSession`](<../../packages/shared/shared/usage/llm_session.py.md#llmusagesession>) with organization ID, user ID, and the metadata object.
-    - Uses a context manager to ensure the session is properly opened and closed.
-    - Calls the [`send_events_concurrently`](<#send_events_concurrently>) function with the specified number of events and the session object.
+    - Creates a [`UsageSessionMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagesessionmetadata>) object with predefined content type and ID.
+    - Initializes an [`LLMUsageSession`](<../../packages/shared/shared/usage/llm_session.py.md#llmusagesession>) with specific organization and user IDs, and the metadata object.
+    - Executes the [`send_events_concurrently`](<#send_events_concurrently>) function with the provided number of events and the initialized session.
 - **Output**: No output is returned as the function's return type is `None`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagesessionmetadata>)

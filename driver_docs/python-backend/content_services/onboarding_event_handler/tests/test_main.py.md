@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for the onboarding event handler using a mock SNS event and pytest.
+Tests the onboarding event handler using a mock SNS event and asserts the handler's response.
 
 # Purpose
 This code is a test suite for a Lambda function handler, using the `pytest` framework. It imports necessary modules and functions, including `exec_onboarding_service` and `handler` from the `src.main` module, and `settings` from `src.utils.config`. The code defines a `pytest` fixture named [`sns_event`](<#sns_event>) that generates a mock Amazon SNS event, simulating an S3 object creation notification. The [`test_lambda_handler`](<#test_lambda_handler>) function uses this fixture to test the `handler` function, asserting that the response is "OK". The script is designed to be executed as a standalone test using `unittest.main()` if run directly.
@@ -30,26 +30,24 @@ Generates a mock SNS event for testing purposes.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Creates a dictionary with a single key 'Records' containing a list with one dictionary.
-    - The dictionary inside the list has a key 'Sns' with a nested dictionary as its value.
-    - The nested dictionary under 'Sns' has a key 'Message' which contains a JSON string.
-    - The JSON string represents an SNS message with an embedded S3 event notification.
+    - Within this dictionary, the key 'Sns' contains another dictionary with the key 'Message'.
+    - The 'Message' key holds a JSON string that represents an SNS message.
+    - The SNS message contains a 'Records' list with one dictionary representing an S3 event notification.
     - The S3 event notification includes details such as event version, source, region, time, name, user identity, request parameters, response elements, schema version, configuration ID, bucket details, and object details.
-- **Output**: A dictionary representing a mock SNS event with embedded S3 event notification details.
+- **Output**: A dictionary representing a mock SNS event with nested structure and JSON-encoded message.
 
 
 ---
 ### test\_lambda\_handler<!-- {{#callable:python-backend/content_services/onboarding_event_handler/tests/test_main.test_lambda_handler}} -->
 [View Source →](<../../../../../content_services/onboarding_event_handler/tests/test_main.py#L44>)
 
-Tests the [`handler`](<../../../lambdas/metrics_handler/src/main.py.md#handler>) function with a mock SNS event to ensure it returns 'OK'.
+Tests the `handler` function with a mock SNS event to ensure it returns 'OK'.
 - **Inputs**:
     - `sns_event`: A mock SNS event fixture that simulates an AWS SNS event with S3 object creation details.
 - **Logic and Control Flow**:
-    - Calls the [`handler`](<../../../lambdas/metrics_handler/src/main.py.md#handler>) function with the `sns_event` and an empty dictionary as arguments.
-    - Asserts that the response from the [`handler`](<../../../lambdas/metrics_handler/src/main.py.md#handler>) function is equal to 'OK'.
-- **Output**: No output is returned; the function raises an assertion error if the [`handler`](<../../../lambdas/metrics_handler/src/main.py.md#handler>) response is not 'OK'.
-- **Functions Called**:
-    - [`python-backend/lambdas/metrics_handler/src/main.handler`](<../../../lambdas/metrics_handler/src/main.py.md#handler>)
+    - Calls the `handler` function with the `sns_event` and an empty dictionary as arguments.
+    - Asserts that the response from the `handler` function is equal to 'OK'.
+- **Output**: No output is returned; the function raises an assertion error if the `handler` response is not 'OK'.
 
 
 

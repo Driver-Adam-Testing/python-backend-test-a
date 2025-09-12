@@ -8,7 +8,7 @@ Tests for rendering Mermaid code blocks using the Mermaid CLI.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[mermaid_python_test.py](mermaid_python_test.py.md)**: Tests if Mermaid code blocks can be rendered using the Mermaid CLI.
+- **[mermaid_python_test.py](mermaid_python_test.py.md)**: Tests if Mermaid code blocks are renderable using the Mermaid CLI by creating temporary files.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

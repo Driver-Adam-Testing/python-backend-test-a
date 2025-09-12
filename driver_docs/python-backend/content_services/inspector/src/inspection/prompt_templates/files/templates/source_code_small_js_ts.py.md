@@ -6,7 +6,7 @@
 Templates for generating structured prompts and analyzing JavaScript/TypeScript code components.
 
 # Purpose
-The code is a configuration file that defines a template for processing JavaScript and TypeScript source code. It imports various components and utilities from different modules to facilitate structured prompting and language specialization. The `SOURCE_CODE_SMALL_TEMPLATE_JS_TS` variable is a list of tuples, each representing a section of the template, such as "Purpose," "Imports and Dependencies," "Global Variables," "Classes," "Interfaces," "Types," and "Functions." Each section uses specific components and instructions to generate structured prompts and analyze code elements like imports, variables, classes, interfaces, types, and functions. The template is designed to assist in the static analysis and documentation of JavaScript and TypeScript code.
+This code defines a template for generating documentation for small JavaScript and TypeScript source code files. It imports various components and utilities from other modules to facilitate structured prompting and data extraction. The template, `SOURCE_CODE_SMALL_TEMPLATE_JS_TS`, consists of several tuples that specify different sections of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", "Interfaces", "Types", and "Functions". Each section uses specific collections and methods to analyze and extract relevant information from the source code, which is then formatted into a structured prompt. The code provides narrow functionality focused on creating a consistent documentation format for small JavaScript and TypeScript files.
 # Imports and Dependencies
 
 ---
@@ -37,8 +37,8 @@ The code is a configuration file that defines a template for processing JavaScri
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: A list of tuples, where each tuple contains a section identifier, a section title, and a series of components or functions related to JavaScript/TypeScript code analysis and documentation. Each tuple is structured to facilitate the generation of structured prompts and the collection of code symbols.
-- **Use**: Used to define the structure and content of prompts and symbol collections for JavaScript/TypeScript code analysis.
+- **Description**: Contains a list of tuples, each representing a section of a template for JavaScript/TypeScript code documentation. Each tuple includes a section identifier, a section title, and a series of components or functions to generate or process content for that section.
+- **Use**: Used to define the structure and content generation logic for documenting JavaScript/TypeScript code.
 
 
 

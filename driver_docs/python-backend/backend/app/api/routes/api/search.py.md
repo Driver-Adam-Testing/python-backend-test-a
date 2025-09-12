@@ -6,7 +6,9 @@
 Defines an API endpoint for executing a hybrid search using node IDs or relative paths.
 
 # Purpose
-This code defines an API endpoint for a search functionality using the FastAPI framework. It imports necessary modules and classes, including `ApiKeyToken` for user authentication, `CurrentSession` for session management, and `HybridSearchTool` for executing search operations. The `SearchRequest` class, a Pydantic model, specifies the structure of the request payload, which includes a search query and optional lists of `node_ids` or `relative_paths`. The [`search`](<#search>) function, decorated with `@router.post("/")`, handles POST requests to the root path, authenticates the user, and processes the search request. It uses the `HybridSearchTool` to perform the search based on the provided `node_ids` or `relative_paths`, and returns a list of `Reference` objects as the search results.
+The code defines an API endpoint for a search functionality using the FastAPI framework. It imports necessary modules and classes, including `APIRouter` from FastAPI, `BaseModel` from Pydantic, and several custom modules for authentication, session management, and search tools. The `SearchRequest` class is a Pydantic model that specifies the structure of the request payload, which includes a search query and optional lists of `node_ids` and `relative_paths`.
+
+The [`search`](<#search>) function is an asynchronous endpoint that processes POST requests. It requires an `ApiKeyToken` for user authentication and a `CurrentSession` for session management. The function uses the `HybridSearchTool` to perform a search based on the provided query. It determines the data source using either `node_ids` or `relative_paths`, which are used to create a `DataSource` object. If neither is provided, the function raises a `ValueError`. The search results, which are a list of `Reference` objects, are returned to the client. This code is part of a broader application, likely serving as a backend service for search operations.
 # Imports and Dependencies
 
 ---
@@ -24,9 +26,9 @@ This code defines an API endpoint for a search functionality using the FastAPI f
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for handling HTTP requests in a FastAPI application.
-- **Use**: Defines and manages routes for HTTP requests in the FastAPI application.
+- **Type**: ``APIRouter``
+- **Description**: Defines an instance of the `APIRouter` class from the FastAPI framework. This instance is used to create and manage API routes within the application.
+- **Use**: Used to register and handle HTTP routes and endpoints for the application.
 
 
 # Classes
@@ -37,9 +39,9 @@ This code defines an API endpoint for a search functionality using the FastAPI f
 
 - **Members**:
     - `query`: A string that contains the search query.
-    - `node_ids`: An optional list of UUIDs that identify nodes.
-    - `relative_paths`: An optional list of strings that specify relative paths.
-- **Description**: Defines the structure for a search request, including a mandatory search query and optional node identifiers or relative paths.
+    - `node_ids`: An optional list of UUIDs that identifies nodes.
+    - `relative_paths`: An optional list of strings that specifies relative paths.
+- **Description**: Defines the structure for a search request, including a query string and optional node identifiers or relative paths.
 - **Inherits From**:
     - `BaseModel`
 
@@ -50,20 +52,19 @@ This code defines an API endpoint for a search functionality using the FastAPI f
 ### search<!-- {{#callable:python-backend/backend/app/api/routes/api/search.search}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/api/search.py#L20>)
 
-Executes a search using a hybrid search tool based on the provided query and data source identifiers.
+Executes a search using a hybrid search tool based on provided query and data source information.
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `user`: An instance of `ApiKeyToken` representing the authenticated user.
-    - `session`: An instance of `CurrentSession` representing the current session context.
+    - `session`: An instance of `CurrentSession` representing the current session.
     - `payload`: An instance of `SearchRequest` containing the search query and optional node IDs or relative paths.
 - **Logic and Control Flow**:
-    - Initialize a [`HybridSearchTool`](<../../../../../packages/shared/shared/v3/app/static/tools/hybrid_search.py.md#hybridsearchtool>) with the search query from `payload`.
-    - Check if `payload.node_ids` is provided; if so, create a `DataSource` using [`from_node_ids`](<../../../../../packages/shared/shared/v3/utils/datasource.py.md#datasourcefrom_node_ids>) with the user's organization ID and the node IDs.
-    - If `payload.node_ids` is not provided, check if `payload.relative_paths` is provided; if so, create a `DataSource` using [`from_relative_paths`](<../../../../../packages/shared/shared/v3/utils/datasource.py.md#datasourcefrom_relative_paths>) with the user's organization ID and the relative paths.
-    - If neither `node_ids` nor `relative_paths` is provided, raise a `ValueError`.
-    - Execute the search tool with an empty `tool_call_id` and the created `datasource`.
-    - Return the `_references` attribute from the `search_tool`.
-- **Output**: A list of `Reference` objects resulting from the search execution.
+    - Initializes a [`HybridSearchTool`](<../../../../../packages/shared/shared/v3/app/static/tools/hybrid_search.py.md#hybridsearchtool>) with the search query from `payload`.
+    - Checks if `payload.node_ids` is provided; if so, creates a `DataSource` using [`from_node_ids`](<../../../../../packages/shared/shared/v3/utils/datasource.py.md#datasourcefrom_node_ids>) with the user's organization ID and node IDs.
+    - If `payload.node_ids` is not provided, checks if `payload.relative_paths` is provided; if so, creates a `DataSource` using [`from_relative_paths`](<../../../../../packages/shared/shared/v3/utils/datasource.py.md#datasourcefrom_relative_paths>) with the user's organization ID and relative paths.
+    - Raises a `ValueError` if neither `node_ids` nor `relative_paths` are provided in `payload`.
+    - Executes the search tool with an empty `tool_call_id` and the created `datasource`.
+- **Output**: A list of `Reference` objects resulting from the search.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool`](<../../../../../packages/shared/shared/v3/app/static/tools/hybrid_search.py.md#hybridsearchtool>)
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<../../../../../packages/shared/shared/v3/utils/datasource.py.md#datasourcefrom_node_ids>)

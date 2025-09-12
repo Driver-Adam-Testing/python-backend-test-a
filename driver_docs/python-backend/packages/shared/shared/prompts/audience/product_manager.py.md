@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a prompt for product managers seeking a detailed technical analysis of product architecture.
+A prompt template for curating content tailored to product managers seeking technical analysis.
 
 # Purpose
-The code defines a single string variable `PRODUCT_MANAGER` that contains a detailed description of a reader persona. This persona is a product manager interested in a technical analysis of a product's architecture, system integration, and performance metrics. The focus is on user experience and market fit, with insights on optimizing technology for user engagement, rapid feature deployment, and adaptability to market trends and customer feedback. This string can be used in applications that require understanding or targeting specific user profiles, particularly in contexts related to product management and development.
+The code defines a single global string variable `PRODUCT_MANAGER`. This variable contains a detailed description of a reader persona, specifically targeting a product manager. The description outlines the product manager's interest in a technical analysis that focuses on product architecture, system integration, performance metrics, user experience, and market fit. The content aims to provide insights on optimizing technology for user engagement, rapid feature deployment, and adaptability to market trends and customer feedback. This code is likely part of a larger system that uses predefined reader personae for content curation or analysis purposes.
 # Global Variables
 
 ---
 ### PRODUCT\_MANAGER
 - **Type**: ``str``
-- **Description**: A multi-line string that describes the content requirements for a product manager persona. It specifies the need for a technical analysis focusing on product architecture, system integration, performance metrics, user experience, and market fit.
+- **Description**: A multi-line string that describes the content curation requirements for a product manager persona. It specifies the need for a technical analysis focusing on product architecture, system integration, performance metrics, user experience, and market fit.
 - **Use**: Used to guide the creation of content tailored for product managers seeking in-depth technical insights.
 
 

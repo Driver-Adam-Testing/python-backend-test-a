@@ -8,11 +8,11 @@ Test cases for Python function calls, classes, functions, imports, methods, and 
 
 ## Files
 - **[tst_calls.py](tst_calls.py.md)**: Test cases for various Python function and method call scenarios, including simple, built-in, and class methods.
-- **[tst_classes.py](tst_classes.py.md)**: Test cases for various Python class definitions, including inheritance, dataclasses, and metaclasses.
+- **[tst_classes.py](tst_classes.py.md)**: Test cases for various Python class definitions, including inheritance, abstract classes, and metaclasses.
 - **[tst_functions.py](tst_functions.py.md)**: Tests for various Python function types, including async, decorators, and complex annotations.
-- **[tst_imports.py](tst_imports.py.md)**: Test cases for various Python import statement scenarios, including aliases, conditionals, and dynamics.
-- **[tst_methods.py](tst_methods.py.md)**: Test cases for various Python method definitions, including instance, class, static, and abstract methods.
-- **[tst_variables.py](tst_variables.py.md)**: Test cases for Python variable definitions, including module-level, class, and scoped variables.
+- **[tst_imports.py](tst_imports.py.md)**: Test cases for various Python import statement scenarios, including aliases, conditional imports, and dynamic imports.
+- **[tst_methods.py](tst_methods.py.md)**: Test cases for various Python method definitions, including instance, class, static, and async methods.
+- **[tst_variables.py](tst_variables.py.md)**: Test cases for various Python variable definitions, including module-level, constants, and class variables.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

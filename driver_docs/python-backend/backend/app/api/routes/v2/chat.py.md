@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a FastAPI route for streaming chat responses using a POST request with user and session data.
+Defines a FastAPI route for streaming chat responses using a POST request with user authentication.
 
 # Purpose
-This code defines an API endpoint using FastAPI to handle HTTP POST requests for a chat service. It uses an `APIRouter` to create a route that accepts a `ChatHttpRequest` payload, which includes fields such as `user_prompt`, `source_node_ids`, `page_node_id`, `llm_session_id`, and `relative_paths`. The endpoint, [`create_streaming_post`](<#create_streaming_post>), requires a `CurrentSession` and `UserToken` for authentication and session management. It constructs a `ChatPipelineRequest` with the provided data and returns a `StreamingResponse`, which streams the response as a "text/event-stream" media type. This setup is part of a broader application that likely involves chat functionalities and user interactions.
+This code defines an API endpoint using FastAPI to handle HTTP POST requests for a chat service. It uses an `APIRouter` to create a route that accepts a `ChatHttpRequest` payload, which includes fields such as `user_prompt`, `source_node_ids`, `page_node_id`, `llm_session_id`, and `relative_paths`. The endpoint, defined by the [`create_streaming_post`](<#create_streaming_post>) function, requires authentication and session information through `UserToken` and `CurrentSession` objects. Upon receiving a request, it constructs a `ChatPipelineRequest` and returns a `StreamingResponse`, which streams the response back to the client with a media type of "text/event-stream". This setup is part of a broader chat application pipeline, facilitating real-time communication.
 # Imports and Dependencies
 
 ---
@@ -23,9 +23,9 @@ This code defines an API endpoint using FastAPI to handle HTTP POST requests for
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API endpoints.
-- **Use**: Defines and manages API routes for handling HTTP requests.
+- **Type**: ``APIRouter``
+- **Description**: Defines an instance of the `APIRouter` class from the FastAPI framework. This instance is used to create and manage API routes within the application.
+- **Use**: Used to define and register API endpoints, such as the `create_streaming_post` function, to handle HTTP requests.
 
 
 # Classes
@@ -35,12 +35,12 @@ This code defines an API endpoint using FastAPI to handle HTTP POST requests for
 [View Source →](<../../../../../../../backend/app/api/routes/v2/chat.py#L16>)
 
 - **Members**:
-    - `user_prompt`: A string that contains the user's input or query.
-    - `source_node_ids`: A list of UUIDs that identifies source nodes, or None if not applicable.
-    - `page_node_id`: A UUID that identifies a page node, or None if not applicable.
-    - `llm_session_id`: A UUID that identifies the LLM session, or None if not applicable.
-    - `relative_paths`: A list of strings that contains relative paths, or None if not applicable.
-- **Description**: Defines the structure for an HTTP request in a chat application, including user input and identifiers for nodes and sessions.
+    - `user_prompt`: A string that contains the user's input prompt.
+    - `source_node_ids`: A list of UUIDs that identify source nodes, or None if not provided.
+    - `page_node_id`: A UUID that identifies a page node, or None if not provided.
+    - `llm_session_id`: A UUID that identifies the LLM session, or None if not provided.
+    - `relative_paths`: A list of strings that represent relative paths, or None if not provided.
+- **Description**: Defines the structure for an HTTP request related to chat operations, including user input and identifiers for nodes and sessions.
 - **Inherits From**:
     - `BaseModel`
 
@@ -54,14 +54,14 @@ This code defines an API endpoint using FastAPI to handle HTTP POST requests for
 Creates a streaming HTTP POST endpoint that processes chat requests and returns a streaming response.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: The current session object, which provides session-related data and context.
-    - `user`: A `UserToken` object that contains user authentication and identification information.
-    - `payload`: A `ChatHttpRequest` object that contains the chat request data, including user prompt, source node IDs, page node ID, LLM session ID, and relative paths.
+    - `session`: The current session object, which provides session-related data and operations.
+    - `user`: A token representing the authenticated user, containing user-specific information such as organization and user ID.
+    - `payload`: An instance of `ChatHttpRequest` containing the chat request data, including user prompt, node IDs, and other optional parameters.
 - **Logic and Control Flow**:
     - Creates a [`ChatPipelineRequest`](<../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#chatpipelinerequest>) object using data from the `payload` and `user` inputs.
     - Calls the [`stream`](<../../../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>) method on the [`ChatPipelineRequest`](<../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#chatpipelinerequest>) object to obtain a streaming response.
     - Returns a `StreamingResponse` object with the stream and sets the media type to 'text/event-stream'.
-- **Output**: A `StreamingResponse` object that streams the response data as 'text/event-stream'.
+- **Output**: A `StreamingResponse` object that streams the chat request processing results as an event stream.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest`](<../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#chatpipelinerequest>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<../../../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>)

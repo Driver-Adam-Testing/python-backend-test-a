@@ -6,9 +6,9 @@
 CLI for setting up and tearing down developer environments with state management.
 
 # Purpose
-This code is a command-line interface (CLI) tool designed to manage developer environments. It provides two main functionalities: setting up and tearing down developer resources. The tool uses the `argparse` module to parse command-line arguments, allowing users to specify commands and options for managing their environments. The `setup` command requires the developer's name, email, and an optional region for configuration, while the `teardown` command requires only the developer's name.
+This code is a command-line interface (CLI) tool designed to manage developer environments. It provides two main functionalities: setting up and tearing down developer resources. The tool uses the `argparse` module to parse command-line arguments and define subcommands for these operations. The `setup` command requires the developer's name, email, and an optional region for configuration, while the `teardown` command requires only the developer's name.
 
-The code imports functions from `developer_setup` to handle the setup and teardown processes. It also defines a function [`load_developer_state`](<#load_developer_state>) to retrieve the state of a developer from a JSON file, which is used during the teardown process. The state files are expected to be located in a directory named `state` and follow a specific naming convention based on the developer's full name. The code is structured to be executed as a standalone script, as indicated by the `if __name__ == "__main__":` block, which calls the [`main`](<#main>) function to initiate the CLI operations.
+The code imports functions `setup_developer_resources` and `teardown_developer_resources` from the `developer_setup` module to perform the respective operations. It also includes a function [`load_developer_state`](<#load_developer_state>) that retrieves the developer's state from a JSON file, which is necessary for the teardown process. The state file is expected to be located in a directory named `state` and follows a naming convention based on the developer's full name. The code is intended to be executed as a script, as indicated by the `if __name__ == "__main__":` block, which calls the [`main`](<#main>) function to initiate the CLI operations.
 # Imports and Dependencies
 
 ---
@@ -26,34 +26,34 @@ The code imports functions from `developer_setup` to handle the setup and teardo
 ### load\_developer\_state<!-- {{#callable:python-backend/dev_stack/src/main.load_developer_state}} -->
 [View Source →](<../../../../dev_stack/src/main.py#L9>)
 
-Loads the state of a developer from a JSON file and returns a validated `Developer` object or `None` if the file does not exist or an error occurs.
+Loads the state of a developer from a JSON file based on the developer's full name.
 - **Inputs**:
-    - `full_name`: The full name of the developer as a string, used to construct the filename for the state file.
+    - `full_name`: A string representing the full name of the developer.
 - **Logic and Control Flow**:
-    - Constructs the filename by converting the `full_name` to lowercase, replacing spaces with underscores, and appending '_state.json'.
-    - Creates a `Path` object for the file in the 'state' directory.
-    - Checks if the file exists; if not, prints an error message and returns `None`.
-    - Attempts to open and read the JSON file; if successful, validates the data using `Developer.model_validate` and returns the `Developer` object.
-    - Catches any exceptions during file reading or validation, prints an error message, and returns `None`.
-- **Output**: A `Developer` object if the state file is successfully loaded and validated, otherwise `None`.
+    - Convert the `full_name` to lowercase and replace spaces with underscores to form the `filename`.
+    - Create the `file_path` by appending the `filename` to the 'state' directory path.
+    - Check if the `file_path` exists; if not, print an error message and return `None`.
+    - Attempt to open the file at `file_path` and load its contents as JSON.
+    - Validate the loaded JSON data using `Developer.model_validate` and return the result.
+    - If an exception occurs during file operations or JSON loading, print an error message and return `None`.
+- **Output**: Returns a `Developer` object if the state file is successfully loaded and validated, otherwise returns `None`.
 
 
 ---
 ### main<!-- {{#callable:python-backend/dev_stack/src/main.main}} -->
 [View Source →](<../../../../dev_stack/src/main.py#L26>)
 
-Parses command-line arguments to either set up or tear down a developer environment.
+Parses command-line arguments to setup or teardown a developer environment.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates an argument parser with a description 'Cloud Local CLI'.
-    - Adds subparsers for 'setup' and 'teardown' commands.
-    - Defines required arguments for the 'setup' command: '--name', '--email', and an optional '--region' with a default value of 'us'.
-    - Defines a required argument for the 'teardown' command: '--name'.
-    - Parses the command-line arguments into the 'args' variable.
-    - Checks the 'command' attribute of 'args' to determine which command was issued.
-    - If the 'setup' command is issued, calls 'setup_developer_resources' with the provided arguments.
-    - If the 'teardown' command is issued, calls 'load_developer_state' to retrieve the developer state and then 'teardown_developer_resources' if the developer exists.
-    - If no valid command is issued, prints the help message.
+    - Create an `ArgumentParser` object with a description for the CLI.
+    - Add subparsers for `setup` and `teardown` commands.
+    - Define required arguments for the `setup` command: `--name`, `--email`, and optional `--region`.
+    - Define required argument for the `teardown` command: `--name`.
+    - Parse the command-line arguments into `args`.
+    - If the command is `setup`, call [`setup_developer_resources`](<developer_setup.py.md#setup_developer_resources>) with the parsed arguments.
+    - If the command is `teardown`, call [`load_developer_state`](<#load_developer_state>) with the developer's name and, if successful, call [`teardown_developer_resources`](<developer_setup.py.md#teardown_developer_resources>).
+    - If no valid command is provided, print the help message.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/dev_stack/src/developer_setup.setup_developer_resources`](<developer_setup.py.md#setup_developer_resources>)

@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add or remove a 'symbol' record in the derived_content_types table.
+Alembic migration script to add or remove a 'symbol' record in the `derived_content_types` table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), which manage changes to the database schema. The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` 'symbol' exists in the `derived_content_types` table. If the record does not exist, the function inserts it. The [`downgrade`](<#downgrade>) function removes the 'symbol' record from the `derived_content_types` table if it exists. 
-
-The script includes revision identifiers, `revision` and `down_revision`, which Alembic uses to track the migration's position in the sequence of migrations. The [`upgrade`](<#upgrade>) function ensures that the database schema includes the necessary 'symbol' type, while the [`downgrade`](<#downgrade>) function reverses this change, maintaining the ability to roll back the migration if needed.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), to manage changes to the database schema. The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` 'symbol' exists in the `derived_content_types` table and inserts it if it is missing. The [`downgrade`](<#downgrade>) function removes the 'symbol' record from the same table. The script includes revision identifiers to track the migration's version and dependencies.
 # Imports and Dependencies
 
 ---
@@ -21,15 +19,15 @@ The script includes revision identifiers, `revision` and `down_revision`, which 
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script. This identifier is used to track changes to the database schema over time.
+- **Use**: Used by Alembic to identify the current revision of the database schema in migration operations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring the correct order of migrations.
-- **Use**: Indicates the parent revision ID for the current migration script.
+- **Description**: A string that specifies the identifier of the previous database schema revision in a migration script. It is used by Alembic to track the order of migrations.
+- **Use**: Used by Alembic to determine the predecessor of the current revision in the migration history.
 
 
 ---
@@ -43,7 +41,7 @@ The script includes revision identifiers, `revision` and `down_revision`, which 
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration does not depend on any other migrations.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -68,12 +66,12 @@ Checks for the existence of a 'symbol' record in the 'derived_content_types' tab
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_17_1310-54fb48ccdd81_add_missing_symbol_record_if_needed.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_17_1310-54fb48ccdd81_add_missing_symbol_record_if_needed.py#L33>)
 
-Removes the 'symbol' record from the 'derived_content_types' table in the database.
+Removes the 'symbol' record from the 'derived_content_types' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Define a SQL delete query to remove the 'symbol' record from the 'derived_content_types' table.
-    - Get a database connection using `op.get_bind()`.
-    - Execute the delete query using the connection.
+    - Defines a SQL delete query to remove records where 'type_name' is 'symbol' from the 'derived_content_types' table.
+    - Gets a database connection using `op.get_bind()`.
+    - Executes the delete query using the connection.
 - **Output**: No output is returned as the function returns `None`.
 
 

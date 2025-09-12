@@ -3,22 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for structured analyses and text files with instructions for describing software files and symbols.
+Templates for generating structured prompts and analyzing metadata and source code across languages, with text files for writing software descriptions.
 
 ## Folders
-- **[templates](templates/README.md)**: Templates for generating structured and multi-prompt analyses of metadata and various programming languages.
+- **[templates](templates/README.md)**: Templates for generating structured prompts and analyzing metadata and source code across various programming languages.
 
 ## Files
-- **[chunk_description.txt](chunk_description.txt.md)**: Instructions for writing a detailed technical description of a code file.
-- **[compress_chunks.txt](compress_chunks.txt.md)**: Aggregates detailed technical descriptions of source code from overlapping chunks for comprehensive analysis.
-- **[determine_file_kind.txt](determine_file_kind.txt.md)**: A text file that describes how to determine the type of source content, using integers 0, 1, or 2.
+- **[chunk_description.txt](chunk_description.txt.md)**: Instructions for writing detailed technical descriptions of code pieces in `chunk_description.txt`.
+- **[compress_chunks.txt](compress_chunks.txt.md)**: Aggregates detailed technical descriptions of source code for compressing data chunks.
+- **[determine_file_kind.txt](determine_file_kind.txt.md)**: A metadata or configuration file classifier for determining the type of source content.
 - **[long_from_chunk_descriptions.txt](long_from_chunk_descriptions.txt.md)**: Instructions for writing a detailed description of a software file using overlapping chunk descriptions.
-- **[long_from_code.txt](long_from_code.txt.md)**: Instructions for writing a detailed description of a software file, including its purpose, usage, main business logic, and critical components.
-- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: Instructions for writing a single paragraph description of a software file using detailed descriptions of its chunks.
-- **[single_paragraph_from_code.txt](single_paragraph_from_code.txt.md)**: Instructions for writing a single paragraph description of a software file.
-- **[single_paragraph_symbol_description.txt](single_paragraph_symbol_description.txt.md)**: Instructions for writing a single paragraph description of a symbol in a source file.
-- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: Instructions for summarizing large software files from overlapping chunk descriptions.
-- **[single_sentence_from_code.txt](single_sentence_from_code.txt.md)**: A single sentence description of a software file.
+- **[long_from_code.txt](long_from_code.txt.md)**: Instructions for writing a detailed description of a software file based on its source code.
+- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: Instructions for writing a single paragraph description of a software file using overlapping chunk descriptions.
+- **[single_paragraph_from_code.txt](single_paragraph_from_code.txt.md)**: Instructions for summarizing a software file in a single paragraph.
+- **[single_paragraph_symbol_description.txt](single_paragraph_symbol_description.txt.md)**: A text file that describes how to write a single paragraph description of a symbol in a source file.
+- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: Instructions for summarizing a large software file from overlapping chunk descriptions.
+- **[single_sentence_from_code.txt](single_sentence_from_code.txt.md)**: A guide for writing concise single-sentence descriptions of software files.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

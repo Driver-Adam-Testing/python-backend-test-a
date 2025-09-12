@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines templates for generating multi-prompt structures for large Java source code analysis.
+Templates for generating structured prompts for large Java source code analysis.
 
 # Purpose
-The code defines a structured template for generating multi-prompt instructions related to Java source code analysis. It imports several components and utilities from different modules, which are used to construct prompts and process Java code. The main purpose of the code is to create a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA`, which consists of a series of tuples. Each tuple represents a specific aspect of Java code analysis, such as purpose, imports and dependencies, interfaces, and classes.
+The code defines a structured template for generating multi-prompt text related to Java source code analysis. It imports several components and utilities from different modules, which are used to construct prompts and process Java code. The main purpose of the code is to create a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA`, that facilitates the generation of structured prompts for analyzing the purpose, imports, interfaces, and classes within Java source code.
 
-The template uses components like `Prompt` and `Component` to build structured text prompts. These prompts are designed to extract and organize information from Java source code. The code also utilizes collections like `JavaClassCollection` and `JavaInterfaceCollection` to gather and process data about Java classes and interfaces. The template is intended for use in a context where detailed analysis and documentation of Java source code are required, providing a systematic approach to extract and present relevant information.
+The template consists of multiple sections, each targeting a specific aspect of Java code analysis. These sections include generating text for the purpose of the code, identifying imports and dependencies, and extracting interfaces and classes. The code uses components like `Prompt`, `Component`, and various collections such as `JavaClassCollection` and `JavaInterfaceCollection` to organize and process the information. The template is designed to be used in a context where Java code needs to be analyzed and documented, providing a structured approach to extract and present relevant information.
 # Imports and Dependencies
 
 ---
@@ -33,7 +33,7 @@ The template uses components like `Prompt` and `Component` to build structured t
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_JAVA
-- **Type**: `list`
+- **Type**: ``list``
 - **Description**: A list of tuples, where each tuple contains a string identifier, a description, and a series of `Prompt` objects or functions related to Java code analysis and generation. Each tuple represents a different aspect of Java code, such as purpose, imports, interfaces, and classes.
 - **Use**: Used to define structured prompts and processing functions for analyzing and generating Java code.
 

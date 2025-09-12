@@ -530,7 +530,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     __tablename__ = "primary_asset"
     __table_args__ = (
         Index(
-            "ix_primary_asset_organization_id_display_name",
+            "ix_v2_primary_asset_organization_id_display_name",
             "organization_id",
             "display_name",
             unique=True,
@@ -615,7 +615,7 @@ class Version(SQLModel, table=True):  # type: ignore
         UniqueConstraint(
             "primary_asset_id",
             "vcs_hash",
-            name="ix_version_primary_asset_id_vcs_hash",
+            name="ix_v2_version_primary_asset_id_vcs_hash",
             postgresql_nulls_not_distinct=True,
         ),
         Index(

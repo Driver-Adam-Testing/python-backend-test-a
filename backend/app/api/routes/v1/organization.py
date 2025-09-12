@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Header, HTTPException
 
@@ -119,11 +120,11 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
         )
 
         # Update onboarding checklist
-        OnboardingChecklistService(
+        OnboardingChecklistService.get_or_create_checklist(
             session=session,
             organization_id=user.organization_id,
             user_id=user.user_id,
-        ).get_or_create().mark_invite_teammate_completed()
+        ).mark_invite_teammate_completed(datetime.now(timezone.utc))
 
         return result
     except PermissionError:

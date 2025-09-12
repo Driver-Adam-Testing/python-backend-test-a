@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from logging import getLogger
 from enum import StrEnum
 from uuid import UUID
@@ -197,11 +198,11 @@ def run_autodoc(
     session.commit()
     session.refresh(autodoc_status)
 
-    OnboardingChecklistService(
+    OnboardingChecklistService.get_or_create_checklist(
         session=session,
         organization_id=user.organization_id,
         user_id=user.user_id,
-    ).get_or_create().mark_generate_autodoc_completed()
+    ).mark_generate_autodoc_completed(datetime.now(timezone.utc))
 
     return autodoc_status
 

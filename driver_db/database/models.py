@@ -832,7 +832,7 @@ class UserCache(SQLModel, table=True):
 class VersionCreator(SQLModel, table=True):
     __tablename__ = "version_creator"
     version_id: UUID = Field(
-        index=True, primary_key=True, ondelete="CASCADE", foreign_key="v2_version.id"
+        index=True, primary_key=True, ondelete="CASCADE", foreign_key="version.id"
     )
     user_id: str = Field(index=True, ondelete="CASCADE", foreign_key="user_cache.id")
 

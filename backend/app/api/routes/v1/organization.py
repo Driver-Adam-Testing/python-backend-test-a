@@ -108,8 +108,8 @@ def list_invitations(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed responses
     user: UserToken,
     invitations: CreateInvitationInput,
-    authorization: str | None = Header(None),
     session: CurrentSession,
+    authorization: str | None = Header(None),
 ):
     logging.info(f"Listing members of organization = {user.organization_id}")
     access_token = authorization.replace("Bearer ", "")

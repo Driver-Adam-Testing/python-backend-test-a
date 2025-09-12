@@ -22,6 +22,7 @@ from utils.synthesis.deep_context_prompts import (
 from utils.update_flow import DiffUpdatable
 
 TAG_MODEL = "gpt-4.1"
+UPDATE_EDITOR = "gpt-5"
 UPDATE_SINGLE_SHOT_MODEL = "gpt-4.1"
 UPDATE_FEW_SHOT_SEQUENTIAL_MODEL = "gpt-4.1"
 UPDATE_MANY_SHOT_SCATTER_MODEL = "gpt-4.1"
@@ -225,9 +226,7 @@ Code diff content deemed relevant to updating the current document has been prev
             string="""
 It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what and how you update the existing document. Make sure to update/replace any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed.
 
-You will be given the aggregated diff content of relevant changed files first followed by the target document's previous version content. You will respond only with your updated/edited version of the target document.
-
-In general, your edited output document should be about the same length as the original input document. When you make your edits, any new content **should not** refer to the fact that it is an update or new addition, or in any way make comments about being an edit. You are to just update the content and flow of the document to be up-to-date in the context of the recent code changes.
+You will be given the aggregated diff content of relevant changed files first followed by the target document's previous version content. You will respond with a dense description of how the document should be edited, so that a copy editor can take the original document and your description of edits and update the final document with no other context. It is important to be dense and terse in describing the required edits but provide enough detail and direction so that the copy editor can be successful. If edits should be small and light -- communicate this in the output description of edits to be made that you will provide.
             """
         )
 
@@ -238,6 +237,33 @@ In general, your edited output document should be about the same length as the o
             .append(task_description)
             .append(doc_description)
             .append(task_afterword)
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .into_str()
+        )
+
+    @staticmethod
+    def system_prompt_editor() -> str:
+        task_description = Component(
+            string="""
+A documentation expert has previously described the edits that need to me made to bring a document up-to-date given new code changes. Your job is to take the description of the edits and apply them to the given document.
+
+It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what, how, and the extent to which you update the existing document. Make sure all of the major components described in the edit description are applied. If the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed.
+
+You will be given the description of edits to be applied first followed by the target document's previous version content. You will respond only with your updated/edited version of the target document.
+
+Further guidelines to follow in making your edits:
+
+- Make sure to **keep all content** from the previous document, except for what is modified when you apply the necessary edits.
+- In generaly, your editied output document should be similar in length to the original input document.
+- When you make your edits, any new content should be folded in naturally. **DO NOT** edit the document in a way that mentions that the updated content is new, edited, or an update.
+            """
+        )
+
+        return (
+            Prompt.empty()
+            .append(UPDATER_IDENTITY_PREAMBLE)
+            .append(DEEP_CONTEXT_DOCS_PREAMBLE)
+            .append(task_description)
             .append(GENERAL_STE_STYLE_INSTRUCTION)
             .into_str()
         )
@@ -319,37 +345,71 @@ In general, your edited output document should be about the same length as the o
         )
 
     async def _update_from_llm_single_shot(self, combined_diff: str) -> Self:
-        llm = ChatOpenAI(
+        llm_updater = ChatOpenAI(
             model=UPDATE_SINGLE_SHOT_MODEL, temperature=0, request_timeout=500
         )
-        system_prompt = type(self).system_prompt_single_shot(doc_kind=self.doc_kind)
-        user_prompt = f"**Diff content**:\n\n{combined_diff}\n\n**Previous document version**:\n\n{self.doc_content}"
+        llm_editor = ChatOpenAI(
+            model=UPDATE_EDITOR,
+            temperature=0,
+            request_timeout=500,
+        )
+        system_prompt_updater = type(self).system_prompt_single_shot(
+            doc_kind=self.doc_kind
+        )
+        user_prompt_updater = f"**Diff content**:\n\n{combined_diff}\n\n**Previous document version**:\n\n{self.doc_content}"
 
-        content_raw = await bounded_llm_generate(
-            llm=llm,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
+        edits = await bounded_llm_generate(
+            llm=llm_updater,
+            system_prompt=system_prompt_updater,
+            user_prompt=user_prompt_updater,
             sem=OPENAI_SEM,
             rate_limiter=OPENAI_RATE_LIMITER,
             output_cfg=OutputConfig.default(),
         )
-        updated_document = content_raw
+
+        print(f"\n\nRequested edits for {self.doc_kind}:\n\n{edits}")
+
+        system_prompt_editor = type(self).system_prompt_editor()
+        user_prompt_editor = f"**Edits to be applied**:\n\n{edits}\n\n**Previous document version**:\n\n{self.doc_content}"
+
+        updated_document = await bounded_llm_generate(
+            llm=llm_editor,
+            system_prompt=system_prompt_editor,
+            user_prompt=user_prompt_editor,
+            sem=OPENAI_SEM,
+            rate_limiter=OPENAI_RATE_LIMITER,
+            output_cfg=OutputConfig.default(),
+        )
 
         return self.model_copy(update={"doc_content": updated_document})
 
     async def _update_from_llm_sequential(self, diff_chunks: list[str]) -> Self:
-        llm = ChatOpenAI(
+        llm_updater = ChatOpenAI(
             model=UPDATE_FEW_SHOT_SEQUENTIAL_MODEL, temperature=0, request_timeout=500
         )
-        system_prompt = type(self).system_prompt_single_shot(doc_kind=self.doc_kind)
+        llm_editor = ChatOpenAI(model=UPDATE_EDITOR, temperature=0, request_timeout=500)
+        system_prompt_updater = type(self).system_prompt_single_shot(
+            doc_kind=self.doc_kind
+        )
+        system_prompt_editor = type(self).system_prompt_editor()
 
         updated_document = self.doc_content
-        for diff in diff_chunks:
-            user_prompt = f"**Diff content**:\n\n{diff}\n\n**Previous document version**:\n\n{updated_document}"
+        for idx, diff in enumerate(diff_chunks):
+            user_prompt_updater = f"**Diff content**:\n\n{diff}\n\n**Previous document version**:\n\n{updated_document}"
+            edits = await bounded_llm_generate(
+                llm=llm_updater,
+                system_prompt=system_prompt_updater,
+                user_prompt=user_prompt_updater,
+                sem=OPENAI_SEM,
+                rate_limiter=OPENAI_RATE_LIMITER,
+                output_cfg=OutputConfig.default(),
+            )
+            print(f"\n\nRequested edits for {idx}-th {self.doc_kind} chunk:\n\n{edits}")
+            user_prompt_editor = f"**Edits to be applied**:\n\n{edits}\n\n**Previous document version**:\n\n{updated_document}"
             updated_document = await bounded_llm_generate(
-                llm=llm,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
+                llm=llm_editor,
+                system_prompt=system_prompt_editor,
+                user_prompt=user_prompt_editor,
                 sem=OPENAI_SEM,
                 rate_limiter=OPENAI_RATE_LIMITER,
                 output_cfg=OutputConfig.default(),

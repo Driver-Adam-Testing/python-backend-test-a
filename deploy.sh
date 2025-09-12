@@ -1,10 +1,13 @@
 #!/bin/bash
 set -e
-#If there's a setEnv.sh script in the / directory, run it before starting
+echo "deploying backend...$1 $2"
+exit 0
+#If there's a setEnv.sh script in the / directory, copy it and run it before starting
 echo "Checking for setEnv script"
 if [ -f "../setEnv.sh" ] ; then
-    echo "Copy script setEnv.sh"
+    echo "Copy and run script setEnv.sh"
     cp ../setEnv.sh .
+    source setEnv.sh
 else
     echo "There is no script setEnv.sh"
 fi

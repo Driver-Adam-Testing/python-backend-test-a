@@ -1,0 +1,5 @@
+[exclude]
+*cdk*
+*node_modules
+*dist
+*__pycache__

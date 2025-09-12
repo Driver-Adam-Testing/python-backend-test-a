@@ -1011,6 +1011,10 @@ async def run_deep_context(
     local_update: bool = False,
 ) -> None:
     """Run deep context docs generation"""
+    import asyncio
+    from pathlib import Path
+
+    from utils.synthesis.deep_context import DeepContextDocKind
 
     try:
         # Prepare all arguments needed for deep_context_docs.remote.aio
@@ -1022,21 +1026,49 @@ async def run_deep_context(
             install_id,
         ) = await prepare_deep_context_args(uuid.UUID(version_id))
 
-        for idx, doc in enumerate(previous_version_content):
-            print(f"Doc Index {idx}\nDoc Contents:\n\n{doc.doc_content}")
-        # if local_update:
-        #     assert previous_version_id is not None
-        #     update_set = {
-        #         ContentKind.DEEP_CONTEXT_ARCHITECTURE,
-        #         ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
-        #     }
-        #
-        #     update_tasks = [
-        #         doc.update_from_diff(diff_collection=flat_topo_file_diff_dag)
-        #         for doc in previous_version_content
-        #         if doc.doc_kind in update_set
-        #     ]
-        #     _completed_docs = await asyncio.gather(*update_tasks)
+        # for idx, doc in enumerate(previous_version_content):
+        #     print(f"Doc Index {idx}\nDoc Contents:\n\n{doc.doc_content}")
+        if local_update:
+            assert previous_version_id is not None
+            update_set = {
+                DeepContextDocKind.ARCHITECTURE,
+                DeepContextDocKind.LLM_ONBOARDING,
+            }
+
+            prev_docs = [
+                doc for doc in previous_version_content if doc.doc_kind in update_set
+            ]
+
+            # update_tasks = [
+            #     doc.update_from_diff(diff_collection=flat_topo_file_diff_dag)
+            #     for doc in previous_version_content
+            #     if doc.doc_kind in update_set
+            # ]
+            update_tasks = [
+                doc.update_from_diff(diff_collection=flat_topo_file_diff_dag)
+                for doc in prev_docs
+            ]
+            completed_docs = await asyncio.gather(*update_tasks)
+
+            print(f"Completed Docs:\n\n{completed_docs}")
+
+            for idx, doc in enumerate(completed_docs):
+                print(f"\n\nDoc Index {idx}\nUpdated Doc Content:\n\n{doc.doc_content}")
+            outdir = Path("update_docs")
+            outdir.mkdir(exist_ok=True)
+
+            print("\n\nWriting out to disk...")
+
+            for p, n in zip(prev_docs, completed_docs):
+                if p.doc_kind == DeepContextDocKind.ARCHITECTURE:
+                    p_file_path = outdir / "architecture_previous.md"
+                    n_file_path = outdir / "architecture_new.md"
+                elif p.doc_kind == DeepContextDocKind.LLM_ONBOARDING:
+                    p_file_path = outdir / "onboarding_previous.md"
+                    n_file_path = outdir / "onboarding_new.md"
+
+                p_file_path.write_text(p.doc_content, encoding="utf-8")
+                n_file_path.write_text(n.doc_content, encoding="utf-8")
         # else:
         #     # Call the remote deep context docs function
         #     _completed_docs = await deep_context_docs.remote.aio(

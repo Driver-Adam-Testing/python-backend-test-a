@@ -226,6 +226,8 @@ Code diff content deemed relevant to updating the current document has been prev
 It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what and how you update the existing document. Make sure to update/replace any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed.
 
 You will be given the aggregated diff content of relevant changed files first followed by the target document's previous version content. You will respond only with your updated/edited version of the target document.
+
+In general, your edited output document should be about the same length as the original input document. When you make your edits, any new content **should not** refer to the fact that it is an update or new addition, or in any way make comments about being an edit. You are to just update the content and flow of the document to be up-to-date in the context of the recent code changes.
             """
         )
 
@@ -300,6 +302,8 @@ In a previous step, code diffs for files that were changed and that are relevant
 It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what and how you update the existing document. Make sure to update/replace any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed. And keep in mind that the individual edit suggestions were written with only the file diff under review in mind. Since you have a much broader view, you can make important decisions at the higher level on what edits are needed for the document given that we would like to be selective in the changes we apply.
 
 You will be given the aggregated edit suggestions (with edit suggestions originating from different files separate by "---") followed by the target_document's previous version content. You will respond only with your updated/edited version of the target document.
+
+In general, your edited output document should be about the same length as the original input document. When you make your edits, any new content **should not** refer to the fact that it is an update or new addition, or in any way make comments about being an edit. You are to just update the content and flow of the document to be up-to-date in the context of the recent code changes.
             """
         )
 
@@ -315,10 +319,8 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
         )
 
     async def _update_from_llm_single_shot(self, combined_diff: str) -> Self:
-        llm = (
-            ChatOpenAI(
-                model=UPDATE_SINGLE_SHOT_MODEL, temperature=0, request_timeout=500
-            ),
+        llm = ChatOpenAI(
+            model=UPDATE_SINGLE_SHOT_MODEL, temperature=0, request_timeout=500
         )
         system_prompt = type(self).system_prompt_single_shot(doc_kind=self.doc_kind)
         user_prompt = f"**Diff content**:\n\n{combined_diff}\n\n**Previous document version**:\n\n{self.doc_content}"
@@ -422,15 +424,17 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
 
     async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
         # Step 1: Filter files for relevance.
-        llm_relevance_tagging = (
-            ChatOpenAI(model=TAG_MODEL, temperature=0, request_timeout=500),
+        llm_relevance_tagging = ChatOpenAI(
+            model=TAG_MODEL, temperature=0, request_timeout=500
         )
 
-        root, tsort_dag = diff_collection
+        _root = diff_collection.root
+        tsort_dag = diff_collection.tsort_dag
         # TODO: For larger scales, where we don't want to create excessive numbers of tasks,
         # TODO: refactor to use a set worker pool/queue type of approach.
         # TODO: Also, the current TaskGroup implementation fails in its entirety if a single
         # TODO: individual task fails with no retry mechanisms -- very fragile.
+        print("Tagging files relevant for update...")
         async with asyncio.TaskGroup() as tg:
             relevance_coros = []
             for node, diff in tsort_dag:
@@ -463,6 +467,7 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
         # If nothing is relevant, return the original document
         # TODO: should this be a deep copy?
         if not is_relevant_diffs:
+            print("Nothing relevant, returning original document...")
             return self
 
         is_relevant_combined_diffs_chunks = split_text(
@@ -481,11 +486,13 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
                 raise ValueError("Unreachable")
             # If everything fits comfortably in a single context window, single shot it.
             case 1:
+                print("Commencing with small diff update algorithm...")
                 return await self._update_from_llm_single_shot(
                     combined_diff=is_relevant_combined_diff_str_chunks[0]
                 )
             # If there are only a few aggregated chunks, do a short sequential processing.
             case n if 2 <= n <= 5:
+                print("Commencing with medium sized diff update algorithm...")
                 # Re-chunk with some overlap to aid sequential procesing.
                 chunks_with_minor_overlap = [
                     c.text
@@ -500,6 +507,7 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
                 )
             # For very large diffs, use a scatter-gather approach.
             case _:
+                print("Commencing with large diff update algorithm...")
                 return await self._update_from_llm_scatter_gather(
                     relevant_diffs=is_relevant_diffs_with_nodes
                 )

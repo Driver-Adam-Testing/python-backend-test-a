@@ -440,7 +440,8 @@ def handle_bitbucket_events(
     for repo in repos_added:
         if "installation_id" not in repo:
             repo["installation_id"] = installation_id
-
+    # Using 2 workers to stay within BitBucket's rate limits
+    # Testing showed this provides optimal throughput without hitting limits
     with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [
             executor.submit(bitbucket_ops.download_and_upload_repo, org_id, repo, token)

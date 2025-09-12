@@ -6,7 +6,7 @@
 Alembic migration script to add and index the "total_files" column in the "v2_node" table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `total_files` to the `v2_node` table, which is an integer computed from the `misc_metadata` JSON field, and creates an index on this column. The [`downgrade`](<#downgrade>) function reverses these changes by removing the index and the `total_files` column from the `v2_node` table. The script includes revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `total_files` to the `v2_node` table, which is an integer computed from the `misc_metadata` JSON field, and creates an index on this column. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the index and the `total_files` column. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -19,22 +19,22 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration script. It is used by Alembic to track the version of the database schema that this script represents.
+- **Use**: Used to identify the current migration script in the Alembic versioning system.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the order of migrations and ensure that they are applied in the correct sequence.
-- **Use**: Used by Alembic to determine the predecessor of the current migration script.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
+- **Use**: Used by Alembic to determine the order of database migrations.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
@@ -53,11 +53,10 @@ This code is a database migration script using Alembic, a database migration too
 Adds a new column 'total_files' to the 'v2_node' table and creates an index on this column.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Adds a new column named 'total_files' to the 'v2_node' table using the 'add_column' operation.
-    - The 'total_files' column is of type 'Integer' and is computed from the 'misc_metadata' JSON field.
-    - The computed value is persisted in the database.
-    - Creates an index on the 'total_files' column using the 'create_index' operation.
-    - The index is not unique.
+    - Add a new column named 'total_files' to the 'v2_node' table using the 'add_column' operation.
+    - Define the 'total_files' column as an integer with a computed value derived from the 'misc_metadata' JSON field.
+    - Set the 'total_files' column to allow null values.
+    - Create an index on the 'total_files' column using the 'create_index' operation, which is not unique.
 - **Output**: No output is returned as the function modifies the database schema in place.
 
 

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Processes files with a focus on PDF extraction and summarization using OpenAI models.
+Processes files with a focus on PDF files, including summarization and extraction of text, images, and tables.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[process_file.py](process_file.py.md)**: Processes files using a specified parser, currently supporting PDF, and returns processed content.
-- **[process_file_pdf.py](process_file_pdf.py.md)**: Processes PDF files to extract and summarize text, images, and tables using OpenAI models.
+- **[process_file.py](process_file.py.md)**: Processes files using a specified parser, currently supporting PDF files.
+- **[process_file_pdf.py](process_file_pdf.py.md)**: Processes PDF files by summarizing content, extracting text, images, and tables, and handling errors.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

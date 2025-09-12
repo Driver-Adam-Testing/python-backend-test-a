@@ -6,9 +6,9 @@
 Templates for generating structured prompts related to large Ruby source code, including modules and classes.
 
 # Purpose
-The code defines a template for generating structured prompts related to Ruby source code analysis. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ruby`, to facilitate the creation of prompts and the analysis of Ruby code. The template, `SOURCE_CODE_LARGE_TEMPLATE_RUBY`, is a list of tuples, each representing a different aspect of the prompt generation process, such as purpose, imports and dependencies, modules, and classes.
+The code defines a template for generating structured prompts and instructions related to Ruby source code analysis. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ruby`, to facilitate the creation of prompts and the collection of Ruby class and module symbols. The template, `SOURCE_CODE_LARGE_TEMPLATE_RUBY`, is a list of tuples, each representing a different aspect of the prompt generation process, such as purpose, imports and dependencies, modules, and classes.
 
-Each tuple in the `SOURCE_CODE_LARGE_TEMPLATE_RUBY` list specifies a different section of the prompt, using components like `Prompt` and `Component` to build the text. The template uses specific instructions, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`, to ensure that the generated prompts adhere to a particular style. Additionally, the template includes functions for checking imports and collecting Ruby modules and classes, which are used to analyze the structure and components of Ruby source code. This code is intended to be part of a larger system that processes and analyzes Ruby code, providing structured and styled prompts for various purposes.
+Each tuple in the template specifies a type of prompt or analysis, such as `S.SINGLE_PROMPT_TEXT` for generating a single prompt text or `S.FN_COND_JSON` for function-based conditional JSON outputs. The template uses components like `Prompt` and `Component` to build structured prompt strings, and it employs functions like `default_imports_checker` and `RubyModuleRawSymbolCollection.from_static_analysis` to perform static analysis and collect relevant symbols. This code is intended to be part of a larger system that analyzes Ruby source code and generates structured documentation or prompts based on the analysis.
 # Imports and Dependencies
 
 ---
@@ -32,8 +32,8 @@ Each tuple in the `SOURCE_CODE_LARGE_TEMPLATE_RUBY` list specifies a different s
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_RUBY
 - **Type**: ``list``
-- **Description**: Contains a list of tuples, each representing a structured prompt configuration for Ruby code analysis. Each tuple includes a prompt type identifier, a description string, and a series of components or functions that define how to generate or process the prompt.
-- **Use**: Used to define and configure structured prompts for analyzing Ruby code, including purpose, imports, modules, and classes.
+- **Description**: Contains a list of tuples, each representing a different section of a Ruby code template. Each tuple includes a section identifier, a section title, and various components or functions related to that section.
+- **Use**: Used to define and organize different sections of a Ruby code template for structured prompting and analysis.
 
 
 

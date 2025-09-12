@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Classes and interfaces for TOML generation, OpenAI chat, logging, and prompts; dependency management.
+Classes, interfaces, and functions for TOML content, logging, OpenAI chat, and project configuration.
 
 ## Folders
-- **[src](src/README.md)**: Classes and interfaces for generating and appending TOML content, OpenAI chat, logging, and prompts.
+- **[src](src/README.md)**: Classes, interfaces, and functions for generating and managing TOML content, logging, and OpenAI chat.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Manages Python project dependencies, specifying exact versions, compatibility, and integrity verification.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for the "auto-toml" project, specifying metadata, dependencies, and build system.
 
 ---

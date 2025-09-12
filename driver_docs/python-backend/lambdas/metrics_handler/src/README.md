@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS Lambda function for handling and logging usage events with Pydantic-based configuration management.
+Configuration management with Pydantic and AWS Lambda event handling with logging and database storage.
 
 ## Folders
 - **[utils](utils/README.md)**: Configuration settings management using Pydantic for environment and database parameters.
 
 ## Files
-- **[main.py](main.py.md)**: AWS Lambda function for handling and logging usage events with database interaction.
+- **[main.py](main.py.md)**: Handles AWS Lambda events by logging details and storing usage events in a database.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Data models for usage and event metrics, conversion utilities, and tests for schema and balance.
+Data models and utilities for usage metrics and events, with tests for schema conversions and balances.
 
 
 ## Files
 - **[event_metadata.py](event_metadata.py.md)**: Defines data models for usage session, payment session, event metadata, and metrics using Pydantic.
 - **[usage_schema.py](usage_schema.py.md)**: Defines data models and conversion utilities for tracking and managing usage metrics and events.
-- **[usage_schema_test.py](usage_schema_test.py.md)**: Tests for usage schema conversions and balance computations using pytest fixtures.
+- **[usage_schema_test.py](usage_schema_test.py.md)**: Tests for usage schema conversions and balances using pytest fixtures and assertions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

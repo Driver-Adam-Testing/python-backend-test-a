@@ -6,9 +6,9 @@
 Base class for LLM response types with methods for markdown conversion and parsing description.
 
 # Purpose
-The code defines an abstract base class `LlmResponseType`, which serves as a foundation for creating various response types. This class inherits from `LlmParseable` and `ABC`, indicating that it is designed to be extended by other classes and cannot be instantiated directly. The primary purpose of `LlmResponseType` is to provide a structure for response types that can be converted to markdown and generate parsing description messages. The [`to_markdown`](<#llmresponsetypeto_markdown>) method returns a string representation of the instance, while the [`to_parsing_description_message`](<#llmresponsetypeto_parsing_description_message>) class method constructs an `LlmMessage` object. This object includes a formatted message containing the class name, an example JSON, and the class docstring, which is useful for generating and understanding the response type.
+The code defines an abstract base class `LlmResponseType`, which serves as a foundation for creating various response types in a system. This class inherits from `LlmParseable` and `ABC`, indicating that it is designed to be extended by other classes and provides a framework for parsing operations. The primary functionality of `LlmResponseType` includes converting instances to markdown format and generating parsing description messages. The [`to_markdown`](<#llmresponsetypeto_markdown>) method returns a string representation of the instance, while the [`to_parsing_description_message`](<#llmresponsetypeto_parsing_description_message>) class method constructs an `LlmMessage` object. This object contains a formatted message with the class name, an example JSON, and the class docstring, which can be used to describe how to parse the response type.
 
-The code imports several components from external modules, such as `FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring` from `shared.v3.globals.constants` and `LlmMessage` and `MessageKind` from `shared.v3.interfaces.llm_message`. These imports suggest that the class is part of a larger system that deals with message parsing and formatting. The [`to_parsing_description_message`](<#llmresponsetypeto_parsing_description_message>) method uses these components to create a message that describes how to parse the response type, indicating that the class is intended to be used in contexts where message parsing and response generation are required.
+The code imports several components from external modules, such as `FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring`, `LlmMessage`, and `MessageKind`, which are used to format and categorize messages. The [`to_parsing_description_message`](<#llmresponsetypeto_parsing_description_message>) method relies on a class-specific method `_generate_example_for_model` to create an example dictionary, which is then converted to a JSON string. This setup suggests that the code is part of a larger system that involves message parsing and formatting, likely in a context where responses need to be structured and documented in a consistent manner. The class does not define public APIs or external interfaces directly but provides a base for other classes to implement specific response types.
 # Imports and Dependencies
 
 ---
@@ -26,7 +26,7 @@ The code imports several components from external modules, such as `FORMAT_RESPO
 ### LlmResponseType<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_response_type.py#L11>)
 
-- **Description**: Serves as a base class for all response types, providing a structure for converting instances to markdown and generating parsing description messages with example JSON and docstring content.
+- **Description**: Serves as a base class for all response types, providing a structure for converting instances to markdown and generating parsing description messages.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType.to_markdown`](<#llmresponsetypeto_markdown>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType.to_parsing_description_message`](<#llmresponsetypeto_parsing_description_message>)
@@ -39,12 +39,12 @@ The code imports several components from external modules, such as `FORMAT_RESPO
 #### LlmResponseType\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType.to_markdown}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_response_type.py#L16>)
 
-Converts the object to a Markdown string representation.
+Converts the object to its string representation for Markdown format.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `str` function on `self` to convert the object to a string.
-    - Returns the string representation of the object.
-- **Output**: A string that represents the object in Markdown format.
+    - Calls the `str` function on the object to get its string representation.
+    - Returns the string representation.
+- **Output**: A string representation of the object.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType`](<#llmresponsetype>)  (Base Class)
 
 
@@ -54,12 +54,13 @@ Converts the object to a Markdown string representation.
 
 Generates a parsing description message containing the class docstring and an example JSON.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `cls`: The class itself, used to access class-level attributes and methods.
 - **Logic and Control Flow**:
-    - Calls the class method [`_generate_example_for_model`](<llm_parseable.py.md#llmparseable_generate_example_for_model>) to obtain an example dictionary.
-    - Converts the example dictionary to a JSON string with indentation for readability.
-    - Formats a string using `FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring` with the class name, example JSON, and class docstring.
-    - Creates and returns an [`LlmMessage`](<llm_message.py.md#llmmessage>) object with the formatted content and message kind set to `MessageKind.PARSING_DESCRIPTION`.
+    - Call the class method [`_generate_example_for_model`](<llm_parseable.py.md#llmparseable_generate_example_for_model>) to obtain an example dictionary.
+    - Convert the example dictionary to a JSON string with indentation using `json.dumps`.
+    - Format a string using `FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring` with the class name, example JSON, and class docstring.
+    - Create and return an [`LlmMessage`](<llm_message.py.md#llmmessage>) object with the formatted content and message kind set to `MessageKind.PARSING_DESCRIPTION`.
 - **Output**: An [`LlmMessage`](<llm_message.py.md#llmmessage>) object containing the formatted parsing description message.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<llm_parseable.py.md#llmparseable_generate_example_for_model>)

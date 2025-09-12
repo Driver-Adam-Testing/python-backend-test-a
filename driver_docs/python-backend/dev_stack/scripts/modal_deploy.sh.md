@@ -3,24 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Bash script for deploying services to a specified environment using Poetry and Modal.
+Bash script to deploy services to a specified environment using Poetry and Modal.
 
 # Purpose
-This script is a Bash executable designed to automate the deployment of multiple services within a project. It requires an environment argument to specify the target deployment environment. The script navigates through different directories, each corresponding to a service, and uses `poetry` to install dependencies and deploy the service using the `modal` command. The services include `inspector`, `agent`, `pdf_preprocessing`, and `autodocs`, each of which is deployed by executing the `src/main.py` file in the specified environment. The script ensures that the deployment process stops if any command fails, as indicated by the `set -eo pipefail` directive.
+This script is a Bash executable used for deploying multiple services to a specified environment. It requires an environment argument to be passed when executed, which it uses to configure the deployment process. The script navigates through different directories corresponding to various services such as `inspector`, `agent`, `pdf_preprocessing`, and `autodocs`, and installs dependencies using `poetry` without installing the root package. It then deploys each service by running the `modal deploy` command with the specified environment, targeting the `src/main.py` file in each service directory. The script ensures that the deployment process stops if any command fails by using the `set -eo pipefail` option.
 # Imports and Dependencies
 
 ---
 - `poetry`
 - `modal`
-
-
-# Global Variables
-
----
-### environment
-- **Type**: ``string``
-- **Description**: The `environment` variable is a string that stores the environment argument provided by the user through the command line. It is used to specify the deployment environment for the script.
-- **Use**: The script uses the `environment` variable to pass the specified environment to the `modal deploy` command for deploying services.
 
 
 

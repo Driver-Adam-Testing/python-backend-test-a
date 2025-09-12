@@ -6,7 +6,7 @@
 Test cases for various TypeScript enum definitions, including basic, string, and mixed enums.
 
 # Purpose
-This code defines several TypeScript enums to demonstrate different types of enum declarations and their usage. It includes a basic enum `Direction` with default numeric values, and `StatusCode` with explicit numeric values representing HTTP status codes. The `Color` enum is a string enum, while `Mixed` combines numeric and string values. A `const enum` named `ConstDirection` is defined for compile-time optimization. The `FileAccess` enum uses bitwise operations and const assertions to define permission levels. An ambient enum `AmbientEnum` is declared without initialization, indicating it is defined elsewhere. Finally, the `ModuleScope` module contains a module-scoped enum `ModuleEnum`, demonstrating how to encapsulate enums within a module.
+This code defines several TypeScript enums to demonstrate different enum types and their usage. It includes a basic enum `Direction` with default numeric values, and `StatusCode` with explicit numeric values representing HTTP status codes. The `Color` enum is a string enum, while `Mixed` combines numeric and string values. The `ConstDirection` is a constant enum, which allows for more optimized code by inlining values. The `FileAccess` enum uses bitwise operations to define permissions, and `AmbientEnum` is an ambient enum, which is declared but not implemented in this file. Finally, `ModuleScope` contains a module-scoped enum `ModuleEnum`, demonstrating how enums can be encapsulated within a module. This file serves as a test suite for various enum definitions in TypeScript.
 # Types
 
 ---
@@ -18,7 +18,7 @@ This code defines several TypeScript enums to demonstrate different types of enu
     - `Down`: Represents the downward direction.
     - `Left`: Represents the leftward direction.
     - `Right`: Represents the rightward direction.
-- **Description**: The `Direction` enum defines a set of named constants representing four cardinal directions: `Up`, `Down`, `Left`, and `Right`. This enum is used to specify directionality in a program, providing a clear and type-safe way to handle directional logic.
+- **Description**: The `Direction` enum defines a set of named constants for four cardinal directions: `Up`, `Down`, `Left`, and `Right`. It provides a way to represent these directions as discrete values, which can be used in control flow and logic that requires directional input.
 
 
 ---
@@ -33,7 +33,7 @@ This code defines several TypeScript enums to demonstrate different types of enu
     - `Unauthorized`: Represents the HTTP status code 401, indicating that authentication is required and has failed or has not yet been provided.
     - `NotFound`: Represents the HTTP status code 404, indicating that the requested resource could not be found.
     - `InternalError`: Represents the HTTP status code 500, indicating an internal server error.
-- **Description**: The `StatusCode` enum defines a set of named constants for common HTTP status codes, providing a clear and readable way to handle HTTP responses in TypeScript applications. Each member of the enum corresponds to a specific HTTP status code, allowing developers to use descriptive names instead of numeric values when working with HTTP responses.
+- **Description**: The `StatusCode` enum defines a set of named constants for common HTTP status codes, providing a clear and readable way to handle HTTP responses in TypeScript applications. Each member of the enum corresponds to a specific HTTP status code, allowing developers to use descriptive names instead of numeric values when checking or setting HTTP response statuses.
 
 
 ---
@@ -53,11 +53,11 @@ This code defines several TypeScript enums to demonstrate different types of enu
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L31>)
 
 - **Members**:
-    - `No`: Represents the value `0` in the `Mixed` enum.
-    - `Yes`: Represents the string value `'YES'` in the `Mixed` enum.
-    - `Maybe`: Represents the value `1` in the `Mixed` enum.
-    - `Never`: Represents the string value `'NEVER'` in the `Mixed` enum.
-- **Description**: The `Mixed` enum defines a set of named constants that can be either numeric or string values. It includes four members: `No` with a numeric value of `0`, `Yes` with a string value of `'YES'`, `Maybe` with a numeric value of `1`, and `Never` with a string value of `'NEVER'`. This enum allows for a combination of numeric and string values, providing flexibility in representing different states or options.
+    - `No`: Represents the numeric value `0`.
+    - `Yes`: Represents the string value `'YES'`.
+    - `Maybe`: Represents the numeric value `1`.
+    - `Never`: Represents the string value `'NEVER'`.
+- **Description**: The `Mixed` enum defines a set of named constants that can be either numeric or string values. It provides a way to represent a collection of related values with both numeric and string types, allowing for more flexible usage in TypeScript code.
 
 
 ---
@@ -69,7 +69,7 @@ This code defines several TypeScript enums to demonstrate different types of enu
     - `South`: Represents the south direction.
     - `East`: Represents the east direction.
     - `West`: Represents the west direction.
-- **Description**: The `ConstDirection` is a constant enum that defines four cardinal directions: `North`, `South`, `East`, and `West`. This enum is used to represent fixed directional values in a program, and because it is a constant enum, the TypeScript compiler inlines these values at compile time, which can lead to more efficient code.
+- **Description**: The `ConstDirection` is a constant enum that defines four cardinal directions: `North`, `South`, `East`, and `West`. It is used to represent fixed directional values in a program, and because it is a constant enum, the TypeScript compiler inlines these values at compile time, which can lead to more efficient code.
 
 
 ---
@@ -82,7 +82,7 @@ This code defines several TypeScript enums to demonstrate different types of enu
     - `Write`: Represents write access with a value of 4.
     - `ReadWrite`: Represents both read and write access with a value of 6.
     - `All`: Represents all access types with a value of 10.
-- **Description**: The `FileAccess` enum defines a set of named constants for file access permissions, using bitwise operations to combine different access levels. It provides a way to specify and check file access permissions, such as `None`, `Read`, `Write`, `ReadWrite`, and `All`, where each member represents a specific combination of access rights.
+- **Description**: The `FileAccess` enum defines a set of named constants for file access permissions. It uses bitwise operations to represent different levels of access, such as `None`, `Read`, `Write`, `ReadWrite`, and `All`. This allows for flexible permission settings by combining different access types.
 
 
 ---
@@ -90,10 +90,10 @@ This code defines several TypeScript enums to demonstrate different types of enu
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L56>)
 
 - **Members**:
-    - `A`: Represents the numeric value 1 in the `AmbientEnum`.
-    - `B`: Represents the numeric value 2 in the `AmbientEnum`, as it follows `A` which is 1.
-    - `C`: Represents the numeric value 4 in the `AmbientEnum`.
-- **Description**: The `AmbientEnum` is a TypeScript enum declaration that defines a set of named constants with numeric values. It includes three members: `A`, `B`, and `C`, where `A` is explicitly set to 1, `B` is implicitly set to 2 (as it follows `A`), and `C` is explicitly set to 4. This enum is declared as ambient, meaning it is defined without an implementation, typically used to describe the shape of an existing JavaScript object or library.
+    - `A`: Represents the numeric value 1.
+    - `B`: Represents the numeric value 2, as it follows `A` which is 1.
+    - `C`: Represents the numeric value 4.
+- **Description**: The `AmbientEnum` is a TypeScript ambient enum declaration that defines a set of named constants with numeric values. It includes three members: `A`, `B`, and `C`, where `A` is explicitly set to 1, `B` is implicitly set to 2 (as it follows `A`), and `C` is explicitly set to 4. This enum is used to declare a set of related constants without providing an implementation, typically for use in ambient contexts such as declaration files.
 
 
 ---
@@ -104,7 +104,7 @@ This code defines several TypeScript enums to demonstrate different types of enu
     - `A`: Represents the string value 'A'.
     - `B`: Represents the string value 'B'.
     - `C`: Represents the string value 'C'.
-- **Description**: The `ModuleEnum` is a string-based enumeration defined within a module scope. It specifies a set of named constants, `A`, `B`, and `C`, each associated with a string value that matches its name. This enum is useful for defining a fixed set of string values that can be used throughout the module to ensure consistency and type safety.
+- **Description**: The `ModuleEnum` is a string-based enumeration defined within a module scope. It specifies a set of named constants, `A`, `B`, and `C`, each associated with a string value of the same name. This enum is used to define a specific set of string values that can be used within the module to ensure consistency and type safety.
 
 
 

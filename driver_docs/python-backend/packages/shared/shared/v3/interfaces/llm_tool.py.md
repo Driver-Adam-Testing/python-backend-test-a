@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Abstract base class for tools callable by an LLM, with execution and asynchronous execution methods.
+Abstract base class for tools callable by an LLM, with synchronous and asynchronous execution methods.
 
 # Purpose
-The code defines an abstract base class `LlmTool` that serves as a framework for tools that can be called by a Language Learning Model (LLM). The class inherits from `LlmParseable` and `ABC`, indicating that it is designed to be extended by other classes that implement specific tool functionalities. The `LlmTool` class provides a structure for managing tool execution, including synchronous and asynchronous execution methods ([`execute`](<#llmtoolexecute>) and [`aexecute`](<#llmtoolaexecute>)), and handling execution errors. It uses threading to manage execution timeouts and ensures that the tool's execution does not block the main thread.
+The code defines an abstract base class `LlmTool` that serves as a framework for tools that can be called by a Language Learning Model (LLM). The class inherits from `LlmParseable` and `ABC`, indicating that it is designed to be extended by other classes that implement specific tool functionalities. The `LlmTool` class provides a structure for executing tasks both synchronously and asynchronously, using the [`execute`](<#llmtoolexecute>) and [`aexecute`](<#llmtoolaexecute>) methods, respectively. These methods manage the execution of a tool call, handle exceptions, and return an `LlmMessage` object that encapsulates the result or error message.
 
-The class includes several properties such as [`tool_call_id`](<#llmtooltool_call_id>), [`datasource`](<#llmtooldatasource>), [`references`](<#llmtoolreferences>), and [`error_message`](<#llmtoolerror_message>), which store information about the tool's execution context and status. The `LlmTool` class also defines abstract methods [`_execute`](<#llmtool_execute>) and [`to_tool_call_response_message`](<#llmtoolto_tool_call_response_message>), which must be implemented by subclasses to define the specific behavior of the tool and how it responds to a tool call. Additionally, the class provides a method [`to_parsing_description_message`](<#llmtoolto_parsing_description_message>) that returns a message containing the class's docstring and an example JSON, which can be used to generate a response type. The `LlmToolStatusString` inner class is used to represent the status of the tool as a string. Overall, the `LlmTool` class provides a structured interface for creating tools that interact with LLMs, focusing on execution management and response generation.
+The class also defines several properties, such as [`tool_call_id`](<#llmtooltool_call_id>), [`datasource`](<#llmtooldatasource>), [`references`](<#llmtoolreferences>), and [`error_message`](<#llmtoolerror_message>), which store information about the tool's execution context. The `LlmTool` class includes abstract methods [`_execute`](<#llmtool_execute>) and [`to_tool_call_response_message`](<#llmtoolto_tool_call_response_message>), which must be implemented by subclasses to define the specific behavior of the tool and how the response message is constructed. Additionally, the class provides a class method [`to_parsing_description_message`](<#llmtoolto_parsing_description_message>) that returns a message containing the class's docstring and an example JSON structure, facilitating the generation of response types. The `LlmToolStatusString` inner class is used to represent status messages for the tool.
 # Imports and Dependencies
 
 ---
@@ -39,7 +39,7 @@ The class includes several properties such as [`tool_call_id`](<#llmtooltool_cal
     - `_tool_datasource`: Holds the data source associated with the tool.
     - `_references`: Contains a set of references related to the tool.
     - `_error_message`: Stores any error message that occurs during execution.
-    - `one_sentence_first_person_rationale_for_calling_the_tool`: Provides a rationale for calling the tool in a single sentence.
+    - `one_sentence_first_person_rationale_for_calling_the_tool`: Provides a rationale for calling the tool in one sentence.
 - **Description**: Facilitates interaction with a tool that can be called by a language model, managing execution and handling errors. It includes properties for tool identification, data source, references, and error messages. The class also defines an inner class `LlmToolStatusString` for status messages and requires implementation of abstract methods for execution and response message generation.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.tool_call_id`](<#llmtooltool_call_id>)
@@ -61,12 +61,12 @@ The class includes several properties such as [`tool_call_id`](<#llmtooltool_cal
 #### LlmTool\.tool\_call\_id<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.tool_call_id}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L38>)
 
-Provides access to the private attribute `_tool_call_id`.
+Retrieves the value of the private attribute `_tool_call_id`.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Returns the value of the private attribute `_tool_call_id`.
-- **Output**: The value of `_tool_call_id`, which is a string or `None`.
+    - Accesses the private attribute `_tool_call_id`.
+- **Output**: Returns the value of `_tool_call_id`, which can be a string or `None`.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<#llmtool>)  (Base Class)
 
 
@@ -74,12 +74,12 @@ Provides access to the private attribute `_tool_call_id`.
 #### LlmTool\.datasource<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.datasource}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L42>)
 
-Provides access to the private attribute `_tool_datasource`.
+Accesses the private attribute `_tool_datasource`.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Returns the value of the private attribute `_tool_datasource`.
-- **Output**: The `DataSource` object or `None` if `_tool_datasource` is not set.
+- **Output**: The method returns an instance of `DataSource` or `None`.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<#llmtool>)  (Base Class)
 
 
@@ -100,13 +100,12 @@ Provides access to the `_references` attribute of the `LlmTool` class.
 #### LlmTool\.error\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.error_message}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L50>)
 
-Retrieves the current error message stored in the `_error_message` attribute.
+Accesses the private attribute `_error_message`.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the `_error_message` attribute of the class instance.
-    - Returns the value of `_error_message`, which can be a string or `None`.
-- **Output**: A string representing the error message or `None` if no error message is set.
+    - Returns the value of the private attribute `_error_message`.
+- **Output**: A string or `None`, representing the error message.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<#llmtool>)  (Base Class)
 
 
@@ -114,18 +113,18 @@ Retrieves the current error message stored in the `_error_message` attribute.
 #### LlmTool\.execute<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.execute}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L54>)
 
-Executes a tool call in a separate thread and returns an LlmMessage based on the execution result or error.
+Executes a tool call in a separate thread and handles potential errors or timeouts, returning an LlmMessage.
 - **Inputs**:
     - `tool_call_id`: A string that identifies the tool call.
     - `datasource`: An instance of DataSource that provides data for the tool call.
 - **Logic and Control Flow**:
     - Assigns `tool_call_id` and `datasource` to instance variables `_tool_call_id` and `_tool_datasource`.
-    - Defines an inner function `target` that attempts to execute [`_execute`](<#llmtool_execute>) and captures any exceptions in `_error_message`.
+    - Defines an inner function `target` that attempts to execute [`_execute`](<#llmtool_execute>) and captures any exceptions as `_error_message`.
     - Starts a new thread to run the `target` function and waits for it to complete with a timeout of 120 seconds.
-    - Checks if the thread is still alive after the timeout, sets an error message, and returns an [`LlmMessage`](<llm_message.py.md#llmmessage>) indicating a timeout.
-    - If an error occurred during execution, returns an [`LlmMessage`](<llm_message.py.md#llmmessage>) with the error message.
-    - If no error occurred, returns the result of [`to_tool_call_response_message`](<#llmtoolto_tool_call_response_message>).
-- **Output**: An [`LlmMessage`](<llm_message.py.md#llmmessage>) object that contains the result of the tool call execution or an error message.
+    - Checks if the thread is still alive after the timeout, logs a timeout message, and sets `_error_message` accordingly.
+    - Returns an [`LlmMessage`](<llm_message.py.md#llmmessage>) with an error message if the thread times out or if `_error_message` is set.
+    - If no errors occur, calls [`to_tool_call_response_message`](<#llmtoolto_tool_call_response_message>) to generate and return a successful [`LlmMessage`](<llm_message.py.md#llmmessage>).
+- **Output**: An [`LlmMessage`](<llm_message.py.md#llmmessage>) object that contains the result of the tool call execution, including any error messages if applicable.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool._execute`](<#llmtool_execute>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<llm_message.py.md#llmmessage>)
@@ -144,14 +143,13 @@ Executes a non-blocking version of the [`execute`](<#llmtoolexecute>) method, ei
     - `tool_call_id`: A string identifier for the tool call.
     - `datasource`: An optional `DataSource` object that provides data for the tool call.
 - **Logic and Control Flow**:
-    - Check if `self.execute` is a coroutine function using `inspect.iscoroutinefunction`.
-    - If `self.execute` is a coroutine, await its execution with `tool_call_id` and `datasource`.
-    - If `self.execute` is not a coroutine, get the current event loop using `asyncio.get_running_loop()`.
-    - Create a partial function `fn` with `self.execute`, `tool_call_id`, and `datasource`.
-    - Run `fn` in the event loop's executor using `loop.run_in_executor(None, fn)` and await its result.
-    - If an exception occurs, catch it and create an error message.
-    - Return an [`LlmMessage`](<llm_message.py.md#llmmessage>) with the error message and tool response details if an exception is caught.
-- **Output**: Returns an [`LlmMessage`](<llm_message.py.md#llmmessage>) object, which contains the result of the tool execution or an error message if an exception occurs.
+    - Checks if `self.execute` is a coroutine function using `inspect.iscoroutinefunction`.
+    - If `self.execute` is a coroutine, it awaits the execution of `self.execute` with `tool_call_id` and `datasource`.
+    - If `self.execute` is not a coroutine, it retrieves the current event loop using `asyncio.get_running_loop()`.
+    - Uses `functools.partial` to create a partial function `fn` with `tool_call_id` and `datasource` as arguments for `self.execute`.
+    - Runs the partial function `fn` in an executor using `loop.run_in_executor(None, fn)` to keep the event loop free for other I/O operations.
+    - Catches any exceptions during execution and constructs an [`LlmMessage`](<llm_message.py.md#llmmessage>) with the error details.
+- **Output**: Returns an [`LlmMessage`](<llm_message.py.md#llmmessage>) object, which contains the result of the tool call or an error message if an exception occurs.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.execute`](<#llmtoolexecute>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<llm_message.py.md#llmmessage>)
@@ -163,7 +161,7 @@ Executes a non-blocking version of the [`execute`](<#llmtoolexecute>) method, ei
 #### LlmTool\.\_execute<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool._execute}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L126>)
 
-Defines an abstract method that must be implemented by subclasses to perform specific execution logic.
+Defines an abstract method that must be implemented by subclasses to execute specific tool logic.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
@@ -176,7 +174,7 @@ Defines an abstract method that must be implemented by subclasses to perform spe
 #### LlmTool\.to\_tool\_call\_response\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.to_tool_call_response_message}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L130>)
 
-Defines an abstract method to convert the tool's response into an `LlmMessage`.
+Defines an abstract method to convert a tool's response into an `LlmMessage`.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
@@ -193,11 +191,11 @@ Generates a parsing description message containing the class docstring and an ex
 - **Decorators**: `@classmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Call the class method [`_generate_example_for_model`](<llm_parseable.py.md#llmparseable_generate_example_for_model>) to get an example dictionary.
-    - Convert the example dictionary to a JSON string with indentation using `json.dumps`.
-    - Format the content string using `FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring` with the class name, example JSON, and class docstring.
-    - Create and return an [`LlmMessage`](<llm_message.py.md#llmmessage>) object with the formatted content and `MessageKind.PARSING_DESCRIPTION`.
-- **Output**: An [`LlmMessage`](<llm_message.py.md#llmmessage>) object with content formatted to include the class name, example JSON, and class docstring, and with message kind set to `MessageKind.PARSING_DESCRIPTION`.
+    - Calls the class method [`_generate_example_for_model`](<llm_parseable.py.md#llmparseable_generate_example_for_model>) to obtain an example dictionary.
+    - Converts the example dictionary to a JSON string with indentation for readability.
+    - Formats a message using the class name, the example JSON, and the class docstring.
+    - Creates and returns an [`LlmMessage`](<llm_message.py.md#llmmessage>) object with the formatted content and a message kind of `MessageKind.PARSING_DESCRIPTION`.
+- **Output**: An [`LlmMessage`](<llm_message.py.md#llmmessage>) object containing the formatted parsing description message.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<llm_parseable.py.md#llmparseable_generate_example_for_model>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<llm_message.py.md#llmmessage>)
@@ -208,15 +206,13 @@ Generates a parsing description message containing the class docstring and an ex
 #### LlmTool\.status<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.status}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L154>)
 
-Provides a status message for the tool based on its references or rationale for calling.
+Provides a status message for the tool based on its references or rationale.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Checks if `_references` is not empty.
-    - If `_references` is not empty, creates a set of unique short paths from `references` and returns them as a formatted string.
-    - If `_references` is empty, checks if `one_sentence_first_person_rationale_for_calling_the_tool` is not `None`.
-    - If `one_sentence_first_person_rationale_for_calling_the_tool` is not `None`, returns its value.
-    - If both `_references` and `one_sentence_first_person_rationale_for_calling_the_tool` are not available, returns a default message indicating the tool was called.
+    - Checks if `_references` is not empty; if true, it collects unique short paths from `references` and returns them as a formatted string.
+    - If `_references` is empty, checks if `one_sentence_first_person_rationale_for_calling_the_tool` is not `None`; if true, returns this rationale.
+    - If both conditions are false, returns a default message indicating the tool's class name.
 - **Output**: A `LlmToolStatusString` that describes the current status of the tool.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<#llmtool>)  (Base Class)
 
@@ -226,7 +222,7 @@ Provides a status message for the tool based on its references or rationale for 
 ### LlmToolStatusString<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.LlmToolStatusString}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L23>)
 
-- **Description**: Represents a status message for a tool, inheriting from the `str` class to provide string representation functionality.
+- **Description**: Represents a status message for a tool, inheriting from the built-in `str` class, and overrides the `__str__` method to return its value.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.LlmToolStatusString.__str__`](<#llmtoolstatusstring__str__>)
 - **Inherits From**:
@@ -238,12 +234,11 @@ Provides a status message for the tool based on its references or rationale for 
 #### LlmToolStatusString\.\_\_str\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.LlmToolStatusString.__str__}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_tool.py#L28>)
 
-Returns the `value` attribute of the instance as a string.
+Returns the string representation of the `LlmToolStatusString` object.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the `value` attribute of the instance.
-    - Returns the `value` attribute as a string.
-- **Output**: A string representation of the `value` attribute of the instance.
+    - Returns the `value` attribute of the `LlmToolStatusString` object.
+- **Output**: A string representation of the `LlmToolStatusString` object.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool.LlmToolStatusString`](<#llmtoolstatusstring>)  (Base Class)
 
 

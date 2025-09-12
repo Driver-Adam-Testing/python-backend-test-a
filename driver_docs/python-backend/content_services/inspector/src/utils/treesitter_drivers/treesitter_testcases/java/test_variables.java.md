@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Demonstrates the use of class, instance, and local variables in Java.
+Defines a Java class with examples of class, instance, and local variables.
 
 # Purpose
 The `VariableExamples` class demonstrates the use of different types of variables in Java, including class variables, instance variables, and local variables. It is part of the `com.example` package. The class defines two static class variables: `MAX_SIZE`, which is a public constant with a value of 100, and `defaultName`, a private string initialized to "Unknown". These class variables are shared across all instances of the class.
 
-The class also includes instance variables: `id`, which is private; `name`, which is protected; and `active`, which is public. These instance variables are specific to each object created from the `VariableExamples` class. Additionally, the [`localVariables`](<#variableexampleslocalvariables>) method illustrates the use of local variables within a method. It declares an integer `localVar`, a string `message`, and a constant `PI`. The method also contains a loop that demonstrates the use of a loop variable `i` and a temporary string `temp`. This class serves as an educational example to illustrate variable scope and accessibility in Java.
+The class also includes instance variables: `id`, which is private; `name`, which is protected; and `active`, which is public. These variables are specific to each instance of the `VariableExamples` class. Additionally, the [`localVariables`](<#variableexampleslocalvariables>) method illustrates the use of local variables within a method. It declares an integer `localVar`, a string `message`, and a constant `PI`. The method also contains a loop that demonstrates the use of a loop variable `i` and a temporary string `temp`. This class serves as an educational example to illustrate the scope and accessibility of different types of variables in Java.
 # Imports and Dependencies
 
 ---
@@ -22,13 +22,13 @@ The class also includes instance variables: `id`, which is private; `name`, whic
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_variables.java#L3>)
 
 - **Modifiers**: `public`
-- **Description**: Represents a class that demonstrates the use of different types of variables in Java, including class variables, instance variables, and local variables within a method.
+- **Description**: Defines a class with examples of different types of variables, including class variables, instance variables, and local variables within a method.
 - **Fields**:
     - `MAX_SIZE`: `int` A public static final integer representing the maximum size, set to 100.
     - `defaultName`: `String` A private static string representing the default name, initialized to 'Unknown'.
     - `id`: `int` A private integer representing the identifier for an instance of the class.
-    - `name`: `String` A protected string representing the name associated with an instance of the class.
-    - `active`: `boolean` A public boolean indicating whether an instance of the class is active.
+    - `name`: `String` A protected string representing the name for an instance of the class.
+    - `active`: `boolean` A public boolean indicating if an instance of the class is active.
 - **Methods**:
     - [`com.example.VariableExamples.localVariables`](<#variableexampleslocalvariables>)
 
@@ -38,17 +38,16 @@ The class also includes instance variables: `id`, which is private; `name`, whic
 #### VariableExamples\.localVariables<!-- {{#callable:com.example.VariableExamples.localVariables}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_variables.java#L14>)
 
-Defines and initializes local variables within a method scope.
+Defines and initializes local variables within the method scope.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
     - Declare and initialize an integer variable `localVar` with the value 42.
     - Declare and initialize a string variable `message` with the value "Hello".
     - Declare and initialize a final double variable `PI` with the value 3.14159.
-    - Start a for loop that iterates from 0 to 9.
-    - Within the loop, declare and initialize a string variable `temp` with the value "iteration " concatenated with the current loop index `i`.
+    - Iterate over a loop 10 times, each time declaring and initializing a string variable `temp` with the value "iteration " concatenated with the current loop index `i`.
 - **Output**:
-    - This method does not return a value.
+    - The method does not return a value.
 - **See also**: [`com.example.VariableExamples`](<#variableexamples>)  (Base Class)
 
 

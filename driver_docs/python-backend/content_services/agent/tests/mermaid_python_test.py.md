@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests if Mermaid code blocks can be rendered using the Mermaid CLI.
+Tests if Mermaid code blocks are renderable using the Mermaid CLI by creating temporary files.
 
 # Purpose
-This script checks if a given Mermaid diagram code block can be rendered using the Mermaid CLI. It defines a function [`is_mermaid_renderable`](<#is_mermaid_renderable>) that takes a string of Mermaid code as input and returns `True` if the code is renderable, or `False` otherwise. The function creates temporary files to store the Mermaid code and the output, and it uses the `subprocess` module to execute the Mermaid CLI command. If the command fails, it captures and prints the error output. The script includes example Mermaid diagrams to demonstrate the function's usage, testing both valid and invalid Mermaid code.
+The code is a Python script that checks if a given Mermaid diagram code block can be rendered using the Mermaid CLI. It defines a function [`is_mermaid_renderable`](<#is_mermaid_renderable>) that takes a string containing Mermaid diagram source code and attempts to render it by creating temporary files for input and output. The function uses the `subprocess` module to call the Mermaid CLI (`mmdc`) and returns `True` if the rendering is successful, or `False` if an error occurs. The script includes example Mermaid diagrams to demonstrate the function's usage, printing whether each example is renderable. Temporary files are cleaned up after the rendering attempt, regardless of success or failure.
 # Imports and Dependencies
 
 ---
@@ -25,14 +25,14 @@ Checks if a given Mermaid code block can be rendered by the Mermaid CLI.
 - **Inputs**:
     - `mermaid_code`: The Mermaid diagram source as a string.
 - **Logic and Control Flow**:
-    - Create a temporary file with a '.mmd' suffix to store the Mermaid code.
-    - Write the provided `mermaid_code` to the temporary file and flush the contents to disk.
-    - Create another temporary file with a '.svg' suffix to serve as the output path for the Mermaid CLI.
+    - Create a temporary file with the '.mmd' suffix to store the Mermaid code.
+    - Write the provided `mermaid_code` to the temporary file and flush the contents to ensure it is written.
+    - Create another temporary file with the '.svg' suffix to serve as the output path for the Mermaid CLI, although the output is not used.
     - Use `subprocess.check_output` to call the Mermaid CLI (`mmdc`) with the input and output file paths.
-    - If the CLI call is successful, return `True`, indicating the code is renderable.
-    - If a `subprocess.CalledProcessError` is raised, print the error output and return `False`.
-    - In the `finally` block, remove the temporary files created for input and output.
-- **Output**: Returns `True` if the Mermaid code is renderable, otherwise returns `False`.
+    - If the Mermaid CLI successfully renders the code, return `True`.
+    - If a `subprocess.CalledProcessError` is raised, print the error output for debugging and return `False`.
+    - In the `finally` block, remove the temporary files created for both input and output paths.
+- **Output**: Returns `True` if the Mermaid code is renderable by the Mermaid CLI, otherwise returns `False`.
 
 
 

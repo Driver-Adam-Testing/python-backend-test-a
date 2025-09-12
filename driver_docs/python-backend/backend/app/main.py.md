@@ -6,9 +6,9 @@
 FastAPI application setup with routers, logging, Sentry configuration, and global error handling.
 
 # Purpose
-The code is a FastAPI application setup file that initializes and configures a web application. It defines the main application instance using FastAPI and sets up various components such as logging, Sentry for error tracking, and Cross-Origin Resource Sharing (CORS) middleware. The application includes three main routers: `unprotected_router`, `studio_router`, and `api_router`, each with different authentication requirements. The `unprotected_router` does not require authentication, the `studio_router` is protected with JSON Web Tokens (JWT), and the `api_router` is secured with an API key. These routers are mounted in a specific order to manage access control effectively.
+The code is a FastAPI application setup file that initializes and configures a web application. It defines the main application instance using FastAPI and sets up various components such as logging, Sentry for error tracking, middleware, and API routers. The application is structured to handle different types of routes with varying levels of security: unprotected routes, JWT-protected routes, and API-key-protected routes. These routes are mounted in a specific order to ensure proper access control.
 
-The file also configures logging using a custom `JsonFormatter` to format log messages as JSON, and it initializes Sentry for error monitoring based on the environment settings. The application includes middleware for logging and CORS, and it defines a global exception handler to manage unhandled exceptions by logging them and returning a generic error response. The configuration settings, such as log level, environment, and CORS origins, are retrieved from a `settings` module, which centralizes configuration management. This setup file is intended to be the entry point for running the FastAPI application, providing a structured and secure environment for handling HTTP requests.
+The file includes configuration for logging using a custom `JsonFormatter` to format log messages in JSON, and it sets the log level based on application settings. Sentry is configured for error tracking, with different sampling rates depending on the environment (development, staging, production). The application also includes middleware for logging and Cross-Origin Resource Sharing (CORS) to control access from different origins. Additionally, a global exception handler is defined to log unhandled exceptions and return a generic error response to the client. The code is intended to be the entry point for running the FastAPI application, integrating various components and configurations necessary for its operation.
 # Imports and Dependencies
 
 ---
@@ -33,6 +33,7 @@ The file also configures logging using a custom `JsonFormatter` to format log me
 - `app.auth.api_key_middleware.require_api_key`
 - `app.auth.jwt_middleware.require_jwt`
 - `app.core.config.settings`
+- `app.mcp.server.my_mcp`
 - `fastapi.routing.APIRoute`
 
 
@@ -41,22 +42,29 @@ The file also configures logging using a custom `JsonFormatter` to format log me
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` variable is an instance of Python's `Logger` class, obtained using the `getLogger` function with the current module's name (`__name__`). This setup allows for logging messages that are specific to this module, facilitating easier debugging and monitoring.
-- **Use**: Used to log messages and errors throughout the module, aiding in debugging and monitoring.
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is initialized with the name of the current module using `__name__`. This allows the logger to output log messages that are tagged with the module's name, which helps in identifying the source of the log messages.
+- **Use**: Used to log messages throughout the application, providing a consistent way to track events and errors.
+
+
+---
+### mcp\_app
+- **Type**: ``my_mcp.http_app``
+- **Description**: Represents an HTTP application instance created by calling the `http_app` method from the `my_mcp` module. This instance is configured with a specific path, "/v1", which likely serves as a base path for the application's endpoints.
+- **Use**: Used to define and configure the HTTP application instance that is later mounted to the main FastAPI application under the "/mcp" path.
 
 
 ---
 ### app
 - **Type**: ``FastAPI``
-- **Description**: Initializes a FastAPI application instance with a specified title, OpenAPI URL, and a custom function to generate unique IDs for routes. The `title` is set using the `settings.PROJECT_NAME`, the `openapi_url` is constructed using `settings.STUDIO_V1_STR`, and the `generate_unique_id_function` is set to `_unique_id`. This setup is part of the application's configuration to handle API requests and responses.
-- **Use**: Used to create and configure the main FastAPI application instance, which includes setting up CORS, middleware, and routers for handling different types of API requests.
+- **Description**: Initializes a `FastAPI` application with specific configurations such as the project title, OpenAPI URL, a custom unique ID function, and lifespan from `mcp_app`. It also mounts the `mcp_app` under the `/mcp` path.
+- **Use**: Serves as the main application instance for handling HTTP requests and managing middleware, routers, and error handling.
 
 
 # Classes
 
 ---
 ### JsonFormatter<!-- {{#class:python-backend/backend/app/main.JsonFormatter}} -->
-[View Source →](<../../../../backend/app/main.py#L43>)
+[View Source →](<../../../../backend/app/main.py#L44>)
 
 - **Description**: Formats log records into a JSON string. It includes the log level, timestamp, logger name, and message. If an exception is present, it adds a traceback to the JSON output.
 - **Methods**:
@@ -68,7 +76,7 @@ The file also configures logging using a custom `JsonFormatter` to format log me
 
 ---
 #### JsonFormatter\.format<!-- {{#callable:python-backend/backend/app/main.JsonFormatter.format}} -->
-[View Source →](<../../../../backend/app/main.py#L44>)
+[View Source →](<../../../../backend/app/main.py#L45>)
 
 Formats a log record into a JSON string with specific fields.
 - **Inputs**:
@@ -76,7 +84,7 @@ Formats a log record into a JSON string with specific fields.
 - **Logic and Control Flow**:
     - Create a dictionary `json_record` with keys 'level', 'timestamp', 'name', and 'message', and populate it with corresponding values from the `record` object.
     - Convert the `record.created` timestamp to a formatted string 'YYYY-MM-DD HH:MM:SS'.
-    - If `record.exc_info` is present, add a 'traceback' key to `json_record` with the formatted exception information.
+    - Check if `record.exc_info` is present; if so, add a 'traceback' key to `json_record` with the formatted exception information.
     - Convert the `json_record` dictionary to a JSON string using `json.dumps`.
 - **Output**: A JSON string representation of the log record.
 - **See also**: [`python-backend/backend/app/main.JsonFormatter`](<#jsonformatter>)  (Base Class)
@@ -87,7 +95,7 @@ Formats a log record into a JSON string with specific fields.
 
 ---
 ### \_configure\_logging<!-- {{#callable:python-backend/backend/app/main._configure_logging}} -->
-[View Source →](<../../../../backend/app/main.py#L58>)
+[View Source →](<../../../../backend/app/main.py#L59>)
 
 Configures the logging system to use a JSON formatter and sets the log level based on application settings.
 - **Inputs**: None
@@ -97,51 +105,52 @@ Configures the logging system to use a JSON formatter and sets the log level bas
     - Set the formatter of the handler to an instance of [`JsonFormatter`](<#jsonformatter>).
     - Configure the logging system with the specified log level and handler.
     - Log an informational message indicating the log level that has been set.
-- **Output**: None
+- **Output**: No output is returned as the function returns `None`.
 - **Functions Called**:
     - [`python-backend/backend/app/main.JsonFormatter`](<#jsonformatter>)
 
 
 ---
 ### \_configure\_sentry<!-- {{#callable:python-backend/backend/app/main._configure_sentry}} -->
-[View Source →](<../../../../backend/app/main.py#L66>)
+[View Source →](<../../../../backend/app/main.py#L67>)
 
 Configures Sentry for error tracking based on the environment.
 - **Inputs**:
-    - `env`: Specifies the environment in which the application is running; must be one of 'local', 'development', 'staging', or 'production'.
-    - `dsn`: The Data Source Name (DSN) for Sentry, used to identify the project in Sentry.
+    - `env`: A string literal indicating the environment, which can be 'local', 'development', 'staging', or 'production'.
+    - `dsn`: A string representing the Data Source Name for Sentry configuration.
 - **Logic and Control Flow**:
-    - Checks if the environment is 'local'; if true, the function returns immediately without configuring Sentry.
+    - Checks if the environment is 'local'; if so, exits the function without configuring Sentry.
     - Determines the sample rate for Sentry traces based on the environment: 1.0 for 'development', 0.5 for 'staging', and 0.1 for 'production'.
-    - Initializes Sentry with the provided DSN, environment, and sample rate, and sets additional options such as not sending default PII and enabling continuous profiling auto-start unless in 'production'.
-- **Output**: Does not return any value; it configures Sentry as a side effect.
+    - Initializes Sentry with the given DSN, environment, and sample rate, and sets additional options such as not sending default PII and enabling continuous profiling auto-start unless in 'production'.
+- **Output**: Does not return any value (returns None).
 
 
 ---
 ### \_unique\_id<!-- {{#callable:python-backend/backend/app/main._unique_id}} -->
-[View Source →](<../../../../backend/app/main.py#L91>)
+[View Source →](<../../../../backend/app/main.py#L92>)
 
-Generates a unique identifier for a given API route by combining its first tag and name.
+Generates a unique identifier for an API route by combining the first tag and the route name.
 - **Inputs**:
-    - `route`: An instance of `APIRoute` representing the API route for which to generate a unique identifier.
+    - `route`: An instance of `APIRoute` that contains metadata about the API route, including tags and name.
 - **Logic and Control Flow**:
-    - Accesses the first tag of the `route` using `route.tags[0]`.
-    - Accesses the name of the `route` using `route.name`.
-    - Concatenates the first tag and the name of the route with a hyphen in between to form a unique identifier.
+    - Accesses the first tag from the `tags` attribute of the `route` object.
+    - Accesses the `name` attribute of the `route` object.
+    - Concatenates the first tag and the route name with a hyphen in between.
+    - Returns the concatenated string as the unique identifier.
 - **Output**: A string that represents the unique identifier for the given API route.
 
 
 ---
 ### global\_exception\_handler<!-- {{#callable:python-backend/backend/app/main.global_exception_handler}} -->
-[View Source →](<../../../../backend/app/main.py#L140>)
+[View Source →](<../../../../backend/app/main.py#L145>)
 
 Handles unhandled exceptions globally in the FastAPI application by logging the error and returning a JSON response with a 500 status code.
 - **Decorators**: `@app.exception_handler`
 - **Inputs**:
     - `request`: The incoming HTTP request that caused the exception.
-    - `exc`: The exception that was raised and needs handling.
+    - `exc`: The exception object that was raised.
 - **Logic and Control Flow**:
-    - Logs the unhandled exception using the logging module with the error level.
+    - Logs the unhandled exception using the logging module with the error level and includes exception information.
     - Returns a JSON response with a status code of 500 and a message indicating that an error occurred and has been logged.
 - **Output**: A `JSONResponse` with a status code of 500 and a message indicating an error has occurred.
 

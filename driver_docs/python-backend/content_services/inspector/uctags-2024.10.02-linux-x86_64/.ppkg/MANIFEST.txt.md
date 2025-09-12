@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A manifest file listing directory and file hashes for binaries in the `bin/` directory.
+Lists files and directories with their hash values in the `bin` directory.
 
 # Purpose
-The file content describes a list of files and directories with their corresponding hash values. Each entry starts with a type indicator: `d` for directories and `f` for files. The hash values are SHA-256 checksums that ensure data integrity and verify the contents of the files. The paths following the hash values specify the location of each file or directory within the `bin/` directory. This structure is typically used for tracking file changes or verifying file integrity in a software project.
+This metadata file lists the contents of a directory and their corresponding hash values. The entry starting with `d|` indicates a directory named `bin/`, while entries starting with `f|` represent files within this directory. Each file entry includes a hash value, which is a unique identifier for the file's content, followed by the file path. The files listed are `ctags`, `readtags`, and `optscript`, all located in the `bin/` directory.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

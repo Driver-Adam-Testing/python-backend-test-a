@@ -6,7 +6,7 @@
 Configuration for MyPy type checker specifying Python version 3.10 and import handling options.
 
 # Purpose
-The `[mypy]` section configures the behavior of the `mypy` static type checker. It specifies that the Python version to check against is `3.10`, instructs `mypy` to skip following imports, and enables support for `namespace_packages`.
+The `[mypy]` section configures the `mypy` static type checker for Python. It specifies that the Python version to check against is 3.10. The `follow_imports` option is set to `skip`, which means `mypy` will not follow imports to other modules. The `namespace_packages` option is set to `True`, allowing `mypy` to recognize and handle namespace packages.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for assembling multi-prompt source code with sections for imports, variables, data structures, subroutines, and macros.
+Defines a template for large assembly source code prompts with sections for purpose, imports, variables, data structures, subroutines, and macros.
 
 # Purpose
-The code defines a template for processing and analyzing assembly source code using multiple prompts. It imports several components from the `utils.lang_specialization.assembly` and `utils.lang_specialization.default_multi_context` modules, which are used to handle different aspects of assembly code, such as data structures, macros, subroutines, and variables. The template, named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY`, is a list of tuples, each representing a specific task or analysis to be performed on the assembly code. These tasks include identifying the purpose of the code, checking imports and dependencies, and extracting global variables, data structures, subroutines, and macros.
+The code defines a template for generating multi-prompt assembly language documentation. It imports several components from the `utils.lang_specialization.assembly` and `utils.lang_specialization.default_multi_context` modules, which are used to handle different aspects of assembly language code, such as data structures, macros, subroutines, and variables. The template, named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY`, is a list of tuples, each representing a specific section of the documentation. These sections include "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," "Subroutines," and "Macros."
 
-The template uses a combination of predefined prompts and functions to process the assembly code. It leverages the `S` class from the `utils.templates` module to define the structure of each task. The tasks are executed in a sequence, where each task is responsible for a specific aspect of the code analysis. The use of lambda functions and conditional JSON processing indicates that the template is designed to interact with a language model or similar system to extract and process information from the assembly code. This code is likely intended to be part of a larger system for analyzing and understanding assembly source code, providing a structured approach to extract meaningful information from it.
+Each tuple in the template specifies a type of prompt or condition, a section title, and functions or constants that help generate the content for that section. For example, the "Purpose" section uses predefined prompts to describe the overall purpose of the source code, while the "Imports and Dependencies" section checks for imports in the code. The template uses functions like `from_llm` to extract and process information from the code, which is then used to populate the documentation sections. This code is intended to be part of a larger system that automates the generation of structured documentation for assembly language code.
 # Imports and Dependencies
 
 ---
@@ -32,8 +32,8 @@ The template uses a combination of predefined prompts and functions to process t
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_ASSEMBLY
 - **Type**: ``list``
-- **Description**: A list of tuples that define a multi-prompt template for assembly code processing. Each tuple contains a prompt type, a description, and a series of functions or constants related to assembly code components such as purpose, imports, global variables, data structures, subroutines, and macros.
-- **Use**: Used to organize and define the structure of prompts for processing assembly code components.
+- **Description**: A list of tuples, where each tuple contains a prompt type, a description string, and a series of functions or constants related to assembly code processing. Each tuple is designed to handle a specific aspect of assembly code, such as purpose, imports, global variables, data structures, subroutines, and macros.
+- **Use**: Used to define a structured template for processing and analyzing different components of assembly code using various functions and constants.
 
 
 

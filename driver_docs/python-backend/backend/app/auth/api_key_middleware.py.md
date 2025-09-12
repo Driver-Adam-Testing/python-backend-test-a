@@ -3,22 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Middleware for API key validation and organization membership verification using Auth0 and FastAPI.
+Middleware for validating API keys, checking organization membership, and returning user payloads.
 
 # Purpose
-The code provides functionality for API key verification and user organization membership validation within a FastAPI application. It integrates with Auth0 for user organization checks and uses a caching mechanism to optimize performance and reduce API call frequency. The primary components include the [`verify_api_key`](<#verify_api_key>) function, which validates API keys against a database and checks user membership in an organization using the [`_is_member_of_org`](<#_is_member_of_org>) function. The [`verify_api_key`](<#verify_api_key>) function returns a JWT-like payload for downstream processing, ensuring that the API key is valid and the user is authorized.
+The code provides functionality for API key validation and user organization membership verification within a FastAPI application. It integrates with an Auth0 service to check if a user belongs to a specific organization and uses a caching mechanism to optimize performance and reduce API call frequency. The [`verify_api_key`](<#verify_api_key>) function validates an API key against a database and checks the user's organization membership using the [`_is_member_of_org`](<#_is_member_of_org>) function. If the API key is valid and the user is a member of the organization, it updates the last used timestamp and returns a payload that mimics a JWT for further processing.
 
-The code also defines a FastAPI dependency, [`require_api_key`](<#require_api_key>), which ensures that incoming requests contain a valid API key in the `X-API-Key` header. This dependency raises an HTTP exception if the key is missing or invalid. The caching of API key verification results is implemented using `cachetools` with a time-to-live (TTL) cache, enhancing efficiency by storing results for a specified duration. The code is structured to be part of a larger application, likely serving as a middleware or utility module for handling authentication and authorization tasks.
+The code also defines a FastAPI dependency, [`require_api_key`](<#require_api_key>), which ensures that incoming requests include a valid API key in the `X-API-Key` header. This dependency raises an HTTP exception if the key is missing or invalid. The caching of user organization membership results is implemented using the `cachetools` library, with a time-to-live (TTL) of 5 minutes for up to 1000 users, to improve efficiency and avoid rate limits. The code is structured to be part of a larger application, relying on external modules for database access, user models, and API key payload creation.
 # Imports and Dependencies
 
 ---
-- `time`
+- `datetime.datetime`
+- `zoneinfo.ZoneInfo`
+- `app.auth.api_key_common.create_api_key_payload`
 - `app.auth.models.User`
 - `app.services.auth0_service.Auth0Service`
 - `cachetools.TTLCache`
 - `cachetools.cached`
 - `database.db.get_session`
-- `database.models_v2.ApiKey`
+- `database.models.ApiKey`
 - `fastapi.Depends`
 - `fastapi.HTTPException`
 - `fastapi.security.APIKeyHeader`
@@ -30,38 +32,38 @@ The code also defines a FastAPI dependency, [`require_api_key`](<#require_api_ke
 ---
 ### \_auth0
 - **Type**: ``Auth0Service``
-- **Description**: Represents an instance of the `Auth0Service` class, which is likely responsible for interacting with the Auth0 Management API. This instance is used to perform operations related to user and organization management within the Auth0 service.
-- **Use**: Used to call methods from the `Auth0Service` class, such as `list_user_organizations`, to check user membership in organizations.
+- **Description**: Represents an instance of the `Auth0Service` class. This instance is used to interact with the Auth0 Management API, specifically for operations related to user organization membership.
+- **Use**: Used to call methods on the `Auth0Service` instance, such as `list_user_organizations`, to check user membership in organizations.
 
 
 ---
 ### API\_KEY\_HEADER\_NAME
 - **Type**: ``str``
 - **Description**: A string that specifies the name of the HTTP header used to pass the API key in requests.
-- **Use**: Used to define the header name for API key authentication in the `_api_key_scheme` variable.
+- **Use**: Used to define the header name for the `APIKeyHeader` security scheme in FastAPI.
 
 
 ---
-### \_api\_key\_scheme
+### API\_KEY\_SCHEME
 - **Type**: ``APIKeyHeader``
-- **Description**: Defines an API key header scheme using the `APIKeyHeader` class from FastAPI's security module. It specifies the header name as `X-API-Key` and sets `auto_error` to `False`, which means it will not automatically raise an error if the header is missing.
-- **Use**: Used to create a dependency in the `require_api_key` function to ensure requests include a valid API key in the specified header.
+- **Description**: Represents an API key header scheme used for authentication in FastAPI applications. It is configured with the header name `X-API-Key` and does not automatically raise an error if the key is missing or invalid.
+- **Use**: Used as a dependency in FastAPI routes to ensure requests include a valid API key in the `X-API-Key` header.
 
 
 # Functions
 
 ---
 ### \_is\_member\_of\_org<!-- {{#callable:python-backend/backend/app/auth/api_key_middleware._is_member_of_org}} -->
-[View Source →](<../../../../../backend/app/auth/api_key_middleware.py#L15>)
+[View Source →](<../../../../../backend/app/auth/api_key_middleware.py#L17>)
 
 Checks if a user is a member of a specified organization using the Auth0 Management API.
 - **Inputs**:
-    - `user_id`: The unique identifier of the user to check membership for.
+    - `user_id`: The unique identifier of the user to check.
     - `org_id`: The unique identifier of the organization to check membership against.
 - **Logic and Control Flow**:
     - Create a [`User`](<models.py.md#user>) object with the given `user_id` and `org_id`, and other fixed attributes.
     - Call `_auth0.list_user_organizations` with the [`User`](<models.py.md#user>) object to get a list of organizations the user belongs to.
-    - Convert the result to a dictionary and store it in `orgs`.
+    - Convert the result to a dictionary `orgs`.
     - Check if any organization in `orgs['organizations']` has an `id` that matches `org_id`.
 - **Output**: Returns `True` if the user is a member of the organization, otherwise `False`.
 - **Functions Called**:
@@ -71,39 +73,40 @@ Checks if a user is a member of a specified organization using the Auth0 Managem
 
 ---
 ### verify\_api\_key<!-- {{#callable:python-backend/backend/app/auth/api_key_middleware.verify_api_key}} -->
-[View Source →](<../../../../../backend/app/auth/api_key_middleware.py#L35>)
+[View Source →](<../../../../../backend/app/auth/api_key_middleware.py#L37>)
 
-Validates an API key against the database and returns a JWT-like payload if valid.
+Validates an API key against the database and returns a JWT-shaped payload if valid.
 - **Decorators**: `@cached`
 - **Inputs**:
-    - `raw_key`: The API key to validate, provided as a string.
+    - `raw_key`: A string representing the raw API key to validate.
 - **Logic and Control Flow**:
-    - Prints the raw API key for debugging purposes.
-    - Opens a database session using `get_session()`.
-    - Queries the `v2_api_key` table to find a matching API key record.
-    - Raises an `HTTPException` with status 401 if the API key is not found.
-    - Checks if the user is a member of the organization using [`_is_member_of_org`](<#_is_member_of_org>).
-    - Raises an `HTTPException` with status 401 if the user is not a member of the organization.
-    - Gets the current time in seconds since the epoch.
-    - Returns a dictionary structured like a JWT payload with user and organization details.
-- **Output**: A dictionary structured like a JWT payload, containing user and organization details if the API key is valid.
+    - Opens a database session using [`get_session`](<../../../driver_db/database/db.py.md#get_session>).
+    - Executes a query to find an `ApiKey` object where the key matches `raw_key`.
+    - If no matching `ApiKey` is found, raises an `HTTPException` with a 401 status code indicating an invalid API key.
+    - Checks if the user associated with the API key is a member of the organization using [`_is_member_of_org`](<#_is_member_of_org>).
+    - If the user is not a member of the organization, raises an `HTTPException` with a 401 status code indicating the user does not belong to the organization.
+    - Updates the `last_used_at` field of the `ApiKey` object to the current UTC time.
+    - Commits the changes to the database.
+    - Returns a JWT-shaped payload created by [`create_api_key_payload`](<api_key_common.py.md#create_api_key_payload>) using the `ApiKey` object.
+- **Output**: A dictionary representing a JWT-shaped payload for the validated API key.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/backend/app/auth/api_key_middleware._is_member_of_org`](<#_is_member_of_org>)
+    - [`python-backend/backend/app/auth/api_key_common.create_api_key_payload`](<api_key_common.py.md#create_api_key_payload>)
 
 
 ---
 ### require\_api\_key<!-- {{#callable:python-backend/backend/app/auth/api_key_middleware.require_api_key}} -->
-[View Source →](<../../../../../backend/app/auth/api_key_middleware.py#L77>)
+[View Source →](<../../../../../backend/app/auth/api_key_middleware.py#L66>)
 
-Asserts that a request carries a valid X-API-Key header and returns user information.
+Asserts that a request includes a valid X-API-Key header and returns a user object.
 - **Inputs**:
-    - `key`: An optional string representing the API key, defaulting to the result of the `_api_key_scheme` dependency.
+    - `key`: An optional string representing the API key, defaulting to a dependency on `API_KEY_SCHEME`.
 - **Logic and Control Flow**:
     - Check if the `key` is not provided; if so, raise an `HTTPException` with a 401 status code and a message indicating a missing X-API-Key header.
-    - Call the [`verify_api_key`](<#verify_api_key>) function with the provided `key` to validate it and retrieve user information.
+    - Call the [`verify_api_key`](<#verify_api_key>) function with the provided `key` to validate it and obtain user information.
     - Return a [`User`](<models.py.md#user>) object initialized with the data returned from [`verify_api_key`](<#verify_api_key>).
-- **Output**: A dictionary containing user information if the API key is valid.
+- **Output**: A dictionary representing a user object, constructed from the verified API key data.
 - **Functions Called**:
     - [`python-backend/backend/app/auth/models.User`](<models.py.md#user>)
     - [`python-backend/backend/app/auth/api_key_middleware.verify_api_key`](<#verify_api_key>)

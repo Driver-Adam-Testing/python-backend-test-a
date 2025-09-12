@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Deploys a CDK stack using environment variables and configuration from a JSON file.
+Sets up and deploys a development stack using AWS CDK with environment configurations.
 
 # Purpose
-This script is a deployment configuration for an AWS Cloud Development Kit (CDK) application. It initializes a CDK `App` and checks for the presence of specific environment variables: `DEV_NAME`, `DEPLOYMENT_ENVIRONMENT`, and `DATABASE_URL`. If any of these variables are missing, the script raises a `ValueError`. The script reads a JSON configuration file, `cdk-stack-config.json`, to set additional environment variables needed for the deployment. It then creates an instance of `DevStack` with parameters derived from the environment variables and the configuration file, specifying the AWS account and region for deployment. Finally, the script synthesizes the CDK app, preparing it for deployment.
+This script is designed to deploy a temporary AWS Cloud Development Kit (CDK) stack for development purposes. It uses the AWS CDK library to define and deploy cloud infrastructure in a programmatic way. The script requires certain environment variables to be set, specifically `DEV_NAME`, `DEPLOYMENT_ENVIRONMENT`, and `DATABASE_URL`, which are used to configure the deployment. The `DEV_NAME` is sanitized to create a valid stack name, and the script reads additional configuration from a JSON file located at `./state/out/cdk-stack-config.json`.
+
+The script initializes an instance of `DevStack`, a class imported from `cdk.dev_stack`, with parameters that include a prefix derived from `DEV_NAME`, the deployment environment, and the database URL. It sets the AWS account and region for the deployment using the `cdk.Environment` class. The script concludes by synthesizing the application with `app.synth()`, which generates the necessary AWS CloudFormation templates for deployment. This script is intended to be executed in a development environment where the specified environment variables and configuration file are available.
 # Imports and Dependencies
 
 ---
@@ -22,8 +24,8 @@ This script is a deployment configuration for an AWS Cloud Development Kit (CDK)
 ---
 ### app
 - **Type**: ``cdk.App``
-- **Description**: Represents an instance of the AWS CDK application. This object is the root of the construct tree and is responsible for managing the lifecycle of the application.
-- **Use**: Used to define and synthesize the AWS Cloud Development Kit (CDK) application.
+- **Description**: Represents an instance of the AWS Cloud Development Kit (CDK) application. This object is the root of the construct tree and is responsible for managing the lifecycle of the CDK application.
+- **Use**: Used to define and synthesize the AWS infrastructure stacks within the CDK application.
 
 
 ---
@@ -36,8 +38,8 @@ This script is a deployment configuration for an AWS Cloud Development Kit (CDK)
 ---
 ### dev\_stack\_name
 - **Type**: ``str``
-- **Description**: A string variable that concatenates the environment variable `dev_name` with the suffix 'TempTestInDevStack'. This variable is used to define the name of a development stack in the AWS CDK application.
-- **Use**: Used to specify the name of the development stack when deploying the CDK stack.
+- **Description**: A string variable that concatenates the environment variable `dev_name` with the suffix `TempTestInDevStack`. This forms a unique name for a development stack.
+- **Use**: Used to define the name of the development stack when deploying the CDK stack.
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Initialization file for the shared prompts tools package.
+Initialization file for the `tools` package in the `shared.prompts` module.
 
 # Purpose
-The comment `# flake8: noqa` is a directive used in Python source code to instruct the Flake8 tool to ignore all style and linting errors in the file. Flake8 is a popular linting tool that checks for compliance with the PEP 8 style guide and other code quality issues. By including this comment, the file is exempt from Flake8's checks, which can be useful in situations where the code intentionally deviates from standard style guidelines or when the developer wants to suppress warnings for specific reasons. This directive applies to the entire file, ensuring that no Flake8 errors or warnings are reported.
+The comment `# flake8: noqa` is a directive used in Python source code to instruct the Flake8 tool to ignore all style and linting errors in the file. Flake8 is a popular linting tool that checks for compliance with PEP 8, the style guide for Python code, and other code quality issues. By including this comment, the developer indicates that Flake8 should not report any warnings or errors for this file, regardless of its content. This can be useful in situations where the file is known to contain intentional deviations from style guidelines or when the developer wants to suppress warnings for specific reasons.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

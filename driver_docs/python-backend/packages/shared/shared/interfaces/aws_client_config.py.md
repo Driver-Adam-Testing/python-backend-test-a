@@ -6,7 +6,7 @@
 Defines an AWS client configuration model with region, access key ID, and secret access key.
 
 # Purpose
-The code defines a data model using the `pydantic` library to represent configuration settings for an AWS client. The `AWSClientConfig` class inherits from `BaseModel` and includes three attributes: `region_name`, `aws_access_key_id`, and `aws_secret_access_key`, all of which are strings. This model is used to validate and manage AWS client configuration data, ensuring that the necessary fields are present and correctly formatted.
+The code defines a data model for AWS client configuration using the `pydantic` library. It creates a class `AWSClientConfig` that inherits from `BaseModel`, which is part of `pydantic`. This class includes three attributes: `region_name`, `aws_access_key_id`, and `aws_secret_access_key`, all of which are strings. The purpose of this class is to validate and manage AWS client configuration data, ensuring that the necessary fields are present and correctly typed. This code provides narrow functionality focused on handling AWS client configuration data.
 # Imports and Dependencies
 
 ---
@@ -19,12 +19,11 @@ The code defines a data model using the `pydantic` library to represent configur
 ### AWSClientConfig<!-- {{#class:python-backend/packages/shared/shared/interfaces/aws_client_config.AWSClientConfig}} -->
 [View Source →](<../../../../../../packages/shared/shared/interfaces/aws_client_config.py#L4>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
-    - `region_name`: Specifies the AWS region for the client.
-    - `aws_access_key_id`: Stores the AWS access key ID for authentication.
-    - `aws_secret_access_key`: Holds the AWS secret access key for authentication.
-- **Description**: Defines configuration settings for an AWS client, including region and authentication credentials.
+    - `region_name`: Specifies the AWS region name.
+    - `aws_access_key_id`: Stores the AWS access key ID.
+    - `aws_secret_access_key`: Holds the AWS secret access key.
+- **Description**: Defines configuration settings for an AWS client, including region, access key ID, and secret access key.
 - **Inherits From**:
     - `BaseModel`
 

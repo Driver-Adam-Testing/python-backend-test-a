@@ -6,7 +6,7 @@
 Alembic migration script to add and remove the "order" column in the "derived_contents" table.
 
 # Purpose
-This code is a database migration script used with Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `c6744cecca4d`, which follows the previous migration `b2feabbcc387`. The [`upgrade`](<#upgrade>) function adds a new column named `order` to the `derived_contents` table, with an integer data type, a default server value of 0, and allows null values. The [`downgrade`](<#downgrade>) function reverses this change by removing the `order` column from the `derived_contents` table. This script provides narrow functionality, specifically for managing schema changes in a database.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `c6744cecca4d`, which follows the previous migration `b2feabbcc387`. The [`upgrade`](<#upgrade>) function adds a new column named `order` of type `Integer` to the `derived_contents` table, with a default value of 0 and allowing null values. The [`downgrade`](<#downgrade>) function reverses this change by removing the `order` column from the `derived_contents` table. This script facilitates schema evolution by allowing the database structure to be updated or reverted as needed.
 # Imports and Dependencies
 
 ---
@@ -21,29 +21,29 @@ This code is a database migration script used with Alembic, a database migration
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
-- **Use**: Used to identify the current state of the database schema in Alembic migrations.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic, a database migration tool, to track changes in the database schema over time.
+- **Use**: Used to identify the current schema revision in Alembic migrations.
 
 
 ---
 ### down\_revision
-- **Type**: `Union[str, None]`
-- **Description**: The `down_revision` variable is a global variable that holds the identifier of the previous database schema revision in a migration script. It is used by Alembic to determine the order of migrations.
+- **Type**: ``Union[str, None]``
+- **Description**: The `down_revision` variable is a global variable that holds the identifier of the previous database schema revision in a migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to determine the order of migrations.
 - **Use**: Indicates the parent revision ID for the current migration script.
 
 
 ---
 ### branch\_labels
-- **Type**: `Union[str, Sequence[str], None]`
-- **Description**: `branch_labels` is a global variable that can hold a string, a sequence of strings, or a `None` value. It is used in the context of Alembic, a database migration tool for SQLAlchemy.
-- **Use**: Used to specify labels for a branch in a database migration script.
+- **Type**: ``Union[str, Sequence[str], None]``
+- **Description**: A variable that can hold a string, a sequence of strings, or a None value. It is used to label branches in a database migration context.
+- **Use**: Used to specify branch labels for Alembic database migrations.
 
 
 ---
 ### depends\_on
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: This variable can hold a string, a sequence of strings, or be set to None. It is used to specify dependencies for a database migration script in Alembic.
-- **Use**: Indicates dependencies for the Alembic migration script.
+- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or a None value. It is used in the context of Alembic migrations to specify dependencies between database revisions.
+- **Use**: Used to define dependencies for a database revision in Alembic migrations.
 
 
 # Functions
@@ -52,11 +52,11 @@ This code is a database migration script used with Alembic, a database migration
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_04_17_1406-c6744cecca4d_derived_content_order_addition.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_04_17_1406-c6744cecca4d_derived_content_order_addition.py#L21>)
 
-Adds a new column named `order` to the `derived_contents` table in the database schema.
+Adds a new column named 'order' to the 'derived_contents' table in the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Uses the `op.add_column` function from Alembic to add a new column.
-    - Defines the new column as `order` with type `Integer`, a default value of `0`, and allows null values.
+    - Uses the Alembic 'op.add_column' function to add a new column.
+    - Defines the new column 'order' with type 'Integer', a default value of '0', and allows null values.
 - **Output**: No output is returned as the function modifies the database schema directly.
 
 
@@ -64,7 +64,7 @@ Adds a new column named `order` to the `derived_contents` table in the database 
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_04_17_1406-c6744cecca4d_derived_content_order_addition.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_04_17_1406-c6744cecca4d_derived_content_order_addition.py#L30>)
 
-Removes the 'order' column from the 'derived_contents' table in the database schema.
+Removes the 'order' column from the 'derived_contents' table in the database.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the 'drop_column' method from the 'op' module to remove the 'order' column from the 'derived_contents' table.

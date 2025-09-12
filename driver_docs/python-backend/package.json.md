@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Specifies a dependency on AWS CDK version 2.164.1 or higher.
+Specifies a dependency on AWS CDK version 2.164.1.
 
 # Purpose
-The JSON file specifies a dependency for a software project. It declares that the project requires the `aws-cdk` package, with a version that is compatible with `2.164.1` or higher. This information is used by package managers to ensure that the correct version of the `aws-cdk` package is installed.
+The JSON file specifies a dependency for a software project. It indicates that the project requires the `aws-cdk` package, with a version that is compatible with version `2.164.1` or higher. This information is used by package managers to ensure that the correct version of the `aws-cdk` package is installed for the project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

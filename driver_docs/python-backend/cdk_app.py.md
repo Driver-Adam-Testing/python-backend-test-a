@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configures AWS CDK stacks based on the deployment environment variable.
+Configures AWS CDK stacks for different deployment environments based on environment variables.
 
 # Purpose
-This code is a deployment script for an AWS Cloud Development Kit (CDK) application. It defines different deployment environments for an application named `DriverApiStack`. The script imports several stack classes from a `cdk` module, each corresponding to a specific deployment environment: `DevelopmentStack`, `OpsStack`, `ProductionStack`, `StagingStack`, and `TestInDevStack`. The script uses the `DEPLOYMENT_ENVIRONMENT` environment variable to determine which stack to deploy. Depending on the value of this variable, the script initializes the appropriate stack with specific AWS account and region settings.
+This code is a deployment script for an AWS Cloud Development Kit (CDK) application. It defines different deployment environments for an application named `DriverApiStack`. The script imports several stack classes from a module named `cdk`, including `DevelopmentStack`, `OpsStack`, `ProductionStack`, `StagingStack`, and `TestInDevStack`. These stacks represent different configurations and resources for various stages of the application's lifecycle, such as development, operations, testing, staging, and production.
 
-The script uses the AWS CDK to define infrastructure as code, allowing for the deployment of cloud resources in a consistent and repeatable manner. The `cdk.App()` object serves as the root of the CDK application, and the `app.synth()` call at the end of the script synthesizes the application into an AWS CloudFormation template. This script is intended to be executed in different environments, such as local development, operations, testing, staging, and production, each with its own configuration and AWS account settings.
+The script uses the `os` module to read the `DEPLOYMENT_ENVIRONMENT` environment variable, which determines which stack to deploy. Depending on the value of this variable, the script initializes the corresponding stack with specific AWS account and region settings. The `cdk.App()` instance, `app`, serves as the container for the stacks, and the `app.synth()` call at the end synthesizes the application, preparing it for deployment. This script is intended to be executed in different environments to deploy the application with the appropriate configuration.
 # Imports and Dependencies
 
 ---
@@ -26,15 +26,15 @@ The script uses the AWS CDK to define infrastructure as code, allowing for the d
 ---
 ### app
 - **Type**: ``cdk.App``
-- **Description**: Represents the entry point for the AWS CDK application. It is responsible for managing the lifecycle of the stacks and synthesizing the cloud assembly.
-- **Use**: Used to initialize and manage the deployment of different stacks based on the deployment environment.
+- **Description**: Represents the entry point for the AWS CDK application. It is responsible for managing the lifecycle of the stacks defined in the application.
+- **Use**: Used to initialize and synthesize the AWS CDK stacks based on the deployment environment.
 
 
 ---
 ### deployment\_environment
-- **Type**: ``str` or `NoneType``
-- **Description**: The `deployment_environment` variable retrieves the value of the `DEPLOYMENT_ENVIRONMENT` environment variable using the `os.getenv` function. If the environment variable is not set, `deployment_environment` will be `None`. This variable is used to determine the deployment environment for the application.
-- **Use**: Determines which stack to deploy based on the environment variable value.
+- **Type**: ``str``
+- **Description**: Gets the deployment environment setting from the environment variable `DEPLOYMENT_ENVIRONMENT`. This variable determines which stack configuration to use for the AWS CDK application.
+- **Use**: Used to select the appropriate stack to deploy based on the environment setting.
 
 
 

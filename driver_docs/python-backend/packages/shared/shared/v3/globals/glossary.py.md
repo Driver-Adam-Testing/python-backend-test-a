@@ -6,37 +6,37 @@
 Defines the `GlossaryDefinition` class and various glossary terms with XML wrapping functionality.
 
 # Purpose
-The code defines a class `GlossaryDefinition` and uses it to create several instances representing different glossary terms. Each instance of `GlossaryDefinition` includes a name, a tag, and a description. The class provides methods to generate XML tags for the glossary terms, with properties [`xml_begin`](<#glossarydefinitionxml_begin>) and [`xml_end`](<#glossarydefinitionxml_end>) to create the opening and closing XML tags, respectively. The [`wrap`](<#glossarydefinitionwrap>) method allows text to be wrapped within these XML tags, with an option to annotate empty content.
+The code defines a class `GlossaryDefinition` and uses it to create several instances representing different glossary terms. Each instance of `GlossaryDefinition` includes a name, a tag, and a description. The class provides methods to generate XML tags for the glossary terms, with [`xml_begin`](<#glossarydefinitionxml_begin>) and [`xml_end`](<#glossarydefinitionxml_end>) properties returning the opening and closing XML tags, respectively. The [`wrap`](<#glossarydefinitionwrap>) method allows text to be wrapped within these XML tags, with an option to annotate empty content.
 
-The instances of `GlossaryDefinition` are organized into categories such as user interaction, cursor, document, reference, tool, search, copy editor, and data source definitions. Each instance represents a specific concept or element related to these categories, such as `USER_PROMPT`, `CURSOR`, `WORKING_DOCUMENT`, and `REFERENCE_LIST`. This code is likely intended to be part of a larger system where these glossary definitions are used to standardize terminology and facilitate the generation of XML-formatted data.
+The instances of `GlossaryDefinition` are organized into categories such as user interaction, cursor, document, reference, tool, search, copy editor, and data source definitions. Each instance represents a specific concept or element related to these categories, such as `USER_PROMPT`, `CURSOR`, `WORKING_DOCUMENT`, and `REFERENCE_LIST`. This code is likely intended to be part of a larger system where these glossary terms are used to standardize and manage terminology across different components, possibly for documentation or data processing purposes.
 # Global Variables
 
 ---
 ### USER\_PROMPT
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for the term 'user prompt'. It includes the name 'user prompt', the tag 'USER_PROMPT', and a description explaining that it is the prompt entered by the user.
+- **Description**: Represents a glossary definition for the term 'user prompt'. It includes the name, tag, and description of the user prompt.
 - **Use**: Used to define and manage the glossary entry for the user prompt in the system.
 
 
 ---
 ### CURSOR
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for the term 'cursor', with a tag 'CURSOR' and a description indicating it is the position of the user's cursor in the document.
-- **Use**: Used to define and describe the concept of a cursor within the context of a document.
+- **Description**: Represents a glossary definition for the term 'cursor', with attributes for the name, tag, and description of the cursor's position in a document.
+- **Use**: Used to define and describe the position of the user's cursor in a document.
 
 
 ---
 ### CURSOR\_SELECTION
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for the term 'cursor selection', with a tag 'CURSOR_SELECTION' and a description that explains it as the area of a document selected by the cursor.
-- **Use**: Used to define and describe the concept of cursor selection within the document context.
+- **Description**: Represents a glossary definition for the term 'cursor selection'. It includes the name, tag, and description of the cursor selection, which is the area of a document selected by the cursor.
+- **Use**: Used to define and describe the concept of cursor selection in a document.
 
 
 ---
 ### DOCUMENT\_CONTENT\_BEFORE\_CURSOR
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for the document content that is before the cursor. It includes a name, a tag, and a description that explains the text before the cursor in a document.
-- **Use**: Used to define and describe the text content that appears before the cursor in a document.
+- **Description**: Represents a glossary definition for the document content that is located before the cursor. It includes a name, a tag, and a description that explains the purpose of this content in the document.
+- **Use**: Used to define and describe the text that appears before the cursor in a document.
 
 
 ---
@@ -49,36 +49,36 @@ The instances of `GlossaryDefinition` are organized into categories such as user
 ---
 ### WORKING\_DOCUMENT
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for the term 'working document'. It includes the name, tag, and description of the working document, which is the document that the user is interacting with and editing.
+- **Description**: Represents a `GlossaryDefinition` instance for the term 'working document'. It includes a name, a tag, and a description that explains the working document as the document the user is interacting with and editing.
 - **Use**: Used to define and describe the concept of a working document within the application.
 
 
 ---
 ### WORKING\_DOCUMENT\_CONTENT
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for the content of a working document. It includes a name, a tag, and a description that specifies it as the content of the working document.
-- **Use**: Used to define and manage the content of the working document in a structured format.
+- **Description**: Represents a `GlossaryDefinition` instance that defines the content of the working document. It includes a name, a tag, and a description that specifies it as the content of the working document.
+- **Use**: Used to encapsulate and manage the content of the working document in a structured format.
 
 
 ---
 ### REFERENCE\_LIST
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for a 'reference list', which is a list of references retrieved for the assistant. It includes a name, tag, and description.
-- **Use**: Used to define and describe the concept of a 'reference list' within the assistant's glossary.
+- **Description**: Represents a glossary definition for a list of references that have been retrieved for the assistant. It includes a name, tag, and description to describe the reference list.
+- **Use**: Used to define and describe the concept of a reference list within the assistant's glossary.
 
 
 ---
 ### REFERENCE
 - **Type**: ``GlossaryDefinition``
 - **Description**: Represents a single reference that has been retrieved for the assistant. It is an instance of the `GlossaryDefinition` class with the name 'reference', tag 'REFERENCE', and a description explaining its purpose.
-- **Use**: Used to define and store information about a single reference for the assistant.
+- **Use**: Used to define and store information about a single reference in the assistant's context.
 
 
 ---
 ### REFERENCE\_CONTENT
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for 'reference content', which includes a name, tag, and description. The description specifies that it is the content of the reference retrieved for the assistant.
-- **Use**: Used to define and describe the 'reference content' in the context of the assistant's operations.
+- **Description**: Represents the content of a reference that has been retrieved for the assistant. It is an instance of the `GlossaryDefinition` class with the name 'reference content', tag 'REFERENCE_CONTENT', and a description explaining its purpose.
+- **Use**: Used to define and store the content of a reference for the assistant.
 
 
 ---
@@ -98,29 +98,29 @@ The instances of `GlossaryDefinition` are organized into categories such as user
 ---
 ### TOOL\_ERROR\_MESSAGE
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for a tool error message. It includes a name, a tag, and a description that explains the message returned by the tool.
-- **Use**: Used to define and manage the glossary entry for tool error messages in the system.
+- **Description**: Represents a glossary definition for a tool error message. It includes a name, a tag, and a description that specifies the message returned by the tool.
+- **Use**: Used to define and manage the tool error message within the application.
 
 
 ---
 ### SEARCH\_QUERY
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for a search query. It includes the name, tag, and description of the search query.
-- **Use**: Used to define and manage the metadata for a search query in the system.
+- **Description**: Represents a glossary definition for a search query. It includes a name, a tag, and a description for the search query.
+- **Use**: Used to define and manage the glossary entry for a search query in the system.
 
 
 ---
 ### TEXT\_TO\_EDIT
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for the text that the user wants to edit. It includes a name, a tag, and a description of the text to edit.
-- **Use**: Used to define and manage the text that the user intends to edit within the application.
+- **Description**: Represents a `GlossaryDefinition` instance that describes the text a user wants to edit. It includes a name, a tag, and a description of the text to edit.
+- **Use**: Used to define and manage the text that a user intends to edit within the application.
 
 
 ---
 ### DATA\_SOURCES
 - **Type**: ``GlossaryDefinition``
-- **Description**: Represents a glossary definition for 'data sources' with a tag 'DATA_SOURCES' and a description that specifies the data sources available to the assistant via tools.
-- **Use**: Used to define and describe the concept of data sources within the system, providing a structured format for referencing this information.
+- **Description**: Represents a glossary definition for 'data sources' that are available to the assistant through tools. It includes a name, a tag, and a description of the data sources.
+- **Use**: Used to define and describe the data sources accessible to the assistant.
 
 
 # Classes
@@ -131,9 +131,9 @@ The instances of `GlossaryDefinition` are organized into categories such as user
 
 - **Members**:
     - `name`: Stores the name of the glossary definition.
-    - `tag`: Stores the tag used for XML representation.
+    - `tag`: Stores the XML tag associated with the glossary definition.
     - `description`: Stores the description of the glossary definition.
-- **Description**: Represents a glossary definition with a name, tag, and description, and provides methods to generate XML tags and wrap text with these tags.
+- **Description**: Represents a glossary definition with a name, tag, and description, and provides methods to generate XML tags for the definition.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.__init__`](<#glossarydefinition__init__>)
     - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.xml_begin`](<#glossarydefinitionxml_begin>)
@@ -146,7 +146,7 @@ The instances of `GlossaryDefinition` are organized into categories such as user
 #### GlossaryDefinition\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.__init__}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/globals/glossary.py#L2>)
 
-Initializes an instance of the `GlossaryDefinition` class with a name, tag, and description.
+Initializes a `GlossaryDefinition` object with a name, tag, and description.
 - **Inputs**:
     - `name`: A string representing the name of the glossary definition.
     - `tag`: A string representing the tag associated with the glossary definition.
@@ -155,7 +155,7 @@ Initializes an instance of the `GlossaryDefinition` class with a name, tag, and 
     - Assigns the input `name` to the instance variable `self.name`.
     - Assigns the input `tag` to the instance variable `self.tag`.
     - Assigns the input `description` to the instance variable `self.description`.
-- **Output**: No output is returned as this is a constructor method.
+- **Output**: None
 - **See also**: [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition`](<#glossarydefinition>)  (Base Class)
 
 
@@ -168,8 +168,8 @@ Generates the opening XML tag using the `tag` attribute of the `GlossaryDefiniti
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `tag` attribute of the `GlossaryDefinition` instance.
-    - Formats the string to create an opening XML tag using the `tag` value.
-- **Output**: A string representing the opening XML tag, formatted as `<tag>`.
+    - Formats a string to create an XML opening tag using the `tag` attribute.
+- **Output**: A string representing the opening XML tag for the `GlossaryDefinition` instance.
 - **See also**: [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition`](<#glossarydefinition>)  (Base Class)
 
 
@@ -177,13 +177,13 @@ Generates the opening XML tag using the `tag` attribute of the `GlossaryDefiniti
 #### GlossaryDefinition\.xml\_end<!-- {{#callable:python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.xml_end}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/globals/glossary.py#L11>)
 
-Generates the XML end tag for the current glossary definition.
+Generates the XML closing tag for the element represented by the `GlossaryDefinition` instance.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `tag` attribute of the `GlossaryDefinition` instance.
-    - Formats the string to create an XML end tag using the `tag` attribute.
-- **Output**: A string representing the XML end tag for the glossary definition.
+    - Formats the closing XML tag using the `tag` attribute.
+- **Output**: A string representing the XML closing tag for the element, formatted as `</tag>`.
 - **See also**: [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition`](<#glossarydefinition>)  (Base Class)
 
 
@@ -191,16 +191,16 @@ Generates the XML end tag for the current glossary definition.
 #### GlossaryDefinition\.wrap<!-- {{#callable:python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/globals/glossary.py#L15>)
 
-Wraps the given text with XML tags defined by the class properties, or returns an empty string or annotated empty tags if the text is empty or None.
+Wraps the given text with XML tags defined by the class properties.
 - **Inputs**:
-    - `text`: A string or None that represents the text to wrap with XML tags.
-    - `annotate_empty`: A boolean flag that indicates whether to return annotated empty XML tags if the text is empty or None.
+    - `text`: The text to wrap with XML tags, or None if no text is provided.
+    - `annotate_empty`: A boolean flag that indicates whether to include XML tags even if the text is empty or None.
 - **Logic and Control Flow**:
     - Check if `text` is None or an empty string.
-    - If `text` is None or empty and `annotate_empty` is True, return a string with `xml_begin` and `xml_end` tags concatenated.
+    - If `text` is None or empty and `annotate_empty` is True, return a string with only the XML tags.
     - If `text` is None or empty and `annotate_empty` is False, return an empty string.
-    - If `text` is not None or empty, return a string with `xml_begin`, the `text` indented by a tab, and `xml_end`, each on separate lines.
-- **Output**: A string that contains the wrapped text with XML tags, or an empty string, or annotated empty XML tags.
+    - If `text` is not None or empty, return the text wrapped with XML tags and formatted with new lines and tabs.
+- **Output**: A string that contains the text wrapped with XML tags, or just the tags if the text is empty and `annotate_empty` is True.
 - **See also**: [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition`](<#glossarydefinition>)  (Base Class)
 
 

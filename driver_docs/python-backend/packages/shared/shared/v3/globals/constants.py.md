@@ -6,77 +6,77 @@
 Defines constants and template strings for JSON formatting and parsing in a Python backend.
 
 # Purpose
-This code defines a set of global constants and string templates used for formatting JSON responses and tool call requests. The constants include `IMPORTANT` and `NEWLINE`, which are used to emphasize important sections and manage line breaks, respectively. The code also specifies default values for parseable rendering, such as `PARSEABLE_CLASS_NAME`, `PARSEABLE_EXAMPLE_INT`, `PARSEABLE_EXAMPLE_FLOAT`, `PARSEABLE_EXAMPLE_BOOL`, `PARSEABLE_EXAMPLE_STR`, and `PARSEABLE_EXAMPLE_DOCSTRING_KEY`. The string templates `FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring` and `FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring` guide the formatting of JSON objects that can be parsed into instances of a specified class, ensuring that the `PARSEABLE_CLASS_NAME` field is set correctly. These templates are useful for generating structured JSON data in a consistent format.
+This code defines a set of global constants and string templates used for formatting JSON responses and tool call requests. The constants include prompt strings like `IMPORTANT` and `NEWLINE`, as well as default values for parseable rendering such as `PARSEABLE_CLASS_NAME`, `PARSEABLE_EXAMPLE_INT`, `PARSEABLE_EXAMPLE_FLOAT`, `PARSEABLE_EXAMPLE_BOOL`, `PARSEABLE_EXAMPLE_STR`, and `PARSEABLE_EXAMPLE_DOCSTRING_KEY`. The string templates `FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring` and `FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring` are designed to guide the formatting of JSON objects that can be parsed into instances of a specified class, using placeholders for class names, example JSON, and docstrings. This code provides narrow functionality focused on ensuring consistent formatting of JSON data in specific contexts.
 # Global Variables
 
 ---
 ### IMPORTANT
 - **Type**: ``str``
-- **Description**: A string that contains the text '!IMPORTANT!'.
-- **Use**: Used as a marker or flag within the code to denote important sections or instructions.
+- **Description**: A string constant that contains the value '!IMPORTANT!'. It is used to emphasize or highlight certain parts of a string or message.
+- **Use**: Used to insert an emphasis marker in formatted strings.
 
 
 ---
 ### NEWLINE
 - **Type**: ``str``
-- **Description**: The `NEWLINE` variable is a string that contains the newline character `\n`. This character is used to represent a line break in text.
-- **Use**: Used to insert line breaks in strings or text outputs.
+- **Description**: A string variable that contains the newline character. It is used to represent a line break in text.
+- **Use**: Used to insert a newline character in strings.
 
 
 ---
 ### PARSEABLE\_CLASS\_NAME
 - **Type**: ``str``
-- **Description**: A string that holds the default name for a class that can be parsed. It is used in the context of JSON formatting and parsing.
+- **Description**: A string that holds the default name for a class that can be parsed. It is used as a placeholder or default value in JSON formatting operations.
 - **Use**: Used to set the `PARSEABLE_CLASS_NAME` field in JSON objects to a specific class name.
 
 
 ---
 ### PARSEABLE\_EXAMPLE\_INT
 - **Type**: ``int``
-- **Description**: A global variable that holds an integer value of 123.
-- **Use**: Used as a default integer value for parseable rendering.
+- **Description**: An integer value set to 123.
+- **Use**: Used as a default example integer value for parseable rendering.
 
 
 ---
 ### PARSEABLE\_EXAMPLE\_FLOAT
 - **Type**: ``float``
-- **Description**: Represents a floating-point number with the value 3.14.
-- **Use**: Used as a default example value for floating-point numbers in parseable rendering.
+- **Description**: A global variable that stores a floating-point number with the value 3.14.
+- **Use**: Used as a default example value for floating-point numbers in parseable rendering contexts.
 
 
 ---
 ### PARSEABLE\_EXAMPLE\_BOOL
 - **Type**: ``bool``
-- **Description**: A boolean variable set to `True`. It is part of a group of default values for parseable rendering.
+- **Description**: A boolean variable that is set to `True`. It is part of a set of default values for parseable rendering.
 - **Use**: Used to represent a default boolean value in parseable rendering configurations.
 
 
 ---
 ### PARSEABLE\_EXAMPLE\_STR
 - **Type**: ``str``
-- **Description**: Contains the string value 'example_string'. It is a simple string variable used in the context of parseable rendering default values.
-- **Use**: Used as a default string value in parseable rendering operations.
+- **Description**: Contains the string value 'example_string'. It is a global variable defined for use in parseable rendering default values.
+- **Use**: Used as a default string value in parseable rendering contexts.
 
 
 ---
 ### PARSEABLE\_EXAMPLE\_DOCSTRING\_KEY
 - **Type**: ``str``
-- **Description**: A string variable that holds the key '_docstring'. It is used as a constant value in the code.
-- **Use**: Used as a key or identifier for docstring-related operations or data.
+- **Description**: A string variable that holds the key '_docstring'. This key is likely used to identify or access a specific part of a data structure related to docstrings.
+- **Use**: Used as a key in data structures or functions that require access to or manipulation of docstring-related information.
 
 
 ---
 ### FORMAT\_RESPONSE\_AS\_JSON\_f\_class\_name\_\_example\_json\_\_docstring
-- **Type**: `str`
-- **Description**: This variable is a formatted string that provides instructions for formatting a response as a JSON object. It includes placeholders for a class name and a docstring, and emphasizes the importance of setting the `PARSEABLE_CLASS_NAME` field.
-- **Use**: Used to guide the formatting of responses into JSON objects that can be parsed into a `pydantic.BaseModel` instance.
+- **Type**: ``str``
+- **Description**: A string template that provides instructions for formatting a response as a JSON object. It includes placeholders for a class name, a docstring, and an example JSON schema.
+- **Use**: Used to guide the formatting of responses into a JSON object that can be parsed into a `pydantic.BaseModel` instance.
 
 
 ---
 ### FORMAT\_TOOL\_CALL\_REQUEST\_f\_class\_name\_\_example\_json\_\_docstring
 - **Type**: ``str``
-- **Description**: A string template that provides instructions for formatting a tool call request as a JSON object. The template includes placeholders for a class name, a docstring, and an example JSON schema.
-- **Use**: Used to guide the creation of JSON objects that can be parsed into instances of a specified Pydantic BaseModel class.
+- **Description**: A string template that provides instructions for formatting a tool call request as a JSON object. The template includes placeholders for `class_name`, `docstring`, and `example_json`, which are intended to be replaced with specific values when generating the JSON object.
+- **Use**: Used to guide the creation of a JSON object that can be parsed into a `pydantic.BaseModel` instance.
 
 
 

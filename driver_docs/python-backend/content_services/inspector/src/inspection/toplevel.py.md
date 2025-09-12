@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for generating and processing descriptions of codebase content using language models.
+Functions for generating and compressing descriptions of codebase content using language models, with support for different output formats and tagging.
 
 # Purpose
-The code is a Python module that provides functionality for processing and generating descriptions of a codebase. It uses a language model (`ChatOpenAI`) to generate various levels of descriptions, such as single sentences, paragraphs, and long-form content, from chunks of text that describe different parts of a codebase. The module includes functions to handle different types of content aggregation and compression, ensuring that the descriptions are concise and adhere to a specific style. The module also includes a function to tag the codebase with scores related to its kind, domain, audience, and entry points, using predefined content kinds and a language model.
+The code is a Python module that provides functionality for processing and generating descriptions of a codebase. It uses a language model, `ChatOpenAI`, to generate various levels of descriptions, such as terse sentences, single sentences, single paragraphs, and long descriptions. The module includes functions to handle different stages of description generation, including chunking the input data, compressing descriptions, and aggregating results. The functions [`toplevel_chunk_description`](<#toplevel_chunk_description>), [`toplevel_compress_chunks`](<#toplevel_compress_chunks>), and others are responsible for generating these descriptions based on templates and instructions defined in external prompt files.
 
-The module is designed to be part of a larger system that analyzes and documents codebases. It imports several utility functions and classes from other modules, such as `LiteNode`, `NodeKind`, and `FastShutdownThreadPoolExecutor`, to manage the processing of codebase descriptions. The module uses asynchronous processing and thread pools to handle potentially large amounts of data efficiently. It is intended to be used as a library file, providing a set of functions that can be called to generate and manage codebase descriptions and tags.
+Additionally, the module includes a function [`comprehend_codebase_top_down`](<#comprehend_codebase_top_down>) that orchestrates the process of aggregating and compressing module information from a codebase. It uses a thread pool executor to parallelize the processing of chunks, ensuring efficient handling of large data sets. The [`tag_codebase`](<#tag_codebase>) function is responsible for tagging the codebase with various content kinds, such as codebase kinds, domains, audiences, and entry points, using the language model to score and categorize the codebase. The module is designed to be part of a larger system, likely intended for analyzing and documenting codebases by generating structured and concise descriptions.
 # Imports and Dependencies
 
 ---
@@ -16,7 +16,7 @@ The module is designed to be part of a larger system that analyzes and documents
 - `concurrent.futures`
 - `pathlib.Path`
 - `typing.Any`
-- `database.models_v2_enums.ContentKind`
+- `database.models_enums.ContentKind`
 - `shared.agent.chat_openai_async.ChatOpenAI`
 - `shared.prompts.structured_prompting.DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB`
 - `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
@@ -41,8 +41,8 @@ The module is designed to be part of a larger system that analyzes and documents
 
 ---
 ### PARENT\_PATH
-- **Type**: `Path`
-- **Description**: Represents the directory path of the current file. It uses the `Path` class from the `pathlib` module to determine the parent directory of the file where this code is located.
+- **Type**: ``Path``
+- **Description**: Represents the directory path of the current file's parent directory. It uses the `Path` class from the `pathlib` module to determine the parent directory of the file in which this code is located.
 - **Use**: Used to construct file paths relative to the current file's directory.
 
 
@@ -55,12 +55,12 @@ The module is designed to be part of a larger system that analyzes and documents
 Generates a response from a language model for a given codebase description chunk.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
-    - `codebase_name`: The name of the codebase for which the description chunk is provided.
+    - `codebase_name`: The name of the codebase for which the description is generated.
     - `description_chunk`: A string containing a chunk of content descriptions related to the codebase.
 - **Logic and Control Flow**:
     - Creates a `system_prompt` by appending a prompt template and a general instruction to an empty `Prompt` object, then converts it to a string.
     - Formats a `user_prompt` string that includes the `codebase_name` and `description_chunk`.
-    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` as arguments.
+    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method on the `llm` object with `system_prompt` and `user_prompt` as arguments.
     - Returns the response generated by the `llm`.
 - **Output**: A string response generated by the language model based on the provided prompts.
 - **Functions Called**:
@@ -76,17 +76,16 @@ Generates a response from a language model for a given codebase description chun
 ### toplevel\_compress\_chunks<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_compress_chunks}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L55>)
 
-Generates a response from a language model by compressing a chunk of module subset descriptions for a given codebase.
+Generates a response by compressing a chunk of module subset descriptions for a given codebase using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
     - `codebase_name`: A string representing the name of the codebase.
     - `description_chunk`: A string containing a chunk of module subset descriptions for the codebase.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by loading a prompt template from a file and appending a general instruction.
-    - Formats a `user_prompt` string with the `codebase_name` and `description_chunk`.
-    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method on the `llm` object with `system_prompt` and `user_prompt` as arguments.
-    - Returns the response generated by the `llm`.
-- **Output**: A string response generated by the language model.
+    - Creates a `system_prompt` by loading a prompt template from a file and appending a general instruction for STE style.
+    - Formats a `user_prompt` string that includes the `codebase_name` and `description_chunk`.
+    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a response.
+- **Output**: Returns a string response generated by the language model.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -100,23 +99,24 @@ Generates a response from a language model by compressing a chunk of module subs
 ### toplevel\_long\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_long_from_chunk_descriptions}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L76>)
 
-Generates a long-form description from chunk descriptions for a given codebase using a language model.
+Generates a long-form response from chunk descriptions for a given codebase using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
-    - `codebase_name`: The name of the codebase for which the description is generated.
+    - `codebase_name`: The name of the codebase for which the descriptions are generated.
     - `data`: A string containing chunk descriptions of the codebase.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template and a general style instruction, then converts it to a string.
-    - Forms a `user_prompt` by formatting the `codebase_name` and `data` into a specific string structure.
-    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a response.
-- **Output**: Returns a string that is the generated long-form description of the codebase.
+    - Creates a `system_prompt` by appending a prompt template and a general instruction to an empty `Prompt` object, then converts it to a string.
+    - Forms a `user_prompt` by formatting the `codebase_name` and `data` into a predefined string structure.
+    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` as arguments.
+    - Returns the response generated by the `llm`.
+- **Output**: A string that is the generated response from the language model based on the provided prompts.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
     - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
-    - [`python-backend/packages/shared/shared/agent/chat_openai_async.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../utils/models.py.md#chatopenaigenerate_response>)
 
 
 ---
@@ -127,11 +127,11 @@ Generates a terse sentence from chunk descriptions using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
     - `data`: A string containing chunk descriptions of a codebase.
-    - `codebase_name`: The name of the codebase for which the chunk descriptions are provided.
+    - `codebase_name`: The name of the codebase for which the descriptions are provided.
 - **Logic and Control Flow**:
     - Creates a `system_prompt` by appending a prompt template and style instructions to an empty `Prompt` object.
-    - Creates a `user_prompt` by appending specific instructions and the chunk descriptions to an empty `Prompt` object.
-    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a response.
+    - Creates a `user_prompt` by appending description instructions and the provided data to an empty `Prompt` object.
+    - Calls `llm.generate_response` with the `system_prompt` and `user_prompt` to generate a response.
 - **Output**: Returns a string that is a terse sentence generated from the chunk descriptions.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -152,7 +152,7 @@ Generates a single sentence description from chunk descriptions of a codebase us
     - `data`: A string containing chunk descriptions of a codebase.
     - `codebase_name`: The name of the codebase for which the description is generated.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template and a style instruction to an empty `Prompt` object, then converts it to a string.
+    - Creates a `system_prompt` by appending a prompt template and a general instruction to an empty `Prompt` object, then converts it to a string.
     - Creates a `user_prompt` by appending a formatted string containing the codebase name and data, along with a description instruction, to an empty `Prompt` object, then converts it to a string.
     - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` as arguments to generate a response.
 - **Output**: Returns a string that is a single sentence description generated by the language model.
@@ -169,24 +169,23 @@ Generates a single sentence description from chunk descriptions of a codebase us
 ### toplevel\_single\_paragraph\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_single_paragraph_from_chunk_descriptions}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L164>)
 
-Generates a single-paragraph description from chunk descriptions of a codebase using a language model.
+Generates a single paragraph description from chunk descriptions of a codebase using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
     - `data`: A string containing chunk descriptions of the codebase.
     - `codebase_name`: The name of the codebase for which the description is generated.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template, raw text formatting instruction, and STE style instruction to an empty `Prompt` object, then converts it to a string.
-    - Creates a `user_prompt` by appending a description instruction and a component containing the codebase name and data to an empty `Prompt` object, then converts it to a string.
-    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` as arguments.
-    - Returns the response generated by the `llm`.
-- **Output**: A string containing the generated single-paragraph description.
+    - Creates a `system_prompt` by appending a prompt template, raw text formatting instruction, and STE style instruction to an empty `Prompt` object.
+    - Creates a `user_prompt` by appending a description instruction and a component containing the chunk descriptions and codebase name to an empty `Prompt` object.
+    - Calls `llm.generate_response` with the `system_prompt` and `user_prompt` to generate a response.
+- **Output**: Returns a string containing the generated single paragraph description.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
     - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
-    - [`python-backend/packages/shared/shared/agent/chat_openai_async.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../utils/models.py.md#chatopenaigenerate_response>)
 
 
 ---
@@ -201,9 +200,8 @@ Generates a long-form response from long descriptions using a language model.
 - **Logic and Control Flow**:
     - Creates a `system_prompt` by appending a prompt template and a general style instruction, then converts it to a string.
     - Formats a `user_prompt` by including the `codebase_name` and `data`.
-    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` as arguments.
-    - Returns the response generated by the `llm`.
-- **Output**: A string that is the generated response from the language model.
+    - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a response.
+- **Output**: Returns a string generated by the language model based on the provided prompts.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -246,10 +244,10 @@ Generates a single sentence summary from long descriptions using a language mode
     - `codebase_name`: The name of the codebase for which the description is generated.
     - `data`: The long descriptions from which a single sentence summary is generated.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template and a style instruction to an empty `Prompt` object, then converts it to a string.
+    - Creates a `system_prompt` by appending a prompt template and a general style instruction to an empty `Prompt` object, then converts it to a string.
     - Creates a `user_prompt` by appending a description instruction and the codebase name with data to an empty `Prompt` object, then converts it to a string.
     - Calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a single sentence summary.
-- **Output**: A single sentence summary of the long descriptions as a string.
+- **Output**: A single sentence summary of the provided long descriptions as a string.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -263,23 +261,23 @@ Generates a single sentence summary from long descriptions using a language mode
 ### toplevel\_single\_paragraph\_from\_long\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_single_paragraph_from_long_descriptions}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L270>)
 
-Generates a single paragraph summary from long descriptions using a language model.
+Generates a single paragraph description from long descriptions using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
-    - `codebase_name`: The name of the codebase for which the descriptions are generated.
-    - `data`: The long descriptions of the codebase to be summarized.
+    - `codebase_name`: A string representing the name of the codebase.
+    - `data`: A string containing long descriptions related to the codebase.
 - **Logic and Control Flow**:
     - Creates a `system_prompt` by appending a prompt template and style instructions to an empty `Prompt` object.
-    - Creates a `user_prompt` by appending a description template and the codebase name with data to an empty `Prompt` object.
-    - Calls `llm.generate_response` with the `system_prompt` and `user_prompt` to generate a single paragraph summary.
-- **Output**: A string containing the generated single paragraph summary of the codebase descriptions.
+    - Creates a `user_prompt` by appending a description instruction and the codebase name with data to an empty `Prompt` object.
+    - Calls `llm.generate_response` with `system_prompt` and `user_prompt` to generate a response.
+- **Output**: Returns a string that is a single paragraph description generated by the language model.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
     - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
-    - [`python-backend/packages/shared/shared/agent/chat_openai_async.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenaigenerate_response>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../utils/models.py.md#chatopenaigenerate_response>)
 
 
 ---
@@ -289,26 +287,26 @@ Generates a single paragraph summary from long descriptions using a language mod
 Generates a comprehensive description of a codebase by processing and compressing documentation content.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for generating responses.
-    - `docs`: A dictionary mapping `LiteNode` objects to their associated documentation data.
+    - `docs`: A dictionary mapping `LiteNode` objects to their associated documentation details.
     - `codebase_name`: The name of the codebase being processed.
-    - `chunk_size`: The maximum size of each chunk of text for processing.
+    - `chunk_size`: The maximum size of each chunk of text to process.
     - `chunk_overlap`: The overlap size between consecutive chunks.
-    - `max_workers`: The maximum number of worker threads for parallel processing.
-    - `include_exploratory_generation`: A boolean indicating whether to include exploratory generation.
+    - `max_workers`: The maximum number of worker threads to use for concurrent processing.
+    - `include_exploratory_generation`: A boolean flag indicating whether to include exploratory generation.
     - `compression_loop_max_itr`: The maximum number of iterations for the compression loop.
 - **Logic and Control Flow**:
     - Initialize an empty string `codebase_content` to aggregate module information.
     - Iterate over each `node` in `docs` to append file or folder descriptions to `codebase_content`.
     - Raise an exception if a node kind is not recognized.
     - Chunk the `codebase_content` using [`chunk_str`](<../utils/llm.py.md#chunk_str>) with specified `chunk_size` and `chunk_overlap`.
-    - If there is more than one chunk, use a thread pool to process each chunk with `toplevel_chunk_description`.
+    - If there is more than one chunk, use a thread pool to process each chunk concurrently with `toplevel_chunk_description`.
     - Aggregate the detailed descriptions from processed chunks.
     - If the aggregated description is too large, compress it iteratively using `toplevel_compress_chunks` until it fits within `chunk_size` or reaches `compression_loop_max_itr`.
     - Determine the aggregation state based on whether chunks were used or not.
     - Use a thread pool to generate final descriptions (long, terse sentence, single sentence, single paragraph) based on the aggregation state.
     - Replace null characters in the generated descriptions.
     - Return a dictionary containing the aggregated description, short descriptions, and long description.
-- **Output**: A dictionary containing the aggregated description, short descriptions (terse sentence, single sentence, single paragraph), and a long description of the codebase.
+- **Output**: A dictionary containing the aggregated description, short descriptions (terse sentence, single sentence, single paragraph), and long description of the codebase.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/llm.chunk_str`](<../utils/llm.py.md#chunk_str>)
     - [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor`](<../utils/threadpool.py.md#fastshutdownthreadpoolexecutor>)
@@ -319,21 +317,21 @@ Generates a comprehensive description of a codebase by processing and compressin
 ### tag\_codebase<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.tag_codebase}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L484>)
 
-Tags a codebase with various content kinds using an LLM and document data.
+Tags a codebase with various content kinds using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate scores and entry points.
-    - `docs`: A dictionary mapping `LiteNode` objects to their associated document data.
-    - `content_kinds`: A set of `ContentKind` values indicating which content kinds to process.
+    - `docs`: A dictionary mapping `LiteNode` objects to their associated data, which includes content descriptions.
+    - `content_kinds`: A set of `ContentKind` enums indicating which types of content to tag in the codebase.
 - **Logic and Control Flow**:
-    - Initialize an empty dictionary `results` to store the output.
-    - Check if `ContentKind.CODEBASE_KINDS` is in `content_kinds`. If true, compute kind scores using `CodebaseKindScores.from_llm` and store the sorted list in `results`.
-    - Check if `ContentKind.CODEBASE_DOMAINS` is in `content_kinds`. If true, compute domain scores using `CodebaseDomainScores.from_llm` and store the sorted list in `results`.
-    - Check if `ContentKind.CODEBASE_AUDIENCES` is in `content_kinds`. If true, compute audience scores using `CodebaseAudienceScores.from_llm` and store the sorted list in `results`.
-    - Check if `ContentKind.CODEBASE_ENTRY_POINTS` is in `content_kinds`. If true, run an asynchronous task to compute entry points using `EntryPoints.from_llm` and store the results in `results`.
-    - Print the computed scores or entry points for each content kind processed.
-- **Output**: A dictionary mapping each `ContentKind` to a list of dictionaries containing the computed scores or entry points.
+    - Initialize an empty dictionary `results` to store the tagging results.
+    - Check if `ContentKind.CODEBASE_KINDS` is in `content_kinds`. If true, generate kind scores using `CodebaseKindScores.from_llm` and store them in `results`.
+    - Check if `ContentKind.CODEBASE_DOMAINS` is in `content_kinds`. If true, generate domain scores using `CodebaseDomainScores.from_llm` and store them in `results`.
+    - Check if `ContentKind.CODEBASE_AUDIENCES` is in `content_kinds`. If true, generate audience scores using `CodebaseAudienceScores.from_llm` and store them in `results`.
+    - Check if `ContentKind.CODEBASE_ENTRY_POINTS` is in `content_kinds`. If true, asynchronously generate entry points using `EntryPoints.from_llm` and store them in `results`.
+    - Print the results for each content kind processed.
+- **Output**: A dictionary mapping each `ContentKind` to a list of dictionaries containing the generated scores or entry points.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/tags/entry_point.RelevanceFlag.from_llm`](<../utils/tags/entry_point.py.md#relevanceflagfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.from_llm`](<../utils/tags/codebase_wide.py.md#codebasekindscoresfrom_llm>)
 
 
 

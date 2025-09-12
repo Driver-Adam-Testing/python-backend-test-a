@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines request models for drivers, including modal and batch requests, using Pydantic.
+Defines Pydantic models for driver requests, including modal and batch requests with call IDs.
 
 # Purpose
-The code defines a set of data models using the `pydantic` library, which is used for data validation and settings management in Python. It includes a base class `DriverRequest` that inherits from `BaseModel`, serving as a foundation for other request models. The `DriverModalRequest` class extends `DriverRequest` and introduces a single attribute `call_id` of type `str`. Similarly, the `DriverModalBatchRequest` class also extends `DriverRequest` and includes an attribute `call_ids`, which is a list of strings. These models are likely used to structure and validate data related to driver requests in an application.
+The code defines a set of data models using the `pydantic` library, which is used for data validation and settings management in Python. It includes a base class `DriverRequest` that inherits from `BaseModel`, serving as a foundation for other request models. The `DriverModalRequest` class extends `DriverRequest` and introduces a single attribute `call_id` of type `str`. Similarly, the `DriverModalBatchRequest` class also extends `DriverRequest` and adds an attribute `call_ids`, which is a list of strings. These models are likely used to structure and validate data related to driver requests in an application.
 # Imports and Dependencies
 
 ---
@@ -30,7 +30,7 @@ The code defines a set of data models using the `pydantic` library, which is use
 
 - **Members**:
     - `call_id`: A string that identifies the call.
-- **Description**: Inherits from `DriverRequest` and adds a `call_id` to identify a specific call.
+- **Description**: Inherits from `DriverRequest` and includes a `call_id` to identify a specific call.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](<#driverrequest>)
 
@@ -41,7 +41,7 @@ The code defines a set of data models using the `pydantic` library, which is use
 
 - **Members**:
     - `call_ids`: A list of strings representing call identifiers.
-- **Description**: Extends `DriverRequest` to handle multiple call identifiers in a batch request.
+- **Description**: Extends `DriverRequest` to handle batch requests by including a list of call identifiers.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](<#driverrequest>)
 

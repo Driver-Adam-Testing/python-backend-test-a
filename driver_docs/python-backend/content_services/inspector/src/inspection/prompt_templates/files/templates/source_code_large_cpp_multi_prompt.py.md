@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating multi-prompt structures for large C++ source code analysis.
+Templates for generating structured prompts for large C++ source code analysis.
 
 # Purpose
-The code defines a structured template for generating documentation related to C++ source code. It imports several components and utilities from different modules, which are used to create a multi-prompt template named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP`. This template is designed to facilitate the generation of documentation by organizing information into sections such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and instructions to extract and format relevant information from C++ code.
+The code defines a structured template for generating prompts related to C++ source code analysis. It imports several components and utilities from different modules, which are used to construct a multi-part template named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP`. This template is designed to facilitate the generation of prompts that help in understanding the purpose, imports, global variables, data structures, and functions within a large C++ codebase. The template uses a combination of static analysis and language model (LLM) outputs to gather and organize information about the C++ code.
 
-The template uses a combination of static analysis and language model (LLM) outputs to gather data about C++ code elements. For example, it uses `CppIncludeRawSymbolCollection` and `CppVariableRawSymbolCollection` to analyze imports and global variables, respectively. The template also employs `Prompt` and `Component` classes to build structured text prompts that guide the documentation process. This code is intended to be part of a larger system that automates the creation of technical documentation for C++ projects, ensuring that the documentation is consistent with Simplified Technical English (STE) guidelines.
+The template consists of multiple sections, each focusing on a specific aspect of the C++ code. These sections include instructions for generating prompts about the overall purpose of the code, its imports and dependencies, global variables, data structures, and functions. The code uses various collections and components, such as `CppIncludeRawSymbolCollection`, `CppVariableRawSymbolCollection`, and `CppDataStructureRawSymbolCollection`, to extract relevant information from the C++ code. The use of `Prompt` and `Component` classes indicates that the code is part of a larger system for automated documentation or analysis of C++ codebases.
 # Imports and Dependencies
 
 ---
@@ -35,9 +35,9 @@ The template uses a combination of static analysis and language model (LLM) outp
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_CPP
-- **Type**: `list`
-- **Description**: A list of tuples, where each tuple contains a string identifier, a description string, and a series of `Prompt` objects or functions related to C++ code analysis and generation. Each tuple represents a different aspect of C++ code, such as purpose, imports, global variables, data structures, and functions.
-- **Use**: Used to define a structured template for generating and analyzing C++ code prompts and components.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of `Prompt` objects or functions related to C++ code analysis and documentation. Each tuple represents a different aspect of C++ code, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: Used to define a structured template for generating multi-prompt documentation for C++ code.
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test file for various TypeScript import and export statement patterns.
+Tests for various TypeScript import and export statement patterns.
 
 # Purpose
-This code is a comprehensive test file for TypeScript import and export statements, demonstrating various import and export patterns. It includes examples of default imports, named imports, namespace imports, type-only imports, side-effect imports, dynamic imports, and imports with assertions. The file also covers CommonJS-style imports, import meta properties, and imports from node modules, scoped packages, and nested paths. On the export side, it illustrates default exports, named exports, type-only exports, export declarations, re-exports with renaming, and complex export patterns such as generic exports, const assertion exports, and exports with decorators. This file serves as a reference for understanding the different ways to manage module dependencies and exports in TypeScript.
+This code is a comprehensive test suite for various TypeScript import and export statements. It demonstrates different import styles, including default, named, namespace, type-only, side-effect, dynamic, and CommonJS-style imports. The code also covers export patterns such as default exports, named exports, re-exports, type-only exports, and complex export patterns like destructuring and conditional exports. Additionally, it includes examples of importing from node modules, scoped packages, nested paths, and parent directories. This file serves as a reference for testing and understanding the diverse import/export capabilities in TypeScript.
 # Imports and Dependencies
 
 ---
@@ -47,22 +47,22 @@ This code is a comprehensive test file for TypeScript import and export statemen
 ---
 ### url
 - **Type**: ``string``
-- **Description**: Contains the URL of the module from which the code is executed. It is a string that represents the location of the current module.
-- **Use**: Used to access the URL of the current module for purposes such as logging or debugging.
+- **Description**: Contains the URL of the current module. This is a special property available in ES modules that provides the URL from which the module was imported.
+- **Use**: Used to access the URL of the current module for purposes such as logging or conditional logic based on the module's location.
 
 
 ---
 ### env
 - **Type**: ``object``
-- **Description**: Represents the environment-specific variables available at runtime in a module. It is part of the `import.meta` object, which provides metadata about the module.
-- **Use**: Accesses environment variables specific to the module's runtime environment.
+- **Description**: Contains environment-specific metadata provided by the module system. This metadata is accessible through the `import.meta` object, which is a special object in JavaScript modules that provides context-specific metadata about the module.
+- **Use**: Accesses environment-specific metadata for the current module.
 
 
 ---
 ### dynamicModule
 - **Type**: `Promise<any>`
-- **Description**: `dynamicModule` is a promise that resolves to the module imported from the './dynamic' path. It uses a top-level await to dynamically import the module at runtime.
-- **Use**: Used to dynamically import a module and access its exports.
+- **Description**: Represents a dynamically imported module from the './dynamic' path. The variable is assigned the result of an asynchronous import operation using top-level await.
+- **Use**: Used to import a module dynamically at runtime, allowing access to its exports.
 
 
 ---

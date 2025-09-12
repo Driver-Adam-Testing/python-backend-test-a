@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for reading a prompt template and downloading files from S3, including parallel downloads.
+Utilities for reading prompt templates and downloading files from S3, including parallel downloads.
 
 # Purpose
-The code provides functionality for reading a file and downloading files from an Amazon S3 bucket. It includes three main functions. The [`get_prompt_template`](<#get_prompt_template>) function reads the content of a file specified by a path and returns it as a string. The [`download_source_file`](<#download_source_file>) function downloads a single file from an S3 bucket using a specified S3 client, bucket name, asset ID, version ID, and relative path. It saves the file to a local directory and returns the local path where the file is saved.
+The code provides functionality for downloading files from an Amazon S3 bucket. It includes functions to read a prompt template from a file and to download individual or multiple source files from S3. The [`get_prompt_template`](<#get_prompt_template>) function reads and returns the content of a file specified by a path. The [`download_source_file`](<#download_source_file>) function downloads a single file from an S3 bucket using a specified S3 client, bucket name, asset ID, version ID, and relative path, saving it to a local directory. The [`download_all_source_files_in_parallel`](<#download_all_source_files_in_parallel>) function extends this capability by downloading multiple files concurrently using a thread pool, which improves efficiency when handling multiple files.
 
-The [`download_all_source_files_in_parallel`](<#download_all_source_files_in_parallel>) function extends the functionality of [`download_source_file`](<#download_source_file>) by allowing multiple files to be downloaded concurrently. It uses a `ThreadPoolExecutor` to manage parallel downloads, which can improve performance when dealing with multiple files. The function takes a list of relative paths and downloads each file in parallel, returning a list of local paths where the files are saved. This code is suitable for use in applications that need to manage and download multiple files from S3 efficiently.
+The code is structured to be used as part of a larger application or library, where it can be imported and called with the necessary parameters. It does not define a public API or external interface but provides utility functions that can be integrated into workflows that require downloading files from S3. The use of `ThreadPoolExecutor` in the [`download_all_source_files_in_parallel`](<#download_all_source_files_in_parallel>) function allows for parallel execution, which is useful for optimizing download operations when dealing with large numbers of files.
 # Imports and Dependencies
 
 ---
@@ -23,12 +23,12 @@ The [`download_all_source_files_in_parallel`](<#download_all_source_files_in_par
 ### get\_prompt\_template<!-- {{#callable:python-backend/content_services/inspector/src/utils/io.get_prompt_template}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/io.py#L5>)
 
-Reads and returns the content of a file specified by a path.
+Reads and returns the content of a file specified by a path or string.
 - **Inputs**:
-    - `f`: A file path, which can be a `Path` object or a string, indicating the location of the file to read.
+    - `f`: A file path or string that specifies the location of the file to read.
 - **Logic and Control Flow**:
-    - Convert the input `f` to a `Path` object if it is not already one.
-    - Open the file at the path `p` in read mode.
+    - Convert the input `f` to a `Path` object `p`.
+    - Open the file at path `p` in read mode.
     - Read the content of the file and return it as a string.
 - **Output**: A string containing the content of the file.
 
@@ -43,12 +43,12 @@ Downloads a file from an S3 bucket to a local path.
     - `bucket_name`: The name of the S3 bucket from which to download the file.
     - `primary_asset_id`: The primary asset identifier used to construct the S3 key.
     - `version_id`: The version identifier used to construct the S3 key.
-    - `node_rel_path`: The relative path of the file within the S3 bucket.
+    - `node_rel_path`: The relative path of the node used to construct the S3 key and local download path.
     - `download_root`: The root directory path where the file will be downloaded locally.
 - **Logic and Control Flow**:
     - Constructs the S3 key by concatenating `primary_asset_id`, `version_id`, and `node_rel_path`.
     - Determines the local download path by appending `node_rel_path` to `download_root`.
-    - Creates the parent directories for the local download path if they do not exist.
+    - Creates the parent directories of the local download path if they do not exist.
     - Downloads the file from the S3 bucket using the constructed S3 key and saves it to the local download path.
 - **Output**: Returns the local path where the file is downloaded.
 
@@ -69,11 +69,11 @@ Downloads multiple source files from an S3 bucket in parallel using a thread poo
 - **Logic and Control Flow**:
     - Initialize an empty list `paths` to store the local paths of downloaded files.
     - Create a `ThreadPoolExecutor` with a specified number of `max_workers`.
-    - Iterate over each `node_path` in `node_rel_paths` and submit a download task to the executor for each path using `download_source_file`.
+    - Iterate over each `node_path` in `node_rel_paths` and submit a download task to the executor for each path using `executor.submit`.
     - Collect the future objects returned by `executor.submit` in a list called `futures`.
-    - Iterate over the completed futures using `as_completed` to retrieve the result of each download task.
-    - Append the result of each future, which is the local path of the downloaded file, to the `paths` list.
-    - Return the `paths` list containing the local paths of all downloaded files.
+    - Iterate over the completed futures using `as_completed(futures)`.
+    - For each completed future, call `future.result()` to get the result of the download task, which is the local path of the downloaded file, and append it to `paths`.
+    - Return the list `paths` containing the local paths of all downloaded files.
 - **Output**: A list of `Path` objects representing the local paths of the downloaded files.
 
 

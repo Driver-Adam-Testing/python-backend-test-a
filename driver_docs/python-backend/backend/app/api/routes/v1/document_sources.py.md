@@ -6,9 +6,9 @@
 API routes for creating, retrieving, and deleting document sources with permission checks.
 
 # Purpose
-This code defines a set of API endpoints using FastAPI for managing document sources. It includes three main operations: creating, retrieving, and deleting document sources. The [`create_document_source`](<#create_document_source>) function allows users with `ContentEditorPermission` to create a new document source by posting data that conforms to the `DocumentSourceCreate` schema. The [`get_document_source`](<#get_document_source>) function retrieves a specific document source using its `document_id` and `source_id`, requiring `ContentReadonlyPermission` for access. If the document source is not found, it raises an `HTTPException` with a 404 status code. The [`delete_document_source`](<#delete_document_source>) function enables users with `ContentEditorPermission` to delete a document source identified by `document_id` and `source_id`.
+This code defines a FastAPI router for managing document sources. It provides three main endpoints: [`create_document_source`](<#create_document_source>), [`get_document_source`](<#get_document_source>), and [`delete_document_source`](<#delete_document_source>). These endpoints allow users to create, retrieve, and delete document sources, respectively. The code uses FastAPI's `APIRouter` to organize these endpoints, and it enforces permissions using dependencies such as `ContentEditorPermission` and `ContentReadonlyPermission`.
 
-The code uses dependency injection to enforce permissions and manage user sessions. The `CurrentSession` and `UserToken` are injected into each endpoint function to handle session management and user authentication. The `DocumentSourceService` class is used to encapsulate the business logic for interacting with document sources, ensuring that the API endpoints remain focused on handling HTTP requests and responses. The `APIRouter` instance, `router`, organizes these endpoints, making it easier to integrate them into a larger FastAPI application.
+The endpoints interact with a `DocumentSourceService` to perform operations on document sources. The [`create_document_source`](<#create_document_source>) function requires a `DocumentSourceCreate` object to create a new document source. The [`get_document_source`](<#get_document_source>) function retrieves a document source by its `document_id` and `source_id`, raising an `HTTPException` if the document source is not found. The [`delete_document_source`](<#delete_document_source>) function removes a document source identified by `document_id` and `source_id`. The code relies on session management and user authentication through `CurrentSession` and `UserToken`, ensuring that only authorized users can perform these operations.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ The code uses dependency injection to enforce permissions and manage user sessio
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: Initializes an instance of the `APIRouter` class from FastAPI. This instance is used to define and manage API routes for handling HTTP requests related to document sources.
+- **Description**: Defines an instance of `APIRouter` from the FastAPI framework. This instance is used to create and manage API routes for handling HTTP requests related to document sources.
 - **Use**: Used to register and manage API endpoints for creating, retrieving, and deleting document sources.
 
 
@@ -43,7 +43,7 @@ Creates a new document source using the provided session and document source dat
 - **Inputs**:
     - `session`: The current database session used to interact with the database.
     - `user`: The user token representing the authenticated user making the request.
-    - `document_source_create`: The data required to create a new document source, encapsulated in a `DocumentSourceCreate` object.
+    - `document_source_create`: An instance of `DocumentSourceCreate` containing the data required to create a new document source.
 - **Logic and Control Flow**:
     - Initialize a `DocumentSourceService` with the provided `session`.
     - Call the `create_document_source` method of `DocumentSourceService` with `document_source_create` to create a new document source.
@@ -57,16 +57,16 @@ Creates a new document source using the provided session and document source dat
 Retrieves a document source by its document and source IDs.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: The current session object, used to interact with the database.
-    - `user`: The user token object, representing the authenticated user.
-    - `document_id`: The UUID of the document to retrieve the source for.
-    - `source_id`: The UUID of the source to retrieve.
+    - `session`: The current database session, represented by `CurrentSession`.
+    - `user`: The user token, represented by `UserToken`, for authentication purposes.
+    - `document_id`: The unique identifier for the document, represented by `UUID`.
+    - `source_id`: The unique identifier for the source, represented by `UUID`.
 - **Logic and Control Flow**:
-    - Create an instance of `DocumentSourceService` using the provided session.
-    - Call `get_document_source` on the `DocumentSourceService` instance with `document_id` and `source_id`.
-    - If `document_source` is not found, raise an `HTTPException` with status code 404 and a detail message.
+    - Create an instance of `DocumentSourceService` using the provided `session`.
+    - Call `get_document_source` on the `document_source_service` with `document_id` and `source_id` to retrieve the document source.
+    - If `document_source` is not found, raise an `HTTPException` with a 404 status code and a detail message.
     - Return the `document_source` if found.
-- **Output**: The document source object if found, otherwise raises an HTTPException with a 404 status code.
+- **Output**: The document source object if found, otherwise raises an `HTTPException` with a 404 status code.
 
 
 ---
@@ -77,12 +77,12 @@ Deletes a document source identified by `document_id` and `source_id`.
 - **Decorators**: `@router.delete`
 - **Inputs**:
     - `session`: The current database session, represented by `CurrentSession`, used to interact with the database.
-    - `user`: The user token, represented by `UserToken`, used to authenticate the user making the request.
+    - `user`: The user token, represented by `UserToken`, which contains information about the authenticated user.
     - `document_id`: A UUID that uniquely identifies the document from which the source will be deleted.
     - `source_id`: A UUID that uniquely identifies the source to be deleted from the document.
 - **Logic and Control Flow**:
     - Create an instance of `DocumentSourceService` using the provided `session`.
-    - Call the `delete_document_source` method of `DocumentSourceService` with `document_id` and `source_id` as arguments.
+    - Call the `delete_document_source` method of `DocumentSourceService` with `document_id` and `source_id` to delete the specified document source.
 - **Output**: The result of the `delete_document_source` method from `DocumentSourceService`, which typically indicates the success or failure of the deletion operation.
 
 

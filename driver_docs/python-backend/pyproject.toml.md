@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for a Python project using Poetry, specifying dependencies, dev tools, and mypy settings.
+Configuration for a Python project using Poetry, specifying dependencies, development tools, and build settings.
 
 # Purpose
-The file is a configuration file for the Poetry dependency management tool, used in a Python project named `python-backend-cdk`. It specifies the project's metadata, including its name, version, and author information. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, such as `aws-cdk-lib`, `constructs`, and `pydantic`, along with their version constraints. The `[tool.poetry.group.dev.dependencies]` section defines additional dependencies needed for development and testing, including `pytest`, `mypy`, and `pre-commit`. The `[build-system]` section indicates the build requirements and backend, specifying that Poetry version 0.12 or higher is needed. The `[tool.mypy]` section configures the `mypy` static type checker with strict type checking enabled and excludes certain directories from type checking.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project. It specifies the project metadata, including the project name `python-backend-cdk`, version `0.1.0`, and author information. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, such as `aws-cdk-lib`, `constructs`, and `pydantic`, along with their version constraints. The `[tool.poetry.group.dev.dependencies]` section defines development dependencies like `pytest`, `mypy`, and `pre-commit`, which are used for testing and code quality checks. The `[build-system]` section indicates that Poetry is the build system, and the `[tool.mypy]` section configures the `mypy` static type checker with strict type checking enabled and excludes directories like `venv` and `alembic` from type checking.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

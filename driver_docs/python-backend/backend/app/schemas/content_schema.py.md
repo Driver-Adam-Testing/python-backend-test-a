@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines Pydantic models for content management operations, including listing, tagging, and exporting content.
+Defines Pydantic models for content management, including input/output schemas and tag associations.
 
 # Purpose
-The code defines a set of data models and request/response structures for managing content and tags in a database system. It uses the `pydantic` library to create data validation and serialization models, and `sqlmodel` for database interaction. The primary focus is on handling content-related operations, such as listing content, associating tags, creating templates, and exporting content. The models include `ListContentInput`, `ListContentResult`, and `ListContentResults`, which facilitate querying and organizing content data. Additionally, the code provides structures for managing tag associations, such as `TagAssociationRequest` and `BatchTagAssociationRequest`, and their corresponding responses.
+The code defines a set of data models and request/response structures for managing content and tags in a database system. It uses the `pydantic` library to create data validation and parsing models, and `sqlmodel` for database interaction. The primary focus is on handling content-related operations, such as listing content, associating tags, creating templates, and exporting content. The models include `ListContentInput`, `ListContentResult`, and `ListContentResults`, which facilitate querying and returning content data with various filters and sorting options.
 
-The code also includes several classes for handling specific content operations, such as `CreateContentResponse`, `DownloadContentResponse`, and `ExportSingleRequest`. These classes define the expected input and output formats for various API endpoints or internal functions. The use of generics in `ContentResultBase` and `ContentRequestBase` allows for flexible handling of different data types. The code is structured to support a modular approach to content management, with clear definitions for each operation's input and output, making it suitable for integration into a larger application or service that requires content and tag management capabilities.
+Additionally, the code provides models for managing tag associations and batch operations, such as `TagAssociationRequest`, `BatchTagAssociationRequest`, and their corresponding response models. These models enable the association and disassociation of tags with content items. The code also includes models for handling content creation and template requests, such as `CreateContentResponse` and `CreateTemplateRequest`. Overall, the code serves as a library file intended to be imported and used in a larger application, providing a structured way to manage content and tag data within a database system.
 # Imports and Dependencies
 
 ---
@@ -17,10 +17,10 @@ The code also includes several classes for handling specific content operations,
 - `typing.Optional`
 - `typing.TypeVar`
 - `uuid.UUID`
-- `database.models_v1.DerivedContent`
-- `database.models_v1.DocumentSource`
-- `database.models_v1.Tag`
-- `database.models_v2_enums.VersionStatus`
+- `database.models.DerivedContent`
+- `database.models.DocumentSource`
+- `database.models.Tag`
+- `database.models_enums.VersionStatus`
 - `pydantic.BaseModel`
 - `sqlmodel.SQLModel`
 
@@ -30,8 +30,8 @@ The code also includes several classes for handling specific content operations,
 ---
 ### DataT
 - **Type**: ``TypeVar``
-- **Description**: Defines a type variable named `DataT` that is bound to the `SQLModel` class. This means `DataT` can be used as a generic type placeholder for any subclass of `SQLModel`.
-- **Use**: Used to create generic classes or functions that operate on instances of `SQLModel` or its subclasses.
+- **Description**: Defines a type variable named `DataT` that is bound to the `SQLModel` class. This means `DataT` can be any type that is a subclass of `SQLModel`.
+- **Use**: Used to create generic classes that can operate on any subclass of `SQLModel`.
 
 
 # Classes
@@ -41,19 +41,19 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L17>)
 
 - **Members**:
-    - `latest_version_only`: Indicates if only the latest version of content is needed.
-    - `text`: Optional text to filter content.
+    - `latest_version_only`: Indicates if only the latest version of content is necessary.
+    - `text`: Optional text filter for content.
     - `limit`: Maximum number of content items to return.
     - `offset`: Number of content items to skip before starting to collect the result set.
     - `sort_by`: Field name to sort the content by.
     - `sort_direction`: Direction to sort the content, either ascending or descending.
-    - `status`: Status of the content to filter by.
+    - `status`: Filter for content based on its status.
     - `content_type_name`: List of content type names to filter by.
     - `order`: Order of the content in the result set.
-    - `tags`: List of tags to filter content by.
-    - `tag_ids`: List of tag IDs to filter content by.
-    - `version_id`: List of version IDs to filter content by.
-- **Description**: Defines input parameters for listing content, including filters for version, text, sorting, and tags.
+    - `tags`: List of tags to filter the content by.
+    - `tag_ids`: List of tag IDs to filter the content by.
+    - `version_id`: List of version IDs to filter the content by.
+- **Description**: Defines the input parameters for listing content, including filters for version, text, limit, offset, sorting, status, content type, order, tags, and version IDs.
 - **Inherits From**:
     - `BaseModel`
 
@@ -63,10 +63,10 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L32>)
 
 - **Members**:
-    - `limit`: Defines the maximum number of content types to list, defaulting to 20.
-    - `offset`: Specifies the starting point for listing content types, defaulting to 0.
-    - `sort_by`: Indicates the attribute by which to sort the content types, defaulting to None.
-    - `sort_direction`: Determines the direction of sorting, defaulting to 'DESC' for descending order.
+    - `limit`: Specifies the maximum number of content types to return.
+    - `offset`: Indicates the starting point for the list of content types.
+    - `sort_by`: Determines the attribute by which to sort the content types.
+    - `sort_direction`: Specifies the direction of sorting, either ascending or descending.
 - **Description**: Defines input parameters for listing content types, including pagination and sorting options.
 - **Inherits From**:
     - `BaseModel`
@@ -85,7 +85,7 @@ The code also includes several classes for handling specific content operations,
     - `relative_path`: Relative path to the content.
     - `content`: Actual content data.
     - `misc_metadata`: Additional metadata for the content.
-    - `status`: Version status of the content.
+    - `status`: Current version status of the content.
     - `tags`: List of tags associated with the content.
     - `source_links`: List of document sources linked to the content.
     - `created_at`: Timestamp when the content was created.
@@ -94,7 +94,7 @@ The code also includes several classes for handling specific content operations,
     - `order`: Order of the content.
     - `version_id`: Identifier for the version of the content.
     - `version`: Version string of the content.
-- **Description**: Represents the result of listing content, including metadata, status, and associated tags and links.
+- **Description**: Represents the result of listing content, including metadata, status, and associated tags and sources.
 - **Inherits From**:
     - `BaseModel`
 
@@ -105,10 +105,10 @@ The code also includes several classes for handling specific content operations,
 
 - **Members**:
     - `results`: A list of `ListContentResult` objects.
-    - `offset`: An integer that indicates the starting point of the results.
+    - `offset`: An integer that specifies the starting point for the list of results.
     - `limit`: An integer that specifies the maximum number of results to return.
-    - `count`: An integer that represents the total number of available results.
-- **Description**: Represents a paginated collection of content results, including metadata for pagination such as offset, limit, and total count.
+    - `count`: An integer that represents the total number of results available.
+- **Description**: Stores a list of content results with pagination details such as offset, limit, and total count.
 - **Inherits From**:
     - `BaseModel`
 
@@ -133,7 +133,7 @@ The code also includes several classes for handling specific content operations,
     - `tag_id`: Stores the unique identifier for the tag.
     - `content_id`: Stores the unique identifier for the content.
     - `message`: Contains a message related to the tag association.
-- **Description**: Represents the response for a tag association operation, including identifiers for the tag and content, and a message.
+- **Description**: Represents the response for a tag association operation, including identifiers for the tag and content, and a related message.
 - **Inherits From**:
     - `BaseModel`
 
@@ -144,7 +144,7 @@ The code also includes several classes for handling specific content operations,
 
 - **Members**:
     - `tags`: A list of `TagAssociationRequest` objects.
-- **Description**: Facilitates the association of multiple tags with content by encapsulating a list of `TagAssociationRequest` objects.
+- **Description**: Associates multiple tags with a batch operation by containing a list of `TagAssociationRequest` objects.
 - **Inherits From**:
     - `BaseModel`
 
@@ -165,8 +165,8 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L87>)
 
 - **Members**:
-    - `results`: A list of data items of type `DataT` or `None`.
-- **Description**: Serves as a base class for content result models, allowing for generic handling of lists of data items.
+    - `results`: A list that can contain elements of type `DataT` or `None`, initialized to `None`.
+- **Description**: Represents a base class for content results, parameterized by a generic type `DataT`, which is bound to `SQLModel`. It provides a structure to store a list of results, which can be of any type that extends `SQLModel`.
 - **Inherits From**:
     - `BaseModel`
 
@@ -176,8 +176,8 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L91>)
 
 - **Members**:
-    - `result`: Holds an optional result of type `DataT`.
-- **Description**: Defines a base class for content requests, parameterized by a generic type `DataT`, which is bound to `SQLModel`. It includes a single member `result` to store the result of a content request, which can be of type `DataT` or `None`.
+    - `result`: Holds an instance of `DataT` or `None`.
+- **Description**: Represents a base class for content requests, parameterized by a generic type `DataT`, which is bound to `SQLModel`. It includes a single member `result` to store the result of type `DataT` or `None`.
 - **Inherits From**:
     - `BaseModel`
 
@@ -193,7 +193,7 @@ The code also includes several classes for handling specific content operations,
 ### ContentSourceResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.ContentSourceResponse}} -->
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L99>)
 
-- **Description**: Inherits from `ContentResultBase` with a generic type of `ListContentResult`, serving as a response structure for content source operations.
+- **Description**: Inherits from `ContentResultBase` with a type parameter of `ListContentResult`, indicating it is a specialized response class for handling content source data.
 
 
 ---
@@ -201,7 +201,7 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L103>)
 
 - **Members**:
-    - `content_id`: Stores the unique identifier for the content as a UUID.
+    - `content_id`: Stores the unique identifier for the content.
 - **Description**: Represents a request to create a template, containing a unique identifier for the content.
 - **Inherits From**:
     - `BaseModel`
@@ -223,8 +223,8 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L111>)
 
 - **Members**:
-    - `collection_id`: Stores the unique identifier for the content collection.
-- **Description**: Associates a content collection with a unique identifier using the `UUID` type.
+    - `collection_id`: Stores the unique identifier for the collection.
+- **Description**: Associates a content item with a collection by using a unique collection identifier.
 - **Inherits From**:
     - `BaseModel`
 
@@ -247,8 +247,8 @@ The code also includes several classes for handling specific content operations,
 - **Members**:
     - `content_id`: Stores the unique identifier for the content.
     - `tag_id`: Stores the unique identifier for the tag.
-    - `message`: Contains a message related to the delete operation.
-- **Description**: Represents the response for a delete tag item operation, including identifiers for the content and tag, and a message about the operation.
+    - `message`: Contains a message related to the deletion of the tag.
+- **Description**: Represents the response for a request to delete a tag from a content item, including identifiers for the content and tag, and a message.
 - **Inherits From**:
     - `BaseModel`
 
@@ -258,8 +258,8 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L125>)
 
 - **Members**:
-    - `results`: Contains a list of `DeleteTagItemResponse` objects.
-- **Description**: Represents the response for a batch delete tags operation, containing the results of each tag deletion attempt.
+    - `results`: A list of `DeleteTagItemResponse` objects.
+- **Description**: Represents the response for a batch delete tags operation, containing a list of results for each tag deletion attempt.
 - **Inherits From**:
     - `BaseModel`
 
@@ -269,10 +269,10 @@ The code also includes several classes for handling specific content operations,
 [View Source →](<../../../../../backend/app/schemas/content_schema.py#L129>)
 
 - **Members**:
-    - `download_url`: Specifies the URL from which to download the content.
-    - `content_name`: Indicates the name of the content to download.
-    - `status`: Represents the current status of the download operation.
-- **Description**: Defines the structure for a response that includes details about downloadable content, such as the URL, content name, and download status.
+    - `download_url`: A string that contains the URL for downloading the content.
+    - `content_name`: A string that specifies the name of the content.
+    - `status`: A string that indicates the status of the download.
+- **Description**: Represents the response for a content download request, including the download URL, content name, and status.
 - **Inherits From**:
     - `BaseModel`
 

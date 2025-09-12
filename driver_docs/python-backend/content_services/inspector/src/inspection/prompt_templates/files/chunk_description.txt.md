@@ -3,25 +3,25 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for writing a detailed technical description of a code file.
+Instructions for writing detailed technical descriptions of code pieces in `chunk_description.txt`.
 
 # Purpose
-Piece of code from `config.yaml` in codebase `project_management_tool` with path `config/settings/config.yaml`:
+Piece of code from `config.yaml` in codebase `project_codebase` with path `config/`:
 
 ```yaml
 database:
   host: localhost
   port: 5432
-  name: project_db
-  user: admin
+  username: admin
   password: secret
+  name: project_db
 
 logging:
   level: INFO
-  file: /var/log/project_management_tool.log
+  file: logs/app.log
 ```
 
-The `config.yaml` file defines the configuration settings for the database and logging components of the `project_management_tool`. The `database` section specifies the connection details required to access the database, including the `host`, `port`, `name`, `user`, and `password`. These settings are essential for establishing a connection to the `project_db` database on the local server using the PostgreSQL service on port `5432`. The `logging` section configures the logging behavior of the application, setting the log `level` to `INFO` and directing log output to the specified file path `/var/log/project_management_tool.log`. This configuration ensures that the application records informational messages and above to the designated log file for monitoring and debugging purposes.
+The `config.yaml` file defines configuration settings for a software application. It specifies the database connection details under the `database` section, including the `host`, `port`, `username`, `password`, and `name` of the database. These settings are used by the application to establish a connection to the database server. Additionally, the `logging` section configures the logging behavior of the application, setting the `level` of logging to `INFO` and specifying the `file` path where log entries are stored. This configuration allows the application to manage how it connects to the database and how it logs operational data.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

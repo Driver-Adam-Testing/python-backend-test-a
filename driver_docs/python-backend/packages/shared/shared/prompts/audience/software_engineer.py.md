@@ -6,28 +6,28 @@
 Defines a prompt and response structure for a software engineer seeking detailed technical documentation.
 
 # Purpose
-This code defines a set of constants and dictionaries used for constructing a structured message exchange between a user and an assistant. The `PROMPT` variable contains a detailed string that outlines the user's expectations for technical documentation. The `MESSAGE` dictionary uses this prompt to define a message with a user role. The `ASSISTANT_MESSAGE` dictionary provides a structured response from the assistant, detailing how it will address the user's request with a focus on advanced topics and relevant information. This code is a configuration setup for a dialogue system, specifying the roles and content of messages exchanged between a user and an assistant.
+This code defines a set of constants and dictionaries used to structure a conversation between a user and an assistant. The `PROMPT` variable contains a detailed string that outlines the user's expectations for technical documentation, emphasizing advanced topics and specific codebase relevance. The `MESSAGE` dictionary assigns the role of "user" and includes the `PROMPT` as its content. The `ASSISTANT_MESSAGE` dictionary represents the assistant's response, which acknowledges the user's requirements and promises to provide detailed, context-specific information. This code is a configuration setup for a conversational interface, defining the initial user prompt and the assistant's response template.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: A multi-line string that describes the expectations and preferences of a seasoned software engineer for in-depth technical documentation. It emphasizes the need for advanced topics, technical enhancements, explanations, analyses, code examples, and assessments specific to the codebase being examined.
-- **Use**: Used as a prompt to guide the generation of content that meets the specified documentation requirements.
+- **Type**: ``str``
+- **Description**: A string that describes the expectations and interests of a seasoned software engineer in terms of technical documentation. It emphasizes the need for in-depth, specific, and relevant content, including examples and thorough examinations, without generalized information.
+- **Use**: Used to define the content expectations for technical documentation inquiries.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two key-value pairs: `role` set to `'user'` and `content` set to the value of the `PROMPT` variable. The `PROMPT` variable is a string that describes the user's expectations for technical documentation.
-- **Use**: Used to store and convey the user's role and their specific content request in a structured format.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has the value `user`, and the `content` key is assigned the value of the `PROMPT` variable, which is a string detailing the user's expectations for technical documentation.
+- **Use**: Used to define the user's role and expectations in a structured format for communication purposes.
 
 
 ---
 ### ASSISTANT\_MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has the value `assistant`, and the `content` key contains a string that outlines how the assistant will provide detailed and tailored responses to technical inquiries.
-- **Use**: Used to define the assistant's response behavior and content in a structured format.
+- **Description**: A dictionary that contains two key-value pairs: `role` and `content`. The `role` key has the value `assistant`, and the `content` key contains a string message that outlines the assistant's approach to providing technical information.
+- **Use**: Used to store and convey the assistant's response strategy and message content in a structured format.
 
 
 

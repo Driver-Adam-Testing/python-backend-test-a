@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for generating multi-prompt text for large Python source code analysis.
+Defines a template for generating multi-prompt structures for large Python source code analysis.
 
 # Purpose
-The code is a configuration for a multi-prompt template system in Python. It defines a structured approach to generate prompts for analyzing and documenting Python source code. The template is organized into several components, each responsible for extracting and processing different aspects of the source code, such as imports, global variables, classes, and functions. The code uses a combination of static analysis and language model processing to collect and format this information.
+The code defines a structured template for generating multi-prompt text related to the purpose and structure of Python source code. It imports several components and utilities from different modules, which are used to analyze and document Python code. The main functionality is organized into a list of tuples, each representing a different aspect of the code documentation process, such as purpose, imports and dependencies, global variables, classes, and functions.
 
-The main components include `Prompt` and `Component` classes, which are used to build and format the prompts. The code imports various utilities and collections from different modules, such as `PyClassCollection`, `PyFnCollection`, and `PyVariableCollection`, to handle specific elements of the source code. The template is designed to be flexible and extendable, allowing for the integration of different instructions and processing methods to generate comprehensive documentation for Python code.
+Each tuple in the `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY` list contains a specific section header, a method for extracting relevant information, and a method for processing that information. The code uses collections and components to gather and format data about the source code, which can then be used to generate structured documentation. This setup is intended for use in a larger system that analyzes Python code and produces documentation based on the extracted data.
 # Imports and Dependencies
 
 ---
@@ -35,9 +35,9 @@ The main components include `Prompt` and `Component` classes, which are used to 
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_PY
-- **Type**: `list`
-- **Description**: Contains a list of tuples, each representing a different section of a structured prompt template. Each tuple includes a section identifier, a description, and a series of components or functions that define the content or processing logic for that section.
-- **Use**: Used to define and organize different sections of a structured prompt template for code analysis and generation.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a string description, and a series of `Prompt` objects or functions related to code analysis and transformation. Each tuple represents a different aspect of code analysis, such as purpose, imports, global variables, classes, and functions.
+- **Use**: Used to define a structured template for multi-prompt code analysis and transformation tasks.
 
 
 

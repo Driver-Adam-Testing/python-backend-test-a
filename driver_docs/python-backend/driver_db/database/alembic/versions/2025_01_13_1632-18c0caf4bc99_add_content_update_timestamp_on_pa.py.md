@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add and populate a content update timestamp column in the `v2_primary_asset` table.
+Alembic migration script to add and populate a timestamp column for content updates on primary assets.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's purpose is to modify the database schema by adding a new column named `related_content_last_updated` to the `v2_primary_asset` table. This column is of type `DateTime` with timezone support and is initially nullable. The [`upgrade`](<#upgrade>) function implements the schema change by adding the column and then populating it with a default timestamp for existing records where the column is null. It also updates the column with the latest content update timestamp for each primary asset by joining related tables and calculating the maximum update time.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's purpose is to modify the `v2_primary_asset` table by adding a new column named `related_content_last_updated`. This column is of type `DateTime` with timezone support and is initially nullable. The [`upgrade`](<#upgrade>) function defines the operations to apply the migration, which includes adding the new column and populating it with timestamps. Initially, it sets the column to a default timestamp of '1970-01-01 00:00:00+00' for rows where the column is null. It then updates the column with the latest content update timestamp for each primary asset by joining related tables and calculating the maximum update time.
 
-The [`downgrade`](<#downgrade>) function reverses the changes made by the [`upgrade`](<#upgrade>) function. It removes the `related_content_last_updated` column from the `v2_primary_asset` table, effectively restoring the database schema to its previous state. The script includes revision identifiers, which Alembic uses to track the migration's position in the sequence of migrations. This script is part of a series of migrations, as indicated by the `revision` and `down_revision` identifiers, and is intended to be executed as part of a larger database version control process.
+The [`downgrade`](<#downgrade>) function defines the reverse operation, which removes the `related_content_last_updated` column from the `v2_primary_asset` table. The script includes revision identifiers, which Alembic uses to track the migration's version and its relationship to other migrations. This script is part of a series of migrations that manage changes to the database schema over time.
 # Imports and Dependencies
 
 ---
@@ -22,14 +22,14 @@ The [`downgrade`](<#downgrade>) function reverses the changes made by the [`upgr
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic, a database migration tool, to track changes in the database schema over time.
+- **Use**: Used to identify the current revision of the database schema in Alembic migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
 - **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 

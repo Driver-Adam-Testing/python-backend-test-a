@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tools for codebase folder summary, file opening, searching, and tool registration in a registry.
+Tools for codebase folder summary, file opening, searching, and strict tool execution with Pydantic.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Registers tools for codebase folder summary, file opening, and searching in a tool registry.
-- **[codebase_folder_summary_tool.py](codebase_folder_summary_tool.py.md)**: A tool to summarize the content of a codebase folder at a specified directory path.
+- **[codebase_folder_summary_tool.py](codebase_folder_summary_tool.py.md)**: Tool for summarizing the content of a codebase folder at a specified directory path.
 - **[open_file_tool.py](open_file_tool.py.md)**: A strict tool class to open a file at a given path and display its content, excluding PDFs.
-- **[search_tool.py](search_tool.py.md)**: A class for searching within a content repository using various algorithms and content types.
-- **[tool_strict.py](tool_strict.py.md)**: Defines an abstract base class for tools with a method to create a schema based on subclass parameters.
+- **[search_tool.py](search_tool.py.md)**: A tool for searching code and technical documentation using various algorithms and content filters.
+- **[tool_strict.py](tool_strict.py.md)**: Defines an abstract base class for strict tool execution and schema generation using Pydantic.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

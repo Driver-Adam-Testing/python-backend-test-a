@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Migrates GitHub App installation IDs from AWS Secrets Manager to a database, with optional dry-run mode.
+Migrates GitHub App installation IDs from secrets to a database, with optional dry-run mode.
 
 # Purpose
-This script facilitates the migration of GitHub App installation IDs from AWS Secrets Manager to a database. It interacts with the GitHub API to retrieve installation IDs associated with user tokens and uses the Auth0 Management API to fetch user and organization data. The script defines several functions to handle these tasks, including [`get_installation_ids_from_github_token`](<#get_installation_ids_from_github_token>), [`get_all_users`](<#get_all_users>), [`get_all_organizations`](<#get_all_organizations>), [`is_token_valid`](<#is_token_valid>), and [`refresh_access_token`](<#refresh_access_token>). The core functionality is encapsulated in the [`migrate_user_installation_ids`](<#migrate_user_installation_ids>) function, which processes each user and organization, retrieves and validates GitHub tokens, and updates the database with installation IDs if they do not already exist.
+This script facilitates the migration of GitHub App installation IDs from AWS Secrets Manager to a database. It interacts with the GitHub API to retrieve installation IDs associated with user tokens and uses the Auth0 Management API to fetch user and organization data. The script defines several functions to handle these tasks, including [`get_installation_ids_from_github_token`](<#get_installation_ids_from_github_token>), [`get_all_users`](<#get_all_users>), [`get_all_organizations`](<#get_all_organizations>), [`is_token_valid`](<#is_token_valid>), and [`refresh_access_token`](<#refresh_access_token>). The core functionality is encapsulated in the [`migrate_user_installation_ids`](<#migrate_user_installation_ids>) function, which processes each user and their associated organizations to migrate the installation IDs. It checks the validity of GitHub tokens, refreshes them if necessary, and writes new tokens back to AWS Secrets Manager.
 
-The script is designed to be executed as a standalone program, as indicated by the [`main`](<#main>) function and the `if __name__ == "__main__":` block. It uses command-line arguments to support a "dry run" mode, allowing users to simulate the migration process without making actual changes to the database. The script relies on several imported modules and services, such as `Auth0Service`, `GithubAppInstallationsRepository`, and AWS Secrets Manager utilities, to perform its operations. Logging is used throughout the script to provide feedback on the migration process, including any errors or warnings encountered.
+The script is designed to be executed as a standalone program, with the [`main`](<#main>) function serving as the entry point. It uses the `argparse` module to handle command-line arguments, allowing for a "dry run" mode where no database changes are made. The script relies on several external modules and services, including `requests` for HTTP requests, `Auth0` for interacting with the Auth0 Management API, and `sqlmodel.Session` for database operations. The [`migrate_user_installation_ids`](<#migrate_user_installation_ids>) function logs the progress and results of the migration process, providing feedback on successful operations and any issues encountered.
 # Imports and Dependencies
 
 ---
@@ -33,7 +33,7 @@ The script is designed to be executed as a standalone program, as indicated by t
 ### get\_installation\_ids\_from\_github\_token<!-- {{#callable:python-backend/driver_data/migrate_gh_app_ids.get_installation_ids_from_github_token}} -->
 [View Source →](<../../../driver_data/migrate_gh_app_ids.py#L19>)
 
-Retrieves the GitHub App installation IDs for a given GitHub user token.
+Retrieves GitHub App installation IDs for a given GitHub user token.
 - **Inputs**:
     - `access_token`: A string representing the GitHub user token used for authentication.
 - **Logic and Control Flow**:
@@ -52,19 +52,19 @@ Retrieves the GitHub App installation IDs for a given GitHub user token.
 ### get\_all\_users<!-- {{#callable:python-backend/driver_data/migrate_gh_app_ids.get_all_users}} -->
 [View Source →](<../../../driver_data/migrate_gh_app_ids.py#L46>)
 
-Fetches all users from Auth0 using pagination.
+Fetches all users from Auth0 by handling pagination.
 - **Inputs**:
-    - `auth0_client`: An instance of the Auth0 management client used to interact with the Auth0 API.
-    - `per_page`: An optional integer specifying the number of users to fetch per page, defaulting to 100.
+    - `auth0_client`: An instance of the `Auth0` class used to interact with the Auth0 Management API.
+    - `per_page`: An integer specifying the number of users to fetch per page, defaulting to 100.
 - **Logic and Control Flow**:
     - Initialize an empty list `users` to store the fetched users.
     - Set the initial page number to 0.
-    - Enter a loop to fetch users from Auth0 using the `auth0_client.users.list` method with the specified `per_page` and `page` parameters.
-    - Retrieve the list of users from the response under the key `users`.
-    - If the retrieved list `batch` is empty, exit the loop.
-    - If `batch` is not empty, extend the `users` list with the contents of `batch`.
-    - Increment the `page` number to fetch the next set of users in the next iteration.
-    - Log the total number of users fetched using the `logging.info` method.
+    - Enter a loop that continues until there are no more users to fetch.
+    - In each iteration, call `auth0_client.users.list` with `per_page` and `page` to fetch a batch of users.
+    - If the fetched batch is empty, break the loop.
+    - Extend the `users` list with the fetched batch of users.
+    - Increment the page number by 1 to fetch the next batch in the next iteration.
+    - Log the total number of users fetched from Auth0.
     - Return the complete list of users.
 - **Output**: A list of dictionaries, where each dictionary represents a user fetched from Auth0.
 
@@ -76,34 +76,34 @@ Fetches all users from Auth0 using pagination.
 Fetches all organizations for a specified user from Auth0, handling pagination.
 - **Inputs**:
     - `auth0_client`: An instance of the `Auth0` class used to interact with the Auth0 API.
-    - `user_id`: A string representing the user ID for which to fetch organizations.
-    - `per_page`: An optional integer specifying the number of organizations to fetch per page, defaulting to 100.
+    - `user_id`: A string representing the unique identifier of the user for whom to fetch organizations.
+    - `per_page`: An integer specifying the number of organizations to fetch per page, defaulting to 100.
 - **Logic and Control Flow**:
     - Initialize an empty list `organizations` to store the fetched organizations.
     - Set the initial page number to 0.
-    - Enter a loop to fetch organizations from Auth0 using the `list_organizations` method of `auth0_client` with the specified `user_id`, `per_page`, and `page`.
+    - Enter a loop to fetch organizations from Auth0 using the `list_organizations` method of `auth0_client` with the specified `user_id`, `per_page`, and `page` parameters.
     - Extract the `organizations` from the response and store them in `batch`.
     - If `batch` is empty, break the loop as there are no more organizations to fetch.
     - Extend the `organizations` list with the contents of `batch`.
     - Increment the `page` number to fetch the next set of organizations in the next iteration.
     - Log the total number of organizations fetched for the user using `logging.info`.
-- **Output**: A list of dictionaries, each representing an organization associated with the specified user.
+- **Output**: A list of dictionaries, where each dictionary represents an organization associated with the specified user.
 
 
 ---
 ### is\_token\_valid<!-- {{#callable:python-backend/driver_data/migrate_gh_app_ids.is_token_valid}} -->
 [View Source →](<../../../driver_data/migrate_gh_app_ids.py#L87>)
 
-Checks if a given GitHub token is valid by making an API request to GitHub.
+Checks if a given GitHub token is valid by making an API request.
 - **Inputs**:
     - `token`: A string representing the GitHub token to validate.
 - **Logic and Control Flow**:
     - Check if the `token` is `None` and return `False` if it is.
     - Set the `url` to 'https://api.github.com/user'.
     - Create a `headers` dictionary with the `Authorization` key set to 'Bearer {token}'.
-    - Make a GET request to the specified `url` with the `headers`.
+    - Make a GET request to the `url` with the `headers`.
     - Return `True` if the response status code is 200, otherwise return `False`.
-- **Output**: A boolean value indicating whether the token is valid (`True`) or not (`False`).
+- **Output**: Returns `True` if the token is valid (response status code is 200), otherwise returns `False`.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../backend/app/repositories/base_repository.py.md#baserepositoryget>)
 
@@ -121,30 +121,30 @@ Requests a new access token from GitHub using a refresh token.
     - Set the request headers to accept JSON responses.
     - Send a POST request to the GitHub OAuth endpoint with the data and headers.
     - Return the JSON response from the GitHub API, which should contain a new access token and possibly a new refresh token.
-- **Output**: A JSON object containing the new 'access_token' and optionally a new 'refresh_token'.
+- **Output**: A JSON object containing the new access token and optionally a new refresh token.
 
 
 ---
 ### migrate\_user\_installation\_ids<!-- {{#callable:python-backend/driver_data/migrate_gh_app_ids.migrate_user_installation_ids}} -->
 [View Source →](<../../../driver_data/migrate_gh_app_ids.py#L111>)
 
-Migrates GitHub token data from secrets to a database for users.
+Migrates GitHub tokens from AWS Secrets Manager to a database for users.
 - **Inputs**:
-    - `auth0_service`: An instance of `Auth0Service` used to interact with Auth0 for management API tokens.
-    - `gh_app_installation_repo`: An instance of `GithubAppInstallationsRepository` used to manage GitHub app installation records in the database.
-    - `dry_run`: A boolean flag indicating whether to simulate the migration without making actual database changes.
+    - `auth0_service`: An instance of `Auth0Service` used to interact with Auth0 for user and organization data.
+    - `gh_app_installation_repo`: An instance of `GithubAppInstallationsRepository` used to manage GitHub App installation records in the database.
+    - `dry_run`: A boolean flag indicating whether to simulate the migration without making any database changes.
 - **Logic and Control Flow**:
     - Obtain a management API token from `auth0_service` and create an `Auth0` client.
     - Retrieve all users from Auth0 using the [`get_all_users`](<#get_all_users>) function.
     - For each user, retrieve all associated organizations using the [`get_all_organizations`](<#get_all_organizations>) function.
-    - For each organization, format a secret key and attempt to read the GitHub token secret using [`read_secret`](<../backend/app/utils/aws_secrets_manager.py.md#read_secret>).
-    - If the secret is not found, log a message and continue to the next organization.
-    - If the GitHub token is invalid, attempt to refresh it using [`refresh_access_token`](<#refresh_access_token>) and update the secret if successful.
-    - Retrieve installation IDs from the GitHub token using [`get_installation_ids_from_github_token`](<#get_installation_ids_from_github_token>).
-    - If installation IDs are found, check if they exist in the database using `gh_app_installation_repo.exists`.
-    - If the installation ID does not exist and `dry_run` is false, create a new record in the database using `gh_app_installation_repo.create`.
-    - Log the completion status of the migration or dry run.
-- **Output**: Logs the migration process and updates the database with GitHub app installation records if `dry_run` is false.
+    - For each organization, format a secret key and attempt to read the GitHub token secret from AWS Secrets Manager.
+    - If the secret does not exist, log a message and continue to the next organization.
+    - If the GitHub token is invalid, attempt to refresh it using the [`refresh_access_token`](<#refresh_access_token>) function and update the secret.
+    - Retrieve installation IDs from GitHub using the [`get_installation_ids_from_github_token`](<#get_installation_ids_from_github_token>) function.
+    - If installation IDs are retrieved, check if they exist in the database using `gh_app_installation_repo.exists`.
+    - If the installation ID does not exist and `dry_run` is `False`, create a new record in the database using `gh_app_installation_repo.create`.
+    - Log the completion of the migration or dry run.
+- **Output**: None. The function performs operations and logs the results.
 - **Functions Called**:
     - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<../backend/app/services/auth0_service.py.md#auth0serviceget_mgmt_api_token>)
     - [`python-backend/driver_data/migrate_gh_app_ids.get_all_users`](<#get_all_users>)
@@ -170,11 +170,11 @@ Parses command-line arguments and initiates the user migration process from secr
     - Creates an argument parser with a description of the migration process.
     - Adds a '--dry-run' argument to simulate the migration without making database changes.
     - Parses the command-line arguments to retrieve the 'dry_run' flag.
-    - Initializes an instance of 'Auth0Service'.
+    - Instantiates an 'Auth0Service' object to interact with Auth0 services.
     - Opens a database session using 'Session(engine)'.
-    - Creates an instance of 'GithubAppInstallationsRepository' with the database session.
+    - Creates a 'GithubAppInstallationsRepository' object with the database session.
     - Calls 'migrate_user_installation_ids' with the 'auth0_service', 'gh_app_installation_repo', and 'dry_run' flag.
-- **Output**: No direct output; it initiates the migration process based on the parsed arguments.
+- **Output**: No direct output; it initiates the migration process and logs information.
 - **Functions Called**:
     - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../backend/app/services/auth0_service.py.md#auth0service>)
     - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../backend/app/repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>)

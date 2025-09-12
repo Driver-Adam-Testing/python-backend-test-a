@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Processes files using a specified parser, currently supporting PDF, and returns processed content.
+Processes files using a specified parser, currently supporting PDF files.
 
 # Purpose
-This code defines a system for processing files, specifically focusing on PDF files. It includes a class `Parser` that enumerates supported file types, currently only `PDF`. The `ProcessFileRequest` class extends `DriverRequest` and specifies the file path and an optional parser type. The `ProcessFileResponse` class extends `DriverResponse` and contains a list of `ProcessedFileContent` objects, which represent the processed contents of a file.
+This code defines a system for processing files, specifically focusing on PDF files. It includes the `Parser` enumeration to specify the type of parser to use, currently supporting only the "pdf" type. The `ProcessFileRequest` class extends `DriverRequest` and includes attributes for the file path and an optional parser type. The `ProcessFileResponse` class extends `DriverResponse` and contains a list of `ProcessedFileContent` objects, which represent the processed contents of a file.
 
-The [`process_file`](<#process_file>) function is the main component that processes a file based on the request. It checks if the parser specified in the `ProcessFileRequest` is `PDF`. If so, it imports the `run_process_pdf` function from a specific module and uses it to process the file. The function reads the file in binary mode, wraps it in a `BytesIO` object, and assigns the file name. It then returns a `ProcessFileResponse` containing the processed content. If no suitable parser is found, the function raises an exception. This code is intended to be part of a larger system where it can be imported and used to handle file processing requests.
+The [`process_file`](<#process_file>) function is the main component of this code. It takes a `ProcessFileRequest` object as input and returns a `ProcessFileResponse` object. If the request specifies a PDF parser, the function reads the file at the given path, converts it into a byte stream, and processes it using the `run_process_pdf` function from an external module. If no suitable parser is found, the function raises an exception. This code is designed to be part of a larger system, likely serving as a library file that can be imported and used to handle file processing requests.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ The [`process_file`](<#process_file>) function is the main component that proces
 
 - **Members**:
     - `PDF`: Represents the PDF file type as a string value 'pdf'.
-- **Description**: Defines an enumeration for different parser types, with 'PDF' as a member representing the PDF file type.
+- **Description**: Defines an enumeration for different parser types, with a single member for PDF files.
 - **Inherits From**:
     - `Enum`
 
@@ -40,7 +40,7 @@ The [`process_file`](<#process_file>) function is the main component that proces
 - **Members**:
     - `file_path`: Specifies the path to the file to process.
     - `parser`: Indicates the parser to use, which can be a `Parser` enum or `None`.
-- **Description**: Extends `DriverRequest` to include file processing details, such as the file path and the parser type.
+- **Description**: Extends `DriverRequest` to include file processing details, such as the file path and an optional parser type.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](<../../interfaces/request.py.md#driverrequest>)
 
@@ -51,7 +51,7 @@ The [`process_file`](<#process_file>) function is the main component that proces
 
 - **Members**:
     - `contents`: A list of `ProcessedFileContent` objects.
-- **Description**: Represents the response from processing a file, containing the processed file contents.
+- **Description**: Represents a response that contains the processed contents of a file.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](<../../interfaces/response.py.md#driverresponse>)
 
@@ -62,16 +62,16 @@ The [`process_file`](<#process_file>) function is the main component that proces
 ### process\_file<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file.process_file}} -->
 [View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file.py#L22>)
 
-Processes a file based on the specified parser and returns the processed content.
+Processes a file based on the specified parser type in the request.
 - **Inputs**:
     - `request`: An instance of `ProcessFileRequest` containing the file path and parser type.
 - **Logic and Control Flow**:
-    - Check if the `parser` attribute of `request` is `Parser.PDF`.
-    - If the parser is `Parser.PDF`, import the [`run_process_pdf`](<process_file_pdf.py.md#run_process_pdf>) function from the specified module.
-    - Open the file at `request.file_path` in binary read mode and read its contents into a `BytesIO` object.
-    - Set the `name` attribute of the `BytesIO` object to the file path.
-    - Call [`run_process_pdf`](<process_file_pdf.py.md#run_process_pdf>) with the `BytesIO` object and return a [`ProcessFileResponse`](<#processfileresponse>) with the processed contents.
-    - If no parser is found, raise an exception with the message 'No parser found for filetype'.
+    - Checks if the `parser` attribute of the `request` is `Parser.PDF`.
+    - If the parser is `Parser.PDF`, imports the [`run_process_pdf`](<process_file_pdf.py.md#run_process_pdf>) function from the specified module.
+    - Opens the file at the path specified in `request.file_path` in binary read mode.
+    - Reads the file content into a `BytesIO` object and sets its `name` attribute to the file path.
+    - Calls [`run_process_pdf`](<process_file_pdf.py.md#run_process_pdf>) with the `BytesIO` object and returns a [`ProcessFileResponse`](<#processfileresponse>) with the processed contents.
+    - Raises an exception if no suitable parser is found for the file type.
 - **Output**: An instance of [`ProcessFileResponse`](<#processfileresponse>) containing a list of `ProcessedFileContent`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file.ProcessFileResponse`](<#processfileresponse>)

@@ -6,9 +6,9 @@
 Tests for JavaScript/TypeScript import resolution using the `JsTsResolver` class.
 
 # Purpose
-The code is a test suite for the `JsTsResolver` class, which is responsible for resolving JavaScript and TypeScript import paths. The test suite uses the `pytest` framework to define a series of test cases that verify the functionality of the import resolution process. The tests cover various scenarios, including resolving relative imports from the same directory, parent directories, and child directories. It also tests the handling of imports that point to directories with index files, non-relative imports, and imports that do not correspond to existing files.
+The code is a test suite for a JavaScript/TypeScript import resolver, specifically for the `JsTsResolver` class. It uses the `pytest` framework to define and execute a series of tests that verify the functionality of resolving import paths in a mock project file structure. The tests cover various scenarios, including resolving relative imports from the same directory, parent directories, and child directories, as well as handling imports with index files, non-relative imports, and imports pointing to non-existent files.
 
-The test suite includes fixtures to set up a mock project file structure and an instance of the `JsTsResolver` class. Each test case uses these fixtures to simulate different import resolution scenarios. The tests ensure that the `JsTsResolver` correctly resolves paths, respects explicit file extensions, and handles complex relative paths. Additionally, the tests verify that the resolver returns `None` for non-existent imports and non-relative imports, ensuring robust handling of various import scenarios.
+The test suite also checks the resolver's ability to handle complex relative paths, normalize paths with redundant segments, and respect explicit file extensions in import statements. Each test case uses the `RawTreeSitterSymbolData` class to represent import symbols and verifies the expected resolved path using assertions. The suite ensures that the `JsTsResolver` correctly identifies and returns the appropriate file paths based on the given import statements and project file structure.
 # Imports and Dependencies
 
 ---
@@ -25,7 +25,7 @@ The test suite includes fixtures to set up a mock project file structure and an 
 ### TestJsTsResolver<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.TestJsTsResolver}} -->
 [View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.py#L13>)
 
-- **Description**: Tests JavaScript and TypeScript import resolution functionality by using fixtures to set up a mock project file structure and a resolver instance. It includes various test methods to verify the resolution of relative imports, handling of non-relative imports, and the behavior when imports point to non-existent files. The tests also cover scenarios such as resolving imports with index files, handling complex relative paths, and ensuring that explicit file extensions are respected.
+- **Description**: Tests JavaScript and TypeScript import resolution functionality by using fixtures to set up a mock project file structure and a resolver instance. It includes various test methods to verify the resolution of relative and non-relative imports, handling of explicit extensions, and normalization of paths.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.TestJsTsResolver.resolver`](<#testjstsresolverresolver>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.TestJsTsResolver.project_files`](<#testjstsresolverproject_files>)
@@ -79,15 +79,14 @@ Creates a mock project file structure for testing purposes.
 
 Tests the resolution of relative imports within the same directory using a JavaScript/TypeScript import resolver.
 - **Inputs**:
-    - `self`: Represents the instance of the class.
-    - `resolver`: An instance of `JsTsResolver` used to resolve imports.
-    - `project_files`: A set of `Path` objects representing the project's file structure.
+    - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
+    - `project_files`: A set of `Path` objects representing the mock project file structure.
 - **Logic and Control Flow**:
-    - Sets `current_file` to the path of the file from which the import is resolved.
-    - Creates a [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object `symbol` representing the import to resolve, with the name './index'.
-    - Calls `resolver.resolve_import` with `current_file`, `symbol`, and `project_files` to resolve the import path.
-    - Asserts that the resolved path is equal to '/project/src/utils/index.js'.
-- **Output**: No output is returned; the function asserts the correctness of the import resolution.
+    - Set `current_file` to the path of the file from which the import is being resolved.
+    - Create a [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object `symbol` representing the import to resolve, with the name './index'.
+    - Call `resolver.resolve_import` with `current_file`, `symbol`, and `project_files` to resolve the import path.
+    - Assert that the resolved path is equal to '/project/src/utils/index.js'.
+- **Output**: No return value; the function asserts that the resolved import path is correct.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -104,14 +103,14 @@ Tests the resolution of relative imports from a parent directory in a JavaScript
     - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
     - `project_files`: A set of `Path` objects representing the mock project file structure.
 - **Logic and Control Flow**:
-    - Sets `current_file` to the path of the file from which imports are resolved.
-    - Creates `symbol_2` representing an import from one directory level up.
-    - Creates `symbol_1` representing an import from two directory levels up.
-    - Calls `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import path for `symbol_2`.
-    - Asserts that the resolved path for `symbol_2` is `/project/src/index.ts`.
-    - Calls `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files` to resolve the import path for `symbol_1`.
-    - Asserts that the resolved path for `symbol_1` is `/project/lib/math.js`.
-- **Output**: None, but asserts that the resolved paths match the expected paths.
+    - Set `current_file` to the path of the file from which imports are resolved.
+    - Create `symbol_2` representing an import from one level up in the directory structure.
+    - Create `symbol_1` representing an import from two levels up in the directory structure.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import path for `symbol_2`.
+    - Assert that the resolved path for `symbol_2` is `/project/src/index.ts`.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files` to resolve the import path for `symbol_1`.
+    - Assert that the resolved path for `symbol_1` is `/project/lib/math.js`.
+- **Output**: The function does not return a value; it uses assertions to verify the correctness of import path resolutions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -124,17 +123,17 @@ Tests the resolution of relative imports from a parent directory in a JavaScript
 
 Tests the resolution of relative imports from a child directory in a JavaScript/TypeScript project.
 - **Inputs**:
+    - `self`: Represents the instance of the class `TestJsTsResolver`.
     - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
     - `project_files`: A set of `Path` objects representing the files in the project.
 - **Logic and Control Flow**:
-    - Set `current_file` to the path of the file from which imports are resolved (`/project/src/index.ts`).
-    - Create `symbol` representing an import from `./utils/helpers`.
-    - Create `symbol_2` representing an import from `./components/Button`.
-    - Call `resolver.resolve_import` with `current_file`, `symbol`, and `project_files` to resolve the import path for `symbol`.
-    - Assert that the resolved path for `symbol` is `/project/src/utils/helpers.ts`.
-    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import path for `symbol_2`.
-    - Assert that the resolved path for `symbol_2` is `/project/src/components/Button.ts`.
-- **Output**: None, but asserts that the resolved paths match the expected paths.
+    - Sets `current_file` to the path of the file `/project/src/index.ts`.
+    - Creates two [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects, `symbol` and `symbol_2`, representing import symbols for `./utils/helpers` and `./components/Button`, respectively.
+    - Calls `resolver.resolve_import` with `current_file`, `symbol`, and `project_files` to resolve the import path for `symbol`.
+    - Asserts that the resolved path for `symbol` is `/project/src/utils/helpers.ts`.
+    - Calls `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import path for `symbol_2`.
+    - Asserts that the resolved path for `symbol_2` is `/project/src/components/Button.ts`.
+- **Output**: No output is returned as the function is a test method that uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -150,13 +149,14 @@ Tests the resolution of imports that point to directories containing index files
     - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
     - `project_files`: A set of `Path` objects representing the mock project file structure.
 - **Logic and Control Flow**:
-    - Set `current_file` to the path of the current file being tested, `/project/src/index.ts`.
-    - Create `symbol_1` and `symbol_2` as instances of [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) representing import symbols for `./utils` and `./components`, respectively.
-    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files` to resolve the import path for `./utils`.
-    - Assert that the resolved path is `/project/src/utils/index.js`.
-    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import path for `./components`.
-    - Assert that the resolved path is `/project/src/components/index.ts`.
-- **Output**: None, but asserts that the resolved paths match the expected index file paths.
+    - Set `current_file` to the path '/project/src/index.ts'.
+    - Create `symbol_1` representing an import from './utils'.
+    - Create `symbol_2` representing an import from './components'.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files` to resolve the import path for './utils'.
+    - Assert that the resolved path is '/project/src/utils/index.js'.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import path for './components'.
+    - Assert that the resolved path is '/project/src/components/index.ts'.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -167,16 +167,15 @@ Tests the resolution of imports that point to directories containing index files
 #### TestJsTsResolver\.test\_non\_relative\_import\_returns\_none<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.TestJsTsResolver.test_non_relative_import_returns_none}} -->
 [View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.py#L184>)
 
-Tests that non-relative imports return None when resolved.
+Tests that non-relative imports return `None` when resolved.
 - **Inputs**:
-    - `self`: Represents the instance of the class.
     - `resolver`: An instance of `JsTsResolver` used to resolve imports.
     - `project_files`: A set of `Path` objects representing the project's file structure.
 - **Logic and Control Flow**:
-    - Defines `current_file` as the path to the file '/project/src/index.ts'.
-    - Creates three [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects (`symbol`, `symbol_2`, `symbol_3`) representing non-relative import symbols.
-    - Calls `resolver.resolve_import` with `current_file`, each symbol, and `project_files`, asserting that the result is `None` for each call.
-- **Output**: No output is returned; the function asserts that non-relative imports resolve to `None`.
+    - Set `current_file` to the path of the file being tested, `/project/src/index.ts`.
+    - Create three [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects (`symbol`, `symbol_2`, `symbol_3`) representing non-relative imports.
+    - Call `resolver.resolve_import` with `current_file`, each `symbol`, and `project_files`, and assert that the result is `None` for each call.
+- **Output**: No output is returned; the function uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -193,7 +192,7 @@ Tests that imports pointing to non-existent files return None.
     - `project_files`: A set of `Path` objects representing the files in the project.
 - **Logic and Control Flow**:
     - Set `current_file` to the path '/project/src/index.ts'.
-    - Create `symbol_1` and `symbol_2` as instances of [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) with names './non-existent' and '../missing/file', respectively, both representing import symbols pointing to non-existent files.
+    - Create `symbol_1` and `symbol_2` as instances of [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) with non-existent import paths.
     - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files`, and assert that the result is `None`.
     - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files`, and assert that the result is `None`.
 - **Output**: None
@@ -209,17 +208,14 @@ Tests that imports pointing to non-existent files return None.
 
 Tests the resolution of complex relative paths with multiple '../' segments in JavaScript/TypeScript imports.
 - **Inputs**:
-    - `self`: Reference to the instance of the class.
     - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
     - `project_files`: A set of `Path` objects representing the mock project file structure.
 - **Logic and Control Flow**:
     - Set `current_file` to the path of the test file '/project/test/unit.test.ts'.
-    - Create `symbol_1` with a relative path '../src/utils/helpers' and `symbol_2` with '../lib/math'.
-    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files` to resolve the path for `symbol_1`.
-    - Assert that the resolved path for `symbol_1` is '/project/src/utils/helpers.ts'.
-    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the path for `symbol_2`.
-    - Assert that the resolved path for `symbol_2` is '/project/lib/math.js'.
-- **Output**: No output is returned; assertions validate the expected behavior.
+    - Create `symbol_1` with a relative path '../src/utils/helpers' and `symbol_2` with '../lib/math', both as [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files`, and assert that the result is '/project/src/utils/helpers.ts'.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files`, and assert that the result is '/project/lib/math.js'.
+- **Output**: No output is returned; assertions validate the expected resolved paths.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -230,17 +226,17 @@ Tests the resolution of complex relative paths with multiple '../' segments in J
 #### TestJsTsResolver\.test\_normalized\_paths<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.TestJsTsResolver.test_normalized_paths}} -->
 [View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.py#L317>)
 
-Tests if paths with redundant segments are normalized correctly by the [`resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>) method.
+Tests if paths with redundant segments are normalized correctly by the `JsTsResolver`.
 - **Inputs**:
     - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
     - `project_files`: A set of `Path` objects representing the project's file structure.
 - **Logic and Control Flow**:
-    - Set `current_file` to the path of the file being tested, `/project/src/components/Button.ts`.
-    - Create `symbol_1` with a path containing redundant segments, `./../utils/helpers`.
-    - Create `symbol_2` with another path containing redundant segments, `../components/../index`.
-    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files`, and assert that the result is `/project/src/utils/helpers.ts`.
-    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files`, and assert that the result is `/project/src/index.ts`.
-- **Output**: No output is returned; assertions validate the expected behavior.
+    - Set `current_file` to the path of the file '/project/src/components/Button.ts'.
+    - Create `symbol_1` with a path containing redundant segments './../utils/helpers'.
+    - Create `symbol_2` with another redundant path '../components/../index'.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files`, and assert the result is '/project/src/utils/helpers.ts'.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files`, and assert the result is '/project/src/index.ts'.
+- **Output**: No output is returned; the function uses assertions to validate path normalization.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -255,13 +251,13 @@ Verifies that the exact `Path` object from `project_files` is returned when reso
 - **Inputs**:
     - `resolver`: An instance of `JsTsResolver` used to resolve imports.
 - **Logic and Control Flow**:
-    - Create specific `Path` objects `path1` and `path2` representing files in the project.
-    - Define a set `project_files` containing `path1` and `path2`.
-    - Create a [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object `symbol` representing an import with the name './index'.
+    - Create two specific `Path` objects, `path1` and `path2`, representing files in the project.
+    - Add these `Path` objects to a set called `project_files`.
+    - Create a [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object named `symbol` with a relative path `./index`.
     - Set `current_file` to a `Path` object representing a different file in the project.
     - Call `resolver.resolve_import` with `current_file`, `symbol`, and `project_files` to resolve the import.
     - Assert that the result of the import resolution is the exact `Path` object `path1`.
-- **Output**: The method does not return a value; it asserts that the resolved import is the exact `Path` object `path1`.
+- **Output**: The function does not return a value; it asserts that the resolved import is the exact `Path` object `path1`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -278,12 +274,12 @@ Tests if explicit file extensions in import statements are correctly resolved by
     - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
     - `project_files`: A set of `Path` objects representing the files in the project.
 - **Logic and Control Flow**:
-    - Defines `current_file` as the path to the file `/project/src/index.ts`.
-    - Creates three [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects (`symbol_1`, `symbol_2`, `symbol_3`) representing import statements with different file extensions.
-    - Calls `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files` to resolve the import with an explicit `.ts` extension and asserts the result is `/project/src/components/Button.ts`.
-    - Calls `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import with an explicit `.js` extension and asserts the result is `/project/lib/math.js`.
-    - Calls `resolver.resolve_import` with `current_file`, `symbol_3`, and `project_files` to resolve the import without an extension and asserts the result is `/project/src/components/Button.ts`.
-- **Output**: No output is returned as this is a test method; it uses assertions to validate behavior.
+    - Set `current_file` to the path of the current file being tested, `/project/src/index.ts`.
+    - Create three [`RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects, `symbol_1`, `symbol_2`, and `symbol_3`, representing different import paths with and without explicit extensions.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files` to resolve the import path and assert that the result is `/project/src/components/Button.ts`.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files` to resolve the import path and assert that the result is `/project/lib/math.js`.
+    - Call `resolver.resolve_import` with `current_file`, `symbol_3`, and `project_files` to resolve the import path and assert that the result is `/project/src/components/Button.ts`.
+- **Output**: The function does not return a value; it uses assertions to verify the correctness of import resolution.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
@@ -294,20 +290,20 @@ Tests if explicit file extensions in import statements are correctly resolved by
 #### TestJsTsResolver\.test\_explicit\_extension\_not\_found<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.TestJsTsResolver.test_explicit_extension_not_found}} -->
 [View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.py#L448>)
 
-Tests that imports with explicit extensions that do not exist return `None`.
+Tests that explicit file extensions in imports that do not exist return `None`.
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestJsTsResolver`.
     - `resolver`: An instance of `JsTsResolver` used to resolve import paths.
-    - `project_files`: A set of `Path` objects representing the files in the project.
+    - `project_files`: A set of `Path` objects representing the files available in the project.
 - **Logic and Control Flow**:
     - Set `current_file` to the path `/project/src/index.ts`.
-    - Create `symbol_1` with the name `./components/Button.jsx` and `symbol_2` with the name `./utils/helpers.mjs`, both representing import symbols.
+    - Create `symbol_1` representing an import with the path `./components/Button.jsx`.
+    - Create `symbol_2` representing an import with the path `./utils/helpers.mjs`.
     - Call `resolver.resolve_import` with `current_file`, `symbol_1`, and `project_files`, and assert that the result is `None`.
     - Call `resolver.resolve_import` with `current_file`, `symbol_2`, and `project_files`, and assert that the result is `None`.
-- **Output**: Returns `None` if the import with the explicit extension does not exist in `project_files`.
+- **Output**: No output is returned; the function uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<js_ts_resolver.py.md#jstsresolverresolve_import>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import`](<../base.py.md#importresolverresolve_import>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver_test.TestJsTsResolver`](<#testjstsresolver>)  (Base Class)
 
 

@@ -6,7 +6,7 @@
 A JavaScript and TypeScript symbol parser using a tree-sitter driver.
 
 # Purpose
-The code defines a class `JsTsParser` that extends the `SymbolParser` class. It is designed to parse JavaScript and TypeScript code by setting the `language` attribute to `"js_ts"`. The `fqn_delimiter` is set to `"."`, which indicates the delimiter used for fully qualified names. The `tree` attribute is assigned the `JsTsDriverTree` class, which likely provides the necessary functionality to parse the syntax tree of JavaScript and TypeScript code. This code provides narrow functionality, specifically for parsing and handling JavaScript and TypeScript symbols.
+The code defines a class `JsTsParser` that extends the `SymbolParser` class. It is designed to parse JavaScript and TypeScript code, as indicated by the `language` attribute set to "js_ts". The `fqn_delimiter` attribute specifies the delimiter for fully qualified names as a period (`.`). The `tree` attribute is assigned the `JsTsDriverTree` class, which likely provides the functionality to parse and represent the syntax tree of JavaScript and TypeScript code. This code provides narrow functionality, specifically for parsing and handling JavaScript and TypeScript syntax trees.
 # Imports and Dependencies
 
 ---

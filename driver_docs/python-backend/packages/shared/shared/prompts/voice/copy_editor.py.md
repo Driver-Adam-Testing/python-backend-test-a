@@ -3,23 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A system message prompt for a technical copy editor to refine technical documents by removing unnecessary content.
+A prompt for a technical copy editor to refine technical documents by removing unnecessary content.
 
 # Purpose
-The code defines two constants, `PROMPT` and `MESSAGE`, which are used for configuring a system message in a text processing or language model application. `PROMPT` is a multi-line string that contains detailed instructions for a technical copy editor, emphasizing the need for concise and specific documentation. It outlines various editing tasks, such as removing redundant or generic content and ensuring clarity and utility for the reader. `MESSAGE` is a dictionary with a key `role` set to "system" and a key `content` that holds the `PROMPT` string, likely used to pass the instructions to a system or API that processes or generates text based on these guidelines. This code provides narrow functionality focused on setting up a specific configuration for text editing tasks.
+The code defines a configuration for a language model prompt used in a technical document editing context. It sets a `PROMPT` string that instructs an AI to edit technical documents by focusing on clarity, conciseness, and relevance to the specific project. The instructions emphasize removing redundant, generic, or speculative content and ensuring the document is useful and information-rich. The `MESSAGE` dictionary contains a key-value pair where the key is `role` with the value `system`, and the key `content` holds the `PROMPT` string. This setup is likely used to guide an AI system in processing and refining technical documentation.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: ``str``
-- **Description**: A multi-line string that provides detailed instructions for editing technical documents. It emphasizes the importance of concise, direct, and information-rich writing, and outlines specific guidelines for removing unnecessary content and improving clarity.
-- **Use**: Serves as a guideline for technical copy editors to refine and enhance technical documentation.
+- **Type**: ``PROMPT``
+- **Description**: A multi-line string that contains detailed instructions for editing a technical document. It includes guidelines on how to make the document concise, specific, and free of unnecessary or redundant content.
+- **Use**: Used as a template or guideline for editing technical documents to improve clarity and relevance.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has the value `system`, and the `content` key is assigned the value of the `PROMPT` variable.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key is assigned the string value `system`, and the `content` key is assigned the value of the `PROMPT` variable.
 - **Use**: Used to define a system message with a specific role and content for a technical copy editing task.
 
 

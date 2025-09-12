@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utilities for Java code analysis and documentation using tree-sitter and structured prompts.
+Utilities for Java code analysis and documentation, including classes for handling Java methods, fields, classes, interfaces, and imports using tree-sitter.
 
 # Purpose
-The code is a Python module that provides functionality for analyzing and documenting Java source code. It uses static analysis to extract and organize information about Java classes, interfaces, methods, and fields. The module defines several classes, such as `JavaClassData`, `JavaInterfaceData`, `JavaMethodData`, and `JavaFieldData`, which represent the structure and metadata of Java code elements. These classes include methods for generating system and user prompts to facilitate the documentation process. The module also includes collections like `JavaClassRawSymbolCollection` and `JavaInterfaceRawSymbolCollection` that manage groups of Java symbols using tree-sitter for parsing and symbol linking.
-
-The module is designed to be part of a larger system that generates documentation for Java code. It defines internal representations (`IrData` and `IrCollection`) for Java symbols and uses these to create structured documentation prompts. The module does not define public APIs for external use but is intended to be integrated into a system that processes Java code to produce documentation. The code relies on external libraries such as `pydantic` for data validation and `tree-sitter` for parsing Java code.
+The code defines a set of classes and functions for analyzing and documenting Java source code. It uses the `tree-sitter` library to parse Java code and extract information about classes, interfaces, methods, and fields. The code provides functionality to create collections of Java symbols, such as classes and interfaces, and to generate documentation for these symbols using structured prompts. The classes `JavaClassData`, `JavaInterfaceData`, `JavaMethodData`, and `JavaFieldData` represent different types of Java symbols and include methods to generate system and user prompts for documentation purposes. The code also includes utility functions to map Java symbol kinds to their scope relations and to handle static analysis of Java code to extract symbol information. The primary purpose of this code is to facilitate the generation of technical documentation for Java source code by leveraging static analysis and structured prompts.
 # Imports and Dependencies
 
 ---
@@ -45,63 +43,63 @@ The module is designed to be part of a larger system that generates documentatio
 
 ---
 ### JAVA\_INTERFACES
-- **Type**: `set`
-- **Description**: Contains a single string element, 'interface', which represents Java interfaces. This set is used to categorize or identify Java interface types in the code.
+- **Type**: ``set``
+- **Description**: Contains a single string element 'interface'. This set is used to categorize or identify Java interface types in the code.
 - **Use**: Used to identify Java interface types.
 
 
 ---
 ### JAVA\_CLASSES
 - **Type**: `set`
-- **Description**: Contains a set of strings that represent Java class types. The set includes the strings 'class' and 'enum', which are common types in Java programming.
+- **Description**: Contains a set of strings that represent Java class types. The set includes the strings 'class' and 'enum', which are common Java class types.
 - **Use**: Used to identify or categorize Java class types in the code.
 
 
 ---
 ### JAVA\_METHODS
 - **Type**: `set`
-- **Description**: Contains a single string element, 'method', which represents a Java method. This set is part of a collection of sets that categorize different Java language constructs.
-- **Use**: Used to identify and categorize Java methods in the context of the code.
+- **Description**: Contains a single string element 'method'. This set is used to represent Java methods in the context of the code.
+- **Use**: Used to categorize or identify Java methods.
 
 
 ---
 ### JAVA\_FIELDS
 - **Type**: `set`
-- **Description**: Contains a single string element, 'field', which represents a category of Java symbols related to fields in Java code.
-- **Use**: Used to categorize or identify Java field symbols in the context of the code.
+- **Description**: Contains a single string element 'field'. This set is used to categorize or identify Java fields in the context of the code.
+- **Use**: Used to represent Java fields in the code.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_JAVA
 - **Type**: ``str``
-- **Description**: A multi-line string that serves as a prompt for a system that generates documentation for Java code. It instructs the system to act as an expert Java programmer and documentation expert, focusing on explaining technical details and the purpose of software.
+- **Description**: A multi-line string that serves as a prompt for a system designed to generate documentation for Java code. It instructs the system to act as an expert Java programmer and documentation expert, focusing on explaining technical details and the purpose of software.
 - **Use**: Used as a prompt to guide the system in generating detailed documentation for Java code.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_JAVA
 - **Type**: ``str``
-- **Description**: A string variable that contains a prompt for a Java programmer and documentation expert. The prompt instructs the expert to write detailed documentation for small and short Java source code files, emphasizing clarity and brevity.
+- **Description**: A string variable that contains a prompt for a Java programmer and documentation expert. The prompt instructs the expert to write detailed documentation for small and short Java source code files.
 - **Use**: Used to provide a specific prompt for generating documentation for small Java source code files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A string variable that contains a prompt for users to explain the purpose of a source code file. The prompt guides users to write 1 or 2 paragraphs without using speculative language and suggests considering specific questions about the code's functionality and components.
-- **Use**: Used to instruct users on how to describe the purpose of a source code file.
+- **Description**: A string variable that contains a prompt for users to explain the purpose of a source code file. The prompt guides users to consider specific questions about the code's functionality, components, and interfaces.
+- **Use**: Used to provide a structured prompt for users to describe the purpose of a source code file.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` variable is a string that contains a prompt for explaining the purpose of a small piece of source code. It instructs the user to provide a concise explanation in a single paragraph, focusing on the functionality of the code.
-- **Use**: Used to guide users in summarizing the purpose of small source code snippets.
+- **Description**: A string variable that contains a prompt for users to explain the purpose of a given code snippet in a concise manner. The prompt encourages users to consider the scope and functionality of the code.
+- **Use**: Used to guide users in providing a brief explanation of a code snippet's purpose.
 
 
 ---
 ### INTERFACES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
+- **Type**: ``str``
 - **Description**: A multi-line string that provides instructions for documenting Java interfaces. It includes a JSON schema that specifies how to format the documentation output.
 - **Use**: Used to guide the documentation process for Java interfaces by providing a structured format and specific instructions.
 
@@ -109,50 +107,50 @@ The module is designed to be part of a larger system that generates documentatio
 ---
 ### INTERFACES\_FOUND\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: This variable is a multi-line string that provides instructions for summarizing an interface in a given code. It guides the user to provide detailed explanations for complex interfaces and shorter descriptions for simpler ones.
-- **Use**: Used to prompt users to summarize interfaces in code with appropriate detail based on complexity.
+- **Description**: A multi-line string that provides instructions for summarizing an interface in a given code. It includes guidelines on how to describe interfaces based on their complexity.
+- **Use**: Used as a prompt to guide users in summarizing interfaces in code.
 
 
 ---
 ### CLASSES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: A multi-line string that provides a detailed prompt for documenting Java classes. It instructs the user to describe a Java class using a specific JSON schema, focusing on the class's description, fields, and modifiers.
-- **Use**: Used as a system prompt to guide users in documenting Java classes according to a predefined JSON schema.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides a system prompt for documenting Java classes. It instructs the user to write detailed documentation for Java classes using a specific JSON schema.
+- **Use**: Used as a system prompt to guide the documentation process for Java classes.
 
 
 ---
 ### CLASSES\_FOUND\_USER\_PROMPT
-- **Type**: `str`
+- **Type**: ``str``
 - **Description**: A multi-line string that provides instructions for summarizing a class in a given code. It includes guidelines on how to describe classes based on their complexity.
-- **Use**: Used as a prompt template for generating class documentation summaries.
+- **Use**: Used as a prompt to guide users in summarizing classes in code.
 
 
 ---
 ### METHODS\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: A multi-line string that provides a detailed prompt for documenting Java class methods. It instructs the user to describe a method using a specific JSON schema, which includes fields for a single sentence description, inputs, control flow, output, and modifiers.
-- **Use**: Used as a system prompt to guide the documentation of Java class methods in a structured format.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides a detailed prompt for documenting Java class methods. It includes instructions for describing the method using a specific JSON schema, which includes fields for a single sentence description, inputs, control flow, output, and modifiers.
+- **Use**: Used as a system prompt to guide the generation of documentation for Java class methods.
 
 
 ---
 ### METHODS\_FOUND\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for summarizing a method in a given code. It includes guidelines on describing the inputs, control flow, logic, and output of the method.
-- **Use**: Used as a prompt to guide users in documenting methods by providing detailed explanations based on the complexity of the method.
+- **Description**: A multi-line string that serves as a template for summarizing methods in provided code. It includes instructions on how to describe the method's inputs, control flow, logic, and output.
+- **Use**: Used as a prompt template for generating method summaries.
 
 
 ---
 ### FIELDS\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: ``str``
-- **Description**: A multi-line string that provides a system prompt for documenting Java fields. It instructs the user to describe a field using a specific JSON schema, focusing on technical details and the purpose of the field.
-- **Use**: Used as a system prompt to guide the documentation of Java fields in a structured format.
+- **Type**: `str`
+- **Description**: A multi-line string that provides instructions for documenting Java fields. It includes a JSON schema that specifies the structure of the documentation output.
+- **Use**: Used to guide the generation of documentation for Java fields by providing a template and instructions.
 
 
 ---
 ### FIELDS\_FOUND\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for summarizing a field in a code snippet. It guides the user to provide a detailed description based on the complexity of the field.
-- **Use**: Used as a prompt template for users to document fields in code.
+- **Description**: A multi-line string that provides instructions for summarizing a field in a code snippet. It includes guidelines on how to describe fields based on their complexity.
+- **Use**: Used as a prompt to guide users in documenting fields in code.
 
 
 # Classes
@@ -167,7 +165,7 @@ The module is designed to be part of a larger system that generates documentatio
     - `inputs`: Contains a list of input arguments for the method.
     - `control_flow`: Represents the control flow elements of the method.
     - `output`: Describes the output of the method in a bulleted format.
-- **Description**: Represents data related to a Java method, including its description, modifiers, inputs, control flow, and output. It provides class methods to generate system and user prompts for documenting Java methods, and it raises errors for unsupported operations like child handling.
+- **Description**: Represents data related to a Java method, including its description, modifiers, inputs, control flow, and output. It provides class methods to generate system and user prompts for documenting Java methods, and it raises errors for unsupported operations like handling children.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaMethodData.system_prompt`](<#javamethoddatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaMethodData.user_prompt`](<#javamethoddatauser_prompt>)
@@ -186,13 +184,13 @@ The module is designed to be part of a larger system that generates documentatio
 Generates a system prompt string for documenting Java methods.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol to document.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
-    - Creates an empty `Prompt` object.
-    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `METHODS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
-    - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Converts the `Prompt` into a string using `into_str()` and returns it.
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `METHODS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()` and return it.
 - **Output**: A string representing the system prompt for documenting Java methods.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -206,17 +204,17 @@ Generates a system prompt string for documenting Java methods.
 #### JavaMethodData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaMethodData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L222>)
 
-Generates a user prompt string based on the provided `RawSymbolData`.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing information about a Java method, including its name, symbol code, and optionally, file code.
+    - `symbol`: An instance of `RawSymbolData` containing the symbol's name, code, and optionally the full file code.
 - **Logic and Control Flow**:
-    - Create an empty `Prompt` object and append a component with the user prompt message and the method name from `symbol`.
-    - Append a component with a no-restatement style instruction for symbols.
-    - Append a component with the method code from `symbol.symbol_code`.
-    - Check if `symbol.file_code` is not empty; if true, append a component with the full file code from `symbol.file_code`.
+    - Create an empty `Prompt` object and append a component with the user prompt and symbol name.
+    - Append a component with no restatement style instruction for symbols.
+    - Append a component with the method code from the symbol.
+    - Check if `symbol.file_code` is present; if so, append a component with the full file code.
     - Convert the `Prompt` object into a string and return it.
-- **Output**: A string that represents the user prompt, including the method name, code, and optionally, the full file code.
+- **Output**: A string that represents the user prompt, including the symbol's name, method code, and optionally the full file code.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -246,10 +244,10 @@ Raises a NotImplementedError indicating that methods should not have children.
 Raises a NotImplementedError indicating that methods should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
+    - `child`: An instance of RawSymbolData representing a child symbol.
 - **Logic and Control Flow**:
-    - Raises a `NotImplementedError` with the message 'Methods should not have children'.
-- **Output**: Does not return a value; instead, it raises an exception.
+    - Raises a NotImplementedError with the message 'Methods should not have children'.
+- **Output**: A string, but in this case, it raises an exception instead of returning a value.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaMethodData`](<#javamethoddata>)  (Base Class)
 
 
@@ -260,11 +258,11 @@ Raises a NotImplementedError indicating that methods should not have children.
 Creates a default instance of the `JavaMethodData` class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with default or empty values for all attributes.
-    - Returns the newly created instance of the class.
-- **Output**: An instance of the `JavaMethodData` class with default values.
+    - Calls the constructor of the `JavaMethodData` class with default or empty values for all its attributes.
+    - Returns the newly created instance of `JavaMethodData`.
+- **Output**: An instance of `JavaMethodData` with default or empty values for its attributes.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<ir_common.py.md#rawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#listedbackticknamerawcontentwithnone>)
@@ -282,9 +280,9 @@ Creates a default instance of the `JavaMethodData` class with empty or default v
 - **Members**:
     - `type`: Specifies the type of the Java field.
     - `description`: Provides a description of the Java field.
-    - `use`: Indicates how the Java field is used.
+    - `use`: Describes how the Java field is used.
     - `modifiers`: Lists the modifiers applied to the Java field.
-- **Description**: Represents data related to a Java field, including its type, description, usage, and modifiers. It provides class methods to generate system and user prompts for documenting fields and raises errors for unsupported operations like child handling.
+- **Description**: Represents data related to a Java field, including its type, description, usage, and modifiers. It provides class methods to generate system and user prompts for documenting Java fields and raises errors for unsupported operations like child handling.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaFieldData.system_prompt`](<#javafielddatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaFieldData.user_prompt`](<#javafielddatauser_prompt>)
@@ -303,13 +301,13 @@ Creates a default instance of the `JavaMethodData` class with empty or default v
 Generates a system prompt string for documenting fields in Java.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to document.
 - **Logic and Control Flow**:
     - Creates an empty `Prompt` object.
     - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `FIELDS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
     - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
     - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Converts the `Prompt` into a string using `into_str()` and returns it.
+    - Converts the `Prompt` to a string using `into_str()` and returns it.
 - **Output**: A string representing the system prompt for documenting fields in Java.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -331,10 +329,10 @@ Generates a user prompt string based on the provided `RawSymbolData`.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the user prompt header and the symbol's name.
     - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a no-restatement style instruction for symbols.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the field code of the symbol.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the field code from the symbol.
     - Check if the symbol has a `file_code`. If it does, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code.
     - Convert the `Prompt` object into a string and return it.
-- **Output**: A string that represents the user prompt, constructed from the symbol's data.
+- **Output**: A string representation of the user prompt constructed from the `RawSymbolData`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -367,7 +365,7 @@ Raises a NotImplementedError indicating that fields should not have children.
     - `child`: An instance of `RawSymbolData` representing a child symbol.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'fields should not have children'.
-- **Output**: A `NotImplementedError` is raised, so no output is returned.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaFieldData`](<#javafielddata>)  (Base Class)
 
 
@@ -375,16 +373,17 @@ Raises a NotImplementedError indicating that fields should not have children.
 #### JavaFieldData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaFieldData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L293>)
 
-Creates and returns a default instance of the `JavaFieldData` class.
+Creates and returns a default instance of the `JavaFieldData` class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
 - **Logic and Control Flow**:
-    - Calls the constructor of the `JavaFieldData` class with default values for its fields.
-    - Sets the `type` field to an instance of [`FieldNameWithBackTickContent`](<ir_common.py.md#fieldnamewithbacktickcontent>) with an empty string as content.
-    - Sets the `description` and `use` fields to instances of [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>) with empty strings as content.
-    - Sets the `modifiers` field to an instance of [`ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#listedcommacombinedbacktickrawcontentnonone>) with an empty list as content.
-- **Output**: A new instance of the `JavaFieldData` class with default field values.
+    - Calls the class constructor `cls` to create a new instance of `JavaFieldData`.
+    - Initializes the `type` attribute with an empty [`FieldNameWithBackTickContent`](<ir_common.py.md#fieldnamewithbacktickcontent>).
+    - Initializes the `description` attribute with an empty [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>).
+    - Initializes the `use` attribute with an empty [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>).
+    - Initializes the `modifiers` attribute with an empty [`ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#listedcommacombinedbacktickrawcontentnonone>).
+- **Output**: A new instance of `JavaFieldData` with default values for its attributes.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<ir_common.py.md#fieldnamewithbacktickcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
@@ -423,11 +422,11 @@ Generates a system prompt string for documenting Java classes.
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
-    - Creates an empty `Prompt` object.
-    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
-    - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Converts the `Prompt` into a string using `into_str()` and returns it.
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()` and return it.
 - **Output**: A string representing the system prompt for documenting Java classes.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -447,10 +446,11 @@ Generates a user prompt string based on the provided symbol data.
     - `symbol`: An instance of `RawSymbolData` containing information about a Java class or symbol.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object and append a component with the class name from `symbol.name`.
-    - Append a predefined instruction component `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS`.
+    - Append a no-restatement style instruction to the prompt.
     - Append a component with the class code from `symbol.symbol_code`.
-    - Check if `symbol.file_code` is not empty; if true, append a component with the full file code from `symbol.file_code`.
-- **Output**: Returns the constructed user prompt as a string.
+    - Check if `symbol.file_code` is not empty; if true, append a component with the full file code.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representation of the constructed user prompt.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -468,10 +468,10 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `s
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing a symbol with a specific kind.
 - **Logic and Control Flow**:
-    - Define a mapping dictionary that associates `SymbolKind` values to `IrData` types or `None`.
-    - Use the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding `IrData` type from the mapping dictionary.
-    - Return the `IrData` type or `None` if the `symbol_kind` is not in the mapping.
-- **Output**: A type of `IrData` corresponding to the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
+    - Defines a mapping dictionary that associates `SymbolKind` values with corresponding `IrData` types or `None`.
+    - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding `IrData` type from the mapping dictionary.
+    - Returns the `IrData` type if found in the mapping, otherwise returns `None`.
+- **Output**: Returns a type of `IrData` corresponding to the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassData`](<#javaclassdata>)  (Base Class)
 
 
@@ -482,11 +482,11 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `s
 Maps a `RawSymbolData` child's `symbol_kind` to its corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a child symbol with a `symbol_kind` attribute.
+    - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` needs mapping.
 - **Logic and Control Flow**:
     - Define a mapping dictionary that associates `SymbolKind` values to `ScopeRelation` values.
     - Use the `get` method on the mapping dictionary to retrieve the `ScopeRelation` corresponding to the `child.symbol_kind`.
-- **Output**: A string representing the `ScopeRelation` field name associated with the `child.symbol_kind`, or `None` if no match is found.
+- **Output**: A string representing the `ScopeRelation` field name associated with the `child`'s `symbol_kind`, or `None` if no match is found.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassData`](<#javaclassdata>)  (Base Class)
 
 
@@ -497,15 +497,10 @@ Maps a `RawSymbolData` child's `symbol_kind` to its corresponding `ScopeRelation
 Creates and returns a default instance of the `JavaClassData` class with empty attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
 - **Logic and Control Flow**:
-    - Calls the constructor of the `JavaClassData` class.
-    - Initializes `modifiers` with an empty [`ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#listedcommacombinedbacktickrawcontentnonone>) object.
-    - Initializes `interfaces_implemented` with an empty [`ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>) object.
-    - Initializes `classes_extended` with an empty [`ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>) object.
-    - Initializes `description` with an empty [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>) object.
-    - Returns the newly created `JavaClassData` instance.
-- **Output**: A new instance of `JavaClassData` with default empty attributes.
+    - Calls the class constructor `cls` with default empty values for `modifiers`, `interfaces_implemented`, `classes_extended`, and `description`.
+- **Output**: A new instance of `JavaClassData` with default values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#listedcommacombinedbacktickrawcontentnonone>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
@@ -520,7 +515,7 @@ Creates and returns a default instance of the `JavaClassData` class with empty a
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `JavaClassData` or lists of `JavaClassData`.
-- **Description**: Manages a collection of Java class data, inheriting from `IrCollection`. It provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
+- **Description**: Manages a collection of Java class data, allowing for the organization and retrieval of class-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassCollection.from_llm`](<#javaclasscollectionfrom_llm>)
 - **Inherits From**:
@@ -538,7 +533,7 @@ Creates an instance of the class using LLM and a list of symbols.
     - `llm`: An instance of `ChatOpenAI` used for language model operations.
     - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to process.
 - **Logic and Control Flow**:
-    - Calls [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) with `JavaClassData`, `llm`, and `symbols_list` as arguments.
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `JavaClassData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
 - **Output**: An instance of the class that is created using the provided LLM and symbols list.
 - **Functions Called**:
@@ -552,9 +547,9 @@ Creates an instance of the class using LLM and a list of symbols.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L378>)
 
 - **Members**:
-    - `description`: Stores a description of the Java interface.
+    - `description`: Holds a description of the Java interface.
     - `_supported_child_ordering`: Defines the order of supported child elements like methods and fields.
-- **Description**: Represents data related to a Java interface, including its description and the order of its child elements. It provides methods to generate system and user prompts for documenting Java interfaces and maps child symbols to their respective internal representations.
+- **Description**: Represents data related to a Java interface, including its description and the order of its child elements. It provides methods to generate system and user prompts for documenting Java interfaces and maps child symbols to their respective intermediate representation (IR) data types.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceData.system_prompt`](<#javainterfacedatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceData.user_prompt`](<#javainterfacedatauser_prompt>)
@@ -573,13 +568,13 @@ Creates an instance of the class using LLM and a list of symbols.
 Generates a system prompt string for documenting Java interfaces.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol to document.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
-    - Create an empty `Prompt` object.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `INTERFACES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
-    - Append `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - Append `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Convert the `Prompt` to a string using `into_str()` and return it.
+    - Creates an empty `Prompt` object.
+    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `INTERFACES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Appends `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Appends `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Converts the `Prompt` to a string using `into_str()` and returns it.
 - **Output**: A string representing the system prompt for documenting Java interfaces.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -593,18 +588,18 @@ Generates a system prompt string for documenting Java interfaces.
 #### JavaInterfaceData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L399>)
 
-Generates a user prompt string based on the provided symbol data.
+Generates a user prompt string for a given Java interface symbol.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `JavaInterfaceData` to which this method belongs.
-    - `symbol`: An instance of `RawSymbolData` containing information about a Java symbol, including its name, symbol code, and optionally file code.
+    - `cls`: The class `JavaInterfaceData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing a Java interface symbol.
 - **Logic and Control Flow**:
-    - Create an empty `Prompt` object and append a component with the user prompt and the symbol's name.
-    - Append a component with a no-restatement style instruction for symbols.
-    - Append a component with the interface code from the symbol's `symbol_code`.
-    - Check if the symbol has `file_code`. If it does, append a component with the full file code.
+    - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the user prompt for interfaces and the symbol's name.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with no restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the interface code from the symbol's `symbol_code`.
+    - Check if the symbol has `file_code`. If true, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code.
     - Convert the `Prompt` object into a string and return it.
-- **Output**: A string that represents the user prompt, including the symbol's name, interface code, and optionally the full file code.
+- **Output**: A string that represents the user prompt for the given Java interface symbol.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -623,9 +618,9 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `s
     - `symbol`: An instance of `RawSymbolData` representing a symbol with a specific kind.
 - **Logic and Control Flow**:
     - Defines a mapping dictionary that associates `SymbolKind` values with corresponding `IrData` types or `None`.
-    - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding `IrData` type from the mapping dictionary.
-    - Returns the `IrData` type if found, otherwise returns `None`.
-- **Output**: Returns a type of `IrData` corresponding to the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
+    - Retrieves the `IrData` type from the mapping dictionary using the `symbol_kind` of the input `symbol`.
+    - Returns the corresponding `IrData` type or `None` if the `symbol_kind` is not in the mapping.
+- **Output**: Returns a type of `IrData` or `None` based on the `symbol_kind` of the input `symbol`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceData`](<#javainterfacedata>)  (Base Class)
 
 
@@ -638,9 +633,9 @@ Maps a `RawSymbolData` child's `symbol_kind` to its corresponding `ScopeRelation
 - **Inputs**:
     - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` needs mapping.
 - **Logic and Control Flow**:
-    - Define a mapping dictionary that associates `SymbolKind` values to `ScopeRelation` values.
-    - Use the `get` method on the mapping dictionary to retrieve the `ScopeRelation` corresponding to the `child.symbol_kind`.
-- **Output**: A string representing the `ScopeRelation` field name associated with the `child`'s `symbol_kind`, or `None` if no match is found.
+    - Defines a mapping dictionary that associates `SymbolKind` values with `ScopeRelation` values.
+    - Uses the `get` method on the mapping dictionary to retrieve the `ScopeRelation` corresponding to the `child.symbol_kind`.
+- **Output**: Returns a `ScopeRelation` field name as a string that corresponds to the `child.symbol_kind`, or `None` if no match is found.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceData`](<#javainterfacedata>)  (Base Class)
 
 
@@ -648,13 +643,13 @@ Maps a `RawSymbolData` child's `symbol_kind` to its corresponding `ScopeRelation
 #### JavaInterfaceData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L433>)
 
-Creates and returns a default instance of the class with empty `interfaces_extended` and `description` fields.
+Creates a default instance of the class with empty `interfaces_extended` and `description` fields.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
 - **Logic and Control Flow**:
     - Calls the class constructor `cls` with `interfaces_extended` set to an empty [`ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>) and `description` set to an empty [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>).
-- **Output**: A new instance of the class with default values for `interfaces_extended` and `description`.
+- **Output**: Returns an instance of the class with default values for `interfaces_extended` and `description`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
@@ -668,7 +663,7 @@ Creates and returns a default instance of the class with empty `interfaces_exten
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `JavaInterfaceData` or lists of `JavaInterfaceData`.
-- **Description**: Manages a collection of Java interface data, allowing for the organization and retrieval of interface-related information. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
+- **Description**: Manages a collection of Java interface data, allowing for the organization and retrieval of interface-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceCollection.from_llm`](<#javainterfacecollectionfrom_llm>)
 - **Inherits From**:
@@ -683,10 +678,10 @@ Creates and returns a default instance of the class with empty `interfaces_exten
 Creates an instance of the class using LLM and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used for language model operations.
-    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to process.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to use.
+    - `symbols_list`: A `RawSymbolCollection` object containing a list of symbols to process.
 - **Logic and Control Flow**:
-    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `JavaInterfaceData`, `llm`, and `symbols_list` as arguments.
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method of the class with `JavaInterfaceData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
 - **Output**: An instance of the class that is created using the provided LLM and symbols list.
 - **Functions Called**:
@@ -700,8 +695,8 @@ Creates an instance of the class using LLM and a list of symbols.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L449>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping Java import statement names to `RawSymbolData` objects.
-- **Description**: Manages a collection of Java import statements using the tree-sitter library. It provides a method to create an instance from static analysis of Java code, extracting import symbols and storing them in a dictionary. The class does not support creation from a language model and raises an error if attempted.
+    - `data`: Stores a dictionary mapping Java import names to `RawSymbolData` objects.
+- **Description**: Manages a collection of Java import statements using the tree-sitter library. It provides methods to create the collection from static analysis of Java code, specifically extracting import statements and storing them as `RawSymbolData` objects. The class does not support creation from language model analysis and raises a `NotImplementedError` if attempted.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaImportRawSymbolCollection.from_static_analysis`](<#javaimportrawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaImportRawSymbolCollection.from_llm`](<#javaimportrawsymbolcollectionfrom_llm>)
@@ -715,19 +710,20 @@ Creates an instance of the class using LLM and a list of symbols.
 #### JavaImportRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaImportRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L454>)
 
-Creates an instance of `JavaImportRawSymbolCollection` from static analysis of Java code, or returns `None` if no imports are found.
+Creates a `JavaImportRawSymbolCollection` instance from static analysis of Java code, extracting import symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string containing the Java source code to analyze.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
 - **Logic and Control Flow**:
-    - Call `JavaDriverTree.from_code` with `code` and `root_rel_path` to get a `driver_tree` object.
-    - Determine if the code requires multiple prompts by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code`.
+    - Call `JavaDriverTree.from_code` to create a driver tree from the provided code and path.
+    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
     - Initialize an empty dictionary `import_dict` to store import symbols.
-    - Iterate over each `ts_symbol` extracted from `driver_tree.extract_imports()`.
-    - For each `ts_symbol` with a non-`None` name, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` and add it to `import_dict`.
-    - Return `None` if `import_dict` is empty; otherwise, return an instance of `cls` initialized with `import_dict`.
-- **Output**: Returns an instance of `JavaImportRawSymbolCollection` containing import symbols, or `None` if no imports are found.
+    - Iterate over each symbol extracted by `driver_tree.extract_imports`.
+    - For each symbol with a non-None name, create a `RawSymbolData` instance using `RawSymbolData.from_tree_sitter_raw_symbol`.
+    - Add the `RawSymbolData` instance to `import_dict` with the symbol's name as the key.
+    - Return `None` if `import_dict` is empty; otherwise, return a new `JavaImportRawSymbolCollection` instance with `import_dict` as its data.
+- **Output**: Returns a `JavaImportRawSymbolCollection` instance containing import symbols if any are found, otherwise returns `None`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
@@ -740,14 +736,14 @@ Creates an instance of `JavaImportRawSymbolCollection` from static analysis of J
 #### JavaImportRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaImportRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L479>)
 
-Raises a NotImplementedError to indicate that static analysis should be used for Java imports instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for Java imports.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the Java code to analyze.
     - `root_rel_path`: A string representing the root relative path for the code.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with a message indicating that static analysis should be used for Java imports.
-- **Output**: This method does not return any value as it raises an exception.
+- **Output**: No output is produced as the method raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaImportRawSymbolCollection`](<#javaimportrawsymbolcollection>)  (Base Class)
 
 
@@ -755,12 +751,12 @@ Raises a NotImplementedError to indicate that static analysis should be used for
 #### JavaImportRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaImportRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L483>)
 
-Returns the `data` attribute of the instance.
+Returns the `data` attribute of the instance as a dictionary.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
     - Returns the `data` attribute.
-- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaImportRawSymbolCollection`](<#javaimportrawsymbolcollection>)  (Base Class)
 
 
@@ -770,8 +766,8 @@ Returns the `data` attribute of the instance.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L487>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping Java class names to `RawSymbolData` objects.
-- **Description**: Manages a collection of Java class symbols using tree-sitter for symbol linking. It provides methods to create the collection from static analysis, filtering for class symbols and constructing `RawSymbolData` for each class and its children. The class does not support creation from LLM and raises a `NotImplementedError` for such attempts.
+    - `data`: Holds a dictionary mapping Java class names to `RawSymbolData` objects.
+- **Description**: Represents a collection of Java class symbols using tree-sitter for symbol linking. It provides methods to create the collection from static analysis, filtering for class symbols and linking them with their child symbols. The class supports conversion of the collection to a dictionary format.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassRawSymbolCollection.from_static_analysis`](<#javaclassrawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassRawSymbolCollection.from_llm`](<#javaclassrawsymbolcollectionfrom_llm>)
@@ -785,21 +781,21 @@ Returns the `data` attribute of the instance.
 #### JavaClassRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L492>)
 
-Creates a collection of Java class symbols from static analysis of code.
+Creates a `JavaClassRawSymbolCollection` from static analysis of Java code, focusing on class symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to create an instance of the class.
+    - `cls`: The class itself, used to create an instance of `JavaClassRawSymbolCollection`.
     - `code`: A string containing the Java source code to analyze.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code.
-    - `reified_symbols`: An optional list of `ReifiedSymbol` objects representing symbols in the code.
+    - `reified_symbols`: An optional list of `ReifiedSymbol` objects representing symbols extracted from the code.
 - **Logic and Control Flow**:
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code` as the argument.
-    - Filter `reified_symbols` to include only those that are class or data structure definitions.
-    - Iterate over each filtered `reified_symbol` to extract its raw symbol data and its children's raw symbol data.
-    - For each `reified_symbol`, create a `RawSymbolData` object for the symbol and its children using `RawSymbolData.from_tree_sitter_raw_symbol`.
-    - Store the `RawSymbolData` objects in a dictionary with the symbol's name as the key.
-    - Return `None` if no class symbols are found; otherwise, return an instance of the class with the collected symbol data.
-- **Output**: Returns an instance of the class containing a dictionary of `RawSymbolData` objects for each class symbol found, or `None` if no class symbols are found.
+    - Checks if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code` as an argument.
+    - Filters the `reified_symbols` list to include only class and data structure symbols that are definitions.
+    - Iterates over each filtered `reified_symbol` to create `RawSymbolData` for each class symbol and its children.
+    - For each `reified_symbol`, creates child symbols from its children using `RawSymbolData.from_tree_sitter_raw_symbol`.
+    - Stores the `RawSymbolData` for each class symbol in the `class_raw_symbol_data` dictionary, keyed by the symbol's name.
+    - Returns `None` if `class_raw_symbol_data` is empty; otherwise, returns an instance of `JavaClassRawSymbolCollection` with the collected data.
+- **Output**: Returns an instance of `JavaClassRawSymbolCollection` containing the raw symbol data for class symbols, or `None` if no class symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
@@ -818,7 +814,7 @@ Raises a NotImplementedError indicating that static analysis should be used for 
     - `code`: A string representing the Java code to analyze.
     - `root_rel_path`: A string representing the root relative path for the Java code.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with a message indicating that static analysis should be used for Java classes.
+    - Raises a NotImplementedError with the message 'Static analysis should be used for Java classes'.
 - **Output**: No output is returned as the method raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassRawSymbolCollection`](<#javaclassrawsymbolcollection>)  (Base Class)
 
@@ -827,7 +823,7 @@ Raises a NotImplementedError indicating that static analysis should be used for 
 #### JavaClassRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaClassRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L559>)
 
-Returns the `data` attribute of the instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
@@ -842,8 +838,8 @@ Returns the `data` attribute of the instance as a dictionary.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L563>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping interface names to `RawSymbolData` objects.
-- **Description**: Manages a collection of Java interface symbols using tree-sitter for symbol extraction and linking. It provides methods to create the collection from static analysis, focusing on interface symbols, and supports conversion to a dictionary format. The class does not support creation from language model analysis and raises a `NotImplementedError` for such attempts.
+    - `data`: Holds a dictionary mapping interface names to `RawSymbolData` objects.
+- **Description**: Manages a collection of Java interface symbols using tree-sitter for symbol extraction and linking. It provides methods to create the collection from static analysis, filtering for interface symbols, and optionally using reified symbols. The class does not support creation from LLM and raises a `NotImplementedError` for such attempts.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceRawSymbolCollection.from_static_analysis`](<#javainterfacerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceRawSymbolCollection.from_llm`](<#javainterfacerawsymbolcollectionfrom_llm>)
@@ -857,24 +853,24 @@ Returns the `data` attribute of the instance as a dictionary.
 #### JavaInterfaceRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L568>)
 
-Creates a collection of Java interface symbols from static analysis of code.
+Creates a `JavaInterfaceRawSymbolCollection` from static analysis of Java code, focusing on interface symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to create an instance of the class.
+    - `cls`: The class `JavaInterfaceRawSymbolCollection` itself, used to create an instance.
     - `code`: A string containing the Java source code to analyze.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code.
-    - `reified_symbols`: An optional list of [`ReifiedSymbol`](<symbol_common.py.md#reifiedsymbol>) objects representing pre-analyzed symbols.
+    - `reified_symbols`: An optional list of [`ReifiedSymbol`](<symbol_common.py.md#reifiedsymbol>) objects to filter for interface symbols; defaults to `None`.
 - **Logic and Control Flow**:
     - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code`.
     - Initialize an empty list `interface_symbols` to store interface symbols.
     - If `reified_symbols` is provided, filter it to include only interface symbols that are definitions.
-    - If `reified_symbols` is not provided, use `JavaDriverTree` to extract interface definitions from the code.
-    - For each interface symbol, create a [`ReifiedSymbol`](<symbol_common.py.md#reifiedsymbol>) if necessary and add it to `interface_symbols`.
+    - If `reified_symbols` is not provided, use `JavaDriverTree.from_code` to extract interface definitions directly from the code.
+    - For each extracted or filtered interface symbol, create a [`ReifiedSymbol`](<symbol_common.py.md#reifiedsymbol>) if necessary and append it to `interface_symbols`.
     - Initialize an empty dictionary `interface_raw_symbol_data` to store raw symbol data.
-    - For each `reified_sym` in `interface_symbols`, create child symbols from its children and store them in `children`.
-    - Create `RawSymbolData` for each `reified_sym` and store it in `interface_raw_symbol_data` using the symbol's name as the key.
-    - Return `None` if `interface_raw_symbol_data` is empty, otherwise return an instance of the class with `interface_raw_symbol_data`.
-- **Output**: Returns an instance of the class containing a dictionary of `RawSymbolData` for each interface symbol, or `None` if no interface symbols are found.
+    - For each `reified_sym` in `interface_symbols`, extract its raw symbol and create child symbols from its children.
+    - Create `RawSymbolData` for each symbol and store it in `interface_raw_symbol_data` using the symbol's name as the key.
+    - Return `None` if `interface_raw_symbol_data` is empty; otherwise, return an instance of `JavaInterfaceRawSymbolCollection` with the collected data.
+- **Output**: Returns an instance of `JavaInterfaceRawSymbolCollection` containing the raw symbol data for interface symbols, or `None` if no interface symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#drivertreefrom_code>)
@@ -890,14 +886,14 @@ Creates a collection of Java interface symbols from static analysis of code.
 #### JavaInterfaceRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L649>)
 
-Raises a NotImplementedError indicating that static analysis should be used for Java interfaces.
+Raises a NotImplementedError to indicate that static analysis should be used for Java interfaces instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the Java code to analyze.
-    - `root_rel_path`: A string representing the root relative path of the Java code.
+    - `root_rel_path`: A string representing the root relative path for the Java code.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with a message indicating that static analysis should be used for Java interfaces.
-- **Output**: Does not return a value; instead, it raises an exception.
+- **Output**: Does not return any value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceRawSymbolCollection`](<#javainterfacerawsymbolcollection>)  (Base Class)
 
 
@@ -905,12 +901,12 @@ Raises a NotImplementedError indicating that static analysis should be used for 
 #### JavaInterfaceRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/java.py#L653>)
 
-Returns the `data` attribute of the instance.
+Returns the `data` attribute of the instance as a dictionary.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
     - Returns the `data` attribute.
-- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/java.JavaInterfaceRawSymbolCollection`](<#javainterfacerawsymbolcollection>)  (Base Class)
 
 
@@ -925,10 +921,10 @@ Maps a given `SymbolKind` to its corresponding `ScopeRelation` in Java.
 - **Inputs**:
     - `symbol_kind`: A `SymbolKind` enumeration value representing the kind of symbol to map.
 - **Logic and Control Flow**:
-    - Defines a dictionary `mapping` that associates `SymbolKind` values with `ScopeRelation` values.
+    - Defines a dictionary `mapping` that associates each `SymbolKind` with a `ScopeRelation`.
     - Uses the `get` method on the `mapping` dictionary to retrieve the `ScopeRelation` for the given `symbol_kind`.
-    - Returns `ScopeRelation.METHOD` as the default if `symbol_kind` is not found in the `mapping`.
-- **Output**: A `ScopeRelation` enumeration value that corresponds to the given `symbol_kind`, or `ScopeRelation.METHOD` if the `symbol_kind` is not in the mapping.
+    - Returns `ScopeRelation.METHOD` as the default if `symbol_kind` is not found in the dictionary.
+- **Output**: A `ScopeRelation` enumeration value that corresponds to the given `SymbolKind`.
 
 
 

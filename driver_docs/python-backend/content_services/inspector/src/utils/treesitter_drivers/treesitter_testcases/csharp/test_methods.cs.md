@@ -3,18 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test cases for various C# method definitions, including constructors, properties, and operators.
+Test cases for C# method definitions, including constructors, properties, methods, and events.
 
 # Purpose
-The code defines a C# namespace `Com.Example.Methods` that contains several classes demonstrating various method definitions and features in C#. The [`MethodExamples`](<#methodexamplesmethodexamples>) class showcases a wide range of method types, including constructors, static methods, instance methods, methods with parameters, generic methods, and asynchronous methods. It also includes examples of operator overloading, conversion operators, and a finalizer. The class demonstrates the use of properties, both auto-implemented and with backing fields, and includes an event declaration. Additionally, it provides examples of method modifiers such as `virtual`, `override`, and `abstract`, although the abstract method is not implemented as it would require an abstract class.
+The code defines a C# namespace `Com.Example.Methods` that contains several classes demonstrating various method definitions and features in C#. The primary class, [`MethodExamples`](<#methodexamplesmethodexamples>), showcases a wide range of method types and properties, including constructors, static and instance methods, methods with parameters, generic methods, and asynchronous methods. It also includes examples of operator overloading, conversion operators, and event handling. The class demonstrates the use of properties with backing fields, auto-implemented properties, and properties with initializers. Additionally, it includes a destructor for cleanup operations.
 
-The code also includes a `StringExtensions` static class, which provides extension methods for the [`string`](<#methodexamplesstring>) type, such as [`Reverse`](<#methodexamplesreverse>) and [`IsNullOrWhiteSpace`](<#stringextensionsisnullorwhitespace>). These methods extend the functionality of the [`string`](<#methodexamplesstring>) class without modifying its original implementation. Another class, `IndexerAndEventExamples`, demonstrates the use of indexers and events. It includes an indexer to access a private dictionary and defines both field-like and property-like events. This code serves as a comprehensive example of method and class features in C#, illustrating how to implement and use various C# language constructs.
+The code also includes a static class `StringExtensions` that provides extension methods for the [`string`](<#methodexamplesstring>) type, such as [`Reverse`](<#methodexamplesreverse>) and [`IsNullOrWhiteSpace`](<#stringextensionsisnullorwhitespace>). Another class, `IndexerAndEventExamples`, demonstrates the use of indexers and events, with a dictionary to store data and events to notify changes. This file serves as a comprehensive example of C# method and class features, illustrating how to implement and use various C# language constructs in a structured manner.
 # Imports and Dependencies
 
 ---
 - `System`
 - `System.Collections.Generic`
 - `System.Threading.Tasks`
+- `System.Text`
 
 
 # Classes
@@ -25,7 +26,7 @@ The code also includes a `StringExtensions` static class, which provides extensi
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Defines a class with various method examples, including constructors, properties, static and instance methods, generic methods, and operator overloading. It includes methods with different parameter types such as `out`, `ref`, and `in`, as well as an async method and a method with an expression body. The class also demonstrates the use of events, a finalizer, and conversion operators. Additionally, it contains a virtual method and an abstract method, which would typically be in an abstract class. The class provides a comprehensive set of examples for method definitions in C#.
+- **Description**: Defines a class with various method examples, including constructors, properties, static and instance methods, generic methods, and operator overloading. It includes methods with different parameter types such as `out`, `ref`, and `in`, as well as an async method. The class also demonstrates the use of events, extension methods, and local functions. It provides a `ToString` override and supports implicit and explicit conversion operators. The class includes a finalizer for cleanup and a virtual method for potential overriding in derived classes.
 - **Methods**:
     - [`Com.Example.Methods.MethodExamples.MethodExamples`](<#methodexamplesmethodexamples>)
     - [`Com.Example.Methods.MethodExamples.MethodExamples`](<#methodexamplesmethodexamples>)
@@ -63,7 +64,7 @@ Initializes a new instance of the `MethodExamples` class; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**: None
-- **Output**: No output; this constructor initializes an instance of the `MethodExamples` class without setting any properties or performing any actions.
+- **Output**: A new instance of the `MethodExamples` class.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -74,11 +75,11 @@ Initializes a new instance of the `MethodExamples` class; this is a constructor.
 Initializes a new instance of the `MethodExamples` class with specified `name` and `value` parameters, as this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `name`: A string that sets the `Name` property of the instance.
-    - `value`: An integer that sets the `Value` property of the instance.
+    - `name`: A `string` that sets the `Name` property of the instance.
+    - `value`: An `int` that sets the `Value` property of the instance.
 - **Control Flow**:
-    - Assigns the input `name` to the `Name` property of the instance.
-    - Assigns the input `value` to the `Value` property of the instance.
+    - Assigns the `name` parameter to the `Name` property of the instance.
+    - Assigns the `value` parameter to the `Value` property of the instance.
 - **Output**: There is no output as this is a constructor.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
@@ -87,13 +88,13 @@ Initializes a new instance of the `MethodExamples` class with specified `name` a
 #### MethodExamples\.Name<!-- {{#callable:Com.Example.Methods.MethodExamples.Name}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L23>)
 
-Provides a public get and set access to the `Name` property of type `string`.
+Represents a property for getting and setting the `Name` of the `MethodExamples` class.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Name` property allows getting and setting of a `string` value.
-    - The property is auto-implemented, meaning it does not have additional logic in its getter or setter.
-- **Output**: A `string` value representing the name associated with an instance of the `MethodExamples` class.
+    - The `Name` property is defined as a public auto-implemented property.
+    - It allows both getting and setting of the `Name` value.
+- **Output**: A `string` representing the name of the `MethodExamples` instance.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -101,14 +102,13 @@ Provides a public get and set access to the `Name` property of type `string`.
 #### MethodExamples\.Value<!-- {{#callable:Com.Example.Methods.MethodExamples.Value}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L24>)
 
-Provides access to the `Value` property, which is an integer with a private setter.
+Represents an integer property `Value` with a private setter.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Value` property is defined as an integer.
-    - The property has a private setter, meaning it can only be set within the class.
-    - The property can be accessed publicly to retrieve its value.
-- **Output**: An integer representing the `Value` property of the `MethodExamples` class.
+    - Defines an integer property `Value`.
+    - The setter for `Value` is private, meaning it can only be set within the class.
+- **Output**: An integer value representing the `Value` property.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -116,12 +116,12 @@ Provides access to the `Value` property, which is an integer with a private sett
 #### MethodExamples\.CreatedAt<!-- {{#callable:Com.Example.Methods.MethodExamples.CreatedAt}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L27>)
 
-Provides the creation date and time of the `MethodExamples` instance as a property.
+Provides a read-only `DateTime` property that initializes to the current date and time when the instance is created.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `CreatedAt` property is initialized with the current date and time when the `MethodExamples` instance is created.
-- **Output**: A `DateTime` object representing the creation date and time of the `MethodExamples` instance.
+    - The `CreatedAt` property is automatically initialized to the current date and time using `DateTime.Now` when an instance of the `MethodExamples` class is created.
+- **Output**: A `DateTime` object representing the creation time of the instance.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -135,7 +135,7 @@ Provides a property to get or set the `_description` field with a default value 
 - **Control Flow**:
     - If `_description` is `null`, the getter returns the string "No description".
     - The setter assigns the trimmed value of the input to `_description`.
-- **Output**: A `string` representing the description, either the value of `_description` or "No description" if `_description` is `null`.
+- **Output**: A `string` representing the description, either the current `_description` or "No description" if `_description` is `null`.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -148,7 +148,7 @@ Writes a static message to the console.
 - **Inputs**: None
 - **Control Flow**:
     - Calls `Console.WriteLine` with the string "Static method".
-- **Output**: No output is returned as the method is `void`.
+- **Output**: No output is returned.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -156,17 +156,17 @@ Writes a static message to the console.
 #### MethodExamples\.ProcessData<!-- {{#callable:Com.Example.Methods.MethodExamples.ProcessData}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L44>)
 
-Concatenates the `input` string `count` times and returns the result.
+Concatenates the input string a specified number of times and returns the result.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `input`: The string to be repeated and concatenated.
-    - `count`: The number of times to repeat the `input` string.
+    - `input`: The string to be repeated.
+    - `count`: The number of times to repeat the input string.
 - **Control Flow**:
     - Initialize a `StringBuilder` object named `result`.
     - Iterate from 0 to `count - 1`.
-    - In each iteration, append the `input` string to `result`.
-    - Convert the `StringBuilder` object to a string and return it.
-- **Output**: A string that consists of the `input` string repeated `count` times.
+    - In each iteration, append `input` to `result`.
+    - Convert `result` to a string and return it.
+- **Output**: A string that contains the `input` string repeated `count` times.
 - **Methods Called**:
     - [`Com.Example.Methods.MethodExamples.ToString`](<#methodexamplestostring>)
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
@@ -176,13 +176,12 @@ Concatenates the `input` string `count` times and returns the result.
 #### MethodExamples\.PrivateHelper<!-- {{#callable:Com.Example.Methods.MethodExamples.PrivateHelper}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L55>)
 
-Provides a placeholder for a private helper function with no current implementation.
+Provides a placeholder for a private helper method implementation.
 - **Modifiers**: `private`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as private, meaning it is accessible only within the `MethodExamples` class.
-    - The method currently contains no implementation, as indicated by the comment `// Implementation`.
-- **Output**: No output is produced as the method has no implementation.
+    - Contains no implementation details as it is a placeholder.
+- **Output**: No output is produced as the method is not implemented.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -211,7 +210,7 @@ Overrides the `ToString` method to return a string representation of the `Method
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - Return a formatted string that includes the class name `MethodExamples` and the value of the `Name` property.
+    - Returns a formatted string that includes the class name `MethodExamples` and the value of the `Name` property.
 - **Output**: A string that represents the `MethodExamples` object, formatted as `"MethodExamples: {Name}"`.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
@@ -224,7 +223,7 @@ Writes a message to the console indicating that a virtual method has been called
 - **Modifiers**: `public`, `virtual`
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `Console.WriteLine` with the string "Virtual method".
+    - Calls `Console.WriteLine` with the string "Virtual method" to output a message to the console.
 - **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
@@ -239,7 +238,7 @@ Declares an abstract method that must be implemented by derived classes.
 - **Control Flow**:
     - The method is declared as abstract, indicating it has no implementation in the current class.
     - Derived classes must provide an implementation for this method.
-- **Output**: No output is produced as the method is abstract and has no implementation.
+- **Output**: No output is produced by this method as it is abstract and has no implementation.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -251,9 +250,9 @@ Executes an asynchronous operation that waits for 100 milliseconds and then retu
 - **Modifiers**: `public`, `async`
 - **Inputs**: None
 - **Control Flow**:
-    - The method starts by awaiting a delay of 100 milliseconds using `Task.Delay(100)`.
-    - After the delay, the method returns the string "Async result".
-- **Output**: A `Task<string>` that, when awaited, provides the string "Async result".
+    - Waits asynchronously for 100 milliseconds using `Task.Delay(100)`.
+    - Returns the string "Async result" after the delay.
+- **Output**: A `Task<string>` that represents the asynchronous operation, which returns the string "Async result".
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -261,14 +260,14 @@ Executes an asynchronous operation that waits for 100 milliseconds and then retu
 #### MethodExamples\.TryGetValue<!-- {{#callable:Com.Example.Methods.MethodExamples.TryGetValue}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L89>)
 
-Attempts to retrieve a value associated with a specified key and returns a boolean indicating success.
+Attempts to retrieve a value associated with a specified key and returns a default value if the key is not found.
 - **Modifiers**: `public`
 - **Inputs**:
     - `key`: A string representing the key to search for in the collection.
-    - `value`: An output parameter that will hold the integer value associated with the specified key if found.
+    - `value`: An output parameter that will hold the integer value associated with the specified key if found, or a default value if not.
 - **Control Flow**:
     - Assigns the integer value 42 to the output parameter `value`.
-    - Returns `true` to indicate that the operation was successful.
+    - Returns `true` indicating that the operation was successful.
 - **Output**: A boolean value `true`, indicating that the method always succeeds in this implementation.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
@@ -282,9 +281,8 @@ Doubles the value of an integer passed by reference.
 - **Inputs**:
     - `value`: An integer passed by reference that will be modified.
 - **Control Flow**:
-    - The method takes an integer parameter by reference.
-    - The method multiplies the integer by 2.
-    - The modified integer is reflected in the caller's context.
+    - The method takes an integer parameter by reference using the `ref` keyword.
+    - The method multiplies the integer by 2, modifying the original value.
 - **Output**: No return value; the method modifies the input integer directly.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
@@ -298,8 +296,8 @@ Writes a formatted message to the console using a read-only `DateTime` parameter
 - **Inputs**:
     - `timestamp`: A `DateTime` value passed by reference as a read-only parameter.
 - **Control Flow**:
-    - Uses `Console.WriteLine` to output a formatted string that includes the `timestamp` value.
-- **Output**: No return value; the method writes directly to the console.
+    - Uses `Console.WriteLine` to output the string 'Processing: ' followed by the `timestamp` value.
+- **Output**: No return value (void method).
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -310,7 +308,7 @@ Writes a formatted message to the console using a read-only `DateTime` parameter
 Reverses the characters in a given string.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `str`: The input string to reverse.
+    - `str`: The string to reverse.
 - **Control Flow**:
     - Calls the [`Reverse`](<#stringextensionsreverse>) method on the input string `str` to reverse its characters.
     - Converts the reversed characters into an array using `ToArray()`.
@@ -326,7 +324,7 @@ Reverses the characters in a given string.
 #### MethodExamples\.\+<!-- {{#callable:Com.Example.Methods.MethodExamples.+}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L111>)
 
-Overloads the `+` operator to combine two [`MethodExamples`](<#methodexamplesmethodexamples>) objects by concatenating their `Name` properties and summing their `Value` properties.
+Overloads the `+` operator to combine two [`MethodExamples`](<#methodexamplesmethodexamples>) objects by concatenating their `Name` properties and adding their `Value` properties.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
     - `left`: The first [`MethodExamples`](<#methodexamplesmethodexamples>) object to combine.
@@ -334,7 +332,7 @@ Overloads the `+` operator to combine two [`MethodExamples`](<#methodexamplesmet
 - **Control Flow**:
     - Create a new [`MethodExamples`](<#methodexamplesmethodexamples>) object.
     - Concatenate the `Name` properties of `left` and `right`.
-    - Sum the `Value` properties of `left` and `right`.
+    - Add the `Value` properties of `left` and `right`.
     - Return the new [`MethodExamples`](<#methodexamplesmethodexamples>) object with the combined `Name` and `Value`.
 - **Output**: A new [`MethodExamples`](<#methodexamplesmethodexamples>) object with combined `Name` and `Value` properties.
 - **Methods Called**:
@@ -346,14 +344,14 @@ Overloads the `+` operator to combine two [`MethodExamples`](<#methodexamplesmet
 #### MethodExamples\.string<!-- {{#callable:Com.Example.Methods.MethodExamples.string}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L117>)
 
-Provides an implicit conversion from a `MethodExamples` object to a `string`, which is a conversion_operator_declaration.
+Provides an implicit conversion from a `MethodExamples` object to a `string`, as a conversion_operator_declaration.
 - **Modifiers**: `public`, `static`, `implicit`
 - **Inputs**:
-    - `obj`: An instance of the `MethodExamples` class to convert to a `string`.
+    - `obj`: A `MethodExamples` object to convert to a `string`.
 - **Control Flow**:
     - Calls the [`ToString`](<#methodexamplestostring>) method on the `obj` parameter.
     - Returns the result of the [`ToString`](<#methodexamplestostring>) method call.
-- **Output**: A `string` representation of the `MethodExamples` object, as defined by its [`ToString`](<#methodexamplestostring>) method.
+- **Output**: A `string` representation of the `MethodExamples` object.
 - **Methods Called**:
     - [`Com.Example.Methods.MethodExamples.ToString`](<#methodexamplestostring>)
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
@@ -363,14 +361,14 @@ Provides an implicit conversion from a `MethodExamples` object to a `string`, wh
 #### MethodExamples\.int<!-- {{#callable:Com.Example.Methods.MethodExamples.int}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L123>)
 
-Defines an explicit conversion operator to convert a `MethodExamples` object to an `int`, which is a conversion_operator_declaration.
+Defines an explicit conversion from a `MethodExamples` object to an `int`, which is a conversion_operator_declaration.
 - **Modifiers**: `public`, `static`, `explicit`
 - **Inputs**:
-    - `obj`: An instance of the `MethodExamples` class from which the `int` value will be extracted.
+    - `obj`: A `MethodExamples` object from which to extract the `Value` property for conversion.
 - **Control Flow**:
     - Access the `Value` property of the `obj` parameter.
     - Return the `Value` property as an `int`.
-- **Output**: The `int` value of the `Value` property from the `MethodExamples` object.
+- **Output**: The `Value` property of the `MethodExamples` object as an `int`.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -381,7 +379,7 @@ Defines an explicit conversion operator to convert a `MethodExamples` object to 
 Performs cleanup operations before the `MethodExamples` object is destroyed; this is a destructor.
 - **Inputs**: None
 - **Control Flow**:
-    - Executes cleanup code when the `MethodExamples` object is about to be destroyed.
+    - Executes cleanup code when the `MethodExamples` object is about to be destroyed by the garbage collector.
 - **Output**: No output is produced.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
@@ -395,8 +393,8 @@ Defines an event field-like named `ValueChanged` that can notify subscribers whe
 - **Inputs**: None
 - **Control Flow**:
     - Defines an event named `ValueChanged` of type `Action<string>`.
-    - Allows subscribers to attach event handlers that take a single `string` parameter.
-- **Output**: No direct output; the event notifies subscribers when triggered.
+    - Allows subscribers to attach event handlers that will be invoked when the event is raised.
+- **Output**: No direct output; the event notifies subscribers when it is raised.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -404,13 +402,12 @@ Defines an event field-like named `ValueChanged` that can notify subscribers whe
 #### MethodExamples\.GetDisplayName<!-- {{#callable:Com.Example.Methods.MethodExamples.GetDisplayName}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L138>)
 
-Returns a formatted string combining the `Name` and `Value` properties.
+Returns a formatted string that combines the `Name` and `Value` properties.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Uses an expression-bodied member to concatenate the `Name` and `Value` properties into a single string.
-    - Formats the string as `"{Name} ({Value})"`.
-- **Output**: A string that represents the `Name` and `Value` properties in a formatted manner.
+    - Uses an expression-bodied member to concatenate the `Name` and `Value` properties into a single string formatted as `"{Name} ({Value})"`.
+- **Output**: A string that represents the `Name` and `Value` properties in a specific format.
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -426,9 +423,9 @@ Calculates a complex value by using a local helper function to process two integ
 - **Control Flow**:
     - Defines a local function [`LocalHelper`](<#calculatecomplexlocalhelper>) that takes two integers `a` and `b`, multiplies them, and adds 10 to the result.
     - Calls [`LocalHelper`](<#calculatecomplexlocalhelper>) with `x` and `y` as arguments and stores the result.
-    - Calls [`LocalHelper`](<#calculatecomplexlocalhelper>) with `y` and `x` as arguments and adds the result to the previous call's result.
-    - Returns the sum of the two [`LocalHelper`](<#calculatecomplexlocalhelper>) calls.
-- **Output**: Returns an integer that is the sum of two calculations performed by the local helper function.
+    - Calls [`LocalHelper`](<#calculatecomplexlocalhelper>) with `y` and `x` as arguments and adds the result to the previous result.
+    - Returns the final calculated integer value.
+- **Output**: An integer that is the sum of the results from two calls to the local helper function.
 - **Methods Called**:
     - [`Com.Example.Methods.MethodExamples.CalculateComplex.LocalHelper`](<#calculatecomplexlocalhelper>)
 - **See also**: [`Com.Example.Methods.MethodExamples`](<#methodexamples>)  (Base Class)
@@ -441,7 +438,7 @@ Calculates a complex value by using a local helper function to process two integ
 
 - **Type**: `class`
 - **Modifiers**: `public`, `static`
-- **Description**: Provides extension methods for the `string` class, including a method to reverse the characters in a string and a method to check if a string is null or consists only of white-space characters.
+- **Description**: Provides extension methods for the `string` class. Includes methods to reverse a string and to check if a string is null or consists only of white-space characters.
 - **Methods**:
     - [`Com.Example.Methods.StringExtensions.Reverse`](<#stringextensionsreverse>)
     - [`Com.Example.Methods.StringExtensions.IsNullOrWhiteSpace`](<#stringextensionsisnullorwhitespace>)
@@ -455,7 +452,7 @@ Calculates a complex value by using a local helper function to process two integ
 Reverses the characters in a given string.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `str`: The input string to reverse.
+    - `str`: The string to reverse.
 - **Control Flow**:
     - Check if the input string `str` is null or empty.
     - If `str` is null or empty, return `str` as is.
@@ -476,10 +473,11 @@ Reverses the characters in a given string.
 Checks if a given string is null, empty, or consists only of white-space characters.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - ``str``: The string to check for null, empty, or white-space content.
+    - `str`: The string to check for null, empty, or white-space content.
 - **Control Flow**:
-    - Calls the `string.IsNullOrWhiteSpace` method with the input `str`.
-- **Output**: Returns `true` if the input string is null, empty, or consists only of white-space characters; otherwise, returns `false`.
+    - Call the `string.IsNullOrWhiteSpace` method with the input `str`.
+    - Return the result of the `string.IsNullOrWhiteSpace` method call.
+- **Output**: A boolean value indicating whether the input string is null, empty, or consists only of white-space characters.
 - **See also**: [`Com.Example.Methods.StringExtensions`](<#stringextensions>)  (Base Class)
 
 
@@ -490,7 +488,7 @@ Checks if a given string is null, empty, or consists only of white-space charact
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Manages a collection of key-value pairs using an indexer and provides mechanisms to handle events. The indexer allows access to the `_data` dictionary using a string key, enabling retrieval and assignment of values. The class defines two events: `DataChanged`, a field-like event, and `StatusChanged`, a property-like event with custom add and remove accessors.
+- **Description**: Provides an implementation of a class that includes an indexer and events. The indexer allows access to a private dictionary `_data` using a string key, enabling retrieval and assignment of values. The class also defines two events: `DataChanged`, which is a field-like event, and `StatusChanged`, which is a property-like event with custom add and remove accessors.
 - **Methods**:
     - [`Com.Example.Methods.IndexerAndEventExamples.[string key]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#callable:Com.Example.Methods.IndexerAndEventExamples.[string key]>)
     - [`Com.Example.Methods.IndexerAndEventExamples.DataChanged`](<#indexerandeventexamplesdatachanged>)
@@ -502,16 +500,15 @@ Checks if a given string is null, empty, or consists only of white-space charact
 #### IndexerAndEventExamples\.\[string key\]<!-- {{#callable:Com.Example.Methods.IndexerAndEventExamples.[string key]}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L177>)
 
-Provides an indexer to get or set values in a private dictionary using a string key.
+Provides an indexer to get or set values in the `_data` dictionary using a string key.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `key`: A string that represents the key to access the dictionary.
+    - `key`: A string that specifies the key to access the value in the `_data` dictionary.
 - **Control Flow**:
-    - If the indexer is used to get a value, it checks if the key exists in the `_data` dictionary.
-    - If the key exists, it returns the corresponding value.
-    - If the key does not exist, it returns `null`.
-    - If the indexer is used to set a value, it assigns the value to the specified key in the `_data` dictionary.
-- **Output**: Returns the value associated with the specified key if it exists; otherwise, returns `null`. When setting, it does not return a value.
+    - If the `get` accessor is called, it checks if the `_data` dictionary contains the specified `key`.
+    - If the `key` exists, it returns the associated value; otherwise, it returns `null`.
+    - If the `set` accessor is called, it assigns the specified value to the `key` in the `_data` dictionary.
+- **Output**: Returns the value associated with the specified `key` if it exists; otherwise, returns `null`. When setting, it does not return a value.
 - **Methods Called**:
     - [`Com.Example.Methods.MethodExamples.TryGetValue`](<#methodexamplestrygetvalue>)
 - **See also**: [`Com.Example.Methods.IndexerAndEventExamples`](<#indexerandeventexamples>)  (Base Class)
@@ -521,13 +518,13 @@ Provides an indexer to get or set values in a private dictionary using a string 
 #### IndexerAndEventExamples\.DataChanged<!-- {{#callable:Com.Example.Methods.IndexerAndEventExamples.DataChanged}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_methods.cs#L184>)
 
-Defines a field-like event named `DataChanged` that can notify subscribers when data changes.
+Represents an event field-like that triggers when data changes.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `DataChanged` event is declared as a public event of type `EventHandler`.
-    - Subscribers can add or remove event handlers to this event to respond to data changes.
-- **Output**: No direct output; the event facilitates communication between objects when data changes occur.
+    - Defines an event named `DataChanged` of type `EventHandler`.
+    - Allows other classes or methods to subscribe to or unsubscribe from the `DataChanged` event.
+- **Output**: No direct output; it provides a mechanism to notify subscribers when the event occurs.
 - **See also**: [`Com.Example.Methods.IndexerAndEventExamples`](<#indexerandeventexamples>)  (Base Class)
 
 
@@ -539,8 +536,8 @@ Provides an event_property_like for subscribing to and unsubscribing from the `S
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - When a handler is added, it is appended to the `_statusChanged` event handler list using the `+=` operator.
-    - When a handler is removed, it is removed from the `_statusChanged` event handler list using the `-=` operator.
+    - When a handler is added, it is appended to the `_statusChanged` event handler list.
+    - When a handler is removed, it is removed from the `_statusChanged` event handler list.
 - **Output**: Allows external code to subscribe to or unsubscribe from the `StatusChanged` event.
 - **See also**: [`Com.Example.Methods.IndexerAndEventExamples`](<#indexerandeventexamples>)  (Base Class)
 

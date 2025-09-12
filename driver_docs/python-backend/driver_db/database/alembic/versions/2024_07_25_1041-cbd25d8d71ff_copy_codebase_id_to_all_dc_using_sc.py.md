@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to copy codebase IDs to all derived contents using a SQL update query.
+Alembic migration script to copy codebase IDs to all derived contents using source content.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script is designed to update the `codebase_id` field in the `derived_contents` table. It does this by executing a SQL statement within the [`upgrade`](<#upgrade>) function. The SQL statement uses a common table expression (CTE) named `SourceCodebase` to select `derived_content_id` and `source_codebase_id` from the `derived_contents` table. It then updates the `codebase_id` in the `derived_contents` table with the `source_codebase_id` from the CTE where the `id` matches the `derived_content_id`.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script is designed to update the `codebase_id` field in the `derived_contents` table. It achieves this by executing a SQL statement that first creates a common table expression (CTE) named `SourceCodebase`. This CTE selects the `id` and `codebase_id` from the `derived_contents` table where there is a non-null `source_content_id`. The script then updates the `codebase_id` in the `derived_contents` table by setting it to the `source_codebase_id` from the CTE where the `id` matches the `derived_content_id`.
 
-The script includes metadata for Alembic, such as `revision`, `down_revision`, `branch_labels`, and `depends_on`, which are used to track the migration's position in the sequence of migrations. The [`upgrade`](<#upgrade>) function contains the logic to apply the migration, while the [`downgrade`](<#downgrade>) function is defined but does not contain any logic, indicating that this migration does not support automatic reversal. This script is intended to be part of a series of migrations that modify the database schema or data.
+The script defines two functions: [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>). The [`upgrade`](<#upgrade>) function contains the SQL logic to perform the update operation. The [`downgrade`](<#downgrade>) function is defined but does not contain any operations, indicating that this migration does not support automatic reversal. The script includes metadata for Alembic, such as `revision`, `down_revision`, `branch_labels`, and `depends_on`, which are used to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -21,28 +21,28 @@ The script includes metadata for Alembic, such as `revision`, `down_revision`, `
 ### revision
 - **Type**: ``str``
 - **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
-- **Use**: Used by Alembic to identify the current schema version in migration scripts.
+- **Use**: Used by Alembic to identify the current schema revision in migration scripts.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Used by Alembic to track the previous revision in the migration sequence.
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migration scripts by identifying the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration does not depend on any other migrations.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -54,17 +54,17 @@ The script includes metadata for Alembic, such as `revision`, `down_revision`, `
 Executes a SQL command to update the `codebase_id` in `derived_contents` based on a join with itself.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a Common Table Expression (CTE) named `SourceCodebase` to select `derived_content_id` and `source_codebase_id` from `derived_contents` by joining the table with itself on `source_content_id`.
-    - Filters the selection to include only rows where `source_content_id` is not null.
-    - Updates the `codebase_id` in `derived_contents` using the `source_codebase_id` from the CTE `SourceCodebase` where the `id` matches `derived_content_id`.
-- **Output**: No direct output; performs an update operation on the database.
+    - Defines a Common Table Expression (CTE) named `SourceCodebase` to select `derived_content_id` and `source_codebase_id` from `derived_contents` where `source_content_id` is not null.
+    - Joins `derived_contents` table with itself to get the `source_codebase_id` for each `derived_content_id`.
+    - Updates the `codebase_id` in `derived_contents` using the `source_codebase_id` from the CTE `SourceCodebase`.
+- **Output**: No return value; executes a SQL update operation on the database.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_25_1041-cbd25d8d71ff_copy_codebase_id_to_all_dc_using_sc.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_25_1041-cbd25d8d71ff_copy_codebase_id_to_all_dc_using_sc.py#L46>)
 
-Does not perform any operations and serves as a placeholder for a downgrade operation.
+Does not perform any operations and serves as a placeholder for a downgrade migration.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Contains no logic or control flow as it is an empty function.

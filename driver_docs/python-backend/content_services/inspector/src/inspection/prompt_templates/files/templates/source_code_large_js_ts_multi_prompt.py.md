@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating multi-prompt structures for large JavaScript and TypeScript source code analysis.
+Templates for generating multi-prompt structures for large JavaScript/TypeScript source code analysis.
 
 # Purpose
-The code defines a structured template for generating multi-prompt documentation specifically for JavaScript and TypeScript source code. It imports various components and utilities from different modules, which are used to construct prompts and analyze code. The main purpose is to create a template that can generate detailed documentation sections such as purpose, imports and dependencies, global variables, classes, interfaces, types, and functions. Each section is associated with specific collections and methods that extract relevant information from the source code through static analysis and language model processing.
+The code defines a structured prompting system for analyzing JavaScript and TypeScript source code. It imports various components and utilities from different modules to facilitate the extraction and organization of information from source code. The main functionality is to create a multi-prompt template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS`, which is used to generate structured prompts for different aspects of JavaScript and TypeScript code, such as imports, global variables, classes, interfaces, types, and functions. Each section of the template is associated with specific collections and methods that perform static analysis and leverage language model outputs to gather and format the relevant data.
 
-The template uses a combination of static analysis and language model outputs to populate each section with accurate data. The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS` variable is a list of tuples, where each tuple represents a section of the documentation. Each section includes a title, a method for extracting raw symbols, a method for processing these symbols, and an optional transformation function. This setup allows for the generation of comprehensive documentation by systematically analyzing and describing the components of JavaScript and TypeScript code.
+The code is organized into a series of tuples, each representing a different aspect of the source code to be analyzed. These tuples contain instructions and methods for extracting and processing information, such as `JsTsImportRawSymbolCollection.from_static_analysis` and `JsTsVariableCollection.from_llm`. The template is designed to be used in a larger system that requires detailed analysis and documentation of JavaScript and TypeScript codebases. The use of components like `Prompt` and `Component` indicates that the system is modular and can be extended or customized for different analysis needs.
 # Imports and Dependencies
 
 ---
@@ -40,8 +40,8 @@ The template uses a combination of static analysis and language model outputs to
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: A list of tuples where each tuple contains a string identifier, a section header, and a series of prompts or functions related to JavaScript and TypeScript code analysis. Each tuple is designed to handle different aspects of code such as purpose, imports, global variables, classes, interfaces, types, and functions.
-- **Use**: Used to define a structured template for generating prompts and processing JavaScript and TypeScript code analysis.
+- **Description**: Contains a list of tuples, each representing a different section of a multi-prompt template for JavaScript and TypeScript code analysis. Each tuple includes a section identifier, a section title, and a series of components or functions that generate or process prompt content for that section.
+- **Use**: Used to define and organize the structure of prompts for analyzing JavaScript and TypeScript code.
 
 
 

@@ -6,9 +6,9 @@
 Test cases for C# namespace definitions, including global, traditional, and file-scoped styles.
 
 # Purpose
-The code demonstrates the use of different namespace styles in C#, including global, traditional, and file-scoped namespaces. It defines several classes, interfaces, enums, and structs to illustrate how these namespaces can be organized and utilized. The `GlobalClass` is defined in the global namespace, while `TraditionalClass` and its nested classes are organized under the `Com.Example.Traditional` namespace, showcasing traditional and nested namespace styles. The file-scoped namespace `Com.Example.FileScoped` includes multiple types such as `FileScopedClass`, `FileScopedUtilities`, and `FileScopedRecord`, demonstrating the newer C# 10+ file-scoped namespace feature.
+The code defines a series of classes, interfaces, enums, and structs to demonstrate the use of both traditional and file-scoped namespaces in C#. It includes examples of global namespace declarations, traditional namespaces with nested structures, and file-scoped namespaces introduced in C# 10. The `GlobalClass` is defined in the global namespace, while `TraditionalClass` and its nested classes are organized under the `Com.Example.Traditional` namespace. The file-scoped namespace `Com.Example.FileScoped` contains multiple types, including `FileScopedClass`, `FileScopedUtilities`, and `FileScopedRecord`, showcasing the organization of code without the need for nested braces.
 
-The code also includes an abstract class `FileScopedAbstractClass` and its concrete implementation `FileScopedConcreteClass`, which also implements the `IFileScopedInterface`. This illustrates the use of inheritance and interface implementation within a file-scoped namespace. Additionally, the code defines a `FileScopedEnum` and a [`FileScopedStruct`](<#filescopedstructfilescopedstruct>), providing examples of enum and struct declarations in a file-scoped context. The presence of a namespace `FileScopedNoSeparator` at the end suggests a demonstration of namespace declaration without a separator, although it does not contain any types or members. Overall, the code serves as a comprehensive example of namespace usage and organization in C#.
+The file also illustrates the implementation of an interface and an abstract class within the file-scoped namespace. The `FileScopedConcreteClass` implements the `IFileScopedInterface` and extends the `FileScopedAbstractClass`, providing concrete implementations for abstract and interface methods. Additionally, the code includes utility methods and a record type, demonstrating the versatility of file-scoped namespaces in organizing related components. The presence of a namespace `FileScopedNoSeparator` at the end suggests a placeholder for further expansion or testing of namespace features.
 # Imports and Dependencies
 
 ---
@@ -24,7 +24,7 @@ The code also includes an abstract class `FileScopedAbstractClass` and its concr
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Defines a class in the global namespace with a single method `GlobalMethod` that writes a message to the console.
+- **Description**: Defines a class in the global namespace with a single method, `GlobalMethod`, which outputs a message to the console.
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.GlobalClass.GlobalMethod`](<#globalclassglobalmethod>)
 
@@ -34,11 +34,11 @@ The code also includes an abstract class `FileScopedAbstractClass` and its concr
 #### GlobalClass\.GlobalMethod<!-- {{#callable:FileScopedNoSeparator.Com.Example.FileScoped.GlobalClass.GlobalMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_namespaces.cs#L8>)
 
-Writes a message to the console indicating that the method is a global method.
+Writes a message to the console indicating it is a global method.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `Console.WriteLine` with the string "Global method" to output this message to the console.
+    - Call `Console.WriteLine` with the string "Global method".
 - **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.GlobalClass`](<#globalclass>)  (Base Class)
 
@@ -50,7 +50,7 @@ Writes a message to the console indicating that the method is a global method.
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Defines a class within the `Com.Example.Traditional` namespace. It contains a single method, `TraditionalMethod`, which outputs a message to the console indicating that it is a method within a traditional namespace.
+- **Description**: Represents a class within the `Com.Example.Traditional` namespace. It contains a single method, `TraditionalMethod`, which outputs a message to the console indicating that it is a method within a traditional namespace.
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.TraditionalClass.TraditionalMethod`](<#traditionalclasstraditionalmethod>)
 
@@ -60,12 +60,12 @@ Writes a message to the console indicating that the method is a global method.
 #### TraditionalClass\.TraditionalMethod<!-- {{#callable:FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.TraditionalClass.TraditionalMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_namespaces.cs#L19>)
 
-Outputs a message to the console indicating it is a method within a traditional namespace.
+Writes a message to the console indicating it is a method within a traditional namespace.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
     - Calls `Console.WriteLine` with the string "Traditional namespace method".
-- **Output**: No return value; outputs a message to the console.
+- **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.TraditionalClass`](<#traditionalclass>)  (Base Class)
 
 
@@ -76,7 +76,7 @@ Outputs a message to the console indicating it is a method within a traditional 
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Defines a class within a nested namespace structure. Contains a single method, `NestedMethod`, which outputs a message to the console indicating it is part of a nested namespace.
+- **Description**: Represents a class within a nested namespace `Com.Example.Traditional.Nested`. It contains a single method `NestedMethod` that outputs a message to the console.
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.Nested.NestedClass.NestedMethod`](<#nestedclassnestedmethod>)
 
@@ -86,12 +86,12 @@ Outputs a message to the console indicating it is a method within a traditional 
 #### NestedClass\.NestedMethod<!-- {{#callable:FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.Nested.NestedClass.NestedMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_namespaces.cs#L30>)
 
-Writes a message to the console indicating it is a method within a nested namespace.
+Outputs a message indicating it is a method within a nested namespace.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Call `Console.WriteLine` with the string "Nested namespace method".
-- **Output**: No output is returned as the method is `void`.
+    - Calls `Console.WriteLine` to output the string 'Nested namespace method'.
+- **Output**: No return value (void method).
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.Nested.NestedClass`](<#nestedclass>)  (Base Class)
 
 
@@ -102,7 +102,7 @@ Writes a message to the console indicating it is a method within a nested namesp
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Represents a class within a deeply nested namespace structure. Contains a single method, `DeeplyNestedMethod`, which outputs a message to the console.
+- **Description**: Defines a class within a deeply nested namespace `Com.Example.Traditional.Nested.DeeplyNested`. Contains a single method `DeeplyNestedMethod` that outputs a message to the console.
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.Nested.DeeplyNested.DeeplyNestedClass.DeeplyNestedMethod`](<#deeplynestedclassdeeplynestedmethod>)
 
@@ -116,7 +116,7 @@ Outputs a message to the console indicating it is a deeply nested method.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `Console.WriteLine` with the string "Deeply nested method".
+    - Call `Console.WriteLine` with the string "Deeply nested method".
 - **Output**: No return value; outputs a message to the console.
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.Com.Example.Traditional.Nested.DeeplyNested.DeeplyNestedClass`](<#deeplynestedclass>)  (Base Class)
 
@@ -128,7 +128,7 @@ Outputs a message to the console indicating it is a deeply nested method.
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Defines a class within a file-scoped namespace, which is a feature introduced in C# 10. This class contains a single method, `FileScopedMethod`, that outputs a message to the console indicating it is part of a file-scoped namespace.
+- **Description**: Represents a class within a file-scoped namespace, introduced in C# 10. The class contains a single method, `FileScopedMethod`, which outputs a message to the console indicating its association with a file-scoped namespace.
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedClass.FileScopedMethod`](<#filescopedclassfilescopedmethod>)
 
@@ -154,7 +154,7 @@ Writes a message to the console indicating it is a file-scoped namespace method.
 
 - **Type**: `class`
 - **Modifiers**: `public`, `static`
-- **Description**: Provides utility methods within a file-scoped namespace. Includes a method `UtilityMethod` that writes a message to the console and a method `FormatValue` that converts an object to its string representation or returns "null" if the object is null.
+- **Description**: Provides utility methods within a file-scoped namespace. Contains static methods `UtilityMethod` and `FormatValue`. `UtilityMethod` writes a message to the console, while `FormatValue` converts an object to its string representation or returns "null" if the object is null.
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedUtilities.UtilityMethod`](<#filescopedutilitiesutilitymethod>)
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedUtilities.FormatValue`](<#filescopedutilitiesformatvalue>)
@@ -181,12 +181,12 @@ Writes a message to the console indicating it is a file-scoped utility method.
 Converts an object to its string representation or returns "null" if the object is null.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - ``value``: An object that you want to convert to a string.
+    - `value`: The object to convert to a string.
 - **Control Flow**:
     - Check if `value` is not null.
-    - If `value` is not null, call `ToString()` on `value` and return the result.
+    - If `value` is not null, call `ToString()` on `value`.
     - If `value` is null, return the string "null".
-- **Output**: A string representation of the input object or "null" if the input is null.
+- **Output**: A string representation of the object or "null" if the object is null.
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedUtilities`](<#filescopedutilities>)  (Base Class)
 
 
@@ -197,7 +197,7 @@ Converts an object to its string representation or returns "null" if the object 
 
 - **Type**: `record`
 - **Modifiers**: `public`
-- **Description**: Represents an immutable data structure with two properties: `Name` of type `string` and `Value` of type `int`. This record is defined in a file-scoped namespace, which is a feature introduced in C# 10 to simplify namespace declarations.
+- **Description**: Represents an immutable data structure with two properties: `Name` of type `string` and `Value` of type `int`. This record is defined within a file-scoped namespace, which is a feature introduced in C# 10 to simplify namespace declarations.
 
 
 ---
@@ -206,7 +206,7 @@ Converts an object to its string representation or returns "null" if the object 
 
 - **Type**: `class`
 - **Modifiers**: `public`, `abstract`
-- **Description**: Defines an abstract class within a file-scoped namespace, which includes an abstract method `AbstractMethod` that must be implemented by derived classes, and a virtual method `VirtualMethod` that provides a default implementation that can be overridden by subclasses.
+- **Description**: Defines an abstract class within a file-scoped namespace. It contains an abstract method `AbstractMethod` that must be implemented by derived classes, and a virtual method `VirtualMethod` that provides a default implementation which can be overridden by subclasses.
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedAbstractClass.AbstractMethod`](<#filescopedabstractclassabstractmethod>)
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedAbstractClass.VirtualMethod`](<#filescopedabstractclassvirtualmethod>)
@@ -223,7 +223,8 @@ Declares an abstract method that must be implemented by derived classes.
 - **Control Flow**:
     - The method is declared as `protected`, meaning it is accessible within its class and by derived class instances.
     - The method is `abstract`, indicating that it does not have an implementation in the base class and must be overridden in any non-abstract derived class.
-- **Output**: There is no output as the method does not have an implementation in the base class.
+    - The method does not take any parameters and does not return a value.
+- **Output**: No output is produced as the method is abstract and lacks implementation.
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedAbstractClass`](<#filescopedabstractclass>)  (Base Class)
 
 
@@ -247,7 +248,7 @@ Writes a message to the console indicating it is a virtual method in a file-scop
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Implements the `FileScopedAbstractClass` and the `IFileScopedInterface`. The class provides concrete implementations for the abstract method `AbstractMethod` and the interface method `InterfaceMethod`. The `AbstractMethod` is overridden to output a message indicating its implementation, and the `InterfaceMethod` outputs a message indicating the implementation of the interface method.
+- **Description**: Implements the `FileScopedAbstractClass` and the `IFileScopedInterface`. Provides concrete implementations for the abstract method `AbstractMethod` and the interface method `InterfaceMethod`. The `AbstractMethod` outputs "Implemented abstract method" to the console, while the `InterfaceMethod` outputs "Implemented interface method".
 - **Methods**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedConcreteClass.AbstractMethod`](<#filescopedconcreteclassabstractmethod>)
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedConcreteClass.InterfaceMethod`](<#filescopedconcreteclassinterfacemethod>)
@@ -261,12 +262,13 @@ Writes a message to the console indicating it is a virtual method in a file-scop
 #### FileScopedConcreteClass\.AbstractMethod<!-- {{#callable:FileScopedNoSeparator.Com.Example.FileScoped.FileScopedConcreteClass.AbstractMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_namespaces.cs#L112>)
 
-Implements an abstract method by writing a message to the console.
+Overrides an abstract method to print a message to the console.
 - **Modifiers**: `protected`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `Console.WriteLine` to output the string 'Implemented abstract method' to the console.
-- **Output**: No output is returned as the method has a `void` return type.
+    - Overrides the abstract method from the base class.
+    - Executes the `Console.WriteLine` function to print the message 'Implemented abstract method' to the console.
+- **Output**: No output is returned as the method has a void return type.
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedConcreteClass`](<#filescopedconcreteclass>)  (Base Class)
 
 
@@ -292,7 +294,7 @@ Writes a message to the console indicating that an interface method is implement
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Defines a set of named constants `Value1`, `Value2`, and `Value3` within a file-scoped namespace. This enum is used to represent a collection of related values that can be used interchangeably in the code.
+- **Description**: Defines a set of named constants `Value1`, `Value2`, and `Value3` within a file-scoped namespace `Com.Example.FileScoped`. This enum is used to represent a collection of related values that can be used throughout the file-scoped namespace.
 
 
 ---
@@ -301,7 +303,7 @@ Writes a message to the console indicating that an interface method is implement
 
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: Represents a simple data structure with a single integer property `Value`. The struct provides a constructor that initializes the `Value` property with a specified integer.
+- **Description**: Represents a simple data structure with a single integer property `Value`. The struct provides a constructor to initialize the `Value` property.
 - **Member Functions**:
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedStruct.Value`](<#filescopedstructvalue>)
     - [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedStruct.FileScopedStruct`](<#filescopedstructfilescopedstruct>)
@@ -312,14 +314,13 @@ Writes a message to the console indicating that an interface method is implement
 #### FileScopedStruct\.Value<!-- {{#callable:FileScopedNoSeparator.Com.Example.FileScoped.FileScopedStruct.Value}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_namespaces.cs#L74>)
 
-Represents a property for getting or setting an integer value in the `FileScopedStruct` structure.
+Provides a property to get or set an integer value in the `FileScopedStruct` structure.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Value` property is defined as an auto-implemented property with both `get` and `set` accessors.
-    - The `get` accessor retrieves the current integer value stored in the `Value` property.
-    - The `set` accessor assigns a new integer value to the `Value` property.
-- **Output**: An integer value that can be retrieved or assigned.
+    - Defines a public property `Value` of type `int` within the `FileScopedStruct`.
+    - Allows both getting and setting of the `Value` property.
+- **Output**: An integer value that can be accessed or modified.
 - **See also**: [`FileScopedNoSeparator.Com.Example.FileScoped.FileScopedStruct`](<#filescopedstruct>)  (Data Structure)
 
 
@@ -345,7 +346,7 @@ Initializes a new instance of the `FileScopedStruct` struct with a specified int
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_namespaces.cs#L60>)
 
 - **Modifiers**: `public`
-- **Description**: Defines a contract for classes that implement it to provide an implementation for the `InterfaceMethod`. This interface is part of a file-scoped namespace, which is a feature introduced in C# 10 that allows for a more concise namespace declaration. The `IFileScopedInterface` does not inherit from any other interfaces, and it contains a single method, `InterfaceMethod`, which must be implemented by any class that implements this interface.
+- **Description**: Defines a contract for classes that implement it to provide an implementation for the `InterfaceMethod`. This interface is part of a file-scoped namespace, which is a feature introduced in C# 10 to simplify namespace declarations by applying the namespace to the entire file. The `IFileScopedInterface` does not inherit from any other interfaces, and it contains a single method, `InterfaceMethod`, which must be implemented by any class that implements this interface.
 
 **Methods**
 - `InterfaceMethod`<!-- {{#callable:FileScopedNoSeparator.Com.Example.FileScoped.IFileScopedInterface.InterfaceMethod}} -->

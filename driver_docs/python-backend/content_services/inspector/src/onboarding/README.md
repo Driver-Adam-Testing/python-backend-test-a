@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions and utilities for Bitbucket, GitHub, and GitLab operations, language metadata, and version control data models.
+Functions and utilities for managing repositories and version control operations across Bitbucket, GitHub, and GitLab.
 
 
 ## Files
 - **[bitbucket_ops.py](bitbucket_ops.py.md)**: Functions for managing Bitbucket repositories, including fetching access tokens, downloading repositories, and handling pull requests.
 - **[gh_ops.py](gh_ops.py.md)**: Functions for interacting with GitHub's API, including generating JWTs, fetching repository data, and managing pull requests.
-- **[gitlab_ops.py](gitlab_ops.py.md)**: Functions for managing GitLab repositories, including fetching access tokens, downloading repositories, and creating pull requests.
-- **[languages.yml](languages.yml.md)**: Defines language metadata for GitHub, including type, color, extensions, and highlighting modes.
-- **[onboard.py](onboard.py.md)**: Handles GitHub, GitLab, and Bitbucket events, processes repositories, and manages codebase connections using AWS S3 and a database.
-- **[onboard_utils.py](onboard_utils.py.md)**: Utilities for handling file operations, S3 interactions, and codebase analysis, including file type detection and encoding management.
-- **[push_bot.py](push_bot.py.md)**: Automates the process of extracting, syncing, and pushing documentation updates to version control repositories.
-- **[test_onboard_utils.py](test_onboard_utils.py.md)**: Tests for unpacking zip archives with various directory structures and optional name overrides.
-- **[vcs_utils.py](vcs_utils.py.md)**: Data models for version control information, including repository, commit, branch, and author details.
+- **[gitlab_ops.py](gitlab_ops.py.md)**: Functions for managing GitLab repositories, including fetching access tokens, downloading repositories, and handling merge requests.
+- **[languages.yml](languages.yml.md)**: Defines languages known to GitHub with attributes like type, color, extensions, and highlighting modes.
+- **[onboard.py](onboard.py.md)**: Handles repository events and codebase connections for GitHub, GitLab, and Bitbucket, including downloading, processing, and uploading repositories, as well as managing database records and handling errors.
+- **[onboard_utils.py](onboard_utils.py.md)**: Utilities for handling file operations, S3 interactions, and codebase analysis, including file type detection, encoding, and directory statistics.
+- **[push_bot.py](push_bot.py.md)**: Automates the process of extracting, syncing, and pushing documentation to version control systems.
+- **[test_onboard_utils.py](test_onboard_utils.py.md)**: Tests for the `unpack_archive_to_finalized_path` function with various zip archive structures.
+- **[vcs_utils.py](vcs_utils.py.md)**: Data models for version control information, including author, commit, branch, and repository details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

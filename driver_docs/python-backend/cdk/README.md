@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS CDK constructs and stack definitions for development, operations, production, and staging environments.
+AWS CDK stacks for development, operations, production, staging, and testing environments, and AWS Lambda constructs.
 
 ## Folders
-- **[constructs](constructs/README.md)**: AWS CDK constructs for Lambda functions, WAF, backend services, Inspector, and metrics processing.
+- **[constructs](constructs/README.md)**: AWS Lambda constructs, WAF configuration, backend infrastructure, Inspector construct, and metrics processing.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[development_stack.py](development_stack.py.md)**: Defines a development stack using AWS CDK with components for metrics, backend, onboarding, and inspection.
-- **[ops_stack.py](ops_stack.py.md)**: Defines an AWS CDK stack for operations, including backend, onboarding, inspector, and metrics components.
+- **[ops_stack.py](ops_stack.py.md)**: Defines an AWS CDK stack for operations, including backend, onboarding, inspector, and metrics lambdas.
 - **[production_stack.py](production_stack.py.md)**: Defines a production stack with AWS CDK, including metrics, backend, onboarding, and inspector components.
 - **[staging_stack.py](staging_stack.py.md)**: Defines a CDK stack for the staging environment with metrics, backend, onboarding, and inspection components.
-- **[test_in_dev_stack.py](test_in_dev_stack.py.md)**: A CDK stack for manually deploying additional infrastructure for testing in a development environment.
+- **[test_in_dev_stack.py](test_in_dev_stack.py.md)**: A stack for manually deploying additional infrastructure for testing in a development environment.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

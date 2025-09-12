@@ -6,9 +6,9 @@
 Alembic migration script to copy data from `source_contents` to `derived_contents` table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines a migration identified by the revision ID `9fdb9475d8f4`, which follows the previous migration `ccbc4d05e796`. The primary function of this script is to copy data from the `source_contents` table to the `derived_contents` table. The [`upgrade`](<#upgrade>) function executes an SQL `INSERT INTO` statement to transfer all columns from `source_contents` to `derived_contents`. 
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines two main functions: [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>). The [`upgrade`](<#upgrade>) function copies data from the `source_contents` table to the `derived_contents` table. It performs an `INSERT` operation, selecting all columns from `source_contents` and inserting them into `derived_contents`. This operation is typically used to migrate data to a new schema or table structure.
 
-The [`downgrade`](<#downgrade>) function provides a way to reverse the migration. It executes an SQL `DELETE` statement to remove entries from the `derived_contents` table where the `source_content_id` is `NULL`. This script is part of a series of migrations that manage changes to the database schema and data, ensuring that the database structure evolves in a controlled manner.
+The [`downgrade`](<#downgrade>) function reverses the changes made by the [`upgrade`](<#upgrade>) function. It deletes entries from the `derived_contents` table where the `source_content_id` is `NULL`. This operation is used to revert the database to its previous state before the [`upgrade`](<#upgrade>) was applied. The script includes revision identifiers, `revision` and `down_revision`, which Alembic uses to track the migration history and dependencies. This script is part of a series of migrations that manage changes to the database schema over time.
 # Imports and Dependencies
 
 ---
@@ -20,15 +20,15 @@ The [`downgrade`](<#downgrade>) function provides a way to reverse the migration
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
 - **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to determine the order of migrations by identifying the parent revision of the current migration.
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of migrations applied to a database.
+- **Use**: Used by Alembic to determine the order of database migrations.
 
 
 ---
@@ -40,8 +40,8 @@ The [`downgrade`](<#downgrade>) function provides a way to reverse the migration
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
 - **Use**: Indicates that this migration does not depend on any other migrations.
 
 
@@ -62,7 +62,7 @@ Copies data from the `source_contents` table to the `derived_contents` table.
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1409-9fdb9475d8f4_copy_sc_to_dc_table.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1409-9fdb9475d8f4_copy_sc_to_dc_table.py#L52>)
 
-Deletes rows from the `derived_contents` table where `source_content_id` is NULL.
+Deletes records from the `derived_contents` table where `source_content_id` is NULL.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Executes a SQL `DELETE` statement on the `derived_contents` table.

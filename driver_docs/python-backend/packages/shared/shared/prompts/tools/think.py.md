@@ -6,7 +6,7 @@
 Defines an empty string constant named PROMPT.
 
 # Purpose
-The code imports a module named `think` from the current package and defines a global variable `PROMPT` as an empty string. This file provides narrow functionality, primarily serving as a configuration or setup script. The presence of `# flake8: noqa` indicates that linting checks are disabled for this file, which may be intentional to avoid warnings or errors related to the import or the unused variable.
+This code imports a module named `think` from the current package and defines a global variable `PROMPT` as an empty string. The code provides narrow functionality, primarily setting up a basic configuration or placeholder for further development. The `flake8: noqa` comment at the top indicates that linting checks are disabled for this file, which may be useful during initial development or when the file is intentionally minimal.
 # Imports and Dependencies
 
 ---
@@ -18,8 +18,8 @@ The code imports a module named `think` from the current package and defines a g
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: The `PROMPT` variable is a global variable defined as an empty string. It is initialized at the top level of the module.
-- **Use**: Stores a string value that can be used throughout the module.
+- **Description**: An empty string assigned to the variable `PROMPT`. This variable is defined at the top level of the module, making it a global variable.
+- **Use**: Used to store a string value that can be accessed and modified throughout the module.
 
 
 

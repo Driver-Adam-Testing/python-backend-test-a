@@ -6,7 +6,7 @@
 Alembic migration script to add and remove the "call_id" column in the "inspectorrun" table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration that adds a new column named `call_id` to the `inspectorrun` table. The [`upgrade`](<#upgrade>) function adds the `call_id` column with a type of `AutoString` and allows it to be nullable. The [`downgrade`](<#downgrade>) function removes the `call_id` column from the `inspectorrun` table, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function. The script includes revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `call_id` of type `AutoString` to the `inspectorrun` table, allowing null values. The [`downgrade`](<#downgrade>) function reverses this change by removing the `call_id` column from the `inspectorrun` table. The script includes metadata such as `revision`, `down_revision`, and `Create Date` to track the migration's version and dependencies.
 # Imports and Dependencies
 
 ---
@@ -20,29 +20,29 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration script. It is used by Alembic to track the specific version of the database schema that this script represents.
+- **Use**: Used by Alembic to identify the current migration script version.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to determine the order of database migrations by linking the current revision to its predecessor.
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations by identifying the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
 - **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -63,11 +63,11 @@ Adds a new column named `call_id` to the `inspectorrun` table in the database sc
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_05_14_1614-830fe3c26803_adds_call_id_to_inspectorrun.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_05_14_1614-830fe3c26803_adds_call_id_to_inspectorrun.py#L29>)
 
-Removes the 'call_id' column from the 'inspectorrun' table.
+Removes the 'call_id' column from the 'inspectorrun' table in the database.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the 'drop_column' method from the 'op' module to remove the 'call_id' column from the 'inspectorrun' table.
-- **Output**: None
+    - Uses the Alembic 'op.drop_column' function to remove the 'call_id' column from the 'inspectorrun' table.
+- **Output**: No output is returned as the function returns 'None'.
 
 
 

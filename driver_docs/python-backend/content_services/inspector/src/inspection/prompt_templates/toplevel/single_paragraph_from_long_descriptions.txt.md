@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for writing a concise paragraph describing a software codebase using detailed module descriptions.
+Instructions for writing a concise paragraph describing a software codebase based on detailed module descriptions.
 
 # Purpose
-The `config.yaml` file defines the configuration settings for the application. It specifies parameters such as the database connection details, including the host, port, username, and password. Additionally, it includes settings for the application's logging level and output format. The file also contains API endpoint configurations, which determine the base URL and authentication methods. By adjusting these parameters, users can customize the application's behavior and connectivity to external services.
+Certainly, please provide the contents of the metadata or configuration file, and I will explain its purpose.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

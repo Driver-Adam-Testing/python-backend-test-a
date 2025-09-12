@@ -6,7 +6,7 @@
 Instructions for setting up and configuring GitLab-ee:17.3.5 using Docker and ngrok.
 
 # Purpose
-The instructions provided are for setting up GitLab-ee version 17.3.5 using Docker. The setup process begins by creating a directory for GitLab Docker configurations and setting the `GITLAB_HOME` environment variable to this directory. Users must edit the `docker-compose.yml` file to set the `GITLAB_ROOT_PASSWORD` to a desired password before starting the GitLab container with `docker-compose up -d`. After the container starts, users need to configure the `external_url` in the `gitlab.rb` file to match their domain and disable Let's Encrypt and HTTP to HTTPS redirection if necessary. The setup concludes with reconfiguring GitLab using `gitlab-ctl reconfigure` and accessing the GitLab instance through a web browser using the specified domain and login credentials.
+The setup instructions provided are for configuring and running a GitLab instance using Docker. The process begins by creating a directory for GitLab Docker data and setting an environment variable `GITLAB_HOME` to this directory. Users must edit the `docker-compose.yml` file to set the `GITLAB_ROOT_PASSWORD` for the GitLab instance. After starting the Docker container with `docker-compose up -d`, users need to configure the `external_url` in the `gitlab.rb` file to match their domain. The instructions also include steps to disable Let's Encrypt and HTTP to HTTPS redirection. Finally, users are guided to reconfigure GitLab using `gitlab-ctl reconfigure` and access the GitLab instance through a web browser.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

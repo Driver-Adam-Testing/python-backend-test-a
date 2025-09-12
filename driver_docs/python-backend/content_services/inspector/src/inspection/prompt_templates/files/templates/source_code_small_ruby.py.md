@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating structured prompts and analyzing Ruby code components.
+Templates for generating structured prompts related to Ruby source code, including modules and classes.
 
 # Purpose
-The code defines a template for generating structured prompts and instructions related to small Ruby source code files. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization`, to facilitate the creation of prompts and style instructions. The `SOURCE_CODE_SMALL_TEMPLATE_RUBY` list contains tuples that define different sections of the template, including "Purpose", "Imports and Dependencies", "Modules", and "Classes". Each tuple specifies a type of prompt or condition, the associated instructions or checks, and the methods to process or analyze Ruby code. This setup is used to generate documentation or analysis for small Ruby code snippets, focusing on their purpose, dependencies, and structural elements.
+This code defines a template for generating documentation related to small Ruby source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization`, to facilitate the creation of structured prompts and instructions. The `SOURCE_CODE_SMALL_TEMPLATE_RUBY` variable is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Modules", and "Classes". Each tuple contains a specific prompt or function to process and generate the corresponding documentation content. The code provides a narrow functionality focused on creating structured documentation for Ruby code using predefined templates and instructions.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ The code defines a template for generating structured prompts and instructions r
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_RUBY
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string identifier, a description string, and a series of components or functions related to Ruby code analysis and prompt generation. Each tuple represents a different aspect of Ruby code, such as purpose, imports, modules, and classes.
-- **Use**: Used to define structured prompts and analysis components for Ruby code processing.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a string description, and a series of function calls or lambda functions. These tuples represent different sections of a Ruby code template, including purpose, imports, modules, and classes.
+- **Use**: Used to define a structured template for generating Ruby code with specific sections and instructions.
 
 
 

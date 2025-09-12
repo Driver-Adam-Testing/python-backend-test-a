@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A shell script to run type checks and linting on the app and driver_db using mypy and ruff.
+A shell script to run type checks and linting on the app and driver_db directories using mypy and ruff.
 
 # Purpose
-The script is a Bash executable that performs static code analysis and formatting checks on a Python project. It uses `mypy` to perform type checking on the `app` directory and within the `driver_db` directory. Additionally, it uses `ruff` to lint the `app` directory and to check the formatting of the code. The script includes error handling with `set -e` to stop execution if any command fails, and `set -x` to print each command before it is executed, which aids in debugging.
+This script is a Bash executable that performs static code analysis and formatting checks on a Python project. It uses `mypy` to perform type checking on the `app` directory and the `driver_db` subdirectory. The script also uses `ruff` to lint the `app` directory and to check the code formatting. The `set -e` command ensures that the script stops execution if any command fails, and `set -x` enables a mode of the shell where all executed commands are printed to the terminal. This script is intended to be run in a development environment to ensure code quality and consistency.
 # Imports and Dependencies
 
 ---

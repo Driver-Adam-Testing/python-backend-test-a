@@ -6,7 +6,7 @@
 Tests for validating codebase analysis presigned URLs and object keys with exception handling.
 
 # Purpose
-This code is a test suite for validating functions related to codebase analysis authentication in a software application. It uses the `pytest` framework to define two test functions: [`test_validate_codebase_analysis_presigned_url`](<#test_validate_codebase_analysis_presigned_url>) and [`test_validate_analyzed_codebase_object_key`](<#test_validate_analyzed_codebase_object_key>). These functions test the behavior of `validate_codebase_analysis_presigned_url` and `validate_analyzed_codebase_object_key` from the `app.services.codebase_service` module. The tests check if these functions correctly handle valid inputs and raise `CodebaseAnalysisAuthException` for invalid inputs, ensuring that the authentication logic for codebase analysis is functioning as expected.
+This code is a test suite for validating functions related to codebase analysis in a software application. It uses the `pytest` framework to test two functions: `validate_codebase_analysis_presigned_url` and `validate_analyzed_codebase_object_key`, which are imported from the `app.services.codebase_service` module. The tests ensure that these functions correctly handle valid inputs and raise `CodebaseAnalysisAuthException` for invalid inputs. The test cases check the validation of a presigned URL and an analyzed codebase object key against expected organization identifiers, ensuring that unauthorized access is properly restricted.
 # Imports and Dependencies
 
 ---
@@ -22,14 +22,14 @@ This code is a test suite for validating functions related to codebase analysis 
 ### test\_validate\_codebase\_analysis\_presigned\_url<!-- {{#callable:python-backend/backend/app/services/codebase_service_test.test_validate_codebase_analysis_presigned_url}} -->
 [View Source →](<../../../../../backend/app/services/codebase_service_test.py#L10>)
 
-Tests the [`validate_codebase_analysis_presigned_url`](<codebase_service.py.md#validate_codebase_analysis_presigned_url>) function for correct URL validation and exception handling.
+Tests the validation of a presigned URL for codebase analysis with different organization IDs and keys.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a URL string for testing purposes.
-    - Calls [`validate_codebase_analysis_presigned_url`](<codebase_service.py.md#validate_codebase_analysis_presigned_url>) with a valid URL, type, and organization ID to ensure no exception is raised.
+    - Defines a URL for a codebase analysis file stored on S3.
+    - Calls [`validate_codebase_analysis_presigned_url`](<codebase_service.py.md#validate_codebase_analysis_presigned_url>) with the correct organization ID and key, expecting no exception.
     - Uses `pytest.raises` to assert that `CodebaseAnalysisAuthException` is raised when the organization ID is incorrect.
-    - Uses `pytest.raises` to assert that `CodebaseAnalysisAuthException` is raised when the type is incorrect.
-- **Output**: No output is returned as this is a test function that asserts the behavior of another function.
+    - Uses `pytest.raises` to assert that `CodebaseAnalysisAuthException` is raised when the key is incorrect.
+- **Output**: No output is returned as the function is a test case that asserts exceptions.
 - **Functions Called**:
     - [`python-backend/backend/app/services/codebase_service.validate_codebase_analysis_presigned_url`](<codebase_service.py.md#validate_codebase_analysis_presigned_url>)
 
@@ -38,7 +38,7 @@ Tests the [`validate_codebase_analysis_presigned_url`](<codebase_service.py.md#v
 ### test\_validate\_analyzed\_codebase\_object\_key<!-- {{#callable:python-backend/backend/app/services/codebase_service_test.test_validate_analyzed_codebase_object_key}} -->
 [View Source →](<../../../../../backend/app/services/codebase_service_test.py#L22>)
 
-Tests the validation of analyzed codebase object keys against organization identifiers.
+Tests the validation of analyzed codebase object keys against expected organization identifiers.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Define `codebase_object_key` with a valid key string.
@@ -46,7 +46,7 @@ Tests the validation of analyzed codebase object keys against organization ident
     - Call [`validate_analyzed_codebase_object_key`](<codebase_service.py.md#validate_analyzed_codebase_object_key>) with `codebase_object_key` and a valid organization ID to ensure no exception is raised.
     - Use `pytest.raises` to assert that [`validate_analyzed_codebase_object_key`](<codebase_service.py.md#validate_analyzed_codebase_object_key>) raises `CodebaseAnalysisAuthException` when called with `codebase_object_key` and an invalid organization ID.
     - Use `pytest.raises` to assert that [`validate_analyzed_codebase_object_key`](<codebase_service.py.md#validate_analyzed_codebase_object_key>) raises `CodebaseAnalysisAuthException` when called with `bad_codebase_object_key` and a valid organization ID.
-- **Output**: No output is returned as this is a test function that asserts the behavior of [`validate_analyzed_codebase_object_key`](<codebase_service.py.md#validate_analyzed_codebase_object_key>).
+- **Output**: No output is returned; the function asserts correct behavior through exceptions.
 - **Functions Called**:
     - [`python-backend/backend/app/services/codebase_service.validate_analyzed_codebase_object_key`](<codebase_service.py.md#validate_analyzed_codebase_object_key>)
 

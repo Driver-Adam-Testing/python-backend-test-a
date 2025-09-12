@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Specialized LLM client for interacting with OpenAI's O-Series models, enforcing JSON strictness.
+Specialized LLM client for interacting with OpenAI's O-Series models, enforcing JSON strictness and flexible tool integration.
 
 # Purpose
-The `OpenAiO1SeriesClient` class is a specialized client for interacting with OpenAI's O-Series language models. It extends the `LlmClient` class and is designed to handle specific requirements when communicating with these models. The class does not use system prompts directly; instead, it converts them into developer messages. It ensures that the output is strictly valid JSON, which is crucial for applications that require structured data. Additionally, the class allows for the integration of tools as optional single instances, providing flexibility in how tools are used during the interaction with the language model.
+The `OpenAiO1SeriesClient` class is a specialized client for interacting with OpenAI's O-Series language models. It extends the `LlmClient` class and is designed to handle specific requirements when communicating with these models. The class does not use system prompts directly; instead, it converts them into developer messages. It also enforces strict JSON formatting on the output to ensure that responses are valid JSON. The class allows for the integration of tools as optional single instances, providing flexibility in how tools are used during interactions with the language model.
 
-The [`_generate`](<#openaio1seriesclient_generate>) method is a core component of the `OpenAiO1SeriesClient` class. It generates responses from the language model based on a given message history, response type, and optional tool types. The method first creates a copy of the message history to prevent changes to the original data. It then adds parsing description messages for the response type and any specified tools. The method constructs the necessary parameters for the OpenAI API call, including the model ID and the formatted message history. It retrieves a response from the OpenAI API and converts it into an `LlmMessage` object, which is then added to the message history and returned. This method is essential for producing responses that adhere to the specified configurations and requirements.
+The primary method in this class, [`_generate`](<#openaio1seriesclient_generate>), is responsible for generating responses from the language model. It takes a message history, a response type, and a list of tool types as parameters. The method creates a copy of the message history to prevent changes to the original data. It then adds parsing description messages for the response type and any specified tools to the message history. The method constructs a dictionary of parameters required for the OpenAI API call, including the model ID and the formatted message history. It then makes a request to the OpenAI API to generate a response, which is processed and added to the original message history. The method returns the generated response as an `LlmMessage` object.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ The [`_generate`](<#openaio1seriesclient_generate>) method is a core component o
 [View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_o1.py#L15>)
 
 - **Members**:
-    - `client`: An instance of the OpenAI client used to interact with OpenAI's O-Series models.
-- **Description**: Interacts with OpenAI's O-Series models by converting system prompts to developer messages, enforcing JSON strictness, and allowing optional single-instance tool execution for flexible integration.
+    - `client`: An instance of the OpenAI client used to interact with OpenAI's API.
+- **Description**: Interacts with OpenAI's O-Series models by converting system prompts to developer messages, enforcing JSON strictness, and allowing optional tool integration. Inherits from `LlmClient` and uses the OpenAI client to generate responses based on message history, response type, and tool types.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient.__init__`](<#openaio1seriesclient__init__>)
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient._generate`](<#openaio1seriesclient_generate>)
@@ -48,11 +48,11 @@ Initializes an instance of the `OpenAiO1SeriesClient` class with a given configu
 - **Inputs**:
     - `config`: An instance of `LlmConfig` that provides configuration settings for the client.
 - **Logic and Control Flow**:
-    - Calls the parent class [`__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>) method with the `config` parameter to initialize the base class.
+    - Calls the parent class [`__init__`](<../../utils/parse_response_string.py.md#parseoutputerror__init__>) method with the `config` parameter to initialize the base class.
     - Creates an instance of `openai.OpenAI` and assigns it to the `client` attribute of the class.
 - **Output**: None
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse.__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>)
+    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.ParseOutputError.__init__`](<../../utils/parse_response_string.py.md#parseoutputerror__init__>)
 - **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient`](<#openaio1seriesclient>)  (Base Class)
 
 
@@ -62,15 +62,15 @@ Initializes an instance of the `OpenAiO1SeriesClient` class with a given configu
 
 Generates a response from the LLM using the provided message history, response type, and tool types.
 - **Inputs**:
-    - `message_history`: An instance of `LlmMessageHistory` that contains the message history to use for generating the response.
-    - `response_type`: An optional type of `LlmResponseType` that specifies the response type to use for generation.
-    - `tool_types`: An optional list of `LlmTool` types that specifies the tool types to use for generation.
+    - `message_history`: An instance of `LlmMessageHistory` that contains the message history for the generation process.
+    - `response_type`: An optional type of `LlmResponseType` that specifies the response type for the generation.
+    - `tool_types`: An optional list of `LlmTool` types that specifies the tool types for the generation.
 - **Logic and Control Flow**:
     - Create a copy of `message_history` to avoid mutating the original.
     - If `response_type` is provided, add its parsing description message to the copied message history.
     - Iterate over `tool_types` if provided, and add each tool's parsing description message to the copied message history.
-    - Prepare `completion_kwargs` with the model ID and the copied message history converted to OpenAI's format.
-    - Call the OpenAI client to create a chat completion using `completion_kwargs` and retrieve the first choice's message.
+    - Prepare `completion_kwargs` with the model ID and the copied message history converted to OpenAI format.
+    - Call the OpenAI client to create a chat completion with the prepared arguments and retrieve the first message from the response choices.
     - Convert the response message to an `LlmMessage` using `LlmMessage.from_openai_chat_completion_message`.
     - Add the generated `LlmMessage` to the original `message_history`.
     - Return the generated `LlmMessage`.

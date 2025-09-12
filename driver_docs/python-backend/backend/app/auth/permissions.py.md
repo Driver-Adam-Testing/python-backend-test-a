@@ -6,21 +6,21 @@
 Defines permission strings for embedding in JWTs.
 
 # Purpose
-This code defines a set of global string constants that represent different permission levels for embedding in JSON Web Tokens (JWTs). Each constant corresponds to a specific role or access level within an application, such as `ORG_MANAGER` for organization management, `CONTENT_EDITOR` for content editing, and `CONTENT_READONLY` for read-only access to content. These constants are likely used to control access to various features or sections of an application by associating them with user roles. The use of these permission strings helps in managing and verifying user permissions in a structured manner.
+This code defines a set of global string constants that represent different permission levels for embedding in JSON Web Tokens (JWTs). Each constant corresponds to a specific role or access level within an application, such as `ORG_MANAGER` for organization management and `CONTENT_EDITOR` for content editing. These constants are likely used to control access to various features or resources in a system by associating them with user roles. The use of descriptive string values helps in managing and verifying permissions within the application.
 # Global Variables
 
 ---
 ### ORG\_MANAGER
 - **Type**: ``str``
-- **Description**: A string that represents a permission identifier for managing organizations. It is used in the context of embedding permissions in JSON Web Tokens (JWTs).
-- **Use**: Used to specify organization management permissions in JWTs.
+- **Description**: A string that represents a permission identifier for managing organizations. It is used in the context of embedding permissions in JWTs (JSON Web Tokens).
+- **Use**: Used to specify the 'organization:management' permission in JWTs.
 
 
 ---
 ### CONTENT\_EDITOR
 - **Type**: ``str``
-- **Description**: A string that represents a permission level for content editing. It is used to specify the 'content:editor' permission in JWTs.
-- **Use**: Used to define a permission level for users who can edit content.
+- **Description**: A string that represents a permission level for editing content. It is used as a permission identifier in JWTs (JSON Web Tokens).
+- **Use**: Used to specify the 'content:editor' permission level in JWTs for access control.
 
 
 ---
@@ -34,21 +34,21 @@ This code defines a set of global string constants that represent different perm
 ### USAGE\_CREDITOR
 - **Type**: ``str``
 - **Description**: A string that represents a permission identifier for managing usage credits.
-- **Use**: Used to specify access control for usage credit management in JWTs.
+- **Use**: Used to specify permissions related to usage credit management in JWTs.
 
 
 ---
 ### SUBSCRIPTION\_MANAGER
 - **Type**: ``str``
-- **Description**: A string that represents a permission identifier for managing subscriptions. It is used to specify access control related to subscription management tasks.
-- **Use**: Used to define a permission level for subscription management in a system that uses JWTs for access control.
+- **Description**: A string that represents a permission identifier for managing subscriptions.
+- **Use**: Used to specify the permission level required for subscription management in JWTs.
 
 
 ---
 ### GIT\_PROVIDER\_MANAGER
 - **Type**: ``str``
-- **Description**: A string that represents a permission identifier for managing a Git provider. It is used in the context of permission management, likely embedded in JWTs (JSON Web Tokens) to specify access rights.
-- **Use**: Used to define a specific permission level related to Git provider management.
+- **Description**: A string that represents a permission level related to the management of a Git provider. It is used as a permission identifier in the context of access control.
+- **Use**: Used to specify a permission level for managing Git provider resources in a system.
 
 
 

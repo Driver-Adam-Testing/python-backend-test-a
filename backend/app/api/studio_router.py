@@ -38,6 +38,7 @@ from app.api.routes.v2 import (
 from app.api.routes.v2 import (
     tags as v2_tags,
 )
+from app.api.routes.v2 import onboarding_checklist
 from app.core.config import settings
 
 studio_router = APIRouter()
@@ -58,6 +59,7 @@ studio_router.include_router(
 studio_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 studio_router.include_router(user.router, prefix="/user", tags=["user"])
 studio_router.include_router(about_you_survey.router, tags=["about_you_survey"])
+studio_router.include_router(onboarding_checklist.router, tags=["onboarding_checklist"])
 studio_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
 )

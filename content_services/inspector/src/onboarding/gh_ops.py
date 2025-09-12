@@ -1,7 +1,7 @@
 import base64
 import hashlib
-import logging
 import os
+import re
 import time
 from uuid import UUID
 
@@ -19,8 +19,6 @@ from onboarding.vcs_utils import (
 )
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
-
-logger = logging.getLogger(__name__)
 
 
 def generate_jwt() -> str:
@@ -63,17 +61,17 @@ def fetch_default_branch_and_commit(full_repo_name: str, access_token: str) -> s
 
     repo = requests.get(repo_url, headers=headers)
     repo_data = repo.json()
-    logger.info(
-        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+    print(
+        f"INFO: Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
     )
     default_branch = repo_data["default_branch"]
 
     branch_url = f"{repo_url}/branches/{default_branch}"
     branch_response = requests.get(branch_url, headers=headers)
     branch_data = branch_response.json()
-    logger.info(f"Default branch for {full_repo_name} is {default_branch}")
-    logger.info(
-        f"Branch data retrieved from github API (status code {branch_response.status_code}): {branch_data}"
+    print(f"INFO: Default branch for {full_repo_name} is {default_branch}")
+    print(
+        f"INFO: Branch data retrieved from github API (status code {branch_response.status_code}): {branch_data}"
     )
     return branch_data["commit"]["sha"]
 
@@ -86,16 +84,16 @@ def fetch_vcs_info(
 
     repo = requests.get(repo_url, headers=headers)
     repo_data = repo.json()
-    logger.info(
-        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+    print(
+        f"INFO: Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
     )
     default_branch = repo_data["default_branch"]
 
     commit_url = f"{repo_url}/commits/{commit_sha}"
     commit_response = requests.get(commit_url, headers=headers)
     commit_data = commit_response.json()
-    logger.info(
-        f"Commit data retrieved from github API (status code {commit_response.status_code}): {commit_data}"
+    print(
+        f"INFO: Commit data retrieved from github API (status code {commit_response.status_code}): {commit_data}"
     )
     author_info = AuthorInfo(
         email=commit_data["commit"]["author"]["email"],
@@ -182,7 +180,7 @@ def download_and_upload_repo(
         try:
             commit = fetch_default_branch_and_commit(repo["full_name"], access_token)
         except KeyError:
-            print(f"Failed to find commit for {repo}, unable to process")
+            print(f"ERROR: Failed to find commit for {repo}, unable to process")
             return repo
     else:
         commit = repo["commit"]
@@ -204,7 +202,7 @@ def download_and_upload_repo(
                 ).first()
                 if not primary_asset:
                     print(
-                        f"Failed to find primary asset for {repo} for org: {org_id}, unable to process push event, unable to process push event"
+                        f"ERROR: Failed to find primary asset for {repo} for org: {org_id}, unable to process push event"
                     )
                     return repo
                 primary_asset_id = primary_asset.id
@@ -250,105 +248,13 @@ def download_and_upload_repo(
                         elif version.status == VersionStatus.GENERATING:
                             # STOPGAP: Ignore push events during active generation to ensure completion
                             print(
-                                f"Generation already in progress for {repo.get('name', 'unknown')}. "
+                                f"WARNING: Generation already in progress for {repo.get('name', 'unknown')}. "
                                 f"Ignoring push event to allow current generation to complete."
                             )
                             return repo
-                            # # Delete running version, and restart inspection with the new version,
-                            # # this way the docs we generate reflect the most up to date state
-                            # run_statement = (
-                            #     select(InspectorRun)
-                            #     .where(InspectorRun.version_id == version.id)
-                            #     .order_by(InspectorRun.created_at.desc())
-                            # )
-                            # run = session.exec(run_statement).first()
-                            #
-                            # if run is not None:
-                            #     call_id = run.call_id
-                            #     modal_call = modal.FunctionCall.from_id(call_id)
-                            #     modal_call.cancel()
-                            # # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
-                            # session.delete(version)
-                            # # Find and delete the usage session for the version
-                            # print("Fetching existing usage session...")
-                            # usage_session_statement = (
-                            #     select(UsageSession)
-                            #     .join(
-                            #         UsageEvent, UsageSession.id == UsageEvent.session_id
-                            #     )
-                            #     .where(
-                            #         UsageSession.session_metadata["version_id"].astext
-                            #         == str(version.id)
-                            #     )
-                            #     .where(
-                            #         UsageEvent.event_type
-                            #         == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
-                            #     )
-                            #     .options(selectinload(UsageSession.usage_events))
-                            # )
-                            # usage_session = session.exec(
-                            #     usage_session_statement
-                            # ).first()
-                            # print(usage_session)
-                            # if usage_session is not None:
-                            #     usage_event = next(
-                            #         (
-                            #             event
-                            #             for event in usage_session.usage_events
-                            #             if event.event_type
-                            #             == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
-                            #         ),
-                            #         None,
-                            #     )
-                            #     print(
-                            #         f"Found {len(usage_session.usage_events)} usage events for version {version.id}"
-                            #     )
-                            #     if usage_event is not None:
-                            #         new_usage_session = UsageSession(
-                            #             status=usage_session.status,
-                            #             organization_id=usage_session.organization_id,
-                            #             user_id="SYSTEM",
-                            #             session_metadata=usage_session.session_metadata,
-                            #         )
-                            #         session.add(new_usage_session)
-                            #         usage_event_credit = UsageEvent(
-                            #             **usage_event.dict(
-                            #                 exclude={
-                            #                     "id",
-                            #                     "bytes_in",
-                            #                     "session_id",
-                            #                     "timestamp",
-                            #                     "event_type",
-                            #                 }
-                            #             ),
-                            #             event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
-                            #             session_id=new_usage_session.id,
-                            #             bytes_in=abs(usage_event.bytes_in),
-                            #             timestamp=datetime.now(tz=UTC),
-                            #         )
-                            #         print(usage_event_credit)
-                            #         print(
-                            #             f"crediting {usage_event_credit.bytes_in} bytes back to version {version.id}"
-                            #         )
-                            #         session.add(usage_event_credit)
-                            #
-                            # new_version = Version(
-                            #     primary_asset_id=primary_asset.id,
-                            #     vcs_hash=commit,
-                            #     status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
-                            #     previous_version_id=version.previous_version_id,
-                            #     vcs_metadata=vcs_info.model_dump(),
-                            # )
-                            # session.add(new_version)
-                            # version_id = new_version.id
-                            #
-                            # print(
-                            #     f"Version already in generating state for {repo["name"]}, deleting existing version and restarting inspection with new version..."
-                            # )
-                            # break
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
                     print(
-                        f"Version already in connecting state for {repo["name"]}, skipping..."
+                        f"INFO: Version already in connecting state for {repo['name']}, skipping..."
                     )
                     return repo
                 else:
@@ -378,11 +284,11 @@ def download_and_upload_repo(
                 session.add(version)
                 version_id = version.id
                 print(
-                    f"Creating primary asset and version for {repo["name"]}:{commit} for org: {org_id}. Version ID: {version_id}"
+                    f"INFO: Creating primary asset and version for {repo['name']}:{commit} for org: {org_id}. Version ID: {version_id}"
                 )
     except IntegrityError:
         print(
-            f"Failed to create primary asset and version {repo["name"]}:{commit} for org: {org_id}"
+            f"ERROR: Failed to create primary asset and version {repo['name']}:{commit} for org: {org_id}"
         )
         return repo
 
@@ -398,7 +304,7 @@ def download_and_upload_repo(
     )
 
     zip_content = download_github_repo_zip(repo["full_name"], commit, access_token)
-    logger.info("Repository downloaded successfully. Size: %d bytes", len(zip_content))
+    print(f"INFO: Repository downloaded successfully. Size: {len(zip_content)} bytes")
 
     org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     # TODO: make a helper for constructing the upload key
@@ -406,7 +312,7 @@ def download_and_upload_repo(
         f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{repo['name']}.zip"
     )
     upload_to_s3_with_metadata(zip_content, metadata, upload_key)
-    print(f"Repository {repo['name']} uploaded successfully to {upload_key}.")
+    print(f"INFO: Repository {repo['name']} uploaded successfully to {upload_key}.")
 
     return None
 
@@ -427,6 +333,130 @@ def get_repo_clone_info_from_id(repo_id: str, github_token: str) -> tuple[str, s
     full_name = data["full_name"]  # e.g., "org/repo"
     clone_url = f"https://x-access-token:{github_token}@github.com/{full_name}.git"
     return clone_url, full_name
+
+
+def list_pull_requests(full_name: str, access_token: str, state: str = "open") -> list:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    all_prs = []
+    page_count = 1
+    with httpx.Client() as client:
+        url = f"https://api.github.com/repos/{full_name}/pulls"
+        response = client.get(
+            url,
+            headers=headers,
+            params={"state": state},
+        )
+        response.raise_for_status()
+        all_prs.extend(response.json())
+
+        # handle pagination
+        link_header = response.headers.get("link", None)
+        while link_header is not None:
+            page_count = page_count + 1
+            parts = response.headers["link"].split(",")
+            matches = [
+                re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip()) for part in parts
+            ]
+            has_next = False
+            for match in matches:
+                next_url, rel = match.groups()
+                if rel == "next" and next_url:
+                    has_next = True
+                    response = client.get(next_url, headers=headers)
+                    response.raise_for_status()
+                    all_prs.extend(response.json())
+            if not has_next:
+                break
+    return all_prs
+
+
+def get_pull_request_commits(full_name: str, pr_id: int, access_token: str) -> list:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    with httpx.Client() as client:
+        url = f"https://api.github.com/repos/{full_name}/pulls/{pr_id}/commits"
+        response = client.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+
+def close_pull_request(full_name: str, pr_id: int, access_token: str) -> None:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    with httpx.Client() as client:
+        # First check if PR is open
+        url = f"https://api.github.com/repos/{full_name}/pulls/{pr_id}"
+        response = client.get(url, headers=headers)
+        response.raise_for_status()
+        pr_data = response.json()
+
+        if pr_data.get("state") != "open":
+            print(
+                f"WARNING: PR #{pr_id} is already {pr_data.get('state', 'in unknown state')}, skipping close"
+            )
+            return
+
+        # Close the PR
+        response = client.patch(url, headers=headers, json={"state": "closed"})
+        response.raise_for_status()
+        print(f"INFO: Closed pull request #{pr_id} for {full_name}")
+
+
+def create_pull_request_with_bot_cleanup(
+    full_name: str,
+    branch: str,
+    access_token: str,
+    commit_slug: str,
+) -> None:
+    BOT_NAME = "docs-bot"
+    BOT_EMAIL = "bot@driverai.com"
+
+    print("INFO: Checking for existing open bot pull requests...")
+
+    try:
+        existing_prs = list_pull_requests(full_name, access_token, state="open")
+
+        for pr in existing_prs:
+            # Double-check the PR is actually open
+            if pr.get("state") != "open":
+                print(
+                    f"INFO: Skipping PR #{pr['number']} - not in open state (state: {pr.get('state')})"
+                )
+                continue
+
+            source_branch = pr["head"]["ref"]
+            if source_branch.startswith("docs_"):
+                pr_number = pr["number"]
+
+                # Check if this PR is for the current commit
+                if source_branch == branch:
+                    print(
+                        f"INFO: PR #{pr_number} already exists for commit {commit_slug} on branch {source_branch}"
+                    )
+                    continue  # Don't close the PR for the current commit
+
+                # Only check if it's a bot PR for OTHER commits
+                commits = get_pull_request_commits(full_name, pr_number, access_token)
+
+                is_bot_pr = any(
+                    commit["commit"]["author"]["name"] == BOT_NAME
+                    or commit["commit"]["author"]["email"] == BOT_EMAIL
+                    for commit in commits
+                )
+                if is_bot_pr:
+                    print(
+                        f"INFO: Closing outdated bot PR #{pr_number} from branch {source_branch}"
+                    )
+                    close_pull_request(full_name, pr_number, access_token)
+
+    except httpx.HTTPError as e:
+        print(f"ERROR: Error checking for existing bot PRs: {e}")
+
+    create_pull_request(full_name, branch, access_token, commit_slug)
 
 
 def create_pull_request(
@@ -465,9 +495,11 @@ def create_pull_request(
                 json=pr_data,
             )
             response.raise_for_status()
-            print(f"✅ Created PR: {response.json()['html_url']}")
+            print(f"INFO: Created PR: {response.json()['html_url']}")
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 422:
-                print("⚠️ No changes to create PR for - branch is up to date with main")
+                print(
+                    "WARNING: No changes to create PR for - branch is up to date with main"
+                )
             else:
                 raise

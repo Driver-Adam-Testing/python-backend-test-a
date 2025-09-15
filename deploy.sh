@@ -1,7 +1,8 @@
 #!/bin/bash
-set -e
-echo "deploying backend...$1 $2"
-exit 0
+set -euo pipefail
+
+echo "deploying backend..."
+
 #If there's a setEnv.sh script in the / directory, copy it and run it before starting
 echo "Checking for setEnv script"
 if [ -f "../setEnv.sh" ] ; then
@@ -12,9 +13,11 @@ else
     echo "There is no script setEnv.sh"
 fi
 
+#Always need the container, always push it. 
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest .
 docker push $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest
+
 
 npm install -g aws-cdk@latest
 pip install aws-cdk-lib
@@ -22,13 +25,15 @@ pip install aws-cdk.aws-lambda-python-alpha
 set +e
 npx cdk deploy --require-approval never
 status=$?
-echo $status
 set -e
 # TODO allow pass through during "streaming updates" Other CLIs (PID=77666) are currently reading from cdk.out. Invoke the CLI in sequence, or use '--output' to synth into different directories."
-# if [[ $status -eq 1 ]]; then
-#     exit 1
-# fi
-#add a forced redploy
+if [[ $status -eq 1 ]]; then
+    echo "CDK exited with status ${status}"
+    exit 1
+fi
+
+#FORCE DEPLOY SECTION
+
 CLUSTER_NAME=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'V2BaseInfrastructureStack-BaseInfrastructureCoreInfrastructureCluster')]" --output text)
 
 SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-ApiBackendBackendApiService')]" --output text)
@@ -185,13 +190,13 @@ for ARN in "${TASKS[@]}"; do
             jq -e --argjson pats "$PATS_JSON" '
               ($pats | map(ascii_downcase)) as $lpats
               | any(.events[]?; (.message // "") as $m
-                         | ($m | ascii_downcase) as $mm
-                         | any($lpats[]; $mm | contains(.)))
+                        | ($m | ascii_downcase) as $mm
+                        | any($lpats[]; $mm | contains(.)))
             ' <<<"$RESP" >/dev/null && { echo ">>> Container likely did not start. Logs printed above. Error found in log $TASK_ID/$CNAME — exiting $EXIT_ON_MATCH_CODE"; exit "$EXIT_ON_MATCH_CODE"; }
           else
             jq -e --argjson pats "$PATS_JSON" '
               any(.events[]?; (.message // "") as $m
-                         | any($pats[]?; $m | contains(.)))
+                        | any($pats[]?; $m | contains(.)))
             ' <<<"$RESP" >/dev/null && { echo ">>> Container likely did not start. Logs printed above. Error found in log $TASK_ID/$CNAME — exiting $EXIT_ON_MATCH_CODE"; exit "$EXIT_ON_MATCH_CODE"; }
           fi
         fi

@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-PDF preprocessing and embedding functions with exception handling, database persistence, and Poetry configuration.
+Processes PDF files, manages dependencies and build settings, and specifies ignored directories for version control.
 
 ## Folders
-- **[src](src/README.md)**: Implements PDF preprocessing and embedding functions with exception handling and database persistence.
+- **[src](src/README.md)**: Processes PDF files by creating summaries, handling exceptions, and managing database updates.
 
 ## Files
 - **[.gitignore](.gitignore.md)**: Specifies ignored directories for metadata and PDFs in version control.
-- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project using Poetry to ensure consistent environments.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for the `pdf-preprocessing` package using Poetry, specifying dependencies and build settings.
+- **[poetry.lock](poetry.lock.md)**: Manages Python package dependencies with locked versions, metadata, and integrity verification using Poetry.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the pdf-preprocessing project using Poetry, specifying dependencies and build settings.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).
 
 ---

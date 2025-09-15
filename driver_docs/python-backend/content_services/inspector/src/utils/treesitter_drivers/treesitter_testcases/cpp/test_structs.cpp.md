@@ -6,9 +6,9 @@
 C++ struct test cases demonstrating features like constructors, inheritance, templates, and namespaces.
 
 # Purpose
-The code is a collection of C++ struct test cases that demonstrate various C++ specific features not available in C. It includes examples of basic struct usage with constructors, access specifiers, inheritance, templates, and scoping through namespaces. The code also illustrates the use of structs within classes, forward declarations, anonymous namespaces, static members, aggregate initialization, and modern C++ features like deleted and defaulted functions. Each struct is designed to highlight a particular C++ feature, providing a comprehensive overview of struct capabilities in C++.
+The code is a collection of C++ struct test cases that demonstrate various C++ specific features not available in C. It includes examples of basic struct usage with constructors and destructors, access specifiers, inheritance, templates, and scoping with namespaces. The code also illustrates the use of static members, aggregate initialization, and modern C++ features such as deleted and defaulted functions. Each struct is designed to highlight a particular C++ feature, providing a comprehensive overview of struct capabilities in C++.
 
-The [`main`](<#main>) function creates instances of several structs, such as [`BasicStruct`](<#basicstructbasicstruct>), [`DerivedStruct`](<#derivedstructderivedstruct>), [`TemplateStruct`](<#templatestructtemplatestruct>), and others, to demonstrate their initialization and usage. The code serves as an educational resource for understanding how C++ extends the capabilities of structs beyond what is available in C, showcasing features like constructors, destructors, virtual methods, and template usage. The inclusion of namespaces and access specifiers further illustrates the advanced scoping and encapsulation features in C++.
+The code defines several structs, such as [`BasicStruct`](<#basicstructbasicstruct>), [`AccessStruct`](<#accessstructaccessstruct>), [`DerivedStruct`](<#derivedstructderivedstruct>), and [`TemplateStruct`](<#templatestructtemplatestruct>), each showcasing different aspects of C++ struct functionality. It also includes examples of structs within namespaces and classes, as well as forward declaration and anonymous namespace usage. The [`main`](<#main>) function demonstrates the instantiation and basic usage of these structs, serving as a practical test suite for understanding C++ struct features. The code does not define public APIs or external interfaces, as its primary purpose is to illustrate C++ struct capabilities.
 # Imports and Dependencies
 
 ---
@@ -33,8 +33,8 @@ The [`main`](<#main>) function creates instances of several structs, such as [`B
 
 - **Type**: ``struct``
 - **Members**:
-    - `value`: An integer that stores the value of the struct.
-- **Description**: Represents a simple structure with a single integer member `value`. It includes a default constructor that initializes `value` to 0, a parameterized constructor that initializes `value` to a given integer, and a destructor. The struct provides methods to set and get the value of `value`.
+    - ``value``: Stores an integer value.
+- **Description**: Represents a simple structure with an integer member `value`. It includes a default constructor that initializes `value` to 0, a parameterized constructor that sets `value` to a given integer, and a destructor. The structure provides methods to set and get the value of `value`.
 - **Member Functions**:
     - [`BasicStruct::BasicStruct`](<#basicstructbasicstruct>)
     - [`BasicStruct::BasicStruct`](<#basicstructbasicstruct>)
@@ -66,8 +66,9 @@ Initializes a `BasicStruct` object with a specified integer value.
 - **Inputs**:
     - `v`: An integer value to initialize the `value` member of the `BasicStruct`.
 - **Logic and Control Flow**:
-    - Assigns the input integer `v` to the `value` member of the `BasicStruct`.
-- **Output**: A `BasicStruct` object initialized with the specified integer value.
+    - The constructor takes an integer `v` as an argument.
+    - It initializes the `value` member of the `BasicStruct` with the provided integer `v`.
+- **Output**: A `BasicStruct` object with its `value` member initialized to the specified integer.
 - **See also**: [`BasicStruct`](<#basicstruct>)  (Data Structure)
 
 
@@ -75,11 +76,11 @@ Initializes a `BasicStruct` object with a specified integer value.
 #### BasicStruct::\~BasicStruct<!-- {{#callable:BasicStruct::~BasicStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L12>)
 
-Destroys an instance of the `BasicStruct`.
+Destructs an instance of the `BasicStruct`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The destructor `~BasicStruct()` is defined but does not contain any specific logic or resource deallocation.
-- **Output**: No output is produced as the destructor does not perform any operations.
+    - The destructor `~BasicStruct()` is defined but does not perform any specific operations.
+- **Output**: No output is produced as the destructor does not have a return value.
 - **See also**: [`BasicStruct`](<#basicstruct>)  (Data Structure)
 
 
@@ -87,12 +88,12 @@ Destroys an instance of the `BasicStruct`.
 #### BasicStruct::setValue<!-- {{#callable:BasicStruct::setValue}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L14>)
 
-Sets the `value` member of `BasicStruct` to the given integer `v`.
+Assigns a new integer value to the `value` member of `BasicStruct`.
 - **Inputs**:
-    - `v`: An integer to set as the new value of the `value` member in `BasicStruct`.
+    - `v`: An integer value to assign to the `value` member of `BasicStruct`.
 - **Logic and Control Flow**:
-    - Assigns the input integer `v` to the `value` member of the `BasicStruct`.
-- **Output**: No output is returned as the function has a `void` return type.
+    - Assign the input integer `v` to the `value` member of the `BasicStruct`.
+- **Output**: No output is returned as the function has a void return type.
 - **See also**: [`BasicStruct`](<#basicstruct>)  (Data Structure)
 
 
@@ -104,7 +105,7 @@ Returns the value of the `value` member variable from a `BasicStruct` instance.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `value` member variable of the `BasicStruct` instance.
-    - Returns the value of the `value` member variable.
+    - Returns the `value` member variable.
 - **Output**: The function returns an `int` which is the current value of the `value` member variable.
 - **See also**: [`BasicStruct`](<#basicstruct>)  (Data Structure)
 
@@ -116,9 +117,9 @@ Returns the value of the `value` member variable from a `BasicStruct` instance.
 
 - **Type**: ``struct``
 - **Members**:
-    - `public_value`: An integer that is accessible from outside the struct.
-    - `private_value`: An integer that is only accessible within the struct.
-- **Description**: Defines a structure with different access specifiers: public, private, and protected. The `public_value` is accessible from outside, while `private_value` and the methods `privateMethod` and `protectedMethod` are restricted to internal or derived class access.
+    - `public_value`: An integer that is accessible publicly.
+    - `private_value`: An integer that is accessible only within the struct.
+- **Description**: Defines a structure with different access specifiers, including a public integer `public_value`, a private integer `private_value`, and private and protected methods. The constructor initializes both `public_value` and `private_value` to zero.
 - **Member Functions**:
     - [`AccessStruct::AccessStruct`](<#accessstructaccessstruct>)
     - [`AccessStruct::privateMethod`](<#accessstructprivatemethod>)
@@ -133,9 +134,9 @@ Returns the value of the `value` member variable from a `BasicStruct` instance.
 Initializes an `AccessStruct` object with default values for its public and private members.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Sets `public_value` to 0.
-    - Sets `private_value` to 0.
-- **Output**: An `AccessStruct` object with `public_value` and `private_value` initialized to 0.
+    - Initializes `public_value` to 0.
+    - Initializes `private_value` to 0.
+- **Output**: An `AccessStruct` object with `public_value` and `private_value` set to 0.
 - **See also**: [`AccessStruct`](<#accessstruct>)  (Data Structure)
 
 
@@ -146,7 +147,7 @@ Initializes an `AccessStruct` object with default values for its public and priv
 Defines a private method within the `AccessStruct` that is not accessible outside the struct.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The method is defined as a private member of the `AccessStruct`, making it inaccessible from outside the struct.
+    - The method is defined as a private member of the `AccessStruct`, meaning it cannot be accessed from outside the struct.
     - The method has an empty body, indicating it performs no operations.
 - **Output**: No output is produced as the method is empty and private.
 - **See also**: [`AccessStruct`](<#accessstruct>)  (Data Structure)
@@ -156,12 +157,12 @@ Defines a private method within the `AccessStruct` that is not accessible outsid
 #### AccessStruct::protectedMethod<!-- {{#callable:AccessStruct::protectedMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L29>)
 
-Defines a protected method within the `AccessStruct` that is not implemented.
+Provides a protected method within the `AccessStruct` that can be accessed by derived classes or friends.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The method is defined as protected, meaning it is accessible within the `AccessStruct` and by derived classes.
-    - The method has no implementation, indicating it is a placeholder or intended for future use.
-- **Output**: No output is produced as the method is not implemented.
+    - The method is defined as a protected member of the `AccessStruct`, making it accessible to derived classes and friends of `AccessStruct`.
+    - The method does not contain any implementation or logic, as it is an empty function body.
+- **Output**: No output, as the method does not perform any operations.
 - **See also**: [`AccessStruct`](<#accessstruct>)  (Data Structure)
 
 
@@ -172,7 +173,7 @@ Defines a protected method within the `AccessStruct` that is not implemented.
 
 - **Type**: ``struct``
 - **Members**:
-    - ``base_value``: An integer that stores the base value for the struct.
+    - `base_value`: Stores an integer value for the base structure.
 - **Description**: Represents a base structure with a single integer member `base_value`. It includes a constructor to initialize `base_value` and a pure virtual method `virtualMethod`, making it an abstract base class intended for inheritance.
 - **Member Functions**:
     - [`BaseStruct::BaseStruct`](<#basestructbasestruct>)
@@ -184,13 +185,13 @@ Defines a protected method within the `AccessStruct` that is not implemented.
 #### BaseStruct::BaseStruct<!-- {{#callable:BaseStruct::BaseStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L35>)
 
-Initializes a `BaseStruct` object with a given integer value and provides a virtual destructor.
+Defines a base structure with a constructor to initialize an integer value and a pure virtual method.
 - **Inputs**:
-    - `v`: An integer value used to initialize the `base_value` member of the `BaseStruct`.
+    - `v`: An integer used to initialize the `base_value` member of the struct.
 - **Logic and Control Flow**:
-    - Assigns the input integer `v` to the `base_value` member of the `BaseStruct`.
-    - Defines a virtual destructor to allow for proper cleanup in derived classes.
-- **Output**: A `BaseStruct` object with the `base_value` initialized to the provided integer.
+    - Initializes the `base_value` member with the provided integer `v`.
+    - Defines a pure virtual method `virtualMethod()` that must be implemented by derived structs.
+- **Output**: An instance of `BaseStruct` with the `base_value` initialized to the given integer.
 - **See also**: [`BaseStruct`](<#basestruct>)  (Data Structure)
 
 
@@ -203,7 +204,7 @@ Defines a virtual destructor for the `BaseStruct` class.
 - **Logic and Control Flow**:
     - The destructor is declared as `virtual` to ensure that the destructor of any derived class is called when an object is deleted through a pointer to `BaseStruct`.
     - The destructor is defined as `default`, indicating that the compiler should generate the default implementation.
-- **Output**: No return value, as it is a destructor.
+- **Output**: No output is produced as this is a destructor.
 - **See also**: [`BaseStruct`](<#basestruct>)  (Data Structure)
 
 
@@ -228,15 +229,15 @@ Defines a virtual destructor for the `BaseStruct` class.
 #### DerivedStruct::DerivedStruct<!-- {{#callable:DerivedStruct::DerivedStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L42>)
 
-Initializes a `DerivedStruct` object with base and derived values and overrides a virtual method.
+Defines a derived structure with an integer member and an overridden virtual method.
 - **Inputs**:
     - `b`: An integer value to initialize the `base_value` in the `BaseStruct`.
     - `d`: An integer value to initialize the `derived_value` in the `DerivedStruct`.
 - **Logic and Control Flow**:
-    - Calls the constructor of `BaseStruct` with the integer `b` to initialize `base_value`.
-    - Initializes `derived_value` with the integer `d`.
+    - Inherits from `BaseStruct` and initializes the `base_value` using the constructor of `BaseStruct`.
+    - Initializes `derived_value` with the provided integer `d`.
     - Overrides the `virtualMethod` from `BaseStruct` with an empty implementation.
-- **Output**: A `DerivedStruct` object with initialized `base_value` and `derived_value`.
+- **Output**: An instance of `DerivedStruct` with initialized `base_value` and `derived_value`.
 - **See also**: [`DerivedStruct`](<#derivedstruct>)  (Data Structure)
 
 
@@ -249,7 +250,7 @@ Overrides the pure virtual method `virtualMethod` from `BaseStruct` in `DerivedS
 - **Logic and Control Flow**:
     - Overrides the `virtualMethod` from the `BaseStruct` class.
     - Provides an empty implementation for the `virtualMethod` in the `DerivedStruct` class.
-- **Output**: No output is produced as the method is empty.
+- **Output**: No output is produced as the method has an empty implementation.
 - **See also**: [`DerivedStruct`](<#derivedstruct>)  (Data Structure)
 
 
@@ -261,7 +262,7 @@ Overrides the pure virtual method `virtualMethod` from `BaseStruct` in `DerivedS
 - **Type**: ``struct``
 - **Members**:
     - ``data``: Holds a value of type `T`.
-- **Description**: Defines a template-based structure that can store a value of any type `T`. It includes a default constructor and a parameterized constructor to initialize the `data` member. The `set` method updates the `data` member, and the `get` method returns the current value of `data`.
+- **Description**: Represents a templated structure that stores a single data member of a generic type `T`. It provides a default constructor and a parameterized constructor to initialize the `data` member. The `set` method updates the `data` member, and the `get` method returns the current value of `data`.
 - **Member Functions**:
     - [`TemplateStruct::TemplateStruct`](<#templatestructtemplatestruct>)
     - [`TemplateStruct::TemplateStruct`](<#templatestructtemplatestruct>)
@@ -278,7 +279,7 @@ Initializes a `TemplateStruct` object with an optional data value of type `T`.
 - **Inputs**:
     - `value`: A constant reference to an object of type `T` used to initialize the `data` member.
 - **Logic and Control Flow**:
-    - If no argument is provided, the default constructor initializes the `data` member with its default constructor.
+    - If no argument is provided, the default constructor initializes the `data` member with its default value.
     - If an argument is provided, the constructor initializes the `data` member with the given value.
 - **Output**: A `TemplateStruct` object with the `data` member initialized.
 - **See also**: [`TemplateStruct`](<#templatestruct>)  (Data Structure)
@@ -306,7 +307,7 @@ Assigns a new value to the `data` member of `TemplateStruct`.
     - `value`: A constant reference to an object of type `T` that will be assigned to the `data` member.
 - **Logic and Control Flow**:
     - Assign the input `value` to the `data` member of the `TemplateStruct`.
-- **Output**: No return value.
+- **Output**: No output is returned as the function has a `void` return type.
 - **See also**: [`TemplateStruct`](<#templatestruct>)  (Data Structure)
 
 
@@ -319,7 +320,7 @@ Returns a constant reference to the `data` member of the `TemplateStruct`.
 - **Logic and Control Flow**:
     - Accesses the `data` member of the `TemplateStruct`.
     - Returns a constant reference to the `data` member.
-- **Output**: A constant reference to the `data` member of the `TemplateStruct`. This reference allows read-only access to the `data`.
+- **Output**: A constant reference to the `data` member of the `TemplateStruct`.
 - **See also**: [`TemplateStruct`](<#templatestruct>)  (Data Structure)
 
 
@@ -328,7 +329,7 @@ Returns a constant reference to the `data` member of the `TemplateStruct`.
 ### NamespacedStruct<!-- {{#data_structure:StructNamespace::NamespacedStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L60>)
 
-- **Type**: `struct`
+- **Type**: ``struct``
 - **Members**:
     - ``value``: Stores an integer value.
 - **Description**: Defines a simple structure within the `StructNamespace` namespace that contains a single integer member `value` and a constructor to initialize it.
@@ -346,7 +347,7 @@ Initializes a `NamespacedStruct` object with a given integer value.
     - `v`: An integer used to initialize the `value` member of the `NamespacedStruct`.
 - **Logic and Control Flow**:
     - Assigns the input integer `v` to the `value` member of the `NamespacedStruct`.
-- **Output**: A `NamespacedStruct` object with its `value` member initialized to the provided integer.
+- **Output**: A `NamespacedStruct` object with its `value` member initialized to the specified integer.
 - **See also**: [`StructNamespace::NamespacedStruct`](<#namespacedstruct>)  (Data Structure)
 
 
@@ -358,7 +359,7 @@ Initializes a `NamespacedStruct` object with a given integer value.
 - **Type**: ``struct``
 - **Members**:
     - ``data``: Stores a `double` value.
-- **Description**: Represents a simple structure within a nested namespace, containing a single `double` member `data` initialized through a constructor.
+- **Description**: Represents a simple structure within a nested namespace, containing a single `double` member `data` and a constructor to initialize it.
 - **Member Functions**:
     - [`StructNamespace::NestedNamespace::DeeplyNested::DeeplyNested`](<#deeplynesteddeeplynested>)
 
@@ -386,7 +387,7 @@ Initializes a `DeeplyNested` struct with a given double value.
 - **Members**:
     - ``InnerStruct``: A public nested struct with an integer member `inner_value`.
     - ``PrivateStruct``: A private nested struct with an integer member `secret`.
-- **Description**: Defines a class that contains two nested structs: `InnerStruct`, which is accessible publicly and has an integer member `inner_value`, and `PrivateStruct`, which is private and has an integer member `secret`. The class demonstrates encapsulation by restricting access to `PrivateStruct`.
+- **Description**: Defines a class that contains two nested structs: `InnerStruct`, which is accessible publicly and has a method, and `PrivateStruct`, which is private and not accessible outside the class.
 
 
 ---
@@ -395,8 +396,8 @@ Initializes a `DeeplyNested` struct with a given double value.
 
 - **Type**: `struct`
 - **Members**:
-    - ``inner_value``: Stores an integer value.
-- **Description**: Defines a structure with a single integer member `inner_value` and a constructor to initialize it. It also includes a method `method()` with no implementation details provided.
+    - ``inner_value``: Stores an integer value for the `InnerStruct`.
+- **Description**: Represents a simple structure within the `ContainerClass` that contains an integer member `inner_value` and a constructor to initialize it. The `method` function is defined but does not perform any operations.
 - **Member Functions**:
     - [`ContainerClass::InnerStruct::InnerStruct`](<#innerstructinnerstruct>)
     - [`ContainerClass::InnerStruct::method`](<#innerstructmethod>)
@@ -409,11 +410,11 @@ Initializes a `DeeplyNested` struct with a given double value.
 
 Represents a simple structure with an integer value and a method.
 - **Inputs**:
-    - `v`: An integer value used to initialize `inner_value`.
+    - `v`: An integer used to initialize the `inner_value` of the `InnerStruct`.
 - **Logic and Control Flow**:
     - Initializes the `inner_value` member with the provided integer `v`.
-    - Defines an empty method `method()` that currently has no implementation.
-- **Output**: An instance of `InnerStruct` with the `inner_value` initialized to the given integer.
+    - Contains an empty method `method()` that does not perform any operations.
+- **Output**: An instance of `InnerStruct` with the `inner_value` set to the provided integer `v`.
 - **See also**: [`ContainerClass::InnerStruct`](<#innerstruct>)  (Data Structure)
 
 
@@ -424,9 +425,9 @@ Represents a simple structure with an integer value and a method.
 Defines an empty method within the `InnerStruct` of `ContainerClass`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The method is defined within the `InnerStruct` of the `ContainerClass`.
-    - The method does not perform any operations as its body is empty.
-- **Output**: No output is produced as the method is empty.
+    - The method is defined within the `InnerStruct` of `ContainerClass`.
+    - The method has an empty body, meaning it performs no operations.
+- **Output**: No output is produced as the method body is empty.
 - **See also**: [`ContainerClass::InnerStruct`](<#innerstruct>)  (Data Structure)
 
 
@@ -448,11 +449,12 @@ Defines an empty method within the `InnerStruct` of `ContainerClass`.
 #### PrivateStruct::PrivateStruct<!-- {{#callable:ContainerClass::PrivateStruct::PrivateStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L85>)
 
-Initializes a `PrivateStruct` object with a given integer value assigned to its `secret` member.
+Initializes a `PrivateStruct` object with a given integer value as its secret.
 - **Inputs**:
     - `s`: An integer value used to initialize the `secret` member of the `PrivateStruct`.
 - **Logic and Control Flow**:
-    - Assigns the input integer `s` to the `secret` member of the `PrivateStruct`.
+    - The constructor takes an integer `s` as an argument.
+    - It initializes the `secret` member of the `PrivateStruct` with the value of `s`.
 - **Output**: A `PrivateStruct` object with its `secret` member initialized to the provided integer value.
 - **See also**: [`ContainerClass::PrivateStruct`](<#privatestruct>)  (Data Structure)
 
@@ -465,7 +467,7 @@ Initializes a `PrivateStruct` object with a given integer value assigned to its 
 - **Type**: ``struct``
 - **Members**:
     - ``ptr``: A pointer to a `ForwardDeclared` object.
-- **Description**: Uses a forward declaration to define a pointer to a `ForwardDeclared` object. The constructor initializes the `ptr` member to `nullptr`, indicating that it does not point to any object initially.
+- **Description**: Represents a structure that uses a forward-declared type, `ForwardDeclared`, by holding a pointer to it. The constructor initializes the pointer to `nullptr`, indicating that it does not point to any `ForwardDeclared` object initially.
 - **Member Functions**:
     - [`UsesForward::UsesForward`](<#usesforwardusesforward>)
 
@@ -478,7 +480,7 @@ Initializes a `PrivateStruct` object with a given integer value assigned to its 
 Initializes a `UsesForward` struct with a null pointer to a `ForwardDeclared` object.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initializes the `ptr` member to `nullptr`.
+    - The constructor initializes the `ptr` member to `nullptr`.
 - **Output**: A `UsesForward` object with its `ptr` member set to `nullptr`.
 - **See also**: [`UsesForward`](<#usesforward>)  (Data Structure)
 
@@ -490,11 +492,8 @@ Initializes a `UsesForward` struct with a null pointer to a `ForwardDeclared` ob
 
 - **Type**: ``struct``
 - **Members**:
-    - ``data``: An integer member that stores data.
-- **Description**: Represents a simple structure with a single integer member `data` and a constructor that initializes this member.
-- **Member Functions**:
-    - [`ForwardDeclared::doSomething`](<test_classes.cpp.md#forwarddeclareddosomething>)
-    - [`ForwardDeclared::ForwardDeclared`](<#forwarddeclaredforwarddeclared>)
+    - ``data``: Stores an integer value.
+- **Description**: Represents a simple structure with a single integer member `data` and a constructor to initialize it.
 
 **Methods**
 
@@ -508,7 +507,7 @@ Initializes a `ForwardDeclared` struct with a given integer value.
 - **Logic and Control Flow**:
     - Assigns the input integer `d` to the `data` member of the `ForwardDeclared` struct.
 - **Output**: A `ForwardDeclared` struct instance with its `data` member initialized to the provided integer value.
-- **See also**: [`ForwardDeclared`](<#forwarddeclared>)  (Data Structure)
+- **See also**: [`ForwardDeclared`](<test_classes.cpp.md#forwarddeclared>)  (Data Structure)
 
 
 
@@ -518,8 +517,8 @@ Initializes a `ForwardDeclared` struct with a given integer value.
 
 - **Type**: ``struct``
 - **Members**:
-    - ``value``: An integer field initialized to 42.
-- **Description**: Defines a simple structure with a single integer member `value`, which is initialized to 42 by the default constructor. This structure is defined within an unnamed namespace, making it accessible only within the file it is declared in.
+    - `value`: An integer initialized to 42.
+- **Description**: Defines an anonymous `struct` within an unnamed namespace, containing a single integer member `value` initialized to 42 by the default constructor.
 - **Member Functions**:
     - [`(anonymous)::AnonymousNamespaceStruct::AnonymousNamespaceStruct`](<#anonymous)::AnonymousNamespaceStruct::AnonymousNamespaceStruct>)
 
@@ -529,10 +528,10 @@ Initializes a `ForwardDeclared` struct with a given integer value.
 #### AnonymousNamespaceStruct::AnonymousNamespaceStruct<!-- {{#callable:(anonymous)::AnonymousNamespaceStruct::AnonymousNamespaceStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L106>)
 
-Initializes an instance of `AnonymousNamespaceStruct` with a default value of 42.
+Initializes an `AnonymousNamespaceStruct` object with a default `value` of 42.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The constructor initializes the `value` member of `AnonymousNamespaceStruct` to 42.
+    - The constructor initializes the `value` member of the `AnonymousNamespaceStruct` to 42.
 - **Output**: An instance of `AnonymousNamespaceStruct` with `value` set to 42.
 - **See also**: [`(anonymous)::AnonymousNamespaceStruct`](<#anonymous)::AnonymousNamespaceStruct>)  (Data Structure)
 
@@ -542,12 +541,12 @@ Initializes an instance of `AnonymousNamespaceStruct` with a default value of 42
 ### StaticStruct<!-- {{#data_structure:StaticStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L111>)
 
-- **Type**: ``struct``
+- **Type**: `struct`
 - **Members**:
     - ``counter``: A static integer that tracks the number of `StaticStruct` instances.
     - ``CONSTANT``: A static constant integer with a value of 100.
     - ``instance_value``: An integer that stores the incremented value of `counter` for each instance.
-- **Description**: Defines a structure with static members, including a counter to track the number of instances and a constant value. Each instance of `StaticStruct` initializes `instance_value` with the incremented `counter` value, demonstrating the use of static members in a struct.
+- **Description**: Defines a structure with static members, including a static counter to track the number of instances and a constant value. Each instance of `StaticStruct` has an `instance_value` initialized to the incremented `counter`. The static method `getCounter` returns the current value of `counter`.
 - **Member Functions**:
     - [`StaticStruct::StaticStruct`](<#staticstructstaticstruct>)
     - [`StaticStruct::getCounter`](<#staticstructgetcounter>)
@@ -591,7 +590,7 @@ Returns the current value of the static member `counter` in `StaticStruct`.
     - ``a``: An integer field.
     - ``b``: A double precision floating-point field.
     - ``c``: A boolean field.
-- **Description**: Represents a simple aggregate data structure with three fields: an integer `a`, a double `b`, and a boolean `c`. This struct is suitable for C++11 aggregate initialization, allowing direct initialization of its members.
+- **Description**: Represents a simple aggregate data structure with three fields: an integer `a`, a double `b`, and a boolean `c`. This struct is suitable for C++11 aggregate initialization.
 
 
 ---
@@ -601,7 +600,7 @@ Returns the current value of the static member `counter` in `StaticStruct`.
 - **Type**: ``struct``
 - **Members**:
     - `value`: Stores an integer value.
-- **Description**: Represents a simple structure with a single integer member `value`. It includes a default constructor, a parameterized constructor, and explicitly deletes the copy constructor and copy assignment operator to prevent copying. The destructor is defaulted.
+- **Description**: Represents a simple structure with a single integer member `value`. It includes a default constructor, a parameterized constructor, and explicitly deleted copy constructor and copy assignment operator, which prevents copying of instances.
 - **Member Functions**:
     - [`ModernStruct::ModernStruct`](<#modernstructmodernstruct>)
     - [`ModernStruct::ModernStruct`](<#modernstructmodernstruct>)
@@ -615,14 +614,16 @@ Returns the current value of the static member `counter` in `StaticStruct`.
 #### ModernStruct::ModernStruct<!-- {{#callable:ModernStruct::ModernStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L133>)
 
-Initializes a `ModernStruct` object with a specified integer value or uses the default constructor.
+Defines a struct with a default constructor, a parameterized constructor, and deleted copy constructor and assignment operator.
 - **Inputs**:
-    - `v`: An integer value to initialize the `value` member of the `ModernStruct`.
+    - `v`: An integer value used to initialize the `value` member of the struct.
 - **Logic and Control Flow**:
-    - If no argument is provided, the default constructor is used, which does not initialize `value`.
-    - If an integer `v` is provided, the constructor initializes the `value` member with `v`.
-    - The copy constructor and copy assignment operator are deleted, preventing copying of `ModernStruct` objects.
-- **Output**: A `ModernStruct` object with the `value` member initialized to the specified integer or left uninitialized if the default constructor is used.
+    - The default constructor `ModernStruct()` initializes an instance without setting the `value` member explicitly.
+    - The parameterized constructor `ModernStruct(int v)` initializes the `value` member with the provided integer `v`.
+    - The copy constructor `ModernStruct(const ModernStruct&)` is deleted, preventing copying of instances.
+    - The assignment operator `ModernStruct& operator=(const ModernStruct&)` is deleted, preventing assignment between instances.
+    - The destructor `~ModernStruct()` is defaulted, allowing automatic cleanup without custom logic.
+- **Output**: An instance of `ModernStruct` with its `value` member initialized as specified by the constructor used.
 - **See also**: [`ModernStruct`](<#modernstruct>)  (Data Structure)
 
 
@@ -630,14 +631,14 @@ Initializes a `ModernStruct` object with a specified integer value or uses the d
 #### ModernStruct::ModernStruct<!-- {{#callable:ModernStruct::ModernStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L134>)
 
-Defines a structure with a constructor, deleted copy constructor, deleted copy assignment operator, and default destructor.
+Initializes a `ModernStruct` object with a specified integer value and prevents copying and assignment.
 - **Inputs**:
-    - `v`: An integer value to initialize the `value` member of the struct.
+    - `v`: An integer value to initialize the `value` member of the `ModernStruct`.
 - **Logic and Control Flow**:
-    - Initializes the `value` member with the provided integer `v` when using the parameterized constructor.
-    - Prevents copying of `ModernStruct` instances by deleting the copy constructor and copy assignment operator.
-    - Allows default construction and destruction of `ModernStruct` instances.
-- **Output**: An instance of `ModernStruct` with the `value` member initialized to the given integer `v`.
+    - Initializes the `value` member with the provided integer `v`.
+    - The copy constructor is deleted, preventing copying of `ModernStruct` objects.
+    - The copy assignment operator is deleted, preventing assignment of `ModernStruct` objects.
+- **Output**: A `ModernStruct` object initialized with the specified integer value.
 - **See also**: [`ModernStruct`](<#modernstruct>)  (Data Structure)
 
 
@@ -645,12 +646,15 @@ Defines a structure with a constructor, deleted copy constructor, deleted copy a
 #### ModernStruct::ModernStruct<!-- {{#callable:ModernStruct::ModernStruct}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L135>)
 
-Prevents copying and assignment of `ModernStruct` instances.
+Prevents copying and assignment for `ModernStruct` while allowing default construction and destruction.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Deletes the copy constructor to prevent copying of `ModernStruct` instances.
-    - Deletes the copy assignment operator to prevent assignment between `ModernStruct` instances.
-- **Output**: No output is produced as these are deleted functions.
+    - The constructor `ModernStruct()` is defaulted, allowing default construction.
+    - The constructor `ModernStruct(int v)` initializes the `value` member with the given integer `v`.
+    - The copy constructor `ModernStruct(const ModernStruct&)` is deleted, preventing copying of `ModernStruct` instances.
+    - The copy assignment operator `operator=(const ModernStruct&)` is deleted, preventing assignment between `ModernStruct` instances.
+    - The destructor `~ModernStruct()` is defaulted, allowing default destruction.
+- **Output**: An instance of `ModernStruct` with a member `value` initialized to a specified integer or default value.
 - **See also**: [`ModernStruct`](<#modernstruct>)  (Data Structure)
 
 
@@ -661,8 +665,9 @@ Prevents copying and assignment of `ModernStruct` instances.
 Prevents assignment of one `ModernStruct` instance to another.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The assignment operator `operator=` is explicitly deleted, which means any attempt to assign one `ModernStruct` instance to another will result in a compile-time error.
-- **Output**: No output is produced as the function is deleted and cannot be used.
+    - The `operator=` is deleted, which means the assignment operator is not available for `ModernStruct`.
+    - Any attempt to assign one `ModernStruct` instance to another will result in a compile-time error.
+- **Output**: No output is produced as the function is deleted.
 - **See also**: [`ModernStruct`](<#modernstruct>)  (Data Structure)
 
 
@@ -673,9 +678,8 @@ Prevents assignment of one `ModernStruct` instance to another.
 Destroys an instance of `ModernStruct` using the default destructor.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The destructor `~ModernStruct()` is defined as `default`, which means it will automatically clean up resources used by `ModernStruct` without any custom logic.
-    - The destructor is implicitly called when an object of `ModernStruct` goes out of scope or is explicitly deleted.
-- **Output**: No return value, as it is a destructor.
+    - Uses the default destructor provided by the compiler to destroy the `ModernStruct` instance.
+- **Output**: No return value; the destructor cleans up the instance of `ModernStruct`.
 - **See also**: [`ModernStruct`](<#modernstruct>)  (Data Structure)
 
 
@@ -686,18 +690,18 @@ Destroys an instance of `ModernStruct` using the default destructor.
 ### main<!-- {{#callable:main}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_structs.cpp#L140>)
 
-Instantiates various struct objects to demonstrate C++ struct features.
+Initializes various struct instances and returns 0.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Create an instance of `BasicStruct` with the value 10.
-    - Create an instance of `DerivedStruct` with base value 1 and derived value 2.
-    - Create an instance of `TemplateStruct<int>` with the value 42.
-    - Create an instance of `StructNamespace::NamespacedStruct` with the value 5.
-    - Create an instance of `ContainerClass::InnerStruct` with the value 7.
-    - Create an instance of `StaticStruct`.
-    - Create an instance of `AggregateStruct` using aggregate initialization with values 1, 2.5, and true.
-    - Return 0 to indicate successful execution.
-- **Output**: Returns an integer value 0, indicating successful execution of the program.
+    - Creates an instance of `BasicStruct` with the value 10.
+    - Creates an instance of `DerivedStruct` with base value 1 and derived value 2.
+    - Creates an instance of `TemplateStruct<int>` with the value 42.
+    - Creates an instance of `StructNamespace::NamespacedStruct` with the value 5.
+    - Creates an instance of `ContainerClass::InnerStruct` with the value 7.
+    - Creates an instance of `StaticStruct`, which increments the static counter.
+    - Creates an instance of `AggregateStruct` using aggregate initialization with values 1, 2.5, and true.
+    - Returns 0 to indicate successful execution.
+- **Output**: Returns an integer 0, indicating successful execution.
 
 
 

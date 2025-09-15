@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a system message prompt for responding with technical context-specific information.
+Defines a system message prompt for responding based on technical context in source code and documents.
 
 # Purpose
-This code defines a configuration for a conversational AI system. The `PROMPT` variable contains a string that instructs the AI on how to respond, emphasizing the need to provide information based on technical context and to avoid general information. The `MESSAGE` dictionary uses the `PROMPT` as its content and assigns it a role of `system`, indicating that it is a system-level instruction for the AI. This setup is typically used to guide the behavior of an AI model in generating responses that are contextually relevant and accurate.
+This code defines a constant `PROMPT` and a dictionary `MESSAGE`. The `PROMPT` is a multi-line string that provides instructions for generating responses based on technical context. It emphasizes the importance of including only technical information and delaying responses until sufficient context is provided. The `MESSAGE` dictionary contains a key `role` with the value `"system"` and a key `content` with the value of the `PROMPT` string. This setup is likely used in a system that processes or generates responses based on specific instructions, ensuring that responses are contextually accurate and relevant.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
 - **Description**: A multi-line string that provides instructions for generating responses based on technical context. It emphasizes the importance of responding with information that is directly relevant to the technical context and source documentation.
-- **Use**: Used as a template or guideline for generating context-aware responses.
+- **Use**: Used as a template or guideline for generating contextually accurate responses.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: A dictionary with two key-value pairs: `role` and `content`. The `role` key has a value of `system`, and the `content` key is assigned the value of the `PROMPT` variable.
-- **Use**: Used to store system role information and a prompt message for further processing.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system role information and a predefined prompt for further processing.
 
 
 

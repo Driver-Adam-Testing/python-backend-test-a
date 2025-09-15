@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration management and settings for large language models using Pydantic and TOML.
+Configuration management and settings for large language models using TOML and Pydantic.
 
 
 ## Files
-- **[llm_config.py](llm_config.py.md)**: Configuration management for large language models using Pydantic and TOML files.
-- **[llm_config.toml](llm_config.toml.md)**: Configuration settings for various language models from OpenAI and Anthropic, detailing model IDs, providers, context windows, and API types.
+- **[llm_config.py](llm_config.py.md)**: Configuration management for large language models using TOML files and Pydantic validation.
+- **[llm_config.toml](llm_config.toml.md)**: Configuration settings for various language models from OpenAI and Anthropic, detailing model IDs, providers, context windows, output tokens, and API types.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

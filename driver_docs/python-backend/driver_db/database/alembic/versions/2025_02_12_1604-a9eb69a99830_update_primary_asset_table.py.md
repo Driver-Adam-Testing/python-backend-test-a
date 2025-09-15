@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to update the `v2_primary_asset` table with a new column and foreign key.
+Alembic migration script to update the primary asset table with a new column and foreign key.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `installation_id` of type UUID to the `v2_primary_asset` table and creates a foreign key constraint linking it to the `id` column of the `git_provider_app_installations` table, with a `SET NULL` action on delete. The [`downgrade`](<#downgrade>) function reverses these changes by removing the foreign key constraint and dropping the `installation_id` column from the `v2_primary_asset` table. The script includes metadata such as `revision`, `down_revision`, and `Create Date` for version control.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `installation_id` of type UUID to the `v2_primary_asset` table and creates a foreign key constraint linking it to the `git_provider_app_installations` table, with a deletion policy of setting the value to NULL. The [`downgrade`](<#downgrade>) function reverses these changes by removing the foreign key constraint and dropping the `installation_id` column from the `v2_primary_asset` table. The script includes metadata such as `revision`, `down_revision`, and timestamps for tracking the migration history.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific state of the database schema at the time of this migration.
+- **Use**: Used by Alembic to identify the current migration version.
 
 
 ---
@@ -41,7 +41,7 @@ This code is a database migration script using Alembic, a database migration too
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -50,13 +50,13 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_12_1604-a9eb69a99830_update_primary_asset_table.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_02_12_1604-a9eb69a99830_update_primary_asset_table.py#L19>)
 
-Modifies the database schema by adding a new column and creating a foreign key constraint.
+Adds a new column and a foreign key constraint to the 'v2_primary_asset' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Adds a new column named `installation_id` of type `UUID` to the `v2_primary_asset` table, allowing null values.
-    - Creates a foreign key constraint on the `installation_id` column in the `v2_primary_asset` table, referencing the `id` column in the `git_provider_app_installations` table.
-    - Specifies that if a referenced record is deleted, the `installation_id` in `v2_primary_asset` will be set to NULL.
-- **Output**: Does not return any value.
+    - Adds a new column named 'installation_id' of type UUID to the 'v2_primary_asset' table, allowing null values.
+    - Creates a foreign key constraint on the 'installation_id' column, linking it to the 'id' column of the 'git_provider_app_installations' table.
+    - Specifies that if the referenced row in 'git_provider_app_installations' is deleted, the 'installation_id' in 'v2_primary_asset' will be set to NULL.
+- **Output**: No output is returned as the function modifies the database schema in place.
 
 
 ---

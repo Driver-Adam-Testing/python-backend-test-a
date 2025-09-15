@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A shell script to start the database, run migrations, and create initial data.
+Shell script to start the database, run migrations, and create initial data.
 
 # Purpose
-The script is a Bash executable that automates the initialization process for a database-driven application. It first executes a Python script located at `/app/app/backend_pre_start.py` to perform any necessary pre-start operations for the database. Next, it changes the directory to `/driver_db/database` and runs the `alembic upgrade head` command to apply database migrations, ensuring the database schema is up to date. Finally, it runs another Python script, `/app/app/initial_data.py`, to populate the database with initial data. This script is intended to be executed as part of the application's startup routine.
+The script is a Bash executable that automates the initialization process for a database-driven application. It first executes a Python script located at `/app/app/backend_pre_start.py` to perform any necessary pre-start operations for the database. Then, it navigates to the `/driver_db/database` directory and runs the `alembic upgrade head` command to apply database migrations. Finally, it executes another Python script, `/app/app/initial_data.py`, to populate the database with initial data. This script is intended to be run as part of the application's startup routine to ensure the database is correctly set up and ready for use.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -46,6 +46,7 @@ from .models_enums import (
 
 
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
+    __tablename__ = "runtime_log_agent_instance"
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -69,6 +70,7 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
 
 
 class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
+    __tablename__ = "runtime_log_agent_message"
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -79,7 +81,7 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
     message: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
     order: int = Field(default=None, sa_column=Column(Integer, autoincrement=True))
     agent_instance_id: UUID = Field(
-        foreign_key="runtimelogagentinstance.id", nullable=False
+        foreign_key="runtime_log_agent_instance.id", nullable=False
     )
     agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="messages")
 
@@ -93,18 +95,18 @@ class Enum_Derived_Content_Status(str, enum.Enum):
 
 
 class DocumentSource(SQLModel, table=True):
-    __tablename__ = "document_sources"
+    __tablename__ = "document_source"
     """Link table between documents and their sources."""
 
     source_node_id: None | uuid.UUID = Field(
         default=None,
-        foreign_key="v2_node.id",
+        foreign_key="node.id",
         primary_key=True,
         ondelete="CASCADE",
     )
     page_node_id: None | uuid.UUID = Field(
         default=None,
-        foreign_key="v2_node.id",
+        foreign_key="node.id",
         primary_key=True,
         ondelete="CASCADE",
     )
@@ -120,7 +122,7 @@ class DocumentSource(SQLModel, table=True):
 
 # TODO add indexes back
 class DerivedContent(SQLModel, table=True):  # type: ignore
-    __tablename__ = "derived_contents"
+    __tablename__ = "derived_content"
 
     # TODO:
     # Point tags at node or primary asset
@@ -151,7 +153,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
 
     node_id: None | UUID = Field(
         default=None,
-        foreign_key="v2_node.id",
+        foreign_key="node.id",
         ondelete="CASCADE",
         nullable=True,
         index=True,
@@ -228,9 +230,10 @@ event.listen(DerivedContent, "after_insert", update_primary_asset_content_timest
 
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
+    __tablename__ = "chunk_and_embedding"
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     content_id: UUID = Field(
-        foreign_key="derived_contents.id",
+        foreign_key="derived_content.id",
         nullable=False,
         index=True,
         ondelete="CASCADE",
@@ -273,7 +276,7 @@ class UsageSessionStatus(str, enum.Enum):
 
 
 class UsageSession(SQLModel, table=True):
-    __tablename__ = "usage_sessions"
+    __tablename__ = "usage_session"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     status: UsageSessionStatus = Field(default=UsageSessionStatus.RUNNING, index=True)
     organization_id: str
@@ -318,11 +321,11 @@ class UsageEventType(enum.IntEnum):
 
 
 class UsageEvent(SQLModel, table=True):
-    __tablename__ = "usage_events"
+    __tablename__ = "usage_event"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     event_type: UsageEventType = Field(sa_column=Column(Integer, nullable=False))
     session_id: UUID = Field(
-        foreign_key="usage_sessions.id",
+        foreign_key="usage_session.id",
         nullable=False,
         ondelete="CASCADE",
         index=True,
@@ -365,7 +368,7 @@ class GithubAppInstallation(SQLModel, table=True):
             nullable=False,
         ),
     )
-    __tablename__ = "github_app_installations"
+    __tablename__ = "github_app_installation"
     __table_args__ = (
         UniqueConstraint(
             "github_app_installation_id",
@@ -440,7 +443,7 @@ class GitProviderKind(str, enum.Enum):
 
 #
 class GitProviderApp(SQLModel, table=True):
-    __tablename__ = "git_provider_apps"
+    __tablename__ = "git_provider_app"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     provider_kind: GitProviderKind = Field(nullable=False, index=True)
     shared_provider: bool
@@ -479,10 +482,10 @@ class GitProviderApp(SQLModel, table=True):
 
 
 class GitProviderAppInstallation(SQLModel, table=True):
-    __tablename__ = "git_provider_app_installations"
+    __tablename__ = "git_provider_app_installation"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     git_provider_app_id: UUID = Field(
-        foreign_key="git_provider_apps.id",
+        foreign_key="git_provider_app.id",
         nullable=False,
         index=True,
         ondelete="CASCADE",
@@ -524,7 +527,7 @@ class GitProviderAppInstallation(SQLModel, table=True):
 
 
 class PrimaryAsset(SQLModel, table=True):  # type: ignore
-    __tablename__ = "v2_primary_asset"
+    __tablename__ = "primary_asset"
     __table_args__ = (
         Index(
             "ix_v2_primary_asset_organization_id_display_name",
@@ -540,7 +543,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     organization_id: str = Field(index=True)
     kind: PrimaryAssetKind = Field(index=True)
     installation_id: UUID | None = Field(
-        foreign_key="git_provider_app_installations.id",
+        foreign_key="git_provider_app_installation.id",
         nullable=True,
         ondelete="SET NULL",
         default=None,
@@ -599,7 +602,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     )
     tags: list["Tag"] = Relationship(
         back_populates="primary_assets",
-        sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
+        sa_relationship_kwargs={"secondary": "primary_asset_tag"},
     )
     vcs_auto_update_policy: VcsAutoUpdatePolicy | None = Field(
         sa_column=Column(String, nullable=True)
@@ -607,7 +610,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
 
 
 class Version(SQLModel, table=True):  # type: ignore
-    __tablename__ = "v2_version"
+    __tablename__ = "version"
     __table_args__ = (
         UniqueConstraint(
             "primary_asset_id",
@@ -624,7 +627,7 @@ class Version(SQLModel, table=True):  # type: ignore
 
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     primary_asset_id: UUID = Field(
-        foreign_key="v2_primary_asset.id",
+        foreign_key="primary_asset.id",
         nullable=False,
         ondelete="CASCADE",
         index=True,
@@ -633,7 +636,7 @@ class Version(SQLModel, table=True):  # type: ignore
     previous_version_id: UUID | None = Field(
         default=None,
         nullable=True,
-        foreign_key="v2_version.id",
+        foreign_key="version.id",
         ondelete="SET NULL",
     )
     created_at: None | datetime = Field(
@@ -700,7 +703,7 @@ class Version(SQLModel, table=True):  # type: ignore
 
 
 class Node(SQLModel, table=True):  # type: ignore
-    __tablename__ = "v2_node"
+    __tablename__ = "node"
     __table_args__ = (
         Index(
             "ix_version_id_relative_path", "version_id", "relative_path", unique=True
@@ -721,7 +724,7 @@ class Node(SQLModel, table=True):  # type: ignore
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     kind: NodeKind
     version_id: UUID = Field(
-        foreign_key="v2_version.id",
+        foreign_key="version.id",
         ondelete="CASCADE",
         nullable=False,
         index=True,
@@ -801,15 +804,15 @@ class Node(SQLModel, table=True):  # type: ignore
 
 
 class PrimaryAssetTag(SQLModel, table=True):
-    __tablename__ = "v2_primary_asset_tag"
+    __tablename__ = "primary_asset_tag"
     tag_id: UUID = Field(
-        index=True, primary_key=True, ondelete="CASCADE", foreign_key="tags.id"
+        index=True, primary_key=True, ondelete="CASCADE", foreign_key="tag.id"
     )
     primary_asset_id: UUID = Field(
         index=True,
         primary_key=True,
         ondelete="CASCADE",
-        foreign_key="v2_primary_asset.id",
+        foreign_key="primary_asset.id",
     )
 
 
@@ -829,13 +832,13 @@ class UserCache(SQLModel, table=True):
 class VersionCreator(SQLModel, table=True):
     __tablename__ = "version_creator"
     version_id: UUID = Field(
-        index=True, primary_key=True, ondelete="CASCADE", foreign_key="v2_version.id"
+        index=True, primary_key=True, ondelete="CASCADE", foreign_key="version.id"
     )
     user_id: str = Field(index=True, ondelete="CASCADE", foreign_key="user_cache.id")
 
 
 class RuntimeLlmSession(SQLModel, table=True):
-    __tablename__ = "v2_runtime_llm_session"
+    __tablename__ = "runtime_llm_session"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: str = Field(index=True)
     organization_id: str = Field(index=True)
@@ -862,13 +865,13 @@ class RuntimeLlmSession(SQLModel, table=True):
 
 
 class RuntimeLlmMessageHistory(SQLModel, table=True):
-    __tablename__ = "v2_runtime_llm_message_history"
+    __tablename__ = "runtime_llm_message_history"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     llm_session_id: UUID = Field(
         index=True,
         nullable=False,
         ondelete="CASCADE",
-        foreign_key="v2_runtime_llm_session.id",
+        foreign_key="runtime_llm_session.id",
     )
     pipeline_kind: str = Field(
         index=True, nullable=False, default=LlmPipelineKind.DEFAULT
@@ -883,13 +886,13 @@ class RuntimeLlmMessageHistory(SQLModel, table=True):
 
 
 class RuntimeLlmMessage(SQLModel, table=True):
-    __tablename__ = "v2_runtime_llm_messages"
+    __tablename__ = "runtime_llm_messages"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     message_history_id: UUID = Field(
         index=True,
         nullable=False,
         ondelete="CASCADE",
-        foreign_key="v2_runtime_llm_message_history.id",
+        foreign_key="runtime_llm_message_history.id",
     )
     llm_message_hash: str
     llm_message_json: dict | None = Field(
@@ -917,12 +920,12 @@ class RuntimeLlmMessage(SQLModel, table=True):
 
 
 class AutoDocStatusHistory(SQLModel, table=True):
-    __tablename__ = "v2_autodoc_status_history"
+    __tablename__ = "autodoc_status_history"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     page_node_id: UUID = Field(
         index=True,
         nullable=False,
-        foreign_key="v2_node.id",
+        foreign_key="node.id",
         ondelete="CASCADE",
     )
     status_kind: AutoDocStatusMessageKind = Field(
@@ -947,7 +950,7 @@ def gen_drv_key() -> str:
 
 
 class ApiKey(SQLModel, table=True):
-    __tablename__ = "v2_api_key"
+    __tablename__ = "api_key"
 
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     key: str = Field(
@@ -981,7 +984,7 @@ class ApiKey(SQLModel, table=True):
 
 
 class Tag(SQLModel, table=True):  # type: ignore
-    __tablename__ = "tags"
+    __tablename__ = "tag"
     __table_args__ = (
         UniqueConstraint("name", "organization_id", name="unique_tag_name_per_org_id"),
     )
@@ -1037,14 +1040,15 @@ class Tag(SQLModel, table=True):  # type: ignore
     # )
     primary_assets: list["PrimaryAsset"] = Relationship(
         back_populates="tags",
-        sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
+        sa_relationship_kwargs={"secondary": "primary_asset_tag"},
     )
 
 
 class InspectorRun(SQLModel, table=True):
+    __tablename__ = "inspector_run"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     version_id: UUID = Field(
-        foreign_key="v2_version.id",
+        foreign_key="version.id",
         nullable=False,
         ondelete="CASCADE",
     )
@@ -1092,4 +1096,59 @@ class AboutYouSurvey(SQLModel, table=True):
             DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
         default=None,
+    )
+
+
+class OnboardingChecklist(SQLModel, table=True):
+    __tablename__ = "onboarding_checklist"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "user_id", name="uq_onboarding_checklist_org_user"
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True, nullable=False)
+    user_id: str = Field(index=True, nullable=False)
+
+    # Timestamps for each step
+    connect_codebase_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    generate_codebase_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    setup_mcp_started_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    setup_mcp_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    enable_export_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    generate_autodoc_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    invite_teammate_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    checklist_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+
+    # Standard timestamps
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
     )

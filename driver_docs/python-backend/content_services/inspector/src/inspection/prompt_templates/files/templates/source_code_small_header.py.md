@@ -6,7 +6,7 @@
 Defines a template for small source code headers with prompts for purpose, imports, variables, data structures, and functions.
 
 # Purpose
-This code defines a template for generating documentation headers for source code files, specifically targeting C or C++ headers. It imports several modules and classes from the `utils.lang_specialization` and `utils.templates` packages to facilitate the creation of structured documentation sections. The `SOURCE_CODE_SMALL_TEMPLATE_HEADER` list contains tuples that define different sections of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each tuple specifies a type of content, a section title, and functions or prompts to generate or check the content. This setup allows for automated or semi-automated generation of documentation by leveraging language models and static analysis tools.
+This code defines a configuration for generating documentation templates for C or C++ header files. It imports several modules and functions from the `utils.lang_specialization` and `utils.templates` packages to facilitate the creation of structured documentation. The `SOURCE_CODE_SMALL_TEMPLATE_HEADER` list contains tuples that specify different sections of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each tuple includes a template type, a section title, and functions or prompts to generate content for that section. This setup allows for the automated generation of documentation by analyzing code and using language models to fill in specific sections.
 # Imports and Dependencies
 
 ---
@@ -27,8 +27,8 @@ This code defines a template for generating documentation headers for source cod
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_HEADER
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string and several function references. Each tuple represents a section of a template header, with the string indicating the section title and the functions providing the logic for processing that section.
-- **Use**: Used to define the structure and processing logic for different sections of a template header in a code generation or analysis tool.
+- **Description**: A list of tuples, where each tuple contains a combination of constants and functions related to code analysis and processing. Each tuple represents a specific section of a code template, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: Used to define the structure and components of a small code template header for code analysis and processing.
 
 
 

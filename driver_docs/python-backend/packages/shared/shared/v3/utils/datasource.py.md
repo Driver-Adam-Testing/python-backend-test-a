@@ -3,23 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a `DataSource` class for managing node IDs within an organization, with caching and validation features.
+Defines the `DataSource` class for managing node IDs and caching Node objects within an organization.
 
 # Purpose
-The code defines a `DataSource` class, which is a data model that represents a collection of node identifiers (`node_ids`) associated with a single organization. The class uses the `pydantic` library for data validation and management. It provides methods to initialize a `DataSource` with node IDs, validate their association with an organization, and cache the corresponding `Node` objects to optimize data retrieval. The class includes several factory methods, such as [`from_node_ids`](<#datasourcefrom_node_ids>), [`from_page_id`](<#datasourcefrom_page_id>), and [`from_relative_paths`](<#datasourcefrom_relative_paths>), to create instances of `DataSource` from different types of input data, such as node IDs, page node IDs, and relative paths.
+The code defines a `DataSource` class, which is a data model representing a collection of node identifiers (`node_ids`) associated with a specific organization. The class is built using the `pydantic` library for data validation and management. It provides methods to initialize a `DataSource` with node IDs and an organization ID, ensuring that all node IDs belong to the specified organization. The class also includes factory methods to create a `DataSource` from different sources, such as node IDs, a page node ID, or relative paths. These methods interact with a database using SQLAlchemy and SQLModel to retrieve and validate the necessary data.
 
-The `DataSource` class also includes methods to describe the contents of the data source. The [`describe_contents`](<#datasourcedescribe_contents>) and [`describe_contents_char_limit`](<#datasourcedescribe_contents_char_limit>) methods generate a textual representation of the nodes, organized by version and optionally limited by tree depth. The class uses SQL queries to interact with a database, leveraging the `sqlalchemy` and `sqlmodel` libraries to perform operations such as joining tables and filtering data based on conditions. The code is structured to be part of a larger system, likely a library or module, that interacts with a database to manage and describe hierarchical data structures.
+The `DataSource` class includes functionality to cache and retrieve `Node` objects associated with the node IDs, optimizing database access by avoiding repeated queries. It provides methods to describe the contents of the data source, grouping nodes by version and organizing them into a hierarchical structure based on their relative paths. The description can be limited by a character count or tree depth, allowing for flexible summarization of the data source's contents. The code is structured to be part of a larger system, likely a library or module, that interacts with a database to manage and describe organizational data.
 # Imports and Dependencies
 
 ---
 - `uuid`
 - `collections.defaultdict`
 - `database.db.get_session`
-- `database.models_v1.DocumentSource`
-- `database.models_v2.Node`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.Version`
-- `database.models_v2_enums.NodeKind`
+- `database.models.DocumentSource`
+- `database.models.Node`
+- `database.models.PrimaryAsset`
+- `database.models.Version`
+- `database.models_enums.NodeKind`
 - `pydantic.BaseModel`
 - `pydantic.Field`
 - `pydantic.PrivateAttr`
@@ -33,13 +33,13 @@ The `DataSource` class also includes methods to describe the contents of the dat
 
 ---
 ### DataSource<!-- {{#class:python-backend/packages/shared/shared/v3/utils/datasource.DataSource}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L13>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L12>)
 
 - **Members**:
-    - `node_ids`: A list of UUIDs representing node identifiers.
-    - `organization_id`: A string representing the organization identifier.
-    - `_cached_nodes`: A private attribute that caches Node objects to avoid repeated fetching.
-- **Description**: Represents a collection of node identifiers (`node_ids`) associated with a single organization (`organization_id`). It includes functionality to cache the corresponding Node objects to optimize access. The class provides methods to create instances from different data sources, such as node IDs, page IDs, or relative paths, and validates that all node IDs belong to the specified organization. It also offers methods to describe the contents of the data source, grouping nodes by version and limiting the depth of folder traversal.
+    - `node_ids`: Stores a list of UUIDs representing node identifiers.
+    - `organization_id`: Stores the identifier of the organization.
+    - `_cached_nodes`: Caches the list of Node objects to avoid repeated fetching.
+- **Description**: Represents a collection of node identifiers (`node_ids`) associated with a single organization (`organization_id`). It includes functionality to cache the corresponding Node objects to optimize access. The class provides methods to initialize from different data sources, such as node IDs, page IDs, or relative paths, and validates that all node IDs belong to the specified organization. It also offers methods to describe the contents of the data source, grouping nodes by version and limiting the depth of folder traversal.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.__init__`](<#datasource__init__>)
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<#datasourcefrom_node_ids>)
@@ -55,21 +55,21 @@ The `DataSource` class also includes methods to describe the contents of the dat
 
 ---
 #### DataSource\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/datasource.DataSource.__init__}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L25>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L24>)
 
 Initializes a `DataSource` object and validates that all `node_ids` belong to the specified `organization_id`.
 - **Inputs**:
     - `node_ids`: A list of UUIDs representing node identifiers.
     - `organization_id`: A string representing the organization identifier.
 - **Logic and Control Flow**:
-    - Calls the parent class `__init__` method with `node_ids` and `organization_id` as arguments.
+    - Calls the parent class `__init__` method with `node_ids` and `organization_id`.
     - Checks if `node_ids` is not empty.
     - Opens a database session using `get_session()`.
     - Constructs a SQL query to select `Node.id` where the `PrimaryAsset.organization_id` matches `organization_id` and `Node.id` is in `node_ids`.
     - Executes the query and retrieves all matching node IDs.
     - Compares the number of matching IDs with the length of `node_ids`.
     - Raises a `ValueError` if the number of matching IDs does not equal the length of `node_ids`.
-    - Sets `_cached_nodes` to `None`.
+    - Sets the `_cached_nodes` attribute to `None`.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
@@ -78,16 +78,15 @@ Initializes a `DataSource` object and validates that all `node_ids` belong to th
 
 ---
 #### DataSource\.from\_node\_ids<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L52>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L51>)
 
 Constructs a `DataSource` instance using a list of `node_ids` and an `organization_id`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to create a new instance.
     - `node_ids`: A list of UUIDs representing node identifiers.
     - `organization_id`: A string representing the organization identifier.
 - **Logic and Control Flow**:
-    - Creates a new `DataSource` instance by calling the class constructor with `node_ids` and `organization_id`.
+    - Creates a new instance of `DataSource` by calling the class constructor `cls` with `node_ids` and `organization_id`.
     - Returns the newly created `DataSource` instance.
 - **Output**: A `DataSource` instance initialized with the provided `node_ids` and `organization_id`.
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource`](<#datasource>)  (Base Class)
@@ -95,16 +94,16 @@ Constructs a `DataSource` instance using a list of `node_ids` and an `organizati
 
 ---
 #### DataSource\.from\_page\_id<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_page_id}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L62>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L61>)
 
-Creates a `DataSource` instance using `page_node_id` to retrieve `node_ids` from `DocumentSource`.
+Creates a `DataSource` instance by retrieving `node_ids` from `DocumentSource` using a given `page_node_id` and `organization_id`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `page_node_id`: A UUID representing the page node ID to query `DocumentSource`.
-    - `organization_id`: A string representing the organization ID to associate with the `DataSource`.
+    - `page_node_id`: A UUID representing the page node identifier used to query `DocumentSource`.
+    - `organization_id`: A string representing the organization identifier for which the `DataSource` is created.
 - **Logic and Control Flow**:
     - Opens a database session using `get_session()`.
-    - Executes a SQL query to select `DocumentSource` entries where `page_node_id` matches the provided `page_node_id`.
+    - Executes a SQL query to select `DocumentSource` entries where `page_node_id` matches the given `page_node_id`.
     - Retrieves all matching `DocumentSource` entries and extracts their `source_node_id` values into a list called `node_ids`.
     - Creates a new `DataSource` instance using the extracted `node_ids` and the provided `organization_id`.
     - Returns the newly created `DataSource` instance.
@@ -116,22 +115,22 @@ Creates a `DataSource` instance using `page_node_id` to retrieve `node_ids` from
 
 ---
 #### DataSource\.from\_relative\_paths<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_relative_paths}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L80>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L79>)
 
-Creates a `DataSource` instance by retrieving node IDs from given relative paths, organization ID, and optionally a version ID.
+Creates a `DataSource` instance by retrieving node IDs from given relative paths, organization ID, and an optional version ID.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `relative_paths`: A list of strings representing the relative paths to query.
-    - `organization_id`: A string representing the organization ID to filter nodes.
-    - `version_id`: An optional string representing the version ID to filter nodes.
+    - `organization_id`: A string representing the organization ID to filter the nodes.
+    - `version_id`: An optional string representing the version ID to filter the nodes.
 - **Logic and Control Flow**:
     - Opens a database session using `get_session()` context manager.
-    - Constructs a SQL query to select `Node` objects that match the given `relative_paths` and `organization_id`.
-    - Joins `Node` with `Version` and `PrimaryAsset` tables to filter nodes based on `version_id` or the latest version if `version_id` is not provided.
-    - Executes the query and retrieves all matching nodes.
+    - Constructs a SQL query to select `Node` objects by joining `Version` and `PrimaryAsset` tables.
+    - Filters nodes based on `relative_paths`, `organization_id`, and either the provided `version_id` or the latest version ID if `version_id` is `None`.
+    - Executes the query to retrieve all matching nodes.
     - Extracts node IDs from the retrieved nodes.
     - Returns a new `DataSource` instance initialized with the extracted node IDs and the given `organization_id`.
-- **Output**: A `DataSource` instance initialized with node IDs matching the specified criteria.
+- **Output**: A `DataSource` object initialized with node IDs corresponding to the specified relative paths and organization ID.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource`](<#datasource>)  (Base Class)
@@ -139,18 +138,18 @@ Creates a `DataSource` instance by retrieving node IDs from given relative paths
 
 ---
 #### DataSource\.nodes<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/datasource.DataSource.nodes}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L117>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L116>)
 
 Returns a list of cached `Node` objects, loading them from the database if they are not already cached.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Checks if `_cached_nodes` is `None` to determine if nodes need to be loaded from the database.
-    - Opens a database session using `get_session()`.
-    - Executes a query to load all ancestor nodes that match the `node_ids` and caches them in `ancestors`.
-    - Builds a list of conditions for querying descendant nodes based on the ancestors' version and path.
-    - Executes a query to load descendant nodes if conditions exist, otherwise sets `descendants` to an empty list.
-    - Combines `ancestors` and `descendants` into a dictionary `id_to_node` to ensure unique nodes by their ID.
+    - Opens a session with the database using `get_session()`.
+    - Executes a query to load all ancestor nodes that match the `node_ids` and their versions using `selectinload`.
+    - Builds a list of conditions for each ancestor's version and path to find descendant nodes.
+    - Executes a query to load all descendant nodes that match the conditions using an `OR` clause.
+    - Combines ancestor and descendant nodes into a dictionary `id_to_node` to ensure unique nodes by their ID.
     - Caches the list of unique nodes in `_cached_nodes`.
     - Returns the cached list of nodes.
 - **Output**: A list of `Node` objects that are cached in `_cached_nodes`.
@@ -161,20 +160,20 @@ Returns a list of cached `Node` objects, loading them from the database if they 
 
 ---
 #### DataSource\.describe\_contents\_char\_limit<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/datasource.DataSource.describe_contents_char_limit}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L155>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L154>)
 
 Describes the contents of a `DataSource` by grouping nodes by version and limiting the description to a specified character limit.
 - **Inputs**:
-    - `char_limit`: An integer that specifies the maximum number of characters allowed in the description.
+    - `char_limit`: An integer specifying the maximum number of characters allowed in the description.
 - **Logic and Control Flow**:
-    - Initialize an empty string `description` and set `tree_depth` to 2.
+    - Initialize `description` as an empty string and set `tree_depth` to 2.
     - Enter a loop that continues until the description does not change or exceeds the character limit.
     - Call [`describe_contents`](<#datasourcedescribe_contents>) with the current `tree_depth` to get a new description.
-    - If the new description is the same as the current `description`, exit the loop.
+    - If the new description is the same as the current description, exit the loop.
     - If the length of the new description is within the `char_limit`, update `description` with the new description.
     - If the length of the new description exceeds the `char_limit`, exit the loop.
     - Increment `tree_depth` by 1 for the next iteration.
-- **Output**: A string that contains the description of the `DataSource` contents, limited by the specified character limit.
+- **Output**: A string representing the description of the `DataSource` contents, limited by the specified character limit.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.describe_contents`](<#datasourcedescribe_contents>)
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource`](<#datasource>)  (Base Class)
@@ -182,19 +181,20 @@ Describes the contents of a `DataSource` by grouping nodes by version and limiti
 
 ---
 #### DataSource\.describe\_contents<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/datasource.DataSource.describe_contents}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L174>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/datasource.py#L173>)
 
-Describes the contents of a `DataSource` by organizing nodes by version and optionally limiting the depth of folder traversal.
+Describes the contents of a `DataSource` by organizing nodes by version and optionally limiting folder depth.
 - **Inputs**:
-    - `tree_depth`: An optional integer that specifies the maximum depth of folder traversal; if `None`, there is no depth limit.
+    - `tree_depth`: An optional integer that specifies the maximum depth of folders to traverse; if `None`, there is no limit.
 - **Logic and Control Flow**:
     - Initialize an empty list `summary_lines` to store the description lines.
-    - Define a helper function `build_tree` to construct a hierarchical tree structure from a list of nodes based on their relative paths.
-    - Define a helper function `count_files` to recursively count all file nodes in a given tree structure.
-    - Define a helper function `traverse_tree` to traverse the tree structure, appending file and folder information to `summary_lines`, and respecting the `tree_depth` limit if specified.
+    - Define a helper function `build_tree` to construct a hierarchical tree structure from a list of nodes, organizing them into directories and files.
+    - Define a helper function `count_files` to recursively count all file nodes within a given tree structure.
+    - Define a helper function `traverse_tree` to recursively traverse the tree structure, appending file and folder information to `summary_lines`, and respecting the `tree_depth` limit if specified.
     - Group nodes by their `version_id` to prevent mixing versions.
     - For each version group, append a version header to `summary_lines`, build a tree structure using `build_tree`, and traverse it using `traverse_tree`.
-- **Output**: A string that represents the hierarchical description of the `DataSource` contents, organized by version and folder structure.
+    - Return the joined `summary_lines` as a single string.
+- **Output**: A string that describes the contents of the `DataSource`, organized by version and folder structure.
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource`](<#datasource>)  (Base Class)
 
 

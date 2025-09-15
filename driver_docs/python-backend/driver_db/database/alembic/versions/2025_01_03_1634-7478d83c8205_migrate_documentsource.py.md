@@ -6,9 +6,9 @@
 Alembic migration script to add and update columns in the `document_sources` table with foreign keys.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script is designed to modify the `document_sources` table by adding two new columns: `source_node_id` and `page_node_id`, both of which are of type UUID and initially nullable. The script updates these new columns with values derived from the `derived_contents` table, ensuring that the `document_sources` table is populated with the correct node identifiers. Additionally, the script establishes foreign key relationships between the new columns in `document_sources` and the `id` column in the `v2_node` table.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's primary purpose is to modify the `document_sources` table by adding two new columns: `source_node_id` and `page_node_id`, both of which are of type UUID and initially nullable. The script updates these new columns with values derived from the `derived_contents` table, ensuring that the `document_sources` table is populated with the correct node identifiers. Additionally, the script establishes foreign key relationships between the new columns in `document_sources` and the `id` column in the `v2_node` table, which helps maintain referential integrity.
 
-The script includes both an [`upgrade`](<#upgrade>) function and a [`downgrade`](<#downgrade>) function. The [`upgrade`](<#upgrade>) function performs the operations to add the new columns, update their values, and create the necessary foreign key constraints. The [`downgrade`](<#downgrade>) function reverses these changes by removing the `page_node_id` and `source_node_id` columns from the `document_sources` table. This migration script is part of a version-controlled sequence of database schema changes, as indicated by the `revision` and `down_revision` identifiers, which help track the order of migrations.
+The script defines two functions, `upgrade()` and `downgrade()`, which are standard in Alembic migration scripts. The `upgrade()` function contains the logic to apply the changes, including adding columns, updating data, and creating foreign keys. The `downgrade()` function provides the logic to reverse these changes, specifically by removing the newly added columns. This migration script is part of a version-controlled sequence of database schema changes, as indicated by the `revision` and `down_revision` identifiers, which help track the order of migrations.
 # Imports and Dependencies
 
 ---
@@ -21,15 +21,15 @@ The script includes both an [`upgrade`](<#upgrade>) function and a [`downgrade`]
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic to track the version of the database schema that this migration script applies.
+- **Use**: Used to identify the current migration version in Alembic operations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Indicates the immediate predecessor revision in the migration history.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the sequence of migrations and ensure that they are applied in the correct order.
+- **Use**: Used by Alembic to determine the order of migration scripts by identifying the immediate predecessor of the current revision.
 
 
 ---
@@ -42,8 +42,8 @@ The script includes both an [`upgrade`](<#upgrade>) function and a [`downgrade`]
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: Represents a global variable that is set to `None`. It is used as a placeholder for dependencies in Alembic migration scripts.
-- **Use**: Indicates that there are no dependencies for this migration script.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -58,20 +58,20 @@ Modifies the database schema by adding new columns, updating them with values, a
     - Adds new columns `source_node_id` and `page_node_id` to the `document_sources` table, allowing null values.
     - Executes SQL statements to update `page_node_id` and `source_node_id` with values from the `derived_contents` table based on matching conditions.
     - Performs a left join with `v2_node` to update `source_node_id` where it is null and the `content_kind` is 'codebase'.
-    - Creates foreign key constraints for `page_node_id` and `source_node_id` columns referencing the `v2_node` table.
-- **Output**: No return value; modifies the database schema as a side effect.
+    - Creates foreign key constraints for `page_node_id` and `source_node_id` columns, linking them to the `id` column in the `v2_node` table.
+- **Output**: No return value; modifies the database schema directly.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_03_1634-7478d83c8205_migrate_documentsource.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_03_1634-7478d83c8205_migrate_documentsource.py#L75>)
 
-Reverts the database schema changes by removing specific columns from the `document_sources` table.
+Removes specific columns from the 'document_sources' table in the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Removes the `page_node_id` column from the `document_sources` table.
-    - Removes the `source_node_id` column from the `document_sources` table.
-- **Output**: No output is returned; the function modifies the database schema directly.
+    - Calls `op.drop_column` to remove the 'page_node_id' column from the 'document_sources' table.
+    - Calls `op.drop_column` to remove the 'source_node_id' column from the 'document_sources' table.
+- **Output**: No return value; modifies the database schema by removing columns.
 
 
 

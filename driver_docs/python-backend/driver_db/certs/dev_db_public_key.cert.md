@@ -6,7 +6,7 @@
 Development database public key certificate for secure communication.
 
 # Purpose
-The content is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. It is used to establish a secure connection between a client and a server by verifying the server's identity. The certificate contains information such as the issuer's name, the subject's name, and the public key. It also includes validity dates to specify the time period during which the certificate is considered valid. This certificate is part of a Public Key Infrastructure (PKI) system, which helps in encrypting data and ensuring secure communication over networks.
+The content is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. It contains a public key and is used to establish a secure connection between a client and a server. The certificate includes metadata such as the issuer's name, the subject's name, and the validity period, which are essential for verifying the authenticity of the certificate. The certificate is part of a Public Key Infrastructure (PKI) system and is used in protocols like HTTPS to ensure secure data transmission over networks.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

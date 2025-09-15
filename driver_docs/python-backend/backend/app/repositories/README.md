@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Generic repository class for SQLModel, Git provider app management, and GithubAppInstallation handling.
+Repository classes for CRUD operations on SQLModel entities and management of Git provider apps and installations.
 
 
 ## Files
-- **[base_repository.py](base_repository.py.md)**: A generic repository class for SQLModel with CRUD operations and query capabilities.
+- **[base_repository.py](base_repository.py.md)**: A generic repository class for CRUD operations and queries on SQLModel entities using SQLAlchemy.
 - **[git_provider_repository.py](git_provider_repository.py.md)**: Database operations for managing Git provider apps and installations by organization, app, and user IDs.
 - **[github_app_installations_repository.py](github_app_installations_repository.py.md)**: Repository for managing GithubAppInstallation entities with methods to list and check existence by IDs.
 

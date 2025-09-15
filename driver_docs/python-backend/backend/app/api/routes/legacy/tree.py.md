@@ -6,17 +6,17 @@
 Implements a function to retrieve and construct a tree of nodes from a database using SQLModel.
 
 # Purpose
-The code defines a function [`get_codebase_tree`](<#get_codebase_tree>) that retrieves and constructs a hierarchical representation of a codebase's directory and file structure. It uses SQLModel to query a database for nodes associated with a specific version and organization. The function returns a list of `FlatNode` objects, each representing a directory or file, with attributes such as `id`, `name`, `path`, and `kind`. The `FlatNode` class is defined using the Strawberry library, which suggests that it is part of a GraphQL API schema.
+The code defines a function to retrieve and construct a hierarchical representation of a codebase tree from a database. It uses the `sqlmodel` library to perform a query that joins `Node`, `Version`, and `PrimaryAsset` tables to fetch nodes associated with a specific `version_id` and `organization_id`. The function [`get_codebase_tree`](<#get_codebase_tree>) returns a list of `FlatNode` objects, which represent nodes in the codebase. Each `FlatNode` includes attributes such as `id`, `name`, `path`, `kind`, and `children`. The `kind` attribute indicates whether the node is a directory or a file, using the `NodeTypeEnum` class.
 
-The code also defines a `NodeTypeEnum` class to categorize nodes as directories or files. The function processes the query results to build a map of directories and files, organizing them into a tree structure. It identifies directories by checking if the `relative_path` ends with a slash and assigns the appropriate `kind`. The function then populates the `children` attribute of directory nodes with the paths of their child nodes, ensuring a structured representation of the codebase. This code is likely part of a larger application that manages or visualizes codebase structures.
+The code uses the `strawberry` library to define GraphQL types, specifically the `FlatNode` class, which is decorated with `@strawberry.type`. The function constructs a map of directories and a list of files, then organizes them into a tree structure. Directories are identified by paths ending with a slash, and files are identified by paths without a trailing slash. The code ensures that each directory node contains a list of its child nodes, represented by their paths. The result is a list of `FlatNode` objects that represent the hierarchical structure of the codebase.
 # Imports and Dependencies
 
 ---
 - `strawberry`
 - `app.api.routes.legacy.scalars.ID`
-- `database.models_v2.Node`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.Version`
+- `database.models.Node`
+- `database.models.PrimaryAsset`
+- `database.models.Version`
 - `sqlmodel.Session`
 - `sqlmodel.select`
 
@@ -32,7 +32,7 @@ The code also defines a `NodeTypeEnum` class to categorize nodes as directories 
     - `File`: Represents a file node type.
     - `Resource`: Represents a resource node type.
     - `Workspace`: Represents a workspace node type.
-- **Description**: Defines constants for different types of nodes, such as directory, file, resource, and workspace, used to categorize nodes in a codebase tree.
+- **Description**: Defines different types of nodes as string constants, which can be used to categorize nodes in a file system or similar hierarchical structure.
 
 
 ---
@@ -43,10 +43,10 @@ The code also defines a `NodeTypeEnum` class to categorize nodes as directories 
 - **Members**:
     - `id`: Unique identifier for the node.
     - `name`: Name of the node, which can be null.
-    - `path`: Relative path of the node, which can be null.
+    - `path`: Path of the node, which can be null.
     - `kind`: Type of the node, which can be null.
     - `children`: List of child node paths, initialized as an empty list.
-- **Description**: Represents a node in a codebase tree with attributes for identification, naming, path, type, and children. It is used to model both directories and files within a hierarchical structure.
+- **Description**: Represents a node in a codebase tree with attributes for identification, naming, path, type, and children, using Strawberry GraphQL type.
 
 
 # Functions
@@ -64,12 +64,12 @@ Generates a tree structure of codebase nodes for a given version and organizatio
     - Execute a database query to select nodes, versions, and primary assets that match the given `version_id` and `organization_id`.
     - If no nodes are found, return an empty list.
     - Initialize `directories_map` to store directory nodes and `files` to store file nodes.
-    - Iterate over the fetched nodes to determine if each node is a directory or a file based on its `relative_path`.
-    - Create a [`FlatNode`](<#flatnode>) for each node and add it to `directories_map` if it is a directory or to `files` if it is a file.
-    - Iterate over the `files` list to find parent directories for each file and update the `children` attribute of the parent directory in `directories_map`.
-    - Add each file node to `directories_map` after updating its parent directory's children.
-    - Iterate over `directories_map` to filter and update the `children` attribute of each directory node to include only valid child paths.
-    - Return the list of directory nodes as the result.
+    - Iterate over each node from the query result to determine if it is a directory or file based on its `relative_path`.
+    - Create a [`FlatNode`](<#flatnode>) object for each node and add it to `directories_map` if it is a directory or to `files` if it is a file.
+    - For each file node, determine its parent directory path and add the file to the parent's children list if the parent exists in `directories_map`.
+    - Add each file node to `directories_map` to ensure all nodes are included in the final result.
+    - Iterate over `directories_map` to filter and update the children of each directory node to include only valid paths.
+    - Return the list of directory nodes as the final result.
 - **Output**: A list of [`FlatNode`](<#flatnode>) objects representing the directory structure of the codebase.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/legacy/tree.FlatNode`](<#flatnode>)

@@ -6,7 +6,7 @@
 Configuration for various language models with details on model ID, provider, and token limits.
 
 # Purpose
-The configuration file defines various models available for use, specifying their unique identifiers, providers, and operational parameters. Each model entry includes a `model_id`, which serves as a unique identifier, and a `provider`, indicating the organization responsible for the model, such as "openai", "anthropic", or "google". The `context_window_size` parameter specifies the maximum number of tokens the model can process in a single input, while `max_output_tokens` defines the maximum number of tokens the model can generate as output. The `system_prompts` field indicates the type or number of system prompts associated with each model, which can vary from "none" to "many". This configuration allows for the selection and use of different models based on specific requirements and capabilities.
+The configuration file defines various models with their specific parameters for use in a software application. Each model is identified by a unique `model_id` and is associated with a `provider`, such as "openai", "anthropic", or "google". The `context_window_size` parameter specifies the maximum number of tokens that the model can process in a single input, while `max_output_tokens` indicates the maximum number of tokens the model can generate as output. The `system_prompts` parameter determines the type or number of system prompts that the model uses, with values like "many", "none", or "one". This configuration allows the application to select and utilize different models based on their capabilities and requirements.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

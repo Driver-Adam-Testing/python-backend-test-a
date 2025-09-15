@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to rename columns in the `source_contents` and `derived_contents` tables.
+Alembic migration script to rename columns in `source_contents` and `derived_contents` tables.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function to rename the `source_content_type_id` column to `content_type_id` in the `source_contents` table and the `derived_content_type_id` column to `content_type_id` in the `derived_contents` table. The [`downgrade`](<#downgrade>) function reverses these changes, renaming `content_type_id` back to `source_content_type_id` and `derived_content_type_id` in their respective tables. The script includes revision identifiers `revision` and `down_revision` to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that renames the `source_content_type_id` column to `content_type_id` in the `source_contents` table and the `derived_content_type_id` column to `content_type_id` in the `derived_contents` table. The [`downgrade`](<#downgrade>) function reverses these changes, restoring the original column names. The script includes revision identifiers, `revision` and `down_revision`, which Alembic uses to track the migration's position in the sequence of database changes. This script provides narrow functionality, specifically for renaming columns in a database schema.
 # Imports and Dependencies
 
 ---
@@ -18,8 +18,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for a specific database schema revision in Alembic.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for a specific database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
+- **Use**: Used as a unique identifier for a database schema migration in Alembic.
 
 
 ---
@@ -40,7 +40,7 @@ This code is a database migration script using Alembic, a database migration too
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration does not depend on any other migrations.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -54,19 +54,19 @@ Renames columns in the database tables `source_contents` and `derived_contents`.
 - **Logic and Control Flow**:
     - Calls `op.alter_column` to rename the column `source_content_type_id` to `content_type_id` in the `source_contents` table.
     - Calls `op.alter_column` to rename the column `derived_content_type_id` to `content_type_id` in the `derived_contents` table.
-- **Output**: No return value; modifies the database schema by renaming columns.
+- **Output**: No return value; modifies the database schema.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_0830-ca49df8b5300_rename_sct_dct_id_cols.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_0830-ca49df8b5300_rename_sct_dct_id_cols.py#L27>)
 
-Reverts column name changes in the `source_contents` and `derived_contents` tables.
+Reverts column name changes in the 'source_contents' and 'derived_contents' tables.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.alter_column` to change the column name from `content_type_id` to `source_content_type_id` in the `source_contents` table.
-    - Calls `op.alter_column` to change the column name from `content_type_id` to `derived_content_type_id` in the `derived_contents` table.
-- **Output**: No output is returned.
+    - Calls `op.alter_column` to change the column name from 'content_type_id' to 'source_content_type_id' in the 'source_contents' table.
+    - Calls `op.alter_column` to change the column name from 'content_type_id' to 'derived_content_type_id' in the 'derived_contents' table.
+- **Output**: No return value; performs database schema changes.
 
 
 

@@ -6,9 +6,9 @@
 Utilities for symbol disambiguation and management using caching and optional LLM assistance.
 
 # Purpose
-The code is a utility module designed to handle symbol disambiguation in a software project. It provides functions to manage and analyze symbols, which are represented by the `RawTreeSitterSymbolData` class. The module includes functions to determine if a symbol is a definition, declaration, or data structure, and to build a containment map of symbols based on their byte positions. The primary functionality is to disambiguate function calls when multiple candidates exist, using a cache to store previous disambiguation results and a language model (LLM) to resolve ambiguities when necessary.
+The code is a utility module designed to handle symbol disambiguation in a codebase, particularly focusing on resolving which function or symbol a call refers to when multiple candidates exist. It uses a combination of caching and a language model (LLM) to achieve this. The module defines several helper functions to manage and manipulate symbol data, such as [`_get_cache_key`](<#_get_cache_key>), [`_build_candidate_map`](<#_build_candidate_map>), and [`get_fully_qualified_name`](<#get_fully_qualified_name>), which are used to create unique identifiers for symbols and manage their relationships. The [`disambiguate_call`](<#disambiguate_call>) function is the core component that attempts to determine the correct symbol for a call by first checking a cache and, if necessary, using an LLM to make the determination.
 
-The module uses a cache mechanism to improve performance by storing results of previous disambiguation attempts, which are protected by a threading lock to ensure thread safety. The [`disambiguate_call`](<#disambiguate_call>) function is the core of this module, using a combination of cached results and an LLM to determine the correct candidate for a function call. The module also includes utility functions to generate fully qualified names for symbols and convert file paths to root-relative paths. The integration with the `ChatOpenAI` model suggests that the module is designed to work with advanced language models to enhance its disambiguation capabilities.
+The module also includes functions to assess symbol types, such as [`is_definition`](<#is_definition>), [`is_declaration`](<#is_declaration>), and [`is_data_structure`](<#is_data_structure>), which help classify symbols based on their kind. The [`build_containment_map`](<#build_containment_map>) function creates a mapping of parent symbols to their child symbols, which is useful for understanding the hierarchical structure of the code. The module is intended to be part of a larger system that analyzes and processes code, likely in a development or code analysis tool, and it does not define a public API for external use. Instead, it provides internal utilities to support symbol disambiguation tasks.
 # Imports and Dependencies
 
 ---
@@ -26,15 +26,15 @@ The module uses a cache mechanism to improve performance by storing results of p
 ---
 ### \_disambiguation\_cache
 - **Type**: ``dict``
-- **Description**: Stores cached results of disambiguation operations for function calls. The cache uses a specific key generated from the call and calling symbols, along with the list of candidates, to store the identity of the chosen function.
+- **Description**: Stores cached results of disambiguation operations for function calls. The cache uses a tuple key generated from function call details and candidate symbols.
 - **Use**: Used to quickly retrieve previously computed disambiguation results to avoid redundant computations.
 
 
 ---
 ### \_cache\_lock
 - **Type**: ``threading.Lock``
-- **Description**: A `threading.Lock` object that provides a mechanism to ensure that only one thread can access a particular section of code at a time. This is useful for preventing race conditions in multithreaded environments.
-- **Use**: Used to synchronize access to the `_disambiguation_cache` to ensure thread safety when reading from or writing to the cache.
+- **Description**: A `threading.Lock` object that provides a mechanism to ensure that only one thread can access a particular section of code at a time. This is useful in multithreaded environments to prevent race conditions.
+- **Use**: Used to synchronize access to the `_disambiguation_cache` to ensure thread safety when checking or updating the cache.
 
 
 # Functions
@@ -60,14 +60,14 @@ Generates a cache key for disambiguating function calls based on symbol data.
 ### \_build\_candidate\_map<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/utils._build_candidate_map}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/utils.py#L30>)
 
-Converts a list of candidate symbols into a mapping from symbol identity to their index.
+Creates a mapping from candidate symbol identities to their indices.
 - **Inputs**:
     - `candidates`: A list of tuples, where each tuple contains a `Path` object and a `RawTreeSitterSymbolData` object representing a candidate symbol.
 - **Logic and Control Flow**:
     - Iterates over the `candidates` list using `enumerate` to get both the index and the candidate data.
-    - For each candidate, constructs a key as a tuple containing the candidate's `name` and `fully_qualified_parent_path`.
+    - For each candidate, constructs a key as a tuple containing the candidate's name and its fully qualified parent path.
     - Maps each constructed key to its corresponding index in the `candidates` list.
-- **Output**: A dictionary mapping each candidate's identity (name and fully qualified parent path) to its index in the `candidates` list.
+- **Output**: A dictionary mapping tuples of candidate names and their fully qualified parent paths to their respective indices in the `candidates` list.
 
 
 ---
@@ -79,9 +79,9 @@ Generates a fully qualified name for a symbol using its parent path and name.
     - `sym`: An instance of `RawTreeSitterSymbolData` representing the symbol for which to generate the fully qualified name.
     - `sep`: A string separator used to join the parent path and the symbol name, defaulting to '::'.
 - **Logic and Control Flow**:
-    - Checks if `sym.fully_qualified_parent_path` and `sym.name` are both present.
-    - If both are present, returns a string combining `sym.fully_qualified_parent_path`, `sym.delimiter`, and `sym.name`.
-    - If either `sym.fully_qualified_parent_path` or `sym.name` is missing, returns `sym.name` or an empty string if `sym.name` is also missing.
+    - Check if `sym.fully_qualified_parent_path` and `sym.name` are both present.
+    - If both are present, return a string combining `sym.fully_qualified_parent_path`, `sym.delimiter`, and `sym.name`.
+    - If either is missing, return `sym.name` or an empty string if `sym.name` is also missing.
 - **Output**: A string representing the fully qualified name of the symbol.
 
 
@@ -103,12 +103,12 @@ Converts an absolute file path to a path relative to the project root.
 ### is\_definition<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/utils.is_definition}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/utils.py#L53>)
 
-Determines if a given symbol is a 'definition' based on its kind.
+Determines if a raw symbol is a 'definition' based on its kind.
 - **Inputs**:
     - `sym`: An instance of `RawTreeSitterSymbolData` representing a symbol to evaluate.
 - **Logic and Control Flow**:
-    - Checks if the `symbol_kind` of `sym` is one of `SymbolKind.CALLABLE`, `SymbolKind.DATA_STRUCTURE`, `SymbolKind.CLASS`, or `SymbolKind.INTERFACE`.
-- **Output**: Returns `True` if `sym` is considered a 'definition'; otherwise, returns `False`.
+    - Checks if the `symbol_kind` of `sym` is in a predefined set of kinds that represent definitions.
+- **Output**: Returns `True` if `sym` is a definition, otherwise `False`.
 
 
 ---
@@ -129,10 +129,13 @@ Checks if a given symbol is a callable declaration.
 
 Checks if a symbol is a data structure, class, or interface.
 - **Inputs**:
-    - `sym`: A `RawTreeSitterSymbolData` object representing a symbol to check.
+    - `sym`: An instance of `RawTreeSitterSymbolData` representing a symbol to check.
 - **Logic and Control Flow**:
-    - Evaluates if `sym.symbol_kind` is equal to `SymbolKind.DATA_STRUCTURE`, `SymbolKind.CLASS`, or `SymbolKind.INTERFACE`.
-- **Output**: Returns `True` if the symbol is a data structure, class, or interface; otherwise, returns `False`.
+    - Checks if `sym.symbol_kind` is equal to `SymbolKind.DATA_STRUCTURE`.
+    - If not, checks if `sym.symbol_kind` is equal to `SymbolKind.CLASS`.
+    - If not, checks if `sym.symbol_kind` is equal to `SymbolKind.INTERFACE`.
+    - Returns `True` if any of the above conditions are met, otherwise returns `False`.
+- **Output**: A boolean value indicating whether the symbol is a data structure, class, or interface.
 
 
 ---
@@ -144,9 +147,9 @@ Creates a mapping of parent symbols to their child symbols based on byte range c
     - `symbols`: A list of `RawTreeSitterSymbolData` objects representing symbols with byte range information.
 - **Logic and Control Flow**:
     - Initialize `child_map` as a `defaultdict` with lists as default values.
-    - Iterate over each symbol in `symbols` as a potential parent.
-    - For each parent, iterate over each symbol in `symbols` as a potential child.
-    - Skip the iteration if the parent and child are the same symbol.
+    - Iterate over each symbol as a potential parent in the `symbols` list.
+    - For each parent symbol, iterate over each symbol as a potential child in the `symbols` list.
+    - Skip the iteration if the parent and child symbols are the same.
     - Check if the child's byte range is fully contained within the parent's byte range using two conditions.
     - If the child's byte range is contained, append the child to the parent's list in `child_map`.
 - **Output**: A dictionary mapping each parent `RawTreeSitterSymbolData` to a list of its child `RawTreeSitterSymbolData` objects.
@@ -159,19 +162,18 @@ Creates a mapping of parent symbols to their child symbols based on byte range c
 Disambiguates which candidate function is the correct one for a call using a language model or cached results.
 - **Inputs**:
     - `candidates`: A list of tuples, each containing a `Path` and `RawTreeSitterSymbolData`, representing potential candidate functions for the call.
-    - `call_symbol`: A `RawTreeSitterSymbolData` object representing the symbol of the function call to disambiguate.
-    - `calling_symbol`: A `RawTreeSitterSymbolData` object representing the symbol of the function that contains the call.
+    - `call_symbol`: A `RawTreeSitterSymbolData` object representing the function call to disambiguate.
+    - `calling_symbol`: A `RawTreeSitterSymbolData` object representing the function containing the call.
     - `use_llm`: A boolean indicating whether to use a language model for disambiguation if no cached result is available.
 - **Logic and Control Flow**:
-    - Generate a cache key using the [`_get_cache_key`](<#_get_cache_key>) function with the provided `candidates`, `call_symbol`, and `calling_symbol`.
-    - Acquire a lock on `_cache_lock` to safely access the `_disambiguation_cache`.
-    - Check if the cache contains a result for the generated cache key; if so, return the cached result if valid.
-    - If a cached result exists but the candidate order has changed, map the cached identity back to the current candidates using [`_build_candidate_map`](<#_build_candidate_map>).
-    - If `use_llm` is false and no valid cache result is found, return the first candidate as the default choice.
-    - If no valid cache result is found and `use_llm` is true, prepare prompts and use the [`ChatOpenAI`](<../models.py.md#chatopenai>) model to determine the correct candidate index.
-    - Attempt to parse the language model's response as an integer; if parsing fails, set the candidate index to `None`.
-    - Cache the result using the cache key and the identity of the chosen candidate, or `None` if no valid candidate was found.
-    - Return the index of the chosen candidate and a boolean indicating whether the language model was used.
+    - Generate a cache key using the [`_get_cache_key`](<#_get_cache_key>) function with the provided inputs.
+    - Check if the cache contains a result for the generated cache key under a lock to ensure thread safety.
+    - If a cached result exists and is not `None`, map the cached identity back to the current candidates using [`_build_candidate_map`](<#_build_candidate_map>) and return the index if found.
+    - If `use_llm` is `False` and no valid cached result is found, return the index of the first candidate and `False`.
+    - If no cached result is found or `use_llm` is `True`, prepare prompts for the language model to disambiguate the call.
+    - Use the [`ChatOpenAI`](<../models.py.md#chatopenai>) model to generate a response and parse the response to get the candidate index.
+    - Cache the result of the disambiguation, storing the identity of the chosen function or `None` if disambiguation failed.
+    - Return the index of the correct candidate and a boolean indicating whether the language model was used.
 - **Output**: A tuple containing the index of the correct candidate (or `None` if not found) and a boolean indicating whether the language model was used.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/utils._get_cache_key`](<#_get_cache_key>)

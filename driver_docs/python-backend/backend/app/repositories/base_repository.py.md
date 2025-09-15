@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A generic repository class for SQLModel with CRUD operations and query capabilities.
+A generic repository class for CRUD operations and queries on SQLModel entities using SQLAlchemy.
 
 # Purpose
 The `BaseRepository` class is a generic repository pattern implementation for managing database operations using SQLModel and SQLAlchemy. It provides a set of methods to perform common database operations such as retrieving, creating, updating, and deleting records. The class is designed to work with any model that extends `SQLModel`, making it a flexible tool for interacting with different database tables. The class uses a `Session` object to execute queries and manage transactions, ensuring that operations are performed within a database session context.
 
-Key methods in the `BaseRepository` class include [`get`](<#baserepositoryget>), [`get_by_pk`](<#baserepositoryget_by_pk>), [`get_by_conditions`](<#baserepositoryget_by_conditions>), [`get_all`](<#baserepositoryget_all>), [`create`](<#baserepositorycreate>), [`update`](<#baserepositoryupdate>), [`delete`](<#baserepositorydelete>), [`delete_by_pk`](<#baserepositorydelete_by_pk>), [`exists`](<#baserepositoryexists>), and [`count_by`](<#baserepositorycount_by>). These methods allow for retrieving records by primary key or conditions, creating new records, updating existing records, deleting records, checking for the existence of records, and counting records based on specified conditions. The class supports query customization through conditions and joins, and it provides sorting and pagination capabilities for retrieving multiple records. The [`update`](<#baserepositoryupdate>) method includes a cautionary note about potential data loss if the input data is not carefully managed, highlighting the importance of ensuring that updates are performed with complete and accurate data.
+Key methods in the `BaseRepository` class include [`get`](<#baserepositoryget>), [`get_by_pk`](<#baserepositoryget_by_pk>), [`get_by_conditions`](<#baserepositoryget_by_conditions>), [`get_all`](<#baserepositoryget_all>), [`create`](<#baserepositorycreate>), [`update`](<#baserepositoryupdate>), [`delete`](<#baserepositorydelete>), [`delete_by_pk`](<#baserepositorydelete_by_pk>), [`exists`](<#baserepositoryexists>), and [`count_by`](<#baserepositorycount_by>). These methods allow for retrieving records by primary key or conditions, creating new records, updating existing records, deleting records, checking for the existence of records, and counting records based on specified conditions. The class also supports sorting and joining with other models, providing a comprehensive interface for database interactions. The use of type variables and generic programming allows the `BaseRepository` to be reused across different models, promoting code reusability and consistency in database operations.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ Key methods in the `BaseRepository` class include [`get`](<#baserepositoryget>),
 ---
 ### T
 - **Type**: ``TypeVar``
-- **Description**: Defines a type variable `T` that is bound to the `SQLModel` class. This means `T` can be any subclass of `SQLModel`, allowing for type-safe operations within the `BaseRepository` class.
-- **Use**: Used to specify a generic type for the `BaseRepository` class, ensuring that operations within the repository are type-checked against subclasses of `SQLModel`.
+- **Description**: `T` is a type variable that is bound to the `SQLModel` class. It is used to define a generic type for the `BaseRepository` class, allowing it to operate on any subclass of `SQLModel`. This ensures that the methods within `BaseRepository` can handle instances of the specified model type.
+- **Use**: Defines a generic type for the `BaseRepository` class, allowing it to work with any subclass of `SQLModel`.
 
 
 # Classes
@@ -43,7 +43,7 @@ Key methods in the `BaseRepository` class include [`get`](<#baserepositoryget>),
 - **Members**:
     - `session`: Stores the database session for executing queries.
     - `model`: Holds the model type that the repository will manage.
-- **Description**: Provides a generic repository pattern for database operations using SQLModel. It supports CRUD operations, including retrieving, creating, updating, and deleting records. It also includes methods for checking the existence of records and counting records based on conditions. The repository uses a session to interact with the database and requires a model type to operate on.
+- **Description**: Provides a generic repository pattern for database operations on a specified model type. It supports CRUD operations, including retrieving instances by primary key or conditions, creating, updating, and deleting instances, and checking for the existence of records. The class uses a database session to execute SQL queries and manage transactions.
 - **Methods**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.__init__`](<#baserepository__init__>)
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<#baserepositoryget>)
@@ -67,10 +67,10 @@ Initializes a `BaseRepository` instance with a database session and a model type
 - **Inputs**:
     - `self`: The instance of the `BaseRepository` class being initialized.
     - `session`: A `Session` object used to interact with the database.
-    - `model`: A type of `T`, where `T` is a subclass of `SQLModel`, representing the database model associated with the repository.
+    - `model`: The type of the model (`T`) that the repository will manage.
 - **Logic and Control Flow**:
-    - Assigns the `session` parameter to the `self.session` attribute of the instance.
-    - Assigns the `model` parameter to the `self.model` attribute of the instance.
+    - Assigns the `session` parameter to the `self.session` attribute.
+    - Assigns the `model` parameter to the `self.model` attribute.
 - **Output**: No output, as this is a constructor method.
 - **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#baserepository>)  (Base Class)
 
@@ -94,12 +94,12 @@ Retrieves an instance of the model using its primary key.
 #### BaseRepository\.get\_by\_pk<!-- {{#callable:python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_pk}} -->
 [View Source →](<../../../../../backend/app/repositories/base_repository.py#L18>)
 
-Retrieves an instance from the database using specified primary key fields and values.
+Retrieves an instance from the database using primary key(s) provided as keyword arguments.
 - **Inputs**:
     - `kwargs`: Key-value pairs of primary key fields and their values.
 - **Logic and Control Flow**:
     - Initializes a query to select the model associated with the repository.
-    - Iterates over the key-value pairs in `kwargs` to add conditions to the query for each primary key field and its value.
+    - Iterates over each key-value pair in `kwargs` to add conditions to the query where the model's attribute matches the given value.
     - Executes the query using the session and returns the first result found.
 - **Output**: The instance if found, otherwise `None`.
 - **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#baserepository>)  (Base Class)
@@ -115,11 +115,11 @@ Retrieves the first instance of a model that matches specified conditions and op
     - `conditions`: A list of conditions to filter the query results.
     - `joins`: An optional list of models to join in the query.
 - **Logic and Control Flow**:
-    - Initializes a query to select from the model associated with the repository.
-    - Checks if `joins` is provided; if so, iterates over each model in `joins` and applies a join to the query.
-    - Iterates over each condition in `conditions` and applies it to the query using the `where` clause.
-    - Executes the query using the session and returns the first result.
-- **Output**: The first instance of the model that matches the conditions and joins, or `None` if no match is found.
+    - Initialize a query to select from the model associated with the repository.
+    - If `joins` is provided, iterate over each model in `joins` and apply a join to the query.
+    - Iterate over each condition in `conditions` and apply a where clause to the query.
+    - Execute the query using the session and return the first result.
+- **Output**: The first instance of the model that matches the conditions, or `None` if no match is found.
 - **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#baserepository>)  (Base Class)
 
 
@@ -129,7 +129,6 @@ Retrieves the first instance of a model that matches specified conditions and op
 
 Retrieves a list of model instances from the database with optional filtering, sorting, and pagination.
 - **Inputs**:
-    - `self`: The instance of the `BaseRepository` class.
     - `limit`: The maximum number of records to retrieve, default is 100.
     - `offset`: The number of records to skip before starting to collect the result set, default is 0.
     - `sort_by`: The field name to sort the results by, default is None.
@@ -137,12 +136,12 @@ Retrieves a list of model instances from the database with optional filtering, s
     - `conditions`: A list of conditions to filter the results, default is None.
     - `joins`: A list of models to join with the main model, default is None.
 - **Logic and Control Flow**:
-    - Initializes a `select` statement for the model with the specified `offset` and `limit`.
-    - If `joins` is provided, iterates over each model in `joins` and applies a `join` to the statement.
-    - If `conditions` is provided, iterates over each condition and applies a `where` clause to the statement.
-    - If `sort_by` is provided, checks if the field exists on the model; if not, raises a `ValueError`.
-    - Constructs the field name for sorting and applies `order_by` with the specified `sort_direction`.
-    - Executes the statement using the session and returns all results as a list.
+    - Initializes a SQL `select` statement for the model with the specified `offset` and `limit`.
+    - If `joins` are provided, iterates over each join model and adds a join to the statement.
+    - If `conditions` are provided, iterates over each condition and adds a where clause to the statement.
+    - If `sort_by` is specified, checks if the field exists on the model; if not, raises a `ValueError`.
+    - Constructs the field name for sorting and applies the sorting direction using `asc` or `desc` functions.
+    - Executes the SQL statement and returns all results as a list.
 - **Output**: A list of model instances that match the specified criteria.
 - **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#baserepository>)  (Base Class)
 
@@ -153,14 +152,14 @@ Retrieves a list of model instances from the database with optional filtering, s
 
 Adds a new object to the database session, commits the transaction, refreshes the object, and returns it.
 - **Inputs**:
-    - `self`: The instance of the `BaseRepository` class.
-    - `obj_in`: The object of type `T` to add to the database session.
+    - `self`: An instance of the `BaseRepository` class.
+    - `obj_in`: An instance of type `T` that is to be added to the database.
 - **Logic and Control Flow**:
     - Adds `obj_in` to the database session using `self.session.add(obj_in)`.
     - Commits the current transaction to the database with `self.session.commit()`.
     - Refreshes `obj_in` to reflect any changes made during the commit using `self.session.refresh(obj_in)`.
     - Returns the refreshed `obj_in`.
-- **Output**: The method returns the object `obj_in` after it has been added to the session, committed, and refreshed.
+- **Output**: The method returns the refreshed instance of type `T` that was added to the database.
 - **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#baserepository>)  (Base Class)
 
 
@@ -190,7 +189,7 @@ Updates an existing instance with new data and commits the changes to the databa
 Deletes an object from the database using its primary key and returns the deleted object if it exists.
 - **Inputs**:
     - `self`: An instance of the `BaseRepository` class.
-    - `pk_id`: The primary key identifier of the object to delete, of type `UUID`.
+    - `pk_id`: A `UUID` representing the primary key of the object to delete.
 - **Logic and Control Flow**:
     - Retrieve the object from the database using the [`get`](<#baserepositoryget>) method with the provided `pk_id`.
     - If the object exists, delete it from the session and commit the transaction.
@@ -209,8 +208,9 @@ Deletes an object from the database using its primary key(s) and returns the del
 - **Inputs**:
     - `kwargs`: A dictionary of key-value pairs representing the primary key fields and their values for the object to delete.
 - **Logic and Control Flow**:
-    - Call [`get_by_pk`](<#baserepositoryget_by_pk>) with `kwargs` to retrieve the object by its primary key(s).
-    - If the object exists, delete it from the session and commit the transaction.
+    - Calls [`get_by_pk`](<#baserepositoryget_by_pk>) with the provided `kwargs` to retrieve the object by its primary key(s).
+    - Checks if the object exists; if it does, deletes the object from the session and commits the transaction.
+    - Returns the object if it was found and deleted, otherwise returns `None`.
 - **Output**: The deleted object if it exists, otherwise `None`.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_pk`](<#baserepositoryget_by_pk>)
@@ -225,14 +225,14 @@ Deletes an object from the database using its primary key(s) and returns the del
 Checks if an instance with a given ID exists and optionally verifies its organization ID.
 - **Inputs**:
     - `self`: The instance of the `BaseRepository` class.
-    - `id`: The UUID of the instance to check for existence.
+    - `id`: The unique identifier (`UUID`) of the instance to check.
     - `organization_id`: An optional string representing the organization ID to verify against the instance's organization ID.
 - **Logic and Control Flow**:
     - Retrieve the instance with the given `id` using the [`get`](<#baserepositoryget>) method.
     - If the instance does not exist, return `False`.
     - If `organization_id` is provided, check if the instance's `organization_id` attribute matches the provided `organization_id`.
     - Return `True` if the instance exists and matches the optional `organization_id`, otherwise return `False`.
-- **Output**: A boolean value indicating whether the instance exists and matches the optional organization ID.
+- **Output**: A boolean value indicating whether the instance exists and, if `organization_id` is provided, whether it matches the instance's organization ID.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<#baserepositoryget>)
 - **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#baserepository>)  (Base Class)
@@ -250,7 +250,7 @@ Counts the number of records in the database that match specified conditions and
 - **Logic and Control Flow**:
     - Initialize a query to count records from the model associated with the repository.
     - If `joins` is provided, iterate over each model in `joins` and join it to the query.
-    - Iterate over each condition in `conditions` and apply it to the query using the `where` clause.
+    - Iterate over each condition in `conditions` and apply it to the query as a filter.
     - Execute the query using the session and return the count of matching records.
 - **Output**: An integer representing the count of records that match the specified conditions and joins.
 - **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#baserepository>)  (Base Class)

@@ -6,9 +6,9 @@
 Implements an Auth0 authentication server using FastAPI and PKCE for token exchange.
 
 # Purpose
-This code is a script that facilitates OAuth2 authentication using the Auth0 service. It uses the FastAPI framework to create a local web server that handles the callback from Auth0 after a user logs in. The script generates a PKCE (Proof Key for Code Exchange) pair to enhance security during the OAuth2 flow. It opens a web browser to direct the user to the Auth0 login page, and upon successful login, it receives an authorization code via the callback endpoint.
+This code is a script that facilitates OAuth2 authentication using the Auth0 service. It uses the FastAPI framework to create a local web server that handles the callback from the Auth0 authentication process. The script generates a PKCE (Proof Key for Code Exchange) pair to enhance security during the OAuth2 flow. It opens a web browser to initiate the login process with Auth0, and upon successful authentication, it receives an authorization code via the callback endpoint.
 
-The script defines several key functions: [`generate_pkce_pair`](<#generate_pkce_pair>) to create the PKCE verifier and challenge, [`callback`](<#callback>) to handle the redirect from Auth0 and store the authorization code, [`get_tokens`](<#get_tokens>) to exchange the authorization code for access and ID tokens, and [`login_via_browser`](<#login_via_browser>) to initiate the login process. The script runs a FastAPI server in a separate thread and uses the `httpx` library to make HTTP requests to Auth0. The main purpose of this script is to authenticate a user and obtain tokens that can be used for accessing protected resources.
+The script defines several key components: a FastAPI application to handle HTTP requests, a function to generate PKCE pairs, and a function to exchange the authorization code for tokens. The [`login_via_browser`](<#login_via_browser>) function orchestrates the authentication process by opening the browser, waiting for the authorization code, and then exchanging it for access and ID tokens. The script runs a FastAPI server in a separate thread and initiates the login process when executed as the main module. This setup is intended for use in environments where a user can interact with a web browser to complete the authentication process.
 # Imports and Dependencies
 
 ---
@@ -29,43 +29,43 @@ The script defines several key functions: [`generate_pkce_pair`](<#generate_pkce
 ---
 ### CLIENT\_ID
 - **Type**: ``str``
-- **Description**: A string that represents the client identifier used in the OAuth2 authentication process with Auth0.
-- **Use**: Used in the `get_tokens` and `login_via_browser` functions to authenticate and authorize the client with the Auth0 service.
+- **Description**: A string that represents the client identifier used in the OAuth2 authentication process with Auth0. It is a unique identifier assigned to the client application by the authorization server.
+- **Use**: Used in the OAuth2 authentication process to identify the client application when requesting tokens from the authorization server.
 
 
 ---
 ### AUTH0\_DOMAIN
 - **Type**: ``str``
-- **Description**: A string that specifies the domain for the Auth0 service used in the application. This domain is necessary for constructing URLs for authentication and token requests.
-- **Use**: Used to build URLs for authentication and token exchange with the Auth0 service.
+- **Description**: Specifies the domain for the Auth0 authentication service used in the application. This domain is necessary for constructing URLs for authentication requests and token exchanges.
+- **Use**: Used to build URLs for authentication and token requests in the application.
 
 
 ---
 ### REDIRECT\_URI
 - **Type**: ``str``
-- **Description**: A string that specifies the URI to which the authorization server will redirect the user after the authentication process is complete. This URI is used in OAuth 2.0 authentication flows to handle the callback from the authorization server.
+- **Description**: A string that specifies the URI to which the authorization server will redirect the user after the authentication process is complete. This URI is typically used in OAuth 2.0 authentication flows to handle the callback from the authorization server.
 - **Use**: Used as the `redirect_uri` parameter in OAuth 2.0 authentication requests to specify where the authorization server should redirect the user after authentication.
 
 
 ---
 ### ORG\_ID
 - **Type**: ``str``
-- **Description**: A string variable that holds the organization ID used in the authentication process with Auth0. It is set to a placeholder value 'YOUR_ORG_ID', indicating that it should be replaced with an actual organization ID.
-- **Use**: Used as a parameter in the `login_via_browser` function to specify the organization during the Auth0 login process.
+- **Description**: A string variable that holds the organization ID used in the authentication process.
+- **Use**: Used as a parameter in the authentication URL to specify the organization during the login process.
 
 
 ---
 ### app
 - **Type**: ``FastAPI``
 - **Description**: Initializes an instance of the `FastAPI` class, which is a web framework for building APIs with Python. This instance is used to define routes and handle HTTP requests.
-- **Use**: Used to create and run a FastAPI server that handles incoming HTTP requests and responses.
+- **Use**: Used to create and run a FastAPI server that handles incoming HTTP requests.
 
 
 ---
 ### auth\_code\_container
 - **Type**: ``dict``
 - **Description**: A dictionary that stores the authorization code received from the Auth0 login process. It is initially empty and is populated when the `/callback` endpoint is accessed with a valid authorization code.
-- **Use**: Stores the authorization code under the key `'code'` for later use in token exchange.
+- **Use**: Used to temporarily hold the authorization code needed to exchange for tokens in the OAuth2 authentication flow.
 
 
 # Functions
@@ -74,13 +74,14 @@ The script defines several key functions: [`generate_pkce_pair`](<#generate_pkce
 ### generate\_pkce\_pair<!-- {{#callable:python-backend/dev_stack/src/auth/auth_server.generate_pkce_pair}} -->
 [View Source →](<../../../../../dev_stack/src/auth/auth_server.py#L24>)
 
-Generates a PKCE (Proof Key for Code Exchange) verifier and challenge pair for OAuth 2.0 authentication.
+Generates a PKCE verifier and challenge pair for OAuth 2.0 authentication.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Generates a random 40-byte string using `os.urandom` and encodes it in a URL-safe base64 format to create the `verifier`.
-    - Encodes the `verifier` using SHA-256 hashing, then encodes the hash in a URL-safe base64 format to create the `challenge`.
-    - Removes any trailing '=' characters from both the `verifier` and `challenge` to ensure they are URL-safe.
-- **Output**: Returns a tuple containing the `verifier` and `challenge` strings.
+    - Generate a random 40-byte string using `os.urandom` and encode it in a URL-safe base64 format to create the `verifier`.
+    - Remove any trailing '=' characters from the base64-encoded `verifier`.
+    - Hash the `verifier` using SHA-256, encode the hash in a URL-safe base64 format to create the `challenge`, and remove any trailing '=' characters.
+    - Return the `verifier` and `challenge` as a tuple.
+- **Output**: A tuple containing the `verifier` and `challenge` strings.
 
 
 ---
@@ -96,27 +97,28 @@ Handles the callback from an OAuth2 authorization flow by extracting the authori
     - Checks if the 'code' is not present; if absent, returns an HTML response with a 400 status code indicating no code was provided.
     - Stores the extracted 'code' in the `auth_code_container` dictionary under the key 'code'.
     - Returns an HTML response indicating a successful login.
-- **Output**: An HTML response indicating either a successful login or an error if no code is provided.
+- **Output**: An HTML response indicating either a missing code with a 400 status or a successful login message.
 
 
 ---
 ### run\_fastapi\_server<!-- {{#callable:python-backend/dev_stack/src/auth/auth_server.run_fastapi_server}} -->
 [View Source →](<../../../../../dev_stack/src/auth/auth_server.py#L44>)
 
-Starts a FastAPI server using Uvicorn on localhost at port 3000.
+Starts a FastAPI server using Uvicorn on a specified host and port.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `uvicorn.run` function with the `app` instance, setting the host to `127.0.0.1` and the port to `3000`.
-- **Output**: No output is returned.
+    - Calls the `uvicorn.run` function to start the FastAPI application `app`.
+    - Specifies the host as `127.0.0.1` and the port as `3000`.
+- **Output**: Does not return any value.
 
 
 ---
 ### get\_tokens<!-- {{#callable:python-backend/dev_stack/src/auth/auth_server.get_tokens}} -->
 [View Source →](<../../../../../dev_stack/src/auth/auth_server.py#L48>)
 
-Exchanges an authorization code and code verifier for OAuth tokens from the Auth0 service.
+Exchanges an authorization code for tokens using the OAuth 2.0 protocol.
 - **Inputs**:
-    - `code`: The authorization code received from the Auth0 authorization server.
+    - `code`: The authorization code received from the OAuth 2.0 authorization server.
     - `verifier`: The code verifier used in the PKCE (Proof Key for Code Exchange) flow.
 - **Logic and Control Flow**:
     - Constructs the token URL using the `AUTH0_DOMAIN` constant.
@@ -124,26 +126,26 @@ Exchanges an authorization code and code verifier for OAuth tokens from the Auth
     - Sets the `Content-Type` header to `application/x-www-form-urlencoded`.
     - Sends a POST request to the token URL with the `data` and `headers` using the `httpx.post` method.
     - Calls `response.raise_for_status()` to raise an exception if the request was unsuccessful.
-    - Returns the JSON response from the token request.
-- **Output**: A JSON object containing the tokens received from the Auth0 service.
+    - Returns the JSON response from the server, which contains the tokens.
+- **Output**: A JSON object containing the tokens received from the authorization server.
 
 
 ---
 ### login\_via\_browser<!-- {{#callable:python-backend/dev_stack/src/auth/auth_server.login_via_browser}} -->
 [View Source →](<../../../../../dev_stack/src/auth/auth_server.py#L65>)
 
-Initiates an OAuth2 login flow via a web browser and exchanges the authorization code for tokens.
+Initiates an OAuth2 login flow via a web browser and retrieves authentication tokens.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Generate a PKCE pair consisting of a verifier and a challenge using [`generate_pkce_pair`](<#generate_pkce_pair>).
+    - Generate a PKCE pair using the [`generate_pkce_pair`](<#generate_pkce_pair>) function, which returns a verifier and a challenge.
     - Create a dictionary `params` with OAuth2 parameters including `response_type`, `client_id`, `redirect_uri`, `scope`, `code_challenge`, `code_challenge_method`, and `organization`.
-    - Construct a query string from the `params` dictionary and form the authorization URL using `AUTH0_DOMAIN`.
-    - Open the authorization URL in the default web browser using `webbrowser.open`.
+    - Construct a query string from the `params` dictionary and form the authorization URL using the `AUTH0_DOMAIN`.
+    - Open the authorization URL in the default web browser to prompt the user for login.
     - Enter a loop that waits until the `auth_code_container` dictionary contains a key `code`.
     - Retrieve the authorization code from `auth_code_container`.
-    - Call [`get_tokens`](<#get_tokens>) with the authorization code and verifier to exchange the code for tokens.
-    - Return the tokens received from [`get_tokens`](<#get_tokens>).
-- **Output**: A dictionary containing the tokens obtained from the authorization server.
+    - Call the [`get_tokens`](<#get_tokens>) function with the authorization code and verifier to exchange the code for authentication tokens.
+    - Return the tokens received from the [`get_tokens`](<#get_tokens>) function.
+- **Output**: Returns authentication tokens as a dictionary, which includes access and ID tokens.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/auth_server.generate_pkce_pair`](<#generate_pkce_pair>)
     - [`python-backend/dev_stack/src/auth/auth_server.get_tokens`](<#get_tokens>)

@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-SQL script for migrating PDF data by creating and linking new asset, version, and node records.
+SQL script for migrating PDF data by creating and linking new asset, version, and node records in a database.
 
 # Purpose
 The code is a SQL script designed to migrate and transform data related to PDF documents from an existing database schema to a new schema. It uses a series of Common Table Expressions (CTEs) to process and insert data into new tables while maintaining relationships between the old and new data structures. The script begins by selecting rows from the `derived_contents` table where the `content_kind` is 'supplemental-document'. It assigns a unique version number to each document and generates a `row_key` for identification.
 
-The script then selects distinct documents to determine a "chosen_id" for each group of documents, which is used to insert records into the `v2_primary_asset` table. It continues by linking these primary assets back to the original documents and inserting all versions into the `v2_version` table. The script further bridges these versions to the original data, inserts corresponding nodes into the `v2_node` table, and finally updates the `derived_contents` table with the new node IDs. The process ensures that each document and its versions are correctly migrated and linked in the new schema.
+The script then selects distinct documents to determine a "chosen" document for each organization and content name group, which is inserted into the `v2_primary_asset` table. It continues by inserting all versions of the documents into the `v2_version` table and links them back to the primary assets. The script further inserts nodes for each version into the `v2_node` table and updates the `derived_contents` table with the new node IDs. The final step is to return the updated rows from the `derived_contents` table. This process ensures that the data is migrated and transformed while preserving the necessary relationships and versioning information.
 # Global Variables
 
 ---
 ### MIGRATE\_PDFS
-- **Type**: `str`
-- **Description**: Defines a SQL script as a string that performs a series of operations to migrate PDF data from a source table to a new schema. The script uses Common Table Expressions (CTEs) to gather, process, and insert data into new tables, ensuring each PDF document is uniquely identified and linked to its new version and node.
-- **Use**: Used to execute a series of SQL operations for migrating PDF data in a database.
+- **Type**: ``str``
+- **Description**: Contains a SQL script as a string that defines a series of Common Table Expressions (CTEs) and SQL operations to migrate PDF-related data. The script processes data from the `derived_contents` table, identifies and groups PDF documents, and inserts them into new tables such as `v2_primary_asset`, `v2_version`, and `v2_node`. It also updates the `derived_contents` table with new node IDs.
+- **Use**: Used to store and execute a SQL script for migrating PDF data in a database.
 
 
 

@@ -3,14 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Middleware for API key and JWT validation, Pydantic models for authentication, and permission strings.
+Asynchronous API key verification, JWT middleware, Pydantic models, permissions, and cache tests.
 
 
 ## Files
-- **[api_key_middleware.py](api_key_middleware.py.md)**: Middleware for API key validation and organization membership verification using Auth0 and FastAPI.
+- **[api_key_async.py](api_key_async.py.md)**: Asynchronous API key verification and organization membership check with caching.
+- **[api_key_common.py](api_key_common.py.md)**: Creates a JWT-shaped payload from an ApiKey model for consistent sync and async results.
+- **[api_key_middleware.py](api_key_middleware.py.md)**: Middleware for validating API keys, checking organization membership, and returning user payloads.
+- **[async_cache.py](async_cache.py.md)**: Async TTL cache with size limit and LRU eviction using asyncio for concurrency.
 - **[jwt_middleware.py](jwt_middleware.py.md)**: Middleware for verifying Auth0 RS256 JWTs and enforcing token-based authentication in FastAPI.
 - **[models.py](models.py.md)**: Defines Pydantic models for user and machine-to-machine authentication data.
 - **[permissions.py](permissions.py.md)**: Defines permission strings for embedding in JWTs.
+- **[test_async_cache.py](test_async_cache.py.md)**: Tests for the AsyncTTLCache class, including basic operations, TTL expiration, LRU eviction, and concurrency.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

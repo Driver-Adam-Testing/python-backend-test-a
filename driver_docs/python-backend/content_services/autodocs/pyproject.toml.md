@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for the Poetry package manager, specifying project metadata and dependencies.
+Configuration for the Poetry package manager specifying dependencies and build settings for the autodocs project.
 
 # Purpose
-The `pyproject.toml` file is a configuration file used by the Poetry tool to manage dependencies and package information for a Python project. It specifies the project's metadata, including the name `autodocs`, version `0.1.0`, and author details. The file lists the packages to include, such as `src/utils`, and defines the dependencies required for the project, including specific versions of Python and various libraries like `openai`, `tiktoken`, and `boto3`. The file also includes paths to local packages, such as `database` and `shared`, which are marked for development use. Additionally, the `[build-system]` section specifies the build requirements and backend, indicating the use of `poetry-core` for building the project.
+The `pyproject.toml` file configures the Python project using Poetry, a dependency management tool. It specifies the project metadata, including the project name `autodocs`, version `0.1.0`, and author information. The file defines the packages to include, such as `src/utils`, and lists the dependencies required for the project, including specific versions of Python and libraries like `openai`, `tiktoken`, and `boto3`. Some dependencies are specified with local paths, indicating they are in development mode, such as `database`, `shared`, and `auto-toml`. The `[build-system]` section specifies the build requirements, indicating that `poetry-core` is needed for building the project. This file is primarily used to create a virtual environment for the local integrated development environment (IDE), while dependencies for containers are managed separately.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

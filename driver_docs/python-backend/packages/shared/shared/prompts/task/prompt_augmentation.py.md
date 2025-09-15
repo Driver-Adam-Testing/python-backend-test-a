@@ -6,21 +6,21 @@
 Defines a system message for enhancing user prompts to improve LLM responses in technical documentation.
 
 # Purpose
-The code defines a constant `PROMPT` that contains a detailed instruction set for a prompt engineer. The purpose of this instruction is to guide the engineer in enhancing user prompts to improve the output from a language model (LLM). The instructions specify that responses should be concise, under 100 words, and tailored to the user's needs, including the desired length and verbosity. Additionally, a `MESSAGE` dictionary is created with a key `role` set to "system" and a key `content` set to the `PROMPT`, which can be used to configure or initialize a system with these instructions.
+The code defines a constant `PROMPT` and a dictionary `MESSAGE` for use in a prompt engineering context. The `PROMPT` string provides detailed instructions for generating concise and effective prompts to enhance user interactions with a language model (LLM). It specifies that responses should be under 100 words and tailored to improve the user's understanding of their code and documentation. The `MESSAGE` dictionary assigns the `PROMPT` to the key `content` under the `role` of `system`, indicating its use in a system-level context for prompt generation. This code provides narrow functionality focused on prompt engineering.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for enhancing user prompts to improve results from a language model. It includes guidelines on how to handle user input, desired output length, verbosity, and format.
-- **Use**: Used as a template for generating improved prompts for language model interactions.
+- **Description**: A multi-line string that provides instructions for a prompt engineer to enhance user prompts for better results from a language model. It includes guidelines on how to handle user instructions, desired output length, verbosity, and format.
+- **Use**: Used as a template or guideline for generating improved prompts for language model interactions.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a value of `system`, and the `content` key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for a prompt engineer.
-- **Use**: Used to define a system message with specific instructions for a prompt engineer in a structured format.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a value of `system`, and the `content` key holds the value of the `PROMPT` variable.
+- **Use**: Used to define a system message with a specific role and content for interaction with a language model.
 
 
 

@@ -3,31 +3,32 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for content name extraction functions in `content_utils` using `pytest` and `unittest.mock`.
+Tests for functions that extract or determine content names from JSON or mock objects.
 
 # Purpose
-This code is a test suite for validating the functionality of two utility functions: `_get_name_from_content_json` and `get_content_name`. It uses the `pytest` framework and `unittest.mock` to create mock objects for testing. The tests cover various scenarios, including valid and invalid JSON inputs, missing name fields, and different content types such as "application_note" and "supplemental-document". The tests ensure that the functions return the expected content names or default values based on the input conditions. The script is designed to be executed directly, running all tests using `pytest.main()`.
+This code is a test suite for validating the functionality of two utility functions: `_get_name_from_content_json` and `get_content_name`. It uses the `pytest` framework to define a series of test cases that check the behavior of these functions under various conditions. The tests for `_get_name_from_content_json` verify its ability to extract a name from a JSON string, handling cases of valid JSON, invalid JSON, missing name fields, and `None` input. The tests for `get_content_name` evaluate its logic for determining the content name based on different attributes of a `DerivedContent` mock object, including scenarios where the content name is directly available, derived from JSON content, or inferred from a file path. The script concludes with a call to `pytest.main()` to execute the tests when the script is run directly.
 # Imports and Dependencies
 
 ---
-- `pytest`
 - `unittest.mock.Mock`
+- `pytest`
+- `database.models.DerivedContent`
 - `app.services.utils.content_utils._get_name_from_content_json`
 - `app.services.utils.content_utils.get_content_name`
-- `database.models_v1.DerivedContent`
 
 
 # Functions
 
 ---
 ### test\_get\_name\_from\_content\_json\_valid<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_name_from_content_json_valid}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L10>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L12>)
 
-Tests if the [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) function correctly extracts the name from a valid JSON string.
+Tests if the function [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) correctly extracts the name from a valid JSON string.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Defines a JSON string `content` with a key `name` and value `Test Name`.
-    - Asserts that the [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) function returns `Test Name` when given the `content` JSON string.
+    - Calls the function [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) with `content` as the argument.
+    - Asserts that the result of `_get_name_from_content_json(content)` is equal to `Test Name`.
 - **Output**: No output is returned; the function uses an assertion to validate the behavior of [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>).
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils._get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>)
@@ -35,14 +36,13 @@ Tests if the [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from
 
 ---
 ### test\_get\_name\_from\_content\_json\_invalid\_json<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_name_from_content_json_invalid_json}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L15>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L17>)
 
 Tests that the function [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) returns `None` when given invalid JSON input.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Set `content` to a string representing an invalid JSON object.
-    - Call [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) with `content` as the argument.
-    - Assert that the result of the function call is `None`.
+    - Sets the variable `content` to an invalid JSON string missing a closing brace.
+    - Asserts that calling [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) with the invalid JSON string returns `None`.
 - **Output**: No output is returned; the function uses an assertion to validate behavior.
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils._get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>)
@@ -50,7 +50,7 @@ Tests that the function [`_get_name_from_content_json`](<content_utils.py.md#_ge
 
 ---
 ### test\_get\_name\_from\_content\_json\_no\_name<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_name_from_content_json_no_name}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L20>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L22>)
 
 Tests that the function [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) returns `None` when the JSON content does not contain a `name` key.
 - **Inputs**: None
@@ -65,14 +65,13 @@ Tests that the function [`_get_name_from_content_json`](<content_utils.py.md#_ge
 
 ---
 ### test\_get\_name\_from\_content\_json\_none<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_name_from_content_json_none}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L25>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L27>)
 
-Tests if the function [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) returns `None` when given `None` as input.
+Tests that the function [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) returns `None` when given `None` as input.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Set `content` to `None`.
-    - Call [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) with `content` as the argument.
-    - Assert that the result of `_get_name_from_content_json(content)` is `None`.
+    - Sets the variable `content` to `None`.
+    - Asserts that calling [`_get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>) with `content` as `None` returns `None`.
 - **Output**: No output is returned; the function uses an assertion to validate behavior.
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils._get_name_from_content_json`](<content_utils.py.md#_get_name_from_content_json>)
@@ -80,65 +79,65 @@ Tests if the function [`_get_name_from_content_json`](<content_utils.py.md#_get_
 
 ---
 ### test\_get\_content\_name\_with\_content\_name<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_content_name_with_content_name}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L30>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L32>)
 
 Tests if the [`get_content_name`](<content_utils.py.md#get_content_name>) function returns the correct content name when the `content_name` attribute is already set.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Create a mock object `content` with a specification of `DerivedContent`.
-    - Set the `content_name` attribute of `content` to "Existing Name".
-    - Assert that the [`get_content_name`](<content_utils.py.md#get_content_name>) function returns "Existing Name" when called with `content`.
-- **Output**: No output is returned; the function asserts the correctness of the [`get_content_name`](<content_utils.py.md#get_content_name>) function's behavior.
+    - Set the `content_name` attribute of `content` to 'Existing Name'.
+    - Assert that the [`get_content_name`](<content_utils.py.md#get_content_name>) function returns 'Existing Name' when called with `content`.
+- **Output**: No output is returned; the function uses an assertion to validate behavior.
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils.get_content_name`](<content_utils.py.md#get_content_name>)
 
 
 ---
 ### test\_get\_content\_name\_application\_note\_with\_name<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_content_name_application_note_with_name}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L36>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L38>)
 
-Tests the [`get_content_name`](<content_utils.py.md#get_content_name>) function to ensure it correctly extracts the name from an application note with a specified name in the content JSON.
+Tests if the [`get_content_name`](<content_utils.py.md#get_content_name>) function correctly extracts the name from a JSON string when the content type is 'application_note' and the name is present.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Create a mock object `content` with a specification of `DerivedContent`.
-    - Set `content.content_name` to `None`.
-    - Set `content.content_type.type_name` to `application_note`.
-    - Set `content.content` to a JSON string containing a `name` key with the value `App Note Name`.
-    - Call `get_content_name(content)` and assert that the result is `App Note Name`.
-- **Output**: No output is returned; the function asserts that the [`get_content_name`](<content_utils.py.md#get_content_name>) function returns the expected name.
+    - Creates a mock object `content` with a specification of `DerivedContent`.
+    - Sets `content.content_name` to `None`.
+    - Sets `content.content_type.type_name` to 'application_note'.
+    - Sets `content.content` to a JSON string containing a 'name' key with the value 'App Note Name'.
+    - Asserts that the [`get_content_name`](<content_utils.py.md#get_content_name>) function returns 'App Note Name' when called with the `content` mock object.
+- **Output**: No output is returned; the function uses an assertion to validate behavior.
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils.get_content_name`](<content_utils.py.md#get_content_name>)
 
 
 ---
 ### test\_get\_content\_name\_application\_note\_generating<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_content_name_application_note_generating}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L44>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L46>)
 
-Tests the [`get_content_name`](<content_utils.py.md#get_content_name>) function for an `application_note` type with no `content_name` and a JSON content containing a `title`.
+Tests the [`get_content_name`](<content_utils.py.md#get_content_name>) function for an application note with no name in the content JSON.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates a mock object `content` with a specification of `DerivedContent`.
-    - Sets `content.content_name` to `None`.
-    - Sets `content.content_type.type_name` to `application_note`.
-    - Sets `content.content` to a JSON string with a `title` key.
-    - Asserts that `get_content_name(content)` returns `Generating content...`.
-- **Output**: No output is returned; the function asserts the expected behavior of [`get_content_name`](<content_utils.py.md#get_content_name>).
+    - Create a mock object `content` with a specification of `DerivedContent`.
+    - Set `content.content_name` to `None`.
+    - Set `content.content_type.type_name` to `application_note`.
+    - Set `content.content` to a JSON string with a `title` key.
+    - Assert that `get_content_name(content)` returns the string `Generating content...`.
+- **Output**: No output is returned; the function uses an assertion to validate behavior.
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils.get_content_name`](<content_utils.py.md#get_content_name>)
 
 
 ---
 ### test\_get\_content\_name\_supplemental\_document<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_content_name_supplemental_document}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L52>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L54>)
 
 Tests the [`get_content_name`](<content_utils.py.md#get_content_name>) function for a `DerivedContent` object with a `supplemental-document` type.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Create a mock object `content` with a specification of `DerivedContent`.
-    - Set `content.content_name` to `None`.
-    - Set `content.content_type.type_name` to `supplemental-document`.
-    - Set `content.relative_path` to `documents/supplemental.pdf`.
-    - Assert that `get_content_name(content)` returns `supplemental.pdf`.
+    - Creates a mock object `content` with a specification of `DerivedContent`.
+    - Sets `content.content_name` to `None`.
+    - Sets `content.content_type.type_name` to `supplemental-document`.
+    - Sets `content.relative_path` to `documents/supplemental.pdf`.
+    - Asserts that `get_content_name(content)` returns `supplemental.pdf`.
 - **Output**: No output is returned; the function asserts the expected behavior of [`get_content_name`](<content_utils.py.md#get_content_name>).
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils.get_content_name`](<content_utils.py.md#get_content_name>)
@@ -146,17 +145,17 @@ Tests the [`get_content_name`](<content_utils.py.md#get_content_name>) function 
 
 ---
 ### test\_get\_content\_name\_default<!-- {{#callable:python-backend/backend/app/services/utils/content_utils_test.test_get_content_name_default}} -->
-[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L60>)
+[View Source →](<../../../../../../backend/app/services/utils/content_utils_test.py#L62>)
 
-Tests the default behavior of the [`get_content_name`](<content_utils.py.md#get_content_name>) function when `content_name` is `None` and `content_type.type_name` is "other".
+Tests the default behavior of the [`get_content_name`](<content_utils.py.md#get_content_name>) function when `content_name` is `None` and `content_type` is not a special case.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Creates a mock object `content` with a specification of `DerivedContent`.
     - Sets `content.content_name` to `None`.
-    - Sets `content.content_type.type_name` to "other".
-    - Sets `content.relative_path` to "other/path/to/content".
-    - Asserts that `get_content_name(content)` returns "other/path/to/content".
-- **Output**: No output is returned; the function uses an assertion to validate behavior.
+    - Sets `content.content_type.type_name` to `"other"`.
+    - Sets `content.relative_path` to `"other/path/to/content"`.
+    - Asserts that `get_content_name(content)` returns `"other/path/to/content"`.
+- **Output**: No output is returned; the function asserts the expected behavior of [`get_content_name`](<content_utils.py.md#get_content_name>).
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils.get_content_name`](<content_utils.py.md#get_content_name>)
 

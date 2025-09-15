@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a system message prompt for explaining thoughts on batches of tool calls to the user.
+Defines a system message prompt for explaining thoughts in tool call batches to the user.
 
 # Purpose
-This code defines a configuration for a messaging system. It includes a string constant `PROMPT`, which provides a template message that describes the purpose of a "think tool" in the context of tool calls. The `PROMPT` indicates that each batch of tool calls should include a thought, which the think tool will explain to the user. Additionally, the code defines a dictionary `MESSAGE` with two keys: `role` and `content`. The `role` is set to "system", and the `content` is set to the value of `PROMPT`, indicating that this message is intended for system-level communication. This setup is likely used in a system where automated thoughts or explanations are communicated to users alongside tool operations.
+The code defines a configuration for a messaging system. It includes a string constant `PROMPT` that provides a template message explaining the purpose of a "think tool" in the context of tool calls. The `PROMPT` indicates that each batch of tool calls should include a thought, which the think tool will explain to the user. The dictionary `MESSAGE` is then created with two key-value pairs: `role` set to `"system"` and `content` set to the value of `PROMPT`. This setup suggests that `MESSAGE` is intended to be used in a system where messages are structured with specific roles and content, likely for communication or logging purposes.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that describes the necessity of including a thought with each batch of tool calls. It emphasizes that the thought should be explained to the user and accompanied by other tools.
-- **Use**: Used as the content for the `MESSAGE` dictionary to provide system instructions.
+- **Description**: A multi-line string that provides instructions or information about the purpose of tool calls and the importance of communicating thoughts to the user. It emphasizes that each batch of tool calls should include a thought, which the think tool will explain to the user.
+- **Use**: Used as a content template for the `MESSAGE` dictionary to convey system instructions.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key holds the value of the `PROMPT` variable.
-- **Use**: Used to store and organize system role information and its associated content for further processing or communication.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a value of `system`, and the `content` key holds the value of the `PROMPT` variable.
+- **Use**: Used to store system role information and a prompt message for further processing or communication.
 
 
 

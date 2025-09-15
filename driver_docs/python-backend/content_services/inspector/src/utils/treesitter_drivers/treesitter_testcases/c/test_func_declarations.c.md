@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test cases for function declarations and handling in C, including inline attributes and complex return types.
+Function declarations and definitions for memory management, cluster operations, and signal handling.
 
 # Purpose
-This C source code file contains a mix of function declarations, macro definitions, and type definitions. It includes a conditional macro definition that modifies the `inline` keyword to enforce inlining when using the GNU Compiler Collection (GCC) with Position Independent Code (PIC). The file declares several functions related to memory management and cluster node operations, such as [`__mmap`](<#__mmap>), [`__munmap`](<#__munmap>), [`createClusterNode`](<#createclusternode>), and [`clusterAddNode`](<#clusteraddnode>). Additionally, it defines a simple function [`some_function`](<#some_function>) and a variable `not_a_function` to illustrate different code elements. A typedef for a function pointer, `signal_handler_t`, is also included, along with a function [`complex_function`](<#complex_function>) that returns a complex data type `struct result_type`. This file serves as a header-like collection of function prototypes and type definitions for use in a larger C program.
+This C header file contains function declarations and macro definitions related to memory management and cluster node operations. It includes conditional compilation to redefine the `inline` keyword with the `__attribute__((always_inline))` attribute when using the GNU Compiler Collection (GCC) with Position Independent Code (PIC). The file declares functions for memory mapping ([`__mmap`](<#__mmap>), [`__munmap`](<#__munmap>), [`__mremap`](<#__mremap>), [`__madvise`](<#__madvise>)) and cluster node management ([`createClusterNode`](<#createclusternode>), [`clusterAddNode`](<#clusteraddnode>), [`clusterAcceptHandler`](<#clusteraccepthandler>), [`clusterReadHandler`](<#clusterreadhandler>)). Additionally, it includes a function definition ([`some_function`](<#some_function>)) and a variable declaration (`not_a_function`) to demonstrate differentiation between functions and variables. A typedef for a function pointer (`signal_handler_t`) and a function with a complex return type ([`complex_function`](<#complex_function>)) are also present, illustrating the handling of various C language constructs.
 # Global Variables
 
 ---

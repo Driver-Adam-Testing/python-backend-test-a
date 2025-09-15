@@ -7,12 +7,12 @@ Java test cases demonstrating classes, enums, imports, interfaces, methods, and 
 
 
 ## Files
-- **[test_classes.java](test_classes.java.md)**: Java classes demonstrating inheritance, encapsulation, and interfaces with inner and abstract classes.
-- **[test_enums.java](test_enums.java.md)**: Defines enums for Color, Status with a constructor, and Priority with multiple methods.
-- **[test_imports.java](test_imports.java.md)**: Demonstrates the use of various Java imports and static imports in a class method.
-- **[test_interfaces.java](test_interfaces.java.md)**: Java interfaces demonstrating features like constants, abstract, default, static methods, and a functional interface.
-- **[test_methods.java](test_methods.java.md)**: Defines various method examples including static, instance, private, generic, and overridden methods.
-- **[test_variables.java](test_variables.java.md)**: Demonstrates the use of class, instance, and local variables in Java.
+- **[test_classes.java](test_classes.java.md)**: Java classes demonstrating inheritance, encapsulation, and the Comparable interface.
+- **[test_enums.java](test_enums.java.md)**: Defines enums for Color, Status, and Priority with constructors and methods.
+- **[test_imports.java](test_imports.java.md)**: Demonstrates the use of various Java imports in a class with a method that utilizes them.
+- **[test_interfaces.java](test_interfaces.java.md)**: Java interfaces demonstrating features like constants, abstract, default, static methods, and nested interfaces.
+- **[test_methods.java](test_methods.java.md)**: Defines a Java class with various method examples, including static, instance, private, and generic methods.
+- **[test_variables.java](test_variables.java.md)**: Defines a Java class with examples of class, instance, and local variables.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

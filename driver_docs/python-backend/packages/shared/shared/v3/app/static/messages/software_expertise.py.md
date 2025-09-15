@@ -6,7 +6,7 @@
 Defines a system message for a software expertise role with specific responsibilities and limitations.
 
 # Purpose
-The code defines a class `SoftwareExpertiseMessage` that inherits from `LlmMessage`, which is imported from `shared.v3.interfaces.llm_message`. This class specifies a `message_kind` attribute set to `MessageKind.SYSTEM`, indicating the type of message it represents. The `content` attribute contains a detailed string that describes the role and responsibilities of an expert software engineer, emphasizing the focus on writing high-quality code and documentation without instructing others or making speculative statements. This code provides narrow functionality by defining a specific type of message within a larger messaging system.
+The code defines a class `SoftwareExpertiseMessage` that inherits from `LlmMessage`, which is imported from a shared module. This class specifies a `message_kind` attribute set to `MessageKind.SYSTEM`, indicating the type of message it represents. The `content` attribute contains a detailed string that describes the role and responsibilities of an expert software engineer, emphasizing the focus on writing high-quality code and documentation without instructing others or making generalizations. This code provides narrow functionality by defining a specific type of message within a larger messaging system.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ The code defines a class `SoftwareExpertiseMessage` that inherits from `LlmMessa
 - **Members**:
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
     - `content`: Contains a detailed description of the software engineer's expertise and responsibilities.
-- **Description**: Represents a message that defines the role and responsibilities of an expert software engineer, emphasizing the focus on writing high-quality code and documentation without instructing others or making generalizations.
+- **Description**: Extends `LlmMessage` to define a system message that describes the role and responsibilities of an expert software engineer, emphasizing code quality and documentation without instructing others.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 

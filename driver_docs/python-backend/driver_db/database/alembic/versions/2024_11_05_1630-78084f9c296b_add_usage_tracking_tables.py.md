@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add usage tracking tables with related indexes and constraints.
+Alembic migration script to add `usage_sessions` and `usage_events` tables with related indexes.
 
 # Purpose
-The code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The primary purpose of this script is to add two new tables, `usage_sessions` and `usage_events`, to the database. These tables are designed to track usage data, with `usage_sessions` capturing session-level information and `usage_events` capturing event-level details within each session.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage changes to the database schema. The primary purpose of this script is to add two new tables, `usage_sessions` and `usage_events`, to the database. These tables are designed to track usage data, with `usage_sessions` capturing session-level information and `usage_events` capturing event-level details within each session.
 
-The `usage_sessions` table includes columns such as `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`. The `status` column uses an enumeration type to represent different session states. The `usage_events` table includes columns like `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`. A foreign key constraint links `usage_events` to `usage_sessions` via the `session_id` column. The script also creates indexes on the `status` column of `usage_sessions` and the `session_id` column of `usage_events` to optimize query performance. The [`downgrade`](<#downgrade>) function reverses these changes, removing the tables and associated indexes.
+The `usage_sessions` table includes columns such as `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`. The `status` column uses an enumeration type `usagesessionstatus` with possible values "RUNNING", "COMPLETED", and "FAILED". The `usage_events` table includes columns like `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`. The `session_id` column in `usage_events` is a foreign key referencing the `id` column in `usage_sessions`, ensuring referential integrity. The script also creates indexes on the `status` column of `usage_sessions` and the `session_id` column of `usage_events` to optimize query performance. The [`downgrade`](<#downgrade>) function reverses these changes, removing the tables and indexes, and dropping the enumeration type if it exists.
 # Imports and Dependencies
 
 ---
@@ -23,29 +23,29 @@ The `usage_sessions` table includes columns such as `id`, `status`, `organizatio
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script. This identifier is used to track the specific version of the database schema that the migration script applies.
+- **Use**: Used by Alembic to identify the current schema version during database migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string variable that holds the identifier of the previous database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to determine the order of migrations by specifying the predecessor revision.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations and to apply them correctly.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no specific branch labels associated with this migration script.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies on other migrations.
-- **Use**: Indicates that this migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migrations.
 
 
 # Functions
@@ -54,15 +54,17 @@ The `usage_sessions` table includes columns such as `id`, `status`, `organizatio
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.py#L21>)
 
-Creates the `usage_sessions` and `usage_events` tables with specified columns and indexes in the database.
+Creates the 'usage_sessions' and 'usage_events' tables with specified columns and indexes in the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.create_table` to create the `usage_sessions` table with columns for `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`, and sets `id` as the primary key.
-    - Creates an index on the `status` column of the `usage_sessions` table using `op.create_index`.
-    - Calls `op.create_table` to create the `usage_events` table with columns for `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`, and sets `id` as the primary key.
-    - Adds a foreign key constraint on `session_id` in the `usage_events` table referencing `id` in the `usage_sessions` table with `ondelete="CASCADE"`.
-    - Creates an index on the `session_id` column of the `usage_events` table using `op.create_index`.
-- **Output**: No output is returned as the function modifies the database schema.
+    - Calls `op.create_table` to create the 'usage_sessions' table with columns for 'id', 'status', 'organization_id', 'user_id', 'metadata', 'created_at', and 'updated_at'.
+    - Defines a primary key constraint on the 'id' column of the 'usage_sessions' table.
+    - Creates an index on the 'status' column of the 'usage_sessions' table using `op.create_index`.
+    - Calls `op.create_table` to create the 'usage_events' table with columns for 'id', 'event_type', 'session_id', 'organization_id', 'user_id', 'event_source', 'bytes_in', 'bytes_out', 'tokens_in', 'tokens_out', 'timestamp', and 'metadata'.
+    - Defines a primary key constraint on the 'id' column of the 'usage_events' table.
+    - Defines a foreign key constraint on the 'session_id' column of the 'usage_events' table, referencing the 'id' column of the 'usage_sessions' table with a cascade delete option.
+    - Creates an index on the 'session_id' column of the 'usage_events' table using `op.create_index`.
+- **Output**: No output is returned as the function modifies the database schema directly.
 
 
 ---

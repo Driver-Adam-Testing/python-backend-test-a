@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add and remove 'template' from the derived_content_types table.
+Adds a new 'template' entry to the derived_content_types table with upgrade and downgrade functions.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade function that inserts a new entry with the `type_name` 'template' into the `derived_content_types` table. The [`downgrade`](<#downgrade>) function reverses this change by deleting the entry with `type_name` 'template' from the same table. The script includes revision identifiers `revision` and `down_revision` to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that inserts a new entry with the `type_name` 'template' into the `derived_content_types` table. The [`downgrade`](<#downgrade>) function reverses this change by deleting the entry with `type_name` 'template' from the same table. The script includes revision identifiers, `revision` and `down_revision`, which help Alembic track the migration history. This script provides narrow functionality focused on modifying the database schema by adding or removing a specific entry in a table.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic, a database migration tool, to track changes in the database schema over time.
+- **Use**: Used to identify the current state of the database schema in Alembic migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
-- **Use**: Used by Alembic to identify the parent revision of the current migration.
+- **Description**: A string that specifies the identifier of the previous database schema revision in a sequence of migrations.
+- **Use**: Used by Alembic to determine the order of database migrations.
 
 
 ---
@@ -39,7 +39,7 @@ This code is a database migration script using Alembic, a database migration too
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
+- **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
 - **Use**: Indicates that this migration does not depend on any other migrations.
 
@@ -53,9 +53,9 @@ This code is a database migration script using Alembic, a database migration too
 Inserts a new entry with the type name 'template' into the 'derived_content_types' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Gets a database connection using `op.get_bind()`.
-    - Defines an SQL insert query to add a new row with the type name 'template' to the 'derived_content_types' table.
-    - Executes the SQL insert query using the database connection.
+    - Get a database connection using `op.get_bind()`.
+    - Define an SQL insert query to add a new row with the type name 'template' to the 'derived_content_types' table.
+    - Execute the SQL insert query using the database connection.
 - **Output**: No output is returned.
 
 
@@ -66,9 +66,9 @@ Inserts a new entry with the type name 'template' into the 'derived_content_type
 Removes the 'template' entry from the 'derived_content_types' table in the database.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Get a connection to the database using `op.get_bind()`.
-    - Define a SQL delete query to remove the entry with `type_name` equal to 'template' from the `derived_content_types` table.
-    - Execute the delete query using the connection.
+    - Get a database connection using `op.get_bind()`.
+    - Define a SQL delete query to remove the 'template' entry from the 'derived_content_types' table.
+    - Execute the delete query using the database connection.
 - **Output**: No output is returned.
 
 

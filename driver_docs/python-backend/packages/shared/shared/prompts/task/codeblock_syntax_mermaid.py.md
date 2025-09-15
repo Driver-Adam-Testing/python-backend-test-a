@@ -6,20 +6,20 @@
 A prompt for reviewing and correcting mermaid.js code blocks to ensure proper rendering and syntax.
 
 # Purpose
-The code defines a configuration for a system message used in a software application. It contains a string `PROMPT` that instructs a user, specifically an expert in Mermaid.js, to review and correct Mermaid code blocks within a document. The instructions emphasize removing forbidden characters such as parentheses and double hyphens from element labels to prevent rendering errors. It also provides guidance on the correct syntax for lists within Mermaid blocks and highlights the importance of avoiding cycles in diagrams. The `MESSAGE` dictionary stores the role and content of the system message, with `PROMPT` as its content, indicating that this configuration is likely used in a context where automated or guided review of Mermaid diagrams is necessary.
+The code defines a configuration for a system message used in a software application, specifically for processing and correcting `mermaid` code blocks. The `PROMPT` variable contains detailed instructions for reviewing and fixing `mermaid` diagrams to ensure they render correctly. It specifies rules such as removing forbidden characters like parentheses, correcting list syntax, and avoiding cycles in the diagram. The `MESSAGE` dictionary assigns the `PROMPT` to a `system` role, indicating that this message is intended for internal system use to guide the processing of `mermaid` code blocks. This code provides narrow functionality focused on ensuring the correct rendering of `mermaid` diagrams.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for reviewing and correcting mermaid code blocks in a document. It includes guidelines for syntax correction, such as removing forbidden characters and ensuring correct list syntax in mermaid diagrams.
-- **Use**: Used as a prompt or guideline for processing and correcting mermaid code blocks to ensure they render correctly.
+- **Description**: A multi-line string that provides instructions for reviewing and correcting mermaid code blocks in a document. It includes guidelines to avoid rendering errors, such as removing forbidden characters and correcting syntax for lists in mermaid blocks.
+- **Use**: Used as a prompt or guideline for reviewing and correcting mermaid code blocks to ensure they render correctly.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has the value `system`, and the `content` key holds the value of the `PROMPT` variable, which is a multi-line string providing instructions for reviewing and correcting mermaid code blocks.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a value of `system`, and the `content` key holds the value of the `PROMPT` variable, which is a multi-line string providing instructions for reviewing and correcting mermaid code blocks.
 - **Use**: Used to store system-level instructions for processing mermaid code blocks.
 
 

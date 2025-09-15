@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for large assembly source code with prompts for purpose, imports, variables, data structures, subroutines, and macros.
+Defines a template for assembling large source code with prompts and collections for variables, data structures, subroutines, and macros.
 
 # Purpose
 The code defines a template for processing and organizing assembly source code. It imports several components from the `utils.lang_specialization.assembly` module, which include collections for data structures, macros, subroutines, and variables, both in their raw and processed forms. These components are used to categorize and manage different elements of assembly code. The code also imports a `default_imports_checker` from `utils.lang_specialization.default` to verify imports and dependencies.
 
-The `SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY` is a list of tuples, each representing a section of the assembly code processing template. Each tuple contains a type identifier from the `S` module, a section header, and functions or prompts related to that section. The sections include "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," "Subroutines," and "Macros." The template uses functions to transform raw symbol collections into structured collections, facilitating the organization and analysis of assembly code components. This code is intended to be part of a larger system that processes and documents assembly source code.
+The `SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY` is a list of tuples, each representing a section of the template. Each tuple contains a type identifier from the `S` module, a section title, and functions or prompts related to that section. The sections include "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," "Subroutines," and "Macros." The template uses these sections to guide the processing of assembly code, transforming raw symbols into structured collections. This code is likely intended for use in a larger system that analyzes or documents assembly source code, providing a structured approach to handle various components of the code.
 # Imports and Dependencies
 
 ---
@@ -31,8 +31,8 @@ The `SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY` is a list of tuples, each representing
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_ASSEMBLY
 - **Type**: ``list``
-- **Description**: A list of tuples that define various sections of a large template assembly for source code. Each tuple contains a section identifier, a section title, and functions or methods related to that section, such as prompts, import checkers, and collection methods for symbols.
-- **Use**: Used to organize and define the structure of a large template assembly for source code, specifying different sections and their associated processing functions.
+- **Description**: A list of tuples, where each tuple contains elements related to different sections of a large template assembly. Each tuple includes a type identifier, a section header, and various functions or collections related to that section.
+- **Use**: Used to define the structure and components of a large template assembly for processing or generating code.
 
 
 

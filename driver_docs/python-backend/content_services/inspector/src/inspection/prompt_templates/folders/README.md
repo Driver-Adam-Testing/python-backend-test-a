@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for summarizing folder contents and writing descriptions based on child files and folders.
+Templates and instructions for summarizing folder contents and compressing text in various formats.
 
 
 ## Files
-- **[chunk_description.txt](chunk_description.txt.md)**: A text file with instructions for summarizing folder contents based on given descriptions.
-- **[compress_chunks.txt](compress_chunks.txt.md)**: Instructions for summarizing folder contents based on child file and folder descriptions.
+- **[chunk_description.txt](chunk_description.txt.md)**: Instructions for summarizing folder contents based on given descriptions of files and subfolders.
+- **[compress_chunks.txt](compress_chunks.txt.md)**: Templates for summarizing and compressing text chunks in the inspection process.
 - **[single_paragraph_from_child_list.txt](single_paragraph_from_child_list.txt.md)**: Instructions for writing a single paragraph description of a software folder based on its child files and folders.
-- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: Instructions for writing a single paragraph description of a folder in a software codebase.
-- **[single_sentence_from_child_list.txt](single_sentence_from_child_list.txt.md)**: Instructions for summarizing the contents of a folder based on its child files and folders.
-- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: Instructions for summarizing folder contents based on detailed descriptions of its subcomponents.
+- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: Instructions for writing a single paragraph description of a folder in a software codebase using overlapping chunk descriptions.
+- **[single_sentence_from_child_list.txt](single_sentence_from_child_list.txt.md)**: Instructions for summarizing the contents of a software folder based on its child files and folders.
+- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: A guide for writing concise single-sentence descriptions of folder contents in a software codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

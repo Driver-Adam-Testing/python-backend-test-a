@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Parsers for C, C++, C#, Java, JavaScript, TypeScript, and Python code using various drivers.
+Parsers for C, C++, C#, Java, JavaScript, TypeScript, and Python code using tree-sitter drivers.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[c_cpp_parser.py](c_cpp_parser.py.md)**: Parses C and C++ code using a shared symbol parser and C/C++ driver tree.
-- **[csharp_parser.py](csharp_parser.py.md)**: A C# symbol parser using CSharpDriverTree and inheriting from SymbolParser.
+- **[c_cpp_parser.py](c_cpp_parser.py.md)**: Parses C and C++ code using a shared parser and C/C++ driver tree.
+- **[csharp_parser.py](csharp_parser.py.md)**: Parses C# symbols using a tree-sitter driver and a base symbol parser.
 - **[java_parser.py](java_parser.py.md)**: A Java symbol parser using a tree-sitter driver for parsing Java code.
 - **[js_ts_parser.py](js_ts_parser.py.md)**: A JavaScript and TypeScript symbol parser using a tree-sitter driver.
 - **[python_parser.py](python_parser.py.md)**: A Python symbol parser using a tree-sitter driver for syntax analysis.

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Enums, message classes, response type management, and tools for summaries and file handling.
+Enumerations, message classes, response type management, and tools for document processing and retrieval.
 
 ## Folders
 - **[enums](enums/README.md)**: Defines the `FormatKind` enumeration for format types such as CODE_EXAMPLE, DIAGRAM, and TEXT.
-- **[messages](messages/README.md)**: Classes for creating and defining system and user messages for various contexts and applications.
+- **[messages](messages/README.md)**: Classes and definitions for system and user messages in document processing and technical writing contexts.
 - **[response_types](response_types/README.md)**: Classes for managing information set definitions, retrieval parameters, and markdown list formatting.
-- **[tools](tools/README.md)**: Tools for generating folder summaries, hybrid search, and opening files with large text handling.
+- **[tools](tools/README.md)**: Tools for folder summary generation, hybrid search, and file content retrieval and display.
 
 
 ---

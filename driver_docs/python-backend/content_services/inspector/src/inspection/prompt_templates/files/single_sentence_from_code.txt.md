@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A single sentence description of a software file.
+A guide for writing concise single-sentence descriptions of software files.
 
 # Purpose
 ```yaml
@@ -18,7 +18,7 @@ scripts:
   test: "npm test"
 ```
 
-This YAML configuration file defines metadata for an application, including its name, version, and description. It specifies dependencies required for the application, listing them as `library-one` and `library-two`. The file also includes scripts for starting the application with `node index.js` and running tests using `npm test`.
+This YAML configuration file specifies metadata and operational details for an application named `My Application`. It includes the version number `1.0.0` and a brief description of the application. The file lists dependencies required for the application, which are `library-one` and `library-two`. It also defines scripts for starting the application with `node index.js` and running tests with `npm test`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,9 +6,9 @@
 Tests for various Python function types, including async, decorators, and complex annotations.
 
 # Purpose
-This code is a test suite for extracting and demonstrating various Python function definitions and their features. It includes a wide range of function types, showcasing different aspects of Python's function capabilities. The functions cover simple definitions, parameter handling, type hints, asynchronous operations, generators, decorators, nested functions, lambda expressions, recursive functions, and more. Each function is designed to illustrate a specific concept or feature, such as the use of decorators, type annotations, and context managers.
+This code is a comprehensive test suite for extracting and demonstrating various Python function definitions and their features. It includes a wide range of function types, such as simple functions, functions with parameters, and functions with type hints. The code also covers advanced function concepts like asynchronous functions, generator functions, and functions with decorators. Additionally, it demonstrates the use of nested functions, lambda functions, and functions that return other functions. 
 
-The code is organized into distinct sections, each focusing on a particular function type or feature. It includes functions with complex parameter types, default arguments, and various return types. The use of decorators is demonstrated with both custom and built-in decorators, such as `lru_cache` and `staticmethod`. Additionally, the code includes examples of functions with docstrings, demonstrating how to document function parameters and return values. This test suite serves as a comprehensive reference for understanding the diverse ways functions can be defined and used in Python.
+The code further explores complex function features, including recursive functions, functions with docstrings, and functions with complex default arguments. It also includes examples of async generator functions, functions with Union and Literal types, and functions with generic type parameters. The suite demonstrates property-like functions, context manager functions, and functions with complex annotations. This collection of functions serves as a reference for understanding different aspects of Python function definitions and their usage in various contexts.
 # Imports and Dependencies
 
 ---
@@ -31,22 +31,22 @@ The code is organized into distinct sections, each focusing on a particular func
 ---
 ### simple\_lambda
 - **Type**: ``function``
-- **Description**: A lambda function that takes a single argument `x` and returns the result of multiplying `x` by 2. Lambda functions are anonymous functions defined using the `lambda` keyword.
+- **Description**: Defines a lambda function that takes one argument `x` and returns the result of multiplying `x` by 2. Lambda functions are anonymous functions defined using the `lambda` keyword.
 - **Use**: Used to perform a simple arithmetic operation of doubling the input value.
 
 
 ---
 ### complex\_lambda
 - **Type**: ``lambda``
-- **Description**: Defines an anonymous function that takes two parameters, `x` and `y`, with `y` having a default value of 10. The function returns the sum of `x` and `y` if `x` is greater than 0; otherwise, it returns `y`.
+- **Description**: Defines an anonymous function that takes two parameters, `x` and an optional `y` with a default value of 10. The function returns the sum of `x` and `y` if `x` is greater than 0, otherwise it returns `y`. This allows for conditional addition based on the value of `x`. 
 - **Use**: Used to perform conditional addition based on the value of `x`.
 
 
 ---
 ### T
-- **Type**: `TypeVar`
-- **Description**: Defines a generic type variable `T` that can be used to specify generic types in function signatures or class definitions. `TypeVar` is a utility from the `typing` module that allows for the creation of generic types.
-- **Use**: Used to define generic functions or classes that can operate on any data type, as specified by the `T` type variable.
+- **Type**: ``TypeVar``
+- **Description**: Defines a generic type variable `T` that can be used to specify generic types in function signatures or class definitions. `TypeVar` is part of Python's typing module and allows for the creation of functions or classes that can operate on any data type.
+- **Use**: Used to define generic functions or classes that can accept arguments of any type, maintaining type consistency.
 
 
 # Functions
@@ -66,15 +66,16 @@ Returns the string 'simple'.
 ### function\_with\_params<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.function_with_params}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L12>)
 
-Formats and returns a string that combines the input parameters.
+Formats and returns a string by concatenating the input parameters.
 - **Inputs**:
-    - `a`: An integer that represents the first part of the formatted string.
-    - `b`: A string that represents the second part of the formatted string.
-    - `c`: An optional float that represents the third part of the formatted string; defaults to None if not provided.
+    - `a`: An integer that will be converted to a string and included in the output.
+    - `b`: A string that will be included in the output.
+    - `c`: An optional float that will be converted to a string and included in the output if provided.
 - **Logic and Control Flow**:
-    - Formats the inputs `a`, `b`, and `c` into a single string using an f-string.
-    - Returns the formatted string.
-- **Output**: A string that combines the integer, string, and optional float inputs separated by spaces.
+    - Converts the integer `a` to a string.
+    - Converts the optional float `c` to a string if it is not `None`.
+    - Concatenates the string representations of `a`, `b`, and `c` with spaces in between.
+- **Output**: A formatted string that includes the string representations of `a`, `b`, and `c` separated by spaces.
 
 
 ---
@@ -83,15 +84,15 @@ Formats and returns a string that combines the input parameters.
 
 Returns a tuple containing all types of parameters passed to it.
 - **Inputs**:
-    - `positional_only`: A parameter that must be passed positionally.
-    - `normal_param`: A standard parameter that can be passed either positionally or as a keyword.
-    - `*args`: A variable-length argument list for additional positional arguments.
-    - `keyword_only`: A parameter that must be passed as a keyword argument.
-    - `**kwargs`: A variable-length keyword argument dictionary for additional keyword arguments.
+    - `positional_only`: A positional-only parameter that must be provided without a keyword.
+    - `normal_param`: A standard parameter that can be provided either positionally or as a keyword.
+    - `*args`: A variable-length argument list that captures additional positional arguments.
+    - `keyword_only`: A keyword-only parameter that must be provided as a keyword argument.
+    - `**kwargs`: A variable-length keyword argument dictionary that captures additional keyword arguments.
 - **Logic and Control Flow**:
     - Accepts a positional-only parameter, a normal parameter, additional positional arguments, a keyword-only parameter, and additional keyword arguments.
-    - Returns a tuple containing all the received parameters in the order they are defined.
-- **Output**: A tuple containing the `positional_only`, `normal_param`, `args`, `keyword_only`, and `kwargs`.
+    - Returns a tuple containing all the received parameters in the order: positional-only, normal parameter, args, keyword-only, kwargs.
+- **Output**: A tuple containing the values of `positional_only`, `normal_param`, `args`, `keyword_only`, and `kwargs`.
 
 
 ---
@@ -103,7 +104,7 @@ Calculates the sum of a list of integers.
     - `items`: A list of integers to sum.
 - **Logic and Control Flow**:
     - Uses the built-in `sum` function to calculate the total of the integers in the `items` list.
-- **Output**: The sum of the integers in the `items` list as an integer.
+- **Output**: Returns the sum of the integers in the list as an integer.
 
 
 ---
@@ -114,7 +115,7 @@ Executes an asynchronous delay and returns a completion message.
 - **Inputs**:
     - `delay`: A float representing the number of seconds to wait asynchronously.
 - **Logic and Control Flow**:
-    - Uses 'await' to pause execution for the specified 'delay' duration using 'asyncio.sleep'.
+    - Uses the 'await' keyword to pause execution for the specified 'delay' duration using 'asyncio.sleep'.
     - After the delay, returns the string 'async completed'.
 - **Output**: A string indicating the completion of the asynchronous operation.
 
@@ -128,8 +129,8 @@ Generates a sequence of even numbers up to twice the given integer.
     - `n`: An integer that specifies the number of even numbers to generate.
 - **Logic and Control Flow**:
     - Iterates over a range from 0 to n (exclusive).
-    - Yields the product of the current index and 2 for each iteration.
-- **Output**: A generator that yields even integers starting from 0 up to (n-1) * 2.
+    - Yields the double of each integer in the range.
+- **Output**: A generator that yields even integers up to 2*(n-1).
 
 
 ---
@@ -139,7 +140,7 @@ Generates a sequence of even numbers up to twice the given integer.
 Calculates the square of an integer and caches the result for future calls.
 - **Decorators**: `@lru_cache`
 - **Inputs**:
-    - `x`: An integer input for which the square will be calculated.
+    - `x`: An integer input for which the square is calculated.
 - **Logic and Control Flow**:
     - Uses the `lru_cache` decorator to cache the result of the function call.
     - Returns the square of the input integer `x`.
@@ -154,13 +155,13 @@ Applies a wrapper to a function that prints a message before calling the functio
 - **Decorators**: `@wraps`
 - **Inputs**:
     - `func`: The function to be wrapped.
+    - `*args`: Positional arguments to pass to the wrapped function.
+    - `**kwargs`: Keyword arguments to pass to the wrapped function.
 - **Logic and Control Flow**:
-    - Defines a nested function `wrapper` that takes any arguments and keyword arguments.
-    - Prints a message indicating the function name being called.
-    - Calls the original function `func` with the provided arguments and keyword arguments.
-    - Returns the result of the function call.
-    - Returns the `wrapper` function.
-- **Output**: A wrapped version of the input function that includes a print statement before execution.
+    - Defines a wrapper function that takes any number of positional and keyword arguments.
+    - Prints a message indicating the name of the function being called.
+    - Calls the original function with the provided arguments and returns its result.
+- **Output**: Returns the `wrapper` function that wraps the original function.
 
 
 ---
@@ -199,14 +200,14 @@ Adds two integers and caches the result for efficiency.
 
 Returns a nested function that adds three integers.
 - **Inputs**:
-    - `x`: An integer that is used in the nested addition operation.
+    - `x`: An integer that is used in the nested addition.
 - **Logic and Control Flow**:
     - Defines an `inner_function` that takes an integer `y` as input.
     - Within `inner_function`, defines a `deeply_nested` function that takes an integer `z` as input.
     - `deeply_nested` returns the sum of `x`, `y`, and `z`.
     - `inner_function` returns the `deeply_nested` function.
-    - Returns the `inner_function`.
-- **Output**: A function `inner_function` that takes an integer and returns another function `deeply_nested` which performs the addition of three integers.
+    - `outer_function` returns the `inner_function`.
+- **Output**: A function `inner_function` that takes an integer and returns another function `deeply_nested` which computes the sum of three integers.
 
 
 ---
@@ -230,8 +231,9 @@ Calculates the nth Fibonacci number using recursion.
 - **Inputs**:
     - `n`: An integer representing the position in the Fibonacci sequence to calculate.
 - **Logic and Control Flow**:
-    - Checks if the input `n` is less than or equal to 1; if true, returns `n` as the result.
-    - If `n` is greater than 1, recursively calls `fibonacci` with `n-1` and `n-2` and returns the sum of these two calls.
+    - Checks if the input `n` is less than or equal to 1.
+    - If `n` is less than or equal to 1, returns `n` as the Fibonacci number.
+    - If `n` is greater than 1, recursively calls `fibonacci` with `n-1` and `n-2` and returns their sum.
 - **Output**: An integer representing the nth Fibonacci number.
 
 
@@ -252,11 +254,11 @@ Processes a string by stripping whitespace and converting it to lowercase.
 ### default\_args\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.default_args_function}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L99>)
 
-Executes a callback function with the sum of the lengths of a list and a dictionary, both of which have default values.
+Executes a callback function with the sum of the lengths of a list and a dictionary, using default empty values if not provided.
 - **Inputs**:
     - `items`: A list of integers, defaulting to an empty list if not provided.
     - `mapping`: A dictionary, defaulting to an empty dictionary if not provided.
-    - `callback`: A callable function that takes an integer and returns a value, defaulting to a lambda function that returns its input.
+    - `callback`: A callable function that takes an integer and returns a value, defaulting to an identity function.
 - **Logic and Control Flow**:
     - Check if `items` is `None` and assign an empty list if true.
     - Check if `mapping` is `None` and assign an empty dictionary if true.
@@ -269,14 +271,14 @@ Executes a callback function with the sum of the lengths of a list and a diction
 ### async\_generator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.async_generator}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L111>)
 
-Generates integers from 0 to n-1 asynchronously with a delay between each yield.
+Generates a sequence of integers asynchronously, yielding each integer after a short delay.
 - **Inputs**:
-    - `n`: The number of integers to generate, starting from 0.
+    - `n`: The number of integers to generate and yield.
 - **Logic and Control Flow**:
-    - Iterates over a range from 0 to n.
-    - For each integer in the range, pauses execution for 0.1 seconds using 'await asyncio.sleep(0.1)'.
-    - Yields the current integer after the delay.
-- **Output**: An asynchronous iterator that yields integers from 0 to n-1.
+    - Iterates over a range from 0 to `n`.
+    - For each integer `i` in the range, pauses execution for 0.1 seconds using `await asyncio.sleep(0.1)`.
+    - Yields the current integer `i` after the delay.
+- **Output**: An asynchronous iterator that yields integers from 0 to `n-1`.
 
 
 ---
@@ -285,7 +287,7 @@ Generates integers from 0 to n-1 asynchronously with a delay between each yield.
 
 Converts an input value of type `int` or `str` to a string.
 - **Inputs**:
-    - `value`: An input value that can be either an integer or a string.
+    - `value`: An input value that can be of type `int` or `str`.
 - **Logic and Control Flow**:
     - Converts the input `value` to a string using the `str()` function.
 - **Output**: A string representation of the input `value`.
@@ -295,24 +297,24 @@ Converts an input value of type `int` or `str` to a string.
 ### literal\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.literal_function}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L122>)
 
-Formats a string to indicate the mode of operation.
+Returns a string indicating the mode of operation.
 - **Inputs**:
     - `mode`: A string literal that must be one of 'read', 'write', or 'append'.
 - **Logic and Control Flow**:
     - Formats the input `mode` into a string prefixed with 'Mode: '.
-- **Output**: A string that indicates the mode of operation, prefixed with 'Mode: '.
+- **Output**: A string that represents the mode of operation.
 
 
 ---
 ### generic\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.generic_function}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L130>)
 
-Returns the input item without modification.
+Returns the input item of a generic type.
 - **Inputs**:
-    - `item`: A generic item of type `T`.
+    - `item`: An input of a generic type `T`.
 - **Logic and Control Flow**:
     - Receives an input `item` of type `T`.
-    - Returns the input `item` without any changes.
+    - Returns the input `item` without modification.
 - **Output**: The same item of type `T` that was provided as input.
 
 
@@ -322,9 +324,9 @@ Returns the input item without modification.
 
 Converts a function into a property.
 - **Inputs**:
-    - `func`: The function to convert into a property.
+    - `func`: A function to convert into a property.
 - **Logic and Control Flow**:
-    - Uses the built-in `property` function to convert the input function `func` into a property.
+    - Uses the built-in `property` function to convert the input function into a property.
 - **Output**: A property object created from the input function.
 
 
@@ -332,13 +334,13 @@ Converts a function into a property.
 ### context\_manager\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.context_manager_function}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L140>)
 
-Manages a context with entry and exit actions using a context manager.
+Implements a context manager that prints messages when entering and exiting a context.
 - **Decorators**: `@contextmanager`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Prints 'Entering context' when entering the context.
+    - Prints 'Entering context' when the context is entered.
     - Yields the string 'resource' to the context block.
-    - Prints 'Exiting context' when exiting the context, regardless of whether an exception occurred.
+    - Ensures 'Exiting context' is printed when the context is exited, regardless of whether an exception occurs.
 - **Output**: A context manager that yields the string 'resource'.
 
 
@@ -351,10 +353,11 @@ Returns a lambda function that calls the given function with the length of the d
     - `func`: A callable that takes an integer and a string as arguments and returns a boolean.
     - `data`: A list of optional dictionaries.
 - **Logic and Control Flow**:
-    - Check if the `data` list is empty.
-    - If `data` is empty, return `None`.
-    - If `data` is not empty, return a lambda function that calls `func` with the length of `data` and the string representation of the first element in `data`.
-- **Output**: An optional callable that takes no arguments and returns `None`, or `None` if `data` is empty.
+    - Check if the 'data' list is empty.
+    - If 'data' is empty, return None.
+    - If 'data' is not empty, return a lambda function.
+    - The lambda function calls 'func' with the length of 'data' and the string representation of the first element in 'data'.
+- **Output**: An optional callable that takes no arguments and returns None, or None if 'data' is empty.
 
 
 

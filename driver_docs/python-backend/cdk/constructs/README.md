@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS CDK constructs for Lambda functions, WAF, backend services, Inspector, and metrics processing.
+AWS Lambda constructs, WAF configuration, backend infrastructure, Inspector construct, and metrics processing.
 
 
 ## Files
 - **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: Defines an AWS Lambda construct for asset onboarding with S3, SNS, and Secrets Manager integration.
-- **[aws_waf.py](aws_waf.py.md)**: Defines AWS WAF configuration and association for an Application Load Balanced Fargate service.
-- **[backend.py](backend.py.md)**: Defines AWS infrastructure for a backend service using AWS CDK, including ECS, VPC, and secret management.
+- **[aws_waf.py](aws_waf.py.md)**: Implements AWS WAF configuration and association for an Application Load Balanced Fargate Service.
+- **[backend.py](backend.py.md)**: AWS CDK constructs for deploying a backend service with ECS, ECR, S3, and Secrets Manager integration.
 - **[inspector.py](inspector.py.md)**: Defines an Inspector construct with parameters for environment configuration in a CDK application.
-- **[metrics_lambda.py](metrics_lambda.py.md)**: Defines a Lambda function with event handling, alarms, and notifications for metrics processing.
+- **[metrics_lambda.py](metrics_lambda.py.md)**: Defines a Lambda function with CloudWatch alarms and event handling for metrics processing.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

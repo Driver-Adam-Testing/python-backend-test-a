@@ -6,7 +6,7 @@
 A script to run tests with HTML coverage report using `test.sh`.
 
 # Purpose
-The script is a Bash executable that automates the execution of a test suite. It sets the script to exit immediately if any command fails (`set -e`) and enables debugging output (`set -x`) to display each command before execution. The script runs the `test.sh` script located in the `scripts` directory with a coverage report output in HTML format. It also passes any additional arguments provided to the script to the `test.sh` script.
+The script is a Bash executable that runs a test suite with code coverage reporting. It uses the `set -e` command to stop execution if any command fails and `set -x` to print each command before executing it, which aids in debugging. The script calls another script located at `scripts/test.sh` and passes any additional arguments to it. The `--cov-report=html` option indicates that the test results will include an HTML report of the code coverage. This script is typically used in a development environment to ensure code quality and coverage.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

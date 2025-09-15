@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files and setup instructions for deploying and managing a GitLab service with Docker.
+Configuration files for GitLab deployment and setup instructions using Docker and ngrok.
 
 ## Folders
-- **[gitlab](gitlab/README.md)**: Configuration files and setup instructions for deploying and managing a GitLab service with Docker.
+- **[gitlab](gitlab/README.md)**: Configuration files for GitLab deployment and setup instructions using Docker and ngrok.
 
 
 ---

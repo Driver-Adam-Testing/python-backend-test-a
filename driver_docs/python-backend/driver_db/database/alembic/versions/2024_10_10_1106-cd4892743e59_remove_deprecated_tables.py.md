@@ -6,7 +6,7 @@
 Removes deprecated tables and indexes from the database using Alembic.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that removes specific tables and indexes from the database schema, indicating a cleanup of deprecated or obsolete database structures. The [`upgrade`](<#upgrade>) function drops three tables: `runtimelogcontentretrieval`, `runtimelogagenterror`, and `chunk`, as well as several indexes associated with the `chunk` and `contentmetadata` tables. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration is not intended to be reversed. The script includes metadata such as `revision`, `down_revision`, and `Create Date` to track the migration's version and dependencies.
+This code is an Alembic migration script used to remove deprecated database tables and indexes. The [`upgrade`](<#upgrade>) function contains operations to drop specific tables, such as `runtimelogcontentretrieval`, `runtimelogagenterror`, `chunk`, and `contentmetadata`, as well as several indexes associated with these tables. The `revision` and `down_revision` identifiers are used by Alembic to track the migration's position in the sequence of database schema changes. The [`downgrade`](<#downgrade>) function is defined but does not contain any operations, indicating that this migration is not reversible.
 # Imports and Dependencies
 
 ---
@@ -18,15 +18,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific state of the database schema that this migration script applies to.
+- **Use**: Used by Alembic to identify the current migration version.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
-- **Use**: Used by Alembic to identify the parent revision of the current migration.
+- **Description**: A string that specifies the identifier of the previous database schema revision in a migration script. It is used by Alembic to determine the order of migrations.
+- **Use**: Used to track the migration history by indicating the predecessor revision in the Alembic migration process.
 
 
 ---
@@ -39,8 +39,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: Represents a global variable that is set to `None`. It is used as a placeholder for dependencies in Alembic migrations.
-- **Use**: Indicates that there are no dependencies for the current Alembic migration script.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migrations.
 
 
 # Functions
@@ -69,7 +69,7 @@ Removes deprecated tables and indexes from the database schema.
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_10_10_1106-cd4892743e59_remove_deprecated_tables.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_10_10_1106-cd4892743e59_remove_deprecated_tables.py#L37>)
 
-Does not perform any operations and serves as a placeholder for future downgrade logic.
+Does not perform any operations and serves as a placeholder for the downgrade process.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Contains no logic or control flow as it is an empty function.

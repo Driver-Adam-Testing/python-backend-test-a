@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines the `FormatKindMessage` class to generate specific message content based on `FormatKind`.
+Defines the `FormatKindMessage` class to generate specific message content based on the `FormatKind` type.
 
 # Purpose
-The code defines a class `FormatKindMessage` that extends `LlmMessage` and is used to generate specific message content based on the `FormatKind` enumeration. The class includes a class method [`from_context`](<#formatkindmessagefrom_context>) that takes a `format_kind` parameter and returns an instance of `FormatKindMessage` with content tailored to the specified format kind. The method handles different `FormatKind` values such as `CODE_EXAMPLE`, `DIAGRAM`, `TEXT`, `TABLE`, `LIST`, and `ANY`, each associated with a distinct set of instructions for formatting responses. This code provides narrow functionality focused on generating structured message content for different output formats.
+The code defines a class `FormatKindMessage` that extends the `LlmMessage` class. The primary function of this class is to generate specific message content based on the type of `FormatKind` provided. The `FormatKind` is an enumeration that categorizes different types of content formats, such as `CODE_EXAMPLE`, `DIAGRAM`, `TEXT`, `TABLE`, `LIST`, and `ANY`. The `FormatKindMessage` class uses a class method [`from_context`](<#formatkindmessagefrom_context>) to create instances of itself with content tailored to the specified `FormatKind`.
+
+Each `FormatKind` corresponds to a specific set of instructions or guidelines encapsulated in a string, which dictates how a response should be formatted. For example, if the `FormatKind` is `CODE_EXAMPLE`, the message content instructs that the response should be a single fenced code block with specific formatting rules. Similarly, other `FormatKind` values have their own unique content instructions, such as creating a valid Mermaid diagram for `DIAGRAM` or a Markdown table for `TABLE`. This class is likely used in a context where responses need to be formatted according to specific guidelines, ensuring consistency and adherence to predefined standards.
 # Imports and Dependencies
 
 ---
@@ -23,7 +25,7 @@ The code defines a class `FormatKindMessage` that extends `LlmMessage` and is us
 
 - **Members**:
     - `message_kind`: Specifies the kind of message as `MessageKind.DEVELOPER`.
-- **Description**: Extends `LlmMessage` to provide specific message content based on the `FormatKind` context, such as code examples, diagrams, text, tables, or lists. The class method `from_context` generates a `FormatKindMessage` instance with content tailored to the specified `FormatKind`, ensuring the response format adheres to predefined guidelines for each kind.
+- **Description**: Extends `LlmMessage` to provide specific message content based on the `FormatKind` context, such as code examples, diagrams, text, tables, or lists, ensuring the response format adheres to the specified kind.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage.from_context`](<#formatkindmessagefrom_context>)
 - **Inherits From**:
@@ -46,7 +48,7 @@ Creates a `FormatKindMessage` instance based on the specified `FormatKind`.
     - Checks if `format_kind` is `FormatKind.TABLE` and returns a `FormatKindMessage` with instructions for a Markdown table response.
     - Checks if `format_kind` is `FormatKind.LIST` and returns a `FormatKindMessage` with instructions for a Markdown list response.
     - Checks if `format_kind` is `FormatKind.ANY` and returns a `FormatKindMessage` with a generic instruction.
-- **Output**: A `FormatKindMessage` instance with content tailored to the specified `FormatKind`.
+- **Output**: Returns a `FormatKindMessage` instance with content instructions based on the `format_kind` provided.
 - **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage`](<#formatkindmessage>)  (Base Class)
 
 

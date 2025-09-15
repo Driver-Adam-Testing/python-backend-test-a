@@ -6,7 +6,7 @@
 Language providers for different programming languages.
 
 # Purpose
-The code defines language providers for different programming languages. It likely includes classes or functions that supply language-specific features or configurations. This functionality is narrow, focusing on supporting multiple programming languages within a specific context, such as syntax highlighting, code analysis, or language-specific operations. The code is likely part of a larger system that requires language-specific handling or processing.
+The code defines language providers for different programming languages. It likely includes classes or functions that supply language-specific features or configurations. This functionality is narrow, focusing on supporting multiple programming languages within a specific context, such as a development environment or a code analysis tool. The code may involve defining interfaces or abstract classes that other components can implement to handle language-specific tasks.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

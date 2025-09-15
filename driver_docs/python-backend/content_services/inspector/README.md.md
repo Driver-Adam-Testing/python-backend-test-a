@@ -6,7 +6,7 @@
 Instructions for installing, running, and deploying the cloud-first version of Inspector.
 
 # Purpose
-The document provides instructions for setting up and running a cloud-based version of an application called `Inspector`. To install the necessary environment, use the command `poetry install --no-root`. Before executing the application from a local computer, modify `main.py` to specify the correct paths for the local and remote codebases. The application can be run in a development environment using the command `modal run --env=dev src/main.py codebase-id="<UUID>"`. In case of an interruption, the application can be resumed using a run ID with the command `modal run --env=dev src/main.py resume-from-id="myuuid"`. To rerun specific parts of the application, provide the paths to the nodes with the `--rerun-paths` option. Finally, to deploy the application service to the cloud, use the command `modal deploy --env=dev src/main.py`.
+The document provides instructions for setting up and running a cloud-based version of an inspector application. It details the installation of the environment using `poetry install --no-root` and provides guidance on configuring the `main.py` file to point to the correct local and remote codebase paths. The document explains how to execute the application from a local computer while running it in the cloud using the `modal run` command, specifying the environment and codebase ID. It also includes instructions for resuming a run after an abort or crash using a run ID, and for rerunning specific parts of the execution tree by supplying paths to nodes. Finally, it describes how to deploy the application service to the cloud with the `modal deploy` command.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

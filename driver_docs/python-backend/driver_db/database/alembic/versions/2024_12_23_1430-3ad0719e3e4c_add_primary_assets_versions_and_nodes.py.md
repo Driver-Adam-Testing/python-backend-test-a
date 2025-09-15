@@ -6,9 +6,9 @@
 Alembic migration script to add tables for primary assets, versions, and nodes with related constraints.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an [`upgrade`](<#upgrade>) function to create new database tables and indexes, and a [`downgrade`](<#downgrade>) function to reverse these changes. The primary purpose of this script is to add new tables and relationships to the database schema, specifically for managing primary assets, their versions, and associated nodes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an [`upgrade`](<#upgrade>) function to create new database tables and indexes, and a [`downgrade`](<#downgrade>) function to remove them. The primary purpose of this migration is to add tables and relationships for managing primary assets, versions, and nodes in a database schema.
 
-The [`upgrade`](<#upgrade>) function creates several tables: `v2_primary_asset`, `v2_primary_asset_tag`, `v2_version`, and `v2_node`. Each table includes columns with specific data types and constraints, such as primary keys and foreign keys. The script also creates indexes to optimize query performance. The `v2_primary_asset` table stores information about primary assets, while the `v2_version` table tracks different versions of these assets. The `v2_node` table represents nodes associated with asset versions, and the `v2_primary_asset_tag` table links tags to primary assets. The [`downgrade`](<#downgrade>) function removes these tables and indexes, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function.
+The [`upgrade`](<#upgrade>) function creates several tables: `v2_primary_asset`, `v2_primary_asset_tag`, `v2_version`, and `v2_node`. Each table includes columns with specific data types and constraints, such as primary keys and foreign keys. The script also creates indexes to optimize queries on certain columns. The `v2_primary_asset` table stores information about primary assets, while the `v2_version` table tracks different versions of these assets. The `v2_node` table represents nodes associated with versions, and the `v2_primary_asset_tag` table links tags to primary assets. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the tables and indexes created during the upgrade.
 # Imports and Dependencies
 
 ---
@@ -23,15 +23,15 @@ The [`upgrade`](<#upgrade>) function creates several tables: `v2_primary_asset`,
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
-- **Use**: Used to identify the current state of the database schema in Alembic migrations.
+- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script. This identifier is a string that represents the specific state of the database schema after applying this migration.
+- **Use**: Used by Alembic to track and apply database schema changes in a version-controlled manner.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that represents the identifier of the previous database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to determine the order of database migrations by linking the current revision to its predecessor.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is a string that represents the unique ID of the migration that this script is based on.
+- **Use**: Used by Alembic to determine the order of migrations and ensure that migrations are applied in the correct sequence.
 
 
 ---
@@ -44,8 +44,8 @@ The [`upgrade`](<#upgrade>) function creates several tables: `v2_primary_asset`,
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
-- **Use**: Indicates that this migration script does not depend on any other migration script.
+- **Description**: Represents a global variable that is set to `None`. It is used as a placeholder for dependencies in Alembic migration scripts.
+- **Use**: Indicates that there are no dependencies for this migration script.
 
 
 # Functions
@@ -54,17 +54,18 @@ The [`upgrade`](<#upgrade>) function creates several tables: `v2_primary_asset`,
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_23_1430-3ad0719e3e4c_add_primary_assets_versions_and_nodes.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_23_1430-3ad0719e3e4c_add_primary_assets_versions_and_nodes.py#L21>)
 
-Creates new database tables and indexes for primary assets, versions, and nodes.
+Creates new database tables and indexes for primary assets, versions, nodes, and updates the derived contents table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates a table named `v2_primary_asset` with columns for `id`, `display_name`, `repository_id`, `organization_id`, `kind`, `created_at`, and `updated_at`, and sets `id` as the primary key.
-    - Creates a unique index on the `v2_primary_asset` table for the combination of `organization_id` and `display_name`.
-    - Creates a table named `v2_primary_asset_tag` with columns for `tag_id` and `primary_asset_id`, and sets a composite primary key on these columns. It also establishes foreign key constraints linking `primary_asset_id` to `v2_primary_asset.id` and `tag_id` to `tags.id`.
-    - Creates a table named `v2_version` with columns for `id`, `primary_asset_id`, `display_name`, `created_at`, `updated_at`, `status`, and `previous_version_id`, and sets `id` as the primary key. It also establishes foreign key constraints linking `previous_version_id` to `v2_version.id` and `primary_asset_id` to `v2_primary_asset.id`.
-    - Creates a unique index on the `v2_version` table for the combination of `primary_asset_id` and `display_name`.
-    - Creates a table named `v2_node` with columns for `id`, `kind`, `version_id`, `relative_path`, `created_at`, `updated_at`, and `misc_metadata`, and sets `id` as the primary key. It also establishes a foreign key constraint linking `version_id` to `v2_version.id`.
-    - Creates a non-unique index on the `v2_node` table for the `relative_path` column and a unique index for the combination of `version_id` and `relative_path`.
-    - Adds a new column `node_id` to the `derived_contents` table and creates a non-unique index on this column. It also establishes a foreign key constraint linking `node_id` to `v2_node.id`.
+    - Creates the `v2_primary_asset` table with columns for ID, display name, repository ID, organization ID, kind, created at, and updated at, and sets a primary key on the ID column.
+    - Creates a unique index on the `v2_primary_asset` table for the combination of organization ID and display name.
+    - Creates the `v2_primary_asset_tag` table with columns for tag ID and primary asset ID, and sets a primary key on both columns. It also establishes foreign key constraints linking to the `v2_primary_asset` and `tags` tables.
+    - Creates the `v2_version` table with columns for ID, primary asset ID, display name, created at, updated at, status, and previous version ID, and sets a primary key on the ID column. It also establishes foreign key constraints linking to the `v2_primary_asset` and `v2_version` tables.
+    - Creates a unique index on the `v2_version` table for the combination of primary asset ID and display name.
+    - Creates the `v2_node` table with columns for ID, kind, version ID, relative path, created at, updated at, and misc metadata, and sets a primary key on the ID column. It also establishes a foreign key constraint linking to the `v2_version` table.
+    - Creates a non-unique index on the `v2_node` table for the relative path column and a unique index for the combination of version ID and relative path.
+    - Adds a new column `node_id` to the `derived_contents` table and creates a non-unique index on this column.
+    - Establishes a foreign key constraint linking the `node_id` column in the `derived_contents` table to the `v2_node` table.
 - **Output**: No output is returned as the function modifies the database schema.
 
 
@@ -72,19 +73,19 @@ Creates new database tables and indexes for primary assets, versions, and nodes.
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_23_1430-3ad0719e3e4c_add_primary_assets_versions_and_nodes.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_23_1430-3ad0719e3e4c_add_primary_assets_versions_and_nodes.py#L167>)
 
-Reverses database schema changes by dropping specific tables, columns, and indexes.
+Reverses database schema changes by removing specific tables, columns, and indexes.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Drops the column `node_id` from the `derived_contents` table.
-    - Removes the index `ix_version_id_relative_path` from the `v2_node` table.
-    - Removes the index `ix_v2_node_relative_path` from the `v2_node` table.
+    - Removes the column `node_id` from the `derived_contents` table.
+    - Drops the index `ix_version_id_relative_path` from the `v2_node` table.
+    - Drops the index `ix_v2_node_relative_path` from the `v2_node` table.
     - Drops the `v2_node` table.
-    - Removes the index `ix_v2_version_primary_asset_id_display_name` from the `v2_version` table.
+    - Drops the index `ix_v2_version_primary_asset_id_display_name` from the `v2_version` table.
     - Drops the `v2_version` table.
     - Drops the `v2_primary_asset_tag` table.
-    - Removes the index `ix_v2_primary_asset_organization_id_display_name` from the `v2_primary_asset` table.
+    - Drops the index `ix_v2_primary_asset_organization_id_display_name` from the `v2_primary_asset` table.
     - Drops the `v2_primary_asset` table.
-- **Output**: None
+- **Output**: No output is returned as the function returns `None`.
 
 
 

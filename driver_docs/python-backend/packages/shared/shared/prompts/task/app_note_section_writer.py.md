@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A prompt for writing a detailed technical document section called an app note, requiring in-depth codebase understanding.
+A prompt for writing detailed technical document sections in markdown for app notes.
 
 # Purpose
-This code defines two global variables, `PROMPT` and `MESSAGE`, which are used for generating a section of a technical document called an app note. The `PROMPT` variable contains a multi-line string that outlines the task of writing a detailed technical document, emphasizing the need for understanding the codebase and using tools to gather context. The `MESSAGE` variable is a dictionary with a key `role` set to "system" and a key `content` set to the value of `PROMPT`. This setup is likely used in a system that processes or generates technical documentation based on predefined instructions.
+The code defines two global variables, `PROMPT` and `MESSAGE`, which are used for generating a section of a technical document called an app note. The `PROMPT` variable contains a multi-line string that outlines the task of writing a detailed technical document, emphasizing the need for understanding the codebase and using tools to gather context. The `MESSAGE` variable is a dictionary with a key `role` set to "system" and a key `content` set to the value of `PROMPT`. This code is likely part of a larger system that automates or assists in the creation of technical documentation by providing structured prompts and messages.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for writing a section of a technical document called an app note. It emphasizes the need for in-depth insights and understanding of the technical context and codebase before writing the document.
-- **Use**: Used as a template or guideline for writing detailed technical documentation.
+- **Description**: A string that contains instructions for writing a section of a technical document called an app note. It emphasizes the need for in-depth insights and understanding of the technical context before writing the document.
+- **Use**: Used as a template or guideline for writing a detailed technical document.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a value of `system`, and the `content` key is assigned the value of the `PROMPT` variable.
-- **Use**: Used to store system role information and a detailed prompt for technical documentation.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system role information and a detailed prompt for further processing.
 
 
 

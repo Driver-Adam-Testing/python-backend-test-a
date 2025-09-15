@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a recursive function to compute Fibonacci numbers and a main function to print the first five.
+A recursive function to calculate Fibonacci numbers and a main function to print the first five.
 
 # Purpose
-This script calculates and prints the first five numbers in the Fibonacci sequence. It defines a recursive function [`fib`](<#fib>) that computes the Fibonacci number for a given integer `n`. The [`main`](<#main>) function iterates over the range of numbers from 0 to 4, calling the [`fib`](<#fib>) function for each number and printing the result. The script executes the [`main`](<#main>) function when run as a standalone program.
+This script calculates and prints the first five numbers in the Fibonacci sequence. It defines a function [`fib`](<#fib>) that computes the Fibonacci number for a given integer `n` using a recursive approach. The [`main`](<#main>) function iterates over the range of numbers from 0 to 4, calling the [`fib`](<#fib>) function for each number and printing the result. The script executes the [`main`](<#main>) function when run as a standalone program.
 # Functions
 
 ---
@@ -18,8 +18,8 @@ Calculates the nth Fibonacci number using recursion.
     - `n`: An integer representing the position in the Fibonacci sequence to calculate.
 - **Logic and Control Flow**:
     - Check if `n` is less than or equal to 1.
-    - If true, return `n` as the Fibonacci number.
-    - If false, recursively call `fib` with `n-1` and `n-2` and return their sum.
+    - If `n` is less than or equal to 1, return `n`.
+    - If `n` is greater than 1, recursively call `fib` with `n-1` and `n-2` and return their sum.
 - **Output**: The nth Fibonacci number as an integer.
 
 
@@ -31,9 +31,9 @@ Calls the [`fib`](<#fib>) function for the first five non-negative integers and 
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Iterates over a range of integers from 0 to 4.
-    - Calls the [`fib`](<#fib>) function with the current integer `i` as the argument.
-    - Prints the result of the [`fib`](<#fib>) function call.
-- **Output**: No output is returned as the function is of type `None`, but it prints the Fibonacci numbers for the first five non-negative integers to the console.
+    - For each integer `i`, calls the [`fib`](<#fib>) function with `i` as the argument.
+    - Prints the result of each [`fib`](<#fib>) function call.
+- **Output**: No return value; outputs the Fibonacci numbers for integers 0 through 4 to the console.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/git_diff_testcases/file_b.fib`](<#fib>)
 

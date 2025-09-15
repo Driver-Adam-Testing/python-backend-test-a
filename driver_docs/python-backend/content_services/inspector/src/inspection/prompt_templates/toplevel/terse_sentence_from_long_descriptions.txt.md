@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Generates concise descriptions for codebases from detailed module information.
+Instructions for writing concise codebase descriptions from detailed module descriptions.
 
 # Purpose
-The codebase is a structured collection of files and folders designed to implement specific software functionality. Each file and folder serves a distinct purpose, contributing to the overall operation and features of the software. The files typically contain code, configuration settings, or metadata, while folders organize these files into logical groupings. This organization facilitates efficient development, maintenance, and deployment of the software.
+The content provided is a template for documenting a codebase by describing its modules, which include files and folders. Each module is identified by its name and path, followed by a description that explains its purpose or functionality. This structured approach helps in understanding the organization and role of each component within the codebase. The documentation aims to provide a concise overview of the codebase by summarizing the detailed descriptions into a single sentence that captures the essence of the entire codebase. This method ensures clarity and aids in the efficient navigation and comprehension of the software's structure and functionality.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

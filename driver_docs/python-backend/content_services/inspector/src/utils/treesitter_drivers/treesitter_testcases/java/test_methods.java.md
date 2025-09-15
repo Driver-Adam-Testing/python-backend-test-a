@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines various method examples including static, instance, private, generic, and overridden methods.
+Defines a Java class with various method examples, including static, instance, private, and generic methods.
 
 # Purpose
-The [`MethodExamples`](<#methodexamplesmethodexamples>) class in the `com.example` package demonstrates various method types and their functionalities in Java. It includes a constructor, a static method, an instance method with parameters, a private helper method, a method with generic parameters, and an overridden [`toString`](<#methodexamplestostring>) method. The static method [`staticMethod`](<#methodexamplesstaticmethod>) outputs a message to the console. The instance method [`processData`](<#methodexamplesprocessdata>) takes a `String` and an `int` as parameters, concatenating the string a specified number of times and returning the result. The private method [`privateHelper`](<#methodexamplesprivatehelper>) is intended for internal use within the class, though its implementation is not provided.
+The [`MethodExamples`](<#methodexamplesmethodexamples>) class in the `com.example` package demonstrates various method types and their functionalities in Java. It includes a constructor, a static method, an instance method with parameters, a private helper method, a method with generic parameters, and an overridden [`toString`](<#methodexamplestostring>) method. The static method [`staticMethod`](<#methodexamplesstaticmethod>) prints a message to the console. The instance method [`processData`](<#methodexamplesprocessdata>) takes a `String` and an `int` as parameters, concatenating the `String` a specified number of times and returning the result. The private method [`privateHelper`](<#methodexamplesprivatehelper>) is intended for internal use within the class, though its implementation is not provided.
 
-The class also includes a method [`createList`](<#methodexamplescreatelist>) that uses generic parameters to create a list from a variable number of input items, demonstrating the use of Java generics. The [`toString`](<#methodexamplestostring>) method is overridden to return the class name, [`MethodExamples`](<#methodexamplesmethodexamples>), as a string representation of the object. This class provides a narrow set of functionalities focused on demonstrating different method types and their uses in Java, without defining any public APIs or external interfaces.
+The class also includes a method [`createList`](<#methodexamplescreatelist>) that uses generic parameters to create a list from a variable number of arguments, demonstrating the use of Java generics. The [`toString`](<#methodexamplestostring>) method is overridden to return the class name, [`MethodExamples`](<#methodexamplesmethodexamples>), as a string representation of the object. This class provides a collection of method examples that illustrate different method types and their uses in Java, serving as a reference for understanding method implementation and behavior.
 # Imports and Dependencies
 
 ---
@@ -22,7 +22,7 @@ The class also includes a method [`createList`](<#methodexamplescreatelist>) tha
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_methods.java#L3>)
 
 - **Modifiers**: `public`
-- **Description**: Defines a class with various method examples, including a static method, an instance method with parameters, a private helper method, a method with generic parameters, and an overridden `toString` method.
+- **Description**: Defines a class with various method examples, including static, instance, private, generic, and overridden methods, demonstrating different method types and functionalities in Java.
 - **Methods**:
     - [`com.example.MethodExamples.MethodExamples`](<#methodexamplesmethodexamples>)
     - [`com.example.MethodExamples.staticMethod`](<#methodexamplesstaticmethod>)
@@ -43,7 +43,7 @@ Constructs a new instance of the `MethodExamples` class.
 - **Control Flow**:
     - The constructor does not perform any operations or initialize any fields.
 - **Output**:
-    - A new instance of the `MethodExamples` class.
+    - There is no output as this is a constructor.
 - **See also**: [`com.example.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -57,7 +57,7 @@ Prints the string 'Static method' to the standard output.
 - **Control Flow**:
     - Calls `System.out.println` with the string 'Static method'.
 - **Output**:
-    - No output is returned.
+    - No return value (void).
 - **See also**: [`com.example.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -65,17 +65,18 @@ Prints the string 'Static method' to the standard output.
 #### MethodExamples\.processData<!-- {{#callable:com.example.MethodExamples.processData}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_methods.java#L16>)
 
-Concatenates the `input` string `count` times and returns the result.
+Concatenates the `input` string `count` times to form a new string.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `input`: The string to be concatenated.
-    - `count`: The number of times to concatenate the `input` string.
+    - `input`: The string to be repeated.
+    - `count`: The number of times to repeat the `input` string.
 - **Control Flow**:
     - Initialize a `StringBuilder` named `result`.
-    - Iterate `count` times, appending `input` to `result` in each iteration.
+    - Iterate from 0 to `count - 1`.
+    - In each iteration, append `input` to `result`.
     - Convert `result` to a string and return it.
 - **Output**:
-    - A string that is the result of concatenating `input` `count` times.
+    - A string that consists of the `input` string repeated `count` times.
 - **Functions Called**:
     - [`com.example.MethodExamples.toString`](<#methodexamplestostring>)
 - **See also**: [`com.example.MethodExamples`](<#methodexamples>)  (Base Class)
@@ -85,15 +86,15 @@ Concatenates the `input` string `count` times and returns the result.
 #### MethodExamples\.privateHelper<!-- {{#callable:com.example.MethodExamples.privateHelper}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_methods.java#L25>)
 
-Provides a private helper function with no implementation details.
+Implements a private helper function with unspecified functionality.
 - **Modifiers**: `private`
 - **Inputs**: None
 - **Control Flow**:
     - The method is defined as private, indicating it is intended for use only within the `MethodExamples` class.
     - The method does not take any parameters.
-    - The method body is empty, indicating no operations are performed.
+    - The method body is currently empty, indicating no operations are performed.
 - **Output**:
-    - The method does not return any value or perform any operations.
+    - The method does not return any value.
 - **See also**: [`com.example.MethodExamples`](<#methodexamples>)  (Base Class)
 
 
@@ -104,7 +105,7 @@ Provides a private helper function with no implementation details.
 Creates a list from a variable number of input items.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `items`: A variable number of input items of generic type `T`.
+    - `items`: A variable number of input items of generic type `T` to include in the list.
 - **Control Flow**:
     - Uses `Arrays.asList` to convert the input items into a list.
 - **Output**:
@@ -120,7 +121,7 @@ Returns a string representation of the `MethodExamples` class.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The method returns the string literal `"MethodExamples"`.
+    - The method returns the string literal 'MethodExamples'.
 - **Output**:
     - A string that represents the `MethodExamples` class.
 - **See also**: [`com.example.MethodExamples`](<#methodexamples>)  (Base Class)

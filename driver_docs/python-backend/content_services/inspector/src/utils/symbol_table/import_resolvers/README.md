@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-C/C++, C#, Java, JavaScript/TypeScript, and Python import resolvers with tests for JavaScript/TypeScript.
+Resolves import statements for C/C++, C#, Java, TypeScript, and Python to project files.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[c_cpp_resolver.py](c_cpp_resolver.py.md)**: Resolves C/C++ #include directives to corresponding project files using a minimal matching strategy.
-- **[csharp_resolver.py](csharp_resolver.py.md)**: A C# import resolver that handles namespace and global using declarations to map them to project files.
+- **[c_cpp_resolver.py](c_cpp_resolver.py.md)**: Resolves C/C++ #include directives to corresponding project files.
+- **[csharp_resolver.py](csharp_resolver.py.md)**: Resolves C# import statements and namespace declarations to project files using a caching mechanism.
 - **[java_resolver.py](java_resolver.py.md)**: Resolves Java import statements to corresponding project files using a symbol data map.
-- **[js_ts_resolver.py](js_ts_resolver.py.md)**: Resolves TypeScript and JavaScript import statements to corresponding project files.
+- **[js_ts_resolver.py](js_ts_resolver.py.md)**: Resolves TypeScript import statements to corresponding project files.
 - **[js_ts_resolver_test.py](js_ts_resolver_test.py.md)**: Tests for JavaScript/TypeScript import resolution using the `JsTsResolver` class.
 - **[python_resolver.py](python_resolver.py.md)**: Resolves Python import statements to corresponding project files using a symbol data map.
 

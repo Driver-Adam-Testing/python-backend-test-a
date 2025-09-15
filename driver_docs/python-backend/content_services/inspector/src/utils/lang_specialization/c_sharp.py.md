@@ -6,9 +6,7 @@
 Classes and functions for extracting and documenting C# symbols, including classes, structs, interfaces, and methods.
 
 # Purpose
-The code is a Python module that provides functionality for extracting and documenting C# code symbols such as classes, structs, interfaces, methods, and variables. It uses a combination of static analysis and language model processing to generate structured documentation. The module defines several classes, each responsible for handling a specific type of C# symbol, such as `CsClassData`, `CsStructData`, `CsInterfaceData`, and `CsMethodData`. These classes inherit from a base class `IrData` and implement methods to generate system and user prompts for documentation purposes.
-
-The module also includes collections like `CsClassCollection`, `CsStructCollection`, and `CsInterfaceCollection`, which manage groups of symbols. The code uses the `pydantic` library for data validation and management, and it relies on external utilities for symbol extraction and processing, such as `get_fully_qualified_name` and `code_requires_multi_prompt`. The module is designed to be part of a larger system that automates the generation of technical documentation for C# codebases, focusing on providing clear and structured information about the code's components and their relationships.
+The code is a Python module that provides functionality for extracting and documenting C# code symbols, such as classes, structs, interfaces, methods, and variables. It uses classes and methods to define how to parse and represent these symbols, leveraging static analysis and tree-sitter for symbol extraction. The module defines several data classes like `CsClassData`, `CsStructData`, and `CsInterfaceData` to encapsulate information about C# constructs. It also includes collections like `CsClassCollection` and `CsStructCollection` to manage groups of these data objects. The module is designed to be part of a larger system that processes C# code, likely for documentation or analysis purposes, and it defines structured prompts for interacting with a language model to generate documentation. The code does not define public APIs but provides internal classes and methods for symbol extraction and documentation generation.
 # Imports and Dependencies
 
 ---
@@ -58,36 +56,36 @@ The module also includes collections like `CsClassCollection`, `CsStructCollecti
 ---
 ### C\_SHARP\_FUNCTIONS
 - **Type**: `set`
-- **Description**: Contains a single string element, 'method', which represents C# functions.
-- **Use**: Used to categorize or identify C# functions in the code.
+- **Description**: Contains a set with a single string element 'method', representing C# functions.
+- **Use**: Used to categorize or identify C# functions in the context of the code.
 
 
 ---
 ### C\_SHARP\_INTERFACES
 - **Type**: `set`
-- **Description**: Contains a single string element, 'interface', which represents the keyword for interfaces in C#.
-- **Use**: Used to identify or categorize C# interface symbols.
+- **Description**: Contains a single string element, 'interface', which represents the concept of interfaces in C# programming.
+- **Use**: Used to categorize or identify C# interfaces within the code.
 
 
 ---
 ### C\_SHARP\_VARIABLES
 - **Type**: `set`
-- **Description**: Contains the strings 'field' and 'property', which represent types of variables in C#.
+- **Description**: Contains the strings 'field' and 'property', representing types of variables in C#.
 - **Use**: Used to categorize or identify C# variables as either fields or properties.
 
 
 ---
 ### C\_SHARP\_ENUMS
 - **Type**: `set`
-- **Description**: Contains a single string element, `"enum"`, which represents the keyword used in C# to define enumerations.
+- **Description**: Contains a single string element 'enum', which represents C# enumerations.
 - **Use**: Used to identify or categorize C# enumeration types in the code.
 
 
 ---
 ### C\_SHARP\_ENUM\_VALS
 - **Type**: `set`
-- **Description**: Contains a single string element 'enumerator', which represents a C# enumeration value.
-- **Use**: Used to categorize or identify C# enumeration values in the code.
+- **Description**: Contains a single string element 'enumerator', which represents a C# enum value.
+- **Use**: Used to categorize or identify C# enum values in the code.
 
 
 ---
@@ -100,7 +98,7 @@ The module also includes collections like `CsClassCollection`, `CsStructCollecti
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_CS
 - **Type**: `str`
-- **Description**: This variable is a string that contains a system prompt for a C# programmer and documentation expert. It instructs the user to write detailed documentation for small and simple C# source code files.
+- **Description**: This variable is a string that contains a prompt for a system that describes the role of an expert C# programmer and documentation expert. It emphasizes the ability to explain small and simple C# source code files clearly and concisely.
 - **Use**: Used to provide a system prompt for generating documentation for small C# source code files.
 
 
@@ -114,15 +112,15 @@ The module also includes collections like `CsClassCollection`, `CsStructCollecti
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: This variable is a string that contains a prompt for users to explain the purpose of a given piece of code in a concise manner.
-- **Use**: Used to guide users in providing a brief explanation of code functionality and type.
+- **Description**: A string variable that contains a prompt for users to explain the purpose of a given code snippet in a concise manner.
+- **Use**: Used to guide users in providing a brief explanation of the code's purpose.
 
 
 ---
 ### CLASSES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: A multi-line string that provides a detailed system prompt for documenting C# classes.
-- **Use**: Used as a template for generating JSON-based documentation for C# classes.
+- **Description**: A multi-line string that provides a system prompt for documenting C# classes. It instructs the user to describe a class using a specific JSON schema, focusing on the class's description, inheritance, implemented interfaces, and modifiers.
+- **Use**: Used as a template for generating documentation for C# classes by providing a structured prompt.
 
 
 ---
@@ -135,70 +133,70 @@ The module also includes collections like `CsClassCollection`, `CsStructCollecti
 ---
 ### INTERFACES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: A multi-line string that provides instructions for documenting C# interfaces using a specific JSON schema.
-- **Use**: Used as a template or guideline for generating documentation for C# interfaces.
+- **Description**: A multi-line string that provides a detailed prompt for documenting C# interfaces. It instructs the user to describe a given interface using a specific JSON schema, focusing on the interfaces inherited and a paragraph description of the interface.
+- **Use**: Used as a system prompt to guide the documentation process for C# interfaces.
 
 
 ---
 ### INTERFACES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A multi-line string that serves as a template for prompting users to summarize an interface in provided code.
-- **Use**: Used to generate user prompts for summarizing interfaces in code.
+- **Description**: A multi-line string that serves as a template for user prompts related to documenting interfaces in code.
+- **Use**: Used to generate user prompts for summarizing interfaces in code documentation tasks.
 
 
 ---
 ### STRUCTS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: A multi-line string that provides a system prompt for documenting C# structs.
-- **Use**: Used as a template for generating JSON documentation for C# structs.
+- **Description**: A multi-line string that serves as a system prompt for documenting C# structs.
+- **Use**: Used to instruct a system on how to generate documentation for C# structs in a specific JSON format.
 
 
 ---
 ### STRUCTS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A multi-line string that serves as a template for summarizing a struct in provided code.
-- **Use**: Used to prompt users to summarize a struct by providing detailed explanations based on the complexity of the struct.
+- **Description**: A multi-line string that serves as a template for summarizing a struct in a given code snippet.
+- **Use**: Used to prompt users to provide a detailed summary of a struct based on its complexity.
 
 
 ---
 ### METHODS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
 - **Description**: A multi-line string that provides a system prompt for documenting C# methods.
-- **Use**: Used to instruct a system on how to generate documentation for C# methods in a structured JSON format.
+- **Use**: Used to instruct a system on how to document C# methods by providing a JSON schema for the output.
 
 
 ---
 ### METHODS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A multi-line string that provides instructions for summarizing a method in a given code snippet. It includes guidelines on describing the inputs, control flow, logic, and output of the method, with an emphasis on matching the level of detail to the complexity of the method.
-- **Use**: Used as a template or prompt for users to document methods in code by providing structured guidance on what details to include.
+- **Description**: A multi-line string that provides a template for summarizing a method in a given code. It includes instructions on how to describe the method's inputs, control flow, logic, and output, with an emphasis on matching the complexity of the method body.
+- **Use**: Used as a prompt template for generating method documentation.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
 - **Description**: A string variable that contains a JSON schema for documenting variables in C# code.
-- **Use**: Used to define the format and structure for documenting C# variables.
+- **Use**: Used to provide a template for generating documentation for C# variables.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A multi-line string that serves as a template for summarizing a variable in the provided code.
-- **Use**: Used to prompt users to summarize a variable in the code.
+- **Description**: A multi-line string that provides a template for summarizing a variable in the code provided.
+- **Use**: Used as a prompt template for generating documentation for a variable.
 
 
 ---
 ### ENUMS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: A multi-line string that provides instructions for documenting enums in C# using a specific JSON schema. It includes guidelines for writing technical documentation and emphasizes the use of a JSON format for responses.
-- **Use**: Used as a template or prompt for generating documentation for C# enums.
+- **Description**: A multi-line string that provides a system prompt for documenting C# enums. It instructs the user to write detailed documentation for enums using a specific JSON schema.
+- **Use**: Used as a template for generating documentation prompts for C# enums.
 
 
 ---
 ### ENUMS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A multi-line string that serves as a user prompt for summarizing enums in provided code.
+- **Description**: Defines a multi-line string that serves as a user prompt for summarizing enums in provided code.
 - **Use**: Used to prompt users to summarize enums in code documentation tasks.
 
 
@@ -209,8 +207,8 @@ The module also includes collections like `CsClassCollection`, `CsStructCollecti
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L230>)
 
 - **Members**:
-    - `description`: Holds a description of the variable data as a `FieldNameWithRawContent` object.
-- **Description**: Represents variable data in a C# context, inheriting from `IrData`. It provides class methods to generate system and user prompts for variable symbols, ensuring adherence to specific style instructions. The class also raises `NotImplementedError` for methods related to child handling, indicating that variables should not have children. A default instance can be created with an empty description.
+    - `description`: Holds a description of the variable data.
+- **Description**: Represents variable data in a C# context, inheriting from `IrData`, and provides class methods to generate system and user prompts for variable symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsVariableData.system_prompt`](<#csvariabledatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsVariableData.user_prompt`](<#csvariabledatauser_prompt>)
@@ -231,11 +229,11 @@ Generates a system prompt string for documenting variables in C# code.
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
-    - Creates an empty `Prompt` object.
-    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
-    - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Converts the `Prompt` into a string using `into_str()` and returns it.
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
 - **Output**: A string representing the system prompt for documenting variables.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -258,8 +256,8 @@ Generates a user prompt string based on the provided symbol data.
     - Append a component with a no-restatement style instruction for symbols.
     - Append a component with the variable code from the symbol.
     - Check if the symbol has associated file code; if so, append a component with the full file code.
-    - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string that represents the user prompt, constructed from the symbol's data.
+    - Convert the constructed `Prompt` into a string and return it.
+- **Output**: A string that represents the user prompt constructed from the symbol data.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -275,10 +273,10 @@ Generates a user prompt string based on the provided symbol data.
 Raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol to be processed.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with the message 'Variables should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
+    - Raises a `NotImplementedError` with the message 'Variables should not have children'.
+- **Output**: This method does not return any value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsVariableData`](<#csvariabledata>)  (Base Class)
 
 
@@ -292,7 +290,7 @@ Raises a NotImplementedError indicating that variables should not have children.
     - `child`: An instance of RawSymbolData representing a child symbol.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with the message 'Variables should not have children'.
-- **Output**: Does not return a value; instead, it raises an exception.
+- **Output**: Does not return a value; it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsVariableData`](<#csvariabledata>)  (Base Class)
 
 
@@ -300,14 +298,14 @@ Raises a NotImplementedError indicating that variables should not have children.
 #### CsVariableData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsVariableData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L265>)
 
-Creates a default instance of the `CsVariableData` class with an empty `description`.
+Creates a default instance of the `CsVariableData` class with an empty `description` field.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with a `description` parameter set to an instance of [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>) with an empty `content` string.
+    - Calls the class constructor `cls` with a `description` parameter set to a new [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>) object with an empty `content` string.
     - Returns the newly created instance of the class.
-- **Output**: An instance of the `CsVariableData` class with a default `description`.
+- **Output**: A new instance of the `CsVariableData` class with a default `description`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsVariableData`](<#csvariabledata>)  (Base Class)
@@ -324,7 +322,7 @@ Creates a default instance of the `CsVariableData` class with an empty `descript
     - `inputs`: Contains input data for the method.
     - `control_flow`: Represents the control flow data of the method.
     - `output`: Holds the output data of the method.
-- **Description**: Manages data related to C# methods, including descriptions, modifiers, inputs, control flow, and output. It provides methods to generate system and user prompts for documenting methods and handles bespoke data application for modifiers. The class does not support children, as methods should not have children.
+- **Description**: Represents data related to a C# method, including its description, modifiers, inputs, control flow, and output. It inherits from `IrData` and provides methods to generate system and user prompts for documenting C# methods. The class also includes functionality to apply bespoke data to its modifiers.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsMethodData._apply_bespoke_data`](<#csmethoddata_apply_bespoke_data>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsMethodData.system_prompt`](<#csmethoddatasystem_prompt>)
@@ -341,14 +339,14 @@ Creates a default instance of the `CsVariableData` class with an empty `descript
 #### CsMethodData\.\_apply\_bespoke\_data<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsMethodData._apply_bespoke_data}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L279>)
 
-Copies modifiers from the bespoke data of the reified symbol to the `_modifiers` attribute.
+Copies bespoke data modifiers from a reified symbol to the `_modifiers` attribute.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize an empty list `modifiers`.
-    - Iterate over each `modifier` in `self._reified_symbol.raw.bespoke_data.modifiers`.
+    - Iterate over `modifiers` in `self._reified_symbol.raw.bespoke_data.modifiers`.
     - Append each `modifier` to the `modifiers` list.
     - Assign the `modifiers` list to `self._modifiers.content`.
-- **Output**: No output is returned as the method modifies the `_modifiers` attribute in place.
+- **Output**: No output, modifies the `_modifiers` attribute in place.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsMethodData`](<#csmethoddata>)  (Base Class)
@@ -363,10 +361,10 @@ Generates a system prompt string for a given symbol using specific formatting in
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
-    - Creates an empty `Prompt` object.
-    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt` with a formatted string that includes the kind of the symbol if it is not a method.
-    - Appends general style instructions and backticks style instructions to the `Prompt`.
-    - Converts the `Prompt` into a string using `into_str()` method.
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt` with a formatted string that includes the kind of the symbol if it is not a method.
+    - Append general style instructions to the `Prompt`.
+    - Convert the `Prompt` into a string and return it.
 - **Output**: A string representing the system prompt for the given symbol.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -390,8 +388,7 @@ Generates a user prompt string for a given symbol, including method kind and cod
     - Check if the method kind is not `CSharpCallKind.METHOD`; if true, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to mention the kind in the description.
     - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the method code to the `Prompt`.
     - If `symbol.file_code` is present, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
-    - Convert the `Prompt` into a string and return it.
-- **Output**: A string representing the user prompt for the given symbol.
+- **Output**: A string representation of the constructed user prompt.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -407,10 +404,10 @@ Generates a user prompt string for a given symbol, including method kind and cod
 Raises a NotImplementedError indicating that methods should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: A `RawSymbolData` object representing the symbol to be processed.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to convert.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with the message 'Methods should not have children'.
-- **Output**: Does not return a value; instead, it raises an exception.
+    - Raises a `NotImplementedError` with the message 'Methods should not have children'.
+- **Output**: This method does not return any value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsMethodData`](<#csmethoddata>)  (Base Class)
 
 
@@ -421,10 +418,10 @@ Raises a NotImplementedError indicating that methods should not have children.
 Raises a NotImplementedError indicating that methods should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
+    - `child`: An instance of RawSymbolData representing a child symbol.
 - **Logic and Control Flow**:
-    - Raises a `NotImplementedError` with the message 'Methods should not have children'.
-- **Output**: This method does not return a value as it raises an exception.
+    - Raises a NotImplementedError with the message 'Methods should not have children'.
+- **Output**: Does not return a value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsMethodData`](<#csmethoddata>)  (Base Class)
 
 
@@ -432,13 +429,13 @@ Raises a NotImplementedError indicating that methods should not have children.
 #### CsMethodData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsMethodData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L337>)
 
-Creates and returns a default instance of the `CsMethodData` class.
+Creates a default instance of the `CsMethodData` class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with default values for `single_sentence`, `inputs`, `control_flow`, and `output`.
-- **Output**: A new instance of `CsMethodData` with default values.
+    - Calls the class constructor `cls` with default or empty values for the attributes `single_sentence`, `inputs`, `control_flow`, and `output`.
+- **Output**: A new instance of the `CsMethodData` class with default values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<ir_common.py.md#rawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#listedbackticknamerawcontentwithnone>)
@@ -452,12 +449,12 @@ Creates and returns a default instance of the `CsMethodData` class.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L347>)
 
 - **Members**:
-    - `_type`: Stores the type information of the C# struct.
-    - `_modifiers`: Holds the modifiers applied to the C# struct.
-    - `_partial_implementations`: Contains partial implementation details of the C# struct.
-    - `description`: Provides a description of the C# struct.
-    - `_supported_child_ordering`: Defines the order of supported child elements like fields, methods, and nested classes.
-- **Description**: Represents a data structure for handling C# struct information, including type, modifiers, and partial implementations. It supports child elements such as fields, methods, and nested classes, and provides methods to apply bespoke data and generate prompts for system and user interactions.
+    - `_type`: Stores the type of the C# structure as a list of strings.
+    - `_modifiers`: Stores the modifiers of the C# structure as a list of strings.
+    - `_partial_implementations`: Stores partial implementations as a list of strings.
+    - `description`: Holds a description of the C# structure.
+    - `_supported_child_ordering`: Defines the order of supported child elements as a list of strings.
+- **Description**: Represents a data structure for C# structs, inheriting from `IrData`, and manages type, modifiers, partial implementations, and description. It also defines the order of child elements such as fields, methods, and nested classes.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructData._apply_bespoke_data`](<#csstructdata_apply_bespoke_data>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructData.system_prompt`](<#csstructdatasystem_prompt>)
@@ -474,17 +471,17 @@ Creates and returns a default instance of the `CsMethodData` class.
 #### CsStructData\.\_apply\_bespoke\_data<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructData._apply_bespoke_data}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L366>)
 
-Populates the `_partial_implementations`, `_modifiers`, and `_type` attributes with data from the `_reified_symbol`.
+Populates the `_partial_implementations`, `_modifiers`, and `_type` attributes with data derived from the `self._reified_symbol` object.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize empty lists `partial_implementations` and `modifiers`.
-    - Iterate over `self._reified_symbol.children`.
-    - For each child, if the child's `symbol_kind` is `CLASS`, construct a formatted string using the child's file path, symbol kind, and fully qualified name, and append it to `partial_implementations`.
+    - Iterate over `self._reified_symbol.children` to find children with `SymbolKind.CLASS`.
+    - For each class child, construct a formatted string using its file path, symbol kind, and fully qualified name, and append it to `partial_implementations`.
     - Iterate over `self._reified_symbol.raw.bespoke_data.modifiers` and append each modifier to `modifiers`.
     - Assign `partial_implementations` to `self._partial_implementations.content`.
     - Assign `modifiers` to `self._modifiers.content`.
-    - Assign a list containing the `kind` from `self._reified_symbol.raw.bespoke_data` to `self._type.content`, replacing underscores with spaces.
-- **Output**: No output is returned as the method modifies instance attributes in place.
+    - Assign a list containing the `kind` from `self._reified_symbol.raw.bespoke_data`, with underscores replaced by spaces, to `self._type.content`.
+- **Output**: No output is returned; the method modifies instance attributes in place.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<../symbol_table/utils.py.md#get_fully_qualified_name>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -495,7 +492,7 @@ Populates the `_partial_implementations`, `_modifiers`, and `_type` attributes w
 #### CsStructData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L387>)
 
-Generates a system prompt string by appending specific components and instructions to an empty prompt.
+Generates a system prompt string for a given symbol using predefined components and instructions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
@@ -504,8 +501,8 @@ Generates a system prompt string by appending specific components and instructio
     - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `STRUCTS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
     - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
     - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Convert the `Prompt` into a string using `into_str()` and return it.
-- **Output**: A string representing the system prompt.
+    - Convert the `Prompt` to a string using `into_str()` and return it.
+- **Output**: A string representing the system prompt for the given symbol.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -525,9 +522,9 @@ Generates a user prompt string based on the provided symbol data.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object and append a no-restatement style instruction for symbols.
     - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt` with the symbol's name and code formatted as a string.
-    - Check if the `symbol` has `file_code`. If true, append another [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
+    - Check if the `symbol` has `file_code`. If true, append another [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code.
     - Convert the `Prompt` into a string and return it.
-- **Output**: A string representing the user prompt.
+- **Output**: A string that represents the user prompt.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -559,10 +556,10 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type or returns `Non
 Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` needs mapping to a field name.
+    - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` needs mapping.
 - **Logic and Control Flow**:
-    - Defines a mapping dictionary that associates `SymbolKind` values to `ScopeRelation` values.
-    - Uses the `get` method on the mapping dictionary to retrieve the `ScopeRelation` value corresponding to the `child.symbol_kind`.
+    - Define a mapping dictionary that associates `SymbolKind` values to `ScopeRelation` values.
+    - Use the `get` method on the mapping dictionary to retrieve the `ScopeRelation` value corresponding to the `child.symbol_kind`.
 - **Output**: A string representing the `ScopeRelation` field name associated with the `child`'s `symbol_kind`, or `None` if no mapping exists.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructData`](<#csstructdata>)  (Base Class)
 
@@ -574,10 +571,10 @@ Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` 
 Creates and returns a default instance of the class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that can be used to provide additional context or data, but defaults to `None` if not provided.
+    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with default or empty values for the attributes `description`, `implements`, and `modifiers`.
-- **Output**: A new instance of the class with default or empty values for its attributes.
+    - Calls the class constructor `cls` with default values for `description`, `implements`, and `modifiers`.
+- **Output**: A new instance of the class with default attribute values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
@@ -590,8 +587,8 @@ Creates and returns a default instance of the class with empty or default values
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L443>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping strings to `CsStructData` or lists of `CsStructData`.
-- **Description**: Manages a collection of C# structure data, allowing for the storage and retrieval of `CsStructData` objects or lists of such objects. It provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
+    - `data`: Holds a dictionary mapping strings to `CsStructData` or lists of `CsStructData`.
+- **Description**: Manages a collection of C# structure data, allowing for the organization and retrieval of `CsStructData` instances. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructCollection.from_llm`](<#csstructcollectionfrom_llm>)
 - **Inherits From**:
@@ -603,15 +600,15 @@ Creates and returns a default instance of the class with empty or default values
 #### CsStructCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L446>)
 
-Creates an instance of the class using a language model and a list of symbols.
+Creates an instance of the class using a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: A `ChatOpenAI` instance representing the language model to use.
-    - `symbols_list`: A `RawSymbolCollection` containing the list of symbols to process.
+    - `llm`: An instance of `ChatOpenAI` representing the language model to use.
+    - `symbols_list`: A `RawSymbolCollection` containing the symbols to process.
 - **Logic and Control Flow**:
     - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `CsStructData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class created using the provided language model and symbols list.
+- **Output**: An instance of the class (`Self`) created using the provided language model and symbols.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructCollection`](<#csstructcollection>)  (Base Class)
@@ -624,11 +621,11 @@ Creates an instance of the class using a language model and a list of symbols.
 
 - **Members**:
     - `_type`: Stores the type of the class as a list of strings.
-    - `_modifiers`: Holds the modifiers of the class as a list of strings.
-    - `_partial_implementations`: Contains partial implementations as a list of strings.
-    - `description`: Provides a description of the class.
+    - `_modifiers`: Stores the modifiers of the class as a list of strings.
+    - `_partial_implementations`: Stores partial implementations as a list of strings.
+    - `description`: Holds the description of the class.
     - `_supported_child_ordering`: Defines the order of supported child elements as a list of strings.
-- **Description**: Represents a data structure for handling C# class information, including type, modifiers, partial implementations, and description. It supports child ordering for fields, methods, and nested classes. The class provides methods to apply bespoke data, generate system and user prompts, and map child symbols to intermediate representations or field names.
+- **Description**: Represents a data structure for handling C# class information, including type, modifiers, partial implementations, and description. It supports child ordering for fields, methods, and nested classes. The class provides methods to apply bespoke data and generate prompts for system and user interactions.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassData._apply_bespoke_data`](<#csclassdata_apply_bespoke_data>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassData.system_prompt`](<#csclassdatasystem_prompt>)
@@ -645,17 +642,17 @@ Creates an instance of the class using a language model and a list of symbols.
 #### CsClassData\.\_apply\_bespoke\_data<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassData._apply_bespoke_data}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L470>)
 
-Applies bespoke data to the class by processing child symbols and modifiers.
+Populates the `_partial_implementations`, `_modifiers`, and `_type` attributes with data derived from the `self._reified_symbol` object.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize empty lists `partial_implementations` and `modifiers`.
-    - Iterate over `self._reified_symbol.children`.
-    - For each child, if the child's symbol kind is `CLASS`, construct a formatted string with the child's file path, symbol kind, and fully qualified name, and append it to `partial_implementations`.
+    - Iterate over `self._reified_symbol.children` to find children with `SymbolKind.CLASS`.
+    - For each class child, construct a formatted string with its file path, kind, and fully qualified name, and append it to `partial_implementations`.
     - Iterate over `self._reified_symbol.raw.bespoke_data.modifiers` and append each modifier to `modifiers`.
     - Assign `partial_implementations` to `self._partial_implementations.content`.
     - Assign `modifiers` to `self._modifiers.content`.
     - Determine the kind of the symbol and assign it to `self._type.content`.
-- **Output**: No output is returned; the method modifies the instance's attributes `_partial_implementations`, `_modifiers`, and `_type`.
+- **Output**: No output is returned as the method modifies instance attributes in place.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<../symbol_table/utils.py.md#get_fully_qualified_name>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -669,7 +666,7 @@ Applies bespoke data to the class by processing child symbols and modifiers.
 Generates a system prompt string for documenting C# classes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to document.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object.
     - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
@@ -689,16 +686,16 @@ Generates a system prompt string for documenting C# classes.
 #### CsClassData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L504>)
 
-Generates a user prompt string for a given symbol by appending specific instructions and code details.
+Generates a user prompt string for a given symbol, including its name and code, and optionally the full file code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing details about the symbol, such as its name and code.
+    - `symbol`: An instance of `RawSymbolData` containing the symbol's name, code, and optionally the full file code.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object and append a no-restatement style instruction for symbols.
     - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the class name and class code from the `symbol` to the `Prompt`.
     - Check if `symbol.file_code` is present; if so, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
     - Convert the `Prompt` into a string and return it.
-- **Output**: A string representing the user prompt with instructions and code details for the given symbol.
+- **Output**: A string representing the user prompt for the given symbol.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -719,7 +716,7 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type or returns `Non
     - Defines a mapping dictionary that associates `SymbolKind` values with corresponding `IrData` types or `None`.
     - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding `IrData` type from the mapping dictionary.
     - Returns the `IrData` type if found in the mapping, otherwise returns `None`.
-- **Output**: A type of `IrData` corresponding to the symbol kind, or `None` if the symbol kind is not mapped.
+- **Output**: A type of `IrData` corresponding to the symbol kind, or `None` if no mapping exists.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassData`](<#csclassdata>)  (Base Class)
 
 
@@ -727,14 +724,14 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type or returns `Non
 #### CsClassData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L531>)
 
-Maps a `RawSymbolData` object's `symbol_kind` to a corresponding `ScopeRelation` value.
+Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object that contains a `symbol_kind` attribute.
+    - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` needs mapping.
 - **Logic and Control Flow**:
-    - Defines a mapping dictionary that associates `SymbolKind` values with `ScopeRelation` values.
-    - Uses the `get` method on the mapping dictionary to retrieve the `ScopeRelation` value corresponding to the `symbol_kind` of the `child` argument.
-- **Output**: A `ScopeRelation` value that corresponds to the `symbol_kind` of the `child` argument, or `None` if no match is found.
+    - Defines a mapping dictionary that associates `SymbolKind` values to `ScopeRelation` values.
+    - Uses the `get` method on the mapping dictionary to retrieve the `ScopeRelation` corresponding to the `child.symbol_kind`.
+- **Output**: A string representing the `ScopeRelation` field name associated with the `child`'s `symbol_kind`, or `None` if no match is found.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassData`](<#csclassdata>)  (Base Class)
 
 
@@ -745,10 +742,10 @@ Maps a `RawSymbolData` object's `symbol_kind` to a corresponding `ScopeRelation`
 Creates a default instance of the class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that can be `None`.
+    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
 - **Logic and Control Flow**:
-    - Calls the class constructor `cls` with default or empty values for `description`, `inherits_from`, `implements`, and `modifiers`.
-- **Output**: An instance of the class with default attribute values.
+    - Calls the class constructor `cls` with default or empty values for the attributes `description`, `inherits_from`, `implements`, and `modifiers`.
+- **Output**: A new instance of the class with default attribute values.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
@@ -761,8 +758,8 @@ Creates a default instance of the class with empty or default values for its att
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L551>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping strings to `CsClassData` or lists of `CsClassData`.
-- **Description**: Manages a collection of C# class data, allowing for the storage and retrieval of class-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols.
+    - `data`: Holds a dictionary mapping strings to `CsClassData` or lists of `CsClassData`.
+- **Description**: Manages a collection of C# class data, allowing for the organization and retrieval of class-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassCollection.from_llm`](<#csclasscollectionfrom_llm>)
 - **Inherits From**:
@@ -774,14 +771,13 @@ Creates a default instance of the class with empty or default values for its att
 #### CsClassCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L554>)
 
-Creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` representing the language model to use.
     - `symbols_list`: A `RawSymbolCollection` containing the symbols to process.
 - **Logic and Control Flow**:
-    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method of the class with `CsClassData`, `llm`, and `symbols_list` as arguments.
-    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method on the class, passing `CsClassData`, `llm`, and `symbols_list` as arguments.
 - **Output**: An instance of the class (`Self`) created using the provided language model and symbols.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
@@ -798,7 +794,7 @@ Creates an instance of the class using data from a language model and a collecti
     - `_partial_implementations`: Holds a list of partial implementations for the interface data.
     - `description`: Contains a description of the interface data.
     - `_supported_child_ordering`: Defines the order of supported child elements, such as fields and methods.
-- **Description**: Represents data related to C# interfaces, including modifiers, partial implementations, and a description. It provides methods to apply bespoke data and generate prompts for system and user interactions. The class also defines the order of child elements it supports, specifically fields and methods.
+- **Description**: Represents interface data in a C# context, inheriting from `IrData`. It manages modifiers, partial implementations, and descriptions related to C# interfaces. The class also defines the order of child elements it supports, specifically fields and methods. It provides methods to apply bespoke data and generate prompts for system and user interactions.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceData._apply_bespoke_data`](<#csinterfacedata_apply_bespoke_data>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceData.system_prompt`](<#csinterfacedatasystem_prompt>)
@@ -824,7 +820,7 @@ Populates `_partial_implementations` and `_modifiers` attributes with data from 
     - Iterate over `self._reified_symbol.raw.bespoke_data.modifiers` and append each modifier to `modifiers`.
     - Assign `partial_implementations` to `self._partial_implementations.content`.
     - Assign `modifiers` to `self._modifiers.content`.
-- **Output**: No output is returned; the method modifies the instance's attributes in place.
+- **Output**: No return value; modifies the `_partial_implementations` and `_modifiers` attributes of the instance.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<../symbol_table/utils.py.md#get_fully_qualified_name>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -864,8 +860,8 @@ Generates a user prompt string based on the provided symbol data.
     - `symbol`: An instance of `RawSymbolData` containing the symbol's name, code, and optionally the full file code.
 - **Logic and Control Flow**:
     - Create an empty `Prompt` object and append a no-restatement style instruction for symbols.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt` with a string containing the user prompt and the symbol's name and code.
-    - Check if `symbol.file_code` is present; if so, append another [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt` with the symbol's name and interface code.
+    - Check if `symbol.file_code` is present; if so, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
     - Convert the `Prompt` into a string and return it.
 - **Output**: A string representing the user prompt.
 - **Functions Called**:
@@ -885,9 +881,9 @@ Maps a `RawSymbolData` object to a corresponding `IrData` type based on its `sym
 - **Inputs**:
     - `symbol`: A `RawSymbolData` object representing a symbol with a specific kind.
 - **Logic and Control Flow**:
-    - Define a mapping dictionary that associates `SymbolKind.VARIABLE` with `CsVariableData` and `SymbolKind.CALLABLE` with `None`.
-    - Use the `get` method on the mapping dictionary to retrieve the corresponding `IrData` type for the `symbol_kind` of the input `symbol`.
-- **Output**: Returns a type of `IrData` corresponding to the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
+    - Defines a mapping dictionary that associates `SymbolKind.VARIABLE` with `CsVariableData` and `SymbolKind.CALLABLE` with `None`.
+    - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding value from the mapping dictionary.
+- **Output**: Returns a type of `IrData` or `None` based on the `symbol_kind` of the input `symbol`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceData`](<#csinterfacedata>)  (Base Class)
 
 
@@ -898,11 +894,11 @@ Maps a `RawSymbolData` object to a corresponding `IrData` type based on its `sym
 Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` needs mapping.
+    - `child`: A `RawSymbolData` object representing a child symbol with a `symbol_kind` attribute.
 - **Logic and Control Flow**:
-    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `ScopeRelation.METHOD` and `SymbolKind.VARIABLE` with `ScopeRelation.FIELD`.
-    - Uses the `get` method on the mapping dictionary to retrieve the corresponding `ScopeRelation` for the `child.symbol_kind`.
-- **Output**: Returns a string representing the `ScopeRelation` field name corresponding to the `child.symbol_kind`, or `None` if no match is found.
+    - Define a mapping dictionary that associates `SymbolKind.CALLABLE` with `ScopeRelation.METHOD` and `SymbolKind.VARIABLE` with `ScopeRelation.FIELD`.
+    - Use the `get` method on the mapping dictionary to retrieve the corresponding `ScopeRelation` for the `child.symbol_kind`.
+- **Output**: A string representing the `ScopeRelation` field name corresponding to the `child.symbol_kind`, or `None` if no match is found.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceData`](<#csinterfacedata>)  (Base Class)
 
 
@@ -910,13 +906,13 @@ Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` 
 #### CsInterfaceData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L635>)
 
-Creates a default instance of the class with empty `interfaces_inherited` and `description` attributes.
+Creates and returns a default instance of the class with empty `interfaces_inherited` and `description` attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
 - **Logic and Control Flow**:
     - Calls the class constructor `cls` with `interfaces_inherited` set to an empty [`ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>) and `description` set to an empty [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>).
-- **Output**: Returns an instance of the class with default attributes.
+- **Output**: A new instance of the class with default attributes.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
@@ -930,7 +926,7 @@ Creates a default instance of the class with empty `interfaces_inherited` and `d
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `CsInterfaceData` or lists of `CsInterfaceData`.
-- **Description**: Manages a collection of C# interface data, allowing for the storage and retrieval of interface-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols.
+- **Description**: Manages a collection of C# interface data, allowing for the storage and retrieval of interface-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceCollection.from_llm`](<#csinterfacecollectionfrom_llm>)
 - **Inherits From**:
@@ -942,7 +938,7 @@ Creates a default instance of the class with empty `interfaces_inherited` and `d
 #### CsInterfaceCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L646>)
 
-Creates an instance of the class using a language model and a collection of symbols.
+Creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` representing the language model to use.
@@ -950,7 +946,7 @@ Creates an instance of the class using a language model and a collection of symb
 - **Logic and Control Flow**:
     - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method of the class with `CsInterfaceData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class that is created using the provided language model and symbols.
+- **Output**: An instance of the class created using the provided language model and symbols.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceCollection`](<#csinterfacecollection>)  (Base Class)
@@ -963,7 +959,7 @@ Creates an instance of the class using a language model and a collection of symb
 
 - **Members**:
     - `data`: Stores a dictionary mapping class names to `RawSymbolData` objects.
-- **Description**: Collects and manages raw symbol data for C# classes extracted from static analysis. It filters and organizes symbols based on their kind and definition status, and constructs `RawSymbolData` objects for each class and its methods. The class supports conversion of the collected data into a dictionary format.
+- **Description**: Represents a collection of raw symbol data for C# classes, extracted through static analysis. It processes reified symbols to identify class definitions and their associated methods, organizing them into a dictionary. The class provides a method to convert this data into a dictionary format, but does not implement functionality for LLM-based extraction.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassRawSymbolCollection.from_static_analysis`](<#csclassrawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassRawSymbolCollection.from_llm`](<#csclassrawsymbolcollectionfrom_llm>)
@@ -980,18 +976,18 @@ Creates an instance of the class using a language model and a collection of symb
 Creates a `CsClassRawSymbolCollection` instance from static analysis of C# code, or returns `None` if no class symbols are found.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the C# code to analyze.
-    - `root_rel_path`: A `Path` object representing the root relative path of the code file.
+    - `code`: A string containing the C# source code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the code.
 - **Logic and Control Flow**:
-    - Filter `reified_symbols` to get class symbols that are definitions.
-    - Initialize `class_raw_symbol_data` as an empty dictionary.
-    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
-    - Count occurrences of global method names in `reified_symbols` to handle overloaded methods.
-    - For each class symbol, check if it is not already in `class_raw_symbol_data` and create a `RawSymbolData` instance for it.
-    - For each child of a class symbol, if it is a callable and in the same file, append its `RawSymbolData` to the class's children, marking it as overloaded if necessary.
-    - Return `None` if `class_raw_symbol_data` is empty, otherwise return a new `CsClassRawSymbolCollection` instance with the data.
-- **Output**: A `CsClassRawSymbolCollection` instance containing the class symbols and their associated data, or `None` if no class symbols are found.
+    - Filters `reified_symbols` to find class symbols that are definitions and stores them in `class_symbols`.
+    - Determines if the file is large by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code`.
+    - Initializes `global_method_counts` to track the number of times each method name appears in `fn_symbols`.
+    - Iterates over `fn_symbols` to populate `global_method_counts` with method names and their counts.
+    - Iterates over `class_symbols` to create `RawSymbolData` for each class symbol and stores it in `class_raw_symbol_data`.
+    - For each class symbol, iterates over its children to add method symbols to the corresponding `RawSymbolData` if they are defined in the same file.
+    - Returns `None` if `class_raw_symbol_data` is empty; otherwise, returns a new `CsClassRawSymbolCollection` instance with the collected data.
+- **Output**: Returns a `CsClassRawSymbolCollection` instance containing the class symbols and their methods, or `None` if no class symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
@@ -1010,7 +1006,7 @@ Raises a NotImplementedError indicating that static analysis should be used for 
     - `root_rel_path`: A string representing the root relative path of the code file.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with the message 'Static analysis should be used for C# classes'.
-- **Output**: This method does not return any value as it raises an exception.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassRawSymbolCollection`](<#csclassrawsymbolcollection>)  (Base Class)
 
 
@@ -1018,7 +1014,7 @@ Raises a NotImplementedError indicating that static analysis should be used for 
 #### CsClassRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsClassRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L734>)
 
-Returns the `data` attribute of the instance.
+Returns the `data` attribute of the instance as a dictionary.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
@@ -1034,7 +1030,7 @@ Returns the `data` attribute of the instance.
 
 - **Members**:
     - `data`: Stores a dictionary mapping string keys to `RawSymbolData` objects.
-- **Description**: Manages a collection of raw symbol data for C# data structures, specifically structs, by analyzing static code. It filters and processes symbols related to data structures and their methods, organizing them into a dictionary for further use. The class provides a method to create an instance from static analysis, but not from a language model, indicating its focus on static code analysis.
+- **Description**: Represents a collection of raw symbol data for C# structs, derived from `RawSymbolCollection`. It provides methods to create instances from static analysis, specifically targeting data structures in C# code. The class processes reified symbols to extract and organize raw symbol data, including handling method overloads and partial class definitions.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructRawSymbolCollection.from_static_analysis`](<#csstructrawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructRawSymbolCollection.from_llm`](<#csstructrawsymbolcollectionfrom_llm>)
@@ -1048,22 +1044,22 @@ Returns the `data` attribute of the instance.
 #### CsStructRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L741>)
 
-Creates a `CsStructRawSymbolCollection` instance from static analysis of code, focusing on data structure symbols.
+Creates a `CsStructRawSymbolCollection` from static analysis of code, focusing on data structure symbols and their methods.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the source code to analyze.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
+    - `root_rel_path`: A `Path` object indicating the root relative path of the source code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the code.
 - **Logic and Control Flow**:
     - Filter `reified_symbols` to get data structure symbols that are definitions.
     - Initialize an empty dictionary `ds_raw_symbol_data` to store raw symbol data for data structures.
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
     - Filter `reified_symbols` to get callable symbols that are definitions and count their occurrences in `global_method_counts`.
-    - Iterate over each data structure symbol and check if it is not already in `ds_raw_symbol_data`.
-    - For each data structure symbol, create a `RawSymbolData` instance using `RawSymbolData.from_tree_sitter_raw_symbol` and add it to `ds_raw_symbol_data`.
-    - For each child of a data structure symbol, check if it is a callable in the same file and append its `RawSymbolData` to the parent symbol's children list.
-    - Return `None` if `ds_raw_symbol_data` is empty; otherwise, return a new `CsStructRawSymbolCollection` instance with the collected data.
-- **Output**: A `CsStructRawSymbolCollection` instance if data structure symbols are found; otherwise, `None`.
+    - Iterate over each data structure symbol in `ds_symbols`.
+    - For each data structure symbol, check if it is not already in `ds_raw_symbol_data` and create a `RawSymbolData` object for it.
+    - For each child of the data structure symbol, if it is a callable and in the same file, append its `RawSymbolData` to the parent data structure's children, considering method overloading.
+    - Return `None` if `ds_raw_symbol_data` is empty; otherwise, return a new instance of `CsStructRawSymbolCollection` with the collected data.
+- **Output**: A `CsStructRawSymbolCollection` instance containing the raw symbol data for data structures, or `None` if no data structures are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
@@ -1082,7 +1078,7 @@ Raises a NotImplementedError indicating that static analysis should be used for 
     - `root_rel_path`: A string representing the root relative path of the code file.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with the message 'Static analysis should be used for C# classes'.
-- **Output**: Does not return any value as it raises an exception.
+- **Output**: Does not return a value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructRawSymbolCollection`](<#csstructrawsymbolcollection>)  (Base Class)
 
 
@@ -1090,12 +1086,12 @@ Raises a NotImplementedError indicating that static analysis should be used for 
 #### CsStructRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L818>)
 
-Returns the `data` attribute of the instance.
+Returns the `data` attribute of the instance as a dictionary.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
     - Returns the `data` attribute.
-- **Output**: A dictionary with keys of type `str` and values of type `RawSymbolData`.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsStructRawSymbolCollection`](<#csstructrawsymbolcollection>)  (Base Class)
 
 
@@ -1106,7 +1102,7 @@ Returns the `data` attribute of the instance.
 
 - **Members**:
     - `data`: Stores a dictionary mapping string keys to `RawSymbolData` objects.
-- **Description**: Represents a collection of raw symbol data specifically for C# interfaces, inheriting from `RawSymbolCollection`. It provides a method to create an instance from static analysis of code, filtering and organizing symbols related to interfaces. The class also includes functionality to handle large files and manage method counts for overloaded methods.
+- **Description**: Represents a collection of raw symbol data specifically for C# interfaces, inheriting from `RawSymbolCollection`. It provides a method `from_static_analysis` to populate the collection based on static analysis of code, focusing on interface symbols and their associated data. The class also includes logic to handle large files and overloaded methods.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceRawSymbolCollection.from_static_analysis`](<#csinterfacerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceRawSymbolCollection.from_llm`](<#csinterfacerawsymbolcollectionfrom_llm>)
@@ -1127,14 +1123,15 @@ Creates an instance of `CsInterfaceRawSymbolCollection` from static analysis dat
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the source code.
 - **Logic and Control Flow**:
-    - Filter `reified_symbols` to get interface symbols that are definitions.
-    - Initialize `interface_raw_symbol_data` as an empty dictionary.
-    - Determine if the file is large using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) function.
-    - Count occurrences of method names in `reified_symbols` to handle overloaded methods.
-    - Iterate over each interface symbol and create `RawSymbolData` if not already present in `interface_raw_symbol_data`.
-    - For each child of an interface symbol, check if it is a callable in the same file and append its `RawSymbolData` to the parent interface's children.
-    - Return `None` if `interface_raw_symbol_data` is empty, otherwise return an instance of `CsInterfaceRawSymbolCollection` with the collected data.
-- **Output**: Returns an instance of `CsInterfaceRawSymbolCollection` containing the interface symbols' raw data or `None` if no interface symbols are found.
+    - Filter `reified_symbols` to get interface symbols that are definitions and store them in `interface_symbols`.
+    - Initialize an empty dictionary `interface_raw_symbol_data` to store raw symbol data for interfaces.
+    - Determine if the file is large by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code`.
+    - Filter `reified_symbols` to get callable symbols that are definitions and store them in `fn_symbols`.
+    - Count occurrences of each function name in `fn_symbols` and store the counts in `global_method_counts`.
+    - Iterate over `interface_symbols` to populate `interface_raw_symbol_data` with `RawSymbolData` for each interface symbol.
+    - For each child of an interface symbol, if it is a callable and in the same file, append its `RawSymbolData` to the corresponding interface's children in `interface_raw_symbol_data`.
+    - Return `None` if `interface_raw_symbol_data` is empty; otherwise, return an instance of `CsInterfaceRawSymbolCollection` with the collected data.
+- **Output**: Returns an instance of `CsInterfaceRawSymbolCollection` containing raw symbol data for interfaces, or `None` if no interface symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
@@ -1161,12 +1158,12 @@ Raises a NotImplementedError indicating that static analysis should be used for 
 #### CsInterfaceRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c_sharp.py#L908>)
 
-Returns the `data` attribute of the instance as a dictionary.
+Returns the `data` attribute of the `CsInterfaceRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
     - Returns the `data` attribute.
-- **Output**: A dictionary with keys of type `str` and values of type `RawSymbolData`.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c_sharp.CsInterfaceRawSymbolCollection`](<#csinterfacerawsymbolcollection>)  (Base Class)
 
 

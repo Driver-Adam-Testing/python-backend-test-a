@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for assembling small source code with prompts and collections for assembly components.
+Defines a template for small assembly source code with prompts for purpose, imports, variables, data structures, subroutines, and macros.
 
 # Purpose
-The code defines a template for processing and documenting assembly source code. It imports several collections and utilities from the `utils.lang_specialization.assembly` and `utils.lang_specialization.default` modules, which are used to handle different components of assembly code, such as variables, data structures, subroutines, and macros. The `SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY` list contains tuples that specify how to document various aspects of the assembly code, including its purpose, imports, global variables, data structures, subroutines, and macros. Each tuple includes a type of processing step, a section header, and functions or prompts to transform or check the code. This setup facilitates the structured analysis and documentation of assembly code components.
+The code defines a template for processing and documenting assembly source code. It imports several components from the `utils.lang_specialization.assembly` module, which include collections for assembly data structures, macros, subroutines, and variables, both in raw and processed forms. The template, `SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY`, is a list of tuples that specify different sections of documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", "Subroutines", and "Macros". Each section uses specific functions or collections to process and format the relevant information. This code provides a structured approach to generate documentation for small assembly source code files, ensuring that all relevant components are systematically addressed.
 # Imports and Dependencies
 
 ---
@@ -29,8 +29,8 @@ The code defines a template for processing and documenting assembly source code.
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_ASSEMBLY
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains elements that define a specific section of an assembly code template. Each tuple includes a prompt type, a section header, a function or method to process the section, and additional parameters or placeholders for further processing.
-- **Use**: Used to define and organize different sections of an assembly code template for processing and generation.
+- **Description**: A list of tuples, where each tuple contains elements that define a specific section of an assembly code template. Each tuple includes a prompt type, a section header, and functions or methods related to that section.
+- **Use**: Used to define the structure and components of an assembly code template for processing and generation.
 
 
 

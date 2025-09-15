@@ -6,7 +6,7 @@
 Defines `DriverResponse` and `DriverModalResponse` classes using Pydantic for data validation.
 
 # Purpose
-The code defines a data model using the Pydantic library, which is used for data validation and settings management in Python. It includes a base class `DriverResponse` that inherits from `BaseModel`, serving as a foundation for other response models. The `DriverModalResponse` class extends `DriverResponse` and introduces an attribute `call_id` of type `str`. This structure provides a narrow functionality focused on modeling and validating data related to driver responses, specifically including a call identifier.
+The code defines two classes using the Pydantic library, which is used for data validation and settings management in Python. The `DriverResponse` class is a subclass of `BaseModel` and serves as a base class for other response models. The `DriverModalResponse` class inherits from `DriverResponse` and introduces an additional attribute, `call_id`, which is a string. This structure suggests that the code is part of a system that models responses, likely in a context where a `call_id` is a relevant piece of data.
 # Imports and Dependencies
 
 ---
@@ -19,7 +19,7 @@ The code defines a data model using the Pydantic library, which is used for data
 ### DriverResponse<!-- {{#class:python-backend/packages/shared/shared/interfaces/response.DriverResponse}} -->
 [View Source →](<../../../../../../packages/shared/shared/interfaces/response.py#L4>)
 
-- **Description**: Inherits from `BaseModel` and serves as a base class for driver-related responses.
+- **Description**: Inherits from `BaseModel` and serves as a base class for driver response models.
 - **Inherits From**:
     - `BaseModel`
 
@@ -29,8 +29,8 @@ The code defines a data model using the Pydantic library, which is used for data
 [View Source →](<../../../../../../packages/shared/shared/interfaces/response.py#L8>)
 
 - **Members**:
-    - `call_id`: Stores the call identifier as a string.
-- **Description**: Inherits from `DriverResponse` and adds a `call_id` attribute to store the call identifier.
+    - `call_id`: A string that identifies the call.
+- **Description**: Inherits from `DriverResponse` and includes a `call_id` to identify a call.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](<#driverresponse>)
 

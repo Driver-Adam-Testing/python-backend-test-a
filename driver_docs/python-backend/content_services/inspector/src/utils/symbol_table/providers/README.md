@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Language providers for C, C++, CSharp, Java, JavaScript, TypeScript, and Python with parsers and resolvers.
+Language providers for C, C++, CSharp, Java, JavaScript, TypeScript, and Python with parser and resolver functionalities.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Language providers for different programming languages.
 - **[c_cpp_provider.py](c_cpp_provider.py.md)**: Language provider for C and C++ with parser and resolver functionalities.
-- **[csharp_provider.py](csharp_provider.py.md)**: CSharp language provider with methods to get a parser and resolver.
+- **[csharp_provider.py](csharp_provider.py.md)**: CSharp language provider with methods to get a parser and resolver for CSharp symbols.
 - **[java_provider.py](java_provider.py.md)**: Java language provider with methods to get JavaParser and JavaResolver instances.
 - **[js_ts_provider.py](js_ts_provider.py.md)**: Provides a language provider for JavaScript and TypeScript with parser and resolver functionalities.
 - **[python_provider.py](python_provider.py.md)**: A Python language provider that returns a parser and resolver for Python symbols.

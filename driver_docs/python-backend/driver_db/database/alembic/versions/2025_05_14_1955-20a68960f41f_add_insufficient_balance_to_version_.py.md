@@ -6,7 +6,7 @@
 Adds 'INSUFFICIENT_BALANCE' to the version status enum in the database schema.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration that adds a new value, `INSUFFICIENT_BALANCE`, to the `versionstatus` enum type in the database. The script includes an [`upgrade`](<#upgrade>) function that executes the SQL command to alter the enum type, while the [`downgrade`](<#downgrade>) function is currently a placeholder with no operations defined. The script uses revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `20a68960f41f`, which follows the previous revision `61e839b3f9cd`. The [`upgrade`](<#upgrade>) function alters the `versionstatus` enum type in the database by adding a new value, `INSUFFICIENT_BALANCE`. The [`downgrade`](<#downgrade>) function is currently a placeholder and does not perform any operations, indicating that the migration is not reversible through this script.
 # Imports and Dependencies
 
 ---
@@ -18,15 +18,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema.
+- **Use**: Used to identify the current migration version in Alembic operations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: Indicates the parent revision in the migration sequence for Alembic.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring a sequential order of migrations.
+- **Use**: Used by Alembic to track the order of database schema migrations.
 
 
 ---
@@ -38,9 +38,9 @@ This code is a database migration script using Alembic, a database migration too
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
+- **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migrations.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -53,19 +53,18 @@ Adds a new value 'INSUFFICIENT_BALANCE' to the 'versionstatus' enum type in the 
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Executes a SQL command to alter the 'versionstatus' enum type by adding a new value 'INSUFFICIENT_BALANCE'.
-- **Output**: No output is returned as the function is defined to return None.
+- **Output**: No output is returned as the function returns None.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_05_14_1955-20a68960f41f_add_insufficient_balance_to_version_.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_05_14_1955-20a68960f41f_add_insufficient_balance_to_version_.py#L24>)
 
-Does not perform any operations and serves as a placeholder for downgrading the database schema.
+Defines a placeholder for downgrading the database schema using Alembic.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Contains a `pass` statement, indicating no operations are performed.
-    - Serves as a placeholder for potential future downgrade logic.
-- **Output**: No output is produced as the function does not perform any operations.
+    - Contains a placeholder `pass` statement indicating no operations are defined for downgrading.
+- **Output**: No output is produced as the function contains only a `pass` statement.
 
 
 

@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS Lambda function for S3 event processing, tests, dependency management, and configuration files.
+AWS Lambda function for S3 event processing, tests, and Poetry configuration for dependencies.
 
 ## Folders
 - **[src](src/README.md)**: AWS Lambda function for S3 event processing and utilities for AWS S3 and environment configuration.
-- **[tests](tests/README.md)**: Tests for the onboarding event handler using a mock SNS event and pytest.
+- **[tests](tests/README.md)**: Tests for the onboarding event handler with a mock SNS event and an empty initialization file.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Locks specific dependency versions for a Python project to ensure consistent environments.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for the onboarding-event-handler project using Poetry, specifying dependencies and test settings.
+- **[poetry.lock](poetry.lock.md)**: Specifies exact dependency versions and metadata for consistent Python project environments using Poetry.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the onboarding-event-handler project using Poetry, specifying dependencies and build settings.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).
 
 ---

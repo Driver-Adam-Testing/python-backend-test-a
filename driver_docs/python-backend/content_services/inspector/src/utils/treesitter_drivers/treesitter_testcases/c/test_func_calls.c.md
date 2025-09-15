@@ -6,7 +6,7 @@
 Tests for function calls as arguments and conditional function calls in C.
 
 # Purpose
-This code is a simple C source file that contains two functions for testing purposes. The [`test_function_calls_as_args`](<#test_function_calls_as_args>) function demonstrates the use of function calls as arguments within other functions, specifically using `strlen` and `sizeof` as arguments to the `max` function, and `strlen` within a `printf` statement. The [`test_conditional_calls`](<#test_conditional_calls>) function, which is conditionally compiled with the `#ifdef hi` directive, tests conditional logic by calling `is_valid` to check a condition and then either `process` or `handle_error` based on the result. This file is useful for illustrating function call usage and conditional compilation in C.
+This code is a C source file that contains two functions for testing purposes. The [`test_function_calls_as_args`](<#test_function_calls_as_args>) function demonstrates the use of function calls as arguments by calculating the maximum of the length of the string "test" and the size of an integer, and then printing the length of the string "example". The [`test_conditional_calls`](<#test_conditional_calls>) function, which is conditionally compiled if the `hi` macro is defined, checks if the string "test" is valid using the `is_valid` function. If valid, it processes the string with the `process` function; otherwise, it handles an error with the `handle_error` function. This file is useful for testing and demonstrating function calls and conditional compilation in C.
 # Functions
 
 ---
@@ -16,11 +16,8 @@ This code is a simple C source file that contains two functions for testing purp
 Calls functions as arguments to other functions and prints a formatted string.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `strlen` function with the string "test" to get its length.
-    - Calls the `sizeof` operator to get the size of an `int`.
-    - Calls the `max` function with the results of `strlen("test")` and `sizeof(int)` as arguments and assigns the result to `x`.
-    - Calls the `strlen` function with the string "example" to get its length.
-    - Calls the `printf` function to print the string "example" and its length.
+    - Declare an integer `x` and assign it the result of the `max` function, which takes the length of the string "test" and the size of an integer as arguments.
+    - Call `printf` to print the string "example" and its length using `strlen`.
 - **Output**: No return value; outputs a formatted string to the standard output.
 
 
@@ -28,13 +25,13 @@ Calls functions as arguments to other functions and prints a formatted string.
 ### test\_conditional\_calls<!-- {{#callable:test_conditional_calls}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_func_calls.c#L6>)
 
-Executes a process if a condition is valid, otherwise handles an error.
+Executes `process` if `is_valid` returns true for "test", otherwise calls `handle_error` with "invalid".
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Checks if the condition `is_valid("test")` is true.
-    - If true, calls the `process("test")` function.
-    - If false, calls the `handle_error("invalid")` function.
-- **Output**: No output is returned as the function has a void return type.
+    - Check if `is_valid` returns true for the string "test".
+    - If true, call the `process` function with the argument "test".
+    - If false, call the `handle_error` function with the argument "invalid".
+- **Output**: No return value.
 
 
 

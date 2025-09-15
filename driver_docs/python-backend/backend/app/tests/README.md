@@ -6,7 +6,7 @@
 Tests for CRUD operations in BaseRepository and utility to fetch Auth0 access token.
 
 ## Folders
-- **[repositories](repositories/README.md)**: Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock.
+- **[repositories](repositories/README.md)**: Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock session.
 - **[utils](utils/README.md)**: Fetches an Auth0 access token using client credentials.
 
 ## Files

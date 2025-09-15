@@ -6,9 +6,9 @@
 Templates for generating structured prompts and analyzing C source code components.
 
 # Purpose
-The code defines a structured template for generating prompts related to C source code analysis. It imports several components and utilities from different modules, which are used to create a multi-prompt template named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C`. This template is designed to facilitate the analysis and documentation of C source code by organizing information into specific categories such as imports and dependencies, global variables, data structures, functions, and function declarations. Each category is associated with a specific function or collection that processes the relevant data, often using static analysis or language model (LLM) outputs.
+The code defines a structured template for generating prompts related to C source code analysis. It imports several components and utilities from different modules, which are used to construct a multi-prompt template. This template is designed to analyze and document various aspects of C source code, such as imports, global variables, data structures, functions, and function declarations. The template uses a combination of static analysis and language model (LLM) outputs to gather and organize information about the C code.
 
-The template is structured to support the generation of documentation or analysis reports by providing a systematic approach to extract and organize information from C source code. It uses components like `Prompt` and `Component` to build strings that represent different sections of the documentation. The template also includes instructions for adhering to specific style guidelines, such as using Simplified Technical English and enclosing code references in backticks. This structured approach ensures that the generated documentation is consistent and follows predefined standards.
+The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C` is a list of tuples, each representing a specific aspect of the C code to be documented. Each tuple contains a section identifier, a description, and a series of components or functions that process the C code to extract relevant information. The template aims to provide a comprehensive overview of the C code's structure and functionality, including its public API, by leveraging both static analysis and LLM capabilities. This setup is intended for use in environments where detailed documentation of C source code is required, facilitating a structured approach to code analysis and documentation.
 # Imports and Dependencies
 
 ---
@@ -37,9 +37,9 @@ The template is structured to support the generation of documentation or analysi
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_C
-- **Type**: `list`
-- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of `Prompt` objects or functions related to code analysis and documentation. Each tuple represents a different aspect of code documentation, such as purpose, imports, global variables, data structures, functions, and function declarations.
-- **Use**: Used to define a structured template for generating documentation prompts for C source code.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of `Prompt` objects or functions related to code analysis and documentation. Each tuple represents a different aspect of code documentation, such as purpose, imports, global variables, data structures, functions, and public API declarations.
+- **Use**: Used to define a structured template for generating multi-prompt documentation for C source code.
 
 
 

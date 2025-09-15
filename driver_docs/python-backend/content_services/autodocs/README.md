@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files, utilities for OpenAI chat models, scripts for automated documentation, and Poetry dependency management.
+Configuration files, utilities for OpenAI chat, scripts for automated documentation, and Poetry configuration.
 
 ## Folders
-- **[src](src/README.md)**: Configuration files, utilities for OpenAI chat models, and scripts for automated documentation generation.
+- **[src](src/README.md)**: Configuration files, utilities for OpenAI chat, and scripts for generating and managing automated documentation.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Locks specific dependency versions for consistent Python project environments using Poetry.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry package manager, specifying project metadata and dependencies.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry package manager specifying dependencies and build settings for the autodocs project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

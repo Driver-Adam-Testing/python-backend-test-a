@@ -6,15 +6,15 @@
 API endpoints for creating and deleting primary asset tags with authorization checks.
 
 # Purpose
-The code defines two API endpoints using the FastAPI framework. These endpoints manage `PrimaryAssetTag` resources in a database. The first endpoint, [`delete_primary_asset_tag`](<#delete_primary_asset_tag>), is a DELETE operation that removes a `PrimaryAssetTag` based on the provided `primary_asset_id` and `tag_id`. It checks if the `PrimaryAssetTag` exists and if the user is authorized to delete it by verifying the `organization_id`. If the tag is not found or the user is not authorized, it raises an HTTP 404 exception. Upon successful deletion, it returns a 204 No Content response.
+The code defines two API endpoints for managing `PrimaryAssetTag` resources using the FastAPI framework. It is part of a web application that interacts with a database to perform operations related to primary asset tags. The endpoints are integrated into a router, which is part of the application's version 2 API routes.
 
-The second endpoint, [`create_primary_asset_tag`](<#create_primary_asset_tag>), is a POST operation that creates a new `PrimaryAssetTag`. It accepts a payload containing the `tag_id` and `primary_asset_id` and adds the new tag to the database. After committing the transaction, it returns the newly created `PrimaryAssetTag`. Both endpoints use a `CurrentSession` for database operations and a `UserToken` for user authentication, ensuring that actions are performed within the context of the user's organization.
+The first endpoint, [`delete_primary_asset_tag`](<#delete_primary_asset_tag>), is a DELETE operation that removes a `PrimaryAssetTag` from the database. It requires a `session` for database interaction, a `user` token for authorization, and the `tag_id` and `primary_asset_id` as path parameters. It checks if the `PrimaryAssetTag` exists and if the user is authorized to delete it. If not found or unauthorized, it raises a 404 HTTP exception. The second endpoint, [`create_primary_asset_tag`](<#create_primary_asset_tag>), is a POST operation that creates a new `PrimaryAssetTag`. It requires a `session`, a `user` token, and a `payload` containing the tag details. The new tag is added to the database, and the endpoint returns the created `PrimaryAssetTag`. Both endpoints ensure that operations are committed to the database and handle user authorization based on the organization ID.
 # Imports and Dependencies
 
 ---
 - `uuid.UUID`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.PrimaryAssetTag`
+- `database.models.PrimaryAsset`
+- `database.models.PrimaryAssetTag`
 - `fastapi.Body`
 - `fastapi.HTTPException`
 - `fastapi.Path`
@@ -40,8 +40,8 @@ Deletes a primary asset tag if it exists and the user is authorized.
     - `tag_id`: The UUID of the tag to delete, provided as a path parameter.
     - `primary_asset_id`: The UUID of the primary asset associated with the tag, provided as a path parameter.
 - **Logic and Control Flow**:
-    - Selects a `PrimaryAssetTag` by joining with `PrimaryAsset` and filtering by `tag_id`, `primary_asset_id`, and the user's organization ID.
-    - Checks if the `primary_asset_tag` exists; if not, raises an `HTTPException` with a 404 status code.
+    - Selects the `PrimaryAssetTag` from the database by joining with `PrimaryAsset` and filtering by `tag_id`, `primary_asset_id`, and the user's organization ID.
+    - Checks if the `primary_asset_tag` exists; if not, raises an `HTTPException` with a 404 status code indicating the tag is not found or the user is not authorized.
     - Deletes the `primary_asset_tag` from the session if it exists.
     - Commits the transaction to the database.
     - Returns a `Response` with a 204 status code indicating successful deletion.
@@ -59,14 +59,14 @@ Creates a new primary asset tag and saves it to the database.
     - `user`: The user token containing authentication and authorization information.
     - `payload`: The data required to create a new primary asset tag, provided in the request body.
 - **Logic and Control Flow**:
-    - Create a new [`PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>) object using the `tag_id` and `primary_asset_id` from the `payload`.
-    - Add the new [`PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>) object to the database session.
+    - Create a new [`PrimaryAssetTag`](<../../../../../driver_db/database/models.py.md#primaryassettag>) object using the `tag_id` and `primary_asset_id` from the `payload`.
+    - Add the new [`PrimaryAssetTag`](<../../../../../driver_db/database/models.py.md#primaryassettag>) object to the database session.
     - Commit the transaction to save the new primary asset tag to the database.
     - Refresh the `new_primary_asset_tag` object to reflect the current state in the database.
     - Return the `new_primary_asset_tag` object.
-- **Output**: A [`PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>) object representing the newly created primary asset tag.
+- **Output**: A [`PrimaryAssetTag`](<../../../../../driver_db/database/models.py.md#primaryassettag>) object representing the newly created primary asset tag.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>)
+    - [`python-backend/driver_db/database/models.PrimaryAssetTag`](<../../../../../driver_db/database/models.py.md#primaryassettag>)
 
 
 

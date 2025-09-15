@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a multi-context template for metadata prompts with instructions and components for purpose and content summary.
+Defines templates for metadata prompts with instructions for purpose and content summary.
 
 # Purpose
-The code defines a template for generating metadata in a structured prompting system. It imports several components and prompts from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.metadata`. These components and prompts are used to construct a multi-context template, `METADATA_MULTI_CONTEXT_TEMPLATE`, which is a list of tuples. Each tuple contains a series of instructions and components that are combined to form structured prompts for different sections, such as "Purpose" and "Content Summary".
-
-The template is designed to facilitate the creation of metadata by using predefined instructions and components. It uses the `Prompt` and `Component` classes to build and format the prompts. The template includes style instructions, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`, to ensure that the generated metadata adheres to specific formatting guidelines. This code is likely intended to be part of a larger system that automates the generation of structured metadata for various contexts.
+The code defines a configuration for metadata templates used in structured prompting. It imports several components and instructions from different modules, which are used to construct prompts for metadata purposes. The `METADATA_MULTI_CONTEXT_TEMPLATE` is a list of tuples, each containing a structured format for generating prompts related to the purpose and content summary of metadata. Each tuple includes a prompt type, a section header, and a series of `Prompt` objects that are built using `Component` instances and specific style instructions. This setup is used to create consistent and standardized metadata prompts across different contexts.
 # Imports and Dependencies
 
 ---
@@ -30,8 +28,8 @@ The template is designed to facilitate the creation of metadata by using predefi
 ---
 ### METADATA\_MULTI\_CONTEXT\_TEMPLATE
 - **Type**: ``list``
-- **Description**: Contains tuples that define structured prompts for metadata contexts. Each tuple includes a prompt type, a section header, and several prompt strings that are constructed using components and instructions.
-- **Use**: Used to store and organize structured prompts for different metadata contexts, such as purpose and content summary.
+- **Description**: Contains tuples that define structured prompts for metadata processing. Each tuple includes a prompt type, a section header, and several prompt components that are combined into strings using the `Prompt` class.
+- **Use**: Used to store and organize metadata prompts for different contexts, such as purpose and content summary.
 
 
 

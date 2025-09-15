@@ -6,9 +6,9 @@
 Test cases for various C# enum definitions, including usage examples and extension methods.
 
 # Purpose
-The code defines a collection of C# enumerations (`enum`) within the `Com.Example.Enums` namespace. These enumerations serve various purposes, such as representing colors, statuses, priorities, file access permissions, log levels, days of the week, HTTP status codes, and permissions. Each `enum` is designed to encapsulate a set of named constants, with some having explicit underlying values or types, such as `byte` or `long`. The `FileAccess` enumeration uses the `[Flags]` attribute to allow bitwise operations, enabling combinations of its values. Additionally, the `DayOfWeek` enumeration is extended with methods to determine if a day is a weekend or a weekday.
+The code defines a collection of C# enumerations (`enum`) within the `Com.Example.Enums` namespace. These enumerations serve various purposes, such as representing colors, statuses, priorities, file access permissions, log levels, days of the week, HTTP status codes, and permissions. Each `enum` is designed to encapsulate a set of named constants, which can be used to improve code readability and maintainability. Some enumerations, like `FileAccess`, use the `[Flags]` attribute to allow bitwise operations, while others, like `Priority`, specify an underlying type. The `Permission` enumeration uses a `long` type to accommodate larger values.
 
-The code also includes a class `EnumExamples` that demonstrates the usage of these enumerations. This class contains methods to parse `enum` values from strings, convert `enum` values to strings, iterate over `enum` values, and use `enum` values in switch statements. The `DayOfWeekExtensions` class provides extension methods for the `DayOfWeek` enumeration, enhancing its functionality. Furthermore, the `Operation` enumeration implements the `IComparable<Operation>` interface, allowing for comparison operations. Overall, the code provides a comprehensive set of examples and utilities for working with enumerations in C#.
+The code also includes a class `EnumExamples` that demonstrates the usage of these enumerations. It shows how to perform operations such as parsing strings to `enum` values, converting `enum` values to strings, and iterating over all values of an `enum`. Additionally, the code provides extension methods for the `DayOfWeek` enumeration to determine if a day is a weekend or a weekday. The `Operation` enumeration implements the `IComparable<Operation>` interface, demonstrating how an `enum` can implement interfaces. This file is intended to be a comprehensive example of how to define and use enumerations in C#.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ The code also includes a class `EnumExamples` that demonstrates the usage of the
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Provides examples of how to use enums in C#. Includes a nested enum `SecurityLevel` with multiple access modifiers, and demonstrates various operations with enums such as simple usage, flags, parsing, conversion to string, retrieving all values, and using enums in switch statements. The `UseEnums` method showcases these operations, while the `GetStatusMessage` method returns a message based on the `Status` enum value.
+- **Description**: Provides examples of how to use enums in C#. It includes a nested enum `SecurityLevel` with multiple access modifiers and demonstrates various operations with enums such as simple usage, flags, parsing, conversion to string, iteration over values, and switch statements. The class also contains a private method `GetStatusMessage` that returns a message based on the `Status` enum value.
 - **Methods**:
     - [`Com.Example.Enums.EnumExamples.UseEnums`](<#enumexamplesuseenums>)
     - [`Com.Example.Enums.EnumExamples.GetStatusMessage`](<#enumexamplesgetstatusmessage>)
@@ -34,7 +34,7 @@ The code also includes a class `EnumExamples` that demonstrates the usage of the
 #### EnumExamples\.UseEnums<!-- {{#callable:Com.Example.Enums.EnumExamples.UseEnums}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L120>)
 
-Demonstrates various operations with enums, including usage, parsing, conversion, iteration, and conditional logic.
+Demonstrates various operations with enums, including assignment, bitwise operations, parsing, conversion to string, iteration, and switch-case handling.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
@@ -60,9 +60,9 @@ Returns a status message string based on the provided `Status` enum value.
     - `status`: An enum value of type `Status` that represents the current status of a task.
 - **Control Flow**:
     - Uses a switch expression to match the `status` argument against predefined `Status` enum values.
-    - Returns a specific string message for each `Status` value: 'Pending', 'InProgress', 'Completed', 'Failed', and 'Cancelled'.
-    - Returns 'Unknown status' if the `status` does not match any predefined `Status` values.
-- **Output**: A string that describes the task status based on the `Status` enum value.
+    - Returns a specific string message for each `Status` value: 'Task is pending' for `Status.Pending`, 'Task is in progress' for `Status.InProgress`, 'Task is completed' for `Status.Completed`, 'Task has failed' for `Status.Failed`, and 'Task was cancelled' for `Status.Cancelled`.
+    - Returns 'Unknown status' if the `status` does not match any predefined `Status` enum values.
+- **Output**: A string message that describes the task status based on the `Status` enum value.
 - **See also**: [`Com.Example.Enums.EnumExamples`](<#enumexamples>)  (Base Class)
 
 
@@ -87,10 +87,10 @@ Returns a status message string based on the provided `Status` enum value.
 Determines if a given `DayOfWeek` value represents a weekend day.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `day`: A `DayOfWeek` enum value to check if it is a weekend day.
+    - `day`: A `DayOfWeek` enum value to check if it is a weekend.
 - **Control Flow**:
     - Check if `day` is equal to `DayOfWeek.Saturday` or `DayOfWeek.Sunday`.
-    - Return `true` if `day` is a weekend day, otherwise return `false`.
+    - Return `true` if `day` is a weekend, otherwise return `false`.
 - **Output**: A boolean value indicating whether the specified `DayOfWeek` is a weekend day (`true`) or not (`false`).
 - **See also**: [`Com.Example.Enums.DayOfWeekExtensions`](<#dayofweekextensions>)  (Base Class)
 
@@ -102,11 +102,11 @@ Determines if a given `DayOfWeek` value represents a weekend day.
 Determines if a given `DayOfWeek` value represents a weekday.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `day`: A `DayOfWeek` enum value representing a day of the week.
+    - `day`: A `DayOfWeek` enum value to check if it is a weekday.
 - **Control Flow**:
     - Calls the [`IsWeekend`](<#dayofweekextensionsisweekend>) extension method on the `day` parameter.
     - Returns the negation of the result from [`IsWeekend`](<#dayofweekextensionsisweekend>), indicating if the day is a weekday.
-- **Output**: A boolean value: `true` if the `day` is a weekday, `false` otherwise.
+- **Output**: A boolean value indicating whether the specified `DayOfWeek` is a weekday (true) or not (false).
 - **Methods Called**:
     - [`Com.Example.Enums.DayOfWeekExtensions.IsWeekend`](<#dayofweekextensionsisweekend>)
 - **See also**: [`Com.Example.Enums.DayOfWeekExtensions`](<#dayofweekextensions>)  (Base Class)
@@ -121,7 +121,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents a simple enumeration of colors with three possible values: `Red`, `Green`, and `Blue`. This enum is used to define a set of named constants for colors, which can be used in various parts of a program to represent color choices or settings.
+- **Description**: Defines a set of named constants representing basic colors: `Red`, `Green`, and `Blue`. These constants can be used to represent color values in a program.
 
 
 ---
@@ -130,7 +130,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents the status of a task or process with explicit integer values. The possible statuses are `Pending` (0), `InProgress` (1), `Completed` (2), `Failed` (3), and `Cancelled` (4).
+- **Description**: Represents the different states of a process or task, with explicit integer values assigned to each state. The possible states include `Pending` (0), `InProgress` (1), `Completed` (2), `Failed` (3), and `Cancelled` (4).
 
 
 ---
@@ -139,7 +139,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents different levels of priority with explicit byte values. The `Priority` enum defines four levels: `Low`, `Medium`, `High`, and `Critical`, each associated with a specific byte value ranging from 1 to 4. This enum is useful for categorizing tasks or items based on their importance or urgency.
+- **Description**: Represents different levels of priority with explicit byte values. The `Priority` enum defines four levels: `Low` (1), `Medium` (2), `High` (3), and `Critical` (4). This enum uses `byte` as its underlying type, which is suitable for scenarios where memory efficiency is important and the range of values is small.
 
 
 ---
@@ -148,7 +148,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents a set of file access permissions using the `Flags` attribute, allowing bitwise operations to combine multiple permissions. The `FileAccess` enum defines specific permissions such as `None`, `Read`, `Write`, `Execute`, `ReadWrite`, and `All`, where `ReadWrite` is a combination of `Read` and `Write`, and `All` includes `Read`, `Write`, and `Execute`.
+- **Description**: Defines a set of flags that specify the access permissions for a file. The `FileAccess` enum uses the `[Flags]` attribute, which allows bitwise operations on its values. It includes options for `None`, `Read`, `Write`, `Execute`, `ReadWrite` (a combination of `Read` and `Write`), and `All` (a combination of `Read`, `Write`, and `Execute`).
 
 
 ---
@@ -157,7 +157,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents different levels of logging severity, ranging from `Trace` for detailed information to `Critical` for severe error events.
+- **Description**: Defines different levels of logging severity, ranging from `Trace` for detailed information to `Critical` for severe error events that might cause the application to terminate.
 
 
 ---
@@ -166,7 +166,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents the days of the week, with each day assigned an explicit integer value starting from 1 for Monday to 7 for Sunday. This enum is used to categorize and identify days in a week.
+- **Description**: Represents the days of the week, with each day assigned an explicit integer value starting from 1 for Monday to 7 for Sunday. This enum is useful for operations that require a numerical representation of weekdays, such as scheduling or date calculations.
 
 
 ---
@@ -175,7 +175,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents HTTP status codes as defined in the HTTP/1.1 standard. Each member of the `HttpStatusCode` enum corresponds to a specific HTTP status code, categorized into information responses (e.g., `Continue`), success responses (e.g., `OK`), client error responses (e.g., `BadRequest`), and server error responses (e.g., `InternalServerError`). These codes are used to indicate the result of an HTTP request.
+- **Description**: Represents HTTP status codes as defined in the HTTP/1.1 standard. Each member of the enum corresponds to a specific HTTP status code, categorized into information responses (e.g., `Continue`), success responses (e.g., `OK`), client error responses (e.g., `BadRequest`), and server error responses (e.g., `InternalServerError`). These codes are used to indicate the result of an HTTP request.
 
 
 ---
@@ -184,7 +184,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Represents a set of permissions using a `long` underlying type, where each permission is assigned a unique bit value. This allows for bitwise operations to combine multiple permissions. The `Permission` enum includes values such as `None`, `ReadData`, `WriteData`, `ExecuteFile`, `Delete`, `ReadPermissions`, `ChangePermissions`, `TakeOwnership`, and `FullControl`, which is a combination of all other permissions.
+- **Description**: Defines a set of permissions using a `long` as the underlying type. Each permission is represented by a distinct bit value, allowing for bitwise operations to combine multiple permissions. The `FullControl` permission is a combination of all other permissions, providing complete access.
 
 
 ---
@@ -202,7 +202,7 @@ Determines if a given `DayOfWeek` value represents a weekday.
 
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: Defines a set of arithmetic operations with explicit integer values, implementing the `IComparable<Operation>` interface to allow comparison between different operations.
+- **Description**: Defines a set of arithmetic operations with explicit integer values for each operation. Implements the `IComparable<Operation>` interface to allow comparison between different `Operation` values.
 - **Inherits From**:
     - `IComparable`
 

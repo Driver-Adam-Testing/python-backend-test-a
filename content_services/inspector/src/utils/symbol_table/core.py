@@ -1,5 +1,5 @@
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Self
@@ -20,7 +20,7 @@ from .utils import (
     is_definition,
 )
 
-MAX_LLM_CALLS_PER_FILE = 0
+MAX_DISAMBIGUATIONS_PER_LANGUAGE = 10_000  # NOTE: This is all or nothing - if we exceed this, we disable disambiguation for the language
 
 
 def parse_and_handle(
@@ -216,13 +216,12 @@ class LinkedProject:
 
         # 3) For each symbol, link usage->definition if visible
         linked_map: dict[Path, list[LinkedSymbol]] = {}
-        for fpath, raw_syms in file_to_symbols.items():
-            # visible_files = project_vis.visibility_map.get(fpath, set())
-            # visible_with_self = {fpath, *visible_files}
 
-            visible_syms = project_vis.visibility_map.get(fpath, set())
-            visible_with_self = {*file_to_symbols[fpath], *visible_syms}
-
+        def _process_file(
+            visible_with_self: set[RawTreeSitterSymbolData],
+            raw_syms: list[RawTreeSitterSymbolData],
+            do_disambiguation: bool,
+        ) -> list[LinkedSymbol]:
             llm_calls_made_this_file = 0
 
             linked_syms: list[LinkedSymbol] = []
@@ -257,24 +256,29 @@ class LinkedProject:
                             # So we choose to not link it to itself.
                             continue
                         vis_defs.append(candidate_def)
-                    if len(vis_defs) >= 1:
-                        # pick first or unify
-                        dfpath, def_raw = vis_defs[
-                            0
-                        ]  # TODO: in C++ taking the first is not always correct due to namespace collisions
+                    if len(vis_defs) == 1:
+                        dfpath, def_raw = vis_defs[0]
+                        def_symbol = LinkedSymbol(
+                            raw=def_raw,
+                            is_definition=True,
+                            is_declaration=False,
+                            definition=None,
+                        )
+                    elif len(vis_defs) > 1 and do_disambiguation:
+                        # If we can't disambiguate successfully, we do not link this symbol
+                        def_raw = None
                         # This is true even for FQN though due overloading
-                        if rsym.symbol_kind == SymbolKind.CALL and len(vis_defs) > 1:
+                        if rsym.symbol_kind == SymbolKind.CALL:
                             # Disambiguate
                             calling_symbol = definitions_by_fqn.get(
                                 rsym.fully_qualified_parent_path, []
                             )
                             # TODO: disambiguate calling symbol !
                             if len(calling_symbol) > 0:
-                                use_llm = (
-                                    llm_calls_made_this_file < MAX_LLM_CALLS_PER_FILE
-                                )
                                 index, llm_called = disambiguate_call(
-                                    vis_defs, rsym, calling_symbol[0][1], use_llm
+                                    vis_defs,
+                                    rsym,
+                                    calling_symbol[0][1],
                                 )
                                 if llm_called:
                                     llm_calls_made_this_file += 1
@@ -362,7 +366,34 @@ class LinkedProject:
                         definition=def_symbol,
                     )
                 )
-            linked_map[fpath] = linked_syms
+            return linked_syms
+
+        # NOTE: Heuristic on total number of calls
+        total_calls = sum(
+            1
+            for _, raw_syms in file_to_symbols.items()
+            for rsym in raw_syms
+            if rsym.symbol_kind == SymbolKind.CALL
+        )
+        do_disambiguation = total_calls <= MAX_DISAMBIGUATIONS_PER_LANGUAGE
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            future_to_path = {}
+            for fpath, raw_syms in file_to_symbols.items():
+                # visible_files = project_vis.visibility_map.get(fpath, set())
+                # visible_with_self = {fpath, *visible_file
+
+                visible_syms = project_vis.visibility_map.get(fpath, set())
+                visible_with_self = {*file_to_symbols[fpath], *visible_syms}
+                future_to_path[
+                    executor.submit(
+                        _process_file, visible_with_self, raw_syms, do_disambiguation
+                    )
+                ] = fpath
+            for future in as_completed(future_to_path):
+                fpath = future_to_path[future]
+                linked_syms = future.result()
+                linked_map[fpath] = linked_syms
 
         return cls(linked_symbols=linked_map, visibility_map=project_vis.visibility_map)
 

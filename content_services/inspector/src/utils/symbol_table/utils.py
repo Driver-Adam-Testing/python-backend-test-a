@@ -106,7 +106,6 @@ def disambiguate_call(
     candidates: list[tuple[Path, RawTreeSitterSymbolData]],
     call_symbol: RawTreeSitterSymbolData,
     calling_symbol: RawTreeSitterSymbolData,
-    use_llm: bool,
 ) -> tuple[int | None, bool]:
     """
     Use LLM (or cached result) to disambiguate which candidate is the correct one for a call.
@@ -134,12 +133,6 @@ def disambiguate_call(
             print(
                 f"Warning: Cached candidate {cached_identity} not found in current candidates"
             )
-
-    if not use_llm:
-        # print(
-        #     f"[FALLBACK] LLM cap reached for file {call_symbol.file_path}, using first candidate for call '{call_symbol.name}'. Candidates: {len(candidates)}"
-        # )
-        return 0, False
 
     # Cache miss - proceed with LLM
     print(

@@ -1,12 +1,11 @@
 import asyncio
 import concurrent.futures
-import os
 import pickle
 import uuid
 from pathlib import Path
 from typing import Optional, Union
 
-import boto3
+from common import MODAL_VOLUME_MOUNT_POINT, volume
 from database.models import (
     ChunkAndEmbedding,
     DerivedContent,
@@ -152,12 +151,14 @@ class FileTechDocTask(Task):
         node: LiteNode,
         task_name: str,
         db_node_id: uuid.UUID,
+        codebase_storage_path: str,
         symbol_table_task: Optional["CSymbolTableTask"],
         thread_pool: concurrent.futures.ThreadPoolExecutor | None = None,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.db_node_id = db_node_id
+        self.codebase_storage_path = codebase_storage_path
         self.symbol_table_task = symbol_table_task
         self.thread_pool = thread_pool
         super().__init__(
@@ -169,47 +170,12 @@ class FileTechDocTask(Task):
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
     ) -> TaskResult:
-        if self.symbol_table_task:
-            task_result_data = dependent_results.get(self.symbol_table_task).data
-            # TODO: if the symbol_table_task is here, task_result_data SHOULD be not None (maybe an empty list of symbols though).
-            # Should we assert and fail out inspector, or continue?
-            if task_result_data is not None:
-                reified_symbols = task_result_data.get(self.node.root_rel_path)
-            else:
-                reified_symbols = None
-        else:
-            reified_symbols = None
-
-        if reified_symbols is not None:
-            sym_table_s3_key = f"symbol_tables/symbol_table_for_{self.db_node_id}.pkl"
-
-            def _upload(s3_key: str, reif_symbols: list) -> None:
-                data = pickle.dumps(reif_symbols)
-                boto3.client("s3").put_object(
-                    Bucket=os.environ["BUCKET_NAME"],
-                    Key=s3_key,
-                    Body=data,
-                )
-
-            if self.thread_pool:
-                loop = asyncio.get_running_loop()
-                await loop.run_in_executor(
-                    self.thread_pool,
-                    _upload,
-                    sym_table_s3_key,
-                    reified_symbols,
-                )
-            else:
-                _upload(sym_table_s3_key, reified_symbols)
-        else:
-            sym_table_s3_key = None
-
         async with tech_docs_sem:
             success, docs, node = await make_tech_doc.remote.aio(
                 node=self.node,
-                source_code=self.source_code,
                 codebase_name=self.codebase_name,
-                sym_table_s3_key=sym_table_s3_key,
+                symbol_table_storage_path=self.symbol_table_task.storage_path,
+                codebase_storage_path=self.codebase_storage_path,
             )
 
         return TaskResult(
@@ -808,10 +774,12 @@ class CSymbolTableTask(Task):
         codebase_name: str,
         codebase_root: Path,
         nodes_relative_paths: list[Path],
+        storage_path: str,
     ) -> None:
         self.codebase_name = codebase_name
         self.codebase_root = codebase_root
         self.files = {codebase_root / rel_path for rel_path in nodes_relative_paths}
+        self.storage_path = storage_path
         super().__init__(
             task_name=task_name,
             node=root_node,
@@ -843,4 +811,8 @@ class CSymbolTableTask(Task):
         task_result: TaskResult,
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
+        symbol_table = task_result.data
+        with open(Path(MODAL_VOLUME_MOUNT_POINT) / self.storage_path, "wb") as f:
+            pickle.dump(symbol_table, f)
+        volume.commit()
         return {}

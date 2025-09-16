@@ -1,6 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import modal
+from common import MODAL_VOLUME_MOUNT_POINT
+
 
 def get_prompt_template(f: Path | str) -> str:
     p = Path(f)
@@ -54,3 +57,21 @@ def download_all_source_files_in_parallel(
             paths.append(future.result())
 
     return paths
+
+
+def copy_codebase_to_modal_volume(
+    source_code_storage_path: Path,
+    file_paths: list[Path],
+    download_root: Path,
+    volume: modal.Volume,
+) -> None:
+    for file_path in file_paths:
+        modal_path = (
+            Path(MODAL_VOLUME_MOUNT_POINT)
+            / source_code_storage_path
+            / file_path.relative_to(download_root)
+        )
+        modal_path.parent.mkdir(parents=True, exist_ok=True)
+        with file_path.open("rb") as src_file, modal_path.open("wb") as dest_file:
+            dest_file.write(src_file.read())
+    volume.commit()

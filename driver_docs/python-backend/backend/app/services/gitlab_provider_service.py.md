@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for managing GitLab provider applications, including creation, installation, authorization, and repository access.
+Manages GitLab provider applications, installations, and access tokens, including creation, authorization, and repository operations.
 
 # Purpose
-The code is a module that manages Git provider applications and their installations, specifically focusing on integration with GitLab. It provides functions to create, install, update, and delete Git provider applications and their associated access tokens. The module interacts with a database to store and retrieve information about Git provider applications and installations, using SQLModel for ORM operations. It also uses AWS services for secret management, ensuring secure storage and retrieval of sensitive information like access tokens.
+The code is a module that manages Git provider applications and their installations within an organization. It provides functionality to create, install, update, and delete Git provider applications, specifically focusing on handling GitLab provider integrations. The module interacts with a database to store and retrieve information about Git provider applications and their installations. It also uses AWS for secret management, ensuring secure storage and retrieval of sensitive information such as access tokens.
 
-Key components include functions for handling authorization and callback processes, managing access tokens, and interacting with GitLab to fetch repositories and clone them. The module defines several functions that serve as an interface for these operations, such as [`create_git_provider_app`](<#create_git_provider_app>), [`install_group_access_token`](<#install_group_access_token>), and [`authorize_git_provider`](<#authorize_git_provider>). It also includes error handling mechanisms to manage exceptions related to access token validation and secret management. The module is designed to be part of a larger system, likely a backend service, that facilitates the integration of GitLab with other applications or services.
+Key components of the module include functions for creating and managing Git provider applications ([`create_git_provider_app`](<#create_git_provider_app>), [`install_group_access_token`](<#install_group_access_token>), [`update_group_access_token`](<#update_group_access_token>)), handling authorization and callbacks ([`authorize_git_provider`](<#authorize_git_provider>), [`handle_authorization_callback`](<#handle_authorization_callback>)), and managing repositories ([`fetch_user_repositories_by_app_id`](<#fetch_user_repositories_by_app_id>), [`fetch_group_repositories_by_app_id`](<#fetch_group_repositories_by_app_id>)). The module also includes error handling for access token revocation and provides mechanisms to uninstall applications when necessary. The use of the `GitLabProvider` class indicates that the module is designed to work with GitLab as the Git provider, and it leverages AWS services for secure secret management.
 # Imports and Dependencies
 
 ---
@@ -16,8 +16,8 @@ Key components include functions for handling authorization and callback process
 - `json`
 - `logging`
 - `secrets`
-- `database.models_v1.GitProviderApp`
-- `database.models_v1.GitProviderAppInstallation`
+- `database.models.GitProviderApp`
+- `database.models.GitProviderAppInstallation`
 - `shared.interfaces.aws_client_config.AWSClientConfig`
 - `shared.secret_management.aws_secret_management.AWSSecretManagementStrategy`
 - `shared.secret_management.aws_secret_management.format_secret_name`
@@ -52,7 +52,7 @@ Key components include functions for handling authorization and callback process
 
 ---
 ### fetch\_git\_provider\_apps\_by\_org\_id<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.fetch_git_provider_apps_by_org_id}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L41>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L42>)
 
 Fetches a list of Git provider applications associated with a given organization ID.
 - **Inputs**:
@@ -60,6 +60,7 @@ Fetches a list of Git provider applications associated with a given organization
     - `organization_id`: A string representing the unique identifier of the organization.
 - **Logic and Control Flow**:
     - Calls the [`git_provider_apps_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_apps_by_org_id>) function with the provided `session` and `organization_id` arguments.
+    - Returns the result of the [`git_provider_apps_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_apps_by_org_id>) function call.
 - **Output**: A list of `GitProviderApp` objects associated with the specified organization ID.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_apps_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_apps_by_org_id>)
@@ -67,7 +68,7 @@ Fetches a list of Git provider applications associated with a given organization
 
 ---
 ### fetch\_git\_provider\_app\_install\_by\_user\_id<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.fetch_git_provider_app_install_by_user_id}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L47>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L48>)
 
 Fetches a Git provider app installation for a specific user by their user ID.
 - **Inputs**:
@@ -85,57 +86,59 @@ Fetches a Git provider app installation for a specific user by their user ID.
 
 ---
 ### create\_git\_provider\_app<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.create_git_provider_app}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L55>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L56>)
 
-Creates a new [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) instance and manages its database session lifecycle.
+Creates a new [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) instance and commits it to the database session.
 - **Inputs**:
-    - `session`: A `Session` object for database operations.
-    - `gp_app_input`: An instance of `CreateGitProviderAppRequest` containing the input data for the Git provider app.
-    - `aws_config`: An instance of `AWSClientConfig` for AWS client configuration.
+    - `session`: A `Session` object used to interact with the database.
+    - `gp_app_input`: An instance of `CreateGitProviderAppRequest` containing the input data for the new Git provider app.
+    - `aws_config`: An instance of `AWSClientConfig` containing AWS configuration details.
 - **Logic and Control Flow**:
-    - Create a new [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) instance using the data from `gp_app_input`.
-    - Add the [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) instance to the database session.
-    - Attempt to commit the session and log a success message if successful.
+    - Create a new [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) instance using the data from `gp_app_input`.
+    - Add the new [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) instance to the database session.
+    - Attempt to commit the session to save the new app to the database.
+    - Log a success message if the commit is successful.
     - If an exception occurs during commit, log an error message, roll back the session, and re-raise the exception.
-    - Refresh the [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) instance to ensure it is up-to-date with the database.
-- **Output**: Returns the newly created [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) instance.
+    - Refresh the `git_provider_app` instance to ensure it is up-to-date with the database.
+- **Output**: Returns the newly created [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) instance.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>)
+    - [`python-backend/driver_db/database/models.GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>)
 
 
 ---
 ### install\_group\_access\_token<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.install_group_access_token}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L85>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L86>)
 
 Installs a group access token for a Git provider application and manages its secret storage.
 - **Inputs**:
     - `session`: A `Session` object for database operations.
     - `organization_id`: A string representing the organization ID.
     - `app_id`: A string representing the application ID.
-    - `gat`: A `GroupAccessToken` object containing the group access token details.
+    - `gat`: A `GroupAccessToken` object containing the access token and related metadata.
     - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
     - Validate the group access token using [`validate_group_access_token`](<#validate_group_access_token>) function.
     - If the token is invalid, raise [`GitProviderAccessTokenError`](<../git_providers/utils/errors.py.md#gitprovideraccesstokenerror>).
     - Retrieve the Git provider application using [`git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>).
     - Create an [`AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) instance with the given AWS configuration.
-    - Create a [`GitProviderAppInstallation`](<../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object with the organization ID and metadata.
+    - Create a [`GitProviderAppInstallation`](<../../../driver_db/database/models.py.md#gitproviderappinstallation>) object with the organization ID and metadata.
     - Generate a webhook secret using `secrets.token_urlsafe`.
     - Format the secret name using [`format_secret_name`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with a prefix and installation ID.
     - Serialize the token and webhook secret into JSON format.
     - Attempt to write the secret using `secrets_manager.write_secret`.
     - If writing the secret fails, log the error, rollback the session, and raise the exception.
     - Append the new installation to the application's installations and add it to the session.
-    - Attempt to commit the session; if it fails, delete the secret, rollback the session, and raise the exception.
-    - Refresh the application object in the session.
-    - Return the [`GitProviderAppInstallation`](<../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object.
-- **Output**: A [`GitProviderAppInstallation`](<../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object representing the installed application.
+    - Attempt to commit the session to save changes.
+    - If committing fails, log the error, delete the secret, rollback the session, and raise the exception.
+    - Refresh the session to update the application state.
+    - Return the [`GitProviderAppInstallation`](<../../../driver_db/database/models.py.md#gitproviderappinstallation>) object.
+- **Output**: A [`GitProviderAppInstallation`](<../../../driver_db/database/models.py.md#gitproviderappinstallation>) object representing the installed application.
 - **Functions Called**:
     - [`python-backend/backend/app/services/gitlab_provider_service.validate_group_access_token`](<#validate_group_access_token>)
     - [`python-backend/backend/app/git_providers/utils/errors.GitProviderAccessTokenError`](<../git_providers/utils/errors.py.md#gitprovideraccesstokenerror>)
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>)
-    - [`python-backend/driver_db/database/models_v1.GitProviderAppInstallation`](<../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>)
+    - [`python-backend/driver_db/database/models.GitProviderAppInstallation`](<../../../driver_db/database/models.py.md#gitproviderappinstallation>)
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
     - [`python-backend/backend/app/schemas/git_provider_schema.GitProviderAppTokenSecret`](<../schemas/git_provider_schema.py.md#gitproviderapptokensecret>)
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.write_secret`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategywrite_secret>)
@@ -144,9 +147,9 @@ Installs a group access token for a Git provider application and manages its sec
 
 ---
 ### update\_group\_access\_token<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.update_group_access_token}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L145>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L146>)
 
-Updates the group access token for a specific app installation and stores it securely.
+Updates the group access token for a specific app installation in the AWS Secrets Manager.
 - **Inputs**:
     - `session`: A `Session` object for database operations.
     - `organization_id`: A string representing the organization ID.
@@ -155,15 +158,15 @@ Updates the group access token for a specific app installation and stores it sec
     - `gat`: A `GroupAccessToken` object containing the new access token.
     - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
-    - Calls [`validate_group_access_token`](<#validate_group_access_token>) to check if the provided group access token is valid.
-    - Raises [`GitProviderAccessTokenError`](<../git_providers/utils/errors.py.md#gitprovideraccesstokenerror>) if the token is invalid.
-    - Retrieves the app installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>).
-    - Creates an [`AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) instance with the provided AWS configuration.
-    - Formats the secret name using [`format_secret_name`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) and the app installation ID.
-    - Attempts to read the existing secret using `secrets_manager.read_secret`.
-    - Updates the token in the [`GitProviderAppTokenSecret`](<../schemas/git_provider_schema.py.md#gitproviderapptokensecret>) object and serializes it to JSON.
-    - Writes the updated secret back using `secrets_manager.write_secret`.
-    - Logs an exception and raises it if any error occurs during the secret update process.
+    - Call [`validate_group_access_token`](<#validate_group_access_token>) to check if the provided group access token is valid.
+    - If the token is not valid, raise a [`GitProviderAccessTokenError`](<../git_providers/utils/errors.py.md#gitprovideraccesstokenerror>).
+    - Retrieve the app installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>).
+    - Create an [`AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) instance with the provided AWS configuration.
+    - Format the secret name using [`format_secret_name`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with the app installation ID.
+    - Attempt to read the existing secret from AWS Secrets Manager using [`read_secret`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>).
+    - Update the token in the secret dictionary and serialize it to JSON.
+    - Write the updated secret back to AWS Secrets Manager using [`write_secret`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategywrite_secret>).
+    - If an exception occurs during the secret update, log the exception and re-raise it.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/backend/app/services/gitlab_provider_service.validate_group_access_token`](<#validate_group_access_token>)
@@ -178,53 +181,52 @@ Updates the group access token for a specific app installation and stores it sec
 
 ---
 ### authorize\_git\_provider<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.authorize_git_provider}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L178>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L179>)
 
-Authorizes a Git provider for a specific organization and user using the given application ID and AWS configuration.
+Authorizes a Git provider for a specific organization and user using the GitLabProvider class.
 - **Inputs**:
     - `session`: A `Session` object for database interaction.
     - `organization_id`: A string representing the ID of the organization.
     - `user_id`: A string representing the ID of the user.
     - `app_id`: A string representing the ID of the application.
-    - `aws_config`: An `AWSClientConfig` object containing AWS configuration details.
+    - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
     - Calls [`git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>) to retrieve the Git provider application configuration using `session`, `organization_id`, and `app_id`.
     - Creates a `GitLabProvider` instance using the retrieved configuration and `aws_config`.
     - Calls `authorize_provider` on the `GitLabProvider` instance with `organization_id`, `user_id`, and `app_id` to authorize the provider.
 - **Output**: Returns a string that represents the result of the authorization process.
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.from_config`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacefrom_config>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config`](<../git_providers/providers/gitlab_provider.py.md#gitlabproviderfrom_config>)
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
 
 
 ---
 ### handle\_authorization\_callback<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.handle_authorization_callback}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L191>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L192>)
 
-Handles the callback for authorization by decoding the state, checking for existing app installations, and processing the authorization callback for GitLab.
+Handles the callback for authorization by decoding the state, checking for existing app installations, and processing the authorization callback for new installations.
 - **Inputs**:
     - `session`: A `Session` object for database operations.
     - `code`: A string representing the authorization code received from the provider.
-    - `state`: A base64-encoded string containing the state information.
+    - `state`: A base64-encoded string containing JSON data with `organization_id`, `user_id`, and `application_id`.
     - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
-    - Decode the `state` parameter from base64 to a UTF-8 string and parse it as JSON to extract `organization_id`, `user_id`, and `application_id`.
+    - Decode the `state` parameter from base64 to a JSON string and parse it into a dictionary to extract `organization_id`, `user_id`, and `application_id`.
     - Retrieve the `git_provider_app` using [`git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>) with the `organization_id` and `application_id`.
     - Check if an existing app installation exists for the `user_id` and `organization_id` in `git_provider_app.app_installations`.
-    - If no existing installation is found, log the information, create a new [`GitProviderAppInstallation`](<../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>), append it to `git_provider_app.app_installations`, and commit the changes to the session.
-    - Refresh the `git_provider_app` to get the latest state and retrieve the new `app_install_id`.
-    - Create a `GitLabProvider` instance using `GitLabProvider.from_config` and call `handle_app_authorization_callback` with the `code` and `app_install_id`.
+    - If no existing installation is found, log the information, create a new [`GitProviderAppInstallation`](<../../../driver_db/database/models.py.md#gitproviderappinstallation>), append it to `git_provider_app.app_installations`, and commit the changes to the session.
+    - Refresh the `git_provider_app` to get the new installation ID, create a `GitLabProvider` instance, and call `handle_app_authorization_callback` with the `code` and new installation ID.
     - If an existing installation is found, log that the installation already exists.
-- **Output**: None
+- **Output**: Returns `None` as it performs operations related to authorization callback handling and database updates.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
-    - [`python-backend/driver_db/database/models_v1.GitProviderAppInstallation`](<../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>)
+    - [`python-backend/driver_db/database/models.GitProviderAppInstallation`](<../../../driver_db/database/models.py.md#gitproviderappinstallation>)
     - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config`](<../git_providers/providers/gitlab_provider.py.md#gitlabproviderfrom_config>)
 
 
 ---
 ### fetch\_user\_repositories\_by\_app\_id<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.fetch_user_repositories_by_app_id}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L237>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L238>)
 
 Fetches user-specific Git repositories using a given application ID and handles token revocation errors.
 - **Inputs**:
@@ -237,7 +239,8 @@ Fetches user-specific Git repositories using a given application ID and handles 
     - Create a `GitLabProvider` instance using the application ID and AWS configuration.
     - Retrieve the user's application installation using the organization ID, application ID, and user ID.
     - Attempt to fetch repositories using the `git_provider` and `user_app_install`.
-    - If a `GitProviderAppRevokeError` occurs, log the error and handle the token revocation by uninstalling the app and forcing re-authentication.
+    - If a `GitProviderAppRevokeError` occurs, log the error and call [`handle_user_app_revoke`](<#handle_user_app_revoke>) to uninstall the app and force re-authentication.
+    - Re-raise the caught exception after handling the error.
 - **Output**: A list of `GitRepository` objects representing the user's repositories.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.from_config`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacefrom_config>)
@@ -249,7 +252,7 @@ Fetches user-specific Git repositories using a given application ID and handles 
 
 ---
 ### fetch\_group\_repositories\_by\_app\_id<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.fetch_group_repositories_by_app_id}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L264>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L265>)
 
 Fetches all group repositories associated with a specific application ID for a given organization.
 - **Inputs**:
@@ -262,8 +265,7 @@ Fetches all group repositories associated with a specific application ID for a g
     - Initialize a `GitLabProvider` instance using the application ID and AWS configuration.
     - Retrieve all group application installations for the given organization and application ID.
     - Initialize an empty list `repositories` to store the fetched repositories.
-    - Iterate over each group application installation.
-    - For each installation, fetch the group repositories using the `git_provider` and extend the `repositories` list with the fetched repositories.
+    - Iterate over each group application installation and fetch the group repositories using the `git_provider` instance, extending the `repositories` list with the results.
     - Return the list of all fetched repositories.
 - **Output**: A list of `GitRepository` objects representing the group repositories.
 - **Functions Called**:
@@ -274,7 +276,7 @@ Fetches all group repositories associated with a specific application ID for a g
 
 ---
 ### fetch\_group\_repositories\_by\_installation\_id<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.fetch_group_repositories_by_installation_id}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L285>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L286>)
 
 Fetches repositories for a group based on a specific installation ID.
 - **Inputs**:
@@ -285,22 +287,22 @@ Fetches repositories for a group based on a specific installation ID.
     - `installation_id`: A string representing the installation ID.
     - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
-    - Create a `GitLabProvider` instance using the application configuration and AWS configuration.
-    - Retrieve the group app installation using the `installation_id`.
-    - Check if the group app installation exists and matches the `organization_id`. If not, log an error and raise a `ValueError`.
+    - Create a `GitLabProvider` instance using the application ID and AWS configuration.
+    - Retrieve the group app installation using the installation ID.
+    - Check if the group app installation exists and matches the organization ID; if not, log an error and raise a `ValueError`.
     - Initialize an empty list `repositories`.
-    - Fetch group repositories using the `git_provider` and extend the `repositories` list with the fetched repositories.
+    - Fetch group repositories using the `git_provider` and extend the `repositories` list with the fetched data.
     - Return the `repositories` list.
 - **Output**: A list of `GitRepository` objects representing the fetched repositories.
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.from_config`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacefrom_config>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config`](<../git_providers/providers/gitlab_provider.py.md#gitlabproviderfrom_config>)
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
 
 
 ---
 ### clone\_git\_repository<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.clone_git_repository}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L314>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L315>)
 
 Clones a Git repository using a specified Git provider and handles potential access token revocation errors.
 - **Inputs**:
@@ -313,29 +315,29 @@ Clones a Git repository using a specified Git provider and handles potential acc
     - `bucket_name`: A string representing the name of the AWS S3 bucket.
     - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
-    - Retrieve the existing app installation using [`git_provider_app_installation_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_org_id>) with `session`, `organization_id`, and `app_id`.
+    - Check if an existing app installation exists for the given organization and app ID using [`git_provider_app_installation_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_org_id>) function.
     - If no existing app installation is found, log an error and raise a `ValueError`.
-    - Create a `GitLabProvider` instance using `GitLabProvider.from_config` with the app configuration and `aws_config`.
-    - Attempt to clone the repository using `git_provider.clone_repository` with the provided parameters.
+    - Create a `GitLabProvider` instance using the configuration from [`git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>) and `aws_config`.
+    - Attempt to clone the repository using the `clone_repository` method of the `GitLabProvider` instance.
     - If a `GitProviderAppRevokeError` is raised, log the error, handle the user app revocation using [`handle_user_app_revoke`](<#handle_user_app_revoke>), and re-raise the exception.
-- **Output**: Returns a string indicating the result of the repository cloning operation.
+- **Output**: Returns a string, which is the result of the `clone_repository` method from the `GitLabProvider`.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_org_id>)
-    - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.from_config`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacefrom_config>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config`](<../git_providers/providers/gitlab_provider.py.md#gitlabproviderfrom_config>)
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
     - [`python-backend/backend/app/services/gitlab_provider_service.handle_user_app_revoke`](<#handle_user_app_revoke>)
 
 
 ---
 ### handle\_user\_app\_revoke<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.handle_user_app_revoke}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L349>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L350>)
 
-Handles the revocation of a user app by uninstalling the app and deleting associated secrets.
+Handles the revocation of a user app by uninstalling it and deleting associated secrets.
 - **Inputs**:
     - `session`: A `Session` object for database operations.
-    - `organization_id`: A string representing the ID of the organization.
-    - `app_id`: A string representing the ID of the app.
-    - `installation_id`: A string representing the ID of the app installation.
+    - `organization_id`: A string representing the organization ID.
+    - `app_id`: A string representing the app ID.
+    - `installation_id`: A string representing the installation ID.
     - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
     - Logs the uninstallation of the app for the given `installation_id`.
@@ -353,7 +355,7 @@ Handles the revocation of a user app by uninstalling the app and deleting associ
 
 ---
 ### handle\_group\_access\_revoke<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.handle_group_access_revoke}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L363>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L364>)
 
 Revokes group access by uninstalling the app and deleting associated secrets for a given installation ID.
 - **Inputs**:
@@ -365,10 +367,10 @@ Revokes group access by uninstalling the app and deleting associated secrets for
 - **Logic and Control Flow**:
     - Logs the uninstallation of the app for the given `installation_id`.
     - Calls [`delete_git_provider_app_install`](<../repositories/git_provider_repository.py.md#delete_git_provider_app_install>) to remove the app installation from the database.
-    - Creates an [`AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) object with the provided `aws_config`.
+    - Creates an [`AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) object with the given `aws_config`.
     - Formats the secret name using [`format_secret_name`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with `APP_INSTALL_GAT_NAME_PREFIX` and `installation_id`.
     - Calls [`delete_secret`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategydelete_secret>) on the [`AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) object to delete the secret associated with the installation.
-- **Output**: No output is returned as the function's return type is `None`.
+- **Output**: No output is returned as the function returns `None`.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.delete_git_provider_app_install`](<../repositories/git_provider_repository.py.md#delete_git_provider_app_install>)
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>)
@@ -378,7 +380,7 @@ Revokes group access by uninstalling the app and deleting associated secrets for
 
 ---
 ### handle\_delete\_git\_provider\_app<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.handle_delete_git_provider_app}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L377>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L378>)
 
 Deletes a Git provider app and all its installations for a given organization.
 - **Inputs**:
@@ -401,7 +403,7 @@ Deletes a Git provider app and all its installations for a given organization.
 
 ---
 ### validate\_group\_access\_token<!-- {{#callable:python-backend/backend/app/services/gitlab_provider_service.validate_group_access_token}} -->
-[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L395>)
+[View Source →](<../../../../../backend/app/services/gitlab_provider_service.py#L396>)
 
 Validates a group access token for a GitLab application within an organization.
 - **Inputs**:
@@ -412,9 +414,9 @@ Validates a group access token for a GitLab application within an organization.
     - `aws_config`: An `AWSClientConfig` object for AWS configuration.
 - **Logic and Control Flow**:
     - Create a `GitLabProvider` instance using the application configuration and AWS configuration.
-    - Attempt to retrieve the user associated with the `access_token` using the `auth_strategy` of the `GitLabProvider`.
-    - If the token user is found, return `True`.
-    - If an exception occurs, log the exception and return `False`.
+    - Attempt to retrieve the user associated with the provided access token using the [`token_user`](<../git_providers/oauth/gitlab_oauth_strategy.py.md#gitlaboauthstrategytoken_user>) method of the `auth_strategy`.
+    - If the token is valid and a user is found, return `True`.
+    - If an exception occurs during validation, log the exception and return `False`.
 - **Output**: Returns a boolean indicating whether the access token is valid.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config`](<../git_providers/providers/gitlab_provider.py.md#gitlabproviderfrom_config>)

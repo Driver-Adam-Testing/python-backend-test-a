@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for the onboarding event handler using a mock SNS event and pytest.
+Tests for the onboarding event handler with a mock SNS event and an empty initialization file.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[test_main.py](test_main.py.md)**: Tests for the onboarding event handler using a mock SNS event and pytest.
+- **[test_main.py](test_main.py.md)**: Tests the onboarding event handler using a mock SNS event and asserts the handler's response.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

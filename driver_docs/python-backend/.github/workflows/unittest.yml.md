@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GitHub Actions workflow for running Python backend unit tests on specific branches with code coverage reporting.
+GitHub Actions workflow for running Python unit tests on specific branches using Poetry and Pytest.
 
 # Purpose
-This GitHub Actions workflow file automates the execution of unit tests for a software project. It triggers the workflow on `push` and `pull_request` events to the `develop` and `staging` branches, as well as through manual dispatch. The workflow ensures concurrency by grouping jobs and canceling any in-progress jobs if a new one starts. It sets permissions for `id-token` and `contents` to manage access during the workflow. The job `backend-unit-test` runs on the latest Ubuntu environment and includes steps to set up Python 3.12, install dependencies using Poetry, and execute unit tests with `pytest`. Environment variables are configured for a local PostgreSQL server to support the tests. The workflow also archives code coverage results and posts a coverage comment using specified GitHub Actions.
+This GitHub Actions workflow file automates the execution of unit tests for a software project. It triggers on `push` and `pull_request` events to the `develop` and `staging` branches, as well as on manual dispatch via `workflow_dispatch`. The workflow ensures concurrency by grouping jobs and canceling any in-progress jobs if a new one starts. It sets permissions for `id-token` and `contents` to facilitate secure operations. The workflow defines a job named `backend-unit-test` that runs on the latest Ubuntu environment. It includes steps to check out the code, set up Python 3.12, install dependencies using Poetry, and execute unit tests with `pytest`. Additionally, it archives the code coverage results and posts a coverage comment using the specified GitHub Actions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

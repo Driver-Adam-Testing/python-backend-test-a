@@ -6,7 +6,7 @@
 C library for encoding, decoding, and manipulating JSON with installation instructions.
 
 # Purpose
-The metadata file provides essential information and installation instructions for the Jansson library, a C library used for encoding, decoding, and manipulating JSON data. It includes a brief summary of the library's purpose and provides URLs for the library's homepage and source code download. The file specifies the SHA-256 checksum for verifying the integrity of the downloaded source code. The installation section contains commands to configure the build process using `cmakew`, with options to control the building of shared libraries, documentation, coverage, examples, and tests. The configuration options are set to disable documentation, coverage, examples, and tests, while allowing the building of shared libraries.
+The metadata file provides essential information and configuration instructions for the Jansson library, a C library used for encoding, decoding, and manipulating JSON data. It includes a brief summary of the library's purpose and provides URLs for the library's website and source code download. The file specifies the SHA-256 checksum for verifying the integrity of the downloaded source code. It also outlines installation instructions using `cmakew`, detailing options for building the library with or without shared libraries, documentation, coverage, examples, and tests. The library is distributed under the MIT license, as indicated in the metadata.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

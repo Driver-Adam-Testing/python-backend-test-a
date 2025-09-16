@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Performance testing, LLM pipelines, JSON parsing, LLM clients, tests, utilities, and package initialization.
+Performance testing, LLM clients, interfaces, utilities, global messages, and tests for LLM and DataSource.
 
 ## Folders
-- **[app](app/README.md)**: Performance testing and LLM-based pipelines, enums, message classes, and file handling tools.
-- **[globals](globals/README.md)**: Constants, classes, and messages for JSON parsing, DataSource, LLM, glossary, and iteration contexts.
-- **[interfaces](interfaces/README.md)**: Classes and enums for handling LLM messages, responses, tools, and parsing in Python.
-- **[llms](llms/README.md)**: LLM client implementations for Anthropic and OpenAI models, and configuration management with Pydantic and TOML.
-- **[tests](tests/README.md)**: Tests for DataSource class methods and LlmMessage functionalities, including conversions and persistence.
-- **[utils](utils/README.md)**: Functions for Mermaid diagram validation, data source management, JSON parsing, and semantic comparison.
+- **[app](app/README.md)**: Performance testing and various pipelines, enumerations, message classes, and document tools.
+- **[globals](globals/README.md)**: Constants, classes for DataSource messages, global system messages, glossary terms, and iteration messages.
+- **[interfaces](interfaces/README.md)**: Classes and models for handling LLM messages, responses, tools, and message history.
+- **[llms](llms/README.md)**: LLM clients for Anthropic and OpenAI models, and configuration management with TOML and Pydantic.
+- **[tests](tests/README.md)**: Tests for DataSource class methods and LlmMessage conversions, interactions, and history.
+- **[utils](utils/README.md)**: Functions for Mermaid code validation, data source management, JSON handling, and text embedding comparison.
 
 ## Files
-- **[__init__.py](__init__.py.md)**: Initializes the shared.v3 package by importing and exposing key interfaces, clients, and utilities.
+- **[__init__.py](__init__.py.md)**: Exports classes and utilities for LLM messaging, history, clients, and data handling.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

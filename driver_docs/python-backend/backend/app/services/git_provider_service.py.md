@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A unified service for managing Git provider operations, including app management, access token handling, repository operations, and webhook event processing.
+A service for managing Git provider operations, including app creation, token management, and webhook handling.
 
 # Purpose
-The code defines a `GitProviderService` class, which serves as a unified service for managing operations related to Git provider applications. This service supports multiple Git providers, specifically GitLab and Bitbucket, as indicated by the `PROVIDERS` class variable. The class provides methods for creating, listing, and deleting Git provider applications and their installations. It also manages access tokens, including installation, updating, and revocation, and handles repository operations and webhook events. The service uses AWS for secret management, leveraging the `AWSSecretManagementStrategy` to store and retrieve secrets associated with Git provider installations.
+The code defines a `GitProviderService` class, which serves as a unified service for managing operations related to Git provider applications. This service supports multiple Git providers, specifically GitLab and Bitbucket, as indicated by the `PROVIDERS` class variable. The class provides methods for creating, listing, and deleting Git provider applications and their installations. It also manages access tokens, including installation, updating, and revocation, and handles repository operations and webhook events. The service uses AWS for secret management, leveraging the `AWSSecretManagementStrategy` to store and retrieve sensitive information.
 
-The `GitProviderService` class is designed to be used as a singleton, with the [`get_git_provider_service`](<#get_git_provider_service>) function ensuring that only one instance of the service is created and used throughout the application. This service interacts with a database through SQLModel sessions to persist and manage data related to Git provider applications and installations. It also includes error handling and logging to track operations and handle exceptions. The service is intended to be a central component in an application that integrates with multiple Git providers, providing a consistent interface for managing Git-related operations.
+The `GitProviderService` class is designed to be used as a singleton, with the [`get_git_provider_service`](<#get_git_provider_service>) function ensuring that only one instance of the service is created. This design pattern is useful for maintaining a consistent state across the application. The service interacts with a database through SQLModel sessions to persist and manage data related to Git provider applications and installations. The code also includes error handling and logging to track operations and handle exceptions effectively. The service is intended to be a central component in an application that integrates with multiple Git providers, providing a consistent interface for managing Git-related operations.
 # Imports and Dependencies
 
 ---
 - `logging`
 - `typing.ClassVar`
-- `database.models_v1.GitProviderApp`
-- `database.models_v1.GitProviderAppInstallation`
-- `database.models_v1.GitProviderKind`
+- `database.models.GitProviderApp`
+- `database.models.GitProviderAppInstallation`
+- `database.models.GitProviderKind`
 - `shared.interfaces.aws_client_config.AWSClientConfig`
 - `shared.secret_management.aws_secret_management.AWSSecretManagementStrategy`
 - `shared.secret_management.aws_secret_management.format_secret_name`
@@ -42,15 +42,15 @@ The `GitProviderService` class is designed to be used as a singleton, with the [
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows for logging messages that are specific to the module where the logger is used.
-- **Use**: Used to log informational and error messages throughout the module.
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
+- **Use**: Used to log informational and error messages throughout the module, providing insights into the application's execution flow and error handling.
 
 
 ---
 ### \_service\_instance
 - **Type**: ``NoneType``
 - **Description**: The `_service_instance` variable is a global variable initialized to `None`. It is intended to hold a singleton instance of the `GitProviderService` class.
-- **Use**: Used to store and manage a singleton instance of `GitProviderService` for reuse across the application.
+- **Use**: Used to store the singleton instance of `GitProviderService` created by the `get_git_provider_service` function.
 
 
 # Classes
@@ -87,13 +87,13 @@ The `GitProviderService` class is designed to be used as a singleton, with the [
 #### GitProviderService\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/services/git_provider_service.GitProviderService.__init__}} -->
 [View Source →](<../../../../../backend/app/services/git_provider_service.py#L50>)
 
-Initializes the `GitProviderService` class with AWS configuration and sets up the secrets manager.
+Initializes an instance of the `GitProviderService` class with AWS configuration and a secrets management strategy.
 - **Inputs**:
-    - `aws_config`: An instance of `AWSClientConfig` that contains configuration details for AWS services.
+    - `aws_config`: An instance of `AWSClientConfig` that contains the configuration for AWS services.
 - **Logic and Control Flow**:
     - Assigns the `aws_config` parameter to the instance variable `self.aws_config`.
     - Creates an instance of [`AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) using `aws_config` and assigns it to the instance variable `self.secrets_manager`.
-- **Output**: No output is returned as this is a constructor method.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>)
 - **See also**: [`python-backend/backend/app/services/git_provider_service.GitProviderService`](<#gitproviderservice>)  (Base Class)
@@ -108,8 +108,8 @@ Retrieves a provider instance for a specified Git provider application.
     - `app`: An instance of `GitProviderApp` representing the Git provider application for which to retrieve the provider instance.
 - **Logic and Control Flow**:
     - Retrieve the provider class from the `PROVIDERS` dictionary using the `provider_kind` attribute of the `app` argument.
-    - If the provider class is not found, raise a `ValueError` indicating the provider kind is unsupported.
-    - Return the provider instance by calling the [`from_config`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacefrom_config>) method of the provider class with `app` and `self.aws_config` as arguments.
+    - If the `provider_class` is not found, raise a `ValueError` indicating an unsupported provider kind.
+    - Return the provider instance by calling the [`from_config`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacefrom_config>) method of the `provider_class`, passing the `app` and `aws_config` as arguments.
 - **Output**: An instance of `GitProviderInterface` corresponding to the specified Git provider application.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.from_config`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacefrom_config>)
@@ -123,18 +123,18 @@ Retrieves a provider instance for a specified Git provider application.
 Creates a new Git provider application and manages its database transaction.
 - **Inputs**:
     - `session`: A `Session` object used to interact with the database.
-    - `app_data`: A dictionary containing the data required to create a [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) instance.
+    - `app_data`: A dictionary containing the data required to create a [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) instance.
 - **Logic and Control Flow**:
-    - Instantiate a [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) object using the provided `app_data`.
-    - Check if the `provider_kind` of the app is `GitProviderKind.BITBUCKET`; if true, set `provider_metadata` to include a workspace name.
-    - Add the app instance to the database session.
+    - Instantiate a [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) object using the provided `app_data`.
+    - Check if the `provider_kind` of the app is `GitProviderKind.BITBUCKET`; if true, set `provider_metadata` with a workspace name.
+    - Add the app to the database session.
     - Attempt to commit the session to save the app to the database.
     - If the commit is successful, refresh the app instance to reflect the latest database state and log the creation.
-    - Return the created app instance.
+    - Return the created [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) instance.
     - If an exception occurs during the commit, log the error, rollback the session to undo changes, and re-raise the exception.
-- **Output**: A [`GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>) instance representing the newly created application.
+- **Output**: A [`GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>) instance representing the newly created application.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.GitProviderApp`](<../../../driver_db/database/models_v1.py.md#gitproviderapp>)
+    - [`python-backend/driver_db/database/models.GitProviderApp`](<../../../driver_db/database/models.py.md#gitproviderapp>)
 - **See also**: [`python-backend/backend/app/services/git_provider_service.GitProviderService`](<#gitproviderservice>)  (Base Class)
 
 
@@ -151,7 +151,7 @@ Lists git provider apps for a specified organization, optionally filtering by pr
     - Retrieve all git provider apps associated with the given `organization_id` using the [`git_provider_apps_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_apps_by_org_id>) function.
     - If `provider_kind` is specified, filter the list of apps to include only those with a matching `provider_kind`.
     - Return the list of filtered or unfiltered apps.
-- **Output**: A list of `GitProviderApp` objects that belong to the specified organization, optionally filtered by `provider_kind`.
+- **Output**: A list of `GitProviderApp` objects associated with the specified organization, optionally filtered by `provider_kind`.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_apps_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_apps_by_org_id>)
 - **See also**: [`python-backend/backend/app/services/git_provider_service.GitProviderService`](<#gitproviderservice>)  (Base Class)
@@ -181,7 +181,7 @@ Lists git provider app installations for a specific organization and app.
 
 Deletes a git provider app and all its installations from the database.
 - **Inputs**:
-    - `session`: A `Session` object for database operations.
+    - `session`: A `Session` object used to interact with the database.
     - `organization_id`: A string representing the ID of the organization to which the app belongs.
     - `app_id`: A string representing the ID of the app to delete.
 - **Logic and Control Flow**:
@@ -190,9 +190,9 @@ Deletes a git provider app and all its installations from the database.
     - Retrieve all installations of the app using [`git_provider_app_installation_by_org_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_org_id>).
     - Iterate over each installation, revoke access using `provider.revoke_access(installation)`, and delete the installation from the session.
     - Delete the app from the session.
-    - Commit the session to persist changes to the database.
+    - Commit the session to save changes to the database.
     - Log the deletion of the app and the number of installations deleted.
-- **Output**: None
+- **Output**: No output is returned as the function returns `None`.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
     - [`python-backend/backend/app/services/git_provider_service.GitProviderService.get_provider`](<#gitproviderserviceget_provider>)
@@ -212,17 +212,14 @@ Installs an access token for a Git provider app and manages its storage and vali
     - `app_id`: A string representing the application ID.
     - `token_data`: A dictionary containing the access token data.
 - **Logic and Control Flow**:
-    - Retrieve the Git provider app using [`git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>) with `session`, `organization_id`, and `app_id`.
+    - Retrieve the Git provider app using [`git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>) with the given `session`, `organization_id`, and `app_id`.
     - Get the provider instance for the app using `self.get_provider(app)`.
-    - Validate the access token using `provider.validate_access_token(token_data)`.
-    - If the token is invalid, raise [`GitProviderAccessTokenError`](<../git_providers/utils/errors.py.md#gitprovideraccesstokenerror>).
+    - Validate the access token using `provider.validate_access_token(token_data)`. If invalid, raise [`GitProviderAccessTokenError`](<../git_providers/utils/errors.py.md#gitprovideraccesstokenerror>).
     - Create an installation using `provider.create_installation(organization_id, app_id, token_data)`.
-    - Append the installation to `app.app_installations` and add it to the session.
-    - Commit the session and refresh the installation object.
+    - Append the installation to `app.app_installations`, add it to the session, commit the session, and refresh the installation.
     - Store secrets using `provider.store_secrets(installation, token_data)`.
     - Log the successful installation of the access token.
-    - Return the `installation` object.
-    - If an exception occurs, log the error, rollback the session, and re-raise the exception.
+    - In case of an exception, log the error, rollback the session, and re-raise the exception.
 - **Output**: Returns a `GitProviderAppInstallation` object representing the installed access token.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
@@ -246,13 +243,13 @@ Updates an existing access token for a Git provider app installation.
     - `installation_id`: A string representing the installation ID.
     - `token_data`: A dictionary containing the new access token data.
 - **Logic and Control Flow**:
-    - Retrieve the installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) with the given `installation_id`.
-    - Check if the installation exists and matches the provided `organization_id` and `app_id`. If not, raise a `ValueError`.
-    - Get the provider instance using `self.get_provider` with the installation's app.
+    - Retrieve the installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) with the given `session` and `installation_id`.
+    - Check if the installation exists and matches the given `organization_id` and `app_id`. If not, raise a `ValueError`.
+    - Get the provider instance using `self.get_provider` with the installation's `git_provider_app`.
     - Validate the new access token using `provider.validate_access_token`. If invalid, raise a [`GitProviderAccessTokenError`](<../git_providers/utils/errors.py.md#gitprovideraccesstokenerror>).
     - Update the installation's secrets using `provider.update_secrets`, preserving the webhook secret.
     - Log the successful update of the access token.
-    - Return the updated installation object.
+    - Return the updated installation.
 - **Output**: Returns the updated `GitProviderAppInstallation` object.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
@@ -270,13 +267,13 @@ Updates an existing access token for a Git provider app installation.
 Revokes an access token for a specific installation and removes the installation from the database.
 - **Inputs**:
     - `session`: A `Session` object for database operations.
-    - `organization_id`: A string representing the organization ID to which the installation belongs.
+    - `organization_id`: A string representing the organization ID associated with the installation.
     - `app_id`: A string representing the application ID associated with the installation.
     - `installation_id`: A string representing the installation ID of the access token to revoke.
 - **Logic and Control Flow**:
-    - Attempts to retrieve the installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) with the provided `installation_id`.
-    - Checks if the installation exists and matches the given `organization_id` and `app_id`. If not, raises a `ValueError`.
-    - Retrieves the provider instance using `self.get_provider` with the installation's `git_provider_app`.
+    - Attempts to retrieve the installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) with the provided `session` and `installation_id`.
+    - Checks if the retrieved installation exists and matches the provided `organization_id` and `app_id`. If not, raises a `ValueError`.
+    - Retrieves the provider for the installation using `self.get_provider`.
     - Calls [`revoke_access`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacerevoke_access>) on the provider to revoke the access token for the installation.
     - Deletes the installation from the database using `session.delete` and commits the transaction with `session.commit`.
     - Logs an informational message indicating successful revocation of the access token.
@@ -293,7 +290,7 @@ Revokes an access token for a specific installation and removes the installation
 #### GitProviderService\.list\_repositories<!-- {{#callable:python-backend/backend/app/services/git_provider_service.GitProviderService.list_repositories}} -->
 [View Source →](<../../../../../backend/app/services/git_provider_service.py#L233>)
 
-Lists repositories for a specific installation.
+Lists repositories for a specific installation by verifying the installation and fetching repositories from the provider.
 - **Inputs**:
     - `session`: A `Session` object for database interaction.
     - `organization_id`: A string representing the organization ID.
@@ -301,13 +298,12 @@ Lists repositories for a specific installation.
     - `installation_id`: A string representing the installation ID.
 - **Logic and Control Flow**:
     - Attempts to retrieve the installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) with the provided `installation_id`.
-    - Checks if the retrieved installation exists and matches the given `organization_id` and `app_id`.
-    - Raises a `ValueError` if the installation is not found or does not match the provided IDs.
+    - Checks if the installation exists and matches the given `organization_id` and `app_id`. If not, raises a `ValueError`.
     - Retrieves the provider instance using `self.get_provider` with the installation's `git_provider_app`.
     - Calls `provider.fetch_repositories` to fetch and return the list of repositories for the installation.
-    - Catches `GitProviderAppRevokeError` to log an error message and handle access revocation using `self.handle_access_revoked`.
-    - Catches any other exceptions, logs an error message, and re-raises the exception.
-- **Output**: Returns a list of `GitRepository` objects for the specified installation.
+    - Handles `GitProviderAppRevokeError` by logging an error message, calling `self.handle_access_revoked`, and re-raising the exception.
+    - Logs any other exceptions that occur and re-raises them.
+- **Output**: Returns a list of `GitRepository` objects representing the repositories for the specified installation.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
     - [`python-backend/backend/app/services/git_provider_service.GitProviderService.get_provider`](<#gitproviderserviceget_provider>)
@@ -349,16 +345,16 @@ Retrieves webhook configuration information for a specific Git provider app inst
 #### GitProviderService\.\_extract\_installation\_id<!-- {{#callable:python-backend/backend/app/services/git_provider_service.GitProviderService._extract_installation_id}} -->
 [View Source →](<../../../../../backend/app/services/git_provider_service.py#L308>)
 
-Extracts the installation ID from webhook payload or headers based on the Git provider kind.
+Extracts the installation ID from webhook payload or headers based on the provider kind.
 - **Inputs**:
     - `provider_kind`: Specifies the type of Git provider, such as `GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED` or `GitProviderKind.BITBUCKET`.
     - `payload`: A dictionary containing the webhook payload data.
-    - `headers`: A dictionary containing the webhook headers.
+    - `headers`: A dictionary containing the headers from the webhook request.
 - **Logic and Control Flow**:
     - Checks if `provider_kind` is `GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED` and returns the installation ID from the `headers` using the key `x-installation-id`.
     - If `provider_kind` is `GitProviderKind.BITBUCKET`, attempts to retrieve the installation ID from the `headers` using the key `x-installation-id`.
-    - If the installation ID is not found in the headers for `GitProviderKind.BITBUCKET`, attempts to infer the installation ID from the `workspace` key in the `payload`.
-    - Returns `None` if the installation ID cannot be determined from either the headers or the payload.
+    - If the installation ID is not found in the headers for `GitProviderKind.BITBUCKET`, attempts to infer it from the `workspace` key in the `payload`.
+    - Returns `None` if the installation ID cannot be determined from the headers or payload.
 - **Output**: Returns the installation ID as a string if found, otherwise returns `None`.
 - **See also**: [`python-backend/backend/app/services/git_provider_service.GitProviderService`](<#gitproviderservice>)  (Base Class)
 
@@ -370,12 +366,12 @@ Extracts the installation ID from webhook payload or headers based on the Git pr
 Handles the revocation of access for a specific installation by revoking the access token and logging any errors.
 - **Inputs**:
     - `session`: A `Session` object used to interact with the database.
-    - `organization_id`: A string representing the unique identifier of the organization.
-    - `app_id`: A string representing the unique identifier of the application.
-    - `installation_id`: A string representing the unique identifier of the installation.
+    - `organization_id`: A string representing the ID of the organization.
+    - `app_id`: A string representing the ID of the application.
+    - `installation_id`: A string representing the ID of the installation.
 - **Logic and Control Flow**:
     - Logs the start of the access revocation process for the specified installation ID.
-    - Attempts to revoke the access token for the given installation by calling `self.revoke_access_token`.
+    - Attempts to revoke the access token by calling [`revoke_access_token`](<#gitproviderservicerevoke_access_token>) with the provided session, organization ID, app ID, and installation ID.
     - Catches any exceptions that occur during the revocation process and logs an error message.
 - **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
@@ -397,7 +393,7 @@ Routes a webhook event to the appropriate Git provider for handling.
     - Retrieve the app installation using [`git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) with the given `session` and `installation_id`.
     - If the app installation is not found, log an error and raise a `ValueError`.
     - Get the Git provider instance using [`get_provider`](<#gitproviderserviceget_provider>) with the app installation's `git_provider_app`.
-    - Call the [`handle_webhook_event`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacehandle_webhook_event>) method of the Git provider with the `headers`, `body`, and a [`WebhookEventContext`](<../git_providers/interfaces/provider_interface.py.md#webhookeventcontext>) object containing the app ID, installation ID, and organization ID.
+    - Call the [`handle_webhook_event`](<../git_providers/interfaces/provider_interface.py.md#gitproviderinterfacehandle_webhook_event>) method of the Git provider with the `headers`, `body`, and a [`WebhookEventContext`](<../git_providers/interfaces/provider_interface.py.md#webhookeventcontext>) object containing the app ID, installation ID, organization ID, and session.
 - **Output**: A dictionary containing the result of the webhook event handling by the Git provider.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
@@ -409,7 +405,7 @@ Routes a webhook event to the appropriate Git provider for handling.
 
 ---
 #### GitProviderService\.\_handle\_bitbucket\_webhook<!-- {{#callable:python-backend/backend/app/services/git_provider_service.GitProviderService._handle_bitbucket_webhook}} -->
-[View Source →](<../../../../../backend/app/services/git_provider_service.py#L362>)
+[View Source →](<../../../../../backend/app/services/git_provider_service.py#L363>)
 
 Handles Bitbucket webhook events with security validation and processes push events.
 - **Inputs**:
@@ -418,13 +414,14 @@ Handles Bitbucket webhook events with security validation and processes push eve
     - `headers`: A dictionary containing the headers of the webhook request.
     - `body`: A dictionary containing the body of the webhook request.
 - **Logic and Control Flow**:
-    - Convert the `app_install.id` to a string and store it in `installation_id`.
-    - Retrieve the `x-event-key` and `x-hub-signature` from the `headers` dictionary.
+    - Convert `app_install.id` to a string and store it in `installation_id`.
+    - Retrieve the event key from `headers` using the key `x-event-key`.
+    - Retrieve the incoming secret from `headers` using the key `x-hub-signature`.
     - Read the secret token from the secrets manager using the installation ID.
     - If the secret token exists and does not match the incoming secret, log an error and raise a `PermissionError`.
-    - Get the provider instance using the [`get_provider`](<#gitproviderserviceget_provider>) method with `app_install.git_provider_app`.
-    - If the event key is `repo:push`, log the event and call `handle_push_event` on the provider, passing the session, app ID, installation ID, and body.
-    - If the event key is not `repo:push`, return a dictionary with the message 'Event ignored'.
+    - Get the provider instance for the app installation using [`get_provider`](<#gitproviderserviceget_provider>).
+    - If the event key is `repo:push`, log the event and call `handle_push_event` on the provider with the session, app ID, installation ID, and body.
+    - If the event key is not `repo:push`, return a dictionary with the message `Event ignored`.
 - **Output**: A dictionary containing the result of the event handling, either from `handle_push_event` or a message indicating the event was ignored.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>)
@@ -438,7 +435,7 @@ Handles Bitbucket webhook events with security validation and processes push eve
 
 ---
 ### get\_git\_provider\_service<!-- {{#callable:python-backend/backend/app/services/git_provider_service.get_git_provider_service}} -->
-[View Source →](<../../../../../backend/app/services/git_provider_service.py#L408>)
+[View Source →](<../../../../../backend/app/services/git_provider_service.py#L409>)
 
 Returns a singleton instance of [`GitProviderService`](<#gitproviderservice>), creating it if it does not exist.
 - **Inputs**:

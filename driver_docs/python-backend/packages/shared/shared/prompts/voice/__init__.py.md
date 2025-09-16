@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Imports the `copy_editor` and `software_engineer` modules.
+Imports `copy_editor` and `software_engineer` modules.
 
 # Purpose
-This code is a module that imports two submodules: `copy_editor` and `software_engineer`. The import statement uses relative imports, indicating that these submodules are part of the same package as the current module. The comment `# flake8: noqa` at the top of the file instructs the Flake8 tool to ignore linting errors in this file. This module serves as a connector or aggregator for the `copy_editor` and `software_engineer` submodules, allowing other parts of the package to access their functionality through this module.
+This code is a module import statement that imports two modules: `copy_editor` and `software_engineer`. The import uses relative import syntax, indicating that these modules are part of the same package or directory structure. The `# flake8: noqa` comment at the top of the file instructs the Flake8 linter to ignore this file, which can be useful to bypass style checks or warnings for this specific import statement. This code provides narrow functionality by setting up dependencies for use in the current module or script.
 # Imports and Dependencies
 
 ---

@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines lists of code and metadata file extensions with comments for potential removal.
+Lists of code and metadata file extensions with comments for potential removal.
 
 # Purpose
-The code defines two lists of file extensions, `CODE_EXT` and `META_EXT`, which categorize different types of files based on their extensions. `CODE_EXT` includes extensions commonly associated with source code files across various programming languages, such as `.py`, `.java`, and `.cpp`. `META_EXT` contains extensions for metadata or configuration files, such as `.json`, `.yml`, and `.xml`. The presence of comments like "TODO remove" and "TODO: Possibly remove" suggests that some extensions may be under review for removal or modification. This code is likely part of a larger system that processes or categorizes files based on their extensions.
+This code defines two lists of file extensions, `CODE_EXT` and `META_EXT`, which categorize different types of files based on their extensions. The `CODE_EXT` list includes extensions commonly associated with source code files across various programming languages, such as `.py` for Python, `.java` for Java, and `.cpp` for C++. The `META_EXT` list contains extensions for metadata or configuration files, such as `.json`, `.yml`, and `.xml`. Comments within the code indicate that some extensions may be removed in the future, suggesting that the lists are subject to modification. This code serves as a configuration or reference for identifying and categorizing files by their extensions.
 # Global Variables
 
 ---
 ### CODE\_EXT
 - **Type**: ``list``
-- **Description**: A list of file extensions that are typically associated with source code files. These extensions include common programming and scripting languages such as Python (`.py`), Java (`.java`), C (`.c`), and many others.
-- **Use**: Used to identify or filter files that are considered source code based on their extensions.
+- **Description**: A list of file extensions that are typically associated with source code files. These extensions include common programming languages and script files such as Python, Java, C, and others.
+- **Use**: Used to identify or filter files based on their extensions in a software project.
 
 
 ---
 ### META\_EXT
 - **Type**: ``list``
-- **Description**: A list of file extensions that are typically used for metadata or configuration files. This list includes common formats such as JSON, YAML, and XML, as well as various text and markup file extensions.
-- **Use**: Used to identify and handle files that are related to metadata or configuration purposes.
+- **Description**: Contains a list of file extensions that are typically used for metadata or configuration files. These extensions include formats like JSON, YAML, TOML, Markdown, XML, and others that are commonly used for storing metadata or configuration data.
+- **Use**: Used to identify or filter files that are considered metadata or configuration files based on their extensions.
 
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A class for generating and appending TOML content using large language models, with support for auto-scaling and content summarization.
+Implements the `AutoToml` class for generating and appending TOML content using AI models, with support for auto-scaling and content summarization.
 
 # Purpose
-The code defines a class `AutoToml` that facilitates the generation and manipulation of TOML (Tom's Obvious, Minimal Language) content based on source files and PDF documents. The class is designed to work with a large language model (LLM), specifically `ChatOpenAI`, to generate and append TOML sections. It includes methods to initialize instances from node IDs or page IDs, gather summaries from source contents, and generate or append TOML content based on a given document goal and user context. The class also implements auto-scaling features to manage the processing of large datasets by scaling down the content of PDFs and code files when necessary.
+The code defines a class `AutoToml` that facilitates the generation and manipulation of TOML (Tom's Obvious, Minimal Language) documents based on source content from code files and PDF documents. The class is structured to handle various operations such as generating new TOML sections, appending to existing TOML documents, and gathering summaries from source content. It uses language models (`ChatOpenAI`) to generate responses based on system and user prompts, which are constructed using predefined templates and the content summaries.
 
-The `AutoToml` class uses several helper methods and classes, such as `NodeInfo`, `SourceStats`, and `ScaleMode`, to manage and process the data. It interacts with a database to fetch content and metadata related to nodes, which can be code files, directories, or PDFs. The class supports asynchronous operations to efficiently handle multiple tasks concurrently, such as generating summaries and interacting with the LLM. The code also includes mechanisms to handle content scaling and truncation to ensure that the generated summaries fit within token limits imposed by the LLM.
+The `AutoToml` class includes several methods for initializing instances from different types of node identifiers, such as [`from_node_ids`](<#autotomlfrom_node_ids>), [`from_page_id`](<#autotomlfrom_page_id>), and [`from_root_node_id`](<#autotomlfrom_root_node_id>). It also provides methods for generating and appending TOML content asynchronously, using the [`generate`](<#autotomlgenerate>) and [`append`](<#autotomlappend>) methods. The class supports auto-scaling of content processing based on the number of source files and PDF pages, with different scaling modes defined in the `ScaleMode` enumeration. The class interacts with a database to fetch content and metadata, and it uses various utility functions to manage content scaling, summary generation, and text truncation.
 # Imports and Dependencies
 
 ---
@@ -26,8 +26,8 @@ The `AutoToml` class uses several helper methods and classes, such as `NodeInfo`
 - `toml`
 - `aiolimiter.AsyncLimiter`
 - `chat_openai.ChatOpenAI`
-- `database.models_v2_enums.ContentKind`
-- `database.models_v2_enums.NodeKind`
+- `database.models_enums.ContentKind`
+- `database.models_enums.NodeKind`
 - `logger.logger`
 - `prompts._USER_CONTEXT_SIZE_MAP`
 - `prompts.NO_CONTENT_FOUND_RESPONSE`
@@ -38,40 +38,45 @@ The `AutoToml` class uses several helper methods and classes, such as `NodeInfo`
 - `prompts.generate_user_prompt`
 - `prompts.summary_system_prompt`
 - `prompts.summary_user_prompt`
+- `shared.chunking.text_splitter.split_text`
 - `shared.prompts.structured_prompting.Prompt`
 - `sqlalchemy.func`
 - `sqlmodel.or_`
 - `sqlmodel.select`
+- `tqdm.asyncio.tqdm_asyncio`
 - `database.db.get_session`
-- `database.models_v1.DocumentSource`
-- `database.models_v1.DerivedContent`
-- `database.models_v2.Node`
+- `database.models.DocumentSource`
+- `database.models.DerivedContent`
+- `database.models.Node`
 
 
 # Classes
 
 ---
 ### AutoToml<!-- {{#class:python-backend/content_services/auto_toml/src/auto_toml.AutoToml}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L34>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L36>)
 
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `LLM_MODEL`: Specifies the language model used for generating responses.
-    - `MAX_CONCURRENT_SUMMARIES`: Defines the maximum number of concurrent summaries that can be processed.
-    - `SCALING_THRESHOLD`: Sets the threshold for scaling operations based on the number of sources.
-    - `REQUESTS_PER_SECOND`: Limits the number of requests that can be made per second.
-    - `MAX_CODE_SCALE_FACTOR`: Determines the maximum scaling factor for code content.
-    - `PDF_SCALE_FACTOR`: Specifies the scaling factor for PDF content.
-    - `MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS`: Sets the minimum file count threshold to decide when to use directory contents.
+    - `LLM_SCATTER_MODEL`: Specifies the model used for LLM scatter operations.
+    - `LLM_TOML_MODEL`: Specifies the model used for LLM TOML operations.
+    - `MAX_CONCURRENT_SUMMARIES`: Defines the maximum number of concurrent summaries allowed.
+    - `SCALING_THRESHOLD`: Sets the threshold for scaling operations.
+    - `REQUESTS_PER_SECOND`: Limits the number of requests per second.
+    - `MAX_CODE_SCALE_FACTOR`: Specifies the maximum scale factor for code content.
+    - `PDF_SCALE_FACTOR`: Specifies the scale factor for PDF content.
+    - `MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS`: Defines the minimum file count threshold for using directories.
     - `node_ids`: Stores a list of node identifiers.
-    - `enable_auto_scaling`: Indicates whether auto-scaling is enabled.
-    - `llm`: Holds an instance of the language model used for generating responses.
+    - `enable_auto_scaling`: Indicates if auto-scaling is enabled.
+    - `llm_scatter`: Holds the ChatOpenAI instance for scatter operations.
+    - `llm_toml`: Holds the ChatOpenAI instance for TOML operations.
     - `code_contents`: Contains a list of code content dictionaries.
     - `pdf_contents`: Contains a list of PDF content dictionaries.
-- **Description**: Facilitates the generation and manipulation of TOML content based on document goals and user context. It supports auto-scaling of content processing by adjusting the scale of code and PDF content based on predefined thresholds. The class uses a language model to generate and append TOML sections, and it manages content from various sources, including codebase files, PDFs, and directories. It also provides methods to initialize instances from node IDs or page IDs, and to gather and summarize content from these sources.
+- **Description**: Represents a system for generating and managing TOML configurations based on document goals and user context. It includes nested classes for node information and source statistics, and an enumeration for scaling modes. The class supports operations like generating and appending TOML sections, gathering summaries, and applying scaling to content. It uses language models for processing and can handle both code and PDF content.
 - **Methods**:
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<#autotomlfrom_node_ids>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<#autotomlfrom_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_root_node_id`](<#autotomlfrom_root_node_id>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<#autotomlgenerate>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<#autotomlappend>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._gather_summaries`](<#autotoml_gather_summaries>)
@@ -91,16 +96,15 @@ The `AutoToml` class uses several helper methods and classes, such as `NodeInfo`
 
 ---
 #### AutoToml\.from\_node\_ids<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L73>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L79>)
 
-Creates an instance of the class using a list of node IDs and an auto-scaling option.
+Initializes an instance of the class using a list of node IDs and an auto-scaling option.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `node_ids`: A list of strings representing node IDs.
     - `enable_auto_scaling`: A boolean indicating whether to enable auto-scaling.
 - **Logic and Control Flow**:
-    - Calls the [`_initialize`](<#autotoml_initialize>) class method with `node_ids` and `enable_auto_scaling` as arguments.
-    - Returns the result of the [`_initialize`](<#autotoml_initialize>) method call.
+    - Calls the [`_initialize`](<#autotoml_initialize>) method of the class with the provided `node_ids` and `enable_auto_scaling` arguments.
 - **Output**: An instance of the class.
 - **Functions Called**:
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._initialize`](<#autotoml_initialize>)
@@ -109,21 +113,21 @@ Creates an instance of the class using a list of node IDs and an auto-scaling op
 
 ---
 #### AutoToml\.from\_page\_id<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L79>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L85>)
 
 Initializes an instance of the class using document sources associated with a given page ID.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `page_id`: A UUID representing the page ID for which to fetch document sources.
-    - `enable_auto_scaling`: A boolean indicating whether to enable auto-scaling for the instance.
+    - `page_id`: A UUID representing the page ID to fetch document sources for.
+    - `enable_auto_scaling`: A boolean indicating whether to enable auto-scaling.
 - **Logic and Control Flow**:
-    - Logs the action of fetching document sources for the given `page_id`.
-    - Opens a session with the database using `get_session()`.
+    - Logs the action of fetching document sources for the given page ID.
+    - Opens a database session using [`get_session`](<../../../driver_db/database/db.py.md#get_session>).
     - Executes a query to select `DocumentSource` entries where `page_node_id` matches the given `page_id`.
-    - Raises a `ValueError` if no document sources are found for the given `page_id`.
-    - Extracts `source_node_id` from each `DocumentSource` and converts them to strings to form the `node_ids` list.
-    - Calls the [`_initialize`](<#autotoml_initialize>) method with `node_ids` and `enable_auto_scaling` to create and return an instance of the class.
-- **Output**: Returns an instance of the class initialized with the node IDs and auto-scaling setting.
+    - Raises a `ValueError` if no document sources are found for the given page ID.
+    - Extracts `source_node_id` from each `DocumentSource` and converts them to strings to form a list of `node_ids`.
+    - Calls the [`_initialize`](<#autotoml_initialize>) method with the list of `node_ids` and the `enable_auto_scaling` flag to create and return an instance of the class.
+- **Output**: Returns an instance of the class initialized with the node IDs and auto-scaling option.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._initialize`](<#autotoml_initialize>)
@@ -131,114 +135,124 @@ Initializes an instance of the class using document sources associated with a gi
 
 
 ---
-#### AutoToml\.generate<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L98>)
+#### AutoToml\.from\_root\_node\_id<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_root_node_id}} -->
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L104>)
 
-Generates a TOML document based on a specified goal and user context by gathering summaries from source files and PDF pages, and using a language model to create new TOML sections.
-- **Decorators**: `@async`
+Initializes an instance of the class using a single root node ID and an auto-scaling option.
+- **Decorators**: `@classmethod`
 - **Inputs**:
-    - `document_goal`: A string that specifies the goal of the document to generate.
+    - `root_node_id`: A UUID representing the root node ID to initialize the class instance.
+    - `enable_auto_scaling`: A boolean indicating whether to enable auto-scaling for the instance.
+- **Logic and Control Flow**:
+    - Calls the class method [`_initialize`](<#autotoml_initialize>) with a list containing the `root_node_id` and the `enable_auto_scaling` flag.
+    - Returns the result of the [`_initialize`](<#autotoml_initialize>) method call.
+- **Output**: An instance of the class initialized with the specified root node ID and auto-scaling option.
+- **Functions Called**:
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._initialize`](<#autotoml_initialize>)
+- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
+
+
+---
+#### AutoToml\.generate<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate}} -->
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L110>)
+
+Generates a TOML document based on a specified goal and user context by gathering summaries from source files and PDF pages.
+- **Inputs**:
+    - `document_goal`: A string representing the goal of the document to generate.
     - `user_context`: An optional string providing additional context for the user, defaulting to an empty string.
 - **Logic and Control Flow**:
     - Logs the start of the TOML generation process with the provided document goal and user context.
-    - Logs the number of source files/directories and PDF pages to gather summaries from.
-    - Transforms the `user_context` using a prompt size map and converts it to a string.
-    - Calls the asynchronous method [`_gather_summaries`](<#autotoml_gather_summaries>) to collect summaries from the source contents, which include code and PDF contents.
-    - Generates system and user prompts using the [`generate_system_prompt`](<prompts.py.md#generate_system_prompt>) and [`generate_user_prompt`](<prompts.py.md#generate_user_prompt>) functions, respectively.
-    - Calls the language model's [`generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenaigenerate_response>) method with the generated prompts to create new TOML sections.
-    - Formats the output by combining the document goal and the generated TOML sections into a single string.
+    - Checks if the user context is in the `_USER_CONTEXT_SIZE_MAP` and updates it accordingly.
+    - Calls the [`_gather_summaries`](<#autotoml_gather_summaries>) method to collect summaries from the source files and PDF pages.
+    - Generates system and user prompts using `generate_system_prompt` and `generate_user_prompt` functions.
+    - Calls the [`generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenaigenerate_response>) method of `llm_toml` with the generated prompts to create new TOML sections.
+    - Formats the output by combining the document goal and the generated TOML sections.
     - Logs the generated output for debugging purposes.
-    - Returns the formatted TOML output.
-- **Output**: A string representing the generated TOML document, including the document goal and new TOML sections.
+- **Output**: A string containing the generated TOML document with the specified goal and sections.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._gather_summaries`](<#autotoml_gather_summaries>)
-    - [`python-backend/content_services/auto_toml/src/prompts.generate_system_prompt`](<prompts.py.md#generate_system_prompt>)
-    - [`python-backend/content_services/auto_toml/src/prompts.generate_user_prompt`](<prompts.py.md#generate_user_prompt>)
     - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenaigenerate_response>)
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
 
 
 ---
 #### AutoToml\.append<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L139>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L154>)
 
-Appends user-supplied TOML data with additional generated TOML sections based on the provided context and document goal.
-- **Decorators**: `@async`
+Appends additional TOML sections to user-supplied TOML content based on gathered summaries and user context.
 - **Inputs**:
-    - `user_toml`: A string containing the user-supplied TOML data.
+    - `user_toml`: A string containing the user-supplied TOML content.
     - `user_context`: An optional string providing additional context for the user, defaulting to an empty string.
 - **Logic and Control Flow**:
     - Logs the user-supplied TOML and additional user context for debugging purposes.
     - Parses the `user_toml` string into a dictionary using the `toml.loads` function.
-    - Isolates sections from the parsed TOML using the [`_isolate_sections`](<#autotoml_isolate_sections>) method.
-    - Extracts the document goal from the parsed TOML if available.
+    - Isolates sections from the parsed TOML content using the [`_isolate_sections`](<#autotoml_isolate_sections>) method.
+    - Extracts the document goal from the parsed TOML content if available.
     - Logs the number of source files and PDF pages to gather summaries from.
-    - Calls the [`_gather_summaries`](<#autotoml_gather_summaries>) method asynchronously to collect summaries from the source contents, passing the document goal and user context.
-    - Generates system and user prompts using [`append_system_prompt`](<prompts.py.md#append_system_prompt>) and [`append_user_prompt`](<prompts.py.md#append_user_prompt>) functions, respectively.
-    - Calls the [`generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenaigenerate_response>) method of the `llm` object asynchronously to generate additional TOML sections based on the prompts.
-    - Concatenates the original `user_toml` with the generated TOML sections to form the final output.
-    - Logs the final output for debugging purposes.
-    - Returns the concatenated TOML string as the output.
-- **Output**: A string containing the original user-supplied TOML data appended with additional generated TOML sections.
+    - Calls the [`_gather_summaries`](<#autotoml_gather_summaries>) method asynchronously to obtain a summary of the source contents based on the document goal and user context.
+    - Generates system and user prompts using `append_system_prompt` and `append_user_prompt` functions, respectively.
+    - Logs the process of generating additional TOML sections.
+    - Calls the [`generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenaigenerate_response>) method of `llm_toml` asynchronously to generate additional TOML sections based on the prompts.
+    - Concatenates the original `user_toml` with the generated TOML sections and logs the final output.
+    - Returns the concatenated TOML content as the output.
+- **Output**: A string containing the original user-supplied TOML content appended with additional generated TOML sections.
 - **Functions Called**:
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._isolate_sections`](<#autotoml_isolate_sections>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._gather_summaries`](<#autotoml_gather_summaries>)
-    - [`python-backend/content_services/auto_toml/src/prompts.append_system_prompt`](<prompts.py.md#append_system_prompt>)
-    - [`python-backend/content_services/auto_toml/src/prompts.append_user_prompt`](<prompts.py.md#append_user_prompt>)
     - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenaigenerate_response>)
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
 
 
 ---
 #### AutoToml\.\_gather\_summaries<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._gather_summaries}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L178>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L193>)
 
-Asynchronously gathers and summarizes content from multiple sources based on a document goal and user context.
+Asynchronously gathers and processes summaries from given source contents based on a document goal and user context.
+- **Decorators**: `@asyncio`
 - **Inputs**:
-    - `document_goal`: A string that specifies the goal of the document for which summaries are generated.
-    - `user_context`: A string that provides additional context from the user to guide the summary generation.
-    - `source_contents`: An iterable of dictionaries, each containing a path as the key and the corresponding content as the value.
+    - `document_goal`: A string representing the goal of the document for which summaries are generated.
+    - `user_context`: A string providing additional context from the user to guide summary generation.
+    - `source_contents`: An iterable of dictionaries, each containing a path as the key and corresponding content as the value.
 - **Logic and Control Flow**:
-    - Initializes an empty list `results` to store tasks.
-    - Creates an asynchronous task group using `asyncio.TaskGroup`.
-    - Iterates over each `source_content` in `source_contents`.
-    - For each `source_content`, retrieves the `path` and `content`.
-    - Creates an asynchronous task to generate a summary for each `path` and `content` using [`_generate_summary`](<#autotoml_generate_summary>) and adds it to the task group.
-    - Appends each task to the `results` list.
-    - After all tasks complete, joins the results of each task into a single string `summary`, filtering out empty results.
-    - Prints the length of the `summary` before truncation.
-    - Truncates the `summary` using [`_truncate_text`](<#autotoml_truncate_text>) and prints the length after truncation.
-    - Checks if the `summary` was truncated and logs an error if it was.
-    - Returns the final `summary`.
-- **Output**: A string containing the concatenated summaries of all source contents, possibly truncated to fit within token limits.
+    - Initialize an empty list `tasks` to store asynchronous tasks for summary generation.
+    - Iterate over each `source_content` in `source_contents`.
+    - For each `source_content`, extract the `path` and `content`.
+    - Append a task to `tasks` to generate a summary using [`_generate_summary`](<#autotoml_generate_summary>) with the extracted `path`, a system prompt, and a user prompt.
+    - Use `tqdm_asyncio.gather` to execute all tasks concurrently and collect the results in `summaries`.
+    - Join non-empty summaries with double newlines to form a single `summary` string.
+    - Print the length of the `summary` before truncation.
+    - Split the `summary` into chunks if it exceeds a certain size, using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>).
+    - If multiple chunks exist, initialize an empty `new_summary` and create tasks to generate summaries for each chunk.
+    - Gather results from chunk tasks and join them to form `new_summary`.
+    - Print the length of `new_summary` after compression.
+    - If `new_summary` differs from the original `summary`, log an error and update `summary` with `new_summary`.
+- **Output**: Returns a string containing the combined summaries of the source contents.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._generate_summary`](<#autotoml_generate_summary>)
-    - [`python-backend/content_services/auto_toml/src/prompts.summary_system_prompt`](<prompts.py.md#summary_system_prompt>)
-    - [`python-backend/content_services/auto_toml/src/prompts.summary_user_prompt`](<prompts.py.md#summary_user_prompt>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<#autotomlappend>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._truncate_text`](<#autotoml_truncate_text>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._generate_summary`](<#autotoml_generate_summary>)
+    - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
 
 
 ---
 #### AutoToml\.\_generate\_summary<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._generate_summary}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L221>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L257>)
 
 Generates a summary for a given path using system and user prompts, handling concurrency and exceptions.
 - **Inputs**:
-    - `path`: The file path for which to generate a summary.
-    - `system_prompt`: The system prompt to guide the summary generation.
-    - `user_prompt`: The user prompt to guide the summary generation.
+    - `path`: A string representing the file or directory path for which to generate a summary.
+    - `system_prompt`: A string containing the system prompt to guide the summary generation.
+    - `user_prompt`: A string containing the user prompt to guide the summary generation.
 - **Logic and Control Flow**:
     - Uses an asynchronous context manager with a semaphore and rate limiter to control concurrency and request rate.
-    - Attempts to generate a summary using the `llm.generate_response` method with the provided prompts.
+    - Attempts to generate a summary using the `llm_scatter.generate_response` method with the provided prompts.
     - Checks if the generated summary contains `NO_CONTENT_FOUND_RESPONSE` and returns an empty string if true.
-    - Returns the path and summary concatenated if relevant content is found.
+    - Returns the path and summary concatenated if content is found.
     - Catches exceptions, logs them, and re-raises them.
-- **Output**: A string containing the path and the generated summary, or an empty string if no relevant content is found.
+- **Output**: A string containing the generated summary or an empty string if no content is found.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenaigenerate_response>)
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
@@ -246,40 +260,39 @@ Generates a summary for a given path using system and user prompts, handling con
 
 ---
 #### AutoToml\.\_isolate\_sections<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._isolate_sections}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L241>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L277>)
 
-Processes TOML content to isolate and format specific sections while applying substitutions.
+Processes a dictionary of TOML content to isolate and format specific sections.
 - **Inputs**:
-    - `toml_content`: A dictionary representing TOML content, which may include sections and optional substitutions.
+    - `toml_content`: A dictionary containing TOML content with potential keys like 'substitutions' and 'sections'.
 - **Logic and Control Flow**:
-    - Defines a list of keys to keep in each section: `title`, `level`, `instruction`, and `content_structure`.
-    - Checks if `substitutions` exist in `toml_content` and creates a mapping dictionary from it; otherwise, sets `mapping` to `None`.
-    - Retrieves the `sections` from `toml_content`, defaulting to an empty list if not present.
-    - Iterates over each section in `sections`.
-    - If `mapping` is not `None`, attempts to format `instruction` and `content_structure` strings in each section using `mapping`. Logs a warning if a substitution key is missing.
-    - Removes any keys from each section that are not in the `KEYS_TO_KEEP` list.
-    - Converts the modified sections back to a TOML string and returns it.
+    - Defines a list of keys to keep in each section: 'title', 'level', 'instruction', and 'content_structure'.
+    - Checks if 'substitutions' exist in the input dictionary and creates a mapping of keys to values if present.
+    - Iterates over each section in the 'sections' list from the input dictionary.
+    - If a mapping exists, attempts to format 'instruction' and 'content_structure' strings in each section using the mapping, logging a warning if a key is missing.
+    - Removes any keys from each section that are not in the predefined list of keys to keep.
+    - Converts the modified sections back into a TOML string format and returns it.
 - **Output**: A string representing the modified TOML content with isolated sections.
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
 
 
 ---
 #### AutoToml\.\_initialize<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._initialize}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L276>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L312>)
 
-Initializes an instance of the class with node IDs, auto-scaling settings, and content data.
+Initializes an instance of the `AutoToml` class with specified node IDs and auto-scaling settings.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `node_ids`: A list of node IDs as strings to initialize the instance.
+    - `node_ids`: A list of strings representing the node IDs to initialize.
     - `enable_auto_scaling`: A boolean indicating whether to enable auto-scaling.
 - **Logic and Control Flow**:
-    - Creates an instance of [`ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenai>) with a specified model, temperature, and request timeout.
+    - Creates instances of [`ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenai>) for `llm_scatter` and `llm_toml` with specific models and settings.
     - Retrieves source statistics using [`_get_source_stats`](<#autotoml_get_source_stats>) with the provided `node_ids`.
     - Checks if `enable_auto_scaling` is true; if so, determines the scale mode and code scale factor using [`_get_scale_mode_and_factor`](<#autotoml_get_scale_mode_and_factor>).
     - Logs the node IDs being processed.
-    - Obtains code and PDF content by calling [`_get_content_and_apply_scaling`](<#autotoml_get_content_and_apply_scaling>) with the determined scale mode and code scale factor.
-    - Returns a new instance of the class with the initialized parameters and content data.
-- **Output**: Returns an instance of the class initialized with the specified node IDs, auto-scaling settings, and content data.
+    - Calls [`_get_content_and_apply_scaling`](<#autotoml_get_content_and_apply_scaling>) to retrieve and possibly scale the content based on the determined scale mode and factor.
+    - Returns a new instance of `AutoToml` initialized with the provided and computed parameters.
+- **Output**: Returns an instance of the `AutoToml` class initialized with the specified parameters.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#chatopenai>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._get_source_stats`](<#autotoml_get_source_stats>)
@@ -290,14 +303,14 @@ Initializes an instance of the class with node IDs, auto-scaling settings, and c
 
 ---
 #### AutoToml\.\_get\_content\_and\_apply\_scaling<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._get_content_and_apply_scaling}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L306>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L348>)
 
-Retrieves content based on the scaling mode and applies scaling to PDF and code contents as necessary.
+Retrieves content and applies scaling based on the specified scale mode and factors.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `stats`: An instance of `SourceStats` containing statistics about the source files, PDFs, and directories.
     - `scale_mode`: An instance of `ScaleMode` indicating the scaling mode to apply.
-    - `code_scale_factor`: An integer or `None` representing the factor by which to scale the code content.
+    - `code_scale_factor`: An optional integer specifying the scale factor for code content.
 - **Logic and Control Flow**:
     - Uses a `match` statement to determine the action based on `scale_mode`.
     - If `scale_mode` is `ScaleMode.NONE`, retrieves file and PDF content without scaling.
@@ -314,9 +327,9 @@ Retrieves content based on the scaling mode and applies scaling to PDF and code 
 
 ---
 #### AutoToml\.\_get\_scale\_mode\_and\_factor<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._get_scale_mode_and_factor}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L358>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L400>)
 
-Determines the scaling mode and factor for processing source files and PDF pages based on given statistics.
+Determines the scaling mode and factor for processing source files and PDFs based on given statistics.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `stats`: An instance of `SourceStats` containing counts of PDF pages, source files, and directories.
@@ -326,8 +339,8 @@ Determines the scaling mode and factor for processing source files and PDF pages
     - If `source_ct` exceeds `SCALING_THRESHOLD`, set `mode` to `ScaleMode.SCALE_PDFS` and reduce `pdf_page_ct` by `PDF_SCALE_FACTOR`.
     - Recalculate `source_ct` and check if `source_file_ct` exceeds `SCALING_THRESHOLD` while `pdf_page_ct` is below it.
     - If true, calculate `code_scale_factor` and check if it is within `MAX_CODE_SCALE_FACTOR` and the new `source_ct` is within `SCALING_THRESHOLD`.
-    - If conditions are met, set `mode` to `ScaleMode.SCALE_PDF_AND_CODE` and adjust `source_file_ct` accordingly.
-    - If conditions are not met and `directory_ct` is greater than 0, set `mode` to `ScaleMode.SCALE_PDF_AND_USE_DIRS`.
+    - If conditions are met, set `mode` to `ScaleMode.SCALE_PDF_AND_CODE` and adjust `source_file_ct` by `code_scale_factor`.
+    - If not, and `directory_ct` is greater than 0, set `mode` to `ScaleMode.SCALE_PDF_AND_USE_DIRS`.
     - If `source_ct` still exceeds `SCALING_THRESHOLD`, set `mode` to `ScaleMode.FAIL`.
     - Finally, set `mode` to `ScaleMode.SCALE_PDFS` if `directory_ct` is 0 or `source_file_ct` is below `MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS`, otherwise set it to `ScaleMode.SCALE_PDF_AND_USE_DIRS`.
 - **Output**: A tuple containing the determined `ScaleMode` and the `code_scale_factor`.
@@ -336,26 +349,26 @@ Determines the scaling mode and factor for processing source files and PDF pages
 
 ---
 #### AutoToml\.\_get\_source\_stats<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._get_source_stats}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L408>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L450>)
 
-Retrieves and calculates statistics for nodes based on their IDs, including counts of PDF pages, source files, and directories.
+Retrieves and calculates statistics for a set of nodes based on their IDs.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `node_ids`: A list of node IDs as strings to query and analyze.
+    - `node_ids`: A list of node IDs for which to retrieve statistics.
 - **Logic and Control Flow**:
-    - Import necessary modules and classes for database interaction and model definitions.
-    - Open a database session using `get_session()`.
-    - Execute a query to select nodes from the `Node` table where the node ID is in `node_ids`.
-    - Initialize empty lists for `codebase_file_nodes`, `pdf_nodes`, and `directory_nodes`.
-    - Iterate over the retrieved nodes and classify them into `codebase_file_nodes`, `pdf_nodes`, or `directory_nodes` based on their kind.
-    - Calculate the count of PDF pages by querying `DerivedContent` for nodes in `pdf_nodes` with content kind `PDF_EXTRACTED_TEXT`.
-    - Calculate the count of source files by querying `DerivedContent` for nodes in `codebase_file_nodes` with content kind `LONG_DESCRIPTION`.
-    - If `directory_nodes` is not empty, build path conditions and calculate additional source file and directory counts by querying `DerivedContent` joined with `Node`.
-    - Return a [`SourceStats`](<#sourcestats>) object with the calculated counts and node lists.
-- **Output**: An instance of [`SourceStats`](<#sourcestats>) containing counts of PDF pages, source files, directories, and lists of node information for codebase files, PDFs, and directories.
+    - Imports necessary modules and functions from the database.
+    - Opens a session with the database to execute queries.
+    - Queries the database to retrieve nodes matching the provided node IDs.
+    - Classifies nodes into codebase files, PDFs, and directories based on their kind.
+    - Counts the number of PDF pages by querying `DerivedContent` for PDF nodes.
+    - Counts the number of source files by querying `DerivedContent` for codebase file nodes and directories.
+    - Counts the number of directories by querying `DerivedContent` for directory nodes.
+    - Returns a [`SourceStats`](<#sourcestats>) object containing the counts and lists of node information.
+- **Output**: Returns a [`SourceStats`](<#sourcestats>) object containing counts of PDF pages, source files, directories, and lists of node information for codebase files, PDFs, and directories.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.NodeInfo`](<#nodeinfo>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<#autotomlappend>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._build_path_conditions`](<#autotoml_build_path_conditions>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.SourceStats`](<#sourcestats>)
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
@@ -363,18 +376,17 @@ Retrieves and calculates statistics for nodes based on their IDs, including coun
 
 ---
 #### AutoToml\.\_build\_path\_conditions<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._build_path_conditions}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L502>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L543>)
 
-Constructs a list of path conditions for directory nodes based on their version IDs and relative paths.
+Builds a list of path conditions for directory nodes based on their version IDs and relative paths.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `directory_nodes`: A list of `AutoToml.NodeInfo` objects representing directory nodes.
 - **Logic and Control Flow**:
-    - Import the `Node` class from `database.models_v2`.
+    - Import the `Node` class from `database.models`.
     - Initialize an empty list `path_conditions`.
     - Iterate over each `dir_node` in `directory_nodes`.
-    - For each `dir_node`, create a condition that checks if `Node.version_id` matches `dir_node.version_id` and `Node.relative_path` starts with `dir_node.relative_path`.
-    - Append the condition to `path_conditions`.
+    - For each `dir_node`, append a condition to `path_conditions` that checks if `Node.version_id` matches `dir_node.version_id` and if `Node.relative_path` starts with `dir_node.relative_path`.
     - Return the `path_conditions` list.
 - **Output**: A list of path conditions, where each condition is a conjunction of a version ID match and a relative path prefix match.
 - **Functions Called**:
@@ -384,26 +396,26 @@ Constructs a list of path conditions for directory nodes based on their version 
 
 ---
 #### AutoToml\.\_get\_file\_and\_pdf\_content<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._get_file_and_pdf_content}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L514>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L555>)
 
-Retrieves and categorizes content from codebase files and PDFs based on provided node statistics.
+Retrieves and categorizes content from codebase files and PDF nodes based on provided statistics.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `stats`: An instance of `SourceStats` containing node statistics for codebase files, PDFs, and directories.
+    - `stats`: An instance of `SourceStats` containing information about codebase file nodes, PDF nodes, and directory nodes.
 - **Logic and Control Flow**:
-    - Imports necessary modules and functions for database interaction and model definitions.
-    - Opens a database session using [`get_session`](<../../../driver_db/database/db.py.md#get_session>).
+    - Imports necessary modules and functions from `database.db` and `database.models`.
     - Initializes empty lists `code_contents` and `pdf_contents` to store content.
     - Checks if there are any codebase file nodes or PDF nodes in `stats`.
-    - If there are nodes, retrieves their IDs and executes a query to fetch `DerivedContent` for these nodes based on specific content kinds.
-    - Creates a lookup dictionary to map node IDs to their relative paths and type (code or PDF).
-    - Iterates over the query results, categorizing content into `code_contents` or `pdf_contents` based on the node type.
-    - If there are directory nodes, builds path conditions and executes a query to fetch `DerivedContent` for these directories, extending `code_contents`.
-    - If no content is found in both `code_contents` and `pdf_contents`, raises a `ValueError` with the IDs of the nodes that were checked.
+    - If there are nodes, retrieves their IDs and executes a query to fetch `DerivedContent` for these nodes with specific content kinds.
+    - Creates a lookup dictionary to map node IDs to their relative paths and whether they are PDFs.
+    - Iterates over the query results, categorizing content into `code_contents` or `pdf_contents` based on whether the content is from a PDF node.
+    - If there are directory nodes, builds path conditions and executes a query to fetch `DerivedContent` for these directories, extending `code_contents` with the results.
+    - Raises a `ValueError` if no content is found for any of the provided nodes.
     - Returns the `code_contents` and `pdf_contents` as a tuple.
 - **Output**: A tuple containing two lists: `code_contents` and `pdf_contents`, each list containing dictionaries mapping relative paths to content strings.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<#autotomlappend>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._build_path_conditions`](<#autotoml_build_path_conditions>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptextend>)
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
@@ -411,24 +423,24 @@ Retrieves and categorizes content from codebase files and PDFs based on provided
 
 ---
 #### AutoToml\.\_get\_directory\_and\_pdf\_content<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._get_directory_and_pdf_content}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L595>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L635>)
 
-Retrieves and returns content from PDF and directory nodes based on the provided `SourceStats`.
+Retrieves and returns content from PDF and directory nodes based on provided statistics.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `stats`: An instance of `SourceStats` containing lists of PDF and directory nodes.
 - **Logic and Control Flow**:
-    - Import necessary modules and classes for database interaction.
-    - Open a database session using `get_session()`.
+    - Import necessary modules and classes from `database.db` and `database.models`.
+    - Open a session with the database using `get_session()`.
     - Initialize `pdf_nodes` and `directory_nodes` from `stats`, defaulting to empty lists if not present.
     - Initialize empty lists `directory_contents` and `pdf_contents` to store results.
-    - If `pdf_nodes` is not empty, extract node IDs and query `DerivedContent` for PDF content.
-    - Map PDF node IDs to their relative paths and populate `pdf_contents` with non-null content.
-    - If `directory_nodes` is not empty, build path conditions and query `DerivedContent` and `Node` for directory content.
-    - Populate `directory_contents` with non-null content using relative paths from `Node`.
+    - If `pdf_nodes` is not empty, extract node IDs and query `DerivedContent` for PDF extracted text content.
+    - Map PDF node IDs to their relative paths and populate `pdf_contents` with content from query results.
+    - If `directory_nodes` is not empty, build path conditions using [`_build_path_conditions`](<#autotoml_build_path_conditions>) and query `DerivedContent` and `Node` for long descriptions.
+    - Populate `directory_contents` with content from query results based on path conditions.
     - If both `directory_contents` and `pdf_contents` are empty, raise a `ValueError` indicating no content found for the provided nodes.
     - Return `directory_contents` and `pdf_contents` as a tuple.
-- **Output**: A tuple containing two lists: `directory_contents` and `pdf_contents`, each a list of dictionaries mapping relative paths to content.
+- **Output**: A tuple containing two lists: `directory_contents` and `pdf_contents`, each list containing dictionaries mapping node relative paths to their content.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._build_path_conditions`](<#autotoml_build_path_conditions>)
@@ -438,49 +450,52 @@ Retrieves and returns content from PDF and directory nodes based on the provided
 
 ---
 #### AutoToml\.\_truncate\_text<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._truncate_text}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L658>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L697>)
 
-Truncates a given text to fit within a token limit based on a specified scale factor.
+Truncates a given text to fit within a token limit based on the specified language model and scale factor.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `text`: The text to truncate.
-    - `scale_factor`: An optional integer that determines the scaling factor for the token limit, defaulting to 1.
+    - `llm`: An instance of `ChatOpenAI` or `None`, representing the language model to use for encoding.
+    - `scale_factor`: An integer that adjusts the token limit, defaulting to 1.
 - **Logic and Control Flow**:
-    - Determine the encoder based on the class variable `LLM_MODEL`.
+    - Determine the encoder based on the provided language model `llm` or use the class variable `LLM_SCATTER_MODEL` if `llm` is `None` or does not match specific models.
     - Calculate the maximum number of tokens allowed by multiplying the token limit of the model by 0.7 and dividing by the `scale_factor`.
-    - Encode the input `text` into tokens using the encoder.
+    - Encode the input `text` into tokens using the determined encoder.
     - Check if the number of tokens exceeds the calculated `max_tokens`.
     - If the number of tokens exceeds `max_tokens`, truncate the tokens to `max_tokens` and decode them back into text.
-- **Output**: Returns the truncated text as a string.
+    - Return the possibly truncated text.
+- **Output**: The truncated text as a string.
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
 
 
 ---
 #### AutoToml\.\_scale\_contents<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml.AutoToml._scale_contents}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L674>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L721>)
 
-Scales and optionally truncates a list of content dictionaries based on a given scale factor.
+Scales and potentially truncates a list of content dictionaries based on a given scale factor.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `contents`: A list of dictionaries where each dictionary contains a single key-value pair representing content.
-    - `scale_factor`: An integer that determines the scaling factor for processing the contents.
+    - `contents`: A list of dictionaries where each dictionary has a single key-value pair representing content to scale.
+    - `scale_factor`: An integer that determines the scaling factor for the content.
 - **Logic and Control Flow**:
-    - Initialize an empty list `scaled_contents` to store the processed content.
-    - Iterate over the `contents` list in steps defined by `scale_factor`.
-    - For each subset of contents, extract keys and values from the dictionaries.
+    - Initialize an empty list `scaled_contents` to store the scaled content.
+    - Iterate over the `contents` list in steps of `scale_factor`.
+    - For each subset of content, extract keys and values from the dictionaries.
     - Iterate over the values and truncate them using the [`_truncate_text`](<#autotoml_truncate_text>) method if necessary, logging a warning if truncation occurs.
-    - Join the keys and values into single strings separated by newlines.
-    - Append a new dictionary with the joined key and value to `scaled_contents`.
-- **Output**: Returns a list of dictionaries, each containing a single key-value pair with scaled and possibly truncated content.
+    - Join the keys and values with newline characters to form a single key-value pair.
+    - Append the new key-value pair to `scaled_contents`.
+- **Output**: A list of dictionaries, each containing a single key-value pair, representing the scaled and possibly truncated content.
 - **Functions Called**:
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml._truncate_text`](<#autotoml_truncate_text>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<#autotomlappend>)
 - **See also**: [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml`](<#autotoml>)  (Base Class)
 
 
 
 ---
 ### NodeInfo<!-- {{#class:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.NodeInfo}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L36>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L38>)
 
 - **Decorators**: `@dataclass`
 - **Members**:
@@ -492,24 +507,24 @@ Scales and optionally truncates a list of content dictionaries based on a given 
 
 ---
 ### SourceStats<!-- {{#class:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.SourceStats}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L42>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L44>)
 
-- **Decorators**: `@dataclass`, `@dataclass`
+- **Decorators**: `@dataclass`, `@dataclass`, `@dataclass(frozen=True)`
 - **Members**:
     - `pdf_page_ct`: Stores the count of PDF pages.
     - `source_file_ct`: Stores the count of source files.
     - `directory_ct`: Stores the count of directories.
     - `codebase_file_nodes`: Holds a list of `AutoToml.NodeInfo` objects for codebase files.
-    - `pdf_nodes`: Holds a list of `AutoToml.NodeInfo` objects for PDF files.
+    - `pdf_nodes`: Holds a list of `AutoToml.NodeInfo` objects for PDFs.
     - `directory_nodes`: Holds a list of `AutoToml.NodeInfo` objects for directories.
 - **Description**: Represents statistical data about source files, directories, and PDF pages, including counts and node information.
 
 
 ---
 ### ScaleMode<!-- {{#class:python-backend/content_services/auto_toml/src/auto_toml.AutoToml.ScaleMode}} -->
-[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L51>)
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml.py#L53>)
 
-- **Description**: Defines different modes for scaling operations, such as `NONE`, `SCALE_PDFS`, `SCALE_PDF_AND_CODE`, `SCALE_PDF_AND_USE_DIRS`, and `FAIL`, each represented by an integer value.
+- **Description**: Defines different modes for scaling operations, including options for no scaling, scaling PDFs, scaling both PDFs and code, scaling PDFs and using directories, and a fail mode.
 - **Inherits From**:
     - `Enum`
 

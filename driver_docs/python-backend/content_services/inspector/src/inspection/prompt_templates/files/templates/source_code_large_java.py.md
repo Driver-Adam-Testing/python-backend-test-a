@@ -6,7 +6,7 @@
 Templates for generating structured prompts and analyzing Java source code, including imports, interfaces, and classes.
 
 # Purpose
-The code is a configuration file that defines a template for processing Java source code. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ir_common`, to facilitate structured prompting and language specialization. The template, `SOURCE_CODE_LARGE_TEMPLATE_JAVA`, is a list of tuples that specify different sections like "Purpose", "Imports and Dependencies", "Interfaces", and "Classes". Each section uses specific prompts and components to extract and format information from Java source code, leveraging static analysis and language model outputs. This setup is used to generate structured documentation or analysis for Java codebases.
+This code defines a configuration for generating structured prompts and templates for analyzing Java source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.java`, to facilitate the creation of prompts and the extraction of Java code elements like imports, interfaces, and classes. The `SOURCE_CODE_LARGE_TEMPLATE_JAVA` variable is a list of tuples, each representing a different section of the template, such as "Purpose", "Imports and Dependencies", "Interfaces", and "Classes". Each tuple contains instructions or methods for generating or processing these sections, using components like `Prompt` and `Component` to build the structured output. This setup is used to analyze and document large Java source code files systematically.
 # Imports and Dependencies
 
 ---
@@ -30,9 +30,9 @@ The code is a configuration file that defines a template for processing Java sou
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_JAVA
-- **Type**: `list`
-- **Description**: Contains a list of tuples, each representing a section of a Java code template. Each tuple includes a section identifier, a section title, and a series of instructions or operations related to that section, such as generating prompts or processing Java code elements like imports, interfaces, and classes.
-- **Use**: Used to define and organize the structure and content of a large Java code template for processing and analysis.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of instructions or processing functions related to Java source code analysis. Each tuple is designed to handle a specific aspect of Java code, such as purpose, imports, interfaces, and classes.
+- **Use**: Used to define a structured template for processing and analyzing large Java source code files.
 
 
 

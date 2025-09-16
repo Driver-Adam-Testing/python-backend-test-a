@@ -9,10 +9,10 @@ Pydantic models and tests for user roles, codebase analysis, content management,
 ## Files
 - **[auth0_schema.py](auth0_schema.py.md)**: Defines Pydantic models for handling user invitations and role modifications.
 - **[codebase_schema.py](codebase_schema.py.md)**: Defines Pydantic models for codebase analysis, generation, and onboarding requests and responses.
-- **[codebase_schema_test.py](codebase_schema_test.py.md)**: Tests for the `CodebaseAnalysisMetrics` schema, including validation and immutability checks.
-- **[content_schema.py](content_schema.py.md)**: Defines Pydantic models for content management operations, including listing, tagging, and exporting content.
-- **[document_source_schema.py](document_source_schema.py.md)**: Defines a Pydantic model for creating a document source with UUIDs and an include flag.
-- **[git_provider_schema.py](git_provider_schema.py.md)**: Defines schemas for Git provider configurations, access tokens, repositories, and webhook information.
+- **[codebase_schema_test.py](codebase_schema_test.py.md)**: Tests for `CodebaseAnalysisMetrics` validation and immutability using pytest.
+- **[content_schema.py](content_schema.py.md)**: Defines Pydantic models for content management, including input/output schemas and tag associations.
+- **[document_source_schema.py](document_source_schema.py.md)**: Defines a Pydantic model for creating a document source with document and source IDs and an include flag.
+- **[git_provider_schema.py](git_provider_schema.py.md)**: Defines schemas for Git provider configurations, access tokens, repositories, and related data models.
 - **[secret_management_schema.py](secret_management_schema.py.md)**: Defines secret name prefixes for Git provider applications.
 - **[tag_contents_schema.py](tag_contents_schema.py.md)**: Defines a Pydantic model for creating tag content with tag and content IDs and an include flag.
 - **[tag_schema.py](tag_schema.py.md)**: Defines Pydantic models for tag-related input and output schemas, including validation for tag attributes.

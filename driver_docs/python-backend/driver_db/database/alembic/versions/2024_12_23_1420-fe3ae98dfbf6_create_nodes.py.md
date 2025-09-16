@@ -6,9 +6,9 @@
 Alembic migration script to add and populate the "content_kind" column in the "derived_contents" table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's primary function is to modify the `derived_contents` table by adding a new column named `content_kind`. The [`upgrade`](<#upgrade>) function adds this column with a type of `AutoString`, which is a SQLModel type, and populates it with data from the `derived_content_types` table based on a matching `content_type_id`. The [`downgrade`](<#downgrade>) function reverses this change by removing the `content_kind` column from the `derived_contents` table.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's primary function is to modify the database schema by adding a new column named `content_kind` to the `derived_contents` table. The `content_kind` column is of type `AutoString`, which is a SQLModel type, and it is nullable. After adding the column, the script updates the `content_kind` values by executing an SQL statement that sets `content_kind` to the `type_name` from the `derived_content_types` table, where the `content_type_id` in `derived_contents` matches the `id` in `derived_content_types`.
 
-The script includes revision identifiers, `revision` and `down_revision`, which Alembic uses to track the migration's position in the sequence of database changes. This script is part of a series of migrations, as indicated by the `revision` and `down_revision` identifiers, and it does not have any branch labels or dependencies. The script is intended to be executed as part of a database schema update process, ensuring that the database structure aligns with the application's data model requirements.
+The script defines two main functions: [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>). The [`upgrade`](<#upgrade>) function implements the changes to the database schema, while the [`downgrade`](<#downgrade>) function reverses these changes. In the [`downgrade`](<#downgrade>) function, the script removes the `content_kind` column from the `derived_contents` table. The script includes revision identifiers, which Alembic uses to track the migration history. This script is intended to be part of a series of migrations that manage changes to the database schema over time.
 # Imports and Dependencies
 
 ---
@@ -22,22 +22,22 @@ The script includes revision identifiers, `revision` and `down_revision`, which 
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that serves as a unique identifier for a specific database schema revision in Alembic migrations. It is used to track the current state of the database schema.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Indicates the immediate predecessor revision in the Alembic migration chain.
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations by identifying the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Use**: It is used to define branch labels for the migration, but currently, it does not specify any labels.
 
 
 ---
@@ -53,22 +53,22 @@ The script includes revision identifiers, `revision` and `down_revision`, which 
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.py#L20>)
 
-Adds a new column to the 'derived_contents' table and updates its values based on a related table.
+Adds a new column to the 'derived_contents' table and updates it with data from the 'derived_content_types' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Adds a new column named 'content_kind' to the 'derived_contents' table, allowing null values.
-    - Executes an SQL update statement to set the 'content_kind' column values by joining 'derived_contents' with 'derived_content_types' on 'content_type_id' and assigning 'type_name' from 'derived_content_types'.
-- **Output**: No output is returned.
+    - Executes an SQL update statement to set the 'content_kind' column in 'derived_contents' based on the 'type_name' from the 'derived_content_types' table where the 'content_type_id' matches the 'id' in 'derived_content_types'.
+- **Output**: No return value; modifies the database schema and updates data in the 'derived_contents' table.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.py#L33>)
 
-Removes the `content_kind` column from the `derived_contents` table.
+Removes the 'content_kind' column from the 'derived_contents' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.drop_column` to remove the `content_kind` column from the `derived_contents` table.
+    - Calls the 'drop_column' method from the 'op' module to remove the 'content_kind' column from the 'derived_contents' table.
 - **Output**: No output is returned.
 
 

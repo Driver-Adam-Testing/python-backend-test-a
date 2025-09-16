@@ -6,7 +6,7 @@
 Initializes a Modal app named "inspector-v2".
 
 # Purpose
-The code initializes a `modal.App` object with the name `inspector-v2`. This indicates that the code is setting up an application using the `modal` library, which is likely used for creating and managing cloud-based applications or services. The `app` object represents the application instance and can be used to configure and deploy the application within the Modal framework. This code provides narrow functionality, specifically for initializing and naming an application within the Modal environment.
+The code initializes a `modal.App` object with the name `inspector-v2`. This indicates that the code is setting up an application using the `modal` library, which is likely used for creating and managing cloud-based applications or services. The `app` object represents an instance of the application, and the name `inspector-v2` suggests it may be a versioned application, possibly for inspection or monitoring purposes. This code provides narrow functionality, focusing on the initialization of a specific application instance.
 # Imports and Dependencies
 
 ---
@@ -18,7 +18,7 @@ The code initializes a `modal.App` object with the name `inspector-v2`. This ind
 ---
 ### app
 - **Type**: ``modal.App``
-- **Description**: Represents an instance of a `modal.App` with the name 'inspector-v2'. This instance is created using the `modal` library, which is typically used for building and deploying applications in a cloud environment.
+- **Description**: Represents an instance of a `modal.App` with the name 'inspector-v2'. This instance is created using the `modal` library.
 - **Use**: Used to define and manage the application named 'inspector-v2' within the `modal` framework.
 
 

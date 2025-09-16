@@ -6,7 +6,7 @@
 Alembic migration script to add and remove default workspaces in the database.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that inserts a new default workspace into the `workspaces` table for each distinct `organization_id`, setting the `display_name` and `description` to 'Default' and the `updated_at` field to the current timestamp. The [`downgrade`](<#downgrade>) function reverses this operation by deleting entries from the `workspaces` table where the `display_name` is 'Default'. The script includes metadata for Alembic, such as `revision`, `down_revision`, and other identifiers, to manage the migration history.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that inserts a new default workspace into the `workspaces` table for each distinct `organization_id`, setting the `display_name` and `description` to 'Default' and the `updated_at` field to the current timestamp. The [`downgrade`](<#downgrade>) function removes any workspace entries with the `display_name` set to 'Default'. The script includes metadata for Alembic, such as `revision`, `down_revision`, and other identifiers, to manage the migration history.
 # Imports and Dependencies
 
 ---
@@ -18,15 +18,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script.
 - **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current migration and the one that immediately precedes it.
-- **Use**: Indicates the parent revision in the migration history to ensure proper sequencing of database schema changes.
+- **Description**: A string variable that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations by specifying the immediate predecessor of the current revision.
 
 
 ---
@@ -39,8 +39,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration scripts.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -52,21 +52,21 @@ This code is a database migration script using Alembic, a database migration too
 Inserts default workspace entries into the `workspaces` table for each distinct `organization_id`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Executes a SQL `insert` statement to add entries to the `workspaces` table.
-    - Selects distinct `organization_id` values from the `workspaces` table.
-    - Inserts a new row for each distinct `organization_id` with 'Default' as `display_name` and `description`, and the current timestamp as `updated_at`.
-- **Output**: No return value; performs a database operation to insert data.
+    - Executes a SQL `INSERT` statement to add entries to the `workspaces` table.
+    - The `INSERT` statement selects distinct `organization_id` values from the `workspaces` table.
+    - For each distinct `organization_id`, it inserts a new row with 'Default' as `display_name` and `description`, and the current timestamp as `updated_at`.
+- **Output**: No return value; the function performs a database operation.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_02_0858-d858e8f1ee5e_add_default_workspaces.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_02_0858-d858e8f1ee5e_add_default_workspaces.py#L35>)
 
-Deletes entries from the `workspaces` table where the `display_name` is 'Default'.
+Deletes entries from the 'workspaces' table where the 'display_name' is 'Default'.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Executes a SQL command to delete rows from the `workspaces` table.
-    - Targets rows where the `display_name` column has the value 'Default'.
+    - Executes a SQL command to delete rows from the 'workspaces' table.
+    - Targets rows where the 'display_name' column has the value 'Default'.
 - **Output**: No output is returned.
 
 

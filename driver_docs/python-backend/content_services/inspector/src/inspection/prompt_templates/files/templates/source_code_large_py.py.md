@@ -6,9 +6,9 @@
 Defines a template for analyzing Python source code, including prompts for purpose, imports, variables, classes, and functions.
 
 # Purpose
-The code defines a template for generating structured documentation for Python source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.python`, which are used to create and manage prompts and collections related to Python code analysis. The template, `SOURCE_CODE_LARGE_TEMPLATE_PY`, is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", and "Functions".
+The code defines a template for generating structured documentation for Python source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.python`, which are used to create prompts and collect symbols related to Python code. The template, `SOURCE_CODE_LARGE_TEMPLATE_PY`, is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", and "Functions".
 
-Each tuple in the template contains a section identifier, a section title, and a series of instructions or methods to generate the content for that section. For example, the "Purpose" section uses the `Prompt` class to append components and instructions to form a string that describes the purpose of the code. Other sections, like "Imports and Dependencies", use static analysis and collections to gather and list relevant information. This code is intended to be part of a larger system that automates the generation of technical documentation for Python code, focusing on structured and clear presentation of code components and their purposes.
+Each tuple in the template specifies a section header, a method for collecting relevant data, and instructions for formatting the output. The template uses components like `Prompt`, `Component`, and various symbol collections (`PyClassCollection`, `PyFnCollection`, etc.) to gather and organize information about the source code. This structure allows for the automated generation of detailed documentation, focusing on different aspects of the code, such as its purpose, dependencies, and defined elements.
 # Imports and Dependencies
 
 ---
@@ -34,9 +34,9 @@ Each tuple in the template contains a section identifier, a section title, and a
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_PY
-- **Type**: `list`
-- **Description**: Contains a list of tuples, each representing a section of a structured prompt template. Each tuple includes a section identifier, a section title, and one or more components or functions that generate or process prompt content.
-- **Use**: Used to define and organize sections of a structured prompt template for code analysis and documentation.
+- **Type**: ``list``
+- **Description**: Contains a list of tuples, each representing a section of a structured prompt template. Each tuple includes a section identifier, a section title, and components or functions related to that section.
+- **Use**: Used to define and organize different sections of a structured prompt template for code analysis and generation.
 
 
 

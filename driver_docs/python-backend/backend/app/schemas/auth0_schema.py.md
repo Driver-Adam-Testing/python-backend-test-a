@@ -6,7 +6,7 @@
 Defines Pydantic models for handling user invitations and role modifications.
 
 # Purpose
-This code defines a set of data models using the Pydantic library, which is used for data validation and settings management in Python. The `Invitee` class models an invitee with an `email` attribute of type `EmailStr`, ensuring valid email format. The `Invitation` class includes an `invitee` of type `Invitee` and a `roles` attribute, which is a list of strings representing role IDs. The `CreateInvitationInput` class models input data for creating invitations, containing a list of `Invitation` objects. The `ModifyUserRolesInput` class models input data for modifying user roles, with a `roles` attribute that is a list of role IDs. Finally, the `ModifyUserRolesResponse` class models the response for a user role modification operation, including the `user_id`, `added_roles`, and `removed_roles` attributes.
+This code defines a set of data models using the Pydantic library, which is used for data validation and settings management in Python. The `Invitee` class models an invitee with an `email` attribute validated as an email string. The `Invitation` class includes an `invitee` of type `Invitee` and a `roles` attribute, which is a list of role IDs. The `CreateInvitationInput` class models input data for creating invitations, containing a list of `Invitation` objects. The `ModifyUserRolesInput` class models input data for modifying user roles, with a `roles` attribute that is a list of role IDs. Finally, the `ModifyUserRolesResponse` class models the response for a user role modification operation, including the `user_id`, `added_roles`, and `removed_roles`.
 # Imports and Dependencies
 
 ---
@@ -22,7 +22,7 @@ This code defines a set of data models using the Pydantic library, which is used
 [View Source →](<../../../../../backend/app/schemas/auth0_schema.py#L4>)
 
 - **Members**:
-    - `email`: Stores the email address of the invitee as an `EmailStr` type.
+    - `email`: Stores the email address of the invitee as an `EmailStr`.
 - **Description**: Represents an invitee with an email address, using Pydantic's `BaseModel` for data validation.
 - **Inherits From**:
     - `BaseModel`
@@ -70,7 +70,7 @@ This code defines a set of data models using the Pydantic library, which is used
     - `user_id`: Stores the user identifier as a string.
     - `added_roles`: Contains a list of role identifiers that were added.
     - `removed_roles`: Contains a list of role identifiers that were removed.
-- **Description**: Represents the response structure for modifying user roles, including the user ID and lists of roles that were added or removed.
+- **Description**: Represents the response for modifying user roles, including the user ID and lists of added and removed roles.
 - **Inherits From**:
     - `BaseModel`
 

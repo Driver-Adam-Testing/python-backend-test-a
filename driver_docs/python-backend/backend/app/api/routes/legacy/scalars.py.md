@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines custom scalar types JSON, ID, and NodeType using Strawberry for GraphQL.
+Defines custom scalar types `JSON`, `ID`, and `NodeType` for use with Strawberry GraphQL.
 
 # Purpose
-This code defines custom scalar types for use with the Strawberry GraphQL library. It introduces three scalar types: `JSON`, `ID`, and `NodeType`. The `JSON` scalar is created using the `strawberry.scalar` function and represents JSON values as specified by ECMA-404. It uses simple identity functions for serialization and parsing, meaning it directly returns the input value without modification.
+This code defines custom scalar types for use with the Strawberry GraphQL library. It introduces three scalar types: `JSON`, `ID`, and `NodeType`. The `JSON` scalar is created using the `strawberry.scalar` function and is intended to represent JSON values as specified by ECMA-404. It uses simple identity functions for serialization and parsing, meaning it directly returns the input value without modification.
 
-The `ID` and `NodeType` scalars are defined as classes that inherit from the `str` type. Both classes include static methods [`parse_value`](<#idparse_value>) and [`serialize`](<#idserialize>), which also act as identity functions, returning the input string value unchanged. These scalars are intended to be used in a GraphQL schema to handle specific data types, providing a way to define and manage custom data representations within the GraphQL API.
+The `ID` and `NodeType` scalars are defined as classes that inherit from Python's built-in `str` type. Both classes include static methods [`parse_value`](<#idparse_value>) and [`serialize`](<#idserialize>), which also act as identity functions, returning the input string value unchanged. These scalars are designed to integrate with Strawberry's GraphQL schema, allowing for custom handling of specific data types within a GraphQL API. The code is structured to be part of a library that can be imported and used in other modules to define GraphQL schemas with these custom scalar types.
 # Imports and Dependencies
 
 ---
@@ -21,8 +21,8 @@ The `ID` and `NodeType` scalars are defined as classes that inherit from the `st
 ---
 ### JSON
 - **Type**: ``strawberry.scalar``
-- **Description**: Represents a custom scalar type for JSON values in a GraphQL schema using the `strawberry` library. It is defined as a new type `JSON` that maps to the Python `object` type, allowing it to handle any JSON-compatible data.
-- **Use**: Used to define and handle JSON values in a GraphQL schema, with serialization and parsing functions that pass values through unchanged.
+- **Description**: Represents a custom scalar type for JSON values in a GraphQL schema using the `strawberry` library. It is defined as a new type `JSON` that maps to the Python `object` type and includes serialization and parsing functions that return the input value unchanged.
+- **Use**: Used to handle JSON data in GraphQL operations by providing a scalar type that can serialize and parse JSON values.
 
 
 # Classes
@@ -108,11 +108,11 @@ Returns the input string value without modification.
 Returns the input string value without modification.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `value`: A string input that the method will return.
+    - `value`: A string that needs serialization.
 - **Logic and Control Flow**:
     - Receives a string input `value`.
-    - Returns the input `value` without any changes.
-- **Output**: The same string input that was provided.
+    - Returns the input `value` directly without any changes.
+- **Output**: The same string that was provided as input.
 - **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.NodeType`](<#nodetype>)  (Base Class)
 
 

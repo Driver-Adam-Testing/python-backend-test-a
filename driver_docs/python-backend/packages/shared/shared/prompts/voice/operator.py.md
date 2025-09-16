@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines questions and options to configure a content creation pipeline with roles like operator, content creator, critic, and copy editor.
+Defines a pipeline for content creation with roles like operator, content creator, critic, and copy editor.
 
 # Purpose
-The content outlines a series of questions and options that help define the structure and components of a document creation pipeline. The questions determine the need for various elements such as a copy editor, critic, and whether to use a multi or single shot agent for content creation. They also assess the necessity of including source code, symbol lookup, technical documentation lookup, and PDF searches. The options provided, such as 'Audience' and 'Voice', guide the customization of the document's tone and style. The pipeline involves an operator, a content creator agent, a critic, and a copy editor, each playing a role in the document creation process. Presets like 'Entrypoint analysis', 'App Note', 'Readme', 'Getting started Guide', and 'Online Docs Page' suggest predefined templates or starting points for different types of documentation.
+The content defines a series of questions and options that guide the setup of a content creation pipeline. The questions help determine the requirements for creating a document, such as whether a copy editor or critic is needed, the type of document, and the necessary resources like source code or symbol lookup. The options listed, such as 'Audience' and 'Voice', suggest customization parameters for the document's tone and style. The pipeline involves several roles, including an 'Operator', 'Content Creator Agent', 'Critic', and 'Copy Editor', each contributing to the document creation process. Presets like 'Entrypoint analysis' and 'Readme' indicate predefined configurations for common document types, streamlining the setup for specific documentation needs.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,25 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration scripts, SQL scripts for migrations, PostgreSQL reindexing, and database configuration and models.
+Alembic migration scripts, SQL scripts for content migration, database utilities, and SQLAlchemy models and configurations.
 
 ## Folders
 - **[alembic](alembic/README.md)**: Alembic migration scripts, configuration, and templates for database schema changes and migrations.
-- **[nodes_v2_sql](nodes_v2_sql/README.md)**: SQL scripts for migrating codebases, pages, templates, PDFs, tags, and top-level content.
+- **[nodes_v2_sql](nodes_v2_sql/README.md)**: SQL scripts for migrating codebases, pages, templates, PDFs, tags, and top-level content in a database.
 - **[utils](utils/README.md)**: Shell script and SQL script for reindexing vectors in a PostgreSQL database.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[alembic.ini](alembic.ini.md)**: Configuration for Alembic database migrations and logging settings.
-- **[config.py](config.py.md)**: Configuration settings for a PostgreSQL database connection using Pydantic.
-- **[custom_types.py](custom_types.py.md)**: A custom SQLAlchemy type decorator for PostgreSQL TSVECTOR.
-- **[db.py](db.py.md)**: Database connection setup and session management with support for synchronous and asynchronous engines.
+- **[config.py](config.py.md)**: Defines database connection settings and URIs for different environments using Pydantic.
+- **[custom_types.py](custom_types.py.md)**: A custom SQLAlchemy type decorator for PostgreSQL's TSVECTOR.
+- **[db.py](db.py.md)**: Database connection setup and session management for synchronous and asynchronous SQLAlchemy engines.
 - **[derived_content_types.py](derived_content_types.py.md)**: Defines an enumeration for various derived content type names.
 - **[file_extensions.py](file_extensions.py.md)**: Defines an enumeration for file types and a function to map file extensions to these types.
-- **[models_v1.py](models_v1.py.md)**: Defines SQLAlchemy models for logging, content management, usage tracking, and integrations.
-- **[models_v2.py](models_v2.py.md)**: Defines SQLModel classes for database tables related to assets, versions, nodes, sessions, and API keys.
-- **[models_v2_enums.py](models_v2_enums.py.md)**: Enum classes for asset kinds, providers, version statuses, node kinds, autodoc statuses, content kinds, file types, and LLM pipeline kinds, plus a function to get file type by extension.
-- **[models_v2_test.py](models_v2_test.py.md)**: Tests for database session creation and management using SQLModel and pytest fixtures.
+- **[models.py](models.py.md)**: Defines SQLAlchemy models for various database tables, including runtime logs, usage sessions, and subscriptions.
+- **[models_enums.py](models_enums.py.md)**: Defines various enums for asset kinds, providers, update policies, version statuses, node kinds, document statuses, content kinds, file types, and pipeline kinds, along with a function to map file extensions to file types.
 - **[py.typed](py.typed.md)**: Empty file (no analyzable contents).
 
 ---

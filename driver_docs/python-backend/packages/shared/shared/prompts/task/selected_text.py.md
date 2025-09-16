@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a system message prompt for generating markdown-compatible replacement or appendable text.
+Defines a system message prompt for generating markdown-compatible text replacements or additions.
 
 # Purpose
-The code defines two variables, `PROMPT` and `MESSAGE`, which are used for text processing. `PROMPT` is a string that instructs a system to provide replacement or appendable text for a given section, ensuring the output is cohesive and readable in context. `MESSAGE` is a dictionary with two keys: `role` and `content`. The `role` key has the value `"system"`, and the `content` key holds the `PROMPT` string. This setup is likely used in a system that processes or generates text based on specific instructions.
+The code defines two global variables, `PROMPT` and `MESSAGE`, which are likely used for configuring a system's response behavior. `PROMPT` is a string that instructs the system to provide replacement or appendable text in markdown format, ensuring the output is cohesive and readable within the surrounding context. `MESSAGE` is a dictionary with two keys: `role` and `content`. The `role` key has the value `"system"`, and the `content` key holds the `PROMPT` string, indicating that `MESSAGE` is used to structure a system message with specific content instructions. This code provides narrow functionality, primarily for setting up a specific message format in a system.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A string that instructs the system to respond with text that can replace or append to the selected text. The text should be cohesive and readable within the context of the surrounding text.
-- **Use**: Used to guide the system in generating appropriate text responses for selected text.
+- **Description**: A string that instructs the user to provide replacement or appendable text for a selected text. It specifies that the text should be rendered as markdown and be cohesive and readable within the surrounding context.
+- **Use**: Used as a prompt message to guide the user in providing appropriate text for a specific context.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
 - **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key holds the value of the `PROMPT` variable.
-- **Use**: Used to store system-level message data with a specific prompt content.
+- **Use**: Used to store system-level message data with a specific role and content for further processing.
 
 
 

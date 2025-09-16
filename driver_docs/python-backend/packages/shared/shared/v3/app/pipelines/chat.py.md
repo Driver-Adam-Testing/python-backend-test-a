@@ -3,22 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements a chat pipeline with message history management and interaction with an LLM client.
+Defines classes and methods for handling chat pipeline requests and responses with message history management.
 
 # Purpose
-The code defines a chat pipeline system that processes user prompts and manages message history for a `/chat` endpoint. It includes two main classes: `ChatPipelineRequest` and `ChatPipelineResponse`. The `ChatPipelineRequest` class handles the creation and persistence of chat history, ensuring that user prompts are appended to the existing message history or initializing a new history if none exists. It interacts with a database to retrieve or store message history and uses predefined system messages to initialize new sessions. The `ChatPipelineResponse` class is a typed response that inherits from `PipelineResponse`, encapsulating the final response and references generated during the chat pipeline execution.
+The code defines a module that manages chat interactions within a pipeline system. It provides two main classes: `ChatPipelineRequest` and `ChatPipelineResponse`. The `ChatPipelineRequest` class handles requests to the `/chat` endpoint, including the persistence of chat history. It retrieves or initializes message history from a database, appends new user prompts, and manages the interaction with a language model client. The `ChatPipelineResponse` class is a typed response that includes the final response and references from the chat pipeline.
 
-The code also integrates with a language model client, `LlmClient`, to process the message history and generate responses. The [`_run`](<#chatpipelinerequest_run>) method executes the chat pipeline synchronously, while the [`_stream`](<#chatpipelinerequest_stream>) method provides an asynchronous streaming interface for generating responses. Both methods utilize a `HybridSearchTool` to enhance the response generation process. The code is structured to be part of a larger application, importing various components from shared modules and database models, and it defines public APIs for handling chat requests and responses.
+The module imports various components from other modules, such as database models, message types, and tools, indicating its integration with a larger system. The `ChatPipelineRequest` class includes methods to run the chat pipeline synchronously and asynchronously, using a language model client to process the message history and generate responses. The code is structured to support both immediate and streaming responses, making it suitable for real-time chat applications. The use of `__all__` indicates that the module is intended to be imported and used by other parts of the system, exposing the `ChatPipelineRequest` and `ChatPipelineResponse` classes as its public API.
 # Imports and Dependencies
 
 ---
 - `__future__.annotations`
-- `json`
 - `typing.TYPE_CHECKING`
 - `database.db.get_session`
-- `database.models_v2.RuntimeLlmMessageHistory`
-- `database.models_v2.RuntimeLlmSession`
-- `database.models_v2_enums.LlmPipelineKind`
+- `database.models.RuntimeLlmMessageHistory`
+- `database.models.RuntimeLlmSession`
+- `database.models_enums.LlmPipelineKind`
 - `shared.v3.LlmClient`
 - `shared.v3.LlmMessage`
 - `shared.v3.LlmMessageHistory`
@@ -35,7 +34,6 @@ The code also integrates with a language model client, `LlmClient`, to process t
 - `shared.v3.globals.datasource_messages.DataSourceMessage`
 - `shared.v3.globals.datasource_messages.DataSourceSystemMessage`
 - `shared.v3.globals.datasource_messages.DataSourceTuningSystemMessage`
-- `shared.v3.utils.datasource.DataSource`
 - `sqlmodel.select`
 - `collections.abc.AsyncGenerator`
 - `collections.abc.Sequence`
@@ -47,28 +45,28 @@ The code also integrates with a language model client, `LlmClient`, to process t
 ---
 ### \_\_all\_\_
 - **Type**: ``Sequence[str]``
-- **Description**: Defines a list of strings that specifies the public API of the module. It includes the names of the classes `ChatPipelineRequest` and `ChatPipelineResponse`. This list controls what is imported when a user imports the module using a wildcard import.
-- **Use**: Used to specify which components of the module are accessible when using a wildcard import.
+- **Description**: Defines a list of strings that specifies the public API of the module. It includes the names of the classes `ChatPipelineRequest` and `ChatPipelineResponse`. This list is used to control what is exported when the module is imported using a wildcard import.
+- **Use**: Controls the public API of the module by specifying which components are accessible when using wildcard imports.
 
 
 # Classes
 
 ---
 ### ChatPipelineResponse<!-- {{#class:python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineResponse}} -->
-[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L40>)
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L38>)
 
-- **Description**: Provides a typed response for the chat pipeline, inheriting attributes `final_response` and `references` from the `PipelineResponse` class.
+- **Description**: Represents a typed response for the chat pipeline, inheriting attributes `final_response` and `references` from the `PipelineResponse` class.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_response.PipelineResponse`](<pipeline_response.py.md#pipelineresponse>)
 
 
 ---
 ### ChatPipelineRequest<!-- {{#class:python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest}} -->
-[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L44>)
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L42>)
 
 - **Members**:
     - `user_prompt`: Stores the user's input prompt for the chat pipeline.
-- **Description**: Handles requests for the `/chat` endpoint, maintaining message history and processing user prompts. It retrieves or initializes chat history, appends the user's prompt, and interacts with an LLM client to generate responses. The class supports both synchronous and asynchronous operations for processing chat requests.
+- **Description**: Handles requests for the `/chat` endpoint, maintaining message history and processing user prompts. It retrieves or initializes chat history, appends the current user prompt, and interacts with an LLM client to generate responses. The class supports both synchronous and asynchronous operations for processing chat requests.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest._get_or_create_message_history`](<#chatpipelinerequest_get_or_create_message_history>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest._run`](<#chatpipelinerequest_run>)
@@ -80,22 +78,23 @@ The code also integrates with a language model client, `LlmClient`, to process t
 
 ---
 #### ChatPipelineRequest\.\_get\_or\_create\_message\_history<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest._get_or_create_message_history}} -->
-[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L49>)
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L47>)
 
-Returns the complete message history with the new user message added.
+Returns the complete message history with the new user message, loading from the database if it exists or initializing a new one if not.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Get a database session using `get_session()`.
-    - Initialize `history` as `None` and get the current `runtime_session`.
+    - Initialize `history` as `None` and get the current `llm_session`.
     - Execute a database query to find an existing chat history ID for the current session and pipeline kind.
-    - If a chat history ID exists, load the message history from the database and set the `datasource` if it is `None`.
-    - If no history exists, initialize a new [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) with standard system messages and set the session ID and pipeline kind.
-    - Add the current `user_prompt` as a user message to the history.
+    - If a chat history ID is found, load the message history from the database using `LlmMessageHistory.from_db()`.
+    - If no history is found, initialize a new [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) with standard system messages and the current session ID and pipeline kind.
+    - If the data source has changed since the last session, add a new `DataSourceMessage` to the history.
+    - Add the current `user_prompt` as a [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) to the history.
+    - Return the `history` object.
 - **Output**: An [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object containing the complete message history with the new user message.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.from_db`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryfrom_db>)
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<../../utils/datasource.py.md#datasourcefrom_node_ids>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>)
     - [`python-backend/packages/shared/shared/v3/app/static/messages/driver_app_messages.DriverApplicationMessage`](<../static/messages/driver_app_messages.py.md#driverapplicationmessage>)
     - [`python-backend/packages/shared/shared/v3/app/static/messages/driver_app_messages.ContentStructureMessage`](<../static/messages/driver_app_messages.py.md#contentstructuremessage>)
@@ -113,16 +112,16 @@ Returns the complete message history with the new user message added.
 
 ---
 #### ChatPipelineRequest\.\_run<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest._run}} -->
-[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L99>)
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L93>)
 
 Executes a chat pipeline request by processing message history and returning a response with content and references.
 - **Inputs**:
-    - `client`: An instance of `LlmClient` used to process the message history, defaulting to `LlmClient.gpt_4_1()`.
+    - `client`: An instance of `LlmClient` used to process the message history and generate a response; defaults to `LlmClient.gpt_4_1()`.
 - **Logic and Control Flow**:
-    - Calls [`_get_or_create_message_history`](<#chatpipelinerequest_get_or_create_message_history>) to obtain the message history, including the new user message.
-    - Uses the `client` to perform a [`multi_shot`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot>) operation with the message history, specifying `HybridSearchTool` as the tool type, iterating three times, and using `self.datasource`.
-    - Receives `information_response` and `called_tools` from the [`multi_shot`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot>) operation.
-    - Creates a [`ChatPipelineResponse`](<#chatpipelineresponse>) object with `information_response.content` as the `final_response` and a list of unique references from `called_tools`.
+    - Call [`_get_or_create_message_history`](<#chatpipelinerequest_get_or_create_message_history>) to obtain the message history, including the new user message.
+    - Invoke `client.multi_shot` with the message history, specifying `HybridSearchTool` as the tool type, and set iterations to 3, using the current datasource.
+    - Receive `information_response` and `called_tools` from the [`multi_shot`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot>) method.
+    - Create a [`ChatPipelineResponse`](<#chatpipelineresponse>) object with `information_response.content` as `final_response` and a list of unique references from `called_tools`.
 - **Output**: A [`ChatPipelineResponse`](<#chatpipelineresponse>) object containing the final response content and a list of references.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1`](<../../llms/config/llm_config.py.md#llmconfiggpt_4_1>)
@@ -134,16 +133,16 @@ Executes a chat pipeline request by processing message history and returning a r
 
 ---
 #### ChatPipelineRequest\.\_stream<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest._stream}} -->
-[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L114>)
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/chat.py#L107>)
 
 Streams responses from a language model client using a message history.
 - **Decorators**: `@async`
 - **Inputs**:
-    - `client`: An instance of `LlmClient` to interact with the language model, defaulting to `LlmClient.gpt_4_1()`.
+    - `client`: An instance of `LlmClient` used to stream responses, defaulting to `LlmClient.gpt_4_1()`.
 - **Logic and Control Flow**:
     - Call [`_get_or_create_message_history`](<#chatpipelinerequest_get_or_create_message_history>) to obtain the message history.
-    - Use the [`multi_shot_stream`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot_stream>) method of the `client` to stream responses, passing the message history, tool types, iterations, and datasource.
-    - Iterate over the streamed chunks and yield each chunk.
+    - Use the [`multi_shot_stream`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot_stream>) method of the `client` to stream responses with the message history, `HybridSearchTool` as the tool type, 3 iterations, and the current datasource.
+    - Yield each chunk of the streamed response.
 - **Output**: An asynchronous generator yielding `LlmStreamResponse` objects.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1`](<../../llms/config/llm_config.py.md#llmconfiggpt_4_1>)

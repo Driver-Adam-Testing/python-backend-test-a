@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements a reformatting pipeline using LLM clients to process and stream responses.
+Defines classes and methods for reformatting text using a language model client.
 
 # Purpose
-The code defines a request and response mechanism for a reformatting pipeline using a language model client. It includes two main classes: `ReformatPipelineRequest` and `ReformatPipelineResponse`. The `ReformatPipelineRequest` class extends `PipelineRequest` and is responsible for handling reformatting requests. It uses a language model client to process a given text selection (`cursor_selection`) according to a specified format kind (`format_kind`). The class provides two methods: [`_run`](<#reformatpipelinerequest_run>), which performs a synchronous reformatting operation, and [`_stream`](<#reformatpipelinerequest_stream>), which performs an asynchronous streaming reformatting operation. Both methods utilize a message history that includes system messages and a format-specific message to guide the reformatting process.
+The code defines a request and response mechanism for a reformatting pipeline using a language model client. It includes two main classes: `ReformatPipelineRequest` and `ReformatPipelineResponse`. The `ReformatPipelineRequest` class inherits from `PipelineRequest` and is responsible for handling requests to reformat text based on a specified format kind. It uses a language model client to process the request, sending a prompt that includes a selection of text to be reformatted. The class provides both synchronous ([`_run`](<#reformatpipelinerequest_run>)) and asynchronous ([`_stream`](<#reformatpipelinerequest_stream>)) methods to interact with the language model, allowing for flexibility in how the reformatting is performed.
 
-The `ReformatPipelineResponse` class extends `PipelineResponse` and serves as a placeholder for the response from the reformatting operation. The code imports several components from a shared library, including message classes and enums, to construct the message history and format-specific instructions. The code is structured to be part of a larger application, likely intended to be imported and used within a broader system that handles text processing and reformatting tasks. It does not define public APIs or external interfaces directly but rather provides a specific functionality within a pipeline architecture.
+The `ReformatPipelineResponse` class, which inherits from `PipelineResponse`, is used to encapsulate the response from the language model after processing the reformatting request. The code imports several components from a shared library, including message history and system messages, which are used to construct the context for the language model's operation. The code is structured to be part of a larger application, likely intended to be imported and used within a broader system that requires text reformatting capabilities. It does not define public APIs or external interfaces directly but rather provides a specific functionality within a pipeline architecture.
 # Imports and Dependencies
 
 ---
@@ -31,7 +31,7 @@ The `ReformatPipelineResponse` class extends `PipelineResponse` and serves as a 
 ### ReformatPipelineResponse<!-- {{#class:python-backend/packages/shared/shared/v3/app/pipelines/reformat.ReformatPipelineResponse}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/reformat.py#L18>)
 
-- **Description**: Inherits from `PipelineResponse` and serves as a placeholder for responses specific to the reformatting pipeline.
+- **Description**: Inherits from `PipelineResponse` and does not add any additional functionality or properties.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_response.PipelineResponse`](<pipeline_response.py.md#pipelineresponse>)
 
@@ -41,9 +41,9 @@ The `ReformatPipelineResponse` class extends `PipelineResponse` and serves as a 
 [View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/reformat.py#L22>)
 
 - **Members**:
-    - `cursor_selection`: Stores the text to reformat.
-    - `format_kind`: Specifies the format type to apply.
-- **Description**: Handles requests to reformat text using a specified format type. Inherits from `PipelineRequest` and uses an `LlmClient` to process the reformatting request. The `_run` method performs a single-shot reformatting operation, while the `_stream` method provides an asynchronous streaming interface for reformatting.
+    - `cursor_selection`: Specifies the text to reformat.
+    - `format_kind`: Indicates the format type to apply.
+- **Description**: Handles requests to reformat text using a specified format type. Inherits from `PipelineRequest` and uses a language model client to process the reformatting task. Provides synchronous and asynchronous methods to execute the reformatting operation.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/reformat.ReformatPipelineRequest._run`](<#reformatpipelinerequest_run>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/reformat.ReformatPipelineRequest._stream`](<#reformatpipelinerequest_stream>)
@@ -58,11 +58,11 @@ The `ReformatPipelineResponse` class extends `PipelineResponse` and serves as a 
 
 Executes a reformatting request using a language model client and returns the response.
 - **Inputs**:
-    - `client`: An instance of `LlmClient` used to process the reformatting request. Defaults to `LlmClient.gpt_4_1()`.
+    - `client`: An instance of `LlmClient` used to perform the reformatting operation, defaulting to `LlmClient.gpt_4_1()`.
 - **Logic and Control Flow**:
     - Creates a [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object with a list of system messages including `GlobalSystemMessage`, `CopyEditorSystemMessage`, `SoftwareExpertiseMessage`, and a message derived from `FormatKindMessage` based on `self.format_kind`.
     - Calls the [`single_shot`](<../../llms/clients/llm_client.py.md#llmclientsingle_shot>) method of the `client` with the constructed message history and a prompt to reformat the text specified by `self.cursor_selection`.
-    - Receives the response from the `client` and constructs a [`ReformatPipelineResponse`](<#reformatpipelineresponse>) object with the content of the response and an empty list of references.
+    - Receives a response from the `client` and constructs a [`ReformatPipelineResponse`](<#reformatpipelineresponse>) object with the content of the response and an empty list of references.
     - Returns the [`ReformatPipelineResponse`](<#reformatpipelineresponse>) object.
 - **Output**: A [`ReformatPipelineResponse`](<#reformatpipelineresponse>) object containing the reformatted content and an empty list of references.
 - **Functions Called**:
@@ -80,13 +80,12 @@ Executes a reformatting request using a language model client and returns the re
 
 Streams reformatted text chunks from a language model client based on a given cursor selection and format kind.
 - **Inputs**:
-    - `client`: An instance of `LlmClient` used to stream reformatted text chunks. Defaults to `LlmClient.o3_mini()`.
+    - `client`: An instance of `LlmClient` used to stream data, defaulting to `LlmClient.o3_mini()`.
 - **Logic and Control Flow**:
-    - Creates a [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object with a list of system messages including `GlobalSystemMessage`, `CopyEditorSystemMessage`, `SoftwareExpertiseMessage`, and a message from `FormatKindMessage` based on `self.format_kind`.
-    - Uses the `client.single_shot_stream` method to stream data with the constructed message history and a prompt to reformat the text specified by `self.cursor_selection`.
-    - Iterates asynchronously over each chunk of the streamed response from the client.
-    - Yields each chunk of the streamed response.
-- **Output**: An asynchronous generator that yields `LlmStreamResponse` objects, which are chunks of the reformatted text.
+    - Creates a [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object with a list of system messages including `GlobalSystemMessage`, `CopyEditorSystemMessage`, `SoftwareExpertiseMessage`, and a message derived from `FormatKindMessage` based on `self.format_kind`.
+    - Uses the `client.single_shot_stream` method to asynchronously iterate over chunks of data, passing the `message_history` and a prompt that includes `self.cursor_selection`.
+    - Yields each chunk of data received from the `client.single_shot_stream` method.
+- **Output**: An asynchronous generator that yields `LlmStreamResponse` objects.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o3_mini`](<../../llms/config/llm_config.py.md#llmconfigo3_mini>)
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.single_shot_stream`](<../../llms/clients/llm_client.py.md#llmclientsingle_shot_stream>)

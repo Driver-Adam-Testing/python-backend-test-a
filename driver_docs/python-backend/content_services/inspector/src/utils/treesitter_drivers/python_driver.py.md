@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A Python Tree-sitter driver for extracting and analyzing Python code structures and symbols.
+Implements a Python driver for Tree-sitter to extract and classify code elements like functions, classes, and imports.
 
 # Purpose
-The code is a Python module that provides functionality for analyzing and extracting information from Python source code using the `tree_sitter` library. It defines a class `PyDriverTree`, which extends `DriverTree`, to parse and extract various elements from Python code, such as imports, function and method definitions, class definitions, and function calls. The module uses `tree_sitter` to perform syntax tree analysis and identify different components of the code, categorizing them into specific types like built-in functions, free functions, object methods, and class constructors.
+The code defines a Python module that provides functionality for parsing and analyzing Python source code using the `tree_sitter` library. It includes classes and functions to identify and categorize different elements of Python code, such as function calls, method calls, class definitions, and import statements. The module uses `tree_sitter` to traverse and query the abstract syntax tree (AST) of Python code, extracting relevant information about the structure and components of the code.
 
-The module also defines several helper functions and classes, such as `PyCallKind` and `PyCall`, to classify and represent different types of function calls. It includes methods to extract and return structured data about the code elements, such as [`extract_imports`](<#pydrivertreeextract_imports>), [`extract_function_definitions`](<#pydrivertreeextract_function_definitions>), [`extract_class_definitions`](<#pydrivertreeextract_class_definitions>), and [`extract_calls`](<#pydrivertreeextract_calls>). These methods return lists of `RawTreeSitterSymbolData` objects, which contain detailed information about each code element, including its name, location in the source file, and type. The module is designed to be used as part of a larger system for code analysis and does not define a public API for external use.
+Key components include the `PyDriverTree` class, which extends the `DriverTree` class and provides methods to extract various code elements like function definitions, class definitions, and import statements. The module also defines the `PyCallKind` enumeration to categorize different types of function calls, such as built-in functions, free functions, and object methods. The `PyCall` data class is used to represent function calls with their names and types. The module is designed to be part of a larger system that analyzes Python code, providing detailed information about the code's structure and components.
 # Imports and Dependencies
 
 ---
@@ -26,7 +26,7 @@ The module also defines several helper functions and classes, such as `PyCallKin
 ---
 ### PY\_BUILT\_IN\_FN\_SET
 - **Type**: ``frozenset``
-- **Description**: Contains a set of strings representing the names of Python's built-in functions. These functions are part of Python's standard library and are available without importing any additional modules.
+- **Description**: Contains a set of strings representing the names of Python's built-in functions. These include functions like `abs`, `all`, `any`, `bin`, `bool`, `callable`, `chr`, `classmethod`, and many others.
 - **Use**: Used to identify and categorize function calls as built-in functions within the code.
 
 
@@ -42,7 +42,7 @@ The module also defines several helper functions and classes, such as `PyCallKin
     - `OBJ_METHOD`: Represents an object method call.
     - `CLS_CONSTRUCTOR`: Represents a class constructor call.
     - `CLS_OR_STATIC_METHOD`: Represents a class or static method call.
-- **Description**: Defines different kinds of Python call types using string enumeration, categorizing calls into built-in functions, free functions, object methods, class constructors, and class or static methods.
+- **Description**: Defines different kinds of Python call types using string enumeration, including built-in functions, free functions, object methods, class constructors, and class or static methods.
 - **Inherits From**:
     - `StrEnum`
 
@@ -65,8 +65,8 @@ The module also defines several helper functions and classes, such as `PyCallKin
 - **Decorators**: `@dataclass`
 - **Members**:
     - `language`: Specifies the programming language as 'python'.
-    - `extensions`: Defines the file extensions associated with Python files as a frozenset containing '.py'.
-- **Description**: Represents a specialized driver tree for Python source code analysis, extending the `DriverTree` class. It provides methods to extract various elements from Python code, such as function declarations, imports, callable definitions, class definitions, and variable assignments. The class uses the `tree_sitter` library to parse and query the syntax tree of Python files, enabling detailed analysis of code structure and elements.
+    - `extensions`: Defines a set of file extensions associated with Python files.
+- **Description**: Represents a specialized tree structure for parsing Python code, extending the `DriverTree` class. It provides methods to extract various elements from Python source code, such as function declarations, imports, callable definitions, class definitions, and variable assignments. The class uses the `tree_sitter` library to perform syntax tree queries and processes nodes to gather relevant symbol data.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree._get_fully_qualified_path_to_parent`](<#pydrivertree_get_fully_qualified_path_to_parent>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_function_declarations`](<#pydrivertreeextract_function_declarations>)
@@ -89,19 +89,19 @@ The module also defines several helper functions and classes, such as `PyCallKin
 #### PyDriverTree\.\_get\_fully\_qualified\_path\_to\_parent<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree._get_fully_qualified_path_to_parent}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L150>)
 
-Generates a fully qualified path to the parent node in a syntax tree.
+Constructs a fully qualified path to the parent node of a given syntax tree node.
 - **Inputs**:
-    - `node`: A `tree_sitter.Node` object representing the current node in the syntax tree.
+    - `node`: A `tree_sitter.Node` object representing the syntax tree node for which the path to the parent is constructed.
     - `sep`: A string used as a separator between path components, defaulting to '.'.
 - **Logic and Control Flow**:
     - Initialize an empty list `path_parts` to store parts of the path.
     - Set `current` to the parent of the given `node`.
     - Enter a loop that continues as long as `current` is not `None`.
-    - If `current` is a module, append the file path without its suffix to `path_parts`.
-    - If `current` is a function or class definition, find the name node and append its text to `path_parts`.
+    - If `current` is of type 'module', append the file path without its suffix to `path_parts`.
+    - If `current` is of type 'function_definition' or 'class_definition', find the 'name' child node and append its text to `path_parts` if it exists.
     - Move `current` to its parent node.
-    - After the loop, reverse the `path_parts` list to get the correct order.
-    - Join the elements of `path_parts` using the separator `sep` and return the result.
+    - After the loop, reverse the `path_parts` list to get the correct order of path components.
+    - Join the elements of `path_parts` using the `sep` separator and return the resulting string.
 - **Output**: A string representing the fully qualified path to the parent node, with components separated by the specified separator.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree`](<#pydrivertree>)  (Base Class)
 
@@ -113,7 +113,7 @@ Generates a fully qualified path to the parent node in a syntax tree.
 Returns an empty list of `RawTreeSitterSymbolData` objects.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Returns an empty list immediately.
+    - Returns an empty list immediately without any processing.
 - **Output**: An empty list of `RawTreeSitterSymbolData` objects.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree`](<#pydrivertree>)  (Base Class)
 
@@ -123,17 +123,18 @@ Returns an empty list of `RawTreeSitterSymbolData` objects.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L171>)
 
 Extracts and returns a list of import statements from a Python source file using Tree-sitter.
-- **Inputs**:
-    - `self`: An instance of the `PyDriverTree` class, which contains the necessary context and methods for processing the source file.
+- **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a query string to match different types of import statements: direct imports, imports using `from`, and `__future__` imports.
+    - Defines a query string to match different types of import statements: direct imports, imports using 'from', and '__future__' imports.
     - Executes the query on the root node of the syntax tree to find matches for import statements.
     - Iterates over the matches and processes each pattern index to handle different types of imports.
-    - For direct imports, checks for aliased and non-aliased imports, extracts relevant data, and appends it to the `imports` list.
-    - For `from` imports, constructs the import name based on the module and imported symbols, and appends it to the `imports` list.
-    - For `__future__` imports, constructs the import name and appends it to the `imports` list.
-    - Sorts the collected import data by their starting byte position in the source file.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects, each representing an import statement found in the source file.
+    - For direct imports, checks for aliased and non-aliased imports and creates [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects for each.
+    - For 'from' imports, constructs the import name based on the module and imported symbols, handling aliased and wildcard imports.
+    - For '__future__' imports, constructs the import name by prefixing with '__future__'.
+    - Appends each constructed [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to the `imports` list.
+    - Sorts the `imports` list by the start byte of each import statement.
+    - Returns the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the import statements found in the source file.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree._get_fully_qualified_path_to_parent`](<#pydrivertree_get_fully_qualified_path_to_parent>)
@@ -178,13 +179,11 @@ Extracts top-level free function definitions from the syntax tree.
 #### PyDriverTree\.extract\_method\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_method_definitions}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L322>)
 
-Extracts method definitions from a Python source file.
-- **Inputs**:
-    - `self`: Represents the instance of the class `PyDriverTree`.
+Extracts method definitions from a Python source tree.
+- **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the private method [`_extract_callable_definitions_by_kind`](<#pydrivertree_extract_callable_definitions_by_kind>) with the argument `kind_fn` set to `is_method`.
-    - Returns the result of the [`_extract_callable_definitions_by_kind`](<#pydrivertree_extract_callable_definitions_by_kind>) method call.
-- **Output**: A list of `RawTreeSitterSymbolData` objects representing method definitions.
+- **Output**: Returns a list of `RawTreeSitterSymbolData` objects representing method definitions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree._extract_callable_definitions_by_kind`](<#pydrivertree_extract_callable_definitions_by_kind>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree`](<#pydrivertree>)  (Base Class)
@@ -194,22 +193,21 @@ Extracts method definitions from a Python source file.
 #### PyDriverTree\.\_extract\_callable\_definitions\_by\_kind<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree._extract_callable_definitions_by_kind}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L325>)
 
-Extracts and returns a list of callable definitions (functions and methods) from a syntax tree, filtered by a specified kind function.
+Extracts callable definitions from a syntax tree based on a specified kind function.
 - **Inputs**:
-    - `kind_fn`: A callable that takes a `tree_sitter.Node` and returns a boolean, used to filter the callables by kind.
+    - `kind_fn`: A callable that takes a `tree_sitter.Node` and returns a boolean indicating if the node matches the desired kind of callable.
 - **Logic and Control Flow**:
-    - Define a query string to match all callable definitions in the syntax tree.
-    - Execute the query on the root node of the syntax tree to find matches.
-    - Initialize an empty list `callables` to store the extracted callable data.
-    - Iterate over each match, extracting the `callable_def_node` from the captures.
-    - Check if the `callable_def_node` satisfies the `kind_fn` condition.
-    - If the callable name cannot be parsed, print an error message.
-    - Get the start and end line numbers of the callable definition node.
-    - Get the fully qualified path to the parent of the callable definition node.
-    - Check if the callable definition is decorated and adjust the start and end lines, bytes, and symbol code accordingly.
-    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each callable and append it to the `callables` list.
-    - Sort the `callables` list by the start byte of each callable.
-    - Return the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+    - Defines a query string to identify function definitions in the syntax tree.
+    - Executes the query on the root node of the syntax tree to find matches.
+    - Iterates over each match to extract the callable definition node.
+    - Checks if the callable definition node matches the kind specified by `kind_fn`.
+    - If the callable name cannot be parsed, prints an error message.
+    - Retrieves the line range and fully qualified path for the callable definition node.
+    - Checks if the callable definition node is part of a decorated definition and adjusts the line range and byte range accordingly.
+    - Converts the callable node to text using [`py_node_to_text`](<#py_node_to_text>).
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each callable and appends it to the `callables` list.
+    - Sorts the `callables` list by the start byte of each callable.
+    - Returns the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the extracted callable definitions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.get_callable_name_and_params`](<#get_callable_name_and_params>)
@@ -224,10 +222,10 @@ Extracts and returns a list of callable definitions (functions and methods) from
 #### PyDriverTree\.extract\_data\_structure\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_data_structure_definitions}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L387>)
 
-Returns a list of class definitions extracted from the source code.
+Returns the result of the [`extract_class_definitions`](<#pydrivertreeextract_class_definitions>) method.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the [`extract_class_definitions`](<#pydrivertreeextract_class_definitions>) method to get class definitions.
+    - Calls the [`extract_class_definitions`](<#pydrivertreeextract_class_definitions>) method.
     - Returns the result of the [`extract_class_definitions`](<#pydrivertreeextract_class_definitions>) method.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing class definitions.
 - **Functions Called**:
@@ -242,14 +240,15 @@ Returns a list of class definitions extracted from the source code.
 Extracts class definitions from a syntax tree and returns them as a list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a query string `klass_query_str` to match class definitions in the syntax tree.
+    - Defines a query string to match class definitions in the syntax tree.
     - Executes the query on the root node of the syntax tree to find matches.
     - Iterates over each match to extract the class node and class name.
     - Checks if the class node has superclasses and extracts their names if present.
     - Determines if the class node is part of a decorated definition to adjust the start and end line and byte positions accordingly.
-    - Converts the class node to text using [`py_node_to_text`](<#py_node_to_text>) and constructs a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each class.
-    - Appends each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to the `klasses` list.
-    - Sorts the `klasses` list by the `start_byte` attribute before returning it.
+    - Converts the class node to text using the [`py_node_to_text`](<#py_node_to_text>) function.
+    - Gets the fully qualified path to the parent node using the [`_get_fully_qualified_path_to_parent`](<#pydrivertree_get_fully_qualified_path_to_parent>) method.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each class definition with extracted details and appends it to the `klasses` list.
+    - Sorts the list of class definitions by their start byte positions.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing class definitions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -268,12 +267,12 @@ Extracts and categorizes function and method calls from a syntax tree.
 - **Logic and Control Flow**:
     - Defines a query string to identify free function calls and object method calls in the syntax tree.
     - Executes the query on the root node of the syntax tree to find matches.
-    - Iterates over the matches to categorize each call as either a free function or an object method.
-    - For free function calls, determines the kind of call (built-in, class constructor, or free function) based on the function name and Python conventions.
-    - For object method calls, categorizes them as object methods.
-    - For each call, retrieves the line range, byte range, and fully qualified parent path.
-    - Creates [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) and [`PyCall`](<#pycall>) objects for each call and appends them to the respective lists.
-    - Returns a tuple containing the list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) and the list of [`PyCall`](<#pycall>) objects.
+    - Iterates over the matches to categorize them as free functions or object methods based on the pattern index.
+    - For free functions, decodes the function name and determines its kind (built-in, class constructor, or free function) using heuristics.
+    - For object methods, decodes the method name and assigns the kind as object method.
+    - For each call, retrieves the line range, byte range, and fully qualified parent path of the call node.
+    - Creates [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) and [`PyCall`](<#pycall>) objects for each call and appends them to `calls_symbol` and `calls_kind` lists respectively.
+    - Returns the lists of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) and [`PyCall`](<#pycall>) objects.
 - **Output**: A tuple containing a list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects and a list of [`PyCall`](<#pycall>) objects, representing the extracted calls and their kinds.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -288,11 +287,11 @@ Extracts and categorizes function and method calls from a syntax tree.
 #### PyDriverTree\.extract\_function\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_function_calls}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L534>)
 
-Extracts and returns a list of function call symbols from the syntax tree.
+Extracts and returns a list of function call symbols from the parsed syntax tree.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the [`extract_calls`](<#pydrivertreeextract_calls>) method to retrieve function call symbols and their kinds from the syntax tree.
-    - Ignores the kinds of calls and only returns the list of call symbols.
+    - Ignores the kinds of calls and only returns the list of function call symbols.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing function call symbols.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_calls`](<#pydrivertreeextract_calls>)
@@ -308,12 +307,13 @@ Extracts global variable assignments from a syntax tree using Tree-sitter querie
 - **Logic and Control Flow**:
     - Defines a query string to match single and multiple variable assignments in a module.
     - Executes the query on the root node of the syntax tree to find matches.
-    - Iterates over the matches to process each pattern index separately for single and multiple assignments.
-    - For single assignments, checks if the global name is not None, decodes the name, and retrieves the line range and fully qualified path.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each global variable and appends it to the list.
-    - For multiple assignments, iterates over all identifiers in the pattern list, decodes each name, and retrieves the line range and fully qualified path.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each identifier in the multiple assignment and appends it to the list.
-    - Sorts the list of global variables by their start byte before returning.
+    - Initializes an empty list `gbl_vars` to store global variable data.
+    - Iterates over each match, checking the pattern index to determine if it is a single or multiple assignment.
+    - For single assignments, retrieves the global variable name and checks if it is not `None`.
+    - For multiple assignments, iterates over all identifiers in the pattern list to retrieve their names.
+    - For each global variable, retrieves the start and end line numbers, fully qualified parent path, and other metadata.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each global variable and appends it to `gbl_vars`.
+    - Sorts the list of global variables by their start byte position before returning.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing global variables.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -330,17 +330,16 @@ Extracts global variable assignments from a syntax tree using Tree-sitter querie
 ### py\_node\_to\_text<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.py_node_to_text}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L102>)
 
-Extracts a substring from `source_bytes` corresponding to the range defined by a `tree_sitter.Node`, including leading indentation.
+Converts a specified range of bytes from a source byte sequence into a UTF-8 string, including leading indentation.
 - **Inputs**:
-    - `source_bytes`: A byte string representing the source code from which to extract text.
-    - `node`: A `tree_sitter.Node` object that specifies the start and end byte positions for the text extraction.
+    - `source_bytes`: A byte sequence representing the source code.
+    - `node`: A `tree_sitter.Node` object that specifies the range of bytes to convert.
 - **Logic and Control Flow**:
-    - Get the start byte position from the `node` using `node.start_byte`.
-    - Get the end byte position from the `node` using `node.end_byte`.
-    - Find the position of the last newline character before the start byte to include leading indentation.
-    - Extract the substring from `source_bytes` starting from the position after the last newline up to the end byte.
-    - Decode the extracted byte string to a UTF-8 string and return it.
-- **Output**: A UTF-8 decoded string representing the text from `source_bytes` within the specified range, including leading indentation.
+    - Get the start and end byte positions from the `node` object.
+    - Find the position of the last newline character before the start position to include leading indentation.
+    - Extract the byte sequence from the calculated start position to the end position.
+    - Decode the extracted byte sequence into a UTF-8 string.
+- **Output**: A UTF-8 string representation of the specified byte range, including leading indentation.
 
 
 ---
@@ -362,30 +361,31 @@ Checks if a given node represents a top-level free function in a module.
 ### is\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.is_method}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L121>)
 
-Determines if a given `tree_sitter.Node` represents a method within a class definition.
+Determines if a given node represents a method within a class definition.
 - **Inputs**:
-    - `node`: A `tree_sitter.Node` object that represents a node in the syntax tree.
+    - `node`: A `tree_sitter.Node` object representing a node in the syntax tree.
 - **Logic and Control Flow**:
     - Checks if the `node` has a parent node.
-    - Verifies if the parent node is of type `block` and its parent is of type `class_definition`, indicating a method within a class.
-    - Alternatively, checks if the parent node is of type `decorated_definition`, its parent is of type `block`, and its grandparent is of type `class_definition`, also indicating a method within a class.
-- **Output**: Returns `True` if the node is a method within a class definition, otherwise `False`.
+    - Verifies if the parent node is of type `block` and its grandparent is of type `class_definition`.
+    - Alternatively, checks if the parent node is of type `decorated_definition`, its grandparent is of type `block`, and its great-grandparent is of type `class_definition`.
+    - Returns `True` if any of the above conditions are met, indicating the node is a method; otherwise, returns `False`.
+- **Output**: A boolean value indicating whether the node is a method within a class definition.
 
 
 ---
 ### get\_callable\_name\_and\_params<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.get_callable_name_and_params}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/python_driver.py#L132>)
 
-Extracts the name and parameters node of a function definition from a given Tree-sitter node.
+Extracts the name and parameters node of a function definition from a Tree-sitter node.
 - **Inputs**:
     - `callable_def_node`: A Tree-sitter node representing a function definition.
 - **Logic and Control Flow**:
-    - Checks if the type of `callable_def_node` is 'function_definition'.
-    - Retrieves the child node with the field name 'name' and assigns it to `name_node`.
-    - Retrieves the child node with the field name 'parameters' and assigns it to `params_node`.
-    - If `name_node` is not None and its type is 'identifier', returns the decoded text of `name_node` and `params_node`.
-    - If the conditions are not met, returns a tuple of (None, None).
-- **Output**: A tuple containing the function name as a string (or None) and the parameters node.
+    - Check if the `callable_def_node` is of type 'function_definition'.
+    - Retrieve the child node with the field name 'name' and assign it to `name_node`.
+    - Retrieve the child node with the field name 'parameters' and assign it to `params_node`.
+    - If `name_node` is not None and its type is 'identifier', return the decoded text of `name_node` and `params_node`.
+    - If the conditions are not met, return None, None.
+- **Output**: A tuple containing the function name as a string (or None) and the parameters node (or None).
 
 
 

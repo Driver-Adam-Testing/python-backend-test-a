@@ -6,7 +6,9 @@
 Alembic migration script to update columns and add metadata to git_provider_app_installations table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It updates the database schema by altering columns in the `git_provider_apps` table to make them nullable and adds a new column `metadata` of type `JSONB` to the `git_provider_app_installations` table. The [`upgrade`](<#upgrade>) function applies these changes, while the [`downgrade`](<#downgrade>) function reverses them, making the columns in `git_provider_apps` non-nullable again and removing the `metadata` column from `git_provider_app_installations`. The script includes revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script updates the database schema by altering existing columns and adding a new column in specific tables. The [`upgrade`](<#upgrade>) function modifies the `git_provider_apps` table by making the `scopes`, `redirect_uri`, and `client_id` columns nullable. It also adds a new column named `metadata` of type `JSONB` to the `git_provider_app_installations` table and makes the `user_id` column nullable. These changes are intended to adjust the database schema to accommodate new requirements or features.
+
+The [`downgrade`](<#downgrade>) function reverses the changes made by the [`upgrade`](<#upgrade>) function. It makes the `user_id` column in the `git_provider_app_installations` table non-nullable and removes the `metadata` column. Additionally, it reverts the `scopes`, `redirect_uri`, and `client_id` columns in the `git_provider_apps` table to be non-nullable. This function ensures that the database schema can be rolled back to its previous state if necessary. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -20,8 +22,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration script. It is used by Alembic to track the version of the database schema that this script represents.
-- **Use**: Used to identify the current migration version in Alembic operations.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
@@ -34,15 +36,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: Represents a placeholder for branch labels in the Alembic migration script. It is set to `None`, indicating that no specific branch labels are associated with this migration.
-- **Use**: Used to define branch labels for the Alembic migration, but currently not utilized as it is set to `None`.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Used to define branch labels for the migration script, but currently not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration does not depend on any other migrations.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -51,12 +53,12 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_18_1442-2c5d9d6cbdb5_update_git_provider_app_install_table.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_02_18_1442-2c5d9d6cbdb5_update_git_provider_app_install_table.py#L20>)
 
-Modifies the database schema for `git_provider_apps` and `git_provider_app_installations` tables.
+Modifies the database schema by altering columns and adding a new column to specified tables.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Alters the `scopes`, `redirect_uri`, and `client_id` columns in the `git_provider_apps` table to be nullable.
-    - Adds a new column `metadata` of type `JSONB` to the `git_provider_app_installations` table, which is nullable and does not auto-increment.
-    - Alters the `user_id` column in the `git_provider_app_installations` table to be nullable.
+    - Alters the `scopes`, `redirect_uri`, and `client_id` columns in the `git_provider_apps` table to allow null values.
+    - Adds a new column `metadata` of type `JSONB` to the `git_provider_app_installations` table, allowing null values.
+    - Alters the `user_id` column in the `git_provider_app_installations` table to allow null values.
 - **Output**: No output is returned as the function modifies the database schema in place.
 
 
@@ -64,7 +66,7 @@ Modifies the database schema for `git_provider_apps` and `git_provider_app_insta
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_18_1442-2c5d9d6cbdb5_update_git_provider_app_install_table.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_02_18_1442-2c5d9d6cbdb5_update_git_provider_app_install_table.py#L49>)
 
-Reverts database schema changes made in the `upgrade` function for the `git_provider_app_installations` and `git_provider_apps` tables.
+Reverts database schema changes made in the upgrade function.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Alters the `user_id` column in the `git_provider_app_installations` table to be non-nullable.
@@ -72,7 +74,7 @@ Reverts database schema changes made in the `upgrade` function for the `git_prov
     - Alters the `client_id` column in the `git_provider_apps` table to be non-nullable.
     - Alters the `redirect_uri` column in the `git_provider_apps` table to be non-nullable.
     - Alters the `scopes` column in the `git_provider_apps` table to be non-nullable.
-- **Output**: No output is returned as the function returns `None`.
+- **Output**: None
 
 
 

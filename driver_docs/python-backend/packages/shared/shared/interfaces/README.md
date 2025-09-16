@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agent and billing models, file content processing, usage metrics, AWS config, and request/response models.
+Agent configuration models, billing and file content Pydantic models, usage metrics, AWS client config, and search algorithms.
 
 ## Folders
-- **[agents](agents/README.md)**: Agent configuration models, block kind enumerations, abstract classes, data scope management, pipeline configuration, and prompt models.
+- **[agents](agents/README.md)**: Agent configuration models, block kind enumerations, abstract classes, data scope management, pipeline configurations, and prompt models.
 - **[billing](billing/README.md)**: Pydantic models for subscription records and creation requests with computed date fields.
-- **[file_content](file_content/README.md)**: Pydantic model for file content and enums with a class for PDF content processing.
-- **[usage](usage/README.md)**: Data models for usage and event metrics, conversion utilities, and tests for schema and balance.
+- **[file_content](file_content/README.md)**: Pydantic models and types for processed file content and PDF file content.
+- **[usage](usage/README.md)**: Data models and utilities for usage metrics and events, with tests for schema conversions and balances.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[aws_client_config.py](aws_client_config.py.md)**: Defines an AWS client configuration model with region, access key ID, and secret access key.
-- **[request.py](request.py.md)**: Defines request models for drivers, including modal and batch requests, using Pydantic.
+- **[request.py](request.py.md)**: Defines Pydantic models for driver requests, including modal and batch requests with call IDs.
 - **[response.py](response.py.md)**: Defines `DriverResponse` and `DriverModalResponse` classes using Pydantic for data validation.
-- **[search.py](search.py.md)**: Defines search-related classes including algorithms, input parameters, and result structures.
+- **[search.py](search.py.md)**: Defines search algorithms, input parameters, and result structures for a search interface.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Unit tests for the `ContentService` and `TagService` in a FastAPI application using pytest.
+Unit tests for the `ContentService` and `TagService` in a FastAPI application using pytest fixtures.
 
 # Purpose
-This code is a test suite for a content management system using the `pytest` framework. It defines several `pytest` fixtures to set up the necessary services and data, such as `ContentService`, `TagService`, and various content-related entities. The tests cover a range of functionalities, including creating, retrieving, editing, associating, and deleting content and tags. The tests also verify access control by checking operations across different organizations, ensuring that unauthorized actions raise `HTTPException`. The fixtures and tests work together to simulate real-world scenarios and validate the behavior of the content management system's API and services.
+The code is a test suite for a content management system, utilizing the `pytest` framework. It defines several test cases to verify the functionality of content creation, retrieval, association, editing, and deletion within an application. The tests focus on operations performed by the `ContentService` and `TagService` classes, which manage content and tags, respectively. The tests ensure that content operations are correctly handled, including scenarios where operations are attempted across different organizations, which should raise `HTTPException` errors.
+
+The test suite includes fixtures to set up the necessary test environment, such as creating instances of `ContentService`, `TagService`, and various content-related entities like `DerivedContent` and `ChunkAndEmbedding`. These fixtures provide reusable components for the test cases, ensuring that each test has the required context and data. The tests cover a range of functionalities, including creating content of different types, listing content, associating and disassociating content sources, and handling content across different organizational contexts. The suite ensures that the content management system behaves as expected under various conditions and constraints.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

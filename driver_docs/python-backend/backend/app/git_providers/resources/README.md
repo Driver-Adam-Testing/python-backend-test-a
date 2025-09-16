@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Bitbucket and GitLab API resource management for repositories, commits, webhooks, and archives.
+Bitbucket and GitLab API resource management for token validation, repository handling, and more.
 
 
 ## Files
-- **[bitbucket_api_resources.py](bitbucket_api_resources.py.md)**: Implements Bitbucket API resource management, including repository access, commits, and webhooks.
+- **[bitbucket_api_resources.py](bitbucket_api_resources.py.md)**: Implements Bitbucket API resource management, including token validation, repository handling, and webhook creation.
 - **[gitlab_resources.py](gitlab_resources.py.md)**: GitLab API resource management for fetching repositories, projects, and downloading repository archives.
 
 ---

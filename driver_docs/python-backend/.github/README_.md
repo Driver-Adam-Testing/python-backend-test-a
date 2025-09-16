@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GitHub Actions for deployment, workflows for updates and testing, and Dependabot configuration.
+GitHub Actions for deployment, workflows for updates and tests, and Dependabot configuration.
 
 ## Folders
 - **[actions](actions/README.md)**: GitHub Action for deploying a modal package with specified inputs and environment variables.
-- **[workflows](workflows/README.md)**: GitHub Actions workflows for package updates, environment deployments, and unit testing.
+- **[workflows](workflows/README.md)**: GitHub Actions workflows for package updates, deployments, and unit tests in various environments.
 
 ## Files
 - **[dependabot.yml](dependabot.yml.md)**: Configures Dependabot to update GitHub Actions and pip packages weekly on Wednesdays at 09:00 PT.

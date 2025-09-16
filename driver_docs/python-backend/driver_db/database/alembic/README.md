@@ -3,16 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration scripts, configuration, and templates for database schema changes and migrations.
+Generic single-database configuration instructions.
 
-## Folders
-- **[versions](versions/README.md)**: Alembic migration scripts for database schema changes, including table modifications, index updates, and enum adjustments.
-
-## Files
-- **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[env.py](env.py.md)**: Configures and runs database migrations using Alembic in both offline and online modes.
-- **[README]()**: Generic single-database configuration instructions.
-- **[script.py.mako](script.py.mako.md)**: Alembic migration script template for database schema upgrades and downgrades.
+# Purpose
+The configuration file defines settings for a single-database setup. It specifies parameters necessary for connecting and interacting with a database, such as the database type, connection details, and authentication credentials. This configuration ensures that the application can establish a connection to the specified database and perform required operations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

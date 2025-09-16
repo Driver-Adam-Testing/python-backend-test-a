@@ -44,7 +44,7 @@ try:
 except FileNotFoundError:
     LOCAL_FILES = None
 
-OPENAI_SEM = asyncio.Semaphore(300)
+OPENAI_SEM = asyncio.Semaphore(100)
 PDF_DOWNLOAD_DIR = "pdfs/"
 OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
 

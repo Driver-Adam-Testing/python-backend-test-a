@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Executes block agents for code, diagram, list, and table generation using LLM sessions and prompt augmentation.
+Executes block agents to generate and validate code snippets, mermaid diagrams, lists, and tables.
 
 
 ## Files
-- **[code.py](code.py.md)**: Executes a code block agent to generate and correct code snippets using an LLM session.
-- **[diagram.py](diagram.py.md)**: Executes a pipeline to generate and validate mermaid diagrams using agent-based prompt augmentation.
-- **[list.py](list.py.md)**: Executes a list block agent to generate a single list output using prompt augmentation and smart instruction steps.
-- **[table.py](table.py.md)**: Executes a table block agent to generate an exhaustive table using prompt augmentation and smart instructions.
+- **[code.py](code.py.md)**: Executes a code block agent to generate and correct code snippets using various tools and prompts.
+- **[diagram.py](diagram.py.md)**: Executes a diagram block agent to generate and validate mermaid diagrams using prompt augmentation and agent tools.
+- **[list.py](list.py.md)**: Executes a list block agent to generate an exhaustive list using prompt augmentation and smart instructions.
+- **[table.py](table.py.md)**: Executes a table block agent to generate an exhaustive table using prompt augmentation and smart instruction.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

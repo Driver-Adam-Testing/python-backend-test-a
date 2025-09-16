@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Exposes a modal interface for block kind agents, tests Mermaid CLI rendering, and manages Python dependencies.
+Exposes a modal interface for block kind agents, tests for Mermaid CLI, and Poetry configuration files.
 
 ## Folders
 - **[src](src/README.md)**: Exposes a modal interface for configuring and executing various block kind agents.
 - **[tests](tests/README.md)**: Tests for rendering Mermaid code blocks using the Mermaid CLI.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Ensures consistent Python project environments by locking specific dependency versions and metadata.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies and build system details.
+- **[poetry.lock](poetry.lock.md)**: Manages Python project dependencies with specific versions, metadata, and integrity verification.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry package manager, specifying dependencies and build settings.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

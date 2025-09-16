@@ -6,7 +6,9 @@
 Resolves Python import statements to corresponding project files using a symbol data map.
 
 # Purpose
-The code defines a class `PythonResolver` that extends `ImportResolver` to resolve Python import statements to corresponding project files. It uses the [`resolve_import`](<#pythonresolverresolve_import>) method to map import symbols, represented by `RawTreeSitterSymbolData`, to file paths within a project. The method checks if the import corresponds to a module or function within a `.py` file by comparing the import path against a list of project files. It handles simple imports like `import my_module` and more complex cases like `from my_module import fn`. The code does not yet handle subfolders as modules, as indicated by a `TODO` comment. This functionality is narrow, focusing specifically on resolving Python imports within a project.
+The code defines a class `PythonResolver` that extends the `ImportResolver` class. Its primary function is to resolve Python import statements to their corresponding project files. This is achieved through the [`resolve_import`](<#pythonresolverresolve_import>) method, which takes the current file path, an import symbol, and a mapping of project files to their symbols. The method attempts to match the import statement with the file paths in the project, returning the path of the file that implements the imported module or function.
+
+The [`resolve_import`](<#pythonresolverresolve_import>) method handles different import scenarios. It first checks for direct module imports, such as `import my_module`, by converting the import symbol into a path and searching for a matching file. It then addresses cases where specific functions or submodules are imported, such as `from my_module import fn` or `import my_module.fn`, by adjusting the path accordingly. The method currently does not handle subfolders as modules, as indicated by a `TODO` comment. The code is intended to be part of a larger system, likely a library, that deals with language-specific import resolution, as suggested by its integration with the `ImportResolver` base class and the use of `RawTreeSitterSymbolData` for symbol representation.
 # Imports and Dependencies
 
 ---
@@ -24,7 +26,7 @@ The code defines a class `PythonResolver` that extends `ImportResolver` to resol
 
 - **Members**:
     - `language`: Specifies the programming language as 'python'.
-- **Description**: Extends the `ImportResolver` class to resolve Python import statements to corresponding project files. It uses the import symbol data and a map of project files to symbols to determine the correct file path for a given import. The class handles simple module imports and attempts to resolve imports from modules, but does not yet handle subfolders as modules.
+- **Description**: Resolves Python import statements to corresponding project files by analyzing the import symbol and matching it with available project files. It attempts to map import paths to actual file paths within a project, handling simple module imports and imports from modules, but does not yet handle subfolder modules with `__init__.py` files.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/python_resolver.PythonResolver.resolve_import`](<#pythonresolverresolve_import>)
 - **Inherits From**:
@@ -38,17 +40,17 @@ The code defines a class `PythonResolver` that extends `ImportResolver` to resol
 
 Resolves Python import statements to corresponding project files.
 - **Inputs**:
-    - `current_file`: The current file path as a `Path` object where the import statement is located.
-    - `import_sym`: An instance of `RawTreeSitterSymbolData` representing the import symbol to resolve.
-    - `project_files_to_symbols_map`: A dictionary mapping `Path` objects to lists of `RawTreeSitterSymbolData`, representing the project files and their associated symbols.
+    - `current_file`: The current file path where the import statement is located.
+    - `import_sym`: The symbol data representing the import statement to resolve.
+    - `project_files_to_symbols_map`: A dictionary mapping project file paths to lists of symbol data.
 - **Logic and Control Flow**:
-    - Convert the import symbol name to a path-like string and append the '.py' suffix.
-    - Check if the path-like string matches any file in the project files list for direct module imports.
-    - Return the matching file path if found, or `None` if the parent directory is the current directory ('.').
+    - Convert the import symbol name to a path with a '.py' suffix.
+    - Check if the path matches any project file paths for direct module imports.
+    - Return the matching project file path if found, or None if the parent directory is the current directory.
     - Attempt to resolve the import as a submodule by checking the parent directory with a '.py' suffix.
-    - Return the matching file path if found, or `None` if the path cannot be resolved.
-    - Return `None` if no matching file is found for the import statement.
-- **Output**: A `Path` object representing the resolved file, a list of `Path` objects, or `None` if the import cannot be resolved.
+    - Return the matching project file path if found, or None if the path cannot be resolved.
+    - Return None if no matching file is found or if the import cannot be resolved.
+- **Output**: A path to the resolved file, a list of paths, or None if the import cannot be resolved.
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/python_resolver.PythonResolver`](<#pythonresolver>)  (Base Class)
 
 

@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Classes and enums for handling LLM messages, responses, tools, and parsing in Python.
+Classes and models for handling LLM messages, responses, tools, and message history.
 
 
 ## Files
 - **[llm_message.py](llm_message.py.md)**: Defines the `LlmMessage` class for handling and parsing messages with tool call requests and responses.
-- **[llm_message_history.py](llm_message_history.py.md)**: Implements a class for managing and converting sequential LlmMessage objects in a conversation or instruction sequence.
-- **[llm_message_kind.py](llm_message_kind.py.md)**: Defines the `MessageKind` enum with various message types like USER, ASSISTANT, and SYSTEM.
+- **[llm_message_history.py](llm_message_history.py.md)**: Manages a sequence of LlmMessage objects, supporting operations like adding, removing, and converting messages for various APIs.
+- **[llm_message_kind.py](llm_message_kind.py.md)**: Defines the MessageKind enumeration with various message types like USER, ASSISTANT, and SYSTEM.
 - **[llm_parseable.py](llm_parseable.py.md)**: Defines a base model for auto-generating JSON instructions for subclasses using Pydantic and ABC.
 - **[llm_response_type.py](llm_response_type.py.md)**: Base class for LLM response types with methods for markdown conversion and parsing description.
-- **[llm_stream_response.py](llm_stream_response.py.md)**: Defines LLM stream response classes with various kinds and methods for SSE conversion and encoding.
-- **[llm_tool.py](llm_tool.py.md)**: Abstract base class for tools callable by an LLM, with execution and asynchronous execution methods.
+- **[llm_stream_response.py](llm_stream_response.py.md)**: Defines LLM stream response types and their conversion to SSE format using Pydantic models.
+- **[llm_tool.py](llm_tool.py.md)**: Abstract base class for tools callable by an LLM, with synchronous and asynchronous execution methods.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

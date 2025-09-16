@@ -6,7 +6,7 @@
 Defines a Pydantic model `MessageResponse` with a single string field `message`.
 
 # Purpose
-The code defines a data model using the `pydantic` library, which is used for data validation and settings management in Python. It creates a class named `MessageResponse` that inherits from `BaseModel`. This class has a single attribute, `message`, which is of type `str`. The primary purpose of this code is to provide a structured way to handle and validate data that includes a message string, ensuring that any data assigned to `message` conforms to the expected type. This is a narrow functionality focused on data modeling and validation.
+The code defines a data model using the `pydantic` library, which is used for data validation and settings management in Python. It creates a class named `MessageResponse` that inherits from `BaseModel`. This class has a single attribute, `message`, which is a string. The purpose of this code is to provide a structured way to handle and validate data that includes a message, ensuring that any data assigned to `message` is of the correct type. This is useful in applications where consistent data structures are required, such as in API responses.
 # Imports and Dependencies
 
 ---
@@ -19,10 +19,9 @@ The code defines a data model using the `pydantic` library, which is used for da
 ### MessageResponse<!-- {{#class:python-backend/backend/app/schemas/user_schema.MessageResponse}} -->
 [View Source →](<../../../../../backend/app/schemas/user_schema.py#L4>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
     - `message`: Stores a message as a string.
-- **Description**: Represents a response model that contains a single message string, inheriting validation and serialization features from `BaseModel`.
+- **Description**: Inherits from `BaseModel` and stores a single message as a string.
 - **Inherits From**:
     - `BaseModel`
 

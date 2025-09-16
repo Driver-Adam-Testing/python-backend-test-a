@@ -60,10 +60,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-NO_OS_DRIVER_BRANCH = "staging/docs"
-NO_OS_REPO_NAME = "no-OS"
-NO_OS_GH_ORG = "analogdevicesinc"
-
 aws_config = AWSClientConfig(
     region_name=settings.AWS_REGION,
     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
@@ -542,20 +538,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     installation_id = str(body["installation"]["id"])
     commit_hash = body["after"]
 
-    if org_name == NO_OS_GH_ORG and repo_name == NO_OS_REPO_NAME:
-        if pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}":
-            logger.info(
-                "ADI event ignored: Not the driver branch of no-OS. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
-                org_name,
-                repo_name,
-                pushed_ref,
-                installation_id,
-            )
-            return JSONResponse(
-                status_code=status.HTTP_202_ACCEPTED,
-                content={"message": "Push event ignored (not driver branch)"},
-            )
-    elif pushed_ref != f"refs/heads/{default_branch}":
+    if pushed_ref != f"refs/heads/{default_branch}":
         logger.info(
             "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
             org_name,

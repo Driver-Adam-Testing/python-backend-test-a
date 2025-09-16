@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-SQL script for migrating codebases, including asset preparation, node insertion, and content updates.
+SQL script for migrating codebases by preparing and inserting primary assets, versions, and nodes.
 
 # Purpose
-The code is a SQL script designed to migrate a codebase's data into a new schema. It performs several operations to transform and insert data into new tables. The script begins by creating temporary tables to organize and resolve version information for codebase assets. It then inserts primary assets and their versions into the `v2_primary_asset` and `v2_version` tables, respectively. The script uses SQL operations such as `JOIN`, `CASE`, and `ROW_NUMBER` to manage and order data accurately.
+The code is a SQL script designed to migrate a codebase's data into a new schema. It performs several operations to transform and insert data into new tables. The script begins by creating temporary tables to organize and resolve version information from the existing `derived_contents` table. It then inserts primary assets and their versions into the `v2_primary_asset` and `v2_version` tables, respectively. The script uses SQL constructs such as `CASE` statements and `ROW_NUMBER()` to handle conditional logic and ordering.
 
-The script continues by inserting nodes into the `v2_node` table, which represent directories and files within the codebase. It ensures that each node is unique by using deduplication logic. The script updates the `derived_contents` table to link nodes with their corresponding content and adjusts content kinds to reflect their hierarchical status. Finally, the script includes an optional `SELECT` statement to retrieve all nodes ordered by their creation date. The entire process is wrapped in a transaction to ensure data integrity, using `BEGIN` and `COMMIT` statements.
+The script continues by inserting nodes into the `v2_node` table, which represent directories and files within the codebase. It deduplicates nodes based on their paths and ensures that only the most recent entries are inserted. The script updates the `derived_contents` table to link nodes with their corresponding entries and adjusts content kinds to reflect their hierarchical status. Finally, the script includes an optional select statement to retrieve all nodes ordered by their creation date. The entire process is wrapped in a transaction to ensure atomicity, using `BEGIN` and `COMMIT` statements.
 # Global Variables
 
 ---

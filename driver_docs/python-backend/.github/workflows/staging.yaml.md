@@ -3,28 +3,32 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GitHub Actions workflow for deploying the backend to a staging environment on specific branch events.
+GitHub Actions workflow for deploying the Python backend to the staging environment on specific branch events.
 
 # Purpose
-This file is a GitHub Actions workflow configuration for deploying a backend application to a staging environment. It triggers on pushes to branches prefixed with `release/` or `hotfix/`, and it can also be manually triggered from the Actions tab. The workflow ensures concurrency by canceling any in-progress jobs for the same workflow and branch. It sets permissions for writing ID tokens and reading contents. The deployment job runs on the latest Ubuntu environment and includes steps to set up Node.js and Python, install dependencies using Poetry, configure AWS credentials, and deploy various components of the application using the AWS CDK and Modal. Each deployment step is executed in a specific working directory and uses environment variables for configuration, ensuring that the deployment process is consistent and secure.
+This YAML file defines a GitHub Actions workflow for deploying a backend application to a staging environment. The workflow triggers on pushes to branches prefixed with `release/` or `hotfix/`, and it can also be manually triggered from the Actions tab. The workflow includes a series of jobs that run on an `ubuntu-latest` environment, starting with checking out the code and setting up Node.js and Python environments. It configures AWS credentials for deployment, builds and pushes a Docker image to Amazon ECR, and uses AWS CDK to deploy infrastructure. The workflow also includes steps to deploy various content services using Poetry and Modal, ensuring that each service is deployed with the correct environment variables and secrets. The file ensures that deployments are consistent and automated, reducing manual intervention and potential errors.
 # Content Summary
-This configuration file is a GitHub Actions workflow for deploying a backend application to a staging environment. The workflow is named "Backend Staging Deployment" and is triggered by pushes to branches prefixed with "release/" or "hotfix/". It can also be manually triggered from the Actions tab using `workflow_dispatch`.
+This configuration file is a GitHub Actions workflow for deploying a backend application to a staging environment. The workflow is named "Backend Staging Deployment" and is triggered by pushes to branches prefixed with "release/" or "hotfix/". It can also be manually triggered from the Actions tab.
 
-The workflow uses concurrency control to ensure that only one deployment per branch is active at a time, canceling any in-progress deployments if a new one starts. It requires permissions to write an ID token and read repository contents.
+The workflow ensures concurrency by grouping jobs based on the workflow and reference, and it cancels any in-progress jobs if a new one starts. It sets permissions for writing ID tokens and reading contents.
 
-The deployment job, named "Deploy to Staging Environment", runs on the latest Ubuntu environment. It includes several steps:
+The main job, named "Deploy to Staging Environment", runs on the latest Ubuntu environment. It includes several steps:
 
-1. **Checkout Code**: Uses the `actions/checkout@v4` action to check out the repository code.
-2. **Node.js Setup**: Sets up Node.js version 20.x with npm caching using `actions/setup-node@v4`.
+1. **Checkout Code**: Uses the `actions/checkout@v4` to check out the repository code.
+2. **Setup Node.js**: Configures Node.js version 20.x and caches npm dependencies.
 3. **Install Node.js Dependencies**: Runs `npm ci` to install Node.js dependencies.
-4. **Python Setup**: Configures Python version 3.12 using `actions/setup-python@v5`.
-5. **Install Poetry**: Installs the Poetry package manager using `snok/install-poetry@v1`.
-6. **Install Dependencies**: Installs project dependencies without creating a virtual environment using Poetry.
-7. **AWS Credentials Configuration**: Configures AWS credentials for deployment using `aws-actions/configure-aws-credentials@v4`, with the AWS region set to `us-east-1` and a role specified by `AWS_CICD_ROLE`.
-8. **CDK Deployment**: Deploys the infrastructure using AWS CDK with the environment variable `DEPLOYMENT_ENVIRONMENT` set to "staging".
-9. **Service Deployments**: Deploys several services (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) using Poetry and Modal. Each service is deployed from its respective directory within `content_services`, using environment variables for authentication and configuration.
+4. **Setup Python**: Configures Python version 3.12.
+5. **Install Poetry**: Uses `snok/install-poetry@v1` to install Poetry.
+6. **Install Python Dependencies**: Installs dependencies using Poetry without creating a virtual environment.
+7. **Configure AWS Credentials**: Sets AWS credentials for the `us-east-1` region using a specified role.
+8. **Login to Amazon ECR**: Logs into Amazon Elastic Container Registry (ECR).
+9. **Build and Push Docker Image**: Builds, tags, and pushes a Docker image for the Python backend to Amazon ECR.
+10. **CDK Deploy**: Deploys infrastructure using AWS Cloud Development Kit (CDK) without requiring approval and outputs results to a file.
+11. **Parse CDK Outputs**: Extracts ECS cluster and service ARNs from the CDK outputs.
+12. **Force ECS Deployment**: Forces a new deployment on the ECS service using the parsed ARNs.
+13. **Deploy Services**: Deploys several content services (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) using Poetry and Modal, with environment variables for authentication and environment configuration.
 
-Each service deployment step involves installing dependencies and running a deployment command with Modal, using environment variables for authentication and tagging the deployment with the current GitHub SHA.
+Each deployment step for the content services involves installing dependencies and deploying the service using a specific environment and tag. The workflow uses environment variables and secrets for configuration and authentication.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

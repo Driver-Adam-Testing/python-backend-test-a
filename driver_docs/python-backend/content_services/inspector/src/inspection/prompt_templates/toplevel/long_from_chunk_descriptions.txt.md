@@ -6,7 +6,7 @@
 Instructions for writing a detailed description of a software codebase by combining module subset descriptions.
 
 # Purpose
-The configuration file defines the settings and parameters necessary for the software application to function correctly. It specifies key-value pairs that configure various aspects of the application, such as database connections, API endpoints, authentication credentials, and environment-specific variables. By centralizing these configurations, the file allows for easy modification and management of the application's behavior without altering the source code. This approach enhances the flexibility and adaptability of the software, enabling it to operate in different environments and under varying conditions.
+The `Makefile` in the software codebase automates the build process by defining a set of tasks to compile and link the program. It specifies rules and dependencies for building the software, allowing developers to execute complex build commands with simple instructions. The `Makefile` includes targets such as `all`, `clean`, and `install`, which streamline the process of compiling source code, removing temporary files, and installing the software. By using this file, developers can ensure consistency in the build process across different environments and reduce manual errors.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

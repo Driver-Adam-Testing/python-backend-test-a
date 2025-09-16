@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Parses a string to extract valid JSON objects or arrays, raising an error if none are found.
+Parses strings to extract valid JSON objects or arrays, raising an error if none are found.
 
 # Purpose
-The code defines a utility for parsing JSON data from a string that may contain extraneous text. It includes a custom exception, `ParseOutputError`, which is raised when no valid JSON can be extracted from the input string. The main functionality is provided by the [`parse_response_string`](<#parse_response_string>) function, which scans the input string for JSON objects or arrays. It ignores any surrounding or interspersed non-JSON text and attempts to parse JSON data whenever it encounters a '{' or '[' character. If parsing is successful, it continues scanning beyond the parsed JSON; otherwise, it skips the current bracket and continues searching.
+The code defines a utility for parsing JSON data from a string that may contain extraneous text. It includes a custom exception, `ParseOutputError`, which is raised when no valid JSON can be extracted from the input string. The main functionality is provided by the [`parse_response_string`](<#parse_response_string>) function, which scans the input string for JSON objects or arrays. It attempts to parse JSON data whenever it encounters a '{' or '[' character. If parsing is successful, it continues scanning beyond the parsed JSON; if not, it skips the current bracket and continues searching.
 
-The function returns a single JSON object or array if exactly one is found, or a list of JSON objects/arrays if multiple are found. If no valid JSON is detected, it raises the `ParseOutputError`. The code uses regular expressions to clean up the input string by removing trailing commas before closing brackets, which helps in parsing valid JSON. This code is intended to be used as a utility function, likely within a larger application, to handle and extract JSON data from complex or messy input strings.
+The [`parse_response_string`](<#parse_response_string>) function returns a single JSON object or array if exactly one is found. If multiple JSON objects or arrays are detected, it returns them as a list. If no valid JSON is found, it raises the `ParseOutputError`. The function also preprocesses the input string to remove trailing commas before closing brackets, which can cause JSON parsing errors. This code is likely intended for use in scenarios where JSON data is embedded within other text, and it provides a focused utility for extracting and returning valid JSON data.
 # Imports and Dependencies
 
 ---
@@ -24,7 +24,7 @@ The function returns a single JSON object or array if exactly one is found, or a
 
 - **Members**:
     - `input_str`: Stores the input string that caused the error.
-- **Description**: Represents an exception raised when the input string cannot be parsed into valid JSON. This class extends the base `Exception` class and includes an additional attribute `input_str` to store the problematic input string. The constructor initializes the exception message by combining a custom message with the input string.
+- **Description**: Represents an exception raised when the input string cannot be parsed into valid JSON. It stores the problematic input string and provides an error message that includes this string.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.ParseOutputError.__init__`](<#parseoutputerror__init__>)
 - **Inherits From**:
@@ -42,7 +42,7 @@ Initializes a `ParseOutputError` instance with a message and input string.
     - `input_str`: The input string that caused the error.
 - **Logic and Control Flow**:
     - Assigns the `input_str` parameter to the instance variable `self.input_str`.
-    - Calls the parent class `Exception`'s `__init__` method with a formatted message that includes both `message` and `input_str`.
+    - Calls the parent class `Exception`'s `__init__` method with a formatted message combining `message` and `input_str`.
 - **Output**: None
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/parse_response_string.ParseOutputError`](<#parseoutputerror>)  (Base Class)
 
@@ -54,23 +54,23 @@ Initializes a `ParseOutputError` instance with a message and input string.
 ### parse\_response\_string<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/parse_response_string.parse_response_string}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/utils/parse_response_string.py#L13>)
 
-Parses a string to extract valid JSON objects or arrays, ignoring non-JSON text.
+Scans a string for valid JSON objects or arrays and returns them as a list or a single object.
 - **Inputs**:
-    - `str_to_parse`: The input string that may contain JSON objects or arrays.
+    - `str_to_parse`: A string that possibly contains JSON objects or arrays.
 - **Logic and Control Flow**:
     - Remove trailing commas before '}' or ']' in the input string to form a candidate string.
     - Initialize an empty list `results` to store parsed JSON objects or arrays.
     - Create a `JSONDecoder` instance to decode JSON from the candidate string.
-    - Iterate over the candidate string to find the next '{' or '[' character, indicating the start of a JSON object or array.
+    - Iterate over the candidate string to find the next '{' or '[' character.
     - If no more JSON starts are found, exit the loop.
     - Calculate the absolute index of the found bracket in the candidate string.
-    - Attempt to decode a JSON object or array starting at the found index using `raw_decode`.
-    - If decoding is successful, append the decoded object to `results` and update the index to the end of the decoded JSON.
+    - Attempt to decode a JSON object or array starting at the found index.
+    - If decoding is successful, append the object to `results` and update the index to the end of the parsed JSON.
     - If decoding fails, increment the index to skip the current bracket and continue searching.
     - After the loop, if `results` is empty, raise [`ParseOutputError`](<#parseoutputerror>).
-    - If `results` contains exactly one JSON object or array, return it.
-    - If `results` contains multiple JSON objects or arrays, return them as a list.
-- **Output**: A single JSON object or array if exactly one is found, a list of JSON objects or arrays if multiple are found, or raises [`ParseOutputError`](<#parseoutputerror>) if none are found.
+    - If `results` contains exactly one item, return that item.
+    - If `results` contains multiple items, return them as a list.
+- **Output**: A dictionary or list containing the parsed JSON objects or arrays, or raises [`ParseOutputError`](<#parseoutputerror>) if no valid JSON is found.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.ParseOutputError`](<#parseoutputerror>)
 

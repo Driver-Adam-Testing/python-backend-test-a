@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Shell script to build, run, and test a Docker Compose environment for the backend.
+Shell script to build, run, and test the backend using Docker Compose, then clean up resources.
 
 # Purpose
-This script is a shell script used to manage Docker Compose operations for a development or testing environment. It builds Docker images, ensures that any previous Docker Compose stacks are removed, and then starts the services in detached mode. After starting the services, it executes a test script located at `/app/tests-start.sh` within the `backend` service container. Finally, it cleans up by bringing down the Docker Compose stack and removing any orphaned volumes. The script is designed to automate the setup, execution, and teardown of a Docker-based environment for testing purposes.
+This script is a shell script used to manage Docker Compose operations for a development or testing environment. It builds Docker images, removes any existing containers and volumes that may be left from previous errors, and then starts the Docker Compose services in detached mode. After starting the services, it executes a test script located at `/app/tests-start.sh` within the `backend` service container. Finally, it stops and removes the containers and volumes to clean up the environment. The script ensures that any errors encountered during execution will cause the script to exit immediately, as indicated by the `set -e` command.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

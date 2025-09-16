@@ -6,9 +6,9 @@
 C++ test cases for unions, demonstrating features like constructors, member functions, and templates.
 
 # Purpose
-The code is a collection of test cases and examples demonstrating the use of unions in C++ with features that are not available in C. It includes various types of unions, such as basic unions with constructors and destructors, unions with member functions, and unions containing non-trivial types like `std::string`. The code also illustrates the use of anonymous unions, unions within namespaces, and unions inside classes, showcasing C++ scoping capabilities. Additionally, it demonstrates a tagged union pattern, which uses an enumeration to track the active member of the union, and a template structure that uses a union to store one of two types, highlighting the flexibility of unions in C++.
+The code is a collection of test cases and examples demonstrating the use of unions in C++ with a focus on features that are specific to C++. It includes various types of unions, such as basic unions with constructors and destructors, unions with member functions, and unions containing non-trivial types like `std::string`. The code also illustrates the use of anonymous unions, unions within namespaces, and unions inside classes, showcasing C++ scoping capabilities.
 
-The code further explores advanced C++ features by including a union with static members and a usage counter, which tracks the number of instances created. The [`main`](<#main>) function provides examples of how to instantiate and use these unions, including setting and retrieving values. The code serves as a comprehensive demonstration of C++ union capabilities, emphasizing the language's ability to handle complex data types and structures within unions, which is a significant extension beyond what is possible in C.
+Additionally, the code demonstrates advanced C++ features such as the tagged union pattern, which uses an enumeration to track the active member of the union, and a template structure that uses a union to store different types. It also includes a union with static members to track usage. The [`main`](<#main>) function creates instances of these unions to demonstrate their initialization and usage. This code serves as a comprehensive guide to understanding the unique capabilities and applications of unions in C++.
 # Imports and Dependencies
 
 ---
@@ -35,7 +35,7 @@ The code further explores advanced C++ features by including a union with static
 - **Members**:
     - ``int_value``: Stores an integer value.
     - ``double_value``: Stores a double value.
-- **Description**: A `union` that can store either an integer or a double value, but not both at the same time. It includes constructors for initializing the union with an integer or a double, and a destructor. The default constructor initializes the `int_value` to 0.
+- **Description**: Represents a union that can store either an integer or a double value. It includes constructors for initializing the union with an integer or a double, and a default constructor that initializes the integer value to zero. The destructor is defined but does not perform any specific actions.
 - **Member Functions**:
     - [`BasicUnion::BasicUnion`](<#basicunionbasicunion>)
     - [`BasicUnion::BasicUnion`](<#basicunionbasicunion>)
@@ -48,14 +48,14 @@ The code further explores advanced C++ features by including a union with static
 #### BasicUnion::BasicUnion<!-- {{#callable:BasicUnion::BasicUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L11>)
 
-Initializes a `BasicUnion` instance with either an integer or a double value.
+Initializes a `BasicUnion` object with either an integer or a double value, or defaults to zero.
 - **Inputs**:
     - `v`: An integer or double value to initialize the union with.
 - **Logic and Control Flow**:
     - If no argument is provided, initializes `int_value` to 0.
-    - If an integer argument is provided, initializes `int_value` with the given integer.
-    - If a double argument is provided, initializes `double_value` with the given double.
-- **Output**: A `BasicUnion` instance initialized with the specified value.
+    - If an integer argument `v` is provided, initializes `int_value` with `v`.
+    - If a double argument `v` is provided, initializes `double_value` with `v`.
+- **Output**: A `BasicUnion` object initialized with the specified value or defaulted to zero.
 - **See also**: [`BasicUnion`](<#basicunion>)  (Data Structure)
 
 
@@ -65,10 +65,10 @@ Initializes a `BasicUnion` instance with either an integer or a double value.
 
 Initializes a `BasicUnion` object with either an integer or a double value.
 - **Inputs**:
-    - `v`: An integer or double value to initialize the union with.
+    - `v`: An integer or double value to initialize the union.
 - **Logic and Control Flow**:
-    - If the constructor is called with an integer, it initializes the `int_value` member with the given integer.
-    - If the constructor is called with a double, it initializes the `double_value` member with the given double.
+    - If the input is an integer, the constructor initializes `int_value` with the given integer.
+    - If the input is a double, the constructor initializes `double_value` with the given double.
 - **Output**: A `BasicUnion` object initialized with the specified value.
 - **See also**: [`BasicUnion`](<#basicunion>)  (Data Structure)
 
@@ -77,12 +77,12 @@ Initializes a `BasicUnion` object with either an integer or a double value.
 #### BasicUnion::BasicUnion<!-- {{#callable:BasicUnion::BasicUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L13>)
 
-Initializes a `BasicUnion` instance with a `double` value.
+Initializes a `BasicUnion` object with a `double` value.
 - **Inputs**:
     - `v`: A `double` value to initialize the `double_value` member of the `BasicUnion`.
 - **Logic and Control Flow**:
-    - Assigns the input `double` value `v` to the `double_value` member of the `BasicUnion`.
-- **Output**: A `BasicUnion` instance with the `double_value` member initialized to the specified `double` value.
+    - The constructor initializes the `double_value` member of the `BasicUnion` with the provided `double` value `v`.
+- **Output**: A `BasicUnion` object with the `double_value` member set to the specified `double` value.
 - **See also**: [`BasicUnion`](<#basicunion>)  (Data Structure)
 
 
@@ -105,9 +105,9 @@ Destroys a `BasicUnion` object.
 
 - **Type**: `union`
 - **Members**:
-    - ``i``: Stores an integer value.
-    - ``f``: Stores a floating-point value.
-- **Description**: `FunctionUnion` is a union that can store either an integer or a floating-point number. It includes member functions to set and get these values, allowing for basic manipulation of the stored data. The union initializes the integer member to zero by default.
+    - `i`: An integer member of the union.
+    - `f`: A float member of the union.
+- **Description**: `FunctionUnion` is a union that can store either an integer or a float value. It includes member functions to set and get these values, allowing for basic manipulation of the stored data. The union initializes the integer member `i` to zero by default.
 - **Member Functions**:
     - [`FunctionUnion::FunctionUnion`](<#functionunionfunctionunion>)
     - [`FunctionUnion::setInt`](<#functionunionsetint>)
@@ -125,7 +125,7 @@ Initializes the `FunctionUnion` union with the integer member `i` set to 0.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - The constructor initializes the integer member `i` to 0.
-- **Output**: An instance of `FunctionUnion` with the integer member `i` initialized to 0.
+- **Output**: A `FunctionUnion` object with the integer member `i` initialized to 0.
 - **See also**: [`FunctionUnion`](<#functionunion>)  (Data Structure)
 
 
@@ -135,10 +135,10 @@ Initializes the `FunctionUnion` union with the integer member `i` set to 0.
 
 Sets the integer member `i` of the `FunctionUnion` to the specified value.
 - **Inputs**:
-    - `value`: The integer value to set the member `i` to.
+    - `value`: An integer value to assign to the member `i` of the `FunctionUnion`.
 - **Logic and Control Flow**:
     - Assigns the input `value` to the member `i` of the `FunctionUnion`.
-- **Output**: No output is returned as the function is of type `void`.
+- **Output**: No output is returned as the function has a void return type.
 - **See also**: [`FunctionUnion`](<#functionunion>)  (Data Structure)
 
 
@@ -151,7 +151,7 @@ Assigns a given float value to the `f` member of the `FunctionUnion`.
     - `value`: A float value to assign to the `f` member of the `FunctionUnion`.
 - **Logic and Control Flow**:
     - Assign the input `value` to the `f` member of the `FunctionUnion`.
-- **Output**: No output is returned.
+- **Output**: No output is returned as the function has a void return type.
 - **See also**: [`FunctionUnion`](<#functionunion>)  (Data Structure)
 
 
@@ -190,7 +190,7 @@ Retrieves the value of the `float` member `f` from the `FunctionUnion`.
 - **Members**:
     - ``simple_int``: Stores an integer value.
     - ``complex_string``: Stores a `std::string` object.
-- **Description**: `ComplexUnion` is a C++ union that can store either an integer or a `std::string` object. It includes constructors for initializing the union with an integer or a string. The destructor requires manual handling to properly destroy the `std::string` object when it is used.
+- **Description**: Represents a union that can store either an integer or a `std::string` object. It includes constructors for initializing with an integer or a string, and a destructor that requires manual handling of the `std::string` destruction.
 - **Member Functions**:
     - [`ComplexUnion::ComplexUnion`](<#complexunioncomplexunion>)
     - [`ComplexUnion::ComplexUnion`](<#complexunioncomplexunion>)
@@ -203,11 +203,11 @@ Retrieves the value of the `float` member `f` from the `FunctionUnion`.
 #### ComplexUnion::ComplexUnion<!-- {{#callable:ComplexUnion::ComplexUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L41>)
 
-Initializes a `ComplexUnion` object with the `simple_int` member set to 0.
+Initializes a `ComplexUnion` object with a default integer value of 0.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The constructor initializes the `simple_int` member of the `ComplexUnion` to 0.
-- **Output**: A `ComplexUnion` object with the `simple_int` member initialized to 0.
+    - The constructor initializes the `simple_int` member of the `ComplexUnion` union to 0.
+- **Output**: A `ComplexUnion` object with `simple_int` set to 0.
 - **See also**: [`ComplexUnion`](<#complexunion>)  (Data Structure)
 
 
@@ -215,13 +215,12 @@ Initializes a `ComplexUnion` object with the `simple_int` member set to 0.
 #### ComplexUnion::ComplexUnion<!-- {{#callable:ComplexUnion::ComplexUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L43>)
 
-Initializes the `simple_int` member of the `ComplexUnion` with a given integer value.
+Initializes a `ComplexUnion` object with an integer value.
 - **Inputs**:
-    - `i`: An integer value used to initialize the `simple_int` member of the `ComplexUnion`.
+    - `i`: An integer value to initialize the `simple_int` member of the `ComplexUnion`.
 - **Logic and Control Flow**:
-    - The constructor takes an integer `i` as an argument.
-    - It initializes the `simple_int` member of the `ComplexUnion` with the value of `i`.
-- **Output**: A `ComplexUnion` object with the `simple_int` member initialized to the specified integer value.
+    - The constructor initializes the `simple_int` member of the `ComplexUnion` with the provided integer `i`.
+- **Output**: A `ComplexUnion` object with the `simple_int` member set to the given integer value.
 - **See also**: [`ComplexUnion`](<#complexunion>)  (Data Structure)
 
 
@@ -229,12 +228,12 @@ Initializes the `simple_int` member of the `ComplexUnion` with a given integer v
 #### ComplexUnion::ComplexUnion<!-- {{#callable:ComplexUnion::ComplexUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L45>)
 
-Initializes the `complex_string` member of the `ComplexUnion` with a given `std::string` value using placement new.
+Initializes the `complex_string` member of the `ComplexUnion` with a given `std::string` using placement new.
 - **Inputs**:
-    - `s`: A constant reference to a `std::string` object used to initialize the `complex_string` member.
+    - `s`: A constant reference to a `std::string` that initializes the `complex_string` member.
 - **Logic and Control Flow**:
-    - Uses placement new to construct a `std::string` object in the memory allocated for `complex_string`.
-- **Output**: No return value; constructs the `complex_string` member of the `ComplexUnion`.
+    - Uses placement new to construct a `std::string` object at the memory location of `complex_string`.
+- **Output**: No return value; constructs the `complex_string` member in place.
 - **See also**: [`ComplexUnion`](<#complexunion>)  (Data Structure)
 
 
@@ -260,7 +259,7 @@ Handles the destruction of the `ComplexUnion` union, which contains a non-trivia
 - **Members**:
     - ``value``: An integer member of the union.
     - ``bytes``: A character array of size 4.
-- **Description**: `NamespacedUnion` is a union defined within the `UnionNamespace` namespace. It can store either an integer (`value`) or a character array of four bytes (`bytes`). The union provides two constructors: a default constructor that initializes `value` to 0, and a parameterized constructor that initializes `value` with a given integer.
+- **Description**: Represents a union within the `UnionNamespace` namespace, allowing storage of either an integer or a character array of four bytes. The union provides two constructors: a default constructor initializing `value` to 0, and a parameterized constructor that initializes `value` with a given integer.
 - **Member Functions**:
     - [`UnionNamespace::NamespacedUnion::NamespacedUnion`](<#namespacedunionnamespacedunion>)
     - [`UnionNamespace::NamespacedUnion::NamespacedUnion`](<#namespacedunionnamespacedunion>)
@@ -275,7 +274,7 @@ Initializes a `NamespacedUnion` object with an integer value or defaults to zero
 - **Inputs**:
     - `v`: An integer value to initialize the `value` member of the `NamespacedUnion`.
 - **Logic and Control Flow**:
-    - If no argument is provided, the default constructor initializes the `value` member to zero.
+    - If no argument is provided, the default constructor initializes the `value` member to 0.
     - If an integer argument `v` is provided, the constructor initializes the `value` member to `v`.
 - **Output**: A `NamespacedUnion` object with the `value` member set to the specified integer or zero.
 - **See also**: [`UnionNamespace::NamespacedUnion`](<#namespacedunion>)  (Data Structure)
@@ -303,7 +302,7 @@ Initializes a `NamespacedUnion` instance with an integer value.
 - **Members**:
     - ``long_val``: Stores a `long` integer value.
     - ``double_val``: Stores a `double` floating-point value.
-- **Description**: Represents a union that can store either a `long` integer or a `double` floating-point value, with a default constructor initializing the `long_val` to 0.
+- **Description**: Represents a union that can store either a `long` integer or a `double` floating-point value. The constructor initializes the `long_val` member to zero by default.
 - **Member Functions**:
     - [`UnionNamespace::Inner::DeeplyNested::DeeplyNested`](<#deeplynesteddeeplynested>)
 
@@ -313,11 +312,11 @@ Initializes a `NamespacedUnion` instance with an integer value.
 #### DeeplyNested::DeeplyNested<!-- {{#callable:UnionNamespace::Inner::DeeplyNested::DeeplyNested}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L77>)
 
-Initializes the `long_val` member of the `DeeplyNested` union to zero.
+Initializes the `DeeplyNested` union with a default value for `long_val`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The constructor initializes the `long_val` member to zero.
-- **Output**: A `DeeplyNested` union instance with `long_val` set to zero.
+    - The constructor initializes the `long_val` member of the `DeeplyNested` union to 0.
+- **Output**: A `DeeplyNested` union instance with `long_val` set to 0.
 - **See also**: [`UnionNamespace::Inner::DeeplyNested`](<#deeplynested>)  (Data Structure)
 
 
@@ -330,8 +329,8 @@ Initializes the `long_val` member of the `DeeplyNested` union to zero.
 - **Members**:
     - ``PublicUnion``: A public union with an integer and a float member.
     - ``PrivateUnion``: A private union with a short integer and a character array member.
-    - ``private_union_member``: An instance of the `PrivateUnion` union.
-- **Description**: Contains two unions: `PublicUnion`, which is accessible publicly and includes an integer and a float, and `PrivateUnion`, which is private and includes a short integer and a character array. The class provides a default constructor and manages an instance of `PrivateUnion` as a private member.
+    - ``private_union_member``: An instance of the `PrivateUnion` used within the class.
+- **Description**: Encapsulates two unions, `PublicUnion` and `PrivateUnion`, to demonstrate the use of unions within a class. `PublicUnion` is accessible publicly and contains an integer and a float, while `PrivateUnion` is private and contains a short integer and a character array. The class provides a constructor for initialization.
 - **Member Functions**:
     - [`ContainerClass::ContainerClass`](<#containerclasscontainerclass>)
 
@@ -344,9 +343,10 @@ Initializes the `long_val` member of the `DeeplyNested` union to zero.
 Defines a class with a public and a private union, each with their own members and constructors.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a public union `PublicUnion` with an integer and a float member, and a constructor initializing the integer member to 0.
-    - Defines a private union `PrivateUnion` with a short and a character array member, and a constructor initializing the short member to 0.
-    - Contains a default constructor for `ContainerClass` that does not perform any operations.
+    - Defines a public union `PublicUnion` with an integer member `int_member` and a float member `float_member`, and provides a constructor to initialize `int_member` to 0.
+    - Defines a private union `PrivateUnion` with a short member `short_val` and a character array `char_array` of size 2, and provides a constructor to initialize `short_val` to 0.
+    - Contains a private member `private_union_member` of type `PrivateUnion`.
+    - Provides a default constructor for `ContainerClass` that does not perform any operations.
 - **Output**: An instance of `ContainerClass` with initialized union members.
 - **See also**: [`ContainerClass`](<#containerclass>)  (Data Structure)
 
@@ -360,7 +360,7 @@ Defines a class with a public and a private union, each with their own members a
 - **Members**:
     - ``int_member``: An integer member of the union.
     - ``float_member``: A float member of the union.
-- **Description**: `PublicUnion` is a union that can store either an integer or a float value, but not both at the same time. It includes a default constructor that initializes the `int_member` to 0 and a member function `setInt` to set the value of `int_member`.
+- **Description**: `PublicUnion` is a union that can store either an integer or a float, but not both at the same time. It includes a default constructor that initializes the `int_member` to 0 and a member function `setInt` to set the value of `int_member`.
 - **Member Functions**:
     - [`ContainerClass::PublicUnion::PublicUnion`](<#publicunionpublicunion>)
     - [`ContainerClass::PublicUnion::setInt`](<#publicunionsetint>)
@@ -371,11 +371,13 @@ Defines a class with a public and a private union, each with their own members a
 #### PublicUnion::PublicUnion<!-- {{#callable:ContainerClass::PublicUnion::PublicUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L89>)
 
-Initializes the `int_member` of the `PublicUnion` to zero.
-- **Inputs**: None
+Initializes the `int_member` of the `PublicUnion` to zero and provides a method to set its value.
+- **Inputs**:
+    - `v`: An integer value to set the `int_member` of the `PublicUnion`.
 - **Logic and Control Flow**:
-    - The constructor initializes the `int_member` to zero.
-- **Output**: A `PublicUnion` object with `int_member` set to zero.
+    - The constructor `PublicUnion()` initializes `int_member` to zero.
+    - The method `setInt(int v)` assigns the value of `v` to `int_member`.
+- **Output**: No output is returned from the constructor or the `setInt` method.
 - **See also**: [`ContainerClass::PublicUnion`](<#publicunion>)  (Data Structure)
 
 
@@ -385,10 +387,10 @@ Initializes the `int_member` of the `PublicUnion` to zero.
 
 Sets the `int_member` of the `PublicUnion` to the specified integer value.
 - **Inputs**:
-    - `v`: An integer value to set the `int_member` of the `PublicUnion`.
+    - `v`: An integer value to assign to `int_member`.
 - **Logic and Control Flow**:
     - Assigns the input integer `v` to the `int_member` of the `PublicUnion`.
-- **Output**: No return value.
+- **Output**: No output is returned.
 - **See also**: [`ContainerClass::PublicUnion`](<#publicunion>)  (Data Structure)
 
 
@@ -397,11 +399,11 @@ Sets the `int_member` of the `PublicUnion` to the specified integer value.
 ### PrivateUnion<!-- {{#data_structure:ContainerClass::PrivateUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L94>)
 
-- **Type**: ``union``
+- **Type**: `union`
 - **Members**:
     - ``short_val``: A `short` integer value.
     - ``char_array``: An array of two `char` elements.
-- **Description**: A `union` that contains a `short` integer and an array of two `char` elements. It is defined as a private member within the `ContainerClass`, and it initializes the `short_val` to 0 in its constructor.
+- **Description**: `PrivateUnion` is a union that can store either a `short` integer or an array of two `char` elements. It is defined as a private member within the `ContainerClass`, and it initializes the `short_val` to zero in its default constructor.
 - **Member Functions**:
     - [`ContainerClass::PrivateUnion::PrivateUnion`](<#privateunionprivateunion>)
 
@@ -426,11 +428,11 @@ Initializes the `short_val` member of the `PrivateUnion` to zero.
 
 - **Type**: ``struct``
 - **Members**:
-    - ``type``: An `enum` that indicates the active type in the union, which can be `INT`, `DOUBLE`, or `STRING`.
-    - ``int_value``: An `int` member of the union to store integer values.
-    - ``double_value``: A `double` member of the union to store double-precision floating-point values.
-    - ``string_value``: A `std::string` member of the union to store string values.
-- **Description**: Implements a tagged union pattern that can store an `int`, `double`, or `std::string` value, with an `enum` to track the active type. The `TaggedUnion` uses a union to hold different types of data and an `enum` to keep track of which type is currently stored. It includes constructors for each type and a destructor to handle the cleanup of the `std::string` when it is the active type.
+    - ``type``: Stores the type of the value currently held in the union, which can be `INT`, `DOUBLE`, or `STRING`.
+    - ``int_value``: Holds an integer value when the `type` is `INT`.
+    - ``double_value``: Holds a double value when the `type` is `DOUBLE`.
+    - ``string_value``: Holds a string value when the `type` is `STRING`.
+- **Description**: Implements a tagged union pattern that can store an integer, double, or string value, with an associated `type` enum to track the active data type. The `TaggedUnion` uses a union to store one of the three possible types and a destructor to handle the cleanup of the `string_value` when it is in use. Constructors initialize the union with the appropriate type and value.
 - **Member Functions**:
     - [`TaggedUnion::TaggedUnion`](<#taggeduniontaggedunion>)
     - [`TaggedUnion::TaggedUnion`](<#taggeduniontaggedunion>)
@@ -461,8 +463,8 @@ Initializes a `TaggedUnion` object with an integer value and sets its type to `I
 - **Inputs**:
     - `v`: An integer value to initialize the `TaggedUnion` object.
 - **Logic and Control Flow**:
-    - Sets the `type` member to `INT`.
-    - Initializes the `int_value` member with the provided integer `v`.
+    - Sets the `type` member of the `TaggedUnion` to `INT`.
+    - Initializes the `int_value` member of the union with the provided integer `v`.
 - **Output**: A `TaggedUnion` object initialized with the specified integer value and type set to `INT`.
 - **See also**: [`TaggedUnion`](<#taggedunion>)  (Data Structure)
 
@@ -477,7 +479,7 @@ Initializes a `TaggedUnion` object with a `double` value and sets its type to `D
 - **Logic and Control Flow**:
     - Sets the `type` member of the `TaggedUnion` to `DOUBLE`.
     - Initializes the `double_value` member of the union with the provided `double` value `v`.
-- **Output**: A `TaggedUnion` object initialized with a `double` value.
+- **Output**: A `TaggedUnion` object initialized with the specified `double` value.
 - **See also**: [`TaggedUnion`](<#taggedunion>)  (Data Structure)
 
 
@@ -491,7 +493,7 @@ Initializes a `TaggedUnion` object with a `std::string` value and sets its type 
 - **Logic and Control Flow**:
     - Sets the `type` member of the `TaggedUnion` to `STRING`.
     - Uses placement new to construct a `std::string` object in the `string_value` union member with the value of `s`.
-- **Output**: A `TaggedUnion` object initialized with the provided `std::string` value.
+- **Output**: A `TaggedUnion` object initialized with a `std::string` value.
 - **See also**: [`TaggedUnion`](<#taggedunion>)  (Data Structure)
 
 
@@ -499,10 +501,10 @@ Initializes a `TaggedUnion` object with a `std::string` value and sets its type 
 #### TaggedUnion::\~TaggedUnion<!-- {{#callable:TaggedUnion::~TaggedUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L127>)
 
-Destroys the `string_value` member if the `TaggedUnion` instance holds a string.
+Destroys the `string_value` member of a `TaggedUnion` object if its type is `STRING`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Checks if the `type` of the `TaggedUnion` instance is `STRING`.
+    - Checks if the `type` of the `TaggedUnion` is `STRING`.
     - If `type` is `STRING`, calls the destructor of `string_value` to release resources.
 - **Output**: No return value; it is a destructor.
 - **See also**: [`TaggedUnion`](<#taggedunion>)  (Data Structure)
@@ -513,12 +515,12 @@ Destroys the `string_value` member if the `TaggedUnion` instance holds a string.
 ### Type<!-- {{#data_structure:TaggedUnion::Type}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L109>)
 
-- **Type**: ``enum``
+- **Type**: `enum`
 - **Members**:
     - `INT`: Represents an integer type.
     - `DOUBLE`: Represents a double type.
     - `STRING`: Represents a string type.
-- **Description**: Defines a set of named constants for use in the `TaggedUnion` struct to indicate the type of data currently stored in the union.
+- **Description**: Defines a set of named constants for different data types: integer, double, and string, used to tag the active member in a tagged union.
 
 
 ---
@@ -527,10 +529,10 @@ Destroys the `string_value` member if the `TaggedUnion` instance holds a string.
 
 - **Type**: ``struct``
 - **Members**:
-    - ``first_type``: Holds a value of type `T` when `is_first` is true.
-    - ``second_type``: Holds a value of type `U` when `is_first` is false.
-    - ``is_first``: Indicates whether `first_type` is the active member of the union.
-- **Description**: Enables storage of either a `T` or a `U` type value in a union, with a boolean flag `is_first` to track which type is currently stored. The constructor initializes the union to hold a `T` type by default. The `setFirst` and `setSecond` methods allow switching between storing a `T` or a `U` type, ensuring proper destruction of the previously active type.
+    - ``first_type``: Holds a value of type `T`.
+    - ``second_type``: Holds a value of type `U`.
+    - ``is_first``: Indicates if `first_type` is the active member of the union.
+- **Description**: Represents a template-based union container that can store either a value of type `T` or `U`, but not both simultaneously. The `is_first` boolean flag tracks which type is currently active. The constructor initializes the container with `first_type` as the active member. The `setFirst` and `setSecond` methods allow switching between the two types, ensuring proper destruction and construction of the union members.
 - **Member Functions**:
     - [`TemplateUnionContainer::TemplateUnionContainer`](<#templateunioncontainertemplateunioncontainer>)
     - [`TemplateUnionContainer::setFirst`](<#templateunioncontainersetfirst>)
@@ -542,12 +544,12 @@ Destroys the `string_value` member if the `TaggedUnion` instance holds a string.
 #### TemplateUnionContainer::TemplateUnionContainer<!-- {{#callable:TemplateUnionContainer::TemplateUnionContainer}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L144>)
 
-Initializes a `TemplateUnionContainer` object with the `first_type` active and `is_first` set to true.
+Initializes a `TemplateUnionContainer` object with the first type active and set to its default value.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initializes the `first_type` member of the union using its default constructor.
-    - Sets the `is_first` boolean flag to `true`, indicating that `first_type` is the active member of the union.
-- **Output**: A `TemplateUnionContainer` object with `first_type` initialized and `is_first` set to `true`.
+    - Initializes the `first_type` member of the union to its default value using the default constructor.
+    - Sets the `is_first` flag to `true` to indicate that the `first_type` is currently active.
+- **Output**: A `TemplateUnionContainer` object with the `first_type` initialized and active.
 - **See also**: [`TemplateUnionContainer`](<#templateunioncontainer>)  (Data Structure)
 
 
@@ -555,15 +557,15 @@ Initializes a `TemplateUnionContainer` object with the `first_type` active and `
 #### TemplateUnionContainer::setFirst<!-- {{#callable:TemplateUnionContainer::setFirst}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L146>)
 
-Sets the `first_type` member of the `TemplateUnionContainer` to a new value and updates the `is_first` flag.
+Sets the `first_type` member of the `TemplateUnionContainer` to a given value and updates the state to indicate that `first_type` is active.
 - **Inputs**:
     - `value`: A constant reference to an object of type `T` that will be assigned to `first_type`.
 - **Logic and Control Flow**:
     - Checks if `is_first` is false, indicating that `second_type` is currently active.
     - If `second_type` is active, explicitly calls the destructor for `second_type` to clean up any resources it may hold.
-    - Uses placement new to construct a new object of type `T` in the memory location of `first_type`, initializing it with `value`.
-    - Sets `is_first` to true, indicating that `first_type` is now the active member of the union.
-- **Output**: No return value (void function).
+    - Uses placement new to construct a new object of type `T` in the memory location of `first_type`, initializing it with the provided `value`.
+    - Sets `is_first` to true to indicate that `first_type` is now the active member of the union.
+- **Output**: No return value; the function modifies the state of the `TemplateUnionContainer` object.
 - **See also**: [`TemplateUnionContainer`](<#templateunioncontainer>)  (Data Structure)
 
 
@@ -576,10 +578,10 @@ Sets the `second_type` member of the `TemplateUnionContainer` to a new value and
     - `value`: A constant reference to an object of type `U` that will be used to initialize `second_type`.
 - **Logic and Control Flow**:
     - Checks if `is_first` is true, indicating that `first_type` is currently active.
-    - If `first_type` is active, explicitly calls the destructor of `first_type` to destroy it.
-    - Uses placement new to construct a new object of type `U` in the memory location of `second_type`, initializing it with `value`.
-    - Sets `is_first` to false to indicate that `second_type` is now active.
-- **Output**: No return value; the function modifies the state of the `TemplateUnionContainer` object.
+    - If `is_first` is true, calls the destructor of `first_type` to properly destroy the active object.
+    - Uses placement new to construct a new object of type `U` in the `second_type` union member with the provided `value`.
+    - Sets `is_first` to false to indicate that `second_type` is now the active member.
+- **Output**: None (void function).
 - **See also**: [`TemplateUnionContainer`](<#templateunioncontainer>)  (Data Structure)
 
 
@@ -588,12 +590,12 @@ Sets the `second_type` member of the `TemplateUnionContainer` to a new value and
 ### StaticUnion<!-- {{#data_structure:StaticUnion}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_unions.cpp#L164>)
 
-- **Type**: ``union``
+- **Type**: `union`
 - **Members**:
     - ``int_val``: Stores an integer value.
     - ``double_val``: Stores a double value.
     - ``usage_counter``: Tracks the number of `StaticUnion` instances created.
-- **Description**: `StaticUnion` is a union that can store either an integer or a double value, and it includes a static member `usage_counter` to count how many instances of `StaticUnion` have been created. The constructor initializes the integer value to zero and increments the `usage_counter` each time a new instance is created. The static function `getUsageCount` returns the current value of `usage_counter`.
+- **Description**: `StaticUnion` is a union that can store either an integer or a double value. It includes a static member `usage_counter` to count how many instances of `StaticUnion` have been created. The constructor initializes the integer value to zero and increments the `usage_counter`. The static function `getUsageCount` returns the current value of `usage_counter`.
 - **Member Functions**:
     - [`StaticUnion::StaticUnion`](<#staticunionstaticunion>)
     - [`StaticUnion::getUsageCount`](<#staticuniongetusagecount>)
@@ -609,7 +611,7 @@ Initializes a `StaticUnion` instance and increments the static `usage_counter`.
 - **Logic and Control Flow**:
     - Initializes the `int_val` member to 0.
     - Increments the static `usage_counter` by 1.
-- **Output**: A `StaticUnion` instance with `int_val` initialized to 0 and the `usage_counter` incremented.
+- **Output**: A new instance of `StaticUnion` with `int_val` set to 0 and the `usage_counter` incremented.
 - **See also**: [`StaticUnion`](<#staticunion>)  (Data Structure)
 
 
@@ -636,15 +638,14 @@ Returns the current value of the static `usage_counter` variable.
 Initializes various union types and demonstrates their usage.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates an instance of `BasicUnion` with an integer value of 42.
-    - Creates an instance of `FunctionUnion` and sets its integer value to 10 using the `setInt` method.
-    - Creates an instance of `UnionNamespace::NamespacedUnion` with an integer value of 5.
-    - Creates an instance of `ContainerClass::PublicUnion`.
-    - Creates an instance of `TaggedUnion` initialized with a string value "hello".
-    - Creates an instance of `TemplateUnionContainer` with template parameters `int` and `double`.
-    - Creates an instance of `StaticUnion`.
-    - Returns 0 to indicate successful execution.
-- **Output**: Returns an integer value 0, indicating successful execution of the program.
+    - Creates a `BasicUnion` object `bu` with an integer value of 42.
+    - Creates a `FunctionUnion` object `fu` and sets its integer value to 10 using the `setInt` method.
+    - Creates a `NamespacedUnion` object `nu` within the `UnionNamespace` namespace with an integer value of 5.
+    - Creates a `PublicUnion` object `pu` within the `ContainerClass`.
+    - Creates a `TaggedUnion` object `tu` initialized with the string "hello".
+    - Creates a `TemplateUnionContainer` object `tuc` with template parameters `int` and `double`.
+    - Creates a `StaticUnion` object `su`.
+- **Output**: Returns an integer value 0, indicating successful execution.
 
 
 

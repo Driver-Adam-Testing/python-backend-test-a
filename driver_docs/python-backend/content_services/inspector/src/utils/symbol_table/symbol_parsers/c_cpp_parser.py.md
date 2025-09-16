@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Parses C and C++ code using a shared symbol parser and C/C++ driver tree.
+Parses C and C++ code using a shared parser and C/C++ driver tree.
 
 # Purpose
-The code defines a class `CCppParser` that extends the `SymbolParser` class, providing functionality specific to parsing C and C++ code. It sets the `language` attribute to `"c_cpp"`, indicating that it is a shared parser for both C and C++ languages. The `fqn_delimiter` is set to `"::"`, which is the delimiter used in C++ for fully qualified names. The `tree` attribute is assigned to `CppCDriverTree`, which is likely a driver for handling the syntax tree of C and C++ code. This code provides narrow functionality focused on parsing and handling symbol tables for C and C++ programming languages.
+The `CCppParser` class extends the `SymbolParser` class to provide functionality for parsing C and C++ code. It specifies the `language` attribute as "c_cpp" to indicate that it supports both C and C++ languages. The `fqn_delimiter` is set to "::", which is typical for C++ fully qualified names. The `tree` attribute is assigned the `CppCDriverTree`, which is a driver for handling the syntax tree of C and C++ code. This code is part of a broader system for symbol parsing and syntax tree management in C and C++ programming languages.
 # Imports and Dependencies
 
 ---
@@ -24,7 +24,7 @@ The code defines a class `CCppParser` that extends the `SymbolParser` class, pro
     - `language`: Indicates the parser is for both C and C++.
     - `fqn_delimiter`: Defines the delimiter for fully qualified names as '::'.
     - `tree`: Specifies the use of the C/C++ driver tree.
-- **Description**: Extends the `SymbolParser` to parse symbols in C and C++ code using a shared driver tree and specific language settings.
+- **Description**: Extends `SymbolParser` to parse symbols in C and C++ code using a shared driver tree and specific delimiter for fully qualified names.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#symbolparser>)
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating structured prompts and analyzing C code components.
+Templates for generating structured prompts and analyzing C code components like functions and variables.
 
 # Purpose
-This code is a configuration file that defines a template for processing and documenting small C source code files. It imports various components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.c`, to facilitate the generation of structured documentation. The template, `SOURCE_CODE_SMALL_TEMPLATE_C`, consists of several sections, each associated with a specific aspect of the C code, such as imports, global variables, data structures, functions, and function declarations. Each section uses specific collections and prompts to extract and format information from the C code, ensuring that the documentation adheres to a consistent style and structure.
+This code defines a template for generating documentation for small C source code files. It imports various components and utilities from different modules to facilitate the creation of structured prompts and data collections. The template, `SOURCE_CODE_SMALL_TEMPLATE_C`, consists of several sections, each designed to extract and document specific elements of C code, such as imports, global variables, data structures, functions, and function declarations. The template uses a combination of static analysis and language model processing to gather and format this information, ensuring that the documentation adheres to specific style instructions, including the use of backticks for code references.
 # Imports and Dependencies
 
 ---
@@ -35,8 +35,8 @@ This code is a configuration file that defines a template for processing and doc
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_C
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to code analysis and transformation. Each tuple is structured to facilitate the generation of structured prompts and the collection of code elements such as imports, global variables, data structures, functions, and declarations.
-- **Use**: Used to define and organize structured prompts and code analysis components for processing C language code.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to code analysis and transformation. Each tuple is structured to facilitate the generation of structured prompts and the collection of code elements such as imports, global variables, data structures, functions, and function declarations.
+- **Use**: Used to define a template for generating structured prompts and collecting code elements for analysis.
 
 
 

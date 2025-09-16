@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A comprehensive set of C++ function and class member declarations, including templates, operators, and various C++ features.
+Function declarations and minimal definitions for various C++ features, including templates, lambdas, and classes.
 
 # Purpose
-The code is a comprehensive C++ source file that includes a wide range of function and class declarations, demonstrating various features of the C++ language. It covers basic function declarations, template functions, constexpr functions, inline functions, noexcept functions, and functions with default parameters. The file also includes namespace function declarations, class member functions, template class member functions, friend functions, virtual functions, and operator overloads. Additionally, it demonstrates advanced C++ features such as rvalue references, function templates with multiple parameters, function pointer and `std::function` usage, variadic templates, and C++20 features like coroutines, concepts, and attributes.
+The code file is a comprehensive C++ source file that includes a wide range of function and class declarations, demonstrating various C++ features and techniques. It includes basic function declarations, template functions, constexpr functions, inline functions, noexcept functions, and functions with default parameters. The file also contains namespace declarations, class member functions, template class member functions, friend functions, virtual functions, and operator overloads. Additionally, it demonstrates advanced C++ features such as rvalue references, function templates with multiple parameters, and function pointer usage.
 
-The file defines several classes, including `Calculator`, `Container`, `Point`, and `Shape`, each with a set of member functions and operator overloads. The `Calculator` class, for example, includes constructors, destructors, assignment operators, and various arithmetic and comparison operators. The `Shape` class demonstrates the use of virtual functions, including pure virtual functions for area and perimeter calculations. The file also includes global operator overloads and function declarations with external "C" linkage. The [`main`](<#main>) function provides minimal definitions and tests some of the declared functions, such as [`add`](<#add>), [`multiply`](<#multiply>), and [`printMessage`](<#printmessage>), and demonstrates the use of the `Calculator` class.
+The file defines several classes, including `Calculator`, `Container`, `Point`, and `Shape`, each with their respective member functions and operator overloads. The `Calculator` class, for example, includes constructors, destructors, assignment operators, and various arithmetic and comparison operators. The file also includes C++20 features such as consteval, constinit, coroutine functions, and concept-constrained functions, though these are conditionally compiled based on the C++ version. Furthermore, the file contains external "C" linkage declarations, lambda expressions, and thread-local function declarations. The [`main`](<#main>) function provides minimal testing of some declared functions, such as [`add`](<#add>), [`multiply`](<#multiply>), and [`printMessage`](<#printmessage>), and demonstrates the use of the `Calculator` class.
 # Imports and Dependencies
 
 ---
@@ -31,7 +31,7 @@ The file defines several classes, including `Calculator`, `Container`, `Point`, 
 ---
 ### global\_function\_object
 - **Type**: `std::function<int(int, int)>`
-- **Description**: A global variable that is a function object capable of storing and invoking any callable entity that matches the signature of taking two integers as input and returning an integer.
+- **Description**: `global_function_object` is a global variable of type `std::function<int(int, int)>`. It is a function object that can store, copy, and invoke any callable target that matches the signature of taking two `int` parameters and returning an `int`.
 - **Use**: Used to store a callable entity that can be invoked with two integer arguments to produce an integer result.
 
 
@@ -41,10 +41,10 @@ The file defines several classes, including `Calculator`, `Container`, `Point`, 
 ### Calculator<!-- {{#data_structure:Calculator}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L69>)
 
-- **Type**: ``class``
+- **Type**: `class`
 - **Members**:
-    - ``value``: Stores the current value of the calculator as a `double`.
-- **Description**: Represents a calculator that can perform arithmetic operations and manage its state. It includes constructors, a destructor, assignment operators, and various member functions to manipulate and retrieve the calculator's value. The class also provides operator overloads for arithmetic operations, comparison, and conversion, as well as static functions to create calculator instances. The `value` member variable holds the current numeric value of the calculator.
+    - ``value``: Stores the current value of the calculator.
+- **Description**: Represents a calculator that can perform arithmetic operations and manage its state. It includes constructors, a destructor, assignment operators, and various member functions for getting and setting the value, checking conditions, and converting to other types. The class also provides static functions for creating instances and validating values, as well as operator overloads for arithmetic operations, comparisons, and conversions.
 
 
 ---
@@ -54,7 +54,7 @@ The file defines several classes, including `Calculator`, `Container`, `Point`, 
 - **Type**: ``class``
 - **Members**:
     - ``data``: Holds the data of type `T`.
-- **Description**: Represents a generic container that can store and manage an object of any type `T`. It provides constructors for initialization, copy, and move semantics, as well as a destructor. The class includes methods to get and set the data, check if the container is empty, and determine the size. It also supports conversion between different types and applying functions or predicates to the stored data.
+- **Description**: Represents a generic container that can store and manage an object of any type `T`. It provides constructors for initialization, copy, and move semantics, as well as a destructor. The class includes methods to get and set the data, check if the container is empty, and determine the size. It also supports conversion from and to other types, applying functions to the data, and checking if the data satisfies a given predicate.
 
 
 ---
@@ -63,9 +63,9 @@ The file defines several classes, including `Calculator`, `Container`, `Point`, 
 
 - **Type**: ``class``
 - **Members**:
-    - ``x``: Represents the x-coordinate of the point.
-    - ``y``: Represents the y-coordinate of the point.
-- **Description**: Represents a point in a 2D space with `x` and `y` coordinates. The class provides friend functions for arithmetic operations, comparison, input/output streaming, and utility functions like calculating distance and midpoint between two points.
+    - `x`: Represents the x-coordinate of the point.
+    - `y`: Represents the y-coordinate of the point.
+- **Description**: Represents a point in a 2D space with x and y coordinates. The class provides a constructor to initialize the coordinates and declares several friend functions for arithmetic operations, comparison, input/output streaming, and utility functions like distance and midpoint calculation.
 
 
 ---
@@ -73,11 +73,7 @@ The file defines several classes, including `Calculator`, `Container`, `Point`, 
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L199>)
 
 - **Type**: ``class``
-- **Description**: Represents an abstract base class for geometric shapes, providing a common interface for derived classes to implement specific shape behaviors. It includes pure virtual functions `getArea`, `getPerimeter`, and `clone` that must be implemented by derived classes, and virtual functions `draw`, `getType`, and `operator==` that can be overridden. The class also includes a default destructor and a constructor.
-- **Member Functions**:
-    - [`Shape::~Shape`](<test_func_defs.cpp.md#shapeshape>)
-    - [`Shape::draw`](<test_func_defs.cpp.md#shapedraw>)
-    - [`Shape::~Shape`](<#shapeshape>)
+- **Description**: Represents an abstract base class for geometric shapes, providing a common interface for derived classes to implement specific shape behaviors. It includes pure virtual functions `getArea`, `getPerimeter`, and `clone` that must be implemented by derived classes, as well as virtual functions `draw`, `getType`, and an equality operator `==` that can be optionally overridden. The class is designed to be extended by specific shape classes, such as `Circle`, to provide concrete implementations of these functions.
 
 **Methods**
 
@@ -88,10 +84,10 @@ The file defines several classes, including `Calculator`, `Container`, `Point`, 
 Defines a virtual destructor for the `Shape` class.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The destructor is declared as `virtual` to ensure that the destructor of the derived class is called when an object is deleted through a pointer to the base class `Shape`.
+    - The destructor is declared as `virtual`, allowing derived class destructors to be called correctly when an object is deleted through a base class pointer.
     - The destructor is defined as `default`, indicating that the compiler should generate the default implementation.
 - **Output**: No output is produced by the destructor itself; it ensures proper cleanup of derived class objects.
-- **See also**: [`Shape`](<#shape>)  (Data Structure)
+- **See also**: [`Shape`](<test_func_defs.cpp.md#shape>)  (Data Structure)
 
 
 
@@ -103,15 +99,7 @@ Defines a virtual destructor for the `Shape` class.
 - **Members**:
     - ``radius``: Stores the radius of the circle.
     - ``val``: An additional double value specific to the `Circle` class.
-- **Description**: Inherits from the `Shape` class and represents a circle with a specific radius. It provides methods to calculate the area and perimeter, draw the circle, and get the type of shape. The class also includes functionality to compare circles and clone them. The `Circle` class has a private member `radius` to store the circle's radius and a public member `val` for additional circle-specific data.
-- **Member Functions**:
-    - [`Circle::Circle`](<test_func_defs.cpp.md#circlecircle>)
-    - [`Circle::calculateArea`](<test_func_defs.cpp.md#circlecalculatearea>)
-    - [`Circle::draw`](<test_func_defs.cpp.md#circledraw>)
-    - [`Circle::Circle`](<test_classes.cpp.md#circlecircle>)
-    - [`Circle::getArea`](<test_classes.cpp.md#circlegetarea>)
-    - [`Circle::getPerimeter`](<test_classes.cpp.md#circlegetperimeter>)
-    - [`Circle::print`](<test_classes.cpp.md#circleprint>)
+- **Description**: Represents a circle shape, inheriting from the `Shape` class, with functionality to calculate area, perimeter, and perform drawing operations. It includes a radius attribute and supports operations like cloning and equality comparison with other shapes.
 - **Inherits From**:
     - [`Shape`](<#shape>)
 
@@ -127,9 +115,8 @@ Calculates the sum of two integers.
     - `a`: The first integer to add.
     - `b`: The second integer to add.
 - **Logic and Control Flow**:
-    - Receive two integer inputs, `a` and `b`.
-    - Compute the sum of `a` and `b`.
-    - Return the computed sum.
+    - Add the integer `a` to the integer `b`.
+    - Return the result of the addition.
 - **Output**: The sum of the two input integers.
 
 
@@ -163,16 +150,16 @@ Outputs a given message to the standard output stream followed by a newline.
 ### main<!-- {{#callable:main}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L332>)
 
-Executes a series of function calls and object instantiations to demonstrate basic operations.
+Executes a series of function calls and object instantiations to test declared functions and class methods.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the [`add`](<#add>) function with arguments `5` and `3`, and stores the result in the `result` variable.
     - Calls the [`multiply`](<#multiply>) function with arguments `2.5` and `4.0`, and stores the result in the `product` variable.
     - Calls the [`printMessage`](<#printmessage>) function with the string "Testing function declarations".
     - Instantiates a `Calculator` object `calc` with an initial value of `10.0`.
-    - Outputs the value of the `Calculator` object using `std::cout` and the `getValue` method.
+    - Outputs the value of the `Calculator` object using `calc.getValue()` and prints it to the standard output.
     - Returns `0` to indicate successful execution.
-- **Output**: Returns an integer `0` to indicate successful program termination.
+- **Output**: Returns an integer `0` to indicate successful execution of the program.
 - **Functions Called**:
     - [`add`](<#add>)
     - [`multiply`](<#multiply>)

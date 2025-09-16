@@ -6,9 +6,9 @@
 Functions for managing Bitbucket repositories, including fetching access tokens, downloading repositories, and handling pull requests.
 
 # Purpose
-The code is a Python module that provides functionality for interacting with Bitbucket repositories. It includes functions to manage access tokens, retrieve repository information, download repositories, and handle version control metadata. The module also supports operations such as listing, creating, and closing pull requests, as well as fetching commit information. It uses the Bitbucket API to perform these operations and integrates with AWS for secret management and S3 for uploading repository archives.
+The code is a Python module that interacts with Bitbucket repositories to perform various operations related to version control and repository management. It provides functions to fetch access tokens, retrieve repository information, download repositories, and manage pull requests. The module uses the Bitbucket API to perform these operations, requiring an access token for authentication.
 
-Key components of the module include functions like [`fetch_access_token`](<#fetch_access_token>), which retrieves access tokens from AWS Secrets Manager, and [`download_repo`](<#download_repo>), which clones a repository from Bitbucket and creates a zip archive. The module also defines functions for managing pull requests, such as [`create_pull_request`](<#create_pull_request>) and [`close_pull_request`](<#close_pull_request>), which interact with the Bitbucket API to automate pull request workflows. Additionally, the module uses SQLAlchemy for database interactions, particularly for managing version control metadata and repository information.
+Key components include functions for fetching the default branch, downloading a repository at a specific commit, and obtaining the latest commit on a branch. The module also includes functionality to generate metadata for codebases, upload repositories to AWS S3, and manage pull requests by creating, listing, and closing them. The code integrates with AWS services for secret management and S3 uploads, and it uses SQLAlchemy for database interactions. The module is designed to be part of a larger system, likely for automating repository management tasks in a continuous integration or deployment pipeline.
 # Imports and Dependencies
 
 ---
@@ -18,6 +18,7 @@ Key components of the module include functions like [`fetch_access_token`](<#fet
 - `os`
 - `uuid.UUID`
 - `requests`
+- `database.models.VcsAutoUpdatePolicy`
 - `onboarding.onboard_utils.AccessTokenError`
 - `onboarding.onboard_utils.upload_to_s3_with_metadata`
 - `onboarding.vcs_utils.AuthorInfo`
@@ -36,12 +37,12 @@ Key components of the module include functions like [`fetch_access_token`](<#fet
 - `tempfile`
 - `zipfile`
 - `pathlib.Path`
-- `database.models_v2_enums.PrimaryAssetKind`
+- `database.models_enums.PrimaryAssetKind`
 - `database.db.engine`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.Version`
-- `database.models_v2_enums.PrimaryAssetProvider`
-- `database.models_v2_enums.VersionStatus`
+- `database.models.PrimaryAsset`
+- `database.models.Version`
+- `database.models_enums.PrimaryAssetProvider`
+- `database.models_enums.VersionStatus`
 - `sqlalchemy.exc.IntegrityError`
 
 
@@ -50,15 +51,15 @@ Key components of the module include functions like [`fetch_access_token`](<#fet
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is initialized using the `getLogger` function with the current module's name as the logger's name.
-- **Use**: Used to log messages with different severity levels throughout the module.
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
+- **Use**: Used to log informational messages and errors throughout the module, providing a way to track and debug the execution flow and issues.
 
 
 # Functions
 
 ---
 ### fetch\_access\_token<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.fetch_access_token}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L27>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L28>)
 
 Fetches a workspace access token for a given installation ID from AWS Secrets Manager.
 - **Inputs**:
@@ -66,8 +67,8 @@ Fetches a workspace access token for a given installation ID from AWS Secrets Ma
 - **Logic and Control Flow**:
     - Prints a message indicating the start of the token fetching process for the given installation ID.
     - Formats the secret name using the [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) function with the installation ID.
-    - Creates an instance of [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) using [`AWSClientConfig`](<../../../../packages/shared/shared/interfaces/aws_client_config.py.md#awsclientconfig>) with AWS credentials from environment variables.
-    - Reads the secret value from AWS Secrets Manager using the [`read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>) method of the `secrets_manager` instance.
+    - Creates an [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) instance using AWS client configuration from environment variables.
+    - Reads the secret value from AWS Secrets Manager using the [`read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>) method of the [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) instance.
     - Raises an [`AccessTokenError`](<onboard_utils.py.md#accesstokenerror>) if the secret value is not found.
     - Checks if the secret value is a string and returns it if true.
     - Returns the 'token' field from the secret value if it is not a string.
@@ -82,18 +83,18 @@ Fetches a workspace access token for a given installation ID from AWS Secrets Ma
 
 ---
 ### get\_default\_branch<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.get_default_branch}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L47>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L48>)
 
 Fetches the default branch name of a Bitbucket repository using the Bitbucket API.
 - **Inputs**:
     - `workspace`: The workspace identifier for the Bitbucket repository.
-    - `repo_slug`: The repository slug or name within the workspace.
+    - `repo_slug`: The repository slug (URL-friendly version of the repository name) for the Bitbucket repository.
     - `access_token`: The access token for authenticating with the Bitbucket API.
 - **Logic and Control Flow**:
-    - Create a dictionary `headers` with an authorization header using the `access_token`.
-    - Construct the `url` for the Bitbucket API endpoint to access the repository information.
-    - Send a GET request to the constructed `url` with the `headers`.
-    - Call `raise_for_status()` on the response to ensure the request was successful.
+    - Create a dictionary `headers` with an 'Authorization' key containing the Bearer token for authentication.
+    - Construct the URL for the Bitbucket API endpoint to access the repository information using the `workspace` and `repo_slug`.
+    - Send a GET request to the constructed URL with the `headers`.
+    - Call `raise_for_status()` on the response to ensure the request was successful, raising an error if not.
     - Parse the JSON response to extract the repository data.
     - Return the name of the default branch from the `mainbranch.name` field in the JSON data, defaulting to 'main' if not found.
 - **Output**: Returns the name of the default branch as a string, defaulting to 'main' if the information is not available.
@@ -101,54 +102,56 @@ Fetches the default branch name of a Bitbucket repository using the Bitbucket AP
 
 ---
 ### download\_repo<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.download_repo}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L59>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L60>)
 
 Downloads a specific commit of a Bitbucket repository, creates a zip archive of the repository, and returns the archive as bytes.
 - **Inputs**:
     - `workspace`: The Bitbucket workspace identifier for the repository.
-    - `repo_slug`: The slug (short name) of the repository to download.
-    - `commit`: The specific commit hash to checkout in the repository.
+    - `repo_slug`: The slug (URL-friendly name) of the repository.
+    - `commit`: The specific commit hash to download from the repository.
     - `access_token`: The access token for authentication with Bitbucket.
 - **Logic and Control Flow**:
     - Prints a message indicating the start of the repository download process.
     - Creates a temporary directory to clone the repository into.
-    - Constructs the clone URL using the provided access token.
+    - Constructs the clone URL using the provided access token, workspace, and repository slug.
     - Attempts to clone the repository using a shallow clone with the specified commit.
-    - If the clone fails, raises an exception with the error message.
+    - If the clone fails, raises an exception with the error message from the clone process.
     - If the clone succeeds, attempts to checkout the specified commit.
     - If the checkout fails, fetches all commits and retries the checkout.
-    - If the checkout still fails, raises an exception with the error message.
+    - If the checkout still fails, raises an exception with the error message from the checkout process.
     - Removes the '.git' directory to reduce the size of the repository.
-    - Creates a zip archive of the repository files.
-    - Reads the zip file content into a byte array.
+    - Creates a zip archive of the repository excluding the '.git' directory.
+    - Reads the zip file content into a bytes object.
     - Prints a message indicating the successful creation of the archive and its size.
-    - Returns the byte array containing the zip archive.
-- **Output**: A byte array containing the zip archive of the specified commit of the repository.
+    - Returns the zip file content as bytes.
+    - Handles exceptions for timeout and other errors during the process, printing error messages and raising exceptions as needed.
+- **Output**: A bytes object containing the zip archive of the specified commit of the repository.
 
 
 ---
 ### get\_latest\_commit<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.get_latest_commit}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L173>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L174>)
 
-Fetches the latest commit hash from a specified Bitbucket repository.
+Fetches the latest commit hash from a specified Bitbucket repository's default branch.
 - **Inputs**:
     - `workspace`: The Bitbucket workspace identifier.
-    - `repo_slug`: The repository slug within the workspace.
+    - `repo_slug`: The repository slug (name) within the workspace.
     - `access_token`: The access token for authentication with the Bitbucket API.
+    - `default_branch`: The name of the default branch from which to fetch the latest commit.
 - **Logic and Control Flow**:
     - Set the authorization header using the provided access token.
-    - Construct the URL for the Bitbucket API to fetch commits from the specified repository.
-    - Make a GET request to the Bitbucket API with the constructed URL and headers, requesting only the latest commit.
+    - Construct the URL to access the commits of the specified repository's default branch.
+    - Make a GET request to the Bitbucket API to retrieve the latest commit information, limiting the response to one commit.
     - Raise an HTTP error if the request fails.
     - Parse the JSON response to extract the list of commits.
     - If commits are found, return the hash of the latest commit.
-    - Raise a ValueError if no commits are found.
+    - If no commits are found, raise a ValueError indicating no commits are available on the specified branch.
 - **Output**: Returns the hash of the latest commit as a string.
 
 
 ---
 ### fetch\_vcs\_info<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.fetch_vcs_info}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L186>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L189>)
 
 Fetches version control information from a Bitbucket repository using the provided workspace, repository slug, access token, and commit SHA.
 - **Inputs**:
@@ -157,16 +160,18 @@ Fetches version control information from a Bitbucket repository using the provid
     - `access_token`: The access token for authenticating with the Bitbucket API.
     - `commit_sha`: The SHA of the commit to fetch information for.
 - **Logic and Control Flow**:
-    - Set the authorization header using the provided access token.
-    - Construct the URL for fetching repository information and send a GET request to the Bitbucket API.
-    - Raise an exception if the repository request fails and parse the JSON response to extract repository data.
-    - Log the retrieved repository information and determine the default branch name from the repository data.
-    - Construct the URL for fetching commit information and send a GET request to the Bitbucket API.
-    - Raise an exception if the commit request fails and parse the JSON response to extract commit data.
-    - Log the retrieved commit information and extract author details from the commit data.
+    - Set the authorization headers using the provided access token.
+    - Construct the URL for the Bitbucket API to fetch repository information and send a GET request.
+    - Raise an exception if the repository request fails and parse the JSON response to get repository data.
+    - Log the repository information retrieved from the Bitbucket API.
+    - Extract the default branch name from the repository data, defaulting to 'main' if not found.
+    - Construct the URL for the Bitbucket API to fetch commit information and send a GET request.
+    - Raise an exception if the commit request fails and parse the JSON response to get commit data.
+    - Log the commit information retrieved from the Bitbucket API.
+    - Extract author information from the commit data, handling cases where the author format includes an email.
     - Create [`AuthorInfo`](<vcs_utils.py.md#authorinfo>), [`CommitInfo`](<vcs_utils.py.md#commitinfo>), [`BranchInfo`](<vcs_utils.py.md#branchinfo>), and [`RepoInfo`](<vcs_utils.py.md#repoinfo>) objects using the extracted data.
     - Return a [`VersionControlInfo`](<vcs_utils.py.md#versioncontrolinfo>) object containing the repository, commit, and branch information.
-- **Output**: A [`VersionControlInfo`](<vcs_utils.py.md#versioncontrolinfo>) object containing the repository, commit, and branch information.
+- **Output**: A [`VersionControlInfo`](<vcs_utils.py.md#versioncontrolinfo>) object containing detailed information about the repository, commit, and branch.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/vcs_utils.AuthorInfo`](<vcs_utils.py.md#authorinfo>)
     - [`python-backend/content_services/inspector/src/onboarding/vcs_utils.CommitInfo`](<vcs_utils.py.md#commitinfo>)
@@ -177,9 +182,9 @@ Fetches version control information from a Bitbucket repository using the provid
 
 ---
 ### generate\_codebase\_metadata<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.generate_codebase_metadata}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L245>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L248>)
 
-Generates metadata for a codebase using provided repository and organizational details.
+Generates metadata for a codebase using provided repository and organization details.
 - **Inputs**:
     - `org_id`: The organization ID as a string.
     - `workspace`: The workspace name as a string.
@@ -190,41 +195,43 @@ Generates metadata for a codebase using provided repository and organizational d
     - `asset_name`: The asset name as a string.
     - `install_id`: The installation ID as a string.
 - **Logic and Control Flow**:
-    - Imports `PrimaryAssetKind` from `database.models_v2_enums` to use as a constant value for `asset_kind`.
+    - Imports `PrimaryAssetKind` from `database.models_enums` to use as a constant value.
     - Creates a dictionary with keys corresponding to metadata fields and values derived from the input parameters.
     - Converts `version_id` and `repo_id` to strings before storing them in the dictionary.
-    - Returns the constructed dictionary containing the metadata.
-- **Output**: A dictionary containing metadata for the codebase, including organization ID, repository name, workspace, provider, version ID, repository ID, asset name, asset kind, and installation ID.
+    - Sets the `asset_kind` field to `PrimaryAssetKind.CODEBASE`.
+    - Returns the constructed dictionary as the output.
+- **Output**: A dictionary containing metadata about the codebase, including organization ID, repository details, provider, version ID, asset name, asset kind, and installation ID.
 
 
 ---
 ### download\_and\_upload\_repo<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.download_and_upload_repo}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L270>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L273>)
 
 Downloads a Bitbucket repository, processes it, and uploads it to S3 with metadata.
 - **Inputs**:
     - `org_id`: The organization ID as a string.
-    - `repo`: A dictionary containing repository information.
+    - `repo`: A dictionary containing repository details.
     - `access_token`: A string representing the access token for authentication.
     - `is_push`: A boolean indicating if the operation is triggered by a push event, default is False.
 - **Logic and Control Flow**:
     - Extracts metadata from the `repo` dictionary to determine `repo_id`, `repo_name`, `workspace`, and `repo_slug`.
     - Checks for missing fields (`repo_id`, `repo_name`, `workspace`, `repo_slug`) and returns `repo_name` or 'unknown' if any are missing.
-    - Attempts to get the latest commit from the `repo` dictionary or fetches it using [`get_latest_commit`](<#get_latest_commit>) if not present.
+    - Determines the latest commit from the `repo` dictionary or fetches it using [`get_latest_commit`](<#get_latest_commit>) if not provided.
     - Checks for `installation_id` in the `repo` dictionary and returns `repo_name` if missing.
     - Fetches version control information using [`fetch_vcs_info`](<#fetch_vcs_info>).
-    - Opens a database session and begins a transaction to handle primary asset and version creation or update.
-    - If `is_push` is True, it checks for existing primary assets and versions, handling version creation based on their status.
+    - Opens a database session to handle primary asset and version creation or update based on `is_push`.
+    - If `is_push` is True, it checks the status of existing versions and creates a new version if necessary, handling different version statuses.
     - If `is_push` is False, it creates a new primary asset and version.
+    - Handles `IntegrityError` exceptions by returning `repo_name`.
     - Generates metadata using [`generate_codebase_metadata`](<#generate_codebase_metadata>).
-    - Downloads the repository using [`download_repo`](<#download_repo>) and handles exceptions by returning `repo_name`.
+    - Downloads the repository using [`download_repo`](<#download_repo>) and returns `repo_name` if an error occurs.
     - Uploads the downloaded repository to S3 using [`upload_to_s3_with_metadata`](<onboard_utils.py.md#upload_to_s3_with_metadata>).
-- **Output**: Returns `None` if successful, otherwise returns the `repo_name` or 'unknown' if an error occurs.
+- **Output**: Returns `None` if successful, otherwise returns the `repo_name` or 'unknown' if errors occur.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.get_latest_commit`](<#get_latest_commit>)
     - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.fetch_vcs_info`](<#fetch_vcs_info>)
-    - [`python-backend/driver_db/database/models_v2.Version`](<../../../../driver_db/database/models_v2.py.md#version>)
-    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../driver_db/database/models_v2.py.md#primaryasset>)
+    - [`python-backend/driver_db/database/models.Version`](<../../../../driver_db/database/models.py.md#version>)
+    - [`python-backend/driver_db/database/models.PrimaryAsset`](<../../../../driver_db/database/models.py.md#primaryasset>)
     - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.generate_codebase_metadata`](<#generate_codebase_metadata>)
     - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.download_repo`](<#download_repo>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.upload_to_s3_with_metadata`](<onboard_utils.py.md#upload_to_s3_with_metadata>)
@@ -232,116 +239,114 @@ Downloads a Bitbucket repository, processes it, and uploads it to S3 with metada
 
 ---
 ### get\_repo\_clone\_info\_from\_id<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.get_repo_clone_info_from_id}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L568>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L573>)
 
-Retrieves the clone URL and full name of a Bitbucket repository using its workspace and repository slug.
+Retrieves the clone URL and full name of a Bitbucket repository using the workspace and repository slug.
 - **Inputs**:
     - `workspace`: The workspace identifier for the Bitbucket repository.
-    - `repo_slug`: The repository slug for the Bitbucket repository.
-    - `access_token`: The access token for authentication with the Bitbucket API.
+    - `repo_slug`: The repository slug, which is a URL-friendly version of the repository name.
+    - `access_token`: The access token for authenticating with the Bitbucket API.
 - **Logic and Control Flow**:
-    - Create a dictionary `headers` with an authorization header using the `access_token`.
-    - Construct the URL for the Bitbucket API endpoint using `workspace` and `repo_slug`.
+    - Create a dictionary `headers` with an authorization header using the provided `access_token`.
+    - Construct the URL for the Bitbucket API endpoint using the `workspace` and `repo_slug`.
     - Send a GET request to the constructed URL with the authorization headers.
-    - Call `raise_for_status` on the response to ensure the request was successful.
+    - Raise an exception if the response status indicates an error.
     - Parse the JSON response to extract the `full_name` of the repository.
-    - Construct the `clone_url` using the `access_token`, `workspace`, and `repo_slug`.
-    - Return the `clone_url` and `full_name` as a tuple.
-- **Output**: A tuple containing the clone URL and the full name of the repository.
+    - Construct the `clone_url` using the `workspace`, `repo_slug`, and `access_token`.
+    - Return a tuple containing the `clone_url` and `full_name`.
+- **Output**: A tuple containing the repository's clone URL and full name.
 
 
 ---
 ### fetch\_bitbucket\_default\_branch\_name<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.fetch_bitbucket_default_branch_name}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L588>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L593>)
 
 Fetches the default branch name for a specified Bitbucket repository.
 - **Inputs**:
     - `workspace`: The Bitbucket workspace identifier.
-    - `repo_slug`: The repository slug or name within the workspace.
+    - `repo_slug`: The repository slug, which is a URL-friendly version of the repository name.
     - `access_token`: The access token for authenticating the request to the Bitbucket API.
 - **Logic and Control Flow**:
-    - Set the 'Authorization' header with the provided access token.
-    - Construct the URL for the Bitbucket API to access the repository information.
-    - Send a GET request to the Bitbucket API with the constructed URL and headers.
-    - Raise an exception if the response status indicates an error.
+    - Create a dictionary `headers` with an authorization header using the provided `access_token`.
+    - Construct the URL for the Bitbucket API endpoint to fetch repository details using `workspace` and `repo_slug`.
+    - Send a GET request to the constructed URL with the authorization headers.
+    - Call `raise_for_status()` on the response to ensure the request was successful, raising an error if not.
     - Parse the JSON response to extract the repository data.
-    - Return the name of the default branch from the 'mainbranch' field, defaulting to 'main' if not found.
-- **Output**: Returns the name of the default branch as a string, or 'main' if the default branch is not specified in the response.
+    - Return the name of the default branch from the `mainbranch` field in the JSON data, defaulting to 'main' if not found.
+- **Output**: Returns the name of the default branch as a string, defaulting to 'main' if the information is not available.
 
 
 ---
 ### list\_pull\_requests<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.list_pull_requests}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L602>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L607>)
 
-Fetches a list of pull requests from a Bitbucket repository, handling pagination.
+Retrieves a list of pull requests from a specified Bitbucket repository.
 - **Inputs**:
     - `workspace`: The Bitbucket workspace identifier.
     - `repo_slug`: The repository slug within the workspace.
     - `access_token`: The access token for authentication with the Bitbucket API.
-    - `state`: The state of pull requests to filter by, defaulting to 'OPEN'.
+    - `state`: The state of the pull requests to filter by, defaulting to 'OPEN'.
 - **Logic and Control Flow**:
     - Set the authorization header using the provided access token.
     - Construct the URL for the Bitbucket API endpoint to list pull requests for the specified repository.
     - Initialize an empty list `all_prs` to store pull request data.
-    - Enter a loop to handle pagination, continuing as long as there is a `url`.
-    - Make a GET request to the current `url` with the headers and parameters.
+    - Enter a loop to handle pagination, continuing as long as there is a URL to request.
+    - Make a GET request to the Bitbucket API with the constructed URL, headers, and parameters.
     - Raise an exception if the request fails.
     - Parse the JSON response and extend `all_prs` with the pull request data from the 'values' key.
-    - Update `url` to the 'next' page URL from the response, if available, and clear `params` for subsequent requests.
-    - Exit the loop when there are no more pages to fetch.
-    - Return the list `all_prs` containing all pull requests.
-- **Output**: A list of pull requests, each represented as a dictionary, from the specified Bitbucket repository.
+    - Update the URL to the 'next' page URL from the response, if available, and clear parameters for subsequent requests.
+    - Exit the loop when there are no more pages to request.
+    - Return the list of all pull requests collected.
+- **Output**: A list of pull requests matching the specified state from the given repository.
 
 
 ---
 ### get\_pull\_request\_commits<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.get_pull_request_commits}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L626>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L631>)
 
 Retrieves a list of commits associated with a specific pull request from a Bitbucket repository.
 - **Inputs**:
     - `workspace`: The Bitbucket workspace identifier.
-    - `repo_slug`: The repository slug within the workspace.
-    - `pr_id`: The pull request identifier.
-    - `access_token`: The access token for authentication with the Bitbucket API.
+    - `repo_slug`: The repository slug (name) within the workspace.
+    - `pr_id`: The pull request ID for which to retrieve commits.
+    - `access_token`: The access token for authenticating with the Bitbucket API.
 - **Logic and Control Flow**:
-    - Set the `Authorization` header using the provided `access_token`.
-    - Construct the URL to access the pull request commits using the `workspace`, `repo_slug`, and `pr_id`.
-    - Initialize an empty list `all_commits` to store the commits.
-    - Enter a loop that continues as long as `url` is not `None`.
-    - Make a GET request to the current `url` with the headers.
-    - Raise an exception if the response status is not successful.
-    - Parse the JSON response and extend `all_commits` with the `values` from the response data.
-    - Update `url` to the `next` page URL from the response data, if available.
-    - Exit the loop when there are no more pages to fetch.
+    - Set the authorization header using the provided access token.
+    - Construct the URL for the Bitbucket API endpoint to get commits for the specified pull request.
+    - Initialize an empty list to store all commits.
+    - Enter a loop to handle pagination, making GET requests to the API endpoint.
+    - For each response, check for HTTP errors and parse the JSON data.
+    - Extract the list of commits from the 'values' field and add them to the list of all commits.
+    - Update the URL to the 'next' page URL if available, otherwise exit the loop.
+    - Return the complete list of commits.
 - **Output**: A list of commits associated with the specified pull request.
 
 
 ---
 ### close\_pull\_request<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.close_pull_request}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L648>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L653>)
 
 Closes a pull request on Bitbucket if it is not already closed.
 - **Inputs**:
     - `workspace`: The Bitbucket workspace identifier.
     - `repo_slug`: The repository slug within the workspace.
-    - `pr_id`: The pull request ID to close.
+    - `pr_id`: The identifier of the pull request to close.
     - `access_token`: The access token for authentication with the Bitbucket API.
 - **Logic and Control Flow**:
-    - Set up HTTP headers with authorization and content type for JSON.
-    - Construct the URL to check the pull request status using the workspace, repo_slug, and pr_id.
-    - Send a GET request to the Bitbucket API to retrieve the pull request status.
-    - If the response status code is 200, parse the JSON response to get the pull request state.
-    - If the pull request state is 'MERGED', 'DECLINED', or 'SUPERSEDED', print a message and return without further action.
-    - Construct the URL to decline the pull request and prepare the data payload with a closing message.
-    - Send a POST request to the Bitbucket API to decline the pull request.
-    - If the POST request is successful, print a confirmation message.
-    - If the POST request fails, catch the HTTPError, print an error message, attempt to parse additional error details from the response, and raise the exception.
+    - Set up HTTP headers with authorization and content type.
+    - Construct the URL to check the pull request status and send a GET request.
+    - If the response status is 200, parse the JSON response to get the pull request state.
+    - If the pull request is already closed (state is 'MERGED', 'DECLINED', or 'SUPERSEDED'), print a message and return.
+    - Construct the URL to decline the pull request and send a POST request with a message indicating closure.
+    - Try to raise an exception if the POST request fails, print a success message if it succeeds.
+    - If an HTTP error occurs, print the error message and attempt to parse additional error details from the response.
+    - Raise the exception after printing the error details.
 - **Output**: None
 
 
 ---
 ### create\_pull\_request<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.create_pull_request}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L691>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L696>)
 
 Creates a pull request on a Bitbucket repository for a specified branch and commit.
 - **Inputs**:
@@ -351,12 +356,13 @@ Creates a pull request on a Bitbucket repository for a specified branch and comm
     - `branch`: The name of the source branch for the pull request.
     - `commit_slug`: The identifier for the commit related to the pull request.
 - **Logic and Control Flow**:
-    - Fetch the default branch name of the repository using [`fetch_bitbucket_default_branch_name`](<#fetch_bitbucket_default_branch_name>).
-    - Set up HTTP headers with authorization and content type for JSON.
+    - Fetch the default branch name of the repository using [`fetch_bitbucket_default_branch_name`](<#fetch_bitbucket_default_branch_name>) function.
+    - Set up the headers for the HTTP request with authorization and content type.
     - Prepare the pull request data including title, description, source branch, and destination branch.
-    - Send a POST request to the Bitbucket API to create the pull request.
-    - If the request is successful, print the URL of the created pull request.
-    - If a `requests.HTTPError` occurs, check if the status code is 400 and if the error message indicates that the pull request already exists, print a message; otherwise, re-raise the exception.
+    - Construct the URL for the Bitbucket API endpoint to create pull requests.
+    - Send a POST request to the Bitbucket API with the prepared data and headers.
+    - Attempt to raise an exception if the HTTP response indicates an error.
+    - If a 400 error occurs and the error message indicates the pull request already exists, print a message; otherwise, re-raise the exception.
 - **Output**: Does not return a value; prints the result of the pull request creation or error messages.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.fetch_bitbucket_default_branch_name`](<#fetch_bitbucket_default_branch_name>)
@@ -364,25 +370,24 @@ Creates a pull request on a Bitbucket repository for a specified branch and comm
 
 ---
 ### create\_pull\_request\_with\_bot\_cleanup<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/bitbucket_ops.create_pull_request_with_bot_cleanup}} -->
-[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L733>)
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/bitbucket_ops.py#L738>)
 
 Creates a new pull request and closes any existing bot-generated pull requests from branches starting with 'docs_'.
 - **Inputs**:
     - `workspace`: The workspace identifier for the repository.
     - `repo_slug`: The repository slug or name.
     - `access_token`: The access token for authentication with the repository service.
-    - `branch`: The branch name from which to create the new pull request.
+    - `branch`: The branch name from which to create the pull request.
     - `commit_slug`: The commit identifier for the pull request.
 - **Logic and Control Flow**:
     - Prints a message indicating the start of checking for existing bot pull requests.
     - Calls [`list_pull_requests`](<#list_pull_requests>) to retrieve all open pull requests for the specified repository.
     - Iterates over each pull request to check if the source branch name starts with 'docs_'.
     - For each matching pull request, retrieves the list of commits using [`get_pull_request_commits`](<#get_pull_request_commits>).
-    - Checks if any commit in the pull request is authored by the bot using the bot's name or email.
-    - If a bot-authored pull request is found, attempts to close it using [`close_pull_request`](<#close_pull_request>).
-    - Logs a warning if unable to close a pull request but continues execution.
-    - Handles exceptions during pull request listing and checking, logging errors as needed.
-    - Calls [`create_pull_request`](<#create_pull_request>) to create a new pull request from the specified branch and commit.
+    - Checks if any commit in the pull request is authored by the bot using the bot's email or name.
+    - If a bot-authored pull request is found, attempts to close it using [`close_pull_request`](<#close_pull_request>) and logs the action.
+    - Handles exceptions during the process of checking and closing pull requests, logging any errors encountered.
+    - After processing existing pull requests, calls [`create_pull_request`](<#create_pull_request>) to create a new pull request from the specified branch and commit.
 - **Output**: No return value; performs actions on the repository and logs output.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.list_pull_requests`](<#list_pull_requests>)

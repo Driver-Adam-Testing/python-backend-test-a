@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A script for inspecting codebases, managing tasks, and handling versioning with integration to AWS S3 and OpenAI.
+A script for inspecting and processing codebase versions, managing tasks, and handling exceptions with email notifications.
 
 # Purpose
-The code is a comprehensive script designed to manage and inspect codebase versions using a cloud-based infrastructure. It utilizes the `modal` library to define and execute functions within containerized environments, allowing for scalable and isolated execution. The script primarily focuses on inspecting codebase versions, handling tasks such as downloading source files from S3, computing differences between codebase versions, and generating technical documentation. It defines an `InspectionMode` enumeration to manage different inspection states, such as `NORMAL`, `RESUME`, and `RERUN`, and provides a function [`inspect_db`](<#inspect_db>) to perform the inspection process asynchronously.
+The code is a Python module designed to perform inspection and processing of codebase versions using a cloud-based infrastructure. It uses the `modal` library to define and manage functions that run in containerized environments. The primary functionality revolves around inspecting codebase versions, computing differences between versions, and generating technical documentation. The module imports various tasks and utilities from other modules, such as `tasks`, `utils`, and `database`, to facilitate these operations.
 
-The script also includes several utility functions and classes to support its operations. It defines a `FileTreeDag` to represent the codebase structure and manage file dependencies. The [`inspect_files`](<#inspect_files>) function orchestrates the inspection tasks, creating and managing various tasks like `CSymbolTableTask`, `FileTechDocTask`, and `EmbeddingTask` to process and analyze the codebase. Additionally, the script includes functions for handling exceptions, sending notifications via email, and managing codebase status updates in a database. The script is structured to be executed both locally and remotely, with entry points defined for different operations, such as testing connections, exporting technical documents, and running inspections.
+Key components include the [`inspect_db`](<#inspect_db>) function, which is an asynchronous function that orchestrates the inspection process. It downloads codebase files from an S3 bucket, computes differences between current and previous versions, and manages tasks for generating technical documentation. The module also defines an `InspectionMode` enumeration to handle different modes of operation, such as `NORMAL`, `RESUME`, and `RERUN`. Additionally, the module includes functions for setting codebase status, cleaning up old versions, and sending exception emails. The use of `ThreadPoolExecutor` and `TaskManager` indicates concurrent task execution, optimizing the processing of large codebases.
 # Imports and Dependencies
 
 ---
@@ -16,10 +16,12 @@ The script also includes several utility functions and classes to support its op
 - `os`
 - `uuid`
 - `collections.defaultdict`
+- `concurrent.futures.ThreadPoolExecutor`
 - `enum.Enum`
 - `pathlib.Path`
 - `uuid.UUID`
 - `modal`
+- `deep_context_docs.deep_context_docs`
 - `onboarding.onboard.connect_unconnected_repos`
 - `common.app`
 - `utils.dag.FileTreeDag`
@@ -37,8 +39,8 @@ The script also includes several utility functions and classes to support its op
 - `utils.db.try_get_latest_run_from_version_id`
 - `tempfile`
 - `boto3`
-- `database.models_v2_enums.NodeKind`
-- `database.models_v2_enums.VersionStatus`
+- `database.models_enums.NodeKind`
+- `database.models_enums.VersionStatus`
 - `modal_funcs.export_tech_docs_to_zip`
 - `onboarding.onboard_utils.process_and_upload_all_files_in_parallel`
 - `onboarding.onboard_utils.set_codebase_status`
@@ -54,8 +56,11 @@ The script also includes several utility functions and classes to support its op
 - `utils.io.download_all_source_files_in_parallel`
 - `utils.db.get_all_derived_content_by_node_id`
 - `database.db.engine`
-- `database.models_v2.Version`
+- `database.models.Version`
 - `sqlmodel.Session`
+- `database.models.DocumentSource`
+- `database.models.Node`
+- `sqlmodel.select`
 - `onboarding.onboard.run_codebase_connection`
 - `sendgrid`
 - `sendgrid.helpers.mail.Content`
@@ -70,20 +75,27 @@ The script also includes several utility functions and classes to support its op
 ### inspection\_image
 - **Type**: ``modal.Image``
 - **Description**: Represents a `modal.Image` object configured with a Debian Slim base image and Python 3.12. It installs necessary packages and dependencies, adds local directories, and includes Python source files for various modules.
-- **Use**: Used to define the environment and dependencies for functions that require this specific setup.
+- **Use**: Used to define the environment for the `inspect_db` function, specifying the software and files needed for its execution.
+
+
+---
+### TECH\_DOC\_THREAD\_POOL
+- **Type**: ``ThreadPoolExecutor``
+- **Description**: Creates a thread pool executor with a maximum of 2 worker threads. This allows for concurrent execution of tasks using multiple threads.
+- **Use**: Used to manage and execute tasks concurrently in a multi-threaded environment.
 
 
 # Classes
 
 ---
 ### InspectionMode<!-- {{#class:python-backend/content_services/inspector/src/main.InspectionMode}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L73>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L78>)
 
 - **Members**:
     - `NORMAL`: Represents the 'normal' inspection mode.
     - `RESUME`: Represents the 'resume' inspection mode.
     - `RERUN`: Represents the 'rerun' inspection mode.
-- **Description**: Defines different modes of inspection as enumeration values, including 'normal', 'resume', and 'rerun'. Provides a class method `from_str` to convert a string representation of a mode to its corresponding `InspectionMode` enumeration value.
+- **Description**: Defines different modes of inspection as enumeration values, allowing for easy selection and validation of inspection modes. Provides a class method `from_str` to convert a string representation of a mode into its corresponding `InspectionMode` enumeration value, raising a `ValueError` if the string does not match any valid mode.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/main.InspectionMode.from_str`](<#inspectionmodefrom_str>)
 - **Inherits From**:
@@ -93,7 +105,7 @@ The script also includes several utility functions and classes to support its op
 
 ---
 #### InspectionMode\.from\_str<!-- {{#callable:python-backend/content_services/inspector/src/main.InspectionMode.from_str}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L78>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L83>)
 
 Converts a string representation of an inspection mode to an `InspectionMode` enum value.
 - **Decorators**: `@classmethod`
@@ -101,9 +113,9 @@ Converts a string representation of an inspection mode to an `InspectionMode` en
     - `mode_str`: A string representing the inspection mode, which should match one of the enum values in `InspectionMode`.
 - **Logic and Control Flow**:
     - Attempts to convert `mode_str` to lowercase and return the corresponding `InspectionMode` enum value.
-    - If the conversion fails due to a `ValueError`, it constructs a list of valid mode values from the `InspectionMode` enum.
+    - If the conversion fails due to a `ValueError`, it constructs a string of valid mode values from the `InspectionMode` enum.
     - Raises a `ValueError` with a message indicating the invalid mode and listing the valid modes.
-- **Output**: Returns an `InspectionMode` enum value corresponding to the input string if valid, otherwise raises a `ValueError`.
+- **Output**: An `InspectionMode` enum value corresponding to the input string.
 - **See also**: [`python-backend/content_services/inspector/src/main.InspectionMode`](<#inspectionmode>)  (Base Class)
 
 
@@ -112,7 +124,7 @@ Converts a string representation of an inspection mode to an `InspectionMode` en
 
 ---
 ### get\_result\_loading\_config<!-- {{#callable:python-backend/content_services/inspector/src/main.get_result_loading_config}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L89>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L94>)
 
 Generates a configuration for loading results based on the inspection mode and version IDs.
 - **Decorators**: `@async`
@@ -125,8 +137,8 @@ Generates a configuration for loading results based on the inspection mode and v
     - Determine if there is a difference by checking if `previous_version_id` is not `None`.
     - Use a `match` statement to handle different `inspection_mode` cases: NORMAL, RESUME, and RERUN.
     - For each case, call [`try_get_latest_run_from_version_id`](<utils/db.py.md#try_get_latest_run_from_version_id>) to get the latest run ID for the previous and/or current version based on the inspection mode.
-    - If `existing_run_id_for_prev_version` is available, append a tuple with the run ID and a set containing `NodeStatus.UNMODIFIED` to `result_loading_config`.
-    - If `existing_run_id_for_current_version` is available, append a tuple with the run ID and a set of all `NodeStatus` values to `result_loading_config`.
+    - If `existing_run_id_for_prev_version` is not `None`, append a tuple with the run ID and a set containing `NodeStatus.UNMODIFIED` to `result_loading_config`.
+    - If `existing_run_id_for_current_version` is not `None`, append a tuple with the run ID and a set of all `NodeStatus` values to `result_loading_config`.
     - Return the `result_loading_config` list.
 - **Output**: A list of tuples, each containing a `uuid.UUID` and a set of `NodeStatus` values, representing the configuration for loading results.
 - **Functions Called**:
@@ -136,9 +148,9 @@ Generates a configuration for loading results based on the inspection mode and v
 
 ---
 ### inspect\_db<!-- {{#callable:python-backend/content_services/inspector/src/main.inspect_db}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L138>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L143>)
 
-Inspects a database version by downloading, processing, and analyzing codebase files, and exporting technical documentation if changes are detected.
+Inspects a database version by downloading, processing, and comparing codebase files, and manages the inspection process including error handling and status updates.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `version_id`: A UUID representing the version of the database to inspect.
@@ -151,17 +163,17 @@ Inspects a database version by downloading, processing, and analyzing codebase f
     - Creates an inspector run using [`create_inspector_run`](<utils/db.py.md#create_inspector_run>).
     - Retrieves analyzable nodes for the current and previous versions using [`get_analyzable_nodes_by_version_id`](<utils/db.py.md#get_analyzable_nodes_by_version_id>).
     - Initializes an S3 client and sets up temporary directories for downloading files.
-    - Checks the version status and downloads the source files from S3, either as a zip archive or individual files, depending on the status.
-    - Builds a DAG (Directed Acyclic Graph) of the codebase using [`build_dag`](<#build_dag>).
-    - If a previous version exists, downloads its source files and builds a DAG for it as well.
-    - Computes the difference between the current and previous codebase DAGs if a previous version exists.
-    - Logs the size of the code difference in bytes using [`compute_and_log_code_diff_size_in_bytes`](<utils/git_diff.py.md#compute_and_log_code_diff_size_in_bytes>).
-    - Checks for changes in the codebase and deletes the version if no changes are detected and a previous version exists.
-    - Prepares a list of nodes with their database IDs for further inspection.
-    - Calls [`inspect_files`](<#inspect_files>) to perform detailed inspection tasks on the nodes.
-    - Handles exceptions by sending an email with exception details and setting the codebase status to 'GENERATION_ERROR'.
-    - On successful completion, sets the codebase status to 'GENERATION_COMPLETE' and exports technical documentation if changes are detected.
-- **Output**: Returns `None` as it is an asynchronous function that performs operations and side effects without returning a value.
+    - Checks the version status and downloads the necessary files from S3, either as a zip archive or individual files, depending on the status.
+    - Builds a directed acyclic graph (DAG) of the codebase using [`build_dag`](<#build_dag>).
+    - If a previous version exists, downloads its files and builds a DAG for it, then computes the difference between the current and previous DAGs.
+    - Logs the size of the code difference in bytes using [`compute_and_log_code_diff_size_in_bytes`](<utils/git_diff.py.md#compute_and_log_code_diff_size_in_bytes>), handling any `InsufficientBalanceError`.
+    - Determines if changes are detected by checking the status of nodes in the DAG.
+    - If no changes are detected and a previous version exists, deletes the current version using [`delete_version_by_id`](<utils/db.py.md#delete_version_by_id>) and returns.
+    - Prepares a list of nodes with their database IDs and sets up tasks for inspecting files using [`inspect_files`](<#inspect_files>).
+    - Handles exceptions by sending an email with exception details and updating the codebase status to 'GENERATION_ERROR'.
+    - On successful completion, updates the codebase status to 'GENERATION_COMPLETE' and exports technical documents if changes are detected.
+    - Attempts to clean up old versions using `cleanup_old_versions`.
+- **Output**: Returns `None` as it is an asynchronous function that performs operations and updates without returning a value.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/db.get_version_by_id`](<utils/db.py.md#get_version_by_id>)
     - [`python-backend/content_services/inspector/src/utils/db.try_get_prev_version`](<utils/db.py.md#try_get_prev_version>)
@@ -184,7 +196,7 @@ Inspects a database version by downloading, processing, and analyzing codebase f
 
 ---
 ### hash\_file<!-- {{#callable:python-backend/content_services/inspector/src/main.hash_file}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L424>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L445>)
 
 Computes the SHA-256 hash of a file's contents.
 - **Inputs**:
@@ -195,27 +207,26 @@ Computes the SHA-256 hash of a file's contents.
     - Iterate over the file in chunks of 4096 bytes until the end of the file is reached.
     - Update the hasher with each chunk of data read from the file.
     - Return the hexadecimal digest of the hash.
-- **Output**: A string representing the hexadecimal digest of the file's SHA-256 hash.
+- **Output**: A string representing the hexadecimal SHA-256 hash of the file's contents.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.update`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryupdate>)
 
 
 ---
 ### build\_dag<!-- {{#callable:python-backend/content_services/inspector/src/main.build_dag}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L432>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L453>)
 
 Builds a directed acyclic graph (DAG) of files from a given root path and list of file paths.
 - **Inputs**:
-    - `root_path`: The root directory path as a `Path` object from which the DAG is built.
+    - `root_path`: The root directory path as a `Path` object from which the DAG will be built.
     - `file_paths`: A list of `Path` objects representing file paths to include in the DAG.
 - **Logic and Control Flow**:
     - Prints a message indicating the start of DAG building.
     - Initializes a [`FileTreeDag`](<utils/dag.py.md#filetreedag>) object with the given `root_path`.
     - Iterates over each path in `file_paths`.
-    - Checks if the path is a file using `is_file()`.
-    - If the path is a file, adds it to the DAG using `add_file()` with `change_status` set to `False` and computes the file hash using `hash_file()`.
-    - Returns the constructed [`FileTreeDag`](<utils/dag.py.md#filetreedag>) object.
-- **Output**: Returns a [`FileTreeDag`](<utils/dag.py.md#filetreedag>) object representing the file structure as a DAG.
+    - Checks if the current path is a file.
+    - If it is a file, adds the file to the DAG with its hash calculated by [`hash_file`](<#hash_file>) and sets `change_status` to `False`.
+- **Output**: Returns a [`FileTreeDag`](<utils/dag.py.md#filetreedag>) object representing the constructed DAG of files.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<utils/dag.py.md#filetreedag>)
     - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<utils/dag.py.md#filetreedagadd_file>)
@@ -224,28 +235,29 @@ Builds a directed acyclic graph (DAG) of files from a given root path and list o
 
 ---
 ### inspect\_files<!-- {{#callable:python-backend/content_services/inspector/src/main.inspect_files}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L441>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L462>)
 
 Inspects files in a codebase, creates tasks for processing, and manages task execution.
+- **Decorators**: `@app.function`
 - **Inputs**:
     - `version_id`: A UUID representing the version of the codebase to inspect.
     - `codebase_root`: A Path object representing the root directory of the codebase.
-    - `nodes_with_id`: A list of tuples, each containing a Node object and an optional UUID representing the database node ID.
+    - `nodes_with_id`: A list of tuples, each containing a Node object and an optional UUID representing the node's database ID.
     - `codebase_name`: A string representing the name of the codebase.
     - `run_id`: A UUID representing the run ID for the inspection process.
     - `result_loading_config`: An optional list of tuples, each containing a UUID and a set of NodeStatus, used for loading results.
-    - `rel_path_to_previous_version_db_node_ids`: A dictionary mapping Path objects to UUIDs, representing the relationship between paths and previous version database node IDs.
+    - `rel_path_to_previous_version_db_node_ids`: A dictionary mapping Path objects to UUIDs, representing the relationship between file paths and their database node IDs from a previous version.
 - **Logic and Control Flow**:
-    - Prints all nodes from the input list `nodes_with_id`.
+    - Prints all nodes in the `nodes_with_id` list.
     - Creates a [`CSymbolTableTask`](<tasks.py.md#csymboltabletask>) for the last node in `nodes_with_id` and appends it to the `tasks` list.
     - Iterates over each node in `nodes_with_id` to determine if it is a folder or file.
-    - For folders, creates [`FolderTechDocTask`](<tasks.py.md#foldertechdoctask>) and [`EmbeddingTask`](<tasks.py.md#embeddingtask>) and appends them to the `tasks` list.
-    - For files, retrieves the source code, creates various tasks ([`EmbeddingTask`](<tasks.py.md#embeddingtask>), [`FileTechDocTask`](<tasks.py.md#filetechdoctask>), [`SymbolsTask`](<tasks.py.md#symbolstask>)) and appends them to the `tasks` list.
-    - Determines the root node and its database ID from the last element of `nodes_with_id`.
-    - Creates a [`TopLevelDocsTask`](<tasks.py.md#topleveldocstask>) and a [`CodebaseTaggingTask`](<tasks.py.md#codebasetaggingtask>), and appends them to the `tasks` list.
+    - For folders, creates [`FolderTechDocTask`](<tasks.py.md#foldertechdoctask>) and [`EmbeddingTask`](<tasks.py.md#embeddingtask>) and appends them to `tasks`.
+    - For files, retrieves source code, creates tasks like [`EmbeddingTask`](<tasks.py.md#embeddingtask>), [`FileTechDocTask`](<tasks.py.md#filetechdoctask>), [`SymbolsTask`](<tasks.py.md#symbolstask>), and appends them to `tasks`.
+    - Identifies the root node and its database ID from `nodes_with_id`.
+    - Creates a [`TopLevelDocsTask`](<tasks.py.md#topleveldocstask>) and [`CodebaseTaggingTask`](<tasks.py.md#codebasetaggingtask>) for the root node and appends them to `tasks`.
     - Prints all tasks and initializes a `TaskManager` with S3 persistence.
     - Runs all tasks using the `TaskManager` and prints the completion progress.
-- **Output**: None
+- **Output**: Returns None.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/tasks.CSymbolTableTask`](<tasks.py.md#csymboltabletask>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -265,7 +277,7 @@ Inspects files in a codebase, creates tasks for processing, and manages task exe
 
 ---
 ### get\_file\_content<!-- {{#callable:python-backend/content_services/inspector/src/main.get_file_content}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L639>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L661>)
 
 Reads and returns the content of a file specified by a given path.
 - **Inputs**:
@@ -273,12 +285,12 @@ Reads and returns the content of a file specified by a given path.
 - **Logic and Control Flow**:
     - Creates a `Path` object from the given `path` argument.
     - Calls the `read_text` method on the `Path` object to read the file content.
-- **Output**: A string containing the content of the file at the specified path.
+- **Output**: A string containing the content of the file.
 
 
 ---
 ### set\_codebase\_status\_in\_container<!-- {{#callable:python-backend/content_services/inspector/src/main.set_codebase_status_in_container}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L643>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L665>)
 
 Updates the status of a codebase version in a database container.
 - **Decorators**: `@app.function`
@@ -286,68 +298,126 @@ Updates the status of a codebase version in a database container.
     - `version_id`: A string representing the unique identifier of the codebase version.
     - `status`: A string representing the new status to set for the codebase version.
 - **Logic and Control Flow**:
-    - Imports necessary modules and classes for database interaction.
+    - Imports necessary modules and classes for database operations.
     - Creates a session with the database engine using `Session(engine)`.
-    - Retrieves the `Version` object from the database using the provided `version_id`.
-    - Updates the `status` attribute of the `Version` object to the new `status` value.
-    - Adds the updated `Version` object back to the session to persist changes.
+    - Begins a transaction with `session.begin()`.
+    - Retrieves the `Version` object from the database using `session.get()` with the provided `version_id`.
+    - Updates the `status` attribute of the `Version` object to the new `status` using `VersionStatus(status)`.
+    - Adds the updated `Version` object back to the session with `session.add(version)`.
 - **Output**: Returns `None` as it performs an update operation without returning a value.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
-    - [`python-backend/driver_db/database/models_v2_enums.VersionStatus`](<../../../driver_db/database/models_v2_enums.py.md#versionstatus>)
+    - [`python-backend/driver_db/database/models_enums.VersionStatus`](<../../../driver_db/database/models_enums.py.md#versionstatus>)
+
+
+---
+### cleanup\_old\_versions<!-- {{#callable:python-backend/content_services/inspector/src/main.cleanup_old_versions}} -->
+[View Source →](<../../../../../content_services/inspector/src/main.py#L703>)
+
+Deletes old versions of a document, keeping only the 10 most recent versions and those with associated sources.
+- **Decorators**: `@app.function`
+- **Inputs**:
+    - `new_version_id`: A string representing the ID of the new version to be processed.
+- **Logic and Control Flow**:
+    - Establishes a session with the database using `Session(engine)` and begins a transaction.
+    - Retrieves the `primary_asset_id` for the given `new_version_id` from the `Version` table.
+    - Fetches all versions associated with the `primary_asset_id` and stores them in `versions`.
+    - Fetches versions with associated document sources and stores them in `versions_with_sources`.
+    - Sorts the `versions` by creation date in descending order and keeps the 10 most recent versions.
+    - Extends the list of versions to keep with `versions_with_sources`.
+    - Removes duplicate versions from the list of versions to keep.
+    - Prints debug information about the number of versions being kept and deleted.
+    - Identifies versions to delete by excluding those in the list of versions to keep.
+    - Iterates over versions to keep and prints debug information for each.
+    - Iterates over versions to delete, prints debug information, and deletes them from the session.
+    - Commits the transaction to finalize the deletions.
+- **Output**: None
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptextend>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositorydelete>)
 
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/inspector/src/main.main}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L679>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L771>)
 
 Resumes or reruns the inspector for a given version.
 - **Decorators**: `@app.local_entrypoint`
 - **Inputs**:
     - `version_id`: A string representing the unique identifier of the version to process.
-    - `mode`: A string indicating the mode of inspection, which can be 'normal', 'resume', or 'rerun'.
+    - `mode`: A string indicating the mode of inspection, which can be converted to an `InspectionMode`.
 - **Logic and Control Flow**:
-    - Converts the input `mode` string to an `InspectionMode` enum using `InspectionMode.from_str`.
-    - Attempts to call the `inspect_db.remote` function with `version_id` and `inspection_mode`.
-    - If an exception occurs during the call to `inspect_db.remote`, it prints an error message, sets the codebase status to 'GENERATION_ERROR' using `set_codebase_status_in_container.remote`, and re-raises the exception.
-    - If no exception occurs, it sets the codebase status to 'GENERATION_COMPLETE' using `set_codebase_status_in_container.remote`.
-- **Output**: Does not return any value (returns `None`).
+    - Converts the `mode` string to an `InspectionMode` using `InspectionMode.from_str`.
+    - Attempts to call `inspect_db.remote` with `version_id` and the converted `inspection_mode`.
+    - If an exception occurs, prints an error message and sets the codebase status to 'GENERATION_ERROR' using `set_codebase_status_in_container.remote`.
+    - If no exception occurs, sets the codebase status to 'GENERATION_COMPLETE' using `set_codebase_status_in_container.remote`.
+- **Output**: Does not return a value; it performs actions based on the inspection process and handles exceptions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/main.InspectionMode.from_str`](<#inspectionmodefrom_str>)
 
 
 ---
+### run\_deep\_context<!-- {{#callable:python-backend/content_services/inspector/src/main.run_deep_context}} -->
+[View Source →](<../../../../../content_services/inspector/src/main.py#L791>)
+
+Executes the deep context documentation generation process for a specified version.
+- **Decorators**: `@app.local_entrypoint`
+- **Inputs**:
+    - `version_id`: A string representing the unique identifier of the version for which to generate deep context documentation.
+    - `install_id`: An optional string representing the installation identifier, which can be None if not provided.
+- **Logic and Control Flow**:
+    - Attempts to call the `deep_context_docs.remote` function with `version_id` and `install_id` as arguments.
+    - If an exception occurs during the call, it prints an error message including the `version_id` and the exception details, then raises the exception.
+    - If no exception occurs, it prints a success message indicating the completion of the deep context documentation generation for the specified `version_id`.
+- **Output**: No output is returned as the function's return type is None.
+
+
+---
 ### test\_connection<!-- {{#callable:python-backend/content_services/inspector/src/main.test_connection}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L699>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L807>)
 
 Initiates a remote codebase connection using predefined parameters.
 - **Decorators**: `@app.local_entrypoint`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Imports the `run_codebase_connection` function from the `onboarding.onboard` module.
-    - Defines several parameters including `presigned_url`, `provisional_codebase_name`, `org_id`, `provider`, and `version_id`.
-    - Calls the `run_codebase_connection.remote` function with the defined parameters to initiate the connection.
-- **Output**: No output is returned as the function is defined to return `None`.
+    - Defines several variables with hardcoded values: `presigned_url`, `provisional_codebase_name`, `org_id`, `provider`, and `version_id`.
+    - Calls the `run_codebase_connection.remote` method with the defined variables as arguments.
+- **Output**: Does not return any value.
+
+
+---
+### test\_cleanup\_old\_versions<!-- {{#callable:python-backend/content_services/inspector/src/main.test_cleanup_old_versions}} -->
+[View Source →](<../../../../../content_services/inspector/src/main.py#L826>)
+
+Triggers the `cleanup_old_versions` function remotely with the given version ID.
+- **Decorators**: `@app.local_entrypoint`
+- **Inputs**:
+    - `version_id`: A string representing the version ID to be used for cleaning up old versions.
+- **Logic and Control Flow**:
+    - Calls the `cleanup_old_versions` function with the `version_id` argument using the `remote` method.
+- **Output**: No output is returned as the function's return type is `None`.
 
 
 ---
 ### test\_export<!-- {{#callable:python-backend/content_services/inspector/src/main.test_export}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L718>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L833>)
 
 Exports technical documentation to a zip file using a remote function call.
 - **Decorators**: `@app.local_entrypoint`
 - **Inputs**:
     - `version_id`: A string representing the version identifier for the documentation to export.
-    - `install_id`: An optional string representing the installation identifier, which can be None.
+    - `install_id`: An optional string representing the installation identifier, defaulting to None if not provided.
 - **Logic and Control Flow**:
     - Imports the `export_tech_docs_to_zip` function from the `modal_funcs` module.
     - Calls the `export_tech_docs_to_zip.remote` function with `version_id` and `install_id` as arguments to perform the export operation.
-- **Output**: Does not return any value (None).
+- **Output**: No output is returned as the function's return type is None.
 
 
 ---
 ### test\_inspect\_db<!-- {{#callable:python-backend/content_services/inspector/src/main.test_inspect_db}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L729>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L844>)
 
 Triggers the remote execution of the `inspect_db` function with a predefined version string.
 - **Decorators**: `@app.local_entrypoint`
@@ -360,31 +430,29 @@ Triggers the remote execution of the `inspect_db` function with a predefined ver
 
 ---
 ### run\_connect\_unconnected\_repos<!-- {{#callable:python-backend/content_services/inspector/src/main.run_connect_unconnected_repos}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L735>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L850>)
 
-Initiates the connection process for repositories that are not yet connected.
+Triggers the remote execution of the `connect_unconnected_repos` function.
 - **Decorators**: `@app.local_entrypoint`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `connect_unconnected_repos.remote()` function to start the connection process for unconnected repositories.
-- **Output**: No output is returned as the function's return type is `None`.
+    - Calls the `connect_unconnected_repos.remote()` function to execute it remotely.
+- **Output**: No output is returned as the function is defined to return `None`.
 
 
 ---
 ### send\_exception\_email<!-- {{#callable:python-backend/content_services/inspector/src/main.send_exception_email}} -->
-[View Source →](<../../../../../content_services/inspector/src/main.py#L740>)
+[View Source →](<../../../../../content_services/inspector/src/main.py#L855>)
 
-Sends an email notification about an exception using SendGrid.
+Sends an email notification about an exception using the SendGrid API.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `exception_details`: A string containing details about the exception that occurred.
 - **Logic and Control Flow**:
-    - Imports necessary modules from SendGrid for email handling.
-    - Retrieves environment variables for the environment name and SendGrid API key.
-    - Initializes a SendGrid API client using the API key.
-    - Sets the sender and recipient email addresses.
-    - Constructs the email subject using the environment name and a fixed message.
-    - Creates the email content with the exception details.
+    - Imports necessary modules from the SendGrid library.
+    - Retrieves environment variables `ENV_NAME` and `SENDGRID_API_KEY` for configuration.
+    - Initializes a `SendGridAPIClient` with the API key.
+    - Sets up email details including sender, recipient, subject, and content using the provided `exception_details`.
     - Attempts to send the email using the SendGrid client and prints the response status code.
     - Catches and prints any exceptions that occur during the email sending process.
 - **Output**: Does not return any value.

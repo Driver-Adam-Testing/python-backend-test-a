@@ -6,9 +6,9 @@
 Implements an Auth0 device flow authenticator with token caching and refreshing capabilities.
 
 # Purpose
-The `Auth0DeviceAuthenticator` class provides functionality for authenticating a device using the Auth0 Device Authorization Flow. This class is designed to handle the process of obtaining and refreshing access tokens for a client application. It interacts with Auth0's OAuth 2.0 endpoints to facilitate device-based authentication, allowing users to log in via a web interface and authorize the application to access resources on their behalf.
+The `Auth0DeviceAuthenticator` class provides functionality for authenticating a device using the Auth0 Device Authorization Flow. This class is designed to handle the process of obtaining and refreshing access tokens for a client application. It interacts with Auth0's OAuth 2.0 endpoints to initiate the device authorization flow, poll for tokens, and manage token expiration and caching. The class uses the `httpx` library to make HTTP requests to the Auth0 API and manages token storage in a local cache file, which is specified by the user or defaults to a file in the user's home directory.
 
-Key components of this class include methods for initiating the device authorization flow, polling for tokens, refreshing tokens, and managing token caching. The [`authenticate`](<#auth0deviceauthenticatorauthenticate>) method is the primary entry point, which checks for cached tokens and attempts to refresh them if they are expired. If no valid tokens are available, it starts the device authorization process, guiding the user through the login steps. The class also includes private methods for handling token expiration, caching tokens to a file, and clearing the cache when necessary. This code is intended to be used as part of a larger application that requires device-based authentication with Auth0.
+The class includes several methods to support its main functionality. The [`authenticate`](<#auth0deviceauthenticatorauthenticate>) method initiates the authentication process, checking for cached tokens and refreshing them if necessary. If no valid tokens are available, it starts the device authorization flow by requesting a device code and instructing the user to visit a URL to complete the login. The [`_poll_for_token`](<#auth0deviceauthenticator_poll_for_token>) method repeatedly checks for the availability of tokens until they are issued or the process times out. The class also includes methods for refreshing tokens ([`_refresh_token`](<#auth0deviceauthenticator_refresh_token>)), adding expiration information to tokens ([`_add_expiration`](<#auth0deviceauthenticator_add_expiration>)), checking token expiration ([`_is_token_expired`](<#auth0deviceauthenticator_is_token_expired>)), and managing the token cache ([`_load_cached_tokens`](<#auth0deviceauthenticator_load_cached_tokens>), [`_cache_tokens`](<#auth0deviceauthenticator_cache_tokens>), and [`clear_cache`](<#auth0deviceauthenticatorclear_cache>)).
 # Imports and Dependencies
 
 ---
@@ -35,7 +35,7 @@ Key components of this class include methods for initiating the device authoriza
     - `device_code_url`: Stores the URL for obtaining the device code.
     - `token_url`: Stores the URL for obtaining the token.
     - `cache_file`: Stores the path to the cache file for tokens.
-- **Description**: Manages the authentication process using Auth0's device authorization flow. It handles token caching, refreshing, and retrieval, and guides the user through the device authorization process by providing URLs and user codes for login. The class also manages token expiration and refreshes tokens when necessary.
+- **Description**: Manages the authentication process using Auth0's Device Authorization Flow. It handles token retrieval, caching, and refreshing, and interacts with the Auth0 service to authenticate a device. The class uses HTTP requests to communicate with the Auth0 endpoints and manages token expiration and caching to ensure valid authentication sessions.
 - **Methods**:
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.__init__`](<#auth0deviceauthenticator__init__>)
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate`](<#auth0deviceauthenticatorauthenticate>)
@@ -56,9 +56,9 @@ Key components of this class include methods for initiating the device authoriza
 Initializes an instance of the `Auth0DeviceAuthenticator` class with configuration parameters for authentication.
 - **Inputs**:
     - `client_id`: The client identifier for the application.
-    - `domain`: The domain of the Auth0 tenant.
-    - `audience`: The intended audience for the access token, optional.
-    - `scope`: The scope of the access request, defaulting to 'openid profile email offline_access'.
+    - `domain`: The domain for the Auth0 service.
+    - `audience`: The intended audience for the token, optional.
+    - `scope`: The scope of access requested, defaults to 'openid profile email offline_access'.
     - `cache_file`: The file path for caching tokens, optional.
 - **Logic and Control Flow**:
     - Assigns `client_id` to the instance variable `self.client_id`.
@@ -68,7 +68,7 @@ Initializes an instance of the `Auth0DeviceAuthenticator` class with configurati
     - Constructs the `device_code_url` using the `domain` and assigns it to `self.device_code_url`.
     - Constructs the `token_url` using the `domain` and assigns it to `self.token_url`.
     - Sets `self.cache_file` to the provided `cache_file` or defaults to a path in the user's home directory named `.mycli_tokens.json`.
-- **Output**: None, as this is a constructor method for initializing class instances.
+- **Output**: None, as it is a constructor method for initializing class instances.
 - **See also**: [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator`](<#auth0deviceauthenticator>)  (Base Class)
 
 
@@ -76,24 +76,21 @@ Initializes an instance of the `Auth0DeviceAuthenticator` class with configurati
 #### Auth0DeviceAuthenticator\.authenticate<!-- {{#callable:python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate}} -->
 [View Source →](<../../../../../dev_stack/src/auth/auth0_device_flow.py#L27>)
 
-Authenticates a user using cached tokens or initiates the Auth0 Device Authorization Flow if necessary.
+Authenticates a user using cached tokens or the Auth0 Device Authorization Flow.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Load cached tokens using [`_load_cached_tokens`](<#auth0deviceauthenticator_load_cached_tokens>) method.
     - If tokens exist, check if they are expired using [`_is_token_expired`](<#auth0deviceauthenticator_is_token_expired>).
     - If tokens are not expired, return them.
-    - If tokens are expired and contain a `refresh_token`, attempt to refresh them using [`_refresh_token`](<#auth0deviceauthenticator_refresh_token>).
-    - If refreshing is successful, cache the new tokens and return them.
-    - If no valid tokens are available, print a message to start the Auth0 Device Authorization Flow.
-    - Prepare a `device_payload` dictionary with `client_id` and `scope`, and optionally `audience`.
-    - Send a POST request to `device_code_url` with `device_payload` using `httpx.Client`.
-    - Raise an error if the response status is not successful.
-    - Parse the response JSON to get device authorization data.
+    - If tokens have a `refresh_token`, attempt to refresh them using [`_refresh_token`](<#auth0deviceauthenticator_refresh_token>).
+    - If refreshed tokens are obtained, cache them and return.
+    - If no valid tokens are available, initiate the Auth0 Device Authorization Flow.
+    - Create a `device_payload` dictionary with `client_id` and `scope`, and optionally `audience`.
+    - Send a POST request to `device_code_url` with `device_payload` to get device authorization data.
     - Print instructions for the user to log in using the provided verification URI and user code.
-    - Poll for tokens using [`_poll_for_token`](<#auth0deviceauthenticator_poll_for_token>) with the device data and scope.
-    - Cache the obtained tokens using [`_cache_tokens`](<#auth0deviceauthenticator_cache_tokens>).
-    - Return the obtained tokens.
-- **Output**: Returns a dictionary containing authentication tokens.
+    - Poll for tokens using [`_poll_for_token`](<#auth0deviceauthenticator_poll_for_token>) method with the device data and scope.
+    - Cache the obtained tokens using [`_cache_tokens`](<#auth0deviceauthenticator_cache_tokens>) and return them.
+- **Output**: Returns a dictionary of tokens, either from cache, refreshed, or obtained through the device authorization flow.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator._load_cached_tokens`](<#auth0deviceauthenticator_load_cached_tokens>)
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator._is_token_expired`](<#auth0deviceauthenticator_is_token_expired>)
@@ -107,27 +104,27 @@ Authenticates a user using cached tokens or initiates the Auth0 Device Authoriza
 #### Auth0DeviceAuthenticator\.\_poll\_for\_token<!-- {{#callable:python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator._poll_for_token}} -->
 [View Source →](<../../../../../dev_stack/src/auth/auth0_device_flow.py#L65>)
 
-Polls for an OAuth token using the device code flow until a token is received or an error occurs.
+Polls for an OAuth token using device authorization flow until a token is received or an error occurs.
 - **Inputs**:
     - `device_data`: A dictionary containing device authorization data, including 'device_code', 'interval', and 'expires_in'.
-    - `scope`: The scope of the authorization request, typically a string specifying the permissions requested.
+    - `scope`: A string representing the scope of the authorization request.
 - **Logic and Control Flow**:
-    - Initialize 'interval' from 'device_data' with a default of 5 seconds.
-    - Calculate 'expires_at' as the current UTC time plus the 'expires_in' duration from 'device_data', defaulting to 900 seconds.
+    - Get the polling interval from 'device_data' with a default of 5 seconds.
+    - Calculate the expiration time by adding 'expires_in' seconds to the current UTC time.
     - Enter a loop that continues until the current time is less than 'expires_at'.
-    - In each iteration, sleep for 'interval' seconds.
-    - Create a 'payload' dictionary with 'grant_type', 'device_code', and 'client_id'.
-    - Use an HTTP client to send a POST request to 'self.token_url' with 'payload' and appropriate headers.
+    - In each iteration, wait for the specified 'interval' before proceeding.
+    - Create a payload dictionary with 'grant_type', 'device_code', and 'client_id'.
+    - Use an HTTP client to send a POST request to 'self.token_url' with the payload and appropriate headers.
     - If the response status code is 200, call '_add_expiration' with the response JSON and return the result.
     - If the response status code is 400, check the 'error' field in the response JSON.
     - If 'error' is 'authorization_pending', continue the loop.
-    - If 'error' is 'slow_down', increase 'interval' by 5 seconds and continue the loop.
+    - If 'error' is 'slow_down', increase the 'interval' by 5 seconds and continue the loop.
     - If 'error' is 'expired_token', raise an exception indicating the device code expired.
     - If 'error' is 'access_denied', raise an exception indicating access was denied.
-    - For other errors, raise a generic authentication failure exception.
-    - If the response status code is not 200 or 400, attempt to raise an HTTP status error.
+    - For other errors, raise an exception with the error message.
+    - If the response status code is not 200 or 400, attempt to raise the HTTP status error.
     - If the loop exits without returning, raise a 'TimeoutError' indicating the login timed out.
-- **Output**: Returns a dictionary with token data including expiration information if successful, or raises an exception on error.
+- **Output**: Returns a dictionary with token data and expiration information if successful, or raises an exception if an error occurs.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator._add_expiration`](<#auth0deviceauthenticator_add_expiration>)
 - **See also**: [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator`](<#auth0deviceauthenticator>)  (Base Class)
@@ -139,15 +136,15 @@ Polls for an OAuth token using the device code flow until a token is received or
 
 Attempts to refresh an access token using a given refresh token.
 - **Inputs**:
-    - `refresh_token`: The refresh token used to obtain a new access token.
+    - `refresh_token`: A string representing the refresh token used to obtain a new access token.
 - **Logic and Control Flow**:
     - Creates a payload dictionary with 'grant_type', 'client_id', and 'refresh_token'.
     - Opens an HTTP client session using `httpx.Client()`.
     - Sends a POST request to `self.token_url` with the payload data.
     - Checks if the response status code is 200 (OK).
     - If successful, prints a message and calls [`_add_expiration`](<#auth0deviceauthenticator_add_expiration>) with the response JSON and the fallback refresh token.
-    - If the response status code is not 200, prints a warning message and calls [`clear_cache`](<#auth0deviceauthenticatorclear_cache>).
-    - Handles exceptions by printing an error message and returning `None`.
+    - If the response status code is not 200, prints a warning message, calls [`clear_cache`](<#auth0deviceauthenticatorclear_cache>), and returns `None`.
+    - Catches any exceptions, prints an error message, and returns `None`.
 - **Output**: Returns a dictionary with the new access token and expiration details if successful, or `None` if the refresh fails.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator._add_expiration`](<#auth0deviceauthenticator_add_expiration>)
@@ -162,14 +159,14 @@ Attempts to refresh an access token using a given refresh token.
 Adds an expiration timestamp to the token data or sets a fallback refresh token.
 - **Inputs**:
     - `tokens`: A dictionary containing token data, which may include an 'expires_in' key.
-    - `fallback`: An optional fallback refresh token to use if 'expires_in' is not present in the tokens.
+    - `fallback`: An optional fallback value for the refresh token if 'expires_in' is not present in the tokens.
 - **Logic and Control Flow**:
-    - Check if 'expires_in' is present in the 'tokens' dictionary.
+    - Check if 'expires_in' is in the 'tokens' dictionary.
     - If 'expires_in' is present, calculate the expiration time by adding the current UTC time to the 'expires_in' value in seconds.
     - Convert the calculated expiration time to an ISO 8601 formatted string and store it in the 'tokens' dictionary under the key 'expires_at'.
     - If 'expires_in' is not present and 'fallback' is provided, set the 'refresh_token' in the 'tokens' dictionary to the 'fallback' value.
     - Return the modified 'tokens' dictionary.
-- **Output**: A dictionary containing the original token data with an added 'expires_at' key if 'expires_in' was present, or with a 'refresh_token' key set to the fallback value if provided.
+- **Output**: A dictionary with the added 'expires_at' key if 'expires_in' was present, or with the 'refresh_token' set to the fallback value if provided.
 - **See also**: [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator`](<#auth0deviceauthenticator>)  (Base Class)
 
 
@@ -183,8 +180,9 @@ Checks if a token is expired based on its expiration time.
 - **Logic and Control Flow**:
     - Attempts to parse the 'expires_at' value from the 'tokens' dictionary using 'datetime.fromisoformat'.
     - Compares the current UTC time with the parsed expiration time to determine if the token is expired.
-    - If an exception occurs during parsing, returns True, indicating the token is considered expired.
-- **Output**: Returns a boolean value: True if the token is expired or if an error occurs during expiration time parsing, otherwise False.
+    - Returns 'True' if the current time is greater than or equal to the expiration time, indicating the token is expired.
+    - Catches any exceptions during the parsing process and returns 'True', assuming the token is expired if an error occurs.
+- **Output**: Returns a boolean value: 'True' if the token is expired or if an error occurs during the expiration check, otherwise 'False'.
 - **See also**: [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator`](<#auth0deviceauthenticator>)  (Base Class)
 
 
@@ -206,14 +204,13 @@ Loads cached authentication tokens from a specified file if it exists.
 #### Auth0DeviceAuthenticator\.\_cache\_tokens<!-- {{#callable:python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator._cache_tokens}} -->
 [View Source →](<../../../../../dev_stack/src/auth/auth0_device_flow.py#L180>)
 
-Stores the given tokens in a specified cache file as a JSON object.
+Stores the given tokens in a specified cache file as JSON data.
 - **Inputs**:
-    - `tokens`: A dictionary containing authentication tokens to be cached.
+    - `tokens`: A dictionary containing token data to be cached.
 - **Logic and Control Flow**:
     - Opens the file specified by `self.cache_file` in write mode.
-    - Serializes the `tokens` dictionary into a JSON formatted string.
-    - Writes the JSON string to the file.
-- **Output**: No output is returned; the function writes the tokens to a file.
+    - Serializes the `tokens` dictionary into JSON format and writes it to the file.
+- **Output**: No output is returned; the function writes data to a file.
 - **See also**: [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator`](<#auth0deviceauthenticator>)  (Base Class)
 
 
@@ -222,12 +219,13 @@ Stores the given tokens in a specified cache file as a JSON object.
 [View Source →](<../../../../../dev_stack/src/auth/auth0_device_flow.py#L184>)
 
 Removes the authentication token cache file if it exists.
-- **Inputs**: None
+- **Inputs**:
+    - `self`: Represents the instance of the class `Auth0DeviceAuthenticator`.
 - **Logic and Control Flow**:
     - Checks if the cache file specified by `self.cache_file` exists using `os.path.exists`.
     - If the cache file exists, it removes the file using `os.remove`.
     - Prints a message indicating that the authentication token cache has been cleared.
-- **Output**: No return value; the method performs an action.
+- **Output**: No return value; the function performs an action by removing a file and printing a message.
 - **See also**: [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator`](<#auth0deviceauthenticator>)  (Base Class)
 
 

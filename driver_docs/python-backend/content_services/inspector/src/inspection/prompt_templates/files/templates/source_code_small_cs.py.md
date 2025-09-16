@@ -6,7 +6,7 @@
 Templates for generating structured prompts and analyzing C# code components like classes, structs, and interfaces.
 
 # Purpose
-The code is a configuration file that defines a template for processing small C# source code files. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.c_sharp`, to facilitate the generation of structured prompts and the analysis of C# code elements like classes, structs, and interfaces. The `SOURCE_CODE_SMALL_TEMPLATE_CS` variable is a list of tuples, each representing a section of the template, such as "Purpose", "Imports and Dependencies", "Classes", "Structs", and "Interfaces". Each section uses specific functions and components to process and analyze the C# code, ensuring that the output conforms to a predefined structure and style.
+This code defines a configuration for generating documentation templates for C# source code. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.c_sharp`, to facilitate the creation of structured prompts and collections for C# classes, structs, and interfaces. The `SOURCE_CODE_SMALL_TEMPLATE_CS` variable is a list of tuples, each representing a section of the documentation template, such as "Purpose", "Imports and Dependencies", "Classes", "Structs", and "Interfaces". Each tuple contains a section identifier, a title, and functions or prompts that define how to generate content for that section. This setup allows for the systematic generation of documentation by using predefined instructions and components.
 # Imports and Dependencies
 
 ---
@@ -32,7 +32,7 @@ The code is a configuration file that defines a template for processing small C#
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_CS
 - **Type**: ``list``
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_CS` is a list of tuples, where each tuple contains a set of instructions and components related to C# code analysis and generation. Each tuple includes a type identifier, a description string, and a series of components or functions that process or transform code related to C# programming constructs such as classes, structs, and interfaces.
+- **Description**: A list of tuples where each tuple contains a string identifier, a string description, and a series of components or functions related to C# code analysis and generation. Each tuple represents a different aspect of C# code, such as purpose, imports, classes, structs, and interfaces.
 - **Use**: Used to define a structured template for processing and generating C# code components and their documentation.
 
 

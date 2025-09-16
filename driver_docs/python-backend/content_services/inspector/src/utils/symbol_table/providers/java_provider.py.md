@@ -6,7 +6,7 @@
 Java language provider with methods to get JavaParser and JavaResolver instances.
 
 # Purpose
-The code defines a class `JavaLanguageProvider` that extends the `LanguageProvider` class. It provides functionality specific to the Java programming language by setting the `language` attribute to "java". The class includes two class methods: [`get_parser`](<#javalanguageproviderget_parser>) and [`get_resolver`](<#javalanguageproviderget_resolver>). The [`get_parser`](<#javalanguageproviderget_parser>) method returns an instance of `JavaParser`, while the [`get_resolver`](<#javalanguageproviderget_resolver>) method returns an instance of `JavaResolver`. This setup suggests that `JavaLanguageProvider` is part of a system that uses parsers and resolvers to handle language-specific operations, particularly for Java.
+The `JavaLanguageProvider` class extends the `LanguageProvider` class to support the Java programming language. It specifies the language as "java" and provides two class methods: [`get_parser`](<#javalanguageproviderget_parser>) and [`get_resolver`](<#javalanguageproviderget_resolver>). The [`get_parser`](<#javalanguageproviderget_parser>) method returns an instance of `JavaParser`, while the [`get_resolver`](<#javalanguageproviderget_resolver>) method returns an instance of `JavaResolver`. This code provides narrow functionality by integrating Java-specific parsing and resolution capabilities into a broader symbol table framework.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ The code defines a class `JavaLanguageProvider` that extends the `LanguageProvid
 
 - **Members**:
     - `language`: Specifies the programming language as 'java'.
-- **Description**: Provides language-specific functionalities for Java, including methods to obtain a Java parser and a Java resolver.
+- **Description**: Provides language-specific functionalities for Java, including methods to obtain a parser and a resolver for Java code.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/java_provider.JavaLanguageProvider.get_parser`](<#javalanguageproviderget_parser>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/java_provider.JavaLanguageProvider.get_resolver`](<#javalanguageproviderget_resolver>)
@@ -36,14 +36,14 @@ The code defines a class `JavaLanguageProvider` that extends the `LanguageProvid
 #### JavaLanguageProvider\.get\_parser<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/java_provider.JavaLanguageProvider.get_parser}} -->
 [View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/providers/java_provider.py#L9>)
 
-Returns an instance of [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>).
+Returns an instance of the [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>) class.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: Represents the class `JavaLanguageProvider` itself, not an instance of the class.
 - **Logic and Control Flow**:
-    - Calls the constructor of [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>).
-    - Returns the newly created [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>) instance.
-- **Output**: An instance of [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>).
+    - Calls the constructor of the [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>) class.
+    - Returns a new instance of [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>).
+- **Output**: An instance of the [`JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>) class.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/java_parser.JavaParser`](<../symbol_parsers/java_parser.py.md#javaparser>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/java_provider.JavaLanguageProvider`](<#javalanguageprovider>)  (Base Class)
@@ -58,7 +58,7 @@ Returns an instance of [`JavaResolver`](<../import_resolvers/java_resolver.py.md
 - **Inputs**:
     - `cls`: Represents the class `JavaLanguageProvider` itself, not an instance of the class.
 - **Logic and Control Flow**:
-    - Calls the constructor of [`JavaResolver`](<../import_resolvers/java_resolver.py.md#javaresolver>).
+    - Calls the [`JavaResolver`](<../import_resolvers/java_resolver.py.md#javaresolver>) constructor to create a new instance.
     - Returns the newly created [`JavaResolver`](<../import_resolvers/java_resolver.py.md#javaresolver>) instance.
 - **Output**: An instance of [`JavaResolver`](<../import_resolvers/java_resolver.py.md#javaresolver>).
 - **Functions Called**:

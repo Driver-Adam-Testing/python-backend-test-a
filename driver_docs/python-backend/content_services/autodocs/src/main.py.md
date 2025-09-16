@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Asynchronous functions for generating and managing autodoc content using Modal, with configuration and database interactions.
+Implements functions for generating and managing autodoc configurations and documents using Modal.
 
 # Purpose
-The code defines a set of functions and configurations for generating automated documentation using the `modal` framework. It primarily focuses on the [`run_autodoc`](<#run_autodoc>) and [`run_autodoc_cli`](<#run_autodoc_cli>) functions, which are designed to process and generate documentation based on different configuration types. The code imports various modules and packages, including `modal`, `boto3`, and `sqlalchemy`, to handle tasks such as database interactions, file management, and cloud service integrations. The [`run_autodoc`](<#run_autodoc>) function is an asynchronous function that retrieves document sources from a database, configures the documentation generation process based on the specified configuration kind, and updates the status of the documentation generation. It also logs the process and handles errors by updating the status to indicate a generation error if an exception occurs.
+The code defines a set of functions and configurations for generating automated documentation using the `modal` framework. It primarily focuses on the [`run_autodoc`](<#run_autodoc>) function, which is an asynchronous function designed to generate documentation based on a given page node ID and configuration kind. The function interacts with a database to retrieve document sources and uses various configuration files to determine the scope and content of the documentation. It supports different configuration kinds, such as `ADI_DRIVER`, `ARCHITECTURE`, and `CUSTOM`, and handles the retrieval and processing of configuration files from local directories or AWS S3 buckets. The function also updates the status of the documentation generation process in the database and logs the results.
 
-The code also includes a [`main`](<#main>) function, which serves as a local entry point for running the [`run_autodoc`](<#run_autodoc>) function with specific parameters. The [`run_autodoc_cli`](<#run_autodoc_cli>) function is another asynchronous function that performs similar tasks to [`run_autodoc`](<#run_autodoc>), but it is designed to be executed with command-line interface (CLI) inputs. Both functions utilize the `modal` framework to define the execution environment, including the use of Docker images, secrets, and proxies. The code is structured to support different execution modes and configuration types, allowing for flexible and scalable documentation generation.
+Additionally, the code includes a [`main`](<#main>) function that serves as a local entry point for running the [`run_autodoc`](<#run_autodoc>) function with specific parameters. There is also a [`run_autodoc_cli`](<#run_autodoc_cli>) function, which is another asynchronous function that generates documentation based on provided TOML content and a page node ID. This function also interacts with the database to retrieve document sources and configures the scope of the documentation generation. The code is structured to be used as part of a larger application, with dependencies on external libraries and services, and is intended to be executed in a cloud environment using the `modal` framework.
 # Imports and Dependencies
 
 ---
@@ -30,21 +30,22 @@ The code also includes a [`main`](<#main>) function, which serves as a local ent
 - `autodocs_prototype.update_autodocs_status`
 - `common.app`
 - `common.wait_for_guard_duty_tag`
+- `database.models_enums.ContentKind`
 - `hashlib`
 - `boto3`
 - `database.db.get_session`
-- `database.models_v1.DerivedContent`
-- `database.models_v1.DocumentSource`
-- `database.models_v2.Node`
-- `database.models_v2.UserCache`
-- `database.models_v2.Version`
-- `database.models_v2.VersionCreator`
-- `database.models_v2_enums.AutoDocConfigKind`
-- `database.models_v2_enums.AutoDocStatusMessageKind`
-- `database.models_v2_enums.ContentKind`
-- `database.models_v2_enums.PrimaryAssetKind`
-- `database.models_v2_enums.VersionStatus`
+- `database.models.DerivedContent`
+- `database.models.DocumentSource`
+- `database.models.Node`
+- `database.models.UserCache`
+- `database.models.Version`
+- `database.models.VersionCreator`
+- `database.models_enums.AutoDocConfigKind`
+- `database.models_enums.AutoDocStatusMessageKind`
+- `database.models_enums.PrimaryAssetKind`
+- `database.models_enums.VersionStatus`
 - `sqlalchemy.orm.selectinload`
+- `sqlmodel.delete`
 - `sqlmodel.select`
 
 
@@ -53,36 +54,34 @@ The code also includes a [`main`](<#main>) function, which serves as a local ent
 ---
 ### image
 - **Type**: ``modal.Image``
-- **Description**: Represents a `modal.Image` object configured with a Debian Slim base image and Python 3.12. It includes local directories, Python packages, environment variables, and local files necessary for building and running the application.
-- **Use**: Used to define the environment and dependencies for the `run_autodoc` and `run_autodoc_cli` functions.
+- **Description**: Represents a `modal.Image` object configured with a Debian Slim base image and Python 3.12. It includes several local directories and files added to the image, and installs a list of Python packages using `pip_install`. The image also sets an environment variable `PYTHONPATH` and includes local Python source files.
+- **Use**: Used as the base image for functions defined in the `modal` application, providing the necessary environment and dependencies for execution.
 
 
 # Functions
 
 ---
 ### run\_autodoc<!-- {{#callable:python-backend/content_services/autodocs/src/main.run_autodoc}} -->
-[View Source →](<../../../../../content_services/autodocs/src/main.py#L72>)
+[View Source →](<../../../../../content_services/autodocs/src/main.py#L73>)
 
-Executes the process of generating and updating documentation for a given page node based on specified configuration and context.
+Executes the process of generating and updating documentation based on a given configuration and page node ID.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `page_node_id`: A UUID representing the unique identifier of the page node for which documentation is generated.
-    - `config_kind`: A configuration type that determines the kind of documentation configuration to use.
-    - `document_goal`: An optional string specifying the goal of the document, required if config_kind is FROM_DOCUMENT_GOAL.
+    - `page_node_id`: A UUID representing the ID of the page node for which documentation is generated.
+    - `config_kind`: Specifies the type of configuration to use for generating documentation; the actual type is deferred.
+    - `document_goal`: An optional string that defines the goal of the document, required if config_kind is FROM_DOCUMENT_GOAL.
     - `user_context`: An optional string providing additional context about the user.
+    - `content_kind`: An optional ContentKind enum value that specifies the kind of content to generate.
 - **Logic and Control Flow**:
-    - Imports necessary modules and initializes an empty string for TOML content.
-    - Checks if 'config_kind' is 'FROM_DOCUMENT_GOAL' and raises a ValueError if 'document_goal' is not provided.
-    - Retrieves document sources from the database using the 'page_node_id'.
-    - Initializes a 'Scope' object to categorize document sources into code and PDF configurations.
-    - Determines the configuration file to use based on 'config_kind' and retrieves or generates the configuration content.
-    - Updates the 'Scope' object with the configuration preamble and prints the scope.
-    - Initializes the documentation generation state using 'AutoDocInitState.from_cfg'.
-    - Generates the documentation and calculates the elapsed time for generation.
-    - Updates the documentation status to 'GENERATION_COMPLETE' and stores the generated content in the database.
-    - Checks if the environment is 'prod' or 'staging' and logs the documentation process to Notion.
-    - Handles exceptions by printing the error, updating the documentation status to 'GENERATION_ERROR', and marking the node version as having a generation error.
-- **Output**: Does not return a value; performs operations to generate and update documentation.
+    - Check if the content kind is a page or not to determine the scope of document sources.
+    - Raise a ValueError if config_kind is FROM_DOCUMENT_GOAL and document_goal is not provided.
+    - Retrieve document sources based on the page node ID and content kind, and populate the scope with code and PDF configurations.
+    - Match the config_kind to determine the configuration file to use, and handle custom configurations by downloading from S3 if necessary.
+    - Generate the documentation using the configuration and update the status to GENERATION_COMPLETE.
+    - If the content kind is a page, update the derived content and version status in the database, and log the process if in production or staging environment.
+    - If the content kind is not a page, delete existing derived content and add new derived content to the database.
+    - Handle exceptions by updating the status to GENERATION_ERROR and re-raising the exception.
+- **Output**: Returns a tuple containing content_kind, name, user_context_str, sources, config_content, and doc_content if successful; otherwise, raises an exception.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#llmconfigfrom_name>)
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
@@ -92,56 +91,57 @@ Executes the process of generating and updating documentation for a given page n
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.FullyQualifiedDriverPathPdf`](<autodocs_prototype.py.md#fullyqualifieddriverpathpdf>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.from_file`](<autodocs_prototype.py.md#autodoccfgfrom_file>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.encode`](<../../../packages/shared/shared/v3/interfaces/llm_stream_response.py.md#llmstreamresponseencode>)
-    - [`python-backend/content_services/autodocs/src/common.wait_for_guard_duty_tag`](<common.py.md#wait_for_guard_duty_tag>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<../../auto_toml/src/auto_toml.py.md#autotomlfrom_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_root_node_id`](<../../auto_toml/src/auto_toml.py.md#autotomlfrom_root_node_id>)
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<../../auto_toml/src/auto_toml.py.md#autotomlgenerate>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_cfg`](<autodocs_prototype.py.md#autodocinitstatefrom_cfg>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.get_autodoc_elapsed_time`](<autodocs_prototype.py.md#get_autodoc_elapsed_time>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.update_autodocs_status`](<autodocs_prototype.py.md#update_autodocs_status>)
     - [`python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog`](<autodoc_log.py.md#autodoclog>)
+    - [`python-backend/driver_db/database/models.DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>)
 
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/autodocs/src/main.main}} -->
-[View Source →](<../../../../../content_services/autodocs/src/main.py#L300>)
+[View Source →](<../../../../../content_services/autodocs/src/main.py#L375>)
 
-Initiates the `run_autodoc` function with specified parameters for document generation.
+Initiates the `run_autodoc` function with specified parameters to generate documentation based on a document goal.
 - **Decorators**: `@app.local_entrypoint`
 - **Inputs**:
     - `page_node_id`: A string representing the unique identifier of the page node.
-    - `document_goal`: A string specifying the goal of the document to be generated.
-    - `size`: A string indicating the user context or size for the document generation.
+    - `document_goal`: A string describing the goal of the document to be generated.
+    - `size`: A string indicating the size or user context for the documentation process.
 - **Logic and Control Flow**:
-    - Imports `AutoDocConfigKind` from `database.models_v2_enums`.
-    - Calls the `run_autodoc.remote` function with `page_node_id`, `config_kind` set to `AutoDocConfigKind.FROM_DOCUMENT_GOAL`, `document_goal`, and `user_context` set to `size`.
-- **Output**: Does not return any value (returns `None`).
+    - Imports `AutoDocConfigKind` from `database.models_enums` to use as a configuration kind.
+    - Calls the `run_autodoc` function remotely with `page_node_id`, `config_kind` set to `AutoDocConfigKind.FROM_DOCUMENT_GOAL`, `document_goal`, and `user_context` set to `size`.
+- **Output**: No output is returned as the function's return type is `None`.
 
 
 ---
 ### run\_autodoc\_cli<!-- {{#callable:python-backend/content_services/autodocs/src/main.run_autodoc_cli}} -->
-[View Source →](<../../../../../content_services/autodocs/src/main.py#L316>)
+[View Source →](<../../../../../content_services/autodocs/src/main.py#L391>)
 
-Executes an asynchronous process to generate documentation based on TOML configuration and database sources.
+Executes an asynchronous process to generate documentation based on TOML configuration and page node ID.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `toml_content`: A string containing the TOML configuration content.
     - `page_node_id`: A string representing the unique identifier of the page node.
 - **Logic and Control Flow**:
-    - Import necessary modules and functions for database interaction and configuration handling.
-    - Establish a database session and retrieve document sources related to the given `page_node_id`.
-    - Initialize a [`Scope`](<autodocs_prototype.py.md#scope>) object to categorize document sources into code and PDF configurations.
-    - Iterate over the retrieved document sources to populate the [`Scope`](<autodocs_prototype.py.md#scope>) object with code and PDF configurations based on the asset kind.
-    - Write the provided `toml_content` to a local file named `config_file.toml`.
+    - Import necessary modules and functions for database interaction and ORM operations.
+    - Open a database session and begin a transaction to retrieve document sources related to the given `page_node_id`.
+    - Initialize a [`Scope`](<autodocs_prototype.py.md#scope>) object to store code and PDF configurations.
+    - Iterate over the retrieved document sources to populate the [`Scope`](<autodocs_prototype.py.md#scope>) object with code and PDF configurations based on the primary asset kind.
+    - Write the provided `toml_content` to a file named `config_file.toml`.
     - Load the configuration from the `config_file.toml` and update the [`Scope`](<autodocs_prototype.py.md#scope>) object with the preamble from the configuration.
-    - Create an `AutoDocInitState` object using the configuration and initiate the documentation generation process.
-    - Return the generated documentation.
-- **Output**: Returns the generated documentation as a result of the asynchronous process.
+    - Create an `AutoDocInitState` object using the configuration and execute the document generation process asynchronously.
+    - Return the generated document.
+- **Output**: Returns the generated document as a result of the asynchronous process.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#llmconfigfrom_name>)
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.Scope`](<autodocs_prototype.py.md#scope>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.FullyQualifiedDriverPathCode`](<autodocs_prototype.py.md#fullyqualifieddriverpathcode>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.FullyQualifiedDriverPathPdf`](<autodocs_prototype.py.md#fullyqualifieddriverpathpdf>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.from_file`](<autodocs_prototype.py.md#autodoccfgfrom_file>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_cfg`](<autodocs_prototype.py.md#autodocinitstatefrom_cfg>)

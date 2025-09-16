@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, performance testing tools, Docker ignore rules, dependency lock file, and Python package configuration.
+Functions, classes, and tools for agent creation, billing, text processing, file storage, and usage management.
 
 ## Folders
-- **[shared](shared/README.md)**: Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, performance testing tools, Docker ignore rules, dependency lock file, and Python package configuration.
+- **[shared](shared/README.md)**: Functions, classes, and tools for agent creation, billing, text processing, file storage, and usage management.
 
 
 ---

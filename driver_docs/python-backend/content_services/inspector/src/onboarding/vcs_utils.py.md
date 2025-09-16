@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Data models for version control information, including repository, commit, branch, and author details.
+Data models for version control information, including author, commit, branch, and repository details.
 
 # Purpose
-This code defines a set of data models using the `pydantic` library to represent information related to version control systems. The `AuthorInfo` class models the author's details, including `email`, `name`, and `date`. The `CommitInfo` class includes information about a commit, such as `sha`, `message`, `url`, and an `author` of type `AuthorInfo`. The `BranchInfo` class represents a branch with a `name` attribute. The `RepoInfo` class models repository details, including `name`, `namespace`, `full_name`, and `url`. Finally, the `VersionControlInfo` class aggregates these models to provide a comprehensive structure for version control data, including `repository`, `commit`, and `branch` information.
+This code defines a set of data models using the `pydantic` library to represent information related to version control systems. The `AuthorInfo` class models the author's details, including `email`, `name`, and `date`. The `CommitInfo` class represents commit details with attributes such as `sha`, `message`, `url`, and an `author` of type `AuthorInfo`. The `BranchInfo` class contains a single attribute, `name`, to represent branch information. The `RepoInfo` class models repository details with attributes like `name`, `namespace`, `full_name`, and `url`. Finally, the `VersionControlInfo` class aggregates these models to provide a comprehensive structure for version control information, including `repository`, `commit`, and `branch` details.
 # Imports and Dependencies
 
 ---
@@ -24,7 +24,7 @@ This code defines a set of data models using the `pydantic` library to represent
     - `email`: Stores the email address of the author.
     - `name`: Stores the name of the author.
     - `date`: Stores the date related to the author information.
-- **Description**: Represents information about an author, including their email, name, and a date associated with them.
+- **Description**: Represents author information with fields for email, name, and date, inheriting from `BaseModel` to provide data validation and serialization.
 - **Inherits From**:
     - `BaseModel`
 
@@ -33,13 +33,12 @@ This code defines a set of data models using the `pydantic` library to represent
 ### CommitInfo<!-- {{#class:python-backend/content_services/inspector/src/onboarding/vcs_utils.CommitInfo}} -->
 [View Source →](<../../../../../../content_services/inspector/src/onboarding/vcs_utils.py#L10>)
 
-- **Decorators**: `@pydantic.BaseModel`
 - **Members**:
     - `sha`: Stores the unique identifier for the commit.
     - `message`: Contains the commit message.
     - `url`: Holds the URL to the commit.
     - `author`: References the `AuthorInfo` object for commit author details.
-- **Description**: Represents information about a specific commit in a version control system, including its unique identifier, message, URL, and author details.
+- **Description**: Represents information about a specific commit in a version control system, including its identifier, message, URL, and author details.
 - **Inherits From**:
     - `BaseModel`
 
@@ -48,7 +47,6 @@ This code defines a set of data models using the `pydantic` library to represent
 ### BranchInfo<!-- {{#class:python-backend/content_services/inspector/src/onboarding/vcs_utils.BranchInfo}} -->
 [View Source →](<../../../../../../content_services/inspector/src/onboarding/vcs_utils.py#L17>)
 
-- **Decorators**: `@pydantic.BaseModel`
 - **Members**:
     - `name`: Stores the name of the branch as a string.
 - **Description**: Represents information about a branch in a version control system, specifically storing the branch's name.
@@ -60,7 +58,6 @@ This code defines a set of data models using the `pydantic` library to represent
 ### RepoInfo<!-- {{#class:python-backend/content_services/inspector/src/onboarding/vcs_utils.RepoInfo}} -->
 [View Source →](<../../../../../../content_services/inspector/src/onboarding/vcs_utils.py#L21>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
     - `name`: Stores the name of the repository.
     - `namespace`: Stores the namespace of the repository.
@@ -75,7 +72,6 @@ This code defines a set of data models using the `pydantic` library to represent
 ### VersionControlInfo<!-- {{#class:python-backend/content_services/inspector/src/onboarding/vcs_utils.VersionControlInfo}} -->
 [View Source →](<../../../../../../content_services/inspector/src/onboarding/vcs_utils.py#L28>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
     - `repository`: Holds information about the repository.
     - `commit`: Contains details about the commit.

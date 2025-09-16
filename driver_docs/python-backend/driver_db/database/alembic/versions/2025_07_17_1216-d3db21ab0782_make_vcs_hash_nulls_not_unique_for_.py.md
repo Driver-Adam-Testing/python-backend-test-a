@@ -6,7 +6,7 @@
 Alembic migration script to modify the uniqueness of the `vcs_hash` in the `v2_version` table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function removes an existing index on the `v2_version` table and creates a new unique constraint on the `primary_asset_id` and `vcs_hash` columns, allowing `NULL` values in `vcs_hash` to be treated as distinct. The [`downgrade`](<#downgrade>) function reverses this change by dropping the unique constraint and recreating the original index with a unique constraint on the same columns. The script includes metadata such as `revision`, `down_revision`, and `Create Date` for version control.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function removes an existing index on the `v2_version` table and creates a new unique constraint on the `primary_asset_id` and `vcs_hash` columns, allowing `NULL` values in `vcs_hash` to be treated as distinct. The [`downgrade`](<#downgrade>) function reverses this change by dropping the unique constraint and recreating the original unique index on the same columns. The script includes metadata such as `revision`, `down_revision`, and `Create Date` to track the migration's version and dependencies.
 # Imports and Dependencies
 
 ---
@@ -18,29 +18,29 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script. This identifier is used to track the specific state of the database schema at the time of the migration.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
-- **Use**: Used by Alembic to identify the parent revision of the current migration script.
+- **Description**: A string that represents the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations by identifying the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this Alembic migration script.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is set to `None`, indicating that this Alembic migration script does not depend on any other migrations to be applied before it. It is a part of the Alembic migration configuration.
-- **Use**: Indicates the absence of dependencies for the Alembic migration script.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migrations.
 
 
 # Functions
@@ -49,12 +49,12 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_07_17_1216-d3db21ab0782_make_vcs_hash_nulls_not_unique_for_.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_07_17_1216-d3db21ab0782_make_vcs_hash_nulls_not_unique_for_.py#L18>)
 
-Modifies the database schema by dropping an index and creating a unique constraint with specific null handling.
+Modifies the database schema by dropping an index and creating a unique constraint on the 'v2_version' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Drops the index named `ix_v2_version_primary_asset_id_vcs_hash` from the `v2_version` table.
-    - Creates a unique constraint named `ix_v2_version_primary_asset_id_vcs_hash` on the `v2_version` table for the columns `primary_asset_id` and `vcs_hash`, allowing nulls to be treated as distinct values.
-- **Output**: Does not return any value.
+    - Drops the index 'ix_v2_version_primary_asset_id_vcs_hash' from the 'v2_version' table.
+    - Creates a unique constraint named 'ix_v2_version_primary_asset_id_vcs_hash' on the 'v2_version' table for the columns 'primary_asset_id' and 'vcs_hash', allowing NULL values to be considered distinct.
+- **Output**: No output is returned as the function modifies the database schema in place.
 
 
 ---
@@ -66,7 +66,7 @@ Reverts the database schema changes by dropping a unique constraint and creating
 - **Logic and Control Flow**:
     - Drops the unique constraint named 'ix_v2_version_primary_asset_id_vcs_hash' from the 'v2_version' table.
     - Creates a unique index named 'ix_v2_version_primary_asset_id_vcs_hash' on the 'v2_version' table for the columns 'primary_asset_id' and 'vcs_hash'.
-- **Output**: No output is returned as the function modifies the database schema.
+- **Output**: None
 
 
 

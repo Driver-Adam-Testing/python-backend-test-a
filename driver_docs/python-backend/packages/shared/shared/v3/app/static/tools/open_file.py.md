@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-An LlmTool for opening a file, displaying its content as a reference, and handling large text.
+A tool for opening a file, retrieving its content, and displaying it as a single reference.
 
 # Purpose
-The code defines a class `OpenFileTool`, which is a specialized tool for opening a file at a specified file path and displaying its content as a single reference. This class inherits from `LlmTool`, indicating that it is part of a larger framework or library for handling language model tools. The primary function of `OpenFileTool` is to retrieve and format the content of a file stored in a database, specifically targeting files classified as `CODEBASE_FILE` in the `ContentKind` enumeration.
+The `OpenFileTool` class is a specialized tool that extends the `LlmTool` interface. Its primary function is to open a file specified by a file path and display its content as a single reference. The class uses SQL queries to retrieve data from a database, specifically targeting entries in the `ChunkAndEmbedding` and `DerivedContent` models. It filters these entries based on the file path and content type, ensuring that only relevant data is processed. The tool then assembles the content from multiple chunks, handling any overlapping text between chunks to create a coherent output. If the content exceeds a certain length, it truncates the output to maintain manageability.
 
-The [`_execute`](<#openfiletool_execute>) method is the core component of the `OpenFileTool` class. It uses SQL queries to fetch file content from the database, specifically from the `ChunkAndEmbedding` and `DerivedContent` models. The method processes the content to remove overlapping text between chunks and concatenates the results into a single string. If the content exceeds 75,000 characters, it truncates the text and appends a notice. The class also includes a method [`to_tool_call_response_message`](<#openfiletoolto_tool_call_response_message>) to generate a response message, which either contains the formatted file content or an error message if no content is found. This class is designed to be part of a system that manages and processes file content, providing a structured way to access and display file data.
+The class also defines a method to generate a response message, [`to_tool_call_response_message`](<#openfiletoolto_tool_call_response_message>), which formats the results into a structured message. This message includes the content retrieved from the file and is wrapped in a specific format using the `LlmMessage` class. If no content is found, the method returns an error message indicating the absence of data for the specified file path. The `OpenFileTool` class is designed to be part of a larger system, interacting with database sessions and utilizing shared interfaces and utilities to manage references and messages.
 # Imports and Dependencies
 
 ---
 - `database.db.get_session`
-- `database.models_v1.ChunkAndEmbedding`
-- `database.models_v1.ContentKind`
-- `database.models_v1.DerivedContent`
+- `database.models.ChunkAndEmbedding`
+- `database.models.ContentKind`
+- `database.models.DerivedContent`
 - `shared.v3.globals.glossary.REFERENCE`
 - `shared.v3.globals.glossary.REFERENCE_CONTENT`
 - `shared.v3.globals.glossary.REFERENCE_LIST`
@@ -37,7 +37,7 @@ The [`_execute`](<#openfiletool_execute>) method is the core component of the `O
 
 - **Members**:
     - `file_path`: The path to the file to be opened.
-- **Description**: Represents a tool that opens a file at a specified path and displays its content as a single reference. It retrieves file content from a database, processes it to remove overlapping text between chunks, and stores the result as a reference. If the content exceeds a certain length, it truncates the content. It also provides a response message indicating the results or an error if no content is found.
+- **Description**: Represents a tool that opens a file at a specified file path and displays its content as a single reference. It retrieves and processes file content from a database, handling overlapping text chunks and truncating if necessary. The tool also generates response messages based on the presence of content references.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool._execute`](<#openfiletool_execute>)
     - [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool.to_tool_call_response_message`](<#openfiletoolto_tool_call_response_message>)
@@ -50,20 +50,18 @@ The [`_execute`](<#openfiletool_execute>) method is the core component of the `O
 #### OpenFileTool\.\_execute<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool._execute}} -->
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/open_file.py#L30>)
 
-Executes a database query to retrieve and process file content chunks, then adds a reference to the processed content.
+Executes a database query to retrieve and process file content chunks, then formats and stores the result as a reference.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Opens a database session using `get_session()` context manager.
-    - Constructs a SQL query to select `ChunkAndEmbedding` records joined with `DerivedContent` where conditions match the `file_path` and `node_id`.
-    - Executes the query and retrieves all matching records into `chunks_and_embeddings`.
-    - Checks if `chunks_and_embeddings` is empty and returns if true.
-    - Initializes `formatted_results` and `previous_chunk_text` to process the retrieved chunks.
-    - Iterates over each chunk in `chunks_and_embeddings`, adjusting `current_chunk_text` to remove overlapping text with `previous_chunk_text`.
-    - Appends the processed `current_chunk_text` to `formatted_results` and updates `previous_chunk_text`.
-    - Joins all `formatted_results` into `full_text`.
-    - Truncates `full_text` to 75000 characters if it exceeds this length, appending a truncation notice.
-    - Adds a new [`Reference`](<../../../utils/references.py.md#reference>) to `self._references` with the processed `full_text` and other metadata.
-- **Output**: No output is returned; the method modifies the state of `self._references` by adding a new [`Reference`](<../../../utils/references.py.md#reference>) object.
+    - Opens a database session using `get_session()` and constructs a SQL query to select `ChunkAndEmbedding` records joined with `DerivedContent` where conditions match the `file_path` and `node_id`.
+    - Executes the query and retrieves all matching `chunks_and_embeddings`.
+    - Checks if `chunks_and_embeddings` is empty and returns immediately if true.
+    - Initializes an empty list `formatted_results` and a string `previous_chunk_text` to store processed text chunks.
+    - Iterates over each `chunk` in `chunks_and_embeddings`, processes overlapping text between consecutive chunks, and appends the non-overlapping text to `formatted_results`.
+    - Joins all formatted text chunks into a single string `full_text`.
+    - Truncates `full_text` to 75,000 characters if it exceeds this length and appends a truncation notice.
+    - Adds a new [`Reference`](<../../../utils/references.py.md#reference>) object with `full_text` and other metadata to `self._references`.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<../../../utils/references.py.md#referencesetadd_reference>)
@@ -79,9 +77,8 @@ Generates an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) 
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Checks if `_references` is empty.
-    - If `_references` is empty, returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with an error message indicating no content found for the specified file path.
-    - If `_references` is not empty, constructs a detailed [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with the results of the `OpenFileTool`, including the file path and formatted reference content.
-    - Uses `REFERENCE_LIST`, `REFERENCE`, `REFERENCE_CONTENT`, and `REFERENCE_RELATIVE_PATH` to format the reference content in the message.
+    - If `_references` is empty, returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with a tool call response indicating no content found for the specified file path.
+    - If `_references` is not empty, constructs a detailed [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with the results of the `OpenFileTool` for the specified file path, including wrapped references.
 - **Output**: An [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) object representing the tool call response, either with an error message or with the results of the `OpenFileTool`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)

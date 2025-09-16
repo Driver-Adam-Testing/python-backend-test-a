@@ -6,9 +6,7 @@
 Retries database connection initialization until successful or timeout.
 
 # Purpose
-This code is a script designed to initialize a service by ensuring that a database is ready for operations. It uses the `sqlalchemy` and `sqlmodel` libraries to interact with the database and the `tenacity` library to implement a retry mechanism. The script attempts to establish a session with the database using the [`init`](<#init>) function, which is decorated with the `@retry` decorator. This decorator configures the function to retry the database connection attempt multiple times, with a fixed wait time between attempts, until a maximum number of tries is reached. Logging is used to provide information about the initialization process, including any errors encountered.
-
-The script defines a [`main`](<#main>) function that logs the start of the initialization process, calls the [`init`](<#init>) function with the database engine, and logs the completion of the initialization. The [`main`](<#main>) function is executed when the script is run as the main module. The use of the `retry` mechanism ensures that the script can handle temporary database unavailability by retrying the connection attempt, making it suitable for environments where the database might not be immediately available.
+This code is a script designed to initialize a database service by checking the readiness of a database connection. It uses the `tenacity` library to implement a retry mechanism, which attempts to establish a session with the database engine up to a maximum of 300 attempts, with a 1-second wait between each attempt. The [`init`](<#init>) function tries to execute a simple SQL query to verify the database is responsive, logging any errors encountered during the process. The [`main`](<#main>) function orchestrates the initialization process, logging the start and completion of the service initialization. The script is intended to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block.
 # Imports and Dependencies
 
 ---
@@ -29,22 +27,22 @@ The script defines a [`main`](<#main>) function that logs the start of the initi
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its identifier, which helps in categorizing log messages by their source module.
+- **Description**: A `Logger` instance obtained from the `logging` module using the current module's name. It is configured to handle logging messages for the module.
 - **Use**: Used to log informational and error messages throughout the module, particularly in the `init` and `main` functions.
 
 
 ---
 ### max\_tries
 - **Type**: ``int``
-- **Description**: The `max_tries` variable is an integer that represents the maximum number of retry attempts allowed for a specific operation. It is calculated as the product of 60 and 5, which equals 300, indicating a total of 5 minutes worth of attempts if each attempt is spaced by 1 second.
-- **Use**: Used to define the stopping condition for retry attempts in the `@retry` decorator applied to the `init` function.
+- **Description**: Represents the maximum number of retry attempts allowed for a function decorated with the `@retry` decorator. It is calculated as 60 multiplied by 5, which equals 300, indicating a total of 5 minutes worth of attempts if each attempt is spaced by 1 second.
+- **Use**: Used in the `@retry` decorator to specify the maximum number of retry attempts for the `init` function.
 
 
 ---
 ### wait\_seconds
 - **Type**: ``int``
-- **Description**: Defines the fixed wait time in seconds between retry attempts when initializing the database connection.
-- **Use**: Used in the `wait_fixed` parameter of the `@retry` decorator to specify the delay between retries.
+- **Description**: Defines the fixed number of seconds to wait between retry attempts in the `init` function.
+- **Use**: Used as a parameter in the `wait_fixed` function to specify the wait time between retries.
 
 
 # Functions
@@ -58,11 +56,10 @@ Attempts to establish a session with the database engine to verify its availabil
 - **Inputs**:
     - `db_engine`: An instance of `Engine` representing the database engine to connect to.
 - **Logic and Control Flow**:
-    - Attempts to create a session with the provided `db_engine` using a `Session` context manager.
-    - Executes a simple `select(1)` query to check if the database is responsive.
-    - If an exception occurs, logs the error using `logger.error` and re-raises the exception.
-    - Retries the operation based on the retry policy defined by the `@retry` decorator.
-- **Output**: Does not return a value; raises an exception if the database connection cannot be established.
+    - Uses a `try` block to attempt to create a session with the provided `db_engine`.
+    - Within the `try` block, opens a session using `Session(db_engine)` and executes a simple `select(1)` query to check if the database is responsive.
+    - If an exception occurs during the session creation or query execution, logs the error using `logger.error(e)` and re-raises the exception.
+- **Output**: Does not return a value; raises an exception if the database is not available after the specified retry attempts.
 
 
 ---
@@ -75,7 +72,7 @@ Initializes the service by logging the start and end of the initialization proce
     - Logs the message 'Initializing service' to indicate the start of the service initialization.
     - Calls the [`init`](<#init>) function with the `engine` as an argument to initialize the database connection.
     - Logs the message 'Service finished initializing' to indicate the completion of the service initialization.
-- **Output**: No output is returned as the function's return type is `None`.
+- **Output**: Does not return any value.
 - **Functions Called**:
     - [`python-backend/backend/app/tests_pre_start.init`](<#init>)
 

@@ -6,16 +6,16 @@
 Defines Pydantic models for subscription records and creation requests with computed date fields.
 
 # Purpose
-This code defines data models for managing subscription records using the `pydantic` library. The `SubscriptionRecord` class represents a subscription with attributes such as `id`, `organization_id`, `plan_type`, `status`, `billing_frequency`, `created_at`, and `updated_at`. It includes computed properties [`start_date`](<#subscriptionrecordstart_date>) and [`end_date`](<#subscriptionrecordend_date>), which calculate the subscription's start and end dates based on the `created_at` timestamp and `billing_frequency`. The `CreateSubscriptionRequest` class models a request to create a new subscription, requiring `plan_type`, `billing_frequency`, and `organization_id`, with an optional [`start_date`](<#subscriptionrecordstart_date>). This code provides narrow functionality focused on subscription management within a system.
+The code defines data models for managing subscription records using the `pydantic` library. The `SubscriptionRecord` class represents a subscription with attributes such as `id`, `organization_id`, `plan_type`, `status`, `billing_frequency`, `created_at`, and `updated_at`. It includes computed properties [`start_date`](<#subscriptionrecordstart_date>) and [`end_date`](<#subscriptionrecordend_date>) to determine the subscription's start and end dates based on the `created_at` timestamp and `billing_frequency`. The `CreateSubscriptionRequest` class models a request to create a new subscription, requiring `plan_type`, `billing_frequency`, and `organization_id`, with an optional [`start_date`](<#subscriptionrecordstart_date>). This code provides narrow functionality focused on subscription management within a system.
 # Imports and Dependencies
 
 ---
 - `datetime.date`
 - `datetime.datetime`
 - `uuid.UUID`
-- `database.models_v1.BillingFrequency`
-- `database.models_v1.PlanType`
-- `database.models_v1.SubscriptionStatus`
+- `database.models.BillingFrequency`
+- `database.models.PlanType`
+- `database.models.SubscriptionStatus`
 - `dateutil.relativedelta.relativedelta`
 - `pydantic.BaseModel`
 - `pydantic.computed_field`
@@ -29,13 +29,13 @@ This code defines data models for managing subscription records using the `pydan
 
 - **Members**:
     - `id`: Stores a unique identifier for the subscription.
-    - `organization_id`: Stores the identifier of the organization associated with the subscription.
+    - `organization_id`: Stores the identifier for the organization associated with the subscription.
     - `plan_type`: Indicates the type of plan for the subscription.
     - `status`: Represents the current status of the subscription.
     - `billing_frequency`: Specifies how often billing occurs for the subscription.
     - `created_at`: Records the date and time when the subscription was created.
     - `updated_at`: Records the date and time when the subscription was last updated.
-- **Description**: Represents a subscription record with details such as the organization, plan type, status, billing frequency, and timestamps for creation and updates. It also computes the start and end dates based on the billing frequency.
+- **Description**: Represents a subscription record with details such as the unique identifier, organization ID, plan type, status, billing frequency, and timestamps for creation and last update. It also computes the start and end dates based on the creation date and billing frequency.
 - **Methods**:
     - [`python-backend/packages/shared/shared/interfaces/billing/subscription_schema.SubscriptionRecord.start_date`](<#subscriptionrecordstart_date>)
     - [`python-backend/packages/shared/shared/interfaces/billing/subscription_schema.SubscriptionRecord.end_date`](<#subscriptionrecordend_date>)
@@ -69,10 +69,10 @@ Calculates the end date of a subscription based on its billing frequency.
 - **Logic and Control Flow**:
     - Get the `start_date` from the `start_date` property of the `SubscriptionRecord` class.
     - Check if `billing_frequency` is `BillingFrequency.MONTHLY`.
-    - If `billing_frequency` is monthly, add one month to `start_date` to get `end_date`.
-    - If `billing_frequency` is not monthly, add one year to `start_date` to get `end_date`.
+    - If `billing_frequency` is monthly, add one month to `start_date` to calculate `end_date`.
+    - If `billing_frequency` is not monthly, add one year to `start_date` to calculate `end_date`.
     - Return the calculated `end_date`.
-- **Output**: A `date` object representing the calculated end date of the subscription.
+- **Output**: A `date` object representing the end date of the subscription.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/billing/subscription_schema.SubscriptionRecord`](<#subscriptionrecord>)  (Base Class)
 
 
@@ -86,7 +86,7 @@ Calculates the end date of a subscription based on its billing frequency.
     - `billing_frequency`: Indicates how often billing occurs.
     - `organization_id`: Identifies the organization associated with the subscription.
     - `start_date`: Defines the optional start date for the subscription.
-- **Description**: Defines the data structure for creating a new subscription request, including plan type, billing frequency, organization ID, and an optional start date.
+- **Description**: Represents a request to create a new subscription with specified plan type, billing frequency, organization ID, and an optional start date.
 - **Inherits From**:
     - `BaseModel`
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add a nullable UUID column "codebase_id" to the "derived_contents" table.
+Alembic migration script to add a nullable UUID column `codebase_id` to the `derived_contents` table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `6bf38bd239ab`, which follows the previous migration `5684bc66ddb3`. The [`upgrade`](<#upgrade>) function adds a new column named `codebase_id` of type `UUID` to the `derived_contents` table, allowing null values. The [`downgrade`](<#downgrade>) function removes the `codebase_id` column from the `derived_contents` table, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function. The script includes placeholders for creating and dropping foreign key constraints, but these are commented out and not active in the current migration.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `codebase_id` of type UUID to the `derived_contents` table, allowing it to be nullable. The [`downgrade`](<#downgrade>) function removes the `codebase_id` column from the `derived_contents` table, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function. The script includes revision identifiers to track the migration's position in the sequence of migrations.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
+- **Use**: Used to identify the current state of the database schema in Alembic migrations.
 
 
 ---
@@ -39,9 +39,9 @@ This code is a database migration script using Alembic, a database migration too
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -50,13 +50,12 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1137-6bf38bd239ab_add_codebase_id_to_derivedcontent.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1137-6bf38bd239ab_add_codebase_id_to_derivedcontent.py#L18>)
 
-Adds a new column `codebase_id` to the `derived_contents` table in the database schema.
+Adds a new column 'codebase_id' to the 'derived_contents' table in the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Uses the `op.add_column` function from Alembic to add a new column named `codebase_id` to the `derived_contents` table.
-    - The new column is of type `Uuid` and is nullable, meaning it can contain null values.
-    - Comments indicate potential foreign key constraints that are not currently implemented.
-- **Output**: No output is returned as this function modifies the database schema directly.
+    - Uses the Alembic 'op' object to add a new column named 'codebase_id' to the 'derived_contents' table.
+    - The new column is of type 'Uuid' and is nullable.
+- **Output**: No output is returned as this function performs a database schema modification.
 
 
 ---
@@ -66,7 +65,7 @@ Adds a new column `codebase_id` to the `derived_contents` table in the database 
 Removes the 'codebase_id' column from the 'derived_contents' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the 'drop_column' operation from Alembic's 'op' module to remove the 'codebase_id' column from the 'derived_contents' table.
+    - Calls the 'drop_column' method from the 'op' module to remove the 'codebase_id' column from the 'derived_contents' table.
 - **Output**: No output is returned.
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for GitHub OAuth token management, repository data retrieval, and S3 upload operations.
+Functions for GitHub OAuth token management, repository access, and S3 upload operations.
 
 # Purpose
-The code is a module that facilitates interactions with GitHub's API to manage OAuth tokens, access repositories, and handle GitHub App installations. It includes functions to exchange authorization codes for access tokens, validate tokens, refresh tokens, and generate JSON Web Tokens (JWT) for authentication. The module also provides functionality to fetch repositories associated with a GitHub App installation, retrieve default branches and commit hashes, and download repository content as a ZIP file.
+The code provides functionality for interacting with GitHub's API to manage OAuth tokens, fetch repository data, and handle GitHub App installations. It includes functions to exchange authorization codes for access tokens, validate tokens, refresh tokens, and generate JSON Web Tokens (JWTs) for authentication. The code also retrieves access tokens for GitHub App installations and verifies the existence of app installations in a database using the `GithubAppInstallationsRepository`.
 
-Additionally, the module integrates with AWS S3 to upload downloaded repository content. It uses pre-signed URLs to securely upload and download files from S3. The module relies on external configurations and utilities, such as settings for GitHub client credentials and AWS S3 utilities for generating pre-signed URLs. The code is structured to handle exceptions and log errors, ensuring robust error handling and traceability. This module is intended to be part of a larger application, likely serving as a backend service for managing GitHub repositories and their metadata.
+Additionally, the code fetches repository information, including the default branch and commit hash, and downloads repository content as a ZIP file. It uploads this content to an Amazon S3 bucket using pre-signed URLs for secure access. The code is structured to handle errors and log relevant information, making it suitable for integration into a larger application that requires GitHub API interactions and S3 storage capabilities. The functions are designed to be used as part of a broader system, likely as a library or module within an application, rather than as a standalone script.
 # Imports and Dependencies
 
 ---
@@ -33,8 +33,8 @@ Additionally, the module integrates with AWS S3 to upload downloaded repository 
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows for logging messages that are specific to the module where the logger is used.
-- **Use**: Used to log messages and errors throughout the module, providing information about the execution flow and any issues encountered.
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name.
+- **Use**: Used to log messages and errors throughout the module for debugging and monitoring purposes.
 
 
 # Functions
@@ -82,16 +82,16 @@ Checks if a GitHub token is valid by making an authenticated request to the GitH
 ### refresh\_access\_token<!-- {{#callable:python-backend/backend/app/utils/gh_ops.refresh_access_token}} -->
 [View Source →](<../../../../../backend/app/utils/gh_ops.py#L54>)
 
-Refreshes an OAuth access token using a given refresh token.
+Refreshes an access token using a given refresh token by making a POST request to GitHub's OAuth endpoint.
 - **Inputs**:
     - `refresh_token`: A string representing the refresh token used to obtain a new access token.
 - **Logic and Control Flow**:
-    - Define the URL for the GitHub OAuth access token endpoint.
+    - Define the URL for GitHub's OAuth access token endpoint.
     - Create a data dictionary containing the grant type, refresh token, client ID, and client secret.
     - Set the request headers to accept JSON responses.
     - Create an HTTP client using `httpx.Client()`.
-    - Send a POST request to the specified URL with the data and headers.
-    - Return the JSON response from the server, which should contain the new access token and possibly a new refresh token.
+    - Make a POST request to the specified URL with the data and headers.
+    - Return the JSON response from the POST request, which should contain the new access token and possibly a new refresh token.
 - **Output**: A JSON object containing the new access token and optionally a new refresh token.
 
 
@@ -99,13 +99,12 @@ Refreshes an OAuth access token using a given refresh token.
 ### generate\_jwt<!-- {{#callable:python-backend/backend/app/utils/gh_ops.generate_jwt}} -->
 [View Source →](<../../../../../backend/app/utils/gh_ops.py#L68>)
 
-Generates a JSON Web Token (JWT) for authentication using GitHub client credentials.
+Generates a JSON Web Token (JWT) with a specific payload and encodes it using a private key.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Create a `payload` dictionary with keys `iat`, `exp`, and `iss` to store the issued at time, expiration time, and issuer respectively.
-    - Decode the GitHub client PEM secret using Base64 decoding to obtain `decoded_pem`.
-    - Encode the `payload` using the `decoded_pem` and the RS256 algorithm to generate the JWT.
-    - Return the encoded JWT as a string.
+    - Creates a `payload` dictionary with three keys: `iat` (issued at time), `exp` (expiration time), and `iss` (issuer), where `iat` and `exp` are calculated using the current time and `iss` is set to a client ID from settings.
+    - Decodes a base64-encoded private key (`GH_CLIENT_PEM_SECRET`) from settings to obtain the `decoded_pem`.
+    - Encodes the `payload` using the `decoded_pem` and the RS256 algorithm to generate the JWT.
 - **Output**: A string representing the encoded JWT.
 
 
@@ -118,7 +117,7 @@ Fetches a GitHub application access token for a given installation ID.
     - `installation_id`: A string representing the GitHub installation ID for which to fetch the access token.
 - **Logic and Control Flow**:
     - Constructs the URL for the GitHub API endpoint to fetch the access token using the provided `installation_id`.
-    - Generates a JSON Web Token (JWT) by calling the [`generate_jwt`](<#generate_jwt>) function.
+    - Generates a JSON Web Token (JWT) using the [`generate_jwt`](<#generate_jwt>) function.
     - Creates an HTTP client using `httpx.Client` to send a POST request to the constructed URL with the necessary headers, including the JWT for authorization.
     - Raises an exception if the HTTP response status indicates an error (4XX/5XX).
     - Parses the JSON response to extract the token data.
@@ -133,7 +132,7 @@ Fetches a GitHub application access token for a given installation ID.
 ### verify\_app\_installation\_access<!-- {{#callable:python-backend/backend/app/utils/gh_ops.verify_app_installation_access}} -->
 [View Source →](<../../../../../backend/app/utils/gh_ops.py#L91>)
 
-Verifies the existence of a specific organization and installation ID in the GitHub App Installations repository.
+Verifies the existence of a specific organization and installation ID in the database.
 - **Inputs**:
     - `session`: A `Session` object used to interact with the database.
     - `organization_id`: A string representing the unique identifier of the organization.
@@ -141,8 +140,8 @@ Verifies the existence of a specific organization and installation ID in the Git
 - **Logic and Control Flow**:
     - Creates an instance of [`GithubAppInstallationsRepository`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>) using the provided `session`.
     - Calls the [`exists`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositoryexists>) method on the `gh_repository` object with `organization_id` and `installation_id` as arguments.
-    - Returns the result of the [`exists`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositoryexists>) method call, which is a boolean indicating the existence of the organization and installation ID.
-- **Output**: A boolean value indicating whether the specified organization and installation ID exist in the repository.
+    - Returns the result of the [`exists`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositoryexists>) method, which is a boolean indicating whether the organization and installation ID exist.
+- **Output**: A boolean value indicating whether the specified organization and installation ID exist in the database.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>)
     - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.exists`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositoryexists>)
@@ -154,26 +153,32 @@ Verifies the existence of a specific organization and installation ID in the Git
 
 Fetches repositories for a given organization from GitHub using app installations.
 - **Inputs**:
-    - `session`: A `Session` object for database interaction.
-    - `organization_id`: A string representing the ID of the organization to fetch repositories for.
+    - `session`: A `Session` object used to interact with the database.
+    - `organization_id`: A string representing the ID of the organization for which to fetch repositories.
 - **Logic and Control Flow**:
     - Set `per_page` to 100 and `max_pages` to 100 to control pagination.
     - Create a [`GithubAppInstallationsRepository`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>) instance using the provided `session`.
-    - Retrieve GitHub installations for the given `organization_id`.
-    - Initialize an empty list `all_results` to store repository data.
+    - Retrieve GitHub installations for the given `organization_id` using [`list_by_organization_id`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositorylist_by_organization_id>).
+    - Initialize an empty list `all_results` to store fetched repositories.
     - Use an `httpx.Client` to make HTTP requests to the GitHub API.
     - Iterate over each `github_installation` retrieved from the repository.
-    - Construct the URL for fetching repositories with pagination parameters.
-    - Attempt to fetch an app access token for each installation ID.
-    - If a 404 error occurs during token fetching, assume the installation is uninstalled and continue to the next installation.
-    - Set the authorization header with the fetched token.
-    - Fetch the first page of repositories and add the `installation_id` to each repository's data.
-    - Add the fetched repositories to `all_results`.
-    - Check the `link` header for pagination information and continue fetching pages if a `next` link is present.
-    - Increment `page_count` and check if it exceeds `max_pages`, raising an error if it does.
-    - Continue fetching and processing repositories until no `next` link is found.
-    - Return the `all_results` list containing all fetched repositories.
-- **Output**: A list of dictionaries, each representing a repository with additional `installation_id` information.
+    - Construct the URL for fetching repositories with the specified `per_page` parameter.
+    - Attempt to fetch an app access token using [`fetch_app_access_token`](<#fetch_app_access_token>) for the current installation.
+    - Handle `httpx.HTTPStatusError` exceptions, specifically ignoring 404 errors and logging others.
+    - Set the `Authorization` header with the fetched token.
+    - Initialize `page_count` to 1 and make a GET request to the constructed URL.
+    - Raise an exception if the response status is not successful.
+    - Extract repositories from the response JSON and add the `installation_id` to each repository.
+    - Extend `all_results` with the current repositories.
+    - Check for a `link` header in the response to handle pagination.
+    - While a `link` header exists, increment `page_count` and check if it exceeds `max_pages`.
+    - Raise a `ValueError` if `page_count` exceeds `max_pages` to prevent infinite loops.
+    - Parse the `link` header to find the URL for the next page of results.
+    - If a `next` URL is found, make a GET request to it and repeat the process of extracting repositories.
+    - Break the loop if no `next` URL is found.
+    - Return `all_results` containing all fetched repositories.
+    - Log and raise any exceptions encountered during the process.
+- **Output**: A list of dictionaries, each representing a repository with additional metadata such as `installation_id`.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>)
     - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_organization_id`](<../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositorylist_by_organization_id>)
@@ -222,7 +227,7 @@ Fetches the default branch and its latest commit SHA from a GitHub repository.
 ### fetch\_commit\_hash<!-- {{#callable:python-backend/backend/app/utils/gh_ops.fetch_commit_hash}} -->
 [View Source →](<../../../../../backend/app/utils/gh_ops.py#L195>)
 
-Fetches the commit hash for a specified branch of a GitHub repository.
+Fetches the commit hash of a specific branch from a GitHub repository using the GitHub API.
 - **Inputs**:
     - `org_name`: The name of the GitHub organization.
     - `repo`: The name of the GitHub repository.
@@ -233,7 +238,7 @@ Fetches the commit hash for a specified branch of a GitHub repository.
     - Generate the repository URL using the organization and repository names.
     - Construct the branch URL by appending the branch name to the repository URL.
     - Send a GET request to the branch URL with the authorization header to retrieve branch data.
-    - Log the retrieved branch data and the status code of the response.
+    - Log the retrieved branch data and its status code.
     - Extract and return the commit hash from the branch data.
 - **Output**: The commit hash of the specified branch as a string.
 - **Functions Called**:
@@ -253,13 +258,13 @@ Generates metadata for a codebase using provided organization and repository det
     - `repo_id`: The unique identifier for the repository.
     - `owner`: The owner of the repository.
     - `provider`: The service provider of the repository, e.g., GitHub.
-    - `commit`: The commit hash of the repository version.
-    - `upload_key`: The key used for uploading the codebase.
+    - `commit`: The commit hash representing the version of the codebase.
+    - `upload_key`: The key used for uploading the codebase to a storage service.
 - **Logic and Control Flow**:
     - Calls [`org_id_to_hash`](<aws_s3.py.md#org_id_to_hash>) to convert `org_id` into a hashed value `org_id_hash`.
     - Creates a dictionary with metadata fields such as `unhashed_organization_id`, `organization_id`, `org_bucket`, `org_name`, `creator_id`, `file_path`, `codebase_name`, `content_type`, `provider`, `version`, and `repository_id`.
     - Returns the constructed metadata dictionary.
-- **Output**: A dictionary containing metadata about the codebase.
+- **Output**: A dictionary containing metadata about the codebase, including organization and repository details.
 - **Functions Called**:
     - [`python-backend/backend/app/utils/aws_s3.org_id_to_hash`](<aws_s3.py.md#org_id_to_hash>)
 
@@ -268,7 +273,7 @@ Generates metadata for a codebase using provided organization and repository det
 ### download\_github\_repo\_zip<!-- {{#callable:python-backend/backend/app/utils/gh_ops.download_github_repo_zip}} -->
 [View Source →](<../../../../../backend/app/utils/gh_ops.py#L235>)
 
-Downloads a GitHub repository as a ZIP file for a specific commit.
+Downloads a GitHub repository as a ZIP file for a specific commit using an access token.
 - **Inputs**:
     - `org_name`: The name of the GitHub organization.
     - `repo`: The name of the GitHub repository.
@@ -276,11 +281,11 @@ Downloads a GitHub repository as a ZIP file for a specific commit.
     - `access_token`: The GitHub access token for authentication.
 - **Logic and Control Flow**:
     - Create an authorization header using the provided access token.
-    - Construct the URL to download the ZIP file for the specified commit of the repository.
+    - Construct the URL for the ZIP file of the specified repository and commit.
     - Send a GET request to the constructed URL with the authorization header, allowing redirects and setting a timeout of 120 seconds.
-    - Raise an exception if the response status indicates an error.
-    - Return the content of the response, which is the ZIP file data.
-- **Output**: A bytes object containing the ZIP file data of the specified GitHub repository commit.
+    - Raise an exception if the response status indicates an error (4XX/5XX).
+    - Return the content of the response, which is the ZIP file as bytes.
+- **Output**: The function returns the content of the ZIP file as bytes.
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../repositories/base_repository.py.md#baserepositoryget>)
 
@@ -291,16 +296,16 @@ Downloads a GitHub repository as a ZIP file for a specific commit.
 
 Uploads a zip file to an S3 bucket using a pre-signed URL.
 - **Inputs**:
-    - `zip_content`: A byte sequence representing the content of the zip file to upload.
+    - `zip_content`: A byte string representing the content of the zip file to upload.
     - `metadata`: A dictionary containing metadata to associate with the S3 object.
     - `upload_key`: A string representing the key under which to store the object in S3.
 - **Logic and Control Flow**:
-    - Generates a pre-signed URL for uploading to S3 using the [`generate_put_presigned_url`](<aws_s3.py.md#generate_put_presigned_url>) function with the provided `upload_key`, content type, and metadata.
-    - Checks if the pre-signed URL generation was successful; if not, logs an error and returns `False`.
-    - Prepares HTTP headers for the upload, including content type and content length.
-    - Sends a PUT request to the generated S3 URL with the zip content and headers, and sets a timeout of 120 seconds.
-    - Raises an exception if the HTTP request fails with a 4XX or 5XX status code.
-    - Returns `True` if the response status code is 200, indicating a successful upload.
+    - Generate a pre-signed URL for uploading to S3 using [`generate_put_presigned_url`](<aws_s3.py.md#generate_put_presigned_url>) with the given `upload_key`, content type, and metadata.
+    - Check if the pre-signed URL generation was successful; if not, log an error and return `False`.
+    - Define headers for the HTTP PUT request, including content type and content length.
+    - Send a PUT request to the generated S3 URL with the zip content and headers, and set a timeout of 120 seconds.
+    - Raise an exception if the HTTP request fails (non-2XX status code).
+    - Return `True` if the response status code is 200, indicating a successful upload.
 - **Output**: A boolean value indicating whether the upload was successful (`True`) or not (`False`).
 - **Functions Called**:
     - [`python-backend/backend/app/utils/aws_s3.generate_put_presigned_url`](<aws_s3.py.md#generate_put_presigned_url>)
@@ -325,7 +330,8 @@ Downloads a GitHub repository as a ZIP file and uploads it to an S3 bucket, retu
     - Generate metadata for the codebase using [`generate_codebase_metadata`](<#generate_codebase_metadata>).
     - Download the repository as a ZIP file using [`download_github_repo_zip`](<#download_github_repo_zip>).
     - Log the size of the downloaded ZIP content.
-    - Upload the ZIP content to S3 using [`upload_to_s3`](<#upload_to_s3>) and generate a presigned URL for analysis using [`generate_get_presigned_url`](<aws_s3.py.md#generate_get_presigned_url>).
+    - Upload the ZIP content to S3 using [`upload_to_s3`](<#upload_to_s3>) and store the success status.
+    - Generate a presigned URL for downloading the codebase using [`generate_get_presigned_url`](<aws_s3.py.md#generate_get_presigned_url>).
     - Log a success message if the upload is successful.
     - Return a tuple containing the success status and the presigned URL.
     - Catch any exceptions, log the error, and return `False` and an empty string.

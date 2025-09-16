@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Pydantic models and classes for markdown content conversion, including code, diagrams, lists, tables, and text.
+Pydantic models and classes for a copy editor agent to convert various content types into markdown.
 
 
 ## Files
-- **[block_kind_any.py](block_kind_any.py.md)**: A Pydantic model for a copy editor agent handling markdown content.
+- **[block_kind_any.py](block_kind_any.py.md)**: Defines a Pydantic model for a copy editor agent handling markdown content.
 - **[block_kind_code.py](block_kind_code.py.md)**: A Pydantic model for generating markdown-formatted code blocks with descriptions for a copy editor agent.
-- **[block_kind_diagram.py](block_kind_diagram.py.md)**: Defines a Pydantic model for handling and formatting Mermaid diagrams in markdown.
+- **[block_kind_diagram.py](block_kind_diagram.py.md)**: Defines a Pydantic model for handling and formatting mermaid diagrams in markdown.
 - **[block_kind_list.py](block_kind_list.py.md)**: Defines a class for converting lists into markdown format, supporting ordered and unordered lists.
-- **[block_kind_table.py](block_kind_table.py.md)**: A class for a copy editor agent to convert tables with headers and rows into markdown format.
-- **[block_kind_text.py](block_kind_text.py.md)**: A class for a copy editor agent's structured response with markdown text conversion.
+- **[block_kind_table.py](block_kind_table.py.md)**: Class for a copy editor agent to convert tables with headers and rows into markdown format.
+- **[block_kind_text.py](block_kind_text.py.md)**: A structured response class for a copy editor agent handling text paragraphs with markdown conversion.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

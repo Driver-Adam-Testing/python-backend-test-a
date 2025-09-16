@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agent configuration models, block kind enumerations, abstract classes, data scope management, pipeline configuration, and prompt models.
+Agent configuration models, block kind enumerations, abstract classes, data scope management, pipeline configurations, and prompt models.
 
 
 ## Files
-- **[agent_configuration.py](agent_configuration.py.md)**: Defines an agent configuration model with attributes and methods for tool retrieval and prompt creation.
+- **[agent_configuration.py](agent_configuration.py.md)**: Defines an agent configuration model with attributes for model, prompts, iterations, tools, and scope.
 - **[block_kind.py](block_kind.py.md)**: Defines an enumeration for different block kinds: LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY.
 - **[block_response.py](block_response.py.md)**: Defines an abstract base class `BlockResponse` with a method to convert data to Markdown format.
-- **[data_scope.py](data_scope.py.md)**: Defines the `DataScope` class for managing and accessing nodes within an agent's operational scope.
-- **[pipeline_configuration.py](pipeline_configuration.py.md)**: Defines classes and enums for configuring and executing agent pipeline steps, including input and response handling.
+- **[data_scope.py](data_scope.py.md)**: Defines a `DataScope` class for managing and accessing nodes within an agent's operational scope.
+- **[pipeline_configuration.py](pipeline_configuration.py.md)**: Defines configurations and responses for executing agent pipeline steps with various types and modes.
 - **[prompt.py](prompt.py.md)**: A Pydantic model for user prompts with context, supporting XML conversion and context updates.
 
 ---

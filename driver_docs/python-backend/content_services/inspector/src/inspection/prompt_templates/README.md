@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates and instructions for analyzing, summarizing, and describing software files, folders, and codebases.
+Templates for generating structured prompts, summarizing folder contents, and creating getting started guides.
 
 ## Folders
-- **[files](files/README.md)**: Templates for structured analyses and text files with instructions for describing software files and symbols.
-- **[folders](folders/README.md)**: Instructions for summarizing folder contents and writing descriptions based on child files and folders.
-- **[toplevel](toplevel/README.md)**: Templates for a getting started guide and instructions for summarizing and describing codebases.
+- **[files](files/README.md)**: Templates for generating structured prompts and analyzing metadata and source code across languages, with text files for writing software descriptions.
+- **[folders](folders/README.md)**: Templates and instructions for summarizing folder contents and compressing text in various formats.
+- **[toplevel](toplevel/README.md)**: Template prompts for getting started guides and instructions for summarizing codebase descriptions.
 
 
 ---

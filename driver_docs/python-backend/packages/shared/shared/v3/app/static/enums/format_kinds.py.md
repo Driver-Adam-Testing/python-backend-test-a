@@ -26,7 +26,7 @@ The code defines an enumeration `FormatKind` that categorizes different types of
     - `TABLE`: Represents the format kind for tables.
     - `LIST`: Represents the format kind for lists.
     - `ANY`: Represents any format kind.
-- **Description**: Defines different kinds of formats as enumeration members, each represented by a string value.
+- **Description**: Defines different kinds of formats as enumeration members, inheriting from `str` and `Enum` to allow for string comparison and enumeration capabilities.
 - **Inherits From**:
     - `str`
     - `Enum`

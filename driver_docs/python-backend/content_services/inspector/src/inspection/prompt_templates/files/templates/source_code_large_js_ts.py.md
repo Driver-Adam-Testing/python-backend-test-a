@@ -6,9 +6,9 @@
 Templates for generating structured prompts and analyzing JavaScript/TypeScript code components.
 
 # Purpose
-The code defines a template for generating structured prompts and instructions for analyzing JavaScript and TypeScript source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.js_ts`, to facilitate the creation of prompts and the extraction of code elements like classes, interfaces, types, and functions. The template, `SOURCE_CODE_LARGE_TEMPLATE_JS_TS`, is a list of tuples, each specifying a section of the analysis, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", "Interfaces", "Types", and "Functions". Each section uses specific collections and methods to gather and process information from the source code.
+The code defines a structured template for generating documentation related to JavaScript and TypeScript source code. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.js_ts`, to facilitate the creation of documentation prompts. The template, `SOURCE_CODE_LARGE_TEMPLATE_JS_TS`, is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", "Interfaces", "Types", and "Functions". Each section uses specific components and functions to extract and format relevant information from the source code.
 
-The template is designed to be used in a context where JavaScript and TypeScript code needs to be analyzed and documented. It provides a structured approach to extract and organize information about the code's components, such as imports, global variables, and various code constructs. The use of `Prompt` and `Component` objects allows for the dynamic construction of prompt text, which can be used to guide the analysis process. The template does not define public APIs or external interfaces directly but serves as a tool for generating documentation and insights about JavaScript and TypeScript codebases.
+The template is designed to be used in a larger system that analyzes JavaScript and TypeScript code, extracting symbols and metadata to generate structured documentation. The use of collections like `JsTsClassCollection` and `JsTsFnCollection` indicates that the code is intended to handle various elements of JavaScript and TypeScript code, such as classes, functions, and interfaces. The template does not define public APIs or external interfaces directly but provides a framework for generating documentation based on static analysis and language model outputs.
 # Imports and Dependencies
 
 ---
@@ -39,8 +39,8 @@ The template is designed to be used in a context where JavaScript and TypeScript
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: Contains a list of tuples, each representing a section of a structured prompt template for JavaScript and TypeScript code analysis. Each tuple includes a section identifier, a section title, and a combination of static analysis and LLM-based processing functions or instructions.
-- **Use**: Used to define and organize the structure of prompts for analyzing JavaScript and TypeScript code.
+- **Description**: Contains a list of tuples, each representing a section of a JavaScript/TypeScript code template. Each tuple includes a section identifier, a section title, and functions or instructions related to that section.
+- **Use**: Used to define and organize different sections of a JavaScript/TypeScript code template for structured prompting and analysis.
 
 
 

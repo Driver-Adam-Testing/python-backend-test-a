@@ -6,7 +6,7 @@
 Defines Pydantic models for upload requests and responses with file type validation.
 
 # Purpose
-This code defines a set of data models using the `pydantic` library to validate and manage data for file upload operations. The `UploadRequest` class requires a `file_path` that must end with either ".zip" or ".pdf", ensuring that only these file types are accepted. The `UploadAutoDocConfigRequest` class specifies a `page_node_id` of type `UUID` and a `file_path` that must end with ".toml", enforcing a specific file format for configuration uploads. The `UploadResponse` class includes fields for `upload_url`, `primary_asset_id`, and `version_id`, all of which are necessary for handling the response of an upload operation. The `UploadAutoDocConfigResponse` class contains a single field, `upload_url`, which is used to provide the URL for the uploaded configuration.
+This code defines a set of data models using the Pydantic library, which are used for validating and managing data related to file uploads. The `UploadRequest` class ensures that the `file_path` attribute is either a ZIP or PDF file, while the `UploadAutoDocConfigRequest` class requires the `file_path` to be a TOML file. Both classes use `field_validator` to enforce these constraints. The `UploadResponse` class includes attributes for `upload_url`, `primary_asset_id`, and `version_id`, which are likely used to provide information about the uploaded file. The `UploadAutoDocConfigResponse` class contains an `upload_url` attribute, which is used to return the URL for the uploaded configuration. These models provide narrow functionality focused on validating and structuring data for file upload operations.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ This code defines a set of data models using the `pydantic` library to validate 
 [View Source →](<../../../../../backend/app/schemas/upload_schema.py#L7>)
 
 - **Members**:
-    - `file_path`: Specifies the path to the file to upload.
+    - `file_path`: Stores the path of the file to upload.
 - **Description**: Represents a request to upload a file, ensuring the file is either a zip or pdf format through validation.
 - **Methods**:
     - [`python-backend/backend/app/schemas/upload_schema.UploadRequest.must_be_zip_or_pdf`](<#uploadrequestmust_be_zip_or_pdf>)
@@ -36,17 +36,17 @@ This code defines a set of data models using the `pydantic` library to validate 
 #### UploadRequest\.must\_be\_zip\_or\_pdf<!-- {{#callable:python-backend/backend/app/schemas/upload_schema.UploadRequest.must_be_zip_or_pdf}} -->
 [View Source →](<../../../../../backend/app/schemas/upload_schema.py#L10>)
 
-Validates that the `file_path` attribute ends with either ".zip" or ".pdf".
+Validates that the 'file_path' attribute ends with either '.zip' or '.pdf'.
 - **Decorators**: `@field_validator`
 - **Inputs**:
-    - `cls`: The class to which this method belongs.
-    - `v`: The value of the `file_path` attribute to validate.
+    - `cls`: The class to which this validator method belongs.
+    - `v`: The value of the 'file_path' attribute to validate.
 - **Logic and Control Flow**:
-    - Convert the value `v` to lowercase to ensure case-insensitive comparison.
-    - Check if the lowercase value ends with ".zip" or ".pdf".
-    - If the value does not end with ".zip" or ".pdf", raise a `ValueError` with a specific error message.
-    - Return the value `v` if it passes the validation.
-- **Output**: The validated `file_path` value if it ends with ".zip" or ".pdf".
+    - Convert the input value 'v' to lowercase to ensure case-insensitive comparison.
+    - Check if the lowercase 'v' ends with '.zip' or '.pdf'.
+    - If 'v' does not end with '.zip' or '.pdf', raise a ValueError with a specific message.
+    - Return the validated value 'v' if it passes the checks.
+- **Output**: The validated 'file_path' value if it ends with '.zip' or '.pdf'; otherwise, raises a ValueError.
 - **See also**: [`python-backend/backend/app/schemas/upload_schema.UploadRequest`](<#uploadrequest>)  (Base Class)
 
 
@@ -70,16 +70,17 @@ Validates that the `file_path` attribute ends with either ".zip" or ".pdf".
 #### UploadAutoDocConfigRequest\.must\_be\_toml<!-- {{#callable:python-backend/backend/app/schemas/upload_schema.UploadAutoDocConfigRequest.must_be_toml}} -->
 [View Source →](<../../../../../backend/app/schemas/upload_schema.py#L21>)
 
-Validates that the `file_path` attribute ends with the ".toml" extension.
+Validates that the 'file_path' attribute ends with '.toml'.
 - **Decorators**: `@field_validator`
 - **Inputs**:
     - `cls`: The class to which this method belongs.
-    - `v`: The value of the `file_path` attribute to validate.
+    - `v`: The value of the 'file_path' attribute to validate.
 - **Logic and Control Flow**:
-    - Check if the value `v` does not end with the ".toml" extension (case insensitive).
-    - Raise a `ValueError` with a specific message if the check fails.
-    - Return the value `v` if it passes the check.
-- **Output**: The validated `file_path` value if it ends with ".toml".
+    - Convert the input value 'v' to lowercase.
+    - Check if the lowercase value ends with the string '.toml'.
+    - If the value does not end with '.toml', raise a ValueError with a specific message.
+    - Return the validated value 'v'.
+- **Output**: The validated 'file_path' value if it ends with '.toml'.
 - **See also**: [`python-backend/backend/app/schemas/upload_schema.UploadAutoDocConfigRequest`](<#uploadautodocconfigrequest>)  (Base Class)
 
 
@@ -103,7 +104,7 @@ Validates that the `file_path` attribute ends with the ".toml" extension.
 
 - **Members**:
     - `upload_url`: A string that contains the URL for the upload.
-- **Description**: Represents the response for an upload operation, containing the URL where the upload occurs.
+- **Description**: Represents the response for an auto document configuration upload, containing the URL to which the document is uploaded.
 - **Inherits From**:
     - `BaseModel`
 

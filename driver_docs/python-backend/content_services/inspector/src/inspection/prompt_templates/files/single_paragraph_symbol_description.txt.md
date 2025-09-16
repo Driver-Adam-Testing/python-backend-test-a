@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for writing a single paragraph description of a symbol in a source file.
+A text file that describes how to write a single paragraph description of a symbol in a source file.
 
 # Purpose
-The `Makefile` is used to automate the build process of a software project. It defines a set of tasks to be executed, such as compiling source code, linking binaries, and cleaning up build artifacts. Each task is specified as a target, which can have dependencies and associated commands. When a target is invoked, the `make` utility checks if the target is up-to-date by comparing timestamps of the target and its dependencies. If the target is not up-to-date, `make` executes the commands to update it. This process ensures that only the necessary parts of the project are rebuilt, optimizing the build process.
+`generate_response` is a function that takes a `ChatOpenAI` instance, `system_prompt`, and `human_prompt` as input parameters. It constructs a list of `messages` containing a `SystemMessage` with the `system_prompt` and a `HumanMessage` with the `human_prompt`. The function then calls the `llm` instance with these `messages` and returns the text content of the response from the `llm` call.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tools for generating folder summaries, hybrid search, and opening files with large text handling.
+Tools for folder summary generation, hybrid search, and file content retrieval and display.
 
 
 ## Files
-- **[folder_summary.py](folder_summary.py.md)**: A tool for generating and returning long description summaries of folders in a codebase.
+- **[folder_summary.py](folder_summary.py.md)**: A tool for generating and returning long description summaries of specified folders in a codebase.
 - **[hybrid_search.py](hybrid_search.py.md)**: HybridSearchTool performs a hybrid search combining keyword and semantic search in a content repository.
-- **[open_file.py](open_file.py.md)**: An LlmTool for opening a file, displaying its content as a reference, and handling large text.
+- **[open_file.py](open_file.py.md)**: A tool for opening a file, retrieving its content, and displaying it as a single reference.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

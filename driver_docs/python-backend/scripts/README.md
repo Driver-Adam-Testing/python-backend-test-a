@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Shell script to build, run, and test a Docker Compose environment for the backend.
+Shell script to build, run, and test the backend using Docker Compose, then clean up resources.
 
 
 ## Files
-- **[test.sh](test.sh.md)**: Shell script to build, run, and test a Docker Compose environment for the backend.
+- **[test.sh](test.sh.md)**: Shell script to build, run, and test the backend using Docker Compose, then clean up resources.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

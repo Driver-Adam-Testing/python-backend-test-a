@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
+Asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
 
 
 ## Files

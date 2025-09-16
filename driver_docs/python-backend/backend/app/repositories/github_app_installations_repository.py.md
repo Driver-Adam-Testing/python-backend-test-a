@@ -6,15 +6,15 @@
 Repository for managing GithubAppInstallation entities with methods to list and check existence by IDs.
 
 # Purpose
-The `GithubAppInstallationsRepository` class is a specialized repository for managing `GithubAppInstallation` entities within a database. It extends the `BaseRepository` class, which provides basic repository functionalities, and is designed to interact with a SQL database using the `sqlmodel` library. The class requires a `Session` object upon initialization to facilitate database operations.
+The `GithubAppInstallationsRepository` class is a specialized repository for managing `GithubAppInstallation` records in a database. It extends the `BaseRepository` class, which provides basic repository functionalities, and is designed to interact with a SQL database using SQLAlchemy and SQLModel. The class requires a `Session` object upon initialization to facilitate database operations.
 
-The class provides three main methods: [`list_by_organization_id`](<#githubappinstallationsrepositorylist_by_organization_id>), [`list_by_installation_id`](<#githubappinstallationsrepositorylist_by_installation_id>), and [`exists`](<#githubappinstallationsrepositoryexists>). The [`list_by_organization_id`](<#githubappinstallationsrepositorylist_by_organization_id>) method retrieves all `GithubAppInstallation` records associated with a specific organization ID. The [`list_by_installation_id`](<#githubappinstallationsrepositorylist_by_installation_id>) method fetches records based on a specific installation ID. The [`exists`](<#githubappinstallationsrepositoryexists>) method checks if a particular installation ID exists within a given organization, returning a boolean value. Logging is integrated into each method to provide debug and informational messages, which can help in monitoring and troubleshooting database operations.
+The class provides three main methods: [`list_by_organization_id`](<#githubappinstallationsrepositorylist_by_organization_id>), [`list_by_installation_id`](<#githubappinstallationsrepositorylist_by_installation_id>), and [`exists`](<#githubappinstallationsrepositoryexists>). The [`list_by_organization_id`](<#githubappinstallationsrepositorylist_by_organization_id>) method retrieves all `GithubAppInstallation` records associated with a specific organization ID. The [`list_by_installation_id`](<#githubappinstallationsrepositorylist_by_installation_id>) method fetches records based on a specific installation ID. The [`exists`](<#githubappinstallationsrepositoryexists>) method checks if a particular installation ID already exists for a given organization ID, returning a boolean value. Logging is integrated into these methods to provide debug and informational messages, which can help in tracking the operations performed by the repository.
 # Imports and Dependencies
 
 ---
 - `app.core.logger.logger`
 - `app.repositories.base_repository.BaseRepository`
-- `database.models_v1.GithubAppInstallation`
+- `database.models.GithubAppInstallation`
 - `sqlalchemy.func`
 - `sqlmodel.Session`
 - `sqlmodel.col`
@@ -27,7 +27,7 @@ The class provides three main methods: [`list_by_organization_id`](<#githubappin
 ### GithubAppInstallationsRepository<!-- {{#class:python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository}} -->
 [View Source →](<../../../../../backend/app/repositories/github_app_installations_repository.py#L8>)
 
-- **Description**: Manages `GithubAppInstallation` entities in the database. Provides methods to list installations by organization ID or installation ID and to check the existence of a specific installation.
+- **Description**: Manages operations related to `GithubAppInstallation` entities, including listing installations by organization or installation ID and checking for the existence of a specific installation within an organization.
 - **Methods**:
     - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.__init__`](<#githubappinstallationsrepository__init__>)
     - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_organization_id`](<#githubappinstallationsrepositorylist_by_organization_id>)
@@ -40,11 +40,11 @@ The class provides three main methods: [`list_by_organization_id`](<#githubappin
 #### GithubAppInstallationsRepository\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.__init__}} -->
 [View Source →](<../../../../../backend/app/repositories/github_app_installations_repository.py#L9>)
 
-Initializes an instance of the `GithubAppInstallationsRepository` class with a database session and the `GithubAppInstallation` model.
+Initializes a new instance of the GithubAppInstallationsRepository class with a database session and the GithubAppInstallation model.
 - **Inputs**:
     - `session`: A `Session` object that represents the database session to use for operations.
 - **Logic and Control Flow**:
-    - Calls the [`__init__`](<base_repository.py.md#baserepository__init__>) method of the parent class `BaseRepository` with `session` and `GithubAppInstallation` as arguments.
+    - Calls the [`__init__`](<base_repository.py.md#baserepository__init__>) method of the parent class `BaseRepository` with the `session` and `GithubAppInstallation` model as arguments.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/backend/app/repositories/base_repository.BaseRepository.__init__`](<base_repository.py.md#baserepository__init__>)
@@ -59,10 +59,10 @@ Retrieves a list of `GithubAppInstallation` objects filtered by a given organiza
 - **Inputs**:
     - `organization_id`: A string representing the ID of the organization to filter the `GithubAppInstallation` objects.
 - **Logic and Control Flow**:
-    - Logs a debug message indicating the start of the fetch operation for the specified `organization_id`.
+    - Logs a debug message indicating the start of the fetch operation for the given `organization_id`.
     - Executes a SQL query to select `GithubAppInstallation` records where the `organization_id` matches the provided argument.
     - Returns all matching `GithubAppInstallation` records as a list.
-- **Output**: A list of `GithubAppInstallation` objects that belong to the specified organization ID.
+- **Output**: A list of `GithubAppInstallation` objects that match the specified organization ID.
 - **See also**: [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<#githubappinstallationsrepository>)  (Base Class)
 
 
@@ -72,11 +72,11 @@ Retrieves a list of `GithubAppInstallation` objects filtered by a given organiza
 
 Fetches a list of `GithubAppInstallation` objects filtered by a given installation ID.
 - **Inputs**:
-    - `installation_id`: A string representing the installation ID to filter the `GithubAppInstallation` objects.
+    - `installation_id`: A string representing the GitHub app installation ID to filter the installations.
 - **Logic and Control Flow**:
-    - Logs a debug message indicating the start of fetching `GithubAppInstallation` objects for the given `installation_id`.
-    - Executes a SQL query to select `GithubAppInstallation` objects where the `github_app_installation_id` matches the provided `installation_id`.
-    - Returns all results from the executed query as a list.
+    - Logs a debug message indicating the start of fetching installations for the given `installation_id`.
+    - Executes a SQL query to select `GithubAppInstallation` records where the `github_app_installation_id` matches the provided `installation_id`.
+    - Returns all matching `GithubAppInstallation` records as a list.
 - **Output**: A list of `GithubAppInstallation` objects that match the given installation ID.
 - **See also**: [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<#githubappinstallationsrepository>)  (Base Class)
 

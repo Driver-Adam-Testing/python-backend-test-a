@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines data models and configurations for Auth0 applications, Ngrok domains, developer resources, and GitHub apps.
+Defines data models for Auth0 applications, Ngrok domains, developer resources, and GitHub app configurations.
 
 # Purpose
-The code defines a set of data models and enumerations using the `pydantic` library to validate and manage structured data. These models are primarily used for configuring and managing resources related to web applications, APIs, machine-to-machine (M2M) applications, and developer resources. The models include `Auth0SpaCreateAppRequest`, `Auth0ApiCreateRequest`, and `Auth0M2MCreateRequest`, which are used to define requests for creating different types of Auth0 applications. Additionally, the code includes models for managing domain configurations (`NgrokReservedDomain`, `NgrokReservedTcpAddress`), developer resources (`DeveloperResource`, `Developer`), and specific configurations for resources like databases, web applications, and GitHub applications.
+The code defines a set of data models and enumerations using the `pydantic` library to validate and manage structured data. These models are primarily used for configuring and managing resources related to web applications, APIs, machine-to-machine (M2M) applications, and other developer resources. The models include `Auth0SpaCreateAppRequest`, `Auth0ApiCreateRequest`, and `Auth0M2MCreateRequest`, which are used to define requests for creating different types of Auth0 applications. Additionally, the code includes models for managing domain configurations (`NgrokReservedDomain`, `NgrokReservedTcpAddress`), developer resources (`DeveloperResource`, `Developer`), and specific configurations for resources like databases, web applications, and GitHub applications.
 
-The code also defines several enumerations such as `DomainType`, `DomainStatus`, and `DeveloperResourceType` to categorize and manage different types of resources and their statuses. The `Developer` class aggregates various resources and configurations, providing computed properties for generating URLs and sanitized names. The code is structured to be used as a library, providing a set of classes that can be imported and utilized in other parts of a software system to manage and configure application resources programmatically. The use of `pydantic` ensures that the data adheres to specified constraints, enhancing data integrity and validation.
+The code also defines several enumerations such as `DomainType`, `DomainStatus`, and `DeveloperResourceType` to categorize and manage different types of resources and their statuses. The `Developer` class aggregates various resources and configurations, providing computed properties for generating URLs and sanitized names. The use of `pydantic` ensures that the data models enforce type constraints and provide default values where applicable. This code is intended to be part of a larger system where these models are used to configure and manage resources programmatically, likely in a cloud or development environment.
 # Imports and Dependencies
 
 ---
@@ -25,21 +25,21 @@ The code also defines several enumerations such as `DomainType`, `DomainStatus`,
 ---
 ### PermissionAccess
 - **Type**: ``Literal``
-- **Description**: Defines a type that can be one of three string literals: 'read-only', 'read-write', or 'no-access'. This type is used to specify the level of access permissions.
+- **Description**: Defines a type that can be one of three string values: 'read-only', 'read-write', or 'no-access'. This type is used to specify the level of access permissions.
 - **Use**: Used to define access levels in permission configurations, such as in the `GitHubAppPermissionsConfig` class.
 
 
 ---
 ### AssetLambdaSecretMap
 - **Type**: ``dict``
-- **Description**: Maps secret identifiers to their corresponding output names for a Lambda function related to asset onboarding. It contains two key-value pairs where the keys are secret identifiers and the values are the output names of the secrets.
-- **Use**: Used to retrieve the output names of secrets for the asset onboarding Lambda function by their identifiers.
+- **Description**: Maps secret identifiers to their corresponding output names for asset onboarding Lambda functions. The keys represent the secret identifiers, and the values are the output names used in the Lambda configuration.
+- **Use**: Used to configure secrets for asset onboarding Lambda functions by mapping secret identifiers to output names.
 
 
 ---
 ### MetricsLambdaSecretMap
 - **Type**: ``dict``
-- **Description**: A dictionary that maps secret names to their corresponding output values for the Metrics Lambda function. It contains a single key-value pair where the key is `"DATABASE_URL_SECRET_NAME"` and the value is `"MetricsLambdaDBSecretOutput"`. This mapping is used to retrieve the secret value associated with the database URL for the Metrics Lambda.
+- **Description**: A dictionary that maps secret names to their corresponding output values for the Metrics Lambda function. It contains a single key-value pair where the key is `"DATABASE_URL_SECRET_NAME"` and the value is `"MetricsLambdaDBSecretOutput"`. This mapping is used to retrieve the database URL secret for the Metrics Lambda function.
 - **Use**: Used to map secret names to their output values for the Metrics Lambda function.
 
 
@@ -51,18 +51,18 @@ The code also defines several enumerations such as `DomainType`, `DomainStatus`,
 
 - **Members**:
     - `name`: Specifies the name of the application with whitespace stripped and a minimum length of 1.
-    - `app_type`: Defines the type of application, defaulting to 'spa'.
+    - `app_type`: Indicates the type of application, defaulting to 'spa'.
     - `callbacks`: Lists the callback URLs for the application.
     - `allowed_logout_urls`: Lists the URLs allowed for logout.
-    - `web_origins`: Lists the web origins allowed for the application.
+    - `web_origins`: Lists the web origins for the application.
     - `allowed_origins`: Lists the allowed origins, defaulting to an empty list.
     - `initiate_login_uri`: Specifies the URI to initiate login, defaulting to None.
     - `oidc_conformant`: Indicates if the application is OIDC conformant, defaulting to True.
     - `token_endpoint_auth_method`: Specifies the token endpoint authentication method, defaulting to 'none'.
-    - `grant_types`: Lists the grant types allowed, defaulting to ['authorization_code', 'refresh_token', 'implicit'].
-    - `organization_usage`: Defines the organization usage policy, defaulting to 'require'.
+    - `grant_types`: Lists the grant types for the application, defaulting to ['authorization_code', 'refresh_token', 'implicit'].
+    - `organization_usage`: Specifies the organization usage, defaulting to 'require'.
     - `organization_require_behavior`: Specifies the organization require behavior, defaulting to 'pre_login_prompt'.
-- **Description**: Represents a request to create a Single Page Application (SPA) in Auth0, with various configuration options such as callback URLs, allowed origins, and authentication methods.
+- **Description**: Defines the structure for creating a Single Page Application (SPA) in Auth0, including configuration options such as callback URLs, allowed origins, and authentication methods.
 - **Inherits From**:
     - `BaseModel`
 
@@ -80,7 +80,7 @@ The code also defines several enumerations such as `DomainType`, `DomainStatus`,
     - `allow_offline_access`: Indicates if offline access is allowed, defaulting to True.
     - `enforce_policies`: Specifies if policies are enforced, defaulting to True.
     - `include_email_in_tokens`: Indicates if email is included in tokens, defaulting to False.
-    - `scopes`: Lists the scopes available for the API.
+    - `scopes`: Lists the scopes available for the API as a list of dictionaries.
     - `allow_skip_consent`: Determines if consent can be skipped, defaulting to True.
     - `enable_permissions_in_token`: Indicates if permissions are enabled in the token, defaulting to True.
 - **Description**: Defines the structure for creating an Auth0 API request, including configuration options such as signing algorithm, token lifetime, and consent settings.
@@ -93,11 +93,11 @@ The code also defines several enumerations such as `DomainType`, `DomainStatus`,
 [View Source →](<../../../../dev_stack/src/models.py#L37>)
 
 - **Members**:
-    - `name`: Specifies the name of the machine-to-machine application with whitespace stripped and a minimum length of 1.
-    - `app_type`: Defines the application type, defaulting to 'non_interactive'.
-    - `logo_uri`: Holds the URI for the application's logo, which can be null.
-    - `grant_types`: Lists the grant types allowed for the application, defaulting to ['client_credentials'].
-- **Description**: Defines the structure for creating a machine-to-machine (M2M) application request in Auth0, specifying attributes like name, application type, logo URI, and grant types.
+    - `name`: Specifies the name of the application with whitespace stripped and a minimum length of 1.
+    - `app_type`: Defines the type of application, defaulting to 'non_interactive'.
+    - `logo_uri`: Holds the URI for the application's logo, which can be None.
+    - `grant_types`: Lists the grant types for the application, defaulting to ['client_credentials'].
+- **Description**: Defines a request model for creating a machine-to-machine (M2M) application in Auth0, specifying attributes such as the application's name, type, logo URI, and grant types.
 - **Inherits From**:
     - `BaseModel`
 
@@ -115,7 +115,7 @@ The code also defines several enumerations such as `DomainType`, `DomainStatus`,
 ### DomainStatus<!-- {{#class:python-backend/dev_stack/src/models.DomainStatus}} -->
 [View Source →](<../../../../dev_stack/src/models.py#L50>)
 
-- **Description**: Defines the possible statuses for a domain, which can be either `CREATED` or `FAILED`.
+- **Description**: Defines the possible statuses for a domain, with options for `CREATED` and `FAILED`.
 - **Inherits From**:
     - `enum.Enum`
 
@@ -132,7 +132,7 @@ The code also defines several enumerations such as `DomainType`, `DomainStatus`,
     - `region`: Indicates the region of the domain, defaulting to 'us'.
     - `status`: Represents the status of the domain as a `DomainStatus` enum.
     - `metadata`: Holds optional metadata as a dictionary or `None`.
-- **Description**: Defines a reserved domain with attributes such as domain type, subdomain, domain name, description, region, status, and optional metadata. It includes a computed property `domain_url` that constructs the full URL of the domain.
+- **Description**: Represents a reserved domain in Ngrok with attributes for domain type, subdomain, domain name, description, region, status, and optional metadata. Provides a computed property `domain_url` to generate the full URL of the domain.
 - **Methods**:
     - [`python-backend/dev_stack/src/models.NgrokReservedDomain.domain_url`](<#ngrokreserveddomaindomain_url>)
 - **Inherits From**:
@@ -165,7 +165,7 @@ Generates a URL for the domain using the HTTPS protocol.
     - `region`: Specifies the region, defaulting to 'us'.
     - `status`: Indicates the status of the domain using the `DomainStatus` enum.
     - `metadata`: Stores optional metadata as a dictionary or None.
-- **Description**: Represents a reserved TCP address in the Ngrok system, including details such as address, description, region, status, and optional metadata. It provides a computed property `address_url` that formats the address into a TCP URL.
+- **Description**: Represents a reserved TCP address in the Ngrok system, including details such as address, description, region, status, and optional metadata.
 - **Methods**:
     - [`python-backend/dev_stack/src/models.NgrokReservedTcpAddress.address_url`](<#ngrokreservedtcpaddressaddress_url>)
 - **Inherits From**:
@@ -182,8 +182,9 @@ Generates a TCP URL using the `address` attribute of the `NgrokReservedTcpAddres
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `address` attribute of the `NgrokReservedTcpAddress` instance.
-    - Formats the `address` attribute into a TCP URL string prefixed with 'tcp://' and returns it.
-- **Output**: A string representing the TCP URL constructed from the `address` attribute.
+    - Formats a string by prepending 'tcp://' to the `address` attribute.
+    - Returns the formatted string as the TCP URL.
+- **Output**: A string representing the TCP URL, formatted as 'tcp://<address>'.
 - **See also**: [`python-backend/dev_stack/src/models.NgrokReservedTcpAddress`](<#ngrokreservedtcpaddress>)  (Base Class)
 
 
@@ -192,7 +193,7 @@ Generates a TCP URL using the `address` attribute of the `NgrokReservedTcpAddres
 ### DeveloperResourceType<!-- {{#class:python-backend/dev_stack/src/models.DeveloperResourceType}} -->
 [View Source →](<../../../../dev_stack/src/models.py#L83>)
 
-- **Description**: Defines an enumeration for different types of developer resources, such as web applications, APIs, machine-to-machine communication, databases, GitHub applications, AWS Lambda functions, S3 buckets, CDK stacks, content services, and Docker.
+- **Description**: Defines different types of developer resources as enumeration values, such as `WEB_APP`, `API`, `M2M`, `DB`, `GITHUB_APP`, `ASSET_ONBOARDING_LAMBDA`, `METRICS_LAMBDA`, `S3_BUCKET`, `CDK_STACK`, `CONTENT_SERVICES`, and `DOCKER`.
 - **Inherits From**:
     - `enum.Enum`
 
@@ -216,9 +217,9 @@ Generates a TCP URL using the `address` attribute of the `NgrokReservedTcpAddres
 [View Source →](<../../../../dev_stack/src/models.py#L103>)
 
 - **Members**:
-    - `resource_name`: Defines the name of the resource, defaulting to 'cdk-stack'.
-    - `execute`: Specifies the command or script to execute.
-    - `env`: Holds environment variables as a dictionary.
+    - `resource_name`: Specifies the name of the resource, defaulting to 'cdk-stack'.
+    - `execute`: Holds the command or script to execute.
+    - `env`: Contains environment variables as a dictionary.
 - **Description**: Defines the configuration for a CDK resource, including its name, execution command, and environment variables.
 - **Inherits From**:
     - `BaseModel`
@@ -229,10 +230,10 @@ Generates a TCP URL using the `address` attribute of the `NgrokReservedTcpAddres
 [View Source →](<../../../../dev_stack/src/models.py#L109>)
 
 - **Members**:
-    - `resource_name`: Defines the name of the web application resource, defaulting to 'webapp-frontend'.
+    - `resource_name`: Specifies the name of the web application resource, defaulting to 'webapp-frontend'.
     - `setup_str`: Holds a string for setup configuration.
-    - `vite_config`: Contains configuration settings for Vite.
-    - `env`: Stores environment variables as a dictionary.
+    - `vite_config`: Contains a dictionary for Vite configuration settings.
+    - `env`: Stores environment variables in a dictionary.
 - **Description**: Defines the configuration for a web application resource, including its name, setup string, Vite configuration, and environment variables.
 - **Inherits From**:
     - `BaseModel`
@@ -243,7 +244,7 @@ Generates a TCP URL using the `address` attribute of the `NgrokReservedTcpAddres
 [View Source →](<../../../../dev_stack/src/models.py#L116>)
 
 - **Members**:
-    - `resource_name`: Defines the name of the API resource, defaulting to 'backend'.
+    - `resource_name`: Specifies the name of the API resource, defaulting to 'backend'.
     - `env`: Holds environment-specific configuration as a dictionary.
 - **Description**: Defines configuration for an API resource, including its name and environment settings.
 - **Inherits From**:
@@ -255,10 +256,10 @@ Generates a TCP URL using the `address` attribute of the `NgrokReservedTcpAddres
 [View Source →](<../../../../dev_stack/src/models.py#L121>)
 
 - **Members**:
-    - `resource_name`: Defines the name of the resource as 'database'.
-    - `env`: Stores environment-specific configuration as a dictionary.
-    - `secret_map`: Maps secret keys to their corresponding values, or is None if not provided.
-- **Description**: Configures database resources with a specified name, environment settings, and optional secret mappings.
+    - `resource_name`: Specifies the name of the resource, defaulting to 'database'.
+    - `env`: Holds environment-specific configuration as a dictionary.
+    - `secret_map`: Maps secret keys to their values, or is None if not applicable.
+- **Description**: Defines the configuration for a database resource, including its name, environment settings, and optional secret mappings.
 - **Inherits From**:
     - `BaseModel`
 
@@ -299,13 +300,13 @@ Generates a PostgreSQL database connection URL using instance attributes.
 #### DatabaseResource\.async\_db\_url<!-- {{#callable:python-backend/dev_stack/src/models.DatabaseResource.async_db_url}} -->
 [View Source →](<../../../../dev_stack/src/models.py#L138>)
 
-Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
+Generates an asynchronous database connection URL using the `asyncpg` driver.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Uses the `user_name`, `password`, `host_address`, and `db_name` attributes from the `DatabaseResource` class to construct the URL.
-    - Formats the URL string to include the `asyncpg` driver for asynchronous database connections.
-- **Output**: A string representing the asynchronous database URL.
+    - Accesses the `user_name`, `password`, `host_address`, and `db_name` attributes from the `DatabaseResource` class.
+    - Formats these attributes into a connection string using the `asyncpg` driver for PostgreSQL.
+- **Output**: A string representing the asynchronous database connection URL.
 - **See also**: [`python-backend/dev_stack/src/models.DatabaseResource`](<#databaseresource>)  (Base Class)
 
 
@@ -316,8 +317,8 @@ Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
 
 - **Members**:
     - `resource_name`: Stores the name of the resource.
-    - `env`: Holds environment-specific configuration as a dictionary.
-- **Description**: Represents a resource with a name and environment configuration, extending the `BaseModel` class.
+    - `env`: Holds environment-specific configurations as a dictionary.
+- **Description**: Defines a resource with a name and environment configuration, inheriting from `BaseModel`.
 - **Inherits From**:
     - `BaseModel`
 
@@ -329,7 +330,7 @@ Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
 - **Members**:
     - `modal_environment`: Stores the environment configuration for the modal.
     - `secrets`: Holds a list of `ModalSecretResource` objects.
-- **Description**: Defines a resource for content services, including environment settings and associated secrets.
+- **Description**: Defines a resource model for content services, including environment configuration and associated secrets.
 - **Inherits From**:
     - `BaseModel`
 
@@ -341,7 +342,7 @@ Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
 - **Members**:
     - `resource_name`: Stores the name of the Lambda resource.
     - `env`: Holds environment-specific configuration as a dictionary.
-    - `secret_map`: Maps secret keys to their corresponding values as a dictionary.
+    - `secret_map`: Maps secret names to their corresponding values as a dictionary.
 - **Description**: Defines the configuration for a Lambda resource, including its name, environment settings, and a mapping of secrets.
 - **Inherits From**:
     - `BaseModel`
@@ -351,12 +352,11 @@ Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
 ### GitHubAppWebhookConfig<!-- {{#class:python-backend/dev_stack/src/models.GitHubAppWebhookConfig}} -->
 [View Source →](<../../../../dev_stack/src/models.py#L160>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
-    - `webhook_url`: Stores the URL for the webhook.
-    - `webhook_secret`: Stores the secret for the webhook, or None if not set.
+    - `webhook_url`: Specifies the URL for the webhook.
+    - `webhook_secret`: Holds the secret key for the webhook, or None if not set.
     - `ssl_verification_enabled`: Indicates if SSL verification is enabled, defaulting to True.
-- **Description**: Defines the configuration for a GitHub App webhook, including the URL, an optional secret, and an SSL verification flag.
+- **Description**: Defines the configuration for a GitHub App webhook, including the URL, optional secret, and SSL verification setting.
 - **Inherits From**:
     - `BaseModel`
 
@@ -365,12 +365,11 @@ Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
 ### GitHubAppPermissionsConfig<!-- {{#class:python-backend/dev_stack/src/models.GitHubAppPermissionsConfig}} -->
 [View Source →](<../../../../dev_stack/src/models.py#L169>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
     - `repository_permissions`: Stores repository permissions as a dictionary with lowercase string keys and `PermissionAccess` values.
     - `organization_permissions`: Stores organization permissions as a dictionary with lowercase string keys and `PermissionAccess` values.
     - `account_permissions`: Stores account permissions as a dictionary with lowercase string keys and `PermissionAccess` values.
-- **Description**: Defines the permissions configuration for a GitHub App, categorizing permissions into repository, organization, and account levels, each represented as a dictionary with keys as lowercase strings and values as `PermissionAccess` literals.
+- **Description**: Defines the permissions configuration for a GitHub App, including repository, organization, and account permissions, each represented as a dictionary with keys as lowercase strings and values as `PermissionAccess` literals.
 - **Inherits From**:
     - `BaseModel`
 
@@ -397,7 +396,7 @@ Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
     - `public_in_marketplace`: Indicates if the app is public in the marketplace.
     - `private_key_pem_path`: Stores the path to the private key PEM file, if available.
     - `base64_private_key_pem`: Stores the base64-encoded private key PEM, if available.
-- **Description**: Represents a GitHub application resource with various configuration options, including authentication details, webhook settings, permissions, and marketplace visibility.
+- **Description**: Represents a GitHub application resource with various configuration options, including authentication details, webhook settings, permissions, and event subscriptions.
 - **Inherits From**:
     - `BaseModel`
 
@@ -409,15 +408,15 @@ Generates an asynchronous PostgreSQL database URL using the `asyncpg` driver.
 - **Members**:
     - `full_name`: Stores the full name of the developer.
     - `email`: Stores the email address of the developer.
-    - `region`: Stores the region of the developer, defaulting to 'us'.
-    - `reserved_domains`: Stores a list of reserved domains associated with the developer.
-    - `reserved_tcp_address`: Stores a reserved TCP address associated with the developer, if any.
-    - `auth0_webapp`: Stores Auth0 web application configuration, if any.
-    - `auth0_api`: Stores Auth0 API configuration, if any.
-    - `auth0_m2m`: Stores Auth0 machine-to-machine configuration, if any.
-    - `github_app`: Stores GitHub application resource details, if any.
-    - `database`: Stores database resource details, if any.
-    - `resources`: Stores a list of developer resources.
+    - `region`: Specifies the region, defaulting to 'us'.
+    - `reserved_domains`: Holds a list of reserved domains associated with the developer.
+    - `reserved_tcp_address`: Stores a reserved TCP address or is None if not set.
+    - `auth0_webapp`: Contains Auth0 web application configuration or is None if not set.
+    - `auth0_api`: Contains Auth0 API configuration or is None if not set.
+    - `auth0_m2m`: Contains Auth0 machine-to-machine configuration or is None if not set.
+    - `github_app`: Holds GitHub application resource details or is None if not set.
+    - `database`: Stores database resource details or is None if not set.
+    - `resources`: Contains a list of developer resources.
 - **Description**: Represents a developer with attributes for personal information, region, and various resources such as reserved domains, TCP addresses, Auth0 configurations, GitHub applications, and databases. Provides computed properties for generating an S3 bucket name and a sanitized version of the full name.
 - **Methods**:
     - [`python-backend/dev_stack/src/models.Developer.s3_bucket_name`](<#developers3_bucket_name>)
@@ -439,7 +438,8 @@ Generates an S3 bucket name by transforming the developer's full name to lowerca
     - Converts the `full_name` to lowercase.
     - Removes spaces from the `full_name`.
     - Strips any leading or trailing whitespace from the `full_name`.
-    - Appends the string '-asset-dropzone' to the transformed `full_name`.
+    - Appends '-asset-dropzone' to the transformed `full_name`.
+    - Returns the resulting string as the S3 bucket name.
 - **Output**: A string representing the S3 bucket name.
 - **See also**: [`python-backend/dev_stack/src/models.Developer`](<#developer>)  (Base Class)
 
@@ -452,8 +452,8 @@ Generates a sanitized version of the `full_name` attribute by converting it to l
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the `full_name` attribute of the `Developer` class instance.
-    - Converts the `full_name` to lowercase and replaces spaces with hyphens.
+    - Accesses the `full_name` attribute of the `Developer` instance.
+    - Converts `full_name` to lowercase and replaces spaces with hyphens.
     - Uses a regular expression to remove all characters that are not lowercase letters, digits, or hyphens.
     - Returns the sanitized string.
 - **Output**: A string that is a sanitized version of the `full_name` attribute.

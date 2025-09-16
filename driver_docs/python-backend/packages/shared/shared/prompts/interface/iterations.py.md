@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines prompts and messages for different stages of tool execution iterations.
+Defines prompts and messages for different stages of an iterative tool execution process.
 
 # Purpose
-This code defines a set of string templates and corresponding message dictionaries for different stages of an iterative process. The templates `PROMPT_FIRST_ITERATION`, `PROMPT_MIDDLE_ITERATION`, and `PROMPT_FINAL_ITERATION` contain instructions for executing tools, reviewing source code, and returning a response, respectively. Each template includes a placeholder `{remaining_iterations}` to dynamically insert the number of iterations left. The dictionaries `MESSAGE_FIRST_ITERATION`, `MESSAGE_MIDDLE_ITERATION`, and `MESSAGE_FINAL_ITERATION` associate these templates with a user role, indicating that these messages are intended for user interaction. This code provides narrow functionality, specifically for managing and formatting messages in a multi-step process.
+This code defines a set of string templates and corresponding message dictionaries for different stages of an iterative process. The templates `PROMPT_FIRST_ITERATION`, `PROMPT_MIDDLE_ITERATION`, and `PROMPT_FINAL_ITERATION` provide instructions for executing tools, reviewing source code, and returning a response, respectively. Each template includes a placeholder `{remaining_iterations}` to dynamically insert the number of remaining iterations. The dictionaries `MESSAGE_FIRST_ITERATION`, `MESSAGE_MIDDLE_ITERATION`, and `MESSAGE_FINAL_ITERATION` associate these templates with a user role, indicating the context in which these prompts are used. This code is likely part of a larger system that guides a user or process through a series of steps, ensuring that specific actions are taken at each stage.
 # Global Variables
 
 ---
@@ -19,36 +19,36 @@ This code defines a set of string templates and corresponding message dictionari
 ---
 ### MESSAGE\_FIRST\_ITERATION
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a value of `user`, and the `content` key holds the string from `PROMPT_FIRST_ITERATION`, which provides instructions for the first iteration of a process.
-- **Use**: Used to store and convey the initial message and role for the first iteration of a tool execution process.
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a value of `user`, and the `content` key holds the string from `PROMPT_FIRST_ITERATION`. This string provides instructions for executing tools during the first iteration of a process.
+- **Use**: Used to store and convey the initial message and instructions for the first iteration of a tool execution process.
 
 
 ---
 ### PROMPT\_MIDDLE\_ITERATION
 - **Type**: ``str``
-- **Description**: A multi-line string template that provides instructions for reviewing source code and executing tools during the middle iteration of a process. It includes conditions for when to execute the `SearchTool` in hybrid mode and specifies the number of remaining opportunities to execute tools using the `{remaining_iterations}` placeholder.
-- **Use**: Used to guide the process of reviewing source code and executing tools during the middle iteration of a task.
+- **Description**: A multi-line string template that provides instructions for reviewing source code and executing tools during the middle iterations of a process. It includes conditions for when to execute the `SearchTool` in hybrid mode and emphasizes the need for source code results before returning a response.
+- **Use**: Used as a template for generating messages that guide the execution of tools and decision-making during the middle iterations of a process.
 
 
 ---
 ### MESSAGE\_MIDDLE\_ITERATION
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with a 'role' key set to 'user' and a 'content' key set to the value of `PROMPT_MIDDLE_ITERATION`. The `PROMPT_MIDDLE_ITERATION` is a string that provides instructions for reviewing source code and executing tools during the middle iteration of a process.
-- **Use**: Used to store and provide structured message content for the middle iteration of a process.
+- **Description**: Contains a dictionary with a key `role` set to `user` and a key `content` set to the value of `PROMPT_MIDDLE_ITERATION`. The `PROMPT_MIDDLE_ITERATION` is a string that provides instructions for reviewing source code and executing tools during the middle iteration of a process.
+- **Use**: Used to store and convey user role and instructions for the middle iteration in a process.
 
 
 ---
 ### PROMPT\_FINAL\_ITERATION
 - **Type**: ``str``
 - **Description**: Contains a multi-line string that instructs the system to return a response during the final iteration of a process. It emphasizes the need to use only references from the source code results obtained from tools and to ensure the syntactical correctness of any code or mermaid diagrams included in the response.
-- **Use**: Used to define the content of `MESSAGE_FINAL_ITERATION`, which is likely used in a system to guide the final step of a process.
+- **Use**: Used to define the content of `MESSAGE_FINAL_ITERATION`, which is a dictionary entry for the final iteration message.
 
 
 ---
 ### MESSAGE\_FINAL\_ITERATION
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has the value `user`, and the `content` key is assigned the value of `PROMPT_FINAL_ITERATION`, which is a string prompt for the final iteration of a process.
-- **Use**: Used to store and provide the final iteration message for a user role in a process.
+- **Description**: Contains a dictionary with a key `role` set to `user` and a key `content` set to the value of `PROMPT_FINAL_ITERATION`. `PROMPT_FINAL_ITERATION` is a string that instructs the user to return a response in the final iteration, ensuring that any code or diagrams are syntactically correct and based on tool results.
+- **Use**: Used to define the message content for the final iteration in a process where a response must be returned.
 
 
 

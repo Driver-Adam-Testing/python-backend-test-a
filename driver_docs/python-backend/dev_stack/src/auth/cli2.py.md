@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Command-line interface for authentication using Auth0 device flow with login, whoami, and logout commands.
+CLI for authentication using Auth0 device flow with login, whoami, and logout commands.
 
 # Purpose
-This code is a command-line interface (CLI) tool that manages user authentication using the Auth0 device flow. It uses the `click` library to define a CLI with commands for logging in, checking the current user's identity, and logging out. The `Auth0DeviceAuthenticator` class from the `auth0_device_flow` module is used to handle authentication processes with a specified client ID and domain.
+This code is a command-line interface (CLI) tool that manages user authentication using the Auth0 device flow. It uses the `click` library to define a CLI with commands for logging in, checking the current user's identity, and logging out. The `Auth0DeviceAuthenticator` class from the `auth0_device_flow` module is used to handle the authentication process with Auth0, using a specified `CLIENT_ID` and `DOMAIN`.
 
-The CLI consists of three main commands: [`login`](<#login>), [`whoami`](<#whoami>), and [`logout`](<#logout>). The [`login`](<#login>) command initiates the authentication process and confirms successful login. The [`whoami`](<#whoami>) command retrieves and displays the authenticated user's information by making an HTTP request to the Auth0 userinfo endpoint, using the `httpx` library to handle HTTP requests. The [`logout`](<#logout>) command clears the authentication cache, effectively logging the user out. The code is structured to be executed as a standalone script, as indicated by the `if __name__ == "__main__":` block, which calls the [`cli`](<#cli>) function to start the CLI.
+The CLI defines three commands: [`login`](<#login>), [`whoami`](<#whoami>), and [`logout`](<#logout>). The [`login`](<#login>) command initiates the authentication process and confirms successful login. The [`whoami`](<#whoami>) command retrieves and displays the authenticated user's information by making an HTTP request to the Auth0 userinfo endpoint, using the `httpx` library to handle the HTTP request. The [`logout`](<#logout>) command clears the authentication cache, effectively logging the user out. The script is designed to be executed directly, as indicated by the `if __name__ == "__main__":` block, which calls the [`cli`](<#cli>) function to start the CLI.
 # Imports and Dependencies
 
 ---
@@ -29,14 +29,14 @@ The CLI consists of three main commands: [`login`](<#login>), [`whoami`](<#whoam
 ---
 ### DOMAIN
 - **Type**: ``str``
-- **Description**: Contains the domain name for the Auth0 authentication service used in the application. This domain is specific to the development environment for the 'driverai' application.
-- **Use**: Used to configure the `Auth0DeviceAuthenticator` for authentication operations.
+- **Description**: Contains the domain URL for the Auth0 authentication service used in the application. This string is used to configure the `Auth0DeviceAuthenticator` instance for authentication purposes.
+- **Use**: Used to specify the domain for the Auth0 authentication service in the `Auth0DeviceAuthenticator`.
 
 
 ---
 ### auth
 - **Type**: ``Auth0DeviceAuthenticator``
-- **Description**: Initializes an instance of the `Auth0DeviceAuthenticator` class with the specified `client_id` and `domain`. This instance is used to handle authentication processes using the Auth0 device flow.
+- **Description**: Initializes an instance of the `Auth0DeviceAuthenticator` class with the specified `client_id` and `domain`. This instance is used to handle authentication processes using Auth0's device flow.
 - **Use**: Used to authenticate users and manage authentication tokens in the command-line interface application.
 
 
@@ -46,27 +46,26 @@ The CLI consists of three main commands: [`login`](<#login>), [`whoami`](<#whoam
 ### cli<!-- {{#callable:python-backend/dev_stack/src/auth/cli2.cli}} -->
 [View Source →](<../../../../../dev_stack/src/auth/cli2.py#L13>)
 
-Defines a Click command-line interface (CLI) group.
+Defines a Click command-line interface (CLI) group for managing authentication commands.
 - **Decorators**: `@click.group`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The function is decorated with `@click.group`, which indicates that it is a Click command group.
-    - The function body contains only the `pass` statement, meaning it does not perform any operations itself.
-    - The function serves as a container for subcommands defined elsewhere in the code.
-- **Output**: A Click command group object that can contain subcommands.
+    - Uses the Click library to define a command group named `cli`.
+    - The `cli` function is a placeholder for grouping related commands and does not contain any logic itself.
+- **Output**: A Click command group object that can have commands added to it.
 
 
 ---
 ### login<!-- {{#callable:python-backend/dev_stack/src/auth/cli2.login}} -->
 [View Source →](<../../../../../dev_stack/src/auth/cli2.py#L18>)
 
-Authenticates the user and confirms successful login.
+Authenticates the user and confirms successful login via a command-line interface.
 - **Decorators**: `@cli.command`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the [`authenticate`](<auth0_device_flow.py.md#auth0deviceauthenticatorauthenticate>) method on the `auth` object to obtain authentication tokens.
     - Displays a success message using `click.echo`.
-- **Output**: No output is returned; a success message is printed to the console.
+- **Output**: No return value; outputs a success message to the console.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate`](<auth0_device_flow.py.md#auth0deviceauthenticatorauthenticate>)
 
@@ -79,15 +78,15 @@ Retrieves and displays the current user's information using an access token.
 - **Decorators**: `@cli.command`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `auth.authenticate()` method to obtain authentication tokens.
-    - Extracts the `access_token` from the tokens dictionary.
-    - Creates an authorization header using the `access_token`.
-    - Constructs the user information URL using the `DOMAIN` constant.
-    - Initializes an HTTP client using `httpx.Client()` and sends a GET request to the user information URL with the authorization header.
-    - Raises an exception if the HTTP response status is not successful using `resp.raise_for_status()`.
-    - Parses the JSON response to obtain user information.
-    - Displays a message indicating the user is logged in and prints the user information.
-- **Output**: Displays the current user's information to the console.
+    - Call `auth.authenticate()` to obtain authentication tokens.
+    - Extract the `access_token` from the tokens.
+    - Create an `Authorization` header with the `access_token`.
+    - Construct the `userinfo_url` using the `DOMAIN` constant.
+    - Create an `httpx.Client` instance to make an HTTP GET request to the `userinfo_url` with the headers.
+    - Call `resp.raise_for_status()` to ensure the request was successful.
+    - Parse the JSON response to get the user information.
+    - Display the message '👤 You are logged in as:' followed by the user information.
+- **Output**: Displays the current user's information in the console.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate`](<auth0_device_flow.py.md#auth0deviceauthenticatorauthenticate>)
 

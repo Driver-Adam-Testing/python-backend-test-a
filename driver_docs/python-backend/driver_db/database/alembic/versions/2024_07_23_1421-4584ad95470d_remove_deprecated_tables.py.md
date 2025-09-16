@@ -6,9 +6,9 @@
 Alembic migration script to remove deprecated tables and constraints, with downgrade support.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's primary purpose is to remove deprecated database tables and constraints. Specifically, it defines an [`upgrade`](<#upgrade>) function that drops the `organizations`, `users`, and `llms` tables, as well as certain constraints and indexes related to these tables. The [`upgrade`](<#upgrade>) function is responsible for applying these changes to the database schema.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's primary purpose is to remove deprecated database tables and constraints. Specifically, it drops the `organizations`, `users`, and `llms` tables, as well as certain constraints and indexes related to these tables. The [`upgrade`](<#upgrade>) function executes these operations to modify the database schema by removing these elements.
 
-The script also includes a [`downgrade`](<#downgrade>) function, which reverses the changes made by the [`upgrade`](<#upgrade>) function. This function recreates the dropped tables and constraints, allowing the database schema to revert to its previous state if necessary. The [`downgrade`](<#downgrade>) function defines the structure of the `llms`, `users`, and `organizations` tables, including their columns, data types, and constraints. This migration script is part of a version-controlled sequence of database schema changes, as indicated by the `revision` and `down_revision` identifiers.
+The script also includes a [`downgrade`](<#downgrade>) function, which reverses the changes made by the [`upgrade`](<#upgrade>) function. This function recreates the dropped tables and constraints, allowing the database schema to revert to its previous state. The [`downgrade`](<#downgrade>) function defines the structure of the `llms`, `users`, and `organizations` tables, including their columns, data types, and constraints. This migration script is part of a version-controlled sequence of database schema changes, identified by the `revision` and `down_revision` identifiers.
 # Imports and Dependencies
 
 ---
@@ -22,29 +22,29 @@ The script also includes a [`downgrade`](<#downgrade>) function, which reverses 
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script. This identifier is used to track the specific state of the database schema that this migration script applies to.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring a sequential order of migrations.
-- **Use**: Used by Alembic to track the order of database schema migrations.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations and to apply them correctly.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Description**: Represents a variable used in Alembic migration scripts to label branches in a version control system. It is set to `None`, indicating that no specific branch label is associated with this migration.
+- **Use**: Used to define branch labels for Alembic migrations, but currently not utilized in this script.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is set to `None`, indicating that this Alembic migration script does not depend on any other migrations to be applied before it. It is a global variable used in the context of Alembic migration scripts.
-- **Use**: Indicates the absence of dependencies for the current migration script.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
@@ -60,8 +60,8 @@ Removes deprecated tables and constraints from the database schema.
     - Drops the `users` table from the database.
     - Removes the foreign key constraint `derived_contents_llm_id_fkey` from the `derived_contents` table.
     - Drops the `llms` table from the database.
-    - Removes the index `ix_derived_contents_derived_content_type_id` from the `derived_contents` table.
-    - Drops the `llm_id` column from the `derived_contents` table.
+    - Drops the index `ix_derived_contents_derived_content_type_id` from the `derived_contents` table.
+    - Removes the `llm_id` column from the `derived_contents` table.
 - **Output**: No output is returned.
 
 
@@ -69,16 +69,16 @@ Removes deprecated tables and constraints from the database schema.
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_23_1421-4584ad95470d_remove_deprecated_tables.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_23_1421-4584ad95470d_remove_deprecated_tables.py#L34>)
 
-Reverts database schema changes by adding columns, foreign keys, indexes, and tables that were previously removed.
+Reverts database schema changes by recreating tables, columns, and constraints that were previously removed.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Adds a column `llm_id` to the `derived_contents` table with type `UUID` and allows null values.
-    - Creates a foreign key constraint `derived_contents_llm_id_fkey` on the `derived_contents` table referencing the `llms` table.
-    - Creates an index `ix_derived_contents_derived_content_type_id` on the `derived_contents` table for the `derived_content_type_id` column.
-    - Creates the `llms` table with columns `id`, `name`, `model`, `training_date`, `model_owned_by`, `created_at`, and `updated_at`, setting `id` as the primary key.
-    - Creates the `users` table with columns `id`, `organization_id`, `first_name`, `last_name`, `email`, `hashed_password`, `last_login`, `is_active`, `is_service_account`, `created_at`, and `updated_at`, setting `id` as the primary key and `email` as a unique constraint.
-    - Creates the `organizations` table with columns `id`, `name`, `display_name`, `config`, `created_at`, and `updated_at`, setting `id` as the primary key and `name` and `display_name` as unique constraints.
-- **Output**: No output is returned.
+    - Adds the `llm_id` column to the `derived_contents` table with a UUID type and nullable property.
+    - Creates a foreign key constraint `derived_contents_llm_id_fkey` linking `llm_id` in `derived_contents` to `id` in `llms`.
+    - Creates an index `ix_derived_contents_derived_content_type_id` on the `derived_content_type_id` column in the `derived_contents` table.
+    - Creates the `llms` table with columns for `id`, `name`, `model`, `training_date`, `model_owned_by`, `created_at`, and `updated_at`, with `id` as the primary key.
+    - Creates the `users` table with columns for `id`, `organization_id`, `first_name`, `last_name`, `email`, `hashed_password`, `last_login`, `is_active`, `is_service_account`, `created_at`, and `updated_at`, with `id` as the primary key and a unique constraint on `email`.
+    - Creates the `organizations` table with columns for `id`, `name`, `display_name`, `config`, `created_at`, and `updated_at`, with `id` as the primary key and unique constraints on `name` and `display_name`.
+- **Output**: No return value; modifies the database schema.
 
 
 

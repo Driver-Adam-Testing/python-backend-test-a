@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for summarizing folder contents based on detailed descriptions of its subcomponents.
+A guide for writing concise single-sentence descriptions of folder contents in a software codebase.
 
 # Purpose
-The folder `folder_name` contains various subcomponents, including configuration files for setting up the software environment, scripts for automating tasks, and documentation files that provide guidance on using the software.
+The configuration file defines the settings and parameters necessary for the software to function correctly. It specifies key-value pairs that configure various aspects of the application, such as environment variables, database connections, and feature toggles. The file ensures that the software can adapt to different environments and requirements without changing the source code. By centralizing configuration, it allows for easier maintenance and updates, as changes can be made in one place and applied across the application.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

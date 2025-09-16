@@ -20,12 +20,6 @@ from constructs import Construct
 
 # TODO: parameterize task count and container size
 class BackendParams:
-    cors_origins: str
-    allowed_ips: list[str]
-    environment: str
-    use_legacy_dropzone: bool
-    metrics_bus: aws_events.EventBus
-
     def __init__(
         self,
         cors_origins: str,
@@ -330,7 +324,6 @@ class Backend(Construct):
             export_name="EcsServiceArn",
             value=self.service.service.service_arn,
         )
-
 
         # In the service: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         # response = client.put_events(

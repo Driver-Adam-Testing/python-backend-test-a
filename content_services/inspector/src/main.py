@@ -12,7 +12,6 @@ from deep_context_docs import deep_context_docs
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
-from utils.synthesis.deep_context import DeepContextDoc
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -23,6 +22,7 @@ inspection_image = (
     )
     .pip_install(
         [
+            "aiolimiter==1.2.1",
             "boto3",
             "requests",
             "openai==1.99.1",
@@ -202,7 +202,10 @@ async def inspect_db(
 
         previous_version = await try_get_prev_version(version_id)
         previous_version_id = previous_version.id if previous_version else None
-        previous_version_root_node_id = previous_version.root_node.id
+        previous_version_root_node_id = (
+            previous_version.root_node.id if previous_version else None
+        )
+        flat_topo_file_diff_dag = None
 
         codebase_name = version.primary_asset.display_name
 
@@ -428,8 +431,8 @@ async def inspect_db(
         exception_details = (
             f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
-        send_exception_email.remote(exception_details)
         print(f"Error while processing version {version_id}: {e}")
+        send_exception_email.remote(exception_details)
         set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
         raise
     else:
@@ -447,27 +450,31 @@ async def inspect_db(
         # TODO: do deep context doc specific I/O or further analysis.
 
         # TODO: Fetch old document content
-        previous_version_root_content = get_all_derived_content_by_node_id(
-            node_id=previous_version_root_node_id
-        )
-        update_set = {
-            ContentKind.DEEP_CONTEXT_ARCHITECTURE,
-            ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
-        }
-        previous_version_content = [
-            DeepContextDoc(
-                doc_kind=DeepContextDocKind.from_content_kind(
-                    content_kind=c.content_kind
-                ),
-                name=None,
-                user_context={"desired_length": "SHORT"},
-                sources=[],
-                config_content="",
-                doc_content=c.content,
+        if previous_version_root_node_id is not None:
+            update_set = {
+                ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+                ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+            }
+            previous_version_root_content = await get_all_derived_content_by_node_id(
+                node_id=previous_version_root_node_id
             )
-            for c in previous_version_root_content
-            if c.content_kind in update_set
-        ]
+            previous_version_content = [
+                DeepContextDoc(
+                    doc_kind=DeepContextDocKind.from_content_kind(
+                        content_kind=c.content_kind
+                    ),
+                    name=None,
+                    user_context={"desired_length": "SHORT"},
+                    sources=[],
+                    config_content="",
+                    doc_content=c.content,
+                )
+                for c in previous_version_root_content
+                if c.content_kind in update_set
+            ]
+        else:
+            previous_version_root_content = None
+            previous_version_content = None
 
         _completed_docs = await deep_context_docs.remote.aio(
             previous_version_id,
@@ -709,7 +716,7 @@ async def prepare_deep_context_args(
     version_id: uuid.UUID,
 ) -> tuple[
     uuid.UUID | None,
-    list[DeepContextDoc] | None,
+    list | None,
     FlatTopoFileDiffDag | None,
     uuid.UUID,
     str | None,
@@ -1134,7 +1141,7 @@ def run_connect_unconnected_repos() -> None:
 
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
-    .pip_install("sendgrid", "strawberry-graphql")
+    .pip_install("sendgrid", "strawberry-graphql", "aiolimiter")
     .add_local_python_source(
         "common",
         "database",

@@ -6,7 +6,6 @@ import modal
 from common import app
 from database.models_enums import ContentKind
 from utils.dag import FlatTopoFileDiffDag
-from utils.synthesis.deep_context import DeepContextDoc
 
 deep_context_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -127,6 +126,7 @@ async def make_changelog(
     image=deep_context_image,
     secrets=[
         modal.Secret.from_name("db"),
+        modal.Secret.from_name("open-ai"),
     ],
     proxy=(
         modal.Proxy.from_name("my-proxy")
@@ -141,12 +141,16 @@ async def make_changelog(
 )
 async def deep_context_docs(
     old_version_id: uuid.UUID | None,
-    old_version_content: list[DeepContextDoc] | None,
+    old_version_content: list | None,
     code_diff: FlatTopoFileDiffDag | None,
     new_version_id: uuid.UUID,
     install_id: str | None,
 ) -> list:
+    from database.db import async_engine
+    from database.models import DerivedContent
     from database.models_enums import AutoDocConfigKind, VersionStatus
+    from sqlmodel import delete
+    from sqlmodel.ext.asyncio.session import AsyncSession
     from utils.db import get_version_by_id
     from utils.synthesis.deep_context import (
         DeepContextDoc,
@@ -168,8 +172,8 @@ async def deep_context_docs(
         # TODO: in `run_autodoc` when possible or empty if lost (e.g., the sources list and config
         # TODO: content supposed to contain the TOML as a string).
         update_set = {
-            ContentKind.DEEP_CONTEXT_ARCHITECTURE,
-            ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+            DeepContextDocKind.ARCHITECTURE,
+            DeepContextDocKind.LLM_ONBOARDING,
         }
 
         update_tasks = [
@@ -177,7 +181,32 @@ async def deep_context_docs(
             for doc in old_version_content
             if doc.doc_kind in update_set
         ]
+        if install_id is not None:
+            # TODO: making it fresh for now, but need to do an update flow
+            await make_changelog.remote.aio(
+                version_id=new_version_id,
+                install_id=install_id,
+            )
         completed_docs = await asyncio.gather(*update_tasks)
+
+        # NOTE: the IO takes place in the other modal functions for changelog and fresh autodocs
+        # but doing it here for update case since it all runs in main thread anyway.
+        async with AsyncSession(async_engine) as session, session.begin():
+            for doc in completed_docs:
+                content_kind = doc.doc_kind.into_content_kind()
+                dc_delete_query = delete(DerivedContent).where(
+                    DerivedContent.node_id == root_node_id,
+                    DerivedContent.content_kind == content_kind,
+                )
+                await session.exec(dc_delete_query)
+                new_dc = DerivedContent(
+                    node_id=root_node_id,
+                    relative_path=new_version.root_node.relative_path,
+                    content_kind=content_kind,
+                    content=doc.doc_content,
+                    misc_metadata=None,
+                )
+                session.add(new_dc)
         # TODO: Add functionality to update the change log.
     else:
         run_autodoc = modal.Function.from_name(app_name="autodocs", name="run_autodoc")
@@ -195,7 +224,7 @@ async def deep_context_docs(
                 page_node_id=str(root_node_id),
                 config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
                 document_goal=LLM_ONBOARDING_INTENT,
-                user_context="MEDIUM",
+                user_context="SHORT",
                 content_kind=ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
             ),
         ]

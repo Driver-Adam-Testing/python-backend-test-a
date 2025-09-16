@@ -149,7 +149,7 @@ class Backend(Construct):
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
         container_environment_vars = {
-            "BACKEND_CORS_ORIGINS": params.cors_origins.split(","),
+            "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
             "PROJECT_NAME": "DriverAI API",
             "ENVIRONMENT": params.environment,
@@ -330,7 +330,6 @@ class Backend(Construct):
             export_name="EcsServiceArn",
             value=self.service.service.service_arn,
         )
-
 
         # In the service: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         # response = client.put_events(

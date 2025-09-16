@@ -147,9 +147,11 @@ async def get_result_loading_config(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
-    proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    proxy=(
+        modal.Proxy.from_name("my-proxy")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
+    ),
     memory=4096,
     timeout=3600 * 12,
     region="us-east",
@@ -683,8 +685,8 @@ def get_file_content(path: Path) -> str:
         modal.Secret.from_name("db"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
@@ -721,9 +723,11 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
         modal.Secret.from_name("db"),
     ],
     timeout=3600 * 12,
-    proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    proxy=(
+        modal.Proxy.from_name("my-proxy")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
+    ),
 )
 def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine

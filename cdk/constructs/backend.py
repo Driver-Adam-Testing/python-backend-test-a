@@ -28,7 +28,7 @@ class BackendParams:
 
     def __init__(
         self,
-        cors_origins: list[str],
+        cors_origins: str,
         allowed_ips: list[str],
         environment: str,
         use_legacy_dropzone: bool,
@@ -36,7 +36,7 @@ class BackendParams:
         aws_region: str,
         aws_account: str,
     ) -> None:
-        self.cors_origins = ",".join(cors_origins)
+        self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
         self.use_legacy_dropzone = use_legacy_dropzone
@@ -149,7 +149,7 @@ class Backend(Construct):
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
         container_environment_vars = {
-            "BACKEND_CORS_ORIGINS": params.cors_origins,
+            "BACKEND_CORS_ORIGINS": params.cors_origins.split(","),
             "PORT": "8000",
             "PROJECT_NAME": "DriverAI API",
             "ENVIRONMENT": params.environment,

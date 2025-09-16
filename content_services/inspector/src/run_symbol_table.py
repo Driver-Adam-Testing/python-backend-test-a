@@ -19,21 +19,21 @@ def run_and_print_sym_table(
         symbol_table, timing = build_symbol_table(
             files, project_abspath, return_timing=True
         )
-        print_timing_info(timing, "na")
+        print_timing_info(timing)
     else:
         symbol_table = build_symbol_table(files, project_abspath)
 
     print_summary(symbol_table)
 
 
-def print_timing_info(timing: TimingInfo, algorithm: str) -> None:
+def print_timing_info(timing: TimingInfo) -> None:
     """Print timing information for a single approach."""
     BLUE = "\033[94m"
     CYAN = "\033[96m"
     BOLD = "\033[1m"
     RESET = "\033[0m"
 
-    print(f"\n{BOLD}{BLUE}⏱️  {algorithm.upper()} TIMING RESULTS{RESET}")
+    print(f"\n{BOLD}{BLUE}⏱️  TIMING RESULTS{RESET}")
     print("-" * 40)
     print(f"Parsing:      {CYAN}{timing.parsing_time:.3f}s{RESET}")
     print(f"Visibility:   {CYAN}{timing.visibility_time:.3f}s{RESET}")
@@ -50,7 +50,7 @@ def main() -> None:
     parser.add_argument(
         "project_path",
         nargs="?",
-        default="/Users/shaneghiotto/driver/uploaded_codebases/test_c/deep-includes-demo",
+        default="/Users/shaneghiotto/driver/uploaded_codebases/Avalonia",
         help="Path to the project directory",
     )
     parser.add_argument(

@@ -186,7 +186,10 @@ async def inspect_db(
         InsufficientBalanceError,
         compute_and_log_code_diff_size_in_bytes,
     )
-    from utils.io import download_all_source_files_in_parallel
+    from utils.io import (
+        copy_codebase_to_modal_volume,
+        download_all_source_files_in_parallel,
+    )
 
     try:
         # Get the Version and check if it has previous_version_id
@@ -284,17 +287,13 @@ async def inspect_db(
                 # NOTE: can still achieve PR of docs by running export_tech_docs_to_zip manually with install_id via local entrypoint
                 print("Download complete")
 
-            # copy to modal volume
             source_code_storage_path = str(version_id)
-            for p in file_paths:
-                dest_path = Path(
-                    f"{MODAL_VOLUME_MOUNT_POINT}/{source_code_storage_path}"
-                ) / p.relative_to(download_root)
-                dest_path.parent.mkdir(parents=True, exist_ok=True)
-                with p.open("rb") as src_f, dest_path.open("wb") as dest_f:
-                    dest_f.write(src_f.read())
-            volume.commit()
-
+            copy_codebase_to_modal_volume(
+                source_code_storage_path=Path(source_code_storage_path),
+                file_paths=file_paths,
+                download_root=download_root,
+                volume=volume,
+            )
             print("Uploaded to volume")
 
             codebase_dag: FileTreeDag = build_dag(
@@ -426,8 +425,6 @@ async def inspect_db(
                     source_code_storage_path=source_code_storage_path,
                 )
             finally:
-                # remove from volume after complete
-                volume.remove_file(path=source_code_storage_path, recursive=True)
                 with contextlib.suppress(Exception):
                     volume.remove_file(path=symbol_table_storage_path)
     except Exception as e:

@@ -69,9 +69,6 @@ class SymbolResolver(ABC):
         """
         Given a file's imports, return all symbols visible through those imports.
         Each language implements its own logic:
-        - C/C++: Follow includes transitively, return all symbols
-        - Python: Resolve modules, respect __all__, handle namespaces
-        - Java: Resolve packages, handle wildcards
         """
         # NOTE: consider making this NOT an abstractmethod, and then having abstractmethods for
         # `resolve_global_imports` (for C#) and `resolve_file_imports` which can be parallelizable

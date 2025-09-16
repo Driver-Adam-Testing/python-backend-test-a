@@ -107,7 +107,6 @@ def _compute_visibility_scc(
 class CCppResolver(SymbolResolver):
     language = "c_cpp"
 
-    # TODO: DFS
     def resolve_imports_to_symbols(
         self,
         all_files_imports: dict[Path, list[RawTreeSitterSymbolData]],

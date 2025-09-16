@@ -17,10 +17,8 @@ class DevelopmentStack(Stack):
         self.cdkenv = kwargs.get("env")
         print(f"AWS environment set to : {self.cdkenv}")
 
-        cors_origins = (
-            "https://app.dev.driverai.com,https://labs.dev.driverai.com,"
-            "https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
-        )
+        cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
+        
 
         self.metrics_lambda = MetricsLambda(
             self,

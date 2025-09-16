@@ -32,12 +32,12 @@ class PMSStack(Stack):
             "ApiBackend",
             BackendParams(
                 environment="pms",
-                cors_origins=[cors_origins],
+                cors_origins=cors_origins,
                 allowed_ips=[],  # All IPs currently allowed
                 use_legacy_dropzone=True,
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
-                aws_account=self.cdkenv.account
+                aws_account=self.cdkenv.account,
             ),
         )
         self.onboarding_lambda = AssetOnboardingLambda(

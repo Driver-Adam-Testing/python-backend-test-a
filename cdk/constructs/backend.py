@@ -20,15 +20,9 @@ from constructs import Construct
 
 # TODO: parameterize task count and container size
 class BackendParams:
-    cors_origins: str
-    allowed_ips: list[str]
-    environment: str
-    use_legacy_dropzone: bool
-    metrics_bus: aws_events.EventBus
-
     def __init__(
         self,
-        cors_origins: list[str],
+        cors_origins: str,
         allowed_ips: list[str],
         environment: str,
         use_legacy_dropzone: bool,
@@ -148,7 +142,6 @@ class Backend(Construct):
             ],
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
-
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",

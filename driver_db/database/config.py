@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str | None = None
     POSTGRES_PASSWORD: str | None = None
     POSTGRES_DB: str = ""
-    ENVIRONMENT: Literal["local", "development", "staging", "production"] = "local"
+    ENVIRONMENT: Literal["local", "development", "staging", "production", "pms"] = "local"
 
     # NOTE: if DATABASE_URL is set, it overrides the other postgres params
     DATABASE_URL: str | None = None

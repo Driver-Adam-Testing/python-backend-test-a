@@ -11,6 +11,7 @@ FASTMCP_MASK_ERROR_DETAILS = True
 os.environ["FASTMCP_STATELESS_HTTP"] = str(FASTMCP_STATELESS_HTTP)
 os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
 
+import logging
 from pathlib import Path
 
 import fastmcp
@@ -18,12 +19,17 @@ from database.db import get_session
 from database.models import DerivedContent, Node, PrimaryAsset, Version
 from database.models_enums import ContentKind, VersionStatus
 from fastmcp import Context, FastMCP
+from fastmcp.exceptions import ToolError
+from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
+from fastmcp.server.middleware.logging import LoggingMiddleware
 from shared.prompts.structured_prompting import Component, Prompt
 from sqlmodel import select
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id
 from .code_map_v2 import get_code_map_simple
 from .mcp_helpers import get_latest_version_for_codebase
+
+logger = logging.getLogger(__name__)
 
 CODEBASE_NAME_PARAM_DESCRIPTION = """Name of the Driver supported codebase.  The 'get_codebase_names' tool can be used to generate a list of supported codebases.  Only codebase names returned by this tool are valid for this parameter.
 """
@@ -55,27 +61,62 @@ assert (
     fastmcp.settings.mask_error_details is True
 ), "FastMCP must be configured to mask error details."
 
+my_mcp.add_middleware(
+    ErrorHandlingMiddleware(
+        logger=logger,
+        include_traceback=True,
+        error_callback=None,
+        transform_errors=False,
+    )
+)
+
 auth_middleware = McpAuthMiddleware()
 my_mcp.add_middleware(auth_middleware)
+
+my_mcp.add_middleware(
+    LoggingMiddleware(
+        logger=logger,
+        log_level=logging.INFO,
+        include_payloads=True,
+        max_payload_length=1000,
+        methods=None,
+        payload_serializer=None,
+    )
+)
 
 
 def _get_root_node_content(
     org_id: str, codebase_name: str, content_kind: ContentKind
-) -> DerivedContent | None:
+) -> DerivedContent:
     with get_session() as db:
+        primary_asset = db.exec(
+            select(PrimaryAsset)
+            .where(PrimaryAsset.display_name == codebase_name)
+            .where(PrimaryAsset.organization_id == org_id)
+            .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
+        ).first()
+
+        if not primary_asset:
+            raise ToolError(
+                f"`{codebase_name}` is not codebase recognized by Driver.  Use the `get_codebase_names` tool to get a list of valid codebase names."
+            )
+
         derived_content = db.exec(
             select(DerivedContent)
             .join(Node, Node.id == DerivedContent.node_id)
             .join(Version, Version.id == Node.version_id)
-            .join(PrimaryAsset, PrimaryAsset.id == Version.primary_asset_id)
-            .where(PrimaryAsset.display_name == codebase_name)
-            .where(PrimaryAsset.organization_id == org_id)
-            .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
+            .where(Version.primary_asset_id == primary_asset.id)
             .where(Version.status == VersionStatus.GENERATION_COMPLETE)
             .where(Node.depth == 0)
             .where(DerivedContent.content_kind == content_kind)
             .order_by(Version.updated_at.desc())
-        ).first()  # Assumes one entry
+        ).first()
+
+        if not derived_content:
+            raise ToolError(
+                f"No {content_kind.value} content exists for the `{codebase_name}` codebase."
+            )
+
         return derived_content
 
 
@@ -239,7 +280,9 @@ def get_file_documentation(
     with get_session() as db:
         version = get_latest_version_for_codebase(db, org_id, codebase_name)
         if not version:
-            return f"Error: No completed documentation found for codebase '{codebase_name}'."
+            raise ToolError(
+                f"No completed documentation found for codebase '{codebase_name}'."
+            )
 
         full_path = f"{codebase_name}/{path.strip('/')}"
 
@@ -250,7 +293,9 @@ def get_file_documentation(
         ).first()
 
         if not node:
-            return f"Error: File '{path}' not found in codebase '{codebase_name}' documentation. "
+            raise ToolError(
+                f"File '{path}' not found in codebase '{codebase_name}' documentation. "
+            )
 
         content = db.exec(
             select(DerivedContent)
@@ -259,7 +304,9 @@ def get_file_documentation(
         ).first()
 
         if not content or not content.content:
-            return f"No documentation available for '{path}' in codebase '{codebase_name}'. "
+            raise ToolError(
+                f"No documentation available for '{path}' in codebase '{codebase_name}'. "
+            )
         return content.content
 
 

@@ -6,9 +6,9 @@
 Alembic migration script adding VCS fields and enum values to database schema.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script modifies the database schema by adding new columns and enum values to existing tables and types. Specifically, it introduces a new enum type `primaryassetprovider` with values such as `GITHUB`, `GITLAB_SELF_MANAGED`, `BITBUCKET`, and `USER`. This enum is used to add a new column `provider` to the `v2_primary_asset` table. The script also adds `vcs_hash` and `vcs_metadata` columns to the `v2_version` table. Additionally, it updates the `contentkind` enum type by adding new values like `CODEBASE_AUDIENCES` and `CODEBASE_DOMAINS`.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script modifies the database schema by adding new columns and enum values to existing tables and types. Specifically, it introduces a new enum type `primaryassetprovider` with values such as `GITHUB`, `GITLAB_SELF_MANAGED`, `BITBUCKET`, and `USER`. It adds a `provider` column to the `v2_primary_asset` table, which uses this new enum type. Additionally, it adds `vcs_hash` and `vcs_metadata` columns to the `v2_version` table. The script also updates existing records in the `v2_primary_asset` table based on certain conditions and makes the `provider` column non-nullable.
 
-The script includes logic to update existing records in the `v2_primary_asset` table based on certain conditions, such as setting the `provider` column to `USER`, `GITHUB`, or `GITLAB_SELF_MANAGED` depending on the presence of `repository_id` and `installation_id`. It also updates the `vcs_hash` column in the `v2_version` table based on the `provider` value. The [`upgrade`](<#upgrade>) function implements these changes, while the [`downgrade`](<#downgrade>) function reverses them, removing the added columns and enum values. This script is intended to be part of a version-controlled database schema management process.
+The script includes both [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>) functions. The [`upgrade`](<#upgrade>) function applies the changes to the database schema, while the [`downgrade`](<#downgrade>) function reverses these changes. The [`downgrade`](<#downgrade>) function removes the added columns and enum values, effectively restoring the database to its previous state. The script also includes SQL commands to update the `contentkind` type by adding and removing specific values. This migration script is part of a version control system for database schema changes, ensuring that the database structure evolves in a controlled manner.
 # Imports and Dependencies
 
 ---
@@ -23,29 +23,29 @@ The script includes logic to update existing records in the `v2_primary_asset` t
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for a specific database schema revision in Alembic.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
+- **Use**: Used to identify the current state of the database schema in Alembic migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
-- **Use**: Used by Alembic to determine the order of schema migrations.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Used to define branch labels for the migration script, but currently not utilized as it is set to `None`.
+- **Use**: Used to define branch labels for the migration script, but currently not assigned any value.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -54,20 +54,20 @@ The script includes logic to update existing records in the `v2_primary_asset` t
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_07_16_1251-e92af25eccc5_adds_vcs_hash_vcs_metadata_to_version_.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_07_16_1251-e92af25eccc5_adds_vcs_hash_vcs_metadata_to_version_.py#L21>)
 
-Modifies the database schema by adding new columns, updating enum types, and setting default values for specific conditions.
+Executes a database schema upgrade to add new columns, indexes, and enum values, and updates existing data based on specific conditions.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Create a new enum type `primaryassetprovider` with values 'GITHUB', 'GITLAB_SELF_MANAGED', 'BITBUCKET', and 'USER'.
-    - Bind the `primaryassetprovider` enum type to the current database connection.
-    - Add a new nullable column `provider` of type `primaryassetprovider` to the `v2_primary_asset` table.
-    - Create a non-unique index on the `provider` column of the `v2_primary_asset` table.
-    - Add new nullable columns `vcs_hash` and `vcs_metadata` to the `v2_version` table.
-    - Add new values 'CODEBASE_AUDIENCES', 'CODEBASE_DOMAINS', 'CODEBASE_KINDS', and 'CODEBASE_ENTRY_POINTS' to the `contentkind` enum type.
-    - Update the `provider` column in `v2_primary_asset` to 'USER' for rows where `kind` is 'FILE', 'PAGE', or 'PAGE_TEMPLATE'.
-    - Update the `provider` column in `v2_primary_asset` for `kind` 'CODEBASE' based on the presence of `repository_id` and `installation_id`.
-    - Set `vcs_hash` in `v2_version` to `display_name` where `provider` in `v2_primary_asset` is not 'USER'.
-    - Alter the `provider` column in `v2_primary_asset` to be non-nullable.
-- **Output**: No output is returned as the function modifies the database schema directly.
+    - Creates a new enum type `primaryassetprovider` with values 'GITHUB', 'GITLAB_SELF_MANAGED', 'BITBUCKET', and 'USER'.
+    - Binds the `primaryassetprovider` enum type to the current database connection.
+    - Adds a new nullable column `provider` of type `primaryassetprovider` to the `v2_primary_asset` table.
+    - Creates a non-unique index on the `provider` column of the `v2_primary_asset` table.
+    - Adds new nullable columns `vcs_hash` and `vcs_metadata` to the `v2_version` table.
+    - Adds new values 'CODEBASE_AUDIENCES', 'CODEBASE_DOMAINS', 'CODEBASE_KINDS', and 'CODEBASE_ENTRY_POINTS' to the `contentkind` enum type.
+    - Updates the `provider` column in `v2_primary_asset` to 'USER' for rows where `kind` is 'FILE', 'PAGE', or 'PAGE_TEMPLATE'.
+    - Updates the `provider` column in `v2_primary_asset` for rows where `kind` is 'CODEBASE' based on the presence of `repository_id` and `installation_id`.
+    - Sets `vcs_hash` in `v2_version` to `display_name` for rows where the associated `v2_primary_asset.provider` is not 'USER'.
+    - Alters the `provider` column in `v2_primary_asset` to be non-nullable.
+- **Output**: None
 
 
 ---
@@ -77,12 +77,12 @@ Modifies the database schema by adding new columns, updating enum types, and set
 Reverts database schema changes by removing specific columns, indexes, and enum values.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Removes the `vcs_metadata` column from the `v2_version` table.
-    - Removes the `vcs_hash` column from the `v2_version` table.
-    - Drops the index `ix_v2_primary_asset_provider` from the `v2_primary_asset` table.
-    - Removes the `provider` column from the `v2_primary_asset` table.
-    - Executes SQL commands to drop specific enum values from the `contentkind` type.
-- **Output**: No output is returned as the function returns `None`.
+    - Removes the 'vcs_metadata' column from the 'v2_version' table.
+    - Removes the 'vcs_hash' column from the 'v2_version' table.
+    - Drops the index 'ix_v2_primary_asset_provider' from the 'v2_primary_asset' table.
+    - Removes the 'provider' column from the 'v2_primary_asset' table.
+    - Executes SQL commands to drop specific enum values from the 'contentkind' type.
+- **Output**: No output is returned as the function returns None.
 
 
 

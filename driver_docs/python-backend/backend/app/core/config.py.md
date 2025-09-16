@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration settings for a Python backend application using Pydantic for environment variables and validation.
+Configuration settings for a Python backend application using Pydantic for environment variables.
 
 # Purpose
-The code defines a configuration management system using the `pydantic` library, specifically leveraging `BaseSettings` from `pydantic_settings`. It is designed to manage application settings and environment variables for different deployment environments such as local, development, staging, and production. The `Settings` class encapsulates various configuration parameters, including API endpoints, authentication credentials, AWS access details, and GitHub integration secrets. These settings are initialized with default values, many of which are placeholders (`DEFAULT_SECRET`) that must be changed before deployment.
+The code defines a configuration management system using the `pydantic` library, specifically leveraging `BaseSettings` from `pydantic_settings`. It is designed to manage application settings and environment variables for different deployment environments such as local, development, staging, and production. The `Settings` class encapsulates various configuration parameters, including API endpoints, authentication credentials, AWS settings, GitHub integration details, and feature flags. These settings are initialized with default values, many of which are placeholders that must be changed before deployment, as indicated by the `DEFAULT_SECRET` constant.
 
-The `Settings` class includes a custom validator, [`_check_non_default_secrets`](<#settings_check_non_default_secrets>), which ensures that sensitive information is not left at its default value. If any secret remains unchanged and the environment is not local, the code raises a `ValueError`. For local environments, it issues a warning instead. The [`parse_cors`](<#parse_cors>) function is used to process CORS origins, allowing them to be specified as either a list or a comma-separated string. The configuration is loaded from an `.env` file, and the `Settings` instance is created at the end of the file, making it ready for use in the application.
+The `Settings` class includes a custom validator, [`_check_non_default_secrets`](<#settings_check_non_default_secrets>), which ensures that sensitive fields do not retain their default placeholder values in non-local environments. If a field's value is not updated from `DEFAULT_SECRET`, the code raises a warning in a local environment or an error in other environments. The [`parse_cors`](<#parse_cors>) function is used to process CORS origin settings, allowing them to be specified as either a list or a comma-separated string. The `settings` instance of the `Settings` class is created at the end of the file, making the configuration readily available for use throughout the application.
 # Imports and Dependencies
 
 ---
@@ -35,7 +35,7 @@ The `Settings` class includes a custom validator, [`_check_non_default_secrets`]
 ---
 ### settings
 - **Type**: ``Settings``
-- **Description**: Represents an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This instance holds configuration settings for the application, including API paths, authentication credentials, AWS settings, and other environment-specific parameters.
+- **Description**: Represents an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This instance holds configuration settings for the application, including API paths, authentication credentials, AWS settings, and other environment-specific configurations.
 - **Use**: Used to access and manage application configuration settings throughout the codebase.
 
 
@@ -47,11 +47,11 @@ The `Settings` class includes a custom validator, [`_check_non_default_secrets`]
 
 - **Members**:
     - `model_config`: Defines configuration for environment variables and extra settings.
-    - `API_V1_STR`: Specifies the API version 1 string.
-    - `STUDIO_V1_STR`: Specifies the studio version 1 string.
+    - `API_V1_STR`: Specifies the API version 1 string path.
+    - `STUDIO_V1_STR`: Specifies the Studio version 1 string path.
     - `ACCESS_TOKEN_EXPIRE_MINUTES`: Sets the expiration time for access tokens in minutes.
-    - `DOMAIN`: Defines the domain name.
-    - `ENVIRONMENT`: Specifies the environment type.
+    - `DOMAIN`: Defines the domain name for the application.
+    - `ENVIRONMENT`: Specifies the current environment of the application.
     - `AUTH0_DOMAIN`: Holds the Auth0 domain secret.
     - `AUTH0_CLIENT_ID`: Holds the Auth0 client ID secret.
     - `AUTH0_AUDIENCE`: Holds the Auth0 audience secret.
@@ -64,22 +64,26 @@ The `Settings` class includes a custom validator, [`_check_non_default_secrets`]
     - `AWS_REGION`: Holds the AWS region secret.
     - `AWS_S3_ENDPOINT_URL`: Specifies the AWS S3 endpoint URL.
     - `AWS_S3_CODE_BUCKET_SUFFIX`: Holds the AWS S3 code bucket suffix secret.
-    - `DROPZONE_BUCKET_NAME`: Holds the dropzone bucket name secret.
-    - `USE_LEGACY_DROPZONE`: Indicates whether to use the legacy dropzone.
-    - `INSPECTOR_BUCKET_NAME`: Holds the inspector bucket name secret.
-    - `PORT`: Specifies the port number.
-    - `HOST`: Specifies the host address.
+    - `DROPZONE_BUCKET_NAME`: Holds the Dropzone bucket name secret.
+    - `USE_LEGACY_DROPZONE`: Indicates whether to use the legacy Dropzone.
+    - `INSPECTOR_BUCKET_NAME`: Holds the Inspector bucket name secret.
+    - `PORT`: Specifies the port number for the application.
+    - `HOST`: Specifies the host address for the application.
     - `GH_CLIENT_ID`: Holds the GitHub client ID secret.
     - `GH_CLIENT_SECRET`: Holds the GitHub client secret.
     - `GH_REDIRECT_URI`: Holds the GitHub redirect URI secret.
     - `GH_WEBHOOK_SECRET`: Holds the GitHub webhook secret.
     - `GH_CLIENT_PEM_SECRET`: Holds the GitHub client PEM secret.
     - `MODAL_ENVIRONMENT`: Holds the modal environment secret.
-    - `SENTRY_DSN`: Specifies the Sentry DSN.
-    - `LOG_LEVEL`: Defines the log level.
-    - `BACKEND_CORS_ORIGINS`: Specifies the backend CORS origins.
+    - `SENTRY_DSN`: Specifies the Sentry DSN for error tracking.
+    - `LOG_LEVEL`: Defines the logging level for the application.
+    - `BACKEND_CORS_ORIGINS`: Specifies the allowed CORS origins for the backend.
     - `PROJECT_NAME`: Holds the project name secret.
-- **Description**: Manages application settings and configuration, including environment variables, API endpoints, authentication secrets, AWS credentials, and other deployment-specific parameters. It uses Pydantic's `BaseSettings` to load and validate settings, and includes a validator to ensure that default secrets are changed before deployment.
+    - `TURNSTILE_SECRET`: Holds the Turnstile CAPTCHA secret.
+    - `TURNSTILE_EXPECTED_HOSTNAME`: Specifies the expected hostname for Turnstile CAPTCHA.
+    - `TURNSTILE_MAX_AGE_SEC`: Sets the maximum age for Turnstile CAPTCHA in seconds.
+    - `ENABLE_SIGNUP`: Indicates whether signup is enabled.
+- **Description**: Manages application settings and configuration, including environment variables, API paths, authentication secrets, AWS credentials, and feature flags. It validates non-default secrets and warns or raises errors if they are not changed from the default value.
 - **Methods**:
     - [`python-backend/backend/app/core/config.Settings._check_non_default_secrets`](<#settings_check_non_default_secrets>)
     - [`python-backend/backend/app/core/config.Settings._handle_default_secret`](<#settings_handle_default_secret>)
@@ -90,18 +94,17 @@ The `Settings` class includes a custom validator, [`_check_non_default_secrets`]
 
 ---
 #### Settings\.\_check\_non\_default\_secrets<!-- {{#callable:python-backend/backend/app/core/config.Settings._check_non_default_secrets}} -->
-[View Source →](<../../../../../backend/app/core/config.py#L72>)
+[View Source →](<../../../../../backend/app/core/config.py#L80>)
 
-Checks if any fields in the model have the default secret value and handles them accordingly.
+Validates that all secret fields in the model have been changed from their default values.
 - **Decorators**: `@model_validator`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Iterates over each field in `self.model_fields`.
-    - Retrieves the default value and actual value for each field.
+    - Retrieves the default value and the actual value of each field.
     - Checks if the default value is a string and equals `DEFAULT_SECRET`, and if the actual value is also `DEFAULT_SECRET`.
     - Calls [`_handle_default_secret`](<#settings_handle_default_secret>) for fields that meet the above condition.
-    - Returns `self` after processing all fields.
-- **Output**: Returns the instance of the class (`self`).
+- **Output**: Returns the instance of the class (`Self`).
 - **Functions Called**:
     - [`python-backend/backend/app/core/config.Settings._handle_default_secret`](<#settings_handle_default_secret>)
 - **See also**: [`python-backend/backend/app/core/config.Settings`](<#settings>)  (Base Class)
@@ -109,17 +112,17 @@ Checks if any fields in the model have the default secret value and handles them
 
 ---
 #### Settings\.\_handle\_default\_secret<!-- {{#callable:python-backend/backend/app/core/config.Settings._handle_default_secret}} -->
-[View Source →](<../../../../../backend/app/core/config.py#L86>)
+[View Source →](<../../../../../backend/app/core/config.py#L94>)
 
-Checks if a variable's value is set to the default secret and issues a warning or raises an error based on the environment.
+Checks if a variable is set to the default secret and issues a warning or raises an error based on the environment.
 - **Inputs**:
     - `var_name`: The name of the variable to check for the default secret value.
 - **Logic and Control Flow**:
-    - Constructs a message indicating that the variable's value is set to the default secret.
+    - Constructs a message indicating that the variable is set to the default secret value.
     - Checks if the environment is set to 'local'.
     - If the environment is 'local', issues a warning with the constructed message.
     - If the environment is not 'local', raises a ValueError with the constructed message.
-- **Output**: Does not return a value; it either issues a warning or raises an error.
+- **Output**: None
 - **See also**: [`python-backend/backend/app/core/config.Settings`](<#settings>)  (Base Class)
 
 
@@ -130,14 +133,14 @@ Checks if a variable's value is set to the default secret and issues a warning o
 ### parse\_cors<!-- {{#callable:python-backend/backend/app/core/config.parse_cors}} -->
 [View Source →](<../../../../../backend/app/core/config.py#L12>)
 
-Parses a CORS configuration value into a list of strings or returns it as is if already in the correct format.
+Parses a CORS configuration value into a list of strings or returns it as is if already a list or string.
 - **Inputs**:
-    - `v`: The CORS configuration value, which can be a string or a list of strings.
+    - `v`: The CORS configuration value to parse, which can be of any type.
 - **Logic and Control Flow**:
     - Check if `v` is a string and does not start with '[', then split the string by commas, strip whitespace, and return as a list of strings.
-    - If `v` is already a list or a string, return it as is.
-    - If `v` does not match any of the expected types, raise a `ValueError`.
-- **Output**: A list of strings if the input is a comma-separated string, or the input itself if it is already a list or string.
+    - Check if `v` is a list or string, then return `v` as is.
+    - If `v` is neither a string nor a list, raise a `ValueError`.
+- **Output**: A list of strings if `v` is a comma-separated string, or `v` itself if it is already a list or string.
 
 
 

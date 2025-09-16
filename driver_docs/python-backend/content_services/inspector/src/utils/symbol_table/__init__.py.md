@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Exports functions for language support, symbol table construction, and summary printing.
+Imports and exposes functions for language support and symbol table operations.
 
 # Purpose
-This code defines the public API of a module by specifying which functions are accessible when the module is imported. It imports three functions: `get_supported_languages` from the `language_utils` module, and `build_symbol_table` and `print_summary` from the `orchestrator` module. The `__all__` list explicitly declares these three functions as the public interface of the module, indicating that they are intended for use by external code. This approach helps manage the namespace and control which components are exposed to users of the module.
+This code is a module that defines the public API for a package by specifying which functions are accessible when the module is imported. It imports three functions: `get_supported_languages` from the `language_utils` module, and `build_symbol_table` and `print_summary` from the `orchestrator` module. The `__all__` list explicitly declares these three functions as the public interface of the module, indicating that they are intended for use by external code. This approach helps manage the namespace and control which components are exposed to users of the package.
 # Imports and Dependencies
 
 ---
@@ -20,8 +20,8 @@ This code defines the public API of a module by specifying which functions are a
 ---
 ### \_\_all\_\_
 - **Type**: ``list``
-- **Description**: A list that defines the public API of the module by specifying which functions are available for import when using `from <module> import *`. It includes the functions `get_supported_languages`, `build_symbol_table`, and `print_summary`.
-- **Use**: Controls the functions that are accessible when the module is imported using a wildcard import.
+- **Description**: A list that defines the public API of the module by specifying which functions are available for import when using `from module import *`. It includes the functions `get_supported_languages`, `build_symbol_table`, and `print_summary`.
+- **Use**: Controls the symbols that are exported when the module is imported using a wildcard import.
 
 
 

@@ -3,20 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GraphQL types, mutations, queries, schema, and logging extension, Auth0 API management, S3 file access, and database operations.
+Data structures, GraphQL logging, ORM operations, API endpoints, S3 management, custom scalars, schema, and tree functions.
 
 
 ## Files
-- **[api_types.py](api_types.py.md)**: Defines GraphQL types for Git providers and repositories using Strawberry.
-- **[auth0.py](auth0.py.md)**: Manages Auth0 API interactions, including user and organization operations with token refresh logic.
-- **[document_set.py](document_set.py.md)**: Defines a `DocumentSet` class and related types for managing document content and metadata in a codebase.
+- **[document_set.py](document_set.py.md)**: Defines data structures and functions to manage and retrieve document sets, including metadata and content types.
 - **[logging_extension.py](logging_extension.py.md)**: A GraphQL logging extension that logs query execution details.
-- **[mutations.py](mutations.py.md)**: GraphQL mutations for managing application notes, documents, and uploading content with access checks.
-- **[orm_ops.py](orm_ops.py.md)**: Functions for retrieving derived content by ID and checking access permissions in a database session.
-- **[queries.py](queries.py.md)**: GraphQL queries for retrieving organization details, document sets, codebase trees, user info, connected Git providers, and repositories by Git provider.
-- **[s3.py](s3.py.md)**: Class for accessing and managing files in an S3 bucket using hashed organization IDs.
-- **[scalars.py](scalars.py.md)**: Defines custom scalar types JSON, ID, and NodeType using Strawberry for GraphQL.
-- **[schema.py](schema.py.md)**: Defines a GraphQL schema with context and routing for a FastAPI application using Strawberry.
+- **[orm_ops.py](orm_ops.py.md)**: Checks access permissions for various entities in a database session.
+- **[queries.py](queries.py.md)**: GraphQL API endpoints for querying document sets, codebase trees, and connected Git providers.
+- **[s3.py](s3.py.md)**: Manages S3 bucket access for file upload, retrieval, and deletion using hashed organization IDs.
+- **[scalars.py](scalars.py.md)**: Defines custom scalar types `JSON`, `ID`, and `NodeType` for use with Strawberry GraphQL.
+- **[schema.py](schema.py.md)**: Defines a GraphQL schema and context for FastAPI with JWT authentication and logging extensions.
 - **[tree.py](tree.py.md)**: Implements a function to retrieve and construct a tree of nodes from a database using SQLModel.
 
 ---

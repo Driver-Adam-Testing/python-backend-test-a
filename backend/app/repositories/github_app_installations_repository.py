@@ -1,6 +1,6 @@
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
-from database.models_v1 import GithubAppInstallation
+from database.models import GithubAppInstallation
 from sqlalchemy import func
 from sqlmodel import Session, col, select
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for generating structured prompts and checking imports, variables, data structures, and functions.
+Defines a template for generating structured prompts related to source code, including sections for purpose, imports, global variables, data structures, and functions.
 
 # Purpose
-This code is a configuration script that defines a template for processing and documenting small source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`, to facilitate structured prompting and language specialization. The `SOURCE_CODE_SMALL_TEMPLATE_DEFAULT` variable is a list of tuples, each representing a section of the template, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and functions to generate prompts or check imports, ensuring that the documentation adheres to specific style instructions, including the use of backticks for code references. This setup is intended to standardize the documentation process for small source code files.
+This code defines a template for generating structured documentation for small source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`, to facilitate the creation of prompts and the organization of documentation sections. The `SOURCE_CODE_SMALL_TEMPLATE_DEFAULT` variable is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and instructions to generate content, ensuring that the documentation adheres to a consistent style and format. The template is designed to automate the process of documenting small code files by leveraging predefined prompts and style instructions.
 # Imports and Dependencies
 
 ---
@@ -31,9 +31,9 @@ This code is a configuration script that defines a template for processing and d
 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_DEFAULT
-- **Type**: `list`
-- **Description**: A list of tuples, where each tuple contains a string identifier, a string description, and a series of components or functions related to structured prompting and code analysis. Each tuple represents a different aspect of code documentation, such as purpose, imports, global variables, data structures, and functions.
-- **Use**: Used to define a template for structured code documentation and analysis.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a string description, and a series of `Prompt` objects. These `Prompt` objects are constructed using various components and instructions related to structured prompting and language specialization.
+- **Use**: Used to define a template for structured prompting with specific instructions and components for different sections like purpose, imports, global variables, data structures, and functions.
 
 
 

@@ -3,65 +3,65 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Shell script to start a Python application with Uvicorn in reload mode, checking for a prestart script.
+Shell script to start a Python app with Uvicorn, supporting automatic reload and prestart scripts.
 
 # Purpose
-This script is a shell script intended to configure and start a Python web application using the `uvicorn` server. It checks for the presence of a `main.py` file in specific directories to set the default module name, which is used to define the `APP_MODULE` environment variable. The script sets default values for the host, port, and log level, which can be overridden by environment variables. Before starting the server, it checks for and optionally executes a `prestart.sh` script if it exists in the specified path. Finally, it executes `uvicorn` with the specified configuration, enabling automatic reloading of the application when changes are detected in specified directories.
+This script is a shell script designed to configure and start a Python web application using the Uvicorn ASGI server. It checks for the presence of a `main.py` file in specific directories to set the default module name, which is then used to define the `APP_MODULE` environment variable. The script sets default values for the host, port, and log level, which can be overridden by environment variables. Before starting the Uvicorn server, it checks for and optionally executes a `prestart.sh` script if it exists in the specified path. Finally, it executes Uvicorn with the specified configuration, enabling automatic reloading of the application when changes are detected in specified directories.
 # Global Variables
 
 ---
 ### DEFAULT\_MODULE\_NAME
-- **Type**: ``string``
-- **Description**: This variable holds the default module name for the application. It is set to `app.main` if the file `/app/app/main.py` exists, otherwise it is set to `main` if the file `/app/main.py` exists.
-- **Use**: Used to determine the default module name for the application when setting the `MODULE_NAME` variable.
+- **Type**: `string`
+- **Description**: Contains the default module name for the application, which is set based on the presence of specific Python files in the application directory. If the file `/app/app/main.py` exists, it is set to `app.main`; otherwise, if `/app/main.py` exists, it is set to `main`. This variable helps in determining the entry point of the application.
+- **Use**: Used to set the `MODULE_NAME` variable, which is part of the `APP_MODULE` environment variable for the `uvicorn` server command.
 
 
 ---
 ### MODULE\_NAME
-- **Type**: ``string``
-- **Description**: `MODULE_NAME` is a global variable that holds the name of the module to be used by the application. It defaults to the value of `DEFAULT_MODULE_NAME`, which is determined based on the presence of specific Python files in the application directory.
-- **Use**: Used to set the module name for the application, which is then part of the `APP_MODULE` environment variable for running the application with `uvicorn`.
+- **Type**: `string`
+- **Description**: `MODULE_NAME` is a global variable that holds the name of the module to be used by the application. It defaults to the value of `DEFAULT_MODULE_NAME`, which is determined based on the presence of specific Python files in the `/app` directory.
+- **Use**: Used to set the module name for the application, which is part of the `APP_MODULE` environment variable.
 
 
 ---
 ### VARIABLE\_NAME
-- **Type**: ``string``
-- **Description**: `VARIABLE_NAME` is a global variable that defaults to the string 'app' if not set in the environment. It is used to specify the variable name within the module that Uvicorn will use to run the application.
-- **Use**: Used to define the variable name in the `APP_MODULE` environment variable for Uvicorn execution.
+- **Type**: `string`
+- **Description**: A string that sets the default application variable name for the `uvicorn` server to use when starting the application. It defaults to 'app' if not set by the user.
+- **Use**: Used to specify the application variable name in the `APP_MODULE` environment variable for the `uvicorn` server.
 
 
 ---
 ### APP\_MODULE
-- **Type**: ``string``
-- **Description**: `APP_MODULE` is a global environment variable that defines the module and variable name to be used by the `uvicorn` server. It is constructed by combining the `MODULE_NAME` and `VARIABLE_NAME` variables, separated by a colon.
-- **Use**: Used to specify the application module and variable for the `uvicorn` server to run.
+- **Type**: `string`
+- **Description**: The `APP_MODULE` variable is a string that defines the module and variable name for the application to run with Uvicorn. It is constructed using the `MODULE_NAME` and `VARIABLE_NAME` variables, defaulting to a format of `"<module_name>:<variable_name>"`. This variable is exported to be used by the Uvicorn server to locate the application entry point.
+- **Use**: Used to specify the application module and variable for the Uvicorn server to execute.
 
 
 ---
 ### HOST
-- **Type**: ``string``
+- **Type**: `string`
 - **Description**: The `HOST` variable is a global environment variable that specifies the IP address on which the server will listen for incoming connections. It is set to a default value of `0.0.0.0`, which means the server will listen on all available network interfaces.
-- **Use**: Used to define the IP address for the server to bind to when starting the `uvicorn` server.
+- **Use**: Used to define the IP address for the server to bind to when starting the application with `uvicorn`.
 
 
 ---
 ### PORT
 - **Type**: ``PORT``
-- **Description**: The `PORT` variable is a global environment variable that specifies the network port number on which the application will listen for incoming connections. It is set to a default value of 80, which is the standard port for HTTP traffic, unless overridden by an existing environment variable.
-- **Use**: Used to configure the port for the `uvicorn` server to listen on when starting the application.
+- **Description**: Defines the network port number on which the application will listen for incoming connections. The default value is set to 80, which is the standard port for HTTP traffic.
+- **Use**: Used to specify the port number for the `uvicorn` server to bind to when starting the application.
 
 
 ---
 ### LOG\_LEVEL
 - **Type**: ``string``
-- **Description**: Defines the logging level for the application. It is set to a default value of 'info' if not specified otherwise.
-- **Use**: Used to configure the verbosity of log messages in the `uvicorn` server.
+- **Description**: Specifies the logging level for the application. The default value is 'info', but it can be overridden by setting the `LOG_LEVEL` environment variable.
+- **Use**: Used to set the verbosity of log messages in the `uvicorn` server.
 
 
 ---
 ### PRE\_START\_PATH
 - **Type**: ``string``
-- **Description**: Specifies the file path to a pre-start script that should run before the main application starts. The default value is `/app/prestart.sh`, but it can be overridden by setting the `PRE_START_PATH` environment variable.
+- **Description**: Specifies the file path to a script that should run before the main application starts. The default value is `/app/prestart.sh`, but it can be overridden by setting the `PRE_START_PATH` environment variable.
 - **Use**: Used to determine the location of a pre-start script and execute it if it exists.
 
 

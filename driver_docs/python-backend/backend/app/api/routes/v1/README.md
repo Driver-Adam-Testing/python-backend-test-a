@@ -3,20 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-API routes for agent sequences, codebase management, content, document sources, Git, health checks, onboarding, organization, search, subscription, tags, upload, usage, and user management using FastAPI.
+API routes for agent sequences, codebase management, content, document sources, Git, health checks, onboarding, organizations, search, signup, subscriptions, tags, uploads, usage, and user management using FastAPI.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[agent_pipelines.py](agent_pipelines.py.md)**: API routes for executing agent sequences with different block kinds, supporting synchronous and asynchronous operations.
+- **[agent_pipelines.py](agent_pipelines.py.md)**: Defines API routes for executing agent sequences with different block kinds using FastAPI.
 - **[codebase.py](codebase.py.md)**: API routes for managing codebase versions, analysis, generation, and onboarding using FastAPI.
 - **[content.py](content.py.md)**: API routes for managing content, including listing, retrieving, updating, deleting, and exporting content.
 - **[document_sources.py](document_sources.py.md)**: API routes for creating, retrieving, and deleting document sources with permission checks.
-- **[git_provider.py](git_provider.py.md)**: API routes and handlers for managing Git provider applications, installations, and webhooks using FastAPI.
-- **[healthcheck.py](healthcheck.py.md)**: Defines health check endpoints using FastAPI, including a status check and an error trigger for debugging.
+- **[git_provider.py](git_provider.py.md)**: API routes for managing Git provider applications, installations, and webhooks using FastAPI.
+- **[healthcheck.py](healthcheck.py.md)**: Defines a FastAPI health check endpoint and a route to trigger an error for debugging.
 - **[onboarding.py](onboarding.py.md)**: Defines an API endpoint to trigger asset connections based on asset kind and request parameters.
-- **[organization.py](organization.py.md)**: API routes for managing organization roles, members, and invitations with Auth0 integration.
+- **[organization.py](organization.py.md)**: API routes for managing organization roles, members, and invitations with permission checks.
 - **[search.py](search.py.md)**: Defines a FastAPI route for searching content with user authentication and session management.
+- **[signup.py](signup.py.md)**: API endpoint for user signup, including email validation, organization creation, and initial credit allocation.
 - **[subscription.py](subscription.py.md)**: API routes for managing subscriptions, including getting active subscription details and creating subscriptions.
 - **[tags.py](tags.py.md)**: API routes for creating, reading, updating, and deleting tags with permission checks.
 - **[upload.py](upload.py.md)**: Defines API endpoints for creating upload URLs for files and custom configurations with permission checks.

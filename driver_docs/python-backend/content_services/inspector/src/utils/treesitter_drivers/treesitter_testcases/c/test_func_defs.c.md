@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines and tests various C functions, structs, unions, and enums with example usage in `main()`.
+Defines and tests various C functions, structs, and enums with example usage in a `main` function.
 
 # Purpose
-The code is a C source file that serves as an executable program, demonstrating various functions and data structures. It includes several function definitions, such as [`foo`](<#foo>), [`bar`](<#bar>), [`baz`](<#baz>), [`qux`](<#qux>), [`wibble`](<#wibble>), `myFunc`, [`arrayParam`](<#arrayparam>), [`roPointerFunc`](<#ropointerfunc>), and [`triplePtrFunc`](<#tripleptrfunc>), each performing simple operations or returning static or constant values. The [`main`](<#main>) function acts as the entry point of the program, where it initializes and manipulates different data structures, including `struct MyStruct`, `struct MyOtherStruct`, `union MyUnion`, and `MyTypedefStruct`. It also demonstrates the use of an enumeration and an anonymous enum variable.
+This C source code file defines a main program that demonstrates various functions and data structures. It includes several function definitions, such as [`foo`](<#foo>), [`bar`](<#bar>), [`baz`](<#baz>), [`qux`](<#qux>), [`wibble`](<#wibble>), `myFunc`, [`arrayParam`](<#arrayparam>), [`roPointerFunc`](<#ropointerfunc>), [`triplePtrFunc`](<#tripleptrfunc>), and [`returnStruct`](<#returnstruct>). These functions showcase different return types and parameter handling, including static pointers, constant pointers, and structures. The [`main`](<#main>) function calls these functions and prints their results, demonstrating their usage and output.
 
-The program showcases the use of static and constant pointers, function attributes, and different types of return values, including pointers and structures. It prints the results of function calls and the values of various data structures to the standard output using the `printf` function. The code also includes a header file `test.h`, which is likely to contain additional declarations or definitions used within the program. The file is structured to illustrate the use of C language features such as function pointers, static variables, and data encapsulation through structures and unions.
+The code also defines a structure `MyStruct` and uses another structure `MyOtherStruct`, a union `MyUnion`, and a typedef `MyTypedefStruct` within the [`main`](<#main>) function. These data structures are used to illustrate the handling of complex data types in C. Additionally, the code references an enumeration `MyEnum` and an anonymous enumeration variable `g_anonEnumVar`, which are printed in the [`main`](<#main>) function. The file includes a header file `test.h`, suggesting that some types or constants, such as `MyOtherStruct`, `MyUnion`, `MyTypedefStruct`, `MYENUM_VAL1`, and `g_anonEnumVar`, are defined externally. The code serves as a demonstration of various C programming concepts, including function attributes, pointer manipulation, and data structure usage.
 # Imports and Dependencies
 
 ---
@@ -20,11 +20,11 @@ The program showcases the use of static and constant pointers, function attribut
 
 ---
 ### MyStruct
-- **Type**: ``struct``
+- **Type**: `struct`
 - **Members**:
-    - `x`: An integer member of the structure.
-    - `y`: Another integer member of the structure.
-- **Description**: Defines a simple structure with two integer members, `x` and `y`, which can be used to store a pair of integer values.
+    - `x`: An integer field.
+    - `y`: An integer field.
+- **Description**: Represents a simple structure with two integer fields, `x` and `y`, which can be used to store a pair of integer values.
 
 
 # Functions
@@ -36,8 +36,10 @@ The program showcases the use of static and constant pointers, function attribut
 Returns the integer value 0.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Return the integer value 0.
-- **Output**: Returns an integer value of 0.
+    - The function is defined as `static`, meaning it is limited to the file scope.
+    - The function does not take any parameters.
+    - The function immediately returns the integer value 0.
+- **Output**: An integer value of 0.
 
 
 ---
@@ -48,21 +50,21 @@ Returns a null pointer regardless of the input.
 - **Inputs**:
     - `x`: An integer input parameter that is not used in the function.
 - **Logic and Control Flow**:
-    - Receives an integer parameter `x`.
-    - Returns `NULL` immediately without using the input parameter.
-- **Output**: A null pointer of type `char *`.
+    - The function takes an integer parameter `x` but does not use it.
+    - Immediately returns a null pointer (`NULL`).
+- **Output**: A null pointer (`NULL`).
 
 
 ---
 ### baz<!-- {{#callable:baz}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_func_defs.c#L12>)
 
-Returns a pointer to a static integer pointer.
+Returns a pointer to a static integer pointer initialized to NULL.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Declare a static integer pointer `dummy_ptr` and initialize it to `NULL`.
     - Return the address of `dummy_ptr`.
-- **Output**: A pointer to a static integer pointer, specifically the address of `dummy_ptr`. This pointer will always point to the same memory location across function calls.
+- **Output**: A pointer to a static integer pointer, which is initialized to `NULL`.
 
 
 ---
@@ -83,8 +85,8 @@ Returns a null pointer of type `int *`.
 Returns the integer value 42.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The function is defined with the `__attribute__((cdecl))` attribute, which specifies the calling convention.
-    - The function body contains a single `return` statement that returns the integer 42.
+    - The function is defined with the `__attribute__((cdecl))` calling convention, which specifies how the function should be called at the assembly level.
+    - The function body contains a single statement that returns the integer 42.
 - **Output**: An integer value of 42.
 
 
@@ -96,8 +98,8 @@ Modifies the first element of a character array to 'A'.
 - **Inputs**:
     - `arr`: A character array of size 10.
 - **Logic and Control Flow**:
-    - Set the first element of the array `arr` to the character 'A'.
-- **Output**: No return value; the function modifies the input array in place.
+    - Sets the first element of the input array `arr` to the character 'A'.
+- **Output**: No return value (void function).
 
 
 ---
@@ -120,8 +122,8 @@ Returns a pointer to a static double pointer of type `int`.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Declare a static double pointer `dummy_double_ptr` of type `int` and initialize it to `NULL`.
-    - Return the address of `dummy_double_ptr`.
-- **Output**: A pointer to a static double pointer of type `int`. The returned pointer points to a location that holds a `NULL` value.
+    - Return the address of `dummy_double_ptr`, which is a triple pointer of type `int`.
+- **Output**: A triple pointer of type `int` pointing to a static double pointer.
 
 
 ---
@@ -134,20 +136,20 @@ Returns a `MyStruct` instance with predefined values for its members.
     - Declare a variable `s` of type `struct MyStruct`.
     - Set the `x` member of `s` to 1.
     - Set the `y` member of `s` to 2.
-    - Return the `s` variable.
-- **Output**: A `MyStruct` instance with `x` set to 1 and `y` set to 2.
+    - Return the `struct MyStruct` instance `s`.
+- **Output**: A `struct MyStruct` with `x` set to 1 and `y` set to 2.
 
 
 ---
 ### main<!-- {{#callable:main}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_func_defs.c#L56>)
 
-Initializes various data structures, calls multiple functions, and prints their results to the console.
+Initializes various data structures, calls several functions, and prints their results.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Declare and initialize a `struct MyOtherStruct` variable `mos` with values `a = 42` and `b = 3.14f`.
-    - Declare and initialize a `union MyUnion` variable `u` with the integer value `i = 100`.
-    - Declare and initialize a `MyTypedefStruct` variable `tds` with values `w = 10` and `z = 20`.
+    - Declare and initialize a `struct MyOtherStruct` with fields `a` and `b`.
+    - Declare and initialize a `union MyUnion` with field `i`.
+    - Declare and initialize a `MyTypedefStruct` with fields `w` and `z`.
     - Call the function `foo()` and print its return value.
     - Call the function `bar(10)` and print its return value as a pointer.
     - Call the function `baz()` and print its return value as a pointer.
@@ -157,12 +159,10 @@ Initializes various data structures, calls multiple functions, and prints their 
     - Declare a character array `arr` of size 10, pass it to `arrayParam()`, and print the first character of the array.
     - Call `roPointerFunc()`, store the result in `roPtr`, and print the character pointed to by `roPtr`.
     - Call `triplePtrFunc()`, store the result in `triplePtr`, and print the pointer value.
-    - Call `returnStruct()`, store the result in `s2`, and print the values of `s2.x` and `s2.y`.
+    - Call `returnStruct()`, store the result in `s2`, and print the fields `x` and `y` of `s2`.
     - Print the value of `MYENUM_VAL1`.
     - Print the value of `g_anonEnumVar`.
-    - Print the values of `mos.a` and `mos.b`.
-    - Print the integer value of `u.i`.
-    - Print the values of `tds.w` and `tds.z`.
+    - Print the fields of `mos`, `u`, and `tds`.
     - Return 0 to indicate successful execution.
 - **Output**: Returns 0 to indicate successful execution.
 - **Functions Called**:

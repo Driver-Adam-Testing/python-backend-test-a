@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add or remove a 'pdf_summary' record in the database.
+Alembic migration script to add or remove a 'pdf_summary' record in the derived_content_types table.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. The script's primary purpose is to manage the presence of a record in the `derived_content_types` table with the `type_name` of `'pdf_summary'`. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), which are standard in Alembic migrations to apply and revert changes, respectively.
-
-The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` `'pdf_summary'` exists in the `derived_content_types` table. If the record does not exist, it inserts a new record with this `type_name`. The [`downgrade`](<#downgrade>) function removes the record with the `type_name` `'pdf_summary'` from the table. The script uses raw SQL queries executed through SQLAlchemy's connection object to perform these operations. The revision identifiers `revision` and `down_revision` are used by Alembic to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), to manage changes to the database schema. The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` 'pdf_summary' exists in the `derived_content_types` table and inserts it if it is missing. The [`downgrade`](<#downgrade>) function removes the 'pdf_summary' record from the same table. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -21,15 +19,15 @@ The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` `'p
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script. This identifier is used to track changes to the database schema over time.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring a sequential order of migrations.
-- **Use**: Indicates the immediate predecessor revision in the migration history.
+- **Use**: Used by Alembic to track the order of database schema migrations.
 
 
 ---
@@ -55,11 +53,12 @@ The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` `'p
 Adds a 'pdf_summary' record to the 'derived_content_types' table if it does not already exist.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Execute a SQL query to select 'type_name' from 'derived_content_types' where 'type_name' is 'pdf_summary'.
+    - Define a SQL query to select 'type_name' from 'derived_content_types' where 'type_name' is 'pdf_summary'.
     - Get a database connection using 'op.get_bind()'.
-    - Execute the query using the connection and store the result.
+    - Execute the select query using the connection and store the result.
     - Check if the result is empty by converting it to a list and checking its length.
-    - If the result is empty, execute an SQL insert query to add 'pdf_summary' to 'derived_content_types'.
+    - If the result is empty, define a SQL insert query to add 'pdf_summary' to 'derived_content_types'.
+    - Execute the insert query using the connection.
 - **Output**: No output is returned as the function returns 'None'.
 
 
@@ -70,9 +69,9 @@ Adds a 'pdf_summary' record to the 'derived_content_types' table if it does not 
 Removes the 'pdf_summary' record from the 'derived_content_types' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a SQL delete query to remove the 'pdf_summary' record from the 'derived_content_types' table.
-    - Gets a database connection using `op.get_bind()`.
-    - Executes the delete query using the connection.
+    - Define a SQL delete query to remove the 'pdf_summary' record from the 'derived_content_types' table.
+    - Get a database connection using `op.get_bind()`.
+    - Execute the delete query using the connection.
 - **Output**: No output is returned as the function returns `None`.
 
 

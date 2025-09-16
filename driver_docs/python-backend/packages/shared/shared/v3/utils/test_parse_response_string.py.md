@@ -6,7 +6,7 @@
 Tests for the `parse_response_string` function using various JSON-formatted test strings.
 
 # Purpose
-This code is a script that tests the functionality of the `parse_response_string` function imported from the `shared.v3.utils.parse_response_string` module. It defines a list of test strings, `TEST_STRINGS`, which contain various JSON-like structures and text formats. The script iterates over each string in the list and attempts to parse it using the `parse_response_string` function. If the function successfully parses a string, the script prints the result; if an error occurs during parsing, it catches the exception and prints an error message. This script provides narrow functionality focused on testing the parsing capabilities of the `parse_response_string` function with different input formats.
+This code is a script that tests the functionality of the `parse_response_string` function imported from the `shared.v3.utils.parse_response_string` module. It defines a list of test strings, `TEST_STRINGS`, which contain various JSON-like structures and text formats. The script iterates over each string in `TEST_STRINGS`, attempting to parse them using the `parse_response_string` function. If the function successfully parses a string, the script prints the result; if an exception occurs during parsing, it catches the exception and prints an error message. This script is useful for verifying the robustness and error handling capabilities of the `parse_response_string` function when dealing with different input formats.
 # Imports and Dependencies
 
 ---
@@ -18,8 +18,8 @@ This code is a script that tests the functionality of the `parse_response_string
 ---
 ### TEST\_STRINGS
 - **Type**: ``list``
-- **Description**: Contains a list of multi-line strings, each representing a JSON-like structure or a narrative related to initializing a driver or configuring a communication interface. The strings include JSON objects with fields such as `search_query`, `parseable_class_name`, and additional fields for configuration details.
-- **Use**: Used to store test strings that simulate responses or configurations for testing the `parse_response_string` function.
+- **Description**: Contains multiple JSON-formatted strings and text snippets. Each element in the list represents a different JSON structure or text block, some of which include JSON-like data with fields such as `search_query`, `parseable_class_name`, and `extra_field`. The list also includes examples of JSON data embedded within text and formatted as code blocks.
+- **Use**: Used to store and iterate over various JSON-formatted strings and text snippets for parsing and testing purposes.
 
 
 

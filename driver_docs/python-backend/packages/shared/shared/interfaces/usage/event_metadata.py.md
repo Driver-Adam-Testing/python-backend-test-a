@@ -6,17 +6,17 @@
 Defines data models for usage session, payment session, event metadata, and metrics using Pydantic.
 
 # Purpose
-The code defines a set of data models using the `pydantic` library, which are used to represent and validate structured data related to usage events and metrics. These models include `UsageSessionMetadata`, `UsagePaymentSessionMetadata`, `UsageEventMetadata`, and `UsageMetric`. Each model specifies various attributes relevant to its context, such as `content_type`, `provider`, `model`, and `session_id`, among others. The models use type annotations to enforce data types and default values, ensuring that the data conforms to expected formats.
+The code defines a set of data models using the `pydantic` library, which are used to represent metadata and metrics related to usage events. These models include `UsageSessionMetadata`, `UsagePaymentSessionMetadata`, `UsageEventMetadata`, and `UsageMetric`. Each model is a subclass of `BaseModel` from `pydantic`, which provides data validation and serialization capabilities. The models capture various attributes such as content type, provider information, event details, and metrics like session identifiers, data transfer amounts, and timestamps.
 
-The `UsageMetric` class includes a method [`into_usage_event`](<#usagemetricinto_usage_event>), which converts an instance of `UsageMetric` into a `UsageEvent` object. This method maps the attributes of `UsageMetric` to the corresponding fields in `UsageEvent`, facilitating the transformation of usage metric data into a format suitable for storage or further processing. The code is likely part of a larger system that tracks and processes usage data, providing a structured way to handle and convert this data for various purposes.
+The `UsageMetric` class includes a method [`into_usage_event`](<#usagemetricinto_usage_event>) that converts an instance of `UsageMetric` into a `UsageEvent` object. This method maps the attributes of `UsageMetric` to the corresponding fields in `UsageEvent`, facilitating the transformation of metric data into a format suitable for storage or further processing. The code is structured to be part of a larger system, likely involving event tracking or analytics, and is intended to be imported and used in other parts of the application. The use of `pydantic` ensures that the data models are robust and adhere to specified types and constraints.
 # Imports and Dependencies
 
 ---
 - `datetime.datetime`
 - `typing.Literal`
 - `uuid.UUID`
-- `database.models_v1.UsageEvent`
-- `database.models_v1.UsageEventType`
+- `database.models.UsageEvent`
+- `database.models.UsageEventType`
 - `pydantic.BaseModel`
 
 
@@ -26,7 +26,6 @@ The `UsageMetric` class includes a method [`into_usage_event`](<#usagemetricinto
 ### UsageSessionMetadata<!-- {{#class:python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/event_metadata.py#L9>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
     - `content_type`: Specifies the type of content as either 'codebase', 'page', or 'pdf'.
     - `content_id`: Stores the unique identifier for the content.
@@ -47,7 +46,7 @@ The `UsageMetric` class includes a method [`into_usage_event`](<#usagemetricinto
     - `provider`: Specifies the provider of the payment session.
     - `message`: Contains a message related to the payment session.
     - `event_kind`: Indicates the kind of event associated with the payment session.
-- **Description**: Defines metadata for a usage payment session, including the provider, a message, and the type of event.
+- **Description**: Defines metadata for a usage payment session, including the provider, a related message, and the type of event.
 - **Inherits From**:
     - `BaseModel`
 
@@ -56,14 +55,13 @@ The `UsageMetric` class includes a method [`into_usage_event`](<#usagemetricinto
 ### UsageEventMetadata<!-- {{#class:python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageEventMetadata}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/event_metadata.py#L24>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
-    - `model`: Specifies the model name.
-    - `provider`: Indicates the provider name.
-    - `input`: Contains input data as a dictionary.
-    - `output`: Holds the output data as a string.
-    - `sloc`: Represents the source lines of code, defaulting to 0.
-- **Description**: Defines metadata for a usage event, including model and provider information, input and output data, and source lines of code.
+    - `model`: Specifies the model used in the usage event.
+    - `provider`: Indicates the provider of the usage event.
+    - `input`: Contains input data for the usage event as a dictionary.
+    - `output`: Stores the output of the usage event as a string.
+    - `sloc`: Represents the source lines of code involved, defaulting to 0.
+- **Description**: Captures metadata related to a usage event, including model, provider, input, output, and source lines of code.
 - **Inherits From**:
     - `BaseModel`
 
@@ -72,20 +70,19 @@ The `UsageMetric` class includes a method [`into_usage_event`](<#usagemetricinto
 ### UsageMetric<!-- {{#class:python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/event_metadata.py#L32>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
-    - `session_id`: Stores the unique identifier for the session.
+    - `session_id`: Stores a unique identifier for the session.
     - `organization_id`: Stores the identifier for the organization.
     - `user_id`: Stores the identifier for the user.
-    - `event_source`: Indicates the source of the event.
-    - `bytes_in`: Records the number of bytes received.
-    - `bytes_out`: Records the number of bytes sent.
-    - `tokens_in`: Records the number of tokens received.
-    - `tokens_out`: Records the number of tokens sent.
+    - `event_source`: Stores the source of the event.
+    - `bytes_in`: Stores the number of bytes received.
+    - `bytes_out`: Stores the number of bytes sent.
+    - `tokens_in`: Stores the number of tokens received.
+    - `tokens_out`: Stores the number of tokens sent.
     - `timestamp`: Stores the date and time of the event.
-    - `event_type`: Specifies the type of usage event.
-    - `event_metadata`: Contains additional metadata for the event, if available.
-- **Description**: Represents a metric for usage events, capturing details such as session, organization, and user identifiers, data transfer metrics, and event metadata. It provides a method to convert the metric into a `UsageEvent` object.
+    - `event_type`: Stores the type of the usage event.
+    - `event_metadata`: Stores additional metadata for the event, if available.
+- **Description**: Represents a metric for usage events, capturing details such as session, organization, user, data transfer, and event type, with optional metadata.
 - **Methods**:
     - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric.into_usage_event`](<#usagemetricinto_usage_event>)
 - **Inherits From**:
@@ -97,15 +94,15 @@ The `UsageMetric` class includes a method [`into_usage_event`](<#usagemetricinto
 #### UsageMetric\.into\_usage\_event<!-- {{#callable:python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric.into_usage_event}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/event_metadata.py#L45>)
 
-Converts the `UsageMetric` instance into a [`UsageEvent`](<../../../../../driver_db/database/models_v1.py.md#usageevent>) object.
+Converts a `UsageMetric` instance into a [`UsageEvent`](<../../../../../driver_db/database/models.py.md#usageevent>) object.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates a [`UsageEvent`](<../../../../../driver_db/database/models_v1.py.md#usageevent>) object using attributes from the `UsageMetric` instance.
-    - Checks if `event_metadata` is not `None` and calls `model_dump()` on it; otherwise, sets `event_metadata` to `None`.
-    - Returns the created [`UsageEvent`](<../../../../../driver_db/database/models_v1.py.md#usageevent>) object.
-- **Output**: A [`UsageEvent`](<../../../../../driver_db/database/models_v1.py.md#usageevent>) object initialized with the attributes of the `UsageMetric` instance.
+    - Creates a [`UsageEvent`](<../../../../../driver_db/database/models.py.md#usageevent>) object using attributes from the `UsageMetric` instance.
+    - Checks if `event_metadata` is present; if so, calls `model_dump()` on it, otherwise sets it to `None`.
+    - Returns the created [`UsageEvent`](<../../../../../driver_db/database/models.py.md#usageevent>) object.
+- **Output**: A [`UsageEvent`](<../../../../../driver_db/database/models.py.md#usageevent>) object initialized with the attributes of the `UsageMetric` instance.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.UsageEvent`](<../../../../../driver_db/database/models_v1.py.md#usageevent>)
+    - [`python-backend/driver_db/database/models.UsageEvent`](<../../../../../driver_db/database/models.py.md#usageevent>)
 - **See also**: [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric`](<#usagemetric>)  (Base Class)
 
 

@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test file for TypeScript interfaces and type aliases, including inheritance, generics, and augmentations.
+Test cases for TypeScript interfaces, including optional properties, inheritance, and module augmentation.
 
 # Purpose
-This code is a TypeScript test file that demonstrates various uses of interfaces and type aliases. It provides narrow functionality by defining multiple interfaces to illustrate different TypeScript features, such as optional properties and methods, readonly properties, index signatures, interface inheritance, and multiple inheritance. The file also includes examples of generic interfaces, nested interfaces, interface merging, and module augmentation, specifically augmenting the 'express' module and the global `Window` and `Array` interfaces. Additionally, it defines an ambient interface and a type-only export. This file serves as a comprehensive reference for understanding how to use and extend interfaces in TypeScript.
+This code is a test suite for TypeScript interfaces and type aliases, demonstrating various features and capabilities of TypeScript's type system. It includes examples of basic interfaces, such as `InterfaceWithOptional`, which shows how to define optional properties and methods. The code also illustrates the use of readonly properties with `ReadonlyInterface`, where properties cannot be modified after initialization. Index signatures are demonstrated through interfaces like `StringIndex`, `NumberIndex`, and `MixedIndex`, which allow for dynamic property keys.
+
+The code further explores interface inheritance with examples like `Dog`, which extends `Animal`, and `Duck`, which demonstrates multiple inheritance by extending `Animal`, `Flyable`, and `Swimmable`. Generic interfaces are shown with `Pair<T, U>`, allowing for type flexibility. Nested interfaces are represented by `OuterInterface`, which contains multiple levels of nested properties. Interface merging is illustrated with `MergedInterface`, where multiple declarations are combined into a single interface. The code also includes module and global augmentation examples, such as augmenting the `express` module and the global `Window` and `Array` interfaces. Finally, it defines ambient interfaces and type-only exports, showcasing the `ExportedInterface` for external use.
 # Interfaces
 
 ---
@@ -17,7 +19,7 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
     - `required`: A mandatory string property.
     - `optional`: An optional number property.
     - `optionalMethod`: An optional method that returns void.
-- **Description**: Defines a contract for objects that must have a `required` string property and may optionally include a `optional` number property and an `optionalMethod` that returns void.
+- **Description**: Defines an object structure with a mandatory string property, an optional number property, and an optional method that returns void.
 
 
 ---
@@ -37,7 +39,7 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 
 - **Members**:
     - `[key: string]`: Defines an index signature that allows any string key to map to a value of any type.
-- **Description**: Defines a contract for objects where any string key can map to a value of any type, allowing for flexible and dynamic property assignment.
+- **Description**: Defines a contract for objects where any string key can be used to access a value of any type, providing flexibility in object property definitions.
 
 
 ---
@@ -45,7 +47,7 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L24>)
 
 - **Members**:
-    - `[index: number]`: Defines an index signature that maps a number to a string.
+    - `[index: number]`: Maps a numeric index to a string value.
 - **Description**: Defines a contract for objects where numeric indices map to string values, allowing access to string elements using number-based keys.
 
 
@@ -57,7 +59,7 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
     - `[key: string]`: Defines an index signature for string keys with values of type `string` or `number`.
     - `[index: number]`: Defines an index signature for numeric indices with values of type `string`.
     - `length`: Specifies the length of the object as a number.
-- **Description**: Defines a contract for objects that can be indexed by both string and numeric keys, where string keys map to values of type `string` or `number`, and numeric indices map to values of type `string`. It also includes a `length` property to indicate the number of elements.
+- **Description**: Defines a contract for objects that can be indexed by both string and numeric keys, where string keys map to values of type `string` or `number`, and numeric indices map to values of type `string`, with an additional `length` property indicating the number of elements.
 
 
 ---
@@ -97,9 +99,9 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L51>)
 
 - **Members**:
-    - `swim`: Defines a method that does not return a value.
-    - `depth`: Specifies the depth as a number.
-- **Description**: Defines a contract for objects that can swim, requiring them to implement a `swim` method and have a `depth` property.
+    - `swim`: Defines a method that allows an object to perform a swimming action.
+    - `depth`: Specifies the depth at which an object can swim.
+- **Description**: Defines a contract for objects that can swim, requiring them to implement a `swim` method and have a `depth` property to indicate swimming capability and depth level.
 
 
 ---
@@ -108,7 +110,7 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 
 - **Members**:
     - `quack`: Defines a method that makes the duck quack.
-- **Description**: Defines a contract for a duck object that extends the capabilities of an `Animal` with the ability to fly and swim, as well as quack.
+- **Description**: Defines a contract for a duck object that extends the capabilities of an `Animal` with the ability to fly and swim, and includes a method to quack.
 - **Extends/Implements**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Animal`](<#animal>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Flyable`](<#flyable>)
@@ -122,7 +124,7 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 - **Members**:
     - `first`: Represents the first element of the pair with a generic type `T`.
     - `second`: Represents the second element of the pair with a generic type `U`.
-- **Description**: Defines a generic structure for a pair of values, where `first` and `second` are elements of types `T` and `U`, respectively. This interface allows the creation of objects that hold two related values of potentially different types.
+- **Description**: Defines a generic structure for a pair of values, where `first` and `second` are elements of types `T` and `U`, respectively.
 
 
 ---
@@ -130,12 +132,9 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L67>)
 
 - **Members**:
-    - `outer`: Defines a string property at the top level of the interface.
-    - `inner`: Defines a nested object with a `nested` string property and a `deep` object.
-    - `inner.nested`: Defines a string property within the `inner` object.
-    - `inner.deep`: Defines an object within `inner` that contains a `value` property.
-    - `inner.deep.value`: Defines a number property within the `deep` object.
-- **Description**: Defines a structure for objects with a top-level string property `outer` and a nested object `inner` that contains a string property `nested` and another nested object `deep` with a number property `value`.
+    - `outer`: A string property at the top level of the interface.
+    - `inner`: An object containing a nested structure with a string and a deeper object.
+- **Description**: Defines a structure for objects with a top-level string property `outer` and a nested object `inner` that contains another string `nested` and a further nested object `deep` with a numeric property `value`.
 
 
 ---
@@ -146,7 +145,7 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
     - `property1`: Defines a string property named `property1`.
     - `property2`: Defines a number property named `property2`.
     - `method`: Declares a method named `method` that returns void.
-- **Description**: Defines a contract for objects that must include a string property `property1`, a number property `property2`, and a method `method` that returns void. This interface demonstrates TypeScript's interface merging feature, where multiple declarations of the same interface are combined into a single interface.
+- **Description**: Defines a contract for objects that must include two properties, `property1` of type string and `property2` of type number, and a method `method` that returns void. This interface is a result of merging multiple interface declarations with the same name, `MergedInterface`, which allows for the combination of properties and methods from each declaration into a single interface.
 
 
 ---
@@ -154,8 +153,8 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L94>)
 
 - **Members**:
-    - `user`: An optional object with `id` and `name` properties of type `string`.
-- **Description**: Defines an augmentation for the `Request` interface in the 'express' module, adding an optional `user` object with `id` and `name` properties.
+    - `user`: An optional object containing `id` and `name` properties of type `string`.
+- **Description**: Defines an optional `user` object with `id` and `name` properties, used to augment the `Request` interface in the 'express' module.
 
 
 ---
@@ -163,8 +162,8 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L104>)
 
 - **Members**:
-    - `myGlobal`: A string property that is added to the global `Window` interface.
-- **Description**: Defines a contract for the global `Window` object to include a `myGlobal` property of type string, allowing for the extension of the standard `Window` interface with custom properties.
+    - `myGlobal`: A string property added to the global `Window` interface.
+- **Description**: Defines a global augmentation for the `Window` interface by adding a `myGlobal` string property, allowing objects that implement this interface to have a `myGlobal` property accessible globally.
 
 
 ---
@@ -181,9 +180,9 @@ This code is a TypeScript test file that demonstrates various uses of interfaces
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L114>)
 
 - **Members**:
-    - `ambientProperty`: A string property that is part of the interface.
+    - `ambientProperty`: A string property that is part of the ambient interface.
     - `ambientMethod`: A method that does not return a value.
-- **Description**: Defines a contract for objects with a string property `ambientProperty` and a method `ambientMethod` that returns void.
+- **Description**: Defines an ambient interface with a string property `ambientProperty` and a method `ambientMethod` that returns void. This interface specifies a contract for objects that include these members, typically used in scenarios where the interface is declared without an implementation, often for type checking or module augmentation purposes.
 
 
 ---

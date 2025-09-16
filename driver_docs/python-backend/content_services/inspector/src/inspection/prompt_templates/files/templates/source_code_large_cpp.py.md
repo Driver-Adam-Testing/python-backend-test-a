@@ -6,7 +6,9 @@
 Templates for generating structured prompts and analyzing C++ source code components.
 
 # Purpose
-The code defines a template for generating documentation for C++ source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.cpp`, to facilitate the creation of structured prompts and data collections. The `SOURCE_CODE_LARGE_TEMPLATE_CPP` variable is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and instructions to generate content, leveraging static analysis and language model outputs to populate the documentation. This code provides a narrow functionality focused on automating the generation of structured documentation for C++ codebases.
+The code defines a template for generating structured documentation for C++ source code. It imports several components and utilities from different modules, which are used to create prompts and process C++ code elements. The template is organized into sections that cover different aspects of the C++ code, such as imports and dependencies, global variables, data structures, and functions. Each section uses specific collections and methods to analyze and extract relevant information from the C++ code, which is then formatted into a structured output.
+
+The template uses a combination of static analysis and language model processing to gather information about the C++ code. It employs various components like `Prompt`, `Component`, and `ListData` to build and format the documentation. The template is designed to be comprehensive, covering all major elements of C++ code, and it uses specific instructions to ensure the output adheres to Simplified Technical English and formatting guidelines. This code is intended to be part of a larger system that automates the generation of technical documentation for C++ source files.
 # Imports and Dependencies
 
 ---
@@ -33,8 +35,8 @@ The code defines a template for generating documentation for C++ source code. It
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_CPP
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to C++ code analysis and generation. Each tuple is structured to facilitate the generation of structured prompts and the collection of C++ code elements such as imports, global variables, data structures, and functions.
-- **Use**: Used to define a template for generating structured prompts and collecting C++ code elements for analysis and documentation.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to C++ code analysis and generation. Each tuple is structured to facilitate the generation of structured prompts and the extraction of specific code elements such as imports, global variables, data structures, and functions.
+- **Use**: Used to define a template for generating structured prompts and extracting specific elements from C++ code.
 
 
 

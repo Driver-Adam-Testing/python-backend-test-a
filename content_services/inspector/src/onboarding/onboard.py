@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import modal
 from common import app
-from database.models_v2_enums import (
+from database.models_enums import (
     ContentKind,
     NodeKind,
     VersionStatus,
@@ -153,11 +153,10 @@ def handle_github_events(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
-
-    # TODO Import is a dummy import to avoid the issue with importing
-    # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
-    from database.models_v1 import GithubAppInstallation  # noqa: F401
-    from database.models_v2 import PrimaryAsset
+    from database.models import (
+        GithubAppInstallation,  # noqa: F401
+        PrimaryAsset,
+    )
     from onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
@@ -272,11 +271,10 @@ def handle_gitlab_events(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
-
-    # TODO Import is a dummy import to avoid the issue with importing
-    # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
-    from database.models_v1 import GithubAppInstallation  # noqa: F401
-    from database.models_v2 import PrimaryAsset
+    from database.models import (
+        GithubAppInstallation,  # noqa: F401
+        PrimaryAsset,
+    )
     from onboarding import gitlab_ops
     from onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
@@ -379,8 +377,10 @@ def handle_bitbucket_events(
     from database.db import (
         engine,
     )
-    from database.models_v1 import GithubAppInstallation  # noqa: F401
-    from database.models_v2 import PrimaryAsset
+    from database.models import (
+        GithubAppInstallation,  # noqa: F401
+        PrimaryAsset,
+    )
     from onboarding import bitbucket_ops
     from onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
@@ -440,8 +440,9 @@ def handle_bitbucket_events(
     for repo in repos_added:
         if "installation_id" not in repo:
             repo["installation_id"] = installation_id
-
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    # Using 2 workers to stay within BitBucket's rate limits
+    # Testing showed this provides optimal throughput without hitting limits
+    with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [
             executor.submit(bitbucket_ops.download_and_upload_repo, org_id, repo, token)
             for repo in repos_added
@@ -483,7 +484,7 @@ def handle_bitbucket_events(
 def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
-    from database.models_v1 import GithubAppInstallation
+    from database.models import GithubAppInstallation
     from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
 
@@ -592,7 +593,7 @@ def connect_unconnected_repos() -> None:
     """
     import requests
     from database.db import engine
-    from database.models_v1 import GithubAppInstallation
+    from database.models import GithubAppInstallation
     from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
 
@@ -702,16 +703,14 @@ def run_codebase_connection(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
-    from database.models_v1 import (
+    from database.models import (
         DerivedContent,
         GitProviderKind,
-    )
-    from database.models_v2 import (
         Node,
         PrimaryAsset,
         Version,
     )
-    from database.models_v2_enums import VersionStatus
+    from database.models_enums import VersionStatus
     from onboarding.onboard_utils import (
         calculate_directory_stats,
         create_bucket_if_dne,

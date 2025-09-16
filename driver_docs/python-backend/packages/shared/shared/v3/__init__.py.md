@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Initializes the shared.v3 package by importing and exposing key interfaces, clients, and utilities.
+Exports classes and utilities for LLM messaging, history, clients, and data handling.
 
 # Purpose
-This code is a collection of import statements and an `__all__` declaration, which defines the public API of a module. It imports various classes and types from different modules within the `shared.v3` package, including `LlmMessage`, `MessageKind`, `LlmMessageHistory`, `LlmResponseType`, `LlmTool`, `LlmClient`, `DataSource`, `Reference`, and `ReferenceSet`. The `__all__` list specifies which of these imported components are intended to be accessible when the module is imported using a wildcard import statement. This setup is typically used to manage and expose specific functionalities from a larger codebase, providing a controlled interface for other parts of the application to interact with.
+This code is a collection of import statements and an `__all__` declaration, which defines the public API of a module. It imports several classes and functions from different modules within the `shared.v3` package, including `LlmMessage`, `MessageKind`, `LlmMessageHistory`, `LlmResponseType`, `LlmTool`, `LlmClient`, `DataSource`, `Reference`, and `ReferenceSet`. The `__all__` list specifies the symbols that should be accessible when the module is imported using the `from module import *` syntax. This setup helps manage the namespace and control which components are exposed to users of the module, providing a narrow and specific functionality related to handling LLM (likely "Large Language Model") messages and their associated tools and data sources.
 # Imports and Dependencies
 
 ---
@@ -25,9 +25,9 @@ This code is a collection of import statements and an `__all__` declaration, whi
 
 ---
 ### \_\_all\_\_
-- **Type**: `list`
-- **Description**: Defines a list of public objects of the module. It specifies which classes and functions are accessible when the module is imported using a wildcard import statement.
-- **Use**: Controls the public API of the module by listing the names of objects that should be accessible when the module is imported.
+- **Type**: ``list``
+- **Description**: Defines a list of public objects of the module. It specifies which classes and functions are accessible when the module is imported using the `from module import *` syntax.
+- **Use**: Controls the export of module components when using wildcard imports.
 
 
 

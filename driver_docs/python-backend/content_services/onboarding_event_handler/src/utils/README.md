@@ -9,7 +9,7 @@ Utilities for AWS S3 interactions and configuration settings for environment var
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[aws_s3.py](aws_s3.py.md)**: Utilities for interacting with AWS S3, including generating presigned URLs and checking object tags.
-- **[config.py](config.py.md)**: Configuration settings for environment variables and AWS S3 integration using Pydantic.
+- **[config.py](config.py.md)**: Configuration settings for environment variables using Pydantic BaseSettings.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

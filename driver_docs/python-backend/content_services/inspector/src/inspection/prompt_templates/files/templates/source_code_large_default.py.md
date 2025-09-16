@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for generating structured prompts for source code inspection with specific style instructions.
+Defines a template for large source code prompts with sections for purpose, imports, variables, data structures, and functions.
 
 # Purpose
-The code defines a template for generating structured documentation for source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`. These imports include instructions and collections that help in creating prompts and organizing information about the source code, such as style instructions and data structure collections.
+The code defines a template for generating structured documentation for source code files. It imports several components and utilities from different modules, which are used to construct prompts and instructions for generating documentation. The template is organized into sections such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and functions to extract and format relevant information from the source code.
 
-The `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` is a list of tuples that specify different sections of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section is associated with specific components or functions that help in extracting and formatting the relevant information. The template uses prompts and components to ensure that the documentation adheres to specific style instructions, such as using backticks for code references and following Simplified Technical English guidelines. This code is intended to be part of a larger system that automates the generation of technical documentation for Python source code files.
+The template uses a combination of predefined prompts and instructions to guide the generation of documentation. It includes style instructions such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION` to ensure consistency and clarity in the documentation. The template also employs functions like `default_imports_checker` and collections like `DefaultVariableCollection` to gather and process information about the code's imports, variables, data structures, and functions. This setup is intended to be used as part of a larger system for automated documentation generation.
 # Imports and Dependencies
 
 ---
@@ -34,8 +34,8 @@ The `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` is a list of tuples that specify differ
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_DEFAULT
 - **Type**: ``list``
-- **Description**: Contains a list of tuples, each representing a section of a structured prompt template. Each tuple includes a section identifier, a section title, and various components or functions related to that section. The list is used to define the structure and content of a large source code template.
-- **Use**: Defines the structure and content of a large source code template by organizing sections and their related components.
+- **Description**: Contains a list of tuples, each representing a section of a structured prompt template. Each tuple includes a section identifier, a section title, and various components or functions related to that section.
+- **Use**: Used to define the structure and content of a large source code template for generating prompts.
 
 
 

@@ -8,7 +8,7 @@ Classes and functions for extracting and documenting C/C++ header file symbols u
 # Purpose
 The code defines a set of classes and functions for analyzing and documenting C and C++ header files. It uses static analysis to extract symbols such as data structures, functions, and variables from the header files using the `ctags` tool. The extracted symbols are categorized into collections: `HeaderDataStructureRawSymbolCollection`, `HeaderFnRawSymbolCollection`, and `HeaderVariableRawSymbolCollection`. These collections are responsible for identifying and organizing the symbols based on their kind, such as data structures, functions, or variables.
 
-The code also defines classes like `HeaderDataStructureData`, `HeaderFnData`, and `HeaderVariableData` to generate documentation prompts for each symbol type. These classes use predefined system and user prompts to create detailed documentation for the identified symbols. The documentation process involves generating JSON-formatted descriptions of the symbols, which include details about their type, members, inputs, control flow, and usage. The code is structured to facilitate the generation of technical documentation for C and C++ header files by leveraging static analysis and language model prompts.
+The code also defines classes like `HeaderDataStructureData`, `HeaderFnData`, and `HeaderVariableData` to generate documentation prompts for each symbol type. These classes use predefined system and user prompts to create detailed documentation for the extracted symbols. The `IrCollection` subclasses, such as `HeaderDataStructureCollection`, `HeaderFnCollection`, and `HeaderVariableCollection`, manage collections of these documented symbols. The code is structured to facilitate the generation of technical documentation for C and C++ header files by leveraging static analysis and language model prompts.
 # Imports and Dependencies
 
 ---
@@ -35,58 +35,58 @@ The code also defines classes like `HeaderDataStructureData`, `HeaderFnData`, an
 
 ---
 ### C\_OR\_CPP\_HEADER\_DATA\_STRUCTURES
-- **Type**: `set`
-- **Description**: Contains a set of strings representing C or C++ data structure keywords. These keywords include 'enum', 'union', 'struct', 'class', and 'typedef', which are used to define various data structures in C or C++ header files.
-- **Use**: Used to identify and categorize data structures in C or C++ header files.
+- **Type**: ``set``
+- **Description**: Contains a set of strings representing C or C++ data structure keywords. These keywords include `enum`, `union`, `struct`, `class`, and `typedef`, which are used to define various data structures in C or C++ header files.
+- **Use**: Used to identify and categorize C or C++ data structures during code analysis.
 
 
 ---
 ### C\_OR\_CPP\_HEADER\_FUNCTIONS
-- **Type**: `set`
-- **Description**: Contains a set with a single string element 'function'. This set is used to categorize or identify C or C++ header symbols that are functions.
-- **Use**: Used to identify function symbols in C or C++ header files.
+- **Type**: ``set``
+- **Description**: Contains a set of strings that represent function kinds in C or C++ header files. This set is used to identify symbols that are functions when parsing header files.
+- **Use**: Used to categorize and identify function symbols in C or C++ header files during static analysis.
 
 
 ---
 ### C\_OR\_CPP\_HEADER\_MACROS
 - **Type**: ``set``
-- **Description**: Contains a single string element, 'macro', which represents a category of symbols in C or C++ header files. This set is used to identify and categorize macro definitions within the header files.
-- **Use**: Used to categorize and identify macro definitions in C or C++ header files.
+- **Description**: Contains a single string element 'macro'. This set is likely used to categorize or identify macro symbols in C or C++ header files.
+- **Use**: Used to store and identify macro symbols in header files.
 
 
 ---
 ### C\_OR\_CPP\_HEADER\_VARIABLES
 - **Type**: `set`
-- **Description**: Contains a set of strings that represent variable kinds in C or C++ header files. The set includes 'variable' and 'externvar', which are used to categorize different types of variables in the header files.
-- **Use**: Used to identify and categorize variable kinds in C or C++ header files.
+- **Description**: Contains a set of strings that represent variable kinds in C or C++ header files. The set includes 'variable' and 'externvar', which are used to identify standard and external variables, respectively.
+- **Use**: Used to categorize and identify variable symbols in C or C++ header files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_C\_OR\_CPP\_HEADER
 - **Type**: ``str``
-- **Description**: A multi-line string that serves as a system prompt for a large system. It instructs the user to act as an expert C and C++ programmer and documentation expert, focusing on explaining code in C and C++ header files.
-- **Use**: Used as a prompt to guide the behavior of a system or user in generating documentation for C and C++ header files.
+- **Description**: A string variable that contains a prompt for a large system related to C or C++ header files. It instructs the user to write detailed documentation for C and C++ code, focusing on header files.
+- **Use**: Used as a prompt to guide users in documenting C and C++ header files.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_C\_OR\_CPP\_HEADER
 - **Type**: `str`
-- **Description**: This variable is a string that contains a system prompt for a documentation expert specializing in C and C++ header files. It provides instructions for writing detailed documentation to explain code in these files, focusing on small and simple source code files.
-- **Use**: Used to guide the documentation process for small and simple C and C++ header files.
+- **Description**: A string variable that contains a system prompt for documenting small and simple C and C++ header files. It instructs the user to write detailed documentation for code in these files, focusing on being terse and clear.
+- **Use**: Used to provide a system prompt for generating documentation for small C and C++ header files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: A string variable that contains a user prompt for explaining the purpose of a header file. It provides guidance on how to write the explanation, including avoiding speculative language and considering specific questions about the code's functionality and components.
-- **Use**: Used to instruct users on how to describe the purpose of a header file in a detailed and structured manner.
+- **Description**: A string variable that contains a prompt for users to explain the purpose of a header file. The prompt guides users to write a detailed explanation without using speculative language and suggests considering specific questions about the code's functionality and components.
+- **Use**: Used to provide a structured prompt for users to generate explanations about the purpose of C or C++ header files.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` variable is a string that contains a prompt for explaining the purpose of a header file code in a concise manner. It instructs the user to provide a single paragraph explanation consisting of 3 to 5 sentences. This prompt is likely used in a context where users need to summarize or document the purpose of small and simple source code files.
-- **Use**: Used to prompt users to provide a concise explanation of header file code.
+- **Description**: A string variable that contains a prompt for users to explain the purpose of a header file code in a concise manner. It instructs users to provide a single paragraph explanation consisting of 3 to 5 sentences.
+- **Use**: Used to guide users in providing a brief explanation of header file code.
 
 
 ---
@@ -99,35 +99,35 @@ The code also defines classes like `HeaderDataStructureData`, `HeaderFnData`, an
 ---
 ### DATA\_STRUCTURES\_FOUND\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: This variable is a multi-line string that provides a template for summarizing data structures in code. It includes instructions on how to describe data structures, emphasizing the need for detail proportional to the complexity of the data structure.
-- **Use**: Used as a prompt template for summarizing data structures in code.
+- **Description**: A multi-line string that provides instructions for summarizing a data structure in a given code. It specifies that a data structure is a custom or compound type, such as structs, classes, or enums, and not functions, methods, or variables.
+- **Use**: Used to prompt users to summarize data structures in code.
 
 
 ---
 ### FUNCTIONS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a template for documenting functions and class methods in C and C++ code. It includes instructions for describing the function, its inputs, control flow, and output using a specific JSON schema.
+- **Description**: A multi-line string that provides a system prompt for documenting functions and class methods in C and C++ code. It instructs the user to describe a function using a specific JSON schema, which includes a single sentence description, inputs, control flow, and output.
 - **Use**: Used as a template for generating documentation for functions and class methods in C and C++ code.
 
 
 ---
 ### FUNCTIONS\_FOUND\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that serves as a template for summarizing functions or methods in provided code. It includes instructions on how to describe the function's inputs, control flow, logic, and output.
-- **Use**: Used as a prompt template for generating detailed documentation of functions or methods.
+- **Description**: A multi-line string that serves as a template for summarizing functions or methods in provided code. It includes instructions on how to describe the function, focusing on inputs, control flow, logic, and output.
+- **Use**: Used as a prompt template for generating detailed descriptions of functions or methods in code.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: A string variable that contains a JSON schema for documenting variables in C and C++ code. The schema specifies the format for describing the type, description, and use of a variable.
-- **Use**: Used to provide a structured format for documenting variables in C and C++ code.
+- **Description**: A string variable that contains a JSON-formatted system prompt for documenting variables in C and C++ code. It provides instructions on how to describe variables using a specific JSON schema.
+- **Use**: Used to guide the documentation process for variables in C and C++ code.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for summarizing a global variable in a given code. It includes guidelines on how to describe the variable based on its complexity.
+- **Description**: A multi-line string that provides instructions for summarizing a global variable in a given code. It includes guidelines on how to identify and describe global variables, emphasizing the need for detail proportional to the complexity of the variable.
 - **Use**: Used as a prompt or template for users to follow when documenting global variables in code.
 
 
@@ -139,7 +139,7 @@ The code also defines classes like `HeaderDataStructureData`, `HeaderFnData`, an
 
 - **Members**:
     - `data`: Stores a dictionary mapping string keys to `RawSymbolData` or lists of `RawSymbolData`.
-- **Description**: Manages a collection of raw symbol data extracted from C or C++ header files. It uses static analysis to identify and process symbols such as functions and data structures, excluding anonymous entities. The class provides methods to create instances from static analysis results and convert the stored data into a dictionary format.
+- **Description**: Represents a collection of raw symbol data extracted from C or C++ header files, specifically focusing on data structures. It inherits from `RawSymbolCollection` and provides methods to populate the collection using static analysis of code, extracting symbols with `ctags`. The class can handle both standalone and nested data structures, and it ensures that anonymous structs or classes are not processed. The `to_dict` method returns the stored symbol data as a dictionary.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureRawSymbolCollection.from_static_analysis`](<#headerdatastructurerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureRawSymbolCollection.from_llm`](<#headerdatastructurerawsymbolcollectionfrom_llm>)
@@ -157,17 +157,16 @@ Analyzes C or C++ header code to extract and organize symbol data into a collect
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string containing the C or C++ header code to analyze.
-    - `root_rel_path`: A `Path` object representing the relative path to the root directory of the code file.
+    - `root_rel_path`: A `Path` object representing the root relative path of the file being analyzed.
 - **Logic and Control Flow**:
-    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) function.
-    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>).
-    - Initialize dictionaries `global_method_counts` and `class_raw_symbol_data` to store method counts and raw symbol data respectively.
-    - Iterate over each symbol extracted from the code.
-    - For each symbol, check if it is a function or data structure and not anonymous, then update `global_method_counts` or `class_raw_symbol_data` accordingly.
-    - For symbols with a defined scope, check if they belong to a class or data structure and update `class_raw_symbol_data` with method or nested class information.
+    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code` as the argument.
+    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>), passing `root_rel_path` and `code` as arguments.
+    - Initialize `global_method_counts` and `class_raw_symbol_data` as empty dictionaries to store method counts and raw symbol data respectively.
+    - Iterate over each symbol in `symbols` to populate `global_method_counts` and `class_raw_symbol_data` based on the symbol's kind and name.
+    - Check for symbols with a defined scope and update `class_raw_symbol_data` with method or nested class information, handling overloaded methods and anonymous symbols appropriately.
     - Print the `class_raw_symbol_data` for debugging purposes.
     - Return an instance of the class with `class_raw_symbol_data` if it is not empty, otherwise return `None`.
-- **Output**: An instance of the class containing the organized raw symbol data, or `None` if no data structures are found.
+- **Output**: An instance of the class containing the extracted raw symbol data, or `None` if no data is found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>)
@@ -186,7 +185,7 @@ Raises a NotImplementedError indicating that static analysis should be used for 
     - `code`: A string representing the code to analyze.
     - `root_rel_path`: A string representing the root relative path of the code file.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with a specific message.
+    - Raises a NotImplementedError with a message indicating that static analysis should be used for header functions.
 - **Output**: No output is returned as the method raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureRawSymbolCollection`](<#headerdatastructurerawsymbolcollection>)  (Base Class)
 
@@ -210,8 +209,8 @@ Returns the `data` attribute of the instance.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/header.py#L267>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping function names to `RawSymbolData` or lists of `RawSymbolData`.
-- **Description**: Represents a collection of raw symbols specifically for C or C++ header functions. It extends the `RawSymbolCollection` class and provides methods to create instances from static analysis of code, focusing on extracting function symbols from header files. The class supports handling overloaded functions and functions contained within data structures, ensuring that each function is correctly identified and stored in the `data` dictionary.
+    - `data`: Stores a dictionary mapping function names to `RawSymbolData` or a list of `RawSymbolData`.
+- **Description**: Represents a collection of raw symbol data for C or C++ header functions, extracted through static analysis. It inherits from `RawSymbolCollection` and provides methods to populate the collection using static analysis of code, specifically targeting functions defined in header files. The class can convert its data to a dictionary format for further processing or analysis.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnRawSymbolCollection.from_static_analysis`](<#headerfnrawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnRawSymbolCollection.from_llm`](<#headerfnrawsymbolcollectionfrom_llm>)
@@ -225,7 +224,7 @@ Returns the `data` attribute of the instance.
 #### HeaderFnRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/header.py#L270>)
 
-Creates an instance of `HeaderFnRawSymbolCollection` from static analysis of C or C++ header code.
+Analyzes C or C++ header code to extract function symbols and create a collection of raw symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string containing the C or C++ header code to analyze.
@@ -233,16 +232,16 @@ Creates an instance of `HeaderFnRawSymbolCollection` from static analysis of C o
 - **Logic and Control Flow**:
     - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code` as the argument.
     - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>), passing `root_rel_path` and `code` as arguments.
-    - Create a list `all_fn_names` containing names of all functions in the symbols that are not anonymous and belong to C or C++ header functions.
+    - Create a list `all_fn_names` containing the names of all function symbols that are not anonymous.
     - Initialize an empty dictionary `fn_raw_symbol_data` to store raw symbol data for functions.
-    - Iterate over each symbol in `symbols`.
-    - For each symbol, check if it is a function and not anonymous.
-    - Determine if the function is contained in a class by checking its `scope` and `scopeKind`.
-    - Construct the function name `fn_name` based on its scope and kind.
+    - Iterate over each symbol in `symbols`. For each symbol, check if it is a function and not anonymous.
+    - Determine if the function is contained within a class by checking the `scope` and `scopeKind` of the symbol.
+    - Construct the function name `fn_name` based on whether it is contained in a class or not.
+    - Update the symbol's name to `fn_name`.
     - If the function is not contained in a class and is unique in `all_fn_names`, add its raw symbol data to `fn_raw_symbol_data` with `is_overloaded` set to `False`.
-    - If the function is not contained in a class and is not unique in `all_fn_names`, add its raw symbol data to `fn_raw_symbol_data` with `is_overloaded` set to `True`.
-    - Return `None` if `fn_raw_symbol_data` is empty; otherwise, return an instance of `HeaderFnRawSymbolCollection` initialized with `fn_raw_symbol_data`.
-- **Output**: An instance of `HeaderFnRawSymbolCollection` containing raw symbol data for functions, or `None` if no functions are found.
+    - If the function is not contained in a class and is overloaded, add its raw symbol data to `fn_raw_symbol_data` with `is_overloaded` set to `True`.
+    - Return `None` if `fn_raw_symbol_data` is empty; otherwise, return an instance of the class with `fn_raw_symbol_data` as its data.
+- **Output**: An instance of the class containing the raw symbol data for functions, or `None` if no function symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
     - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>)
@@ -260,8 +259,8 @@ Raises a NotImplementedError indicating that static analysis should be used for 
     - `code`: A string representing the code to analyze.
     - `root_rel_path`: A string representing the root relative path of the code file.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with a message indicating that static analysis should be used for header functions.
-- **Output**: No output is returned as the method raises an exception.
+    - Raises a NotImplementedError with a specific message.
+- **Output**: No output is produced as the method raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnRawSymbolCollection`](<#headerfnrawsymbolcollection>)  (Base Class)
 
 
@@ -284,8 +283,8 @@ Returns the `data` attribute of the instance.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/header.py#L344>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` or lists of `RawSymbolData`.
-- **Description**: Manages a collection of raw symbol data specifically for header variables in C or C++ code. It provides methods to create instances from static analysis, using `default_ctags_analysis`, and to convert the stored data into a dictionary format. The class is designed to handle symbols of kind `VARIABLE` and supports static analysis but not LLM-based analysis.
+    - `data`: Stores a dictionary mapping strings to `RawSymbolData` or lists of `RawSymbolData`.
+- **Description**: Represents a collection of raw symbol data specifically for header variables, inheriting from `RawSymbolCollection`. It provides methods to create instances from static analysis, focusing on variables in C or C++ header files. The class uses `default_ctags_analysis` to extract and analyze symbols, ensuring that only header variables are processed. The `to_dict` method returns the stored symbol data as a dictionary.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableRawSymbolCollection.from_static_analysis`](<#headervariablerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableRawSymbolCollection.from_llm`](<#headervariablerawsymbolcollectionfrom_llm>)
@@ -299,16 +298,19 @@ Returns the `data` attribute of the instance.
 #### HeaderVariableRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/header.py#L347>)
 
-Creates a `HeaderVariableRawSymbolCollection` instance from static analysis of C or C++ header code using ctags.
+Creates a `HeaderVariableRawSymbolCollection` instance from static analysis of code using [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>).
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string containing the C or C++ header code to analyze.
-    - `root_rel_path`: A `Path` object representing the root relative path of the file being analyzed.
+    - `code`: A string representing the source code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the file to analyze.
 - **Logic and Control Flow**:
-    - Calls the [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) function with the provided class, code, root relative path, and specific parameters for variable symbols.
-    - Specifies `SymbolKind.VARIABLE` and `C_OR_CPP_HEADER_VARIABLES` to filter for variable symbols in the header file.
-    - Uses '::' as the delimiter and enables symbol padding in the analysis.
-- **Output**: Returns an instance of `HeaderVariableRawSymbolCollection` if symbols are found, otherwise returns `None`.
+    - Calls [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) with the class itself (`cls`) as the `collection_cls` argument.
+    - Passes the `code` and `root_rel_path` arguments to [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>).
+    - Specifies `SymbolKind.VARIABLE` for the `symbol_kind` argument.
+    - Uses `C_OR_CPP_HEADER_VARIABLES` for the `ctags_kinds` argument.
+    - Sets the `delimiter` argument to '::'.
+    - Enables `add_symbol_padding` by setting it to `True`.
+- **Output**: Returns an instance of `HeaderVariableRawSymbolCollection` or `None` if no symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableRawSymbolCollection`](<#headervariablerawsymbolcollection>)  (Base Class)
@@ -325,7 +327,7 @@ Raises a NotImplementedError indicating that static analysis should be used for 
     - `root_rel_path`: A string representing the root relative path for the code.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with a specific message.
-- **Output**: No output is produced as the method raises an exception.
+- **Output**: This method does not return any value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableRawSymbolCollection`](<#headervariablerawsymbolcollection>)  (Base Class)
 
 
@@ -333,12 +335,12 @@ Raises a NotImplementedError indicating that static analysis should be used for 
 #### HeaderVariableRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/header.py#L363>)
 
-Returns the `data` attribute of the instance.
+Returns the `data` attribute of the `HeaderVariableRawSymbolCollection` class.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
     - Returns the `data` attribute.
-- **Output**: A dictionary with keys as strings and values as `RawSymbolData`.
+- **Output**: A dictionary with keys as strings and values as `RawSymbolData` objects.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableRawSymbolCollection`](<#headervariablerawsymbolcollection>)  (Base Class)
 
 
@@ -347,7 +349,7 @@ Returns the `data` attribute of the instance.
 ### HeaderDataStructureData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/header.py#L367>)
 
-- **Description**: Provides class methods to generate prompts and map child symbols to intermediate representations (IR) or field names for data structures in C and C++ header files.
+- **Description**: Represents a specialized data structure for handling header data in C and C++ code analysis. It provides class methods to generate system and user prompts for documenting data structures, and maps child symbols to intermediate representations or field names based on their kind.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureData.system_prompt`](<#headerdatastructuredatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureData.user_prompt`](<#headerdatastructuredatauser_prompt>)
@@ -379,13 +381,13 @@ Returns a predefined JSON string for system prompts related to data structures.
 Generates a user prompt string that includes the name and code of a data structure, and optionally the full file code if available.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing information about the data structure, including its name, symbol code, and optionally the full file code.
+    - `symbol`: An instance of `RawSymbolData` containing information about a data structure, including its name, symbol code, and optionally the full file code.
 - **Logic and Control Flow**:
-    - Initialize `user_prompt` with a predefined prompt string concatenated with the data structure's name and symbol code.
+    - Initialize `user_prompt` with a formatted string that includes `DATA_STRUCTURES_FOUND_USER_PROMPT`, the name of the data structure, and its symbol code.
     - Check if `symbol.file_code` is not empty.
-    - If `symbol.file_code` is present, append the full file code to `user_prompt`.
-    - Return the constructed `user_prompt` string.
-- **Output**: A string that serves as a user prompt, containing the data structure's name, symbol code, and optionally the full file code.
+    - If `symbol.file_code` is not empty, append the full file code to `user_prompt`.
+    - Return the `user_prompt` string.
+- **Output**: A string that serves as a user prompt, containing the data structure's name, code, and optionally the full file code.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureData`](<#headerdatastructuredata>)  (Base Class)
 
 
@@ -400,8 +402,7 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `s
 - **Logic and Control Flow**:
     - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `HeaderFnData` and `SymbolKind.DATA_STRUCTURE` with `None`.
     - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding value from the mapping dictionary.
-    - Returns the value from the mapping dictionary, which is either a type of `IrData` or `None`.
-- **Output**: Returns a type of `IrData` if the `symbol_kind` is `SymbolKind.CALLABLE`, otherwise returns `None`.
+- **Output**: Returns the `IrData` type associated with the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureData`](<#headerdatastructuredata>)  (Base Class)
 
 
@@ -412,10 +413,10 @@ Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `s
 Maps a `RawSymbolData` object's `symbol_kind` to a corresponding field name string.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a symbol with a `symbol_kind` attribute.
+    - `child`: A `RawSymbolData` object representing a symbol with a specific kind.
 - **Logic and Control Flow**:
-    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with 'Methods' and `SymbolKind.DATA_STRUCTURE` with 'Nested Classes'.
-    - Uses the `get` method on the mapping dictionary to retrieve the field name corresponding to the `symbol_kind` of the `child` argument.
+    - Define a mapping dictionary that associates `SymbolKind.CALLABLE` with 'Methods' and `SymbolKind.DATA_STRUCTURE` with 'Nested Classes'.
+    - Use the `get` method on the mapping dictionary to retrieve the field name corresponding to the `symbol_kind` of the `child` argument.
 - **Output**: A string representing the field name associated with the `symbol_kind` of the `child`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureData`](<#headerdatastructuredata>)  (Base Class)
 
@@ -427,7 +428,7 @@ Maps a `RawSymbolData` object's `symbol_kind` to a corresponding field name stri
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `HeaderDataStructureData` or lists of `HeaderDataStructureData`.
-- **Description**: Manages a collection of header data structures, allowing for the organization and retrieval of `HeaderDataStructureData` instances. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a list of raw symbols.
+- **Description**: Manages a collection of header data structures, allowing for the creation of instances from a language model and symbol list.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderDataStructureCollection.from_llm`](<#headerdatastructurecollectionfrom_llm>)
 - **Inherits From**:
@@ -458,7 +459,7 @@ Creates an instance of the class using LLM and a list of symbols.
 ### HeaderFnData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/header.py#L404>)
 
-- **Description**: Extends the `FnData` class to provide specific methods for handling function-related data in C and C++ header files. It includes class methods to generate system and user prompts for functions and raises `NotImplementedError` for methods related to child elements, indicating that functions should not have children.
+- **Description**: Represents a specialized data structure for handling function-related data in C and C++ header files. It provides class methods to generate system and user prompts for functions, and raises exceptions for unsupported operations like handling children, as functions should not have children in this context.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnData.system_prompt`](<#headerfndatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnData.user_prompt`](<#headerfndatauser_prompt>)
@@ -476,7 +477,7 @@ Creates an instance of the class using LLM and a list of symbols.
 Returns a predefined JSON string for system prompts related to functions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is requested.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
 - **Logic and Control Flow**:
     - Returns the constant `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON`.
 - **Output**: A string containing the JSON system prompt for functions.
@@ -490,13 +491,12 @@ Returns a predefined JSON string for system prompts related to functions.
 Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing the symbol's name, symbol code, and optionally file code.
+    - `symbol`: An instance of `RawSymbolData` containing the name, symbol code, and optionally file code of a function.
 - **Logic and Control Flow**:
-    - Initialize `user_prompt` with a formatted string containing `FUNCTIONS_FOUND_USER_PROMPT`, the symbol's name, and its symbol code.
-    - Check if `symbol.file_code` is present.
-    - If `symbol.file_code` is present, append the full file code to `user_prompt`.
+    - Initialize `user_prompt` with a formatted string containing `FUNCTIONS_FOUND_USER_PROMPT` and the function's name and code from `symbol`.
+    - Check if `symbol.file_code` is present; if so, append the full file code to `user_prompt`.
     - Return the constructed `user_prompt` string.
-- **Output**: A string that contains the user prompt with the symbol's name, symbol code, and optionally the full file code.
+- **Output**: A string that contains the user prompt with function details and optionally the full file code.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnData`](<#headerfndata>)  (Base Class)
 
 
@@ -509,8 +509,8 @@ Raises a NotImplementedError indicating that functions should not have children.
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing a symbol.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with the message 'Functions should not have children'.
-- **Output**: None, as the method raises an exception.
+    - Raises a `NotImplementedError` with the message 'Functions should not have children'.
+- **Output**: The method does not return any value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnData`](<#headerfndata>)  (Base Class)
 
 
@@ -521,9 +521,9 @@ Raises a NotImplementedError indicating that functions should not have children.
 Raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
+    - `child`: An instance of RawSymbolData representing a child symbol.
 - **Logic and Control Flow**:
-    - Raises a `NotImplementedError` with the message 'Functions should not have children'.
+    - Raises a NotImplementedError with the message 'Functions should not have children'.
 - **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnData`](<#headerfndata>)  (Base Class)
 
@@ -535,7 +535,7 @@ Raises a NotImplementedError indicating that functions should not have children.
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `HeaderFnData` or lists of `HeaderFnData`.
-- **Description**: Manages a collection of header function data, allowing for the organization and retrieval of function-related information. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a list of raw symbols.
+- **Description**: Manages a collection of header function data, allowing for the organization and retrieval of function-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderFnCollection.from_llm`](<#headerfncollectionfrom_llm>)
 - **Inherits From**:
@@ -550,7 +550,7 @@ Raises a NotImplementedError indicating that functions should not have children.
 Creates an instance of the class using LLM and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used for language model operations.
+    - `llm`: An instance of the `ChatOpenAI` class used for language model operations.
     - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be processed.
 - **Logic and Control Flow**:
     - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `HeaderFnData`, `llm`, and `symbols_list` as arguments.
@@ -584,9 +584,9 @@ Creates an instance of the class using LLM and a list of symbols.
 Returns a predefined system prompt string for variables.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a symbol.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is requested.
 - **Logic and Control Flow**:
-    - Directly returns the constant `VARIABLES_FOUND_SYSTEM_PROMPT_JSON`.
+    - Returns the constant `VARIABLES_FOUND_SYSTEM_PROMPT_JSON`.
 - **Output**: A string containing the system prompt for variables.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableData`](<#headervariabledata>)  (Base Class)
 
@@ -617,8 +617,8 @@ Raises a NotImplementedError indicating that variables should not have children.
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing a symbol.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with the message 'Variables should not have children'.
-- **Output**: This method does not return any value as it raises an exception.
+    - Raises a `NotImplementedError` with the message 'Variables should not have children'.
+- **Output**: None, as the method raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableData`](<#headervariabledata>)  (Base Class)
 
 
@@ -629,10 +629,10 @@ Raises a NotImplementedError indicating that variables should not have children.
 Raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
+    - `child`: An instance of RawSymbolData, representing a child symbol.
 - **Logic and Control Flow**:
-    - Raises a `NotImplementedError` with the message 'Variables should not have children'.
-- **Output**: Does not return a value as it raises an exception.
+    - Raises a NotImplementedError with the message 'Variables should not have children'.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableData`](<#headervariabledata>)  (Base Class)
 
 
@@ -643,7 +643,7 @@ Raises a NotImplementedError indicating that variables should not have children.
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `HeaderVariableData` or lists of `HeaderVariableData`.
-- **Description**: Manages a collection of header variable data, allowing for the organization and retrieval of `HeaderVariableData` instances or lists of such instances. It extends the `IrCollection` class, providing additional functionality specific to header variables. The class includes a class method `from_llm` to create an instance from a language model and a symbol list.
+- **Description**: Manages a collection of header variable data, allowing for the organization and retrieval of `HeaderVariableData` instances or lists of such instances. Inherits from `IrCollection`, providing methods to handle collections of intermediate representation data. The class includes a class method `from_llm` to create an instance from a language model and a symbol list.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableCollection.from_llm`](<#headervariablecollectionfrom_llm>)
 - **Inherits From**:
@@ -658,12 +658,12 @@ Raises a NotImplementedError indicating that variables should not have children.
 Creates an instance of the class using LLM and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class used for language model operations.
-    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be processed.
+    - `llm`: An instance of the `ChatOpenAI` class, representing a language model.
+    - `symbols_list`: An instance of `RawSymbolCollection`, representing a collection of raw symbols.
 - **Logic and Control Flow**:
-    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `HeaderVariableData`, `llm`, and `symbols_list` as arguments.
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method of the class with `HeaderVariableData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class initialized with the provided LLM and symbols list.
+- **Output**: An instance of the class (`Self`) created using the provided LLM and symbols list.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/header.HeaderVariableCollection`](<#headervariablecollection>)  (Base Class)

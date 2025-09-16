@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to create and drop the `v2_autodoc_status_history` table with related indices.
+Alembic migration script to create and manage the `v2_autodoc_status_history` table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade function to create a new table named `v2_autodoc_status_history` with columns for `id`, `page_node_id`, `status_kind`, `content`, `created_at`, and `call_id`. The `status_kind` column uses an enumeration type `autodocstatusmessagekind` to represent various document generation statuses. The script also establishes a foreign key constraint on `page_node_id` referencing the `v2_node` table and creates an index on the `page_node_id` column. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the index and the table.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function to create a new table named `v2_autodoc_status_history` with columns for `id`, `page_node_id`, `status_kind`, `content`, `created_at`, and `call_id`. The `status_kind` column uses an enumeration type `autodocstatusmessagekind` to represent various document generation statuses. The script also establishes a foreign key constraint on `page_node_id` referencing the `v2_node` table and creates an index on the `page_node_id` column. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the index and the table.
 # Imports and Dependencies
 
 ---
@@ -27,8 +27,8 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string variable that holds the identifier of the previous database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to determine the order of database migrations by specifying the predecessor revision.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
+- **Use**: Used by Alembic to track the order of database schema migrations.
 
 
 ---
@@ -42,7 +42,7 @@ This code is a database migration script using Alembic, a database migration too
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -51,11 +51,11 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_04_07_1742-c852fcd10a2f_create_autodocstatushistory.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_04_07_1742-c852fcd10a2f_create_autodocstatushistory.py#L20>)
 
-Creates a new table `v2_autodoc_status_history` with specified columns and an index in the database schema.
+Creates the `v2_autodoc_status_history` table and an index on the `page_node_id` column.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.create_table` to create a new table named `v2_autodoc_status_history`.
-    - Defines columns `id`, `page_node_id`, `status_kind`, `content`, `created_at`, and `call_id` with specified data types and constraints.
+    - Calls `op.create_table` to create a new table named `v2_autodoc_status_history` with specified columns and constraints.
+    - Defines columns `id`, `page_node_id`, `status_kind`, `content`, `created_at`, and `call_id` with their respective data types and constraints.
     - Sets a foreign key constraint on `page_node_id` referencing `v2_node.id` with `ondelete` set to `CASCADE`.
     - Sets a primary key constraint on the `id` column.
     - Calls `op.create_index` to create an index on the `page_node_id` column of the `v2_autodoc_status_history` table.

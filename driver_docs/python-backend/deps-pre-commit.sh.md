@@ -3,17 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A shell script to install dependencies and update interdependent packages using Poetry.
+A script to install dependencies and update interdependent packages using Poetry.
 
 # Purpose
-This script is a Bash executable that automates the setup and execution of a Python environment using Poetry. It installs the necessary dependencies for a project without installing the project itself by using the `poetry install --no-root` command. After setting up the environment, it runs a Python script named `update_interdependent_packages.py` using the `poetry run` command. This script is intended for managing package dependencies and updates in a controlled Python environment.
-# Imports and Dependencies
-
----
-- `bash`
-- `poetry`
-
-
+The script is a Bash executable that automates the installation and execution of Python dependencies and scripts using Poetry. It first installs the project dependencies without installing the root package by executing `poetry install --no-root`. After the dependencies are installed, it runs a Python script named `update_interdependent_packages.py` using the Poetry environment. This script is intended to manage package dependencies and updates in a Python project, leveraging the Poetry tool for environment and dependency management.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

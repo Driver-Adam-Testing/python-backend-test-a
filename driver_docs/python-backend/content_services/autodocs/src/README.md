@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files, utilities for OpenAI chat models, and scripts for automated documentation generation.
+Configuration files, utilities for OpenAI chat, and scripts for generating and managing automated documentation.
 
 ## Folders
-- **[configs](configs/README.md)**: Configuration files for README generation, architecture documentation, and LLM model settings.
-- **[utils](utils/README.md)**: Defines data structures and functions for OpenAI chat model configuration and response generation.
+- **[configs](configs/README.md)**: Configuration files for generating structured README and architecture documents with LLM models.
+- **[utils](utils/README.md)**: Defines data structures and functions for configuring and generating OpenAI chat responses.
 
 ## Files
 - **[adi_project_readme.toml](adi_project_readme.toml.md)**: Configuration for generating a structured README for ADI's `no-OS` codebase projects, including evaluation board details and example setups.
 - **[autodoc_log.py](autodoc_log.py.md)**: Defines a data structure for logging AutoDoc usage to a Notion database and a function to write logs.
-- **[autodocs_prototype.py](autodocs_prototype.py.md)**: A comprehensive script for generating and managing automated documentation using various models and configurations, supporting local and remote execution.
+- **[autodocs_prototype.py](autodocs_prototype.py.md)**: A comprehensive script for generating and managing automated documentation using various models and configurations, supporting both local and remote execution.
 - **[common.py](common.py.md)**: Functions to check and poll S3 objects for specific GuardDuty malware scan status tags.
-- **[main.py](main.py.md)**: Asynchronous functions for generating and managing autodoc content using Modal, with configuration and database interactions.
+- **[main.py](main.py.md)**: Implements functions for generating and managing autodoc configurations and documents using Modal.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements a class for managing and converting sequential LlmMessage objects in a conversation or instruction sequence.
+Manages a sequence of LlmMessage objects, supporting operations like adding, removing, and converting messages for various APIs.
 
 # Purpose
-The code defines a class `LlmMessageHistory` that manages a sequence of `LlmMessage` objects, representing a conversation or a series of instructions and responses. The class provides methods to add, remove, and manipulate messages within this history. It also includes functionality to persist messages to a database using SQLAlchemy and to load message histories from the database. The class supports different message kinds, such as `TOOL_CALL_REQUEST`, `TOOL_CALL_RESPONSE`, `ASSISTANT`, `USER`, and `SYSTEM`, and can convert these messages into formats compatible with various APIs, including OpenAI and Anthropic.
+The `LlmMessageHistory` class manages a sequence of `LlmMessage` objects, representing a conversation or a series of instructions and responses. It provides methods to add, remove, and manipulate messages within this history. The class can load message histories from a database and convert them into various formats compatible with different APIs, such as OpenAI's strict, O3, O1, and Anthropic APIs. These conversions involve mapping each `LlmMessage` to a specific message format required by the target API, using the message's kind to determine the appropriate role and content fields.
 
-The `LlmMessageHistory` class includes methods to convert the message history into different formats required by external APIs, such as [`to_openai_strict`](<#llmmessagehistoryto_openai_strict>), [`to_openai_o3`](<#llmmessagehistoryto_openai_o3>), [`to_openai_o1`](<#llmmessagehistoryto_openai_o1>), and [`to_anthropic`](<#llmmessagehistoryto_anthropic>). These methods map each `LlmMessage` to a specific message format based on its kind, ensuring compatibility with the respective API's requirements. The class also provides utility methods like [`clean`](<#llmmessagehistoryclean>), [`copy`](<#llmmessagehistorycopy>), [`last`](<#llmmessagehistorylast>), and [`rewind_past_last_tool_call_request`](<#llmmessagehistoryrewind_past_last_tool_call_request>) to manage and manipulate the message history. The class is designed to be used as part of a larger system that interacts with language models and external APIs, providing a structured way to handle and convert message data.
+The class also includes utility methods for cleaning the message history by removing specific types of messages, such as iteration or parsing description messages. It supports creating a deep copy of the message history and provides functionality to rewind the history past the last tool call request, removing related response messages. The class interacts with a database to persist message histories and uses SQLAlchemy for database operations. The `LlmMessageHistory` class is designed to be part of a larger system that handles language model interactions, providing a structured way to manage and transform message data for different processing needs.
 # Imports and Dependencies
 
 ---
 - `uuid.UUID`
 - `database.db.get_session`
-- `database.models_v2.RuntimeLlmMessage`
-- `database.models_v2.RuntimeLlmMessageHistory`
-- `database.models_v2_enums.LlmPipelineKind`
+- `database.models.RuntimeLlmMessage`
+- `database.models.RuntimeLlmMessageHistory`
+- `database.models_enums.LlmPipelineKind`
 - `openai.types.chat.ChatCompletionAssistantMessageParam`
 - `openai.types.chat.ChatCompletionDeveloperMessageParam`
 - `openai.types.chat.ChatCompletionMessageParam`
@@ -36,7 +36,7 @@ The `LlmMessageHistory` class includes methods to convert the message history in
 
 ---
 ### LlmMessageHistory<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L27>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L24>)
 
 - **Members**:
     - `id`: Stores the unique identifier for the message history.
@@ -44,7 +44,7 @@ The `LlmMessageHistory` class includes methods to convert the message history in
     - `pipeline_kind`: Indicates the kind of LLM pipeline used.
     - `debug`: Determines if debug information is printed to the console.
     - `messages`: Contains a list of `LlmMessage` objects representing the message history.
-- **Description**: Manages a sequence of `LlmMessage` objects, representing a conversation or a series of instructions and responses. It supports operations such as adding, removing, and converting messages to various formats compatible with different APIs. The class can also load message history from a database and provides methods to clean or copy the message history.
+- **Description**: Represents a container for sequential `LlmMessage` objects, which can represent a conversation or a sequence of instructions and responses. It manages the addition and removal of messages, supports loading from a database, and provides methods to convert the message history into formats suitable for various APIs, such as OpenAI and Anthropic. The class also includes functionality to clean the message history by removing specific types of messages and to create a deep copy of the message history.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.__init__`](<#llmmessagehistory__init__>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.from_db`](<#llmmessagehistoryfrom_db>)
@@ -65,31 +65,31 @@ The `LlmMessageHistory` class includes methods to convert the message history in
 
 ---
 #### LlmMessageHistory\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.__init__}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L33>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L30>)
 
 Initializes an instance of `LlmMessageHistory` with optional messages, identifiers, and configuration settings.
 - **Inputs**:
-    - `messages`: A list of `LlmMessage` objects or `None`, representing the initial messages for the history.
+    - `messages`: A list of `LlmMessage` objects or `None`, representing the initial messages to include in the history.
     - `id`: A `UUID` or `None`, representing the unique identifier for the message history.
     - `llm_session_id`: A `UUID` or `None`, representing the session identifier for the LLM session.
-    - `pipeline_kind`: An instance of `LlmPipelineKind`, representing the type of pipeline to use, defaulting to `LlmPipelineKind.DEFAULT`.
-    - `debug`: A boolean value indicating whether to enable debug mode, defaulting to `True`.
+    - `pipeline_kind`: An `LlmPipelineKind` value, representing the type of pipeline to use, defaulting to `LlmPipelineKind.DEFAULT`.
+    - `debug`: A boolean value, indicating whether to enable debug mode, defaulting to `True`.
 - **Logic and Control Flow**:
-    - Assigns the provided `id`, `llm_session_id`, `pipeline_kind`, and `debug` to the instance variables.
-    - Checks if `id` is `None` and `llm_session_id` is not `None`; if true, creates a new [`RuntimeLlmMessageHistory`](<../../../../../driver_db/database/models_v2.py.md#runtimellmmessagehistory>) in the database and assigns its `id` to the instance.
+    - Assigns the provided `id`, `llm_session_id`, `pipeline_kind`, and `debug` values to the instance attributes.
+    - Checks if `id` is `None` and `llm_session_id` is not `None`; if true, creates a new [`RuntimeLlmMessageHistory`](<../../../../../driver_db/database/models.py.md#runtimellmmessagehistory>) in the database, commits it, and assigns its `id` to the instance.
     - Initializes `self.messages` as an empty list.
     - If `messages` is provided, iterates over each message and adds it to the history using [`add_message`](<#llmmessagehistoryadd_message>), passing the `debug` flag.
-- **Output**: None, as it is a constructor method for initializing an object.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/driver_db/database/models_v2.RuntimeLlmMessageHistory`](<../../../../../driver_db/database/models_v2.py.md#runtimellmmessagehistory>)
+    - [`python-backend/driver_db/database/models.RuntimeLlmMessageHistory`](<../../../../../driver_db/database/models.py.md#runtimellmmessagehistory>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<#llmmessagehistoryadd_message>)
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
 
 
 ---
 #### LlmMessageHistory\.from\_db<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.from_db}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L62>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L59>)
 
 Loads a message history from the database using a given message history ID.
 - **Decorators**: `@classmethod`
@@ -99,10 +99,10 @@ Loads a message history from the database using a given message history ID.
     - Opens a database session using `get_session()`.
     - Executes a query to select a `RuntimeLlmMessageHistory` object where the ID matches `message_history_id`, including its related messages using `selectinload`.
     - Checks if the query result is `None`, and raises a `ValueError` if no message history is found.
-    - Creates an instance of `LlmMessageHistory` with the ID, LLM session ID, and pipeline kind from the retrieved `RuntimeLlmMessageHistory`.
-    - Populates the `messages` attribute of the `LlmMessageHistory` instance by converting each message in `runtime_llm_message_history.messages` to an [`LlmMessage`](<llm_message.py.md#llmmessage>) object.
+    - Creates an instance of `LlmMessageHistory` with the ID, session ID, and pipeline kind from the database object.
+    - Populates the `messages` attribute of the `LlmMessageHistory` instance with [`LlmMessage`](<llm_message.py.md#llmmessage>) objects created from the JSON data of each message in the database.
     - Returns the populated `LlmMessageHistory` instance.
-- **Output**: An instance of `LlmMessageHistory` populated with messages from the database.
+- **Output**: An instance of `LlmMessageHistory` populated with data from the database.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<llm_message.py.md#llmmessage>)
@@ -111,22 +111,22 @@ Loads a message history from the database using a given message history ID.
 
 ---
 #### LlmMessageHistory\.add\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L92>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L89>)
 
 Adds a new `LlmMessage` to the message history and optionally persists it to the database.
 - **Inputs**:
     - `message`: An instance of `LlmMessage` to add to the message history.
-    - `debug`: An optional boolean to control debug output; defaults to the instance's `debug` attribute if not provided.
+    - `debug`: An optional boolean to control whether to print the message to the console; defaults to the instance's `debug` attribute if not provided.
 - **Logic and Control Flow**:
-    - Checks if the hash of `message` is already in the list of message hashes; if so, returns without adding.
-    - Appends `message` to the `messages` list if it is not already present.
-    - If `llm_session_id`, `id`, and `message.persist` are all truthy, creates a [`RuntimeLlmMessage`](<../../../../../driver_db/database/models_v2.py.md#runtimellmmessage>) and adds it to the database using a session.
-    - If `debug` is not provided, sets `debug` to the instance's `debug` attribute.
-    - If `debug` is true, calls [`print_to_console`](<llm_message.py.md#llmmessageprint_to_console>) on `message`.
+    - Checks if the hash of the `message` is already in the list of message hashes; if so, returns without adding the message.
+    - Appends the `message` to the `messages` list if it is not already present.
+    - If `llm_session_id`, `id`, and `message.persist` are all truthy, creates a [`RuntimeLlmMessage`](<../../../../../driver_db/database/models.py.md#runtimellmmessage>) object and adds it to the database session, then commits and refreshes the session.
+    - Sets the `debug` variable to the instance's `debug` attribute if `debug` is `None`.
+    - Prints the `message` to the console if `debug` is `True`.
     - Returns the instance of `LlmMessageHistory`.
 - **Output**: Returns the `LlmMessageHistory` instance to allow method chaining.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.RuntimeLlmMessage`](<../../../../../driver_db/database/models_v2.py.md#runtimellmmessage>)
+    - [`python-backend/driver_db/database/models.RuntimeLlmMessage`](<../../../../../driver_db/database/models.py.md#runtimellmmessage>)
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.print_to_console`](<llm_message.py.md#llmmessageprint_to_console>)
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
@@ -134,17 +134,17 @@ Adds a new `LlmMessage` to the message history and optionally persists it to the
 
 ---
 #### LlmMessageHistory\.remove\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.remove_message}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L118>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L115>)
 
-Removes a `LlmMessage` from the message history and deletes it from the database if it is persistent.
+Removes a `LlmMessage` from the message history and deletes it from the database if certain conditions are met.
 - **Inputs**:
     - `message`: An instance of `LlmMessage` to remove from the message history.
 - **Logic and Control Flow**:
     - Removes the `message` from the `messages` list.
     - Checks if `llm_session_id`, `id`, and `message.persist` are all truthy.
-    - If true, opens a database session and executes a delete operation on `RuntimeLlmMessage` where `llm_message_json` matches the `message` and `message_history_id` matches `self.id`.
-    - Commits the transaction to the database.
-- **Output**: Does not return a value.
+    - If the conditions are met, opens a database session and executes a delete operation to remove the corresponding `RuntimeLlmMessage` from the database.
+    - Commits the transaction to finalize the deletion.
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
@@ -152,7 +152,7 @@ Removes a `LlmMessage` from the message history and deletes it from the database
 
 ---
 #### LlmMessageHistory\.to\_openai\_strict<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_strict}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L134>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L131>)
 
 Converts message history into a list of `ChatCompletionMessageParam` objects for OpenAI's strict API.
 - **Inputs**: None
@@ -160,17 +160,24 @@ Converts message history into a list of `ChatCompletionMessageParam` objects for
     - Initialize an empty list `messages` to store converted message objects.
     - Iterate over each message in `self.messages`.
     - Use a `match` statement to determine the `message_kind` of each message.
-    - For each `message_kind`, create a corresponding `ChatCompletionMessageParam` object with appropriate fields such as `role` and `content`.
-    - Append the created `ChatCompletionMessageParam` object to the `messages` list.
-- **Output**: A list of `ChatCompletionMessageParam` objects, each representing a message in a format compatible with OpenAI's strict API.
+    - For `MessageKind.TOOL_CALL_RESPONSE`, create a `ChatCompletionToolMessageParam` with role 'tool' and add it to `messages`.
+    - For `MessageKind.ASSISTANT`, create a `ChatCompletionAssistantMessageParam` with role 'assistant' and add it to `messages`.
+    - For `MessageKind.DEVELOPER`, create a `ChatCompletionDeveloperMessageParam` with role 'developer' and add it to `messages`.
+    - For `MessageKind.TOOL_CALL_REQUEST`, create a `ChatCompletionAssistantMessageParam` with tool call details and add it to `messages`.
+    - For `MessageKind.SYSTEM`, create a `ChatCompletionSystemMessageParam` with role 'system' and add it to `messages`.
+    - For `MessageKind.USER`, create a `ChatCompletionUserMessageParam` with role 'user' and add it to `messages`.
+    - For `MessageKind.PARSING_DESCRIPTION`, create a `ChatCompletionDeveloperMessageParam` with role 'developer' and add it to `messages`.
+    - For `MessageKind.ITERATION`, create a `ChatCompletionUserMessageParam` with role 'user' and add it to `messages`.
+    - Return the `messages` list.
+- **Output**: A list of `ChatCompletionMessageParam` objects with appropriate fields populated for OpenAI's strict API.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
 
 
 ---
 #### LlmMessageHistory\.to\_openai\_o3<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_o3}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L228>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L225>)
 
-Converts the message history into a list suitable for the OpenAI API variant "O3" by mapping each `LlmMessage` to a recognized message format.
+Converts message history into a list of OpenAI-compatible message parameter objects for the 'O3' API variant.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize an empty list `messages` to store the converted message parameter objects.
@@ -186,32 +193,32 @@ Converts the message history into a list suitable for the OpenAI API variant "O3
     - For `MessageKind.ITERATION`, create a `ChatCompletionUserMessageParam` with role 'user'.
     - Append each created message parameter object to the `messages` list.
     - Return the `messages` list.
-- **Output**: A list of OpenAI-compatible message parameter objects, each containing role and content fields, along with optional fields such as `tool_calls` when relevant.
+- **Output**: A list of OpenAI-compatible message parameter objects, each containing role and content fields, with optional fields such as `tool_calls` when relevant.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
 
 
 ---
 #### LlmMessageHistory\.to\_openai\_o1<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_o1}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L294>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L291>)
 
-Converts message history into a list suitable for the OpenAI API variant "O1" by mapping each message to a role-content-based format.
+Converts the message history into a list suitable for the OpenAI API variant "O1" by mapping each `LlmMessage` to a role-content-based message format.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize an empty list `messages` to store the converted message objects.
     - Iterate over each `message` in `self.messages`.
-    - Use a match statement to determine the `message_kind` of each `message`.
-    - For `TOOL_CALL_RESPONSE`, `SYSTEM`, `DEVELOPER`, `USER`, `PARSING_DESCRIPTION`, and `ITERATION` message kinds, create a `ChatCompletionUserMessageParam` with role 'user' and the message's content.
-    - For `ASSISTANT` message kind, create a `ChatCompletionAssistantMessageParam` with role 'assistant', the message's content, and any `tool_calls`.
-    - For `TOOL_CALL_REQUEST` message kind, create a `ChatCompletionAssistantMessageParam` with role 'assistant' and the message's content.
+    - Use a `match` statement to determine the `message_kind` of each `message`.
+    - For `TOOL_CALL_RESPONSE`, `SYSTEM`, `DEVELOPER`, `USER`, `PARSING_DESCRIPTION`, and `ITERATION` message kinds, create a `ChatCompletionUserMessageParam` with `role` set to "user" and `content` set to `message.content`.
+    - For `ASSISTANT` message kind, create a `ChatCompletionAssistantMessageParam` with `role` set to "assistant", `content` set to `message.content`, and `tool_calls` set to `message.tool_requests`.
+    - For `TOOL_CALL_REQUEST` message kind, create a `ChatCompletionAssistantMessageParam` with `role` set to "assistant" and `content` set to `message.content`.
     - Append each created message dictionary to the `messages` list.
     - Return the `messages` list.
-- **Output**: A list of OpenAI-compatible message parameter objects, each with role and content fields, and possibly tool_calls for the assistant role.
+- **Output**: A list of OpenAI-compatible message parameter objects, each with `role` and `content` fields, and possibly `tool_calls` for the assistant role.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
 
 
 ---
 #### LlmMessageHistory\.to\_anthropic<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_anthropic}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L357>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L354>)
 
 Converts message history into a format suitable for the Anthropic API by categorizing messages and combining system messages.
 - **Inputs**: None
@@ -220,10 +227,9 @@ Converts message history into a format suitable for the Anthropic API by categor
     - Iterate over each message in `self.messages`.
     - Use a match statement to categorize messages based on `message.message_kind`.
     - For `MessageKind.SYSTEM` and `MessageKind.PARSING_DESCRIPTION`, append `message.content` to `system_messages` if it exists.
-    - For `MessageKind.ASSISTANT`, create a dictionary with role 'assistant' and append it to `messages`.
+    - For `MessageKind.ASSISTANT` and `MessageKind.TOOL_CALL_REQUEST`, create a dictionary with role 'assistant' and append it to `messages`.
     - For `MessageKind.USER`, `MessageKind.DEVELOPER`, `MessageKind.TOOL_CALL_RESPONSE`, and `MessageKind.ITERATION`, create a dictionary with role 'user' and append it to `messages`.
-    - For `MessageKind.TOOL_CALL_REQUEST`, create a dictionary with role 'assistant' and append it to `messages`.
-    - Combine all `system_messages` into a single string separated by double newlines, or set to `None` if empty.
+    - Combine all `system_messages` into a single string separated by double newlines, or set to `None` if no system messages exist.
     - Return a tuple containing the `messages` list and the combined system message content.
 - **Output**: A tuple containing a list of regular messages in Anthropic format and a combined system message content string or `None` if no system messages exist.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
@@ -231,7 +237,7 @@ Converts message history into a format suitable for the Anthropic API by categor
 
 ---
 #### LlmMessageHistory\.\_remove\_iteration\_messages<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory._remove_iteration_messages}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L416>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L413>)
 
 Removes all messages of kind `MessageKind.ITERATION` from the message history.
 - **Inputs**: None
@@ -239,7 +245,7 @@ Removes all messages of kind `MessageKind.ITERATION` from the message history.
     - Iterates over each message in `self.messages`.
     - Checks if the `message_kind` of the message is `MessageKind.ITERATION`.
     - Calls `self.remove_message(message)` to remove the message if it is of kind `MessageKind.ITERATION`.
-- **Output**: No output is returned as the method modifies the `self.messages` list in place.
+- **Output**: No output is returned as the function modifies the `self.messages` list in place.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.remove_message`](<#llmmessagehistoryremove_message>)
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
@@ -247,7 +253,7 @@ Removes all messages of kind `MessageKind.ITERATION` from the message history.
 
 ---
 #### LlmMessageHistory\.\_remove\_parsing\_description\_messages<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory._remove_parsing_description_messages}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L424>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L421>)
 
 Removes all messages of kind `PARSING_DESCRIPTION` from the message history.
 - **Inputs**: None
@@ -263,14 +269,14 @@ Removes all messages of kind `PARSING_DESCRIPTION` from the message history.
 
 ---
 #### LlmMessageHistory\.clean<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.clean}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L432>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L429>)
 
 Removes all iteration and parsing description messages from the message history.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the [`_remove_iteration_messages`](<#llmmessagehistory_remove_iteration_messages>) method to remove all iteration messages from the message history.
     - Calls the [`_remove_parsing_description_messages`](<#llmmessagehistory_remove_parsing_description_messages>) method to remove all parsing description messages from the message history.
-- **Output**: No output is returned as the method modifies the message history in place.
+- **Output**: No output is returned as the function modifies the message history in place.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory._remove_iteration_messages`](<#llmmessagehistory_remove_iteration_messages>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory._remove_parsing_description_messages`](<#llmmessagehistory_remove_parsing_description_messages>)
@@ -279,26 +285,25 @@ Removes all iteration and parsing description messages from the message history.
 
 ---
 #### LlmMessageHistory\.copy<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L439>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L436>)
 
-Creates a deep copy of the `LlmMessageHistory` instance with all its messages.
+Creates a deep copy of the `LlmMessageHistory` instance with copied messages.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Iterates over each message in `self.messages` and calls `model_copy()` on each message to create a deep copy.
-    - Stores the copied messages in the `copied_messages` list.
-    - Returns a new `LlmMessageHistory` instance initialized with the `copied_messages` list and `debug` set to `False`.
+    - Iterates over `self.messages` to create a list of copied messages using `message.model_copy()` for each message.
+    - Creates a new `LlmMessageHistory` instance with the copied messages and `debug` set to `False`.
 - **Output**: A new `LlmMessageHistory` instance with copied messages.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
 
 
 ---
 #### LlmMessageHistory\.last<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.last}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L449>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L446>)
 
 Returns the last message in the message history.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the `messages` list attribute of the class instance.
+    - Accesses the `messages` list attribute of the `LlmMessageHistory` instance.
     - Returns the last element of the `messages` list using the index `-1`.
 - **Output**: The last `LlmMessage` object in the `messages` list.
 - **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<#llmmessagehistory>)  (Base Class)
@@ -306,15 +311,14 @@ Returns the last message in the message history.
 
 ---
 #### LlmMessageHistory\.rewind\_past\_last\_tool\_call\_request<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.rewind_past_last_tool_call_request}} -->
-[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L455>)
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_history.py#L452>)
 
 Removes all `TOOL_CALL_RESPONSE` messages following the most recent `TOOL_CALL_REQUEST` and then removes that `TOOL_CALL_REQUEST`.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Iterates over the `messages` list from the newest to the oldest message.
-    - For each message, checks if the `message_kind` is `TOOL_CALL_RESPONSE`.
-    - If `TOOL_CALL_RESPONSE`, removes the message and continues to the next iteration.
-    - If `TOOL_CALL_REQUEST`, removes the message and breaks the loop.
+    - Checks if the message kind is `TOOL_CALL_RESPONSE`; if true, removes the message and continues to the next iteration.
+    - Checks if the message kind is `TOOL_CALL_REQUEST`; if true, removes the message and breaks the loop.
 - **Output**: No output is returned as the method modifies the `messages` list in place.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.remove_message`](<#llmmessagehistoryremove_message>)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A comprehensive test file for various C++ variable types and features, including global, static, and template variables.
+Demonstrates various C++ variable types and features, including global, static, and template variables.
 
 # Purpose
-The code is a comprehensive C++ source file that demonstrates various types of variable declarations and initializations, as well as their usage in a [`main`](<#main>) function. It includes examples of global, static, const, constexpr, and pointer variables, among others. The file also illustrates the use of modern C++ features such as smart pointers, atomic operations, thread-local storage, and structured bindings. Additionally, it defines variables within different scopes, including anonymous and named namespaces, and uses conditional compilation to manage debug and release modes.
+The code is a comprehensive C++ source file that demonstrates various types of variable declarations and initializations, as well as their usage in a [`main`](<#main>) function. It includes examples of global, static, const, constexpr, and pointer variables, among others. The file also illustrates the use of modern C++ features such as smart pointers, atomic operations, thread-local storage, and structured bindings. Additionally, it defines variables within namespaces, both named and anonymous, and uses conditional compilation to manage debug and release modes.
 
-The file serves as a demonstration of C++ language features and variable management techniques. It includes examples of function pointers, lambda expressions, template variables, and class static members. The code also shows the use of RAII (Resource Acquisition Is Initialization) through a [`FileHandle`](<#filehandlefilehandle>) class, and it defines a [`main`](<#main>) function that tests and outputs the values of various variables. The file is structured to provide a broad overview of C++ variable types and their applications, making it a useful reference for understanding variable scope, initialization, and usage in C++.
+The file serves as a demonstration of C++ language features and variable management techniques. It includes examples of function pointers, lambda expressions, template variables, and class static members. The code also shows the use of RAII (Resource Acquisition Is Initialization) through a [`FileHandle`](<#filehandlefilehandle>) class, and it defines a [`main`](<#main>) function that tests and outputs the values of various variables. The file is not intended to be a library or header file for external use but rather a standalone executable that showcases C++ variable types and their interactions.
 # Imports and Dependencies
 
 ---
@@ -25,22 +25,22 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### global\_int
 - **Type**: `int`
-- **Description**: This variable holds an integer value. It is initialized to 42.
-- **Use**: It is used to store and retrieve an integer value globally across the program.
+- **Description**: This variable stores an integer value. It is initialized to 42.
+- **Use**: It is used to demonstrate basic global variable functionality in the program.
 
 
 ---
 ### global\_double
 - **Type**: `double`
-- **Description**: This variable stores a double-precision floating-point number. It is initialized with the value of π (3.14159).
+- **Description**: This variable holds a double precision floating-point number. It is initialized to the value of π (3.14159).
 - **Use**: It is used to represent a mathematical constant in the program.
 
 
 ---
 ### global\_string
 - **Type**: `std::string`
-- **Description**: This variable holds a string value initialized to "Hello, World!". It is a global variable, meaning it can be accessed from any function within the same file.
-- **Use**: It is used to store and display a greeting message in the `main` function.
+- **Description**: This variable holds a string value initialized to 'Hello, World!'. It is a global variable accessible throughout the program.
+- **Use**: It is used to store and display a greeting message in the main function.
 
 
 ---
@@ -53,15 +53,15 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### CONST\_VALUE
 - **Type**: `const int`
-- **Description**: This variable holds a constant integer value of 100. It is defined as `const`, meaning its value cannot be changed after initialization.
-- **Use**: It is used to provide a fixed value throughout the program.
+- **Description**: This variable holds a constant integer value of 100. It is defined as a global variable, meaning it can be accessed from any function within the same file.
+- **Use**: It is used to provide a fixed value that does not change during program execution.
 
 
 ---
 ### CONSTEXPR\_PI
 - **Type**: `constexpr double`
-- **Description**: This variable holds the mathematical constant π (pi) with high precision. It is defined as a `constexpr`, meaning its value is computed at compile time.
-- **Use**: It is used to provide a constant value of π in calculations.
+- **Description**: This variable holds the mathematical constant π (pi) with high precision. It is defined as a `constexpr`, which means its value is computed at compile time.
+- **Use**: It is used to represent the value of pi in calculations that require high precision.
 
 
 ---
@@ -74,8 +74,8 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### static\_counter
 - **Type**: `int`
-- **Description**: This variable is a static integer that starts at zero. It is used to keep track of a count that persists across function calls.
-- **Use**: It is used to maintain a count that can be incremented or accessed throughout the program.
+- **Description**: This variable holds an integer value that starts at zero. It is declared as `static`, which means it retains its value between function calls and is limited to the file scope.
+- **Use**: It is used to count occurrences or track a state across function calls.
 
 
 ---
@@ -89,7 +89,7 @@ The file serves as a demonstration of C++ language features and variable managem
 ### external\_variable
 - **Type**: `int`
 - **Description**: This variable is declared as an `extern` integer. It is defined in another translation unit, allowing it to be accessed across multiple files.
-- **Use**: It is used to share an integer value between different parts of the program.
+- **Use**: It is used to share an integer value between different source files.
 
 
 ---
@@ -101,8 +101,8 @@ The file serves as a demonstration of C++ language features and variable managem
 
 ---
 ### int\_pointer
-- **Type**: `pointer to int`
-- **Description**: This variable is a pointer that can point to an integer value. It is initialized to `nullptr`, indicating that it does not point to any valid memory location at the start.
+- **Type**: `int*`
+- **Description**: This variable is a pointer to an integer. It is initialized to `nullptr`, indicating that it does not point to any valid memory location at the start.
 - **Use**: It is used to store the address of an integer variable.
 
 
@@ -116,8 +116,8 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### pointer\_to\_const
 - **Type**: `int* const`
-- **Description**: This variable is a constant pointer to an `int`. It holds the address of the variable `global_int`, which means it cannot be changed to point to another address.
-- **Use**: It is used to provide a fixed reference to the `global_int` variable.
+- **Description**: This variable is a constant pointer to an `int`. It holds the address of a global integer variable, `global_int`, and cannot be changed to point to another address.
+- **Use**: It is used to access the value of `global_int` through pointer dereferencing.
 
 
 ---
@@ -137,62 +137,62 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### const\_reference
 - **Type**: `const int&`
-- **Description**: This variable is a reference to a constant integer value defined by `CONST_VALUE`. It allows read-only access to the value without copying it.
-- **Use**: It is used to provide a constant reference to `CONST_VALUE`.
+- **Description**: This variable is a reference to a constant integer value. It is initialized to refer to `CONST_VALUE`, which is defined as 100.
+- **Use**: It provides a way to access the constant integer without copying its value.
 
 
 ---
 ### auto\_int
 - **Type**: `auto`
-- **Description**: This variable uses type deduction to automatically determine its type based on the assigned value. It is initialized with the integer value `42`.
+- **Description**: This variable uses type deduction to automatically determine its type based on the assigned value. It is initialized with the integer value 42.
 - **Use**: It is used to store an integer value in a global scope.
 
 
 ---
 ### auto\_double
 - **Type**: `auto`
-- **Description**: This variable uses type deduction to define a `double` with an initial value of `3.14`. It allows for automatic type inference based on the assigned value.
-- **Use**: It is used to store a floating-point number.
+- **Description**: This variable uses type deduction to store a double value. It is initialized with the value 3.14.
+- **Use**: It is used to demonstrate automatic type inference in C++.
 
 
 ---
 ### auto\_string
-- **Type**: `auto`
-- **Description**: This variable uses type deduction to create a `std::string` initialized with the value "Auto String". It allows for automatic type inference based on the assigned value.
-- **Use**: It is used to store a string value that can be accessed globally.
+- **Type**: `auto_string is a variable that uses type deduction to create a `std::string` object.`
+- **Description**: It is initialized with the value "Auto String". This variable holds a string that can be used throughout the program.
+- **Use**: It is used to store and manipulate string data in the global scope.
 
 
 ---
 ### auto\_vector
 - **Type**: `auto`
-- **Description**: This variable is a global instance of `std::vector<int>`. It is initialized with five integer values: 1, 2, 3, 4, and 5.
-- **Use**: It is used to store a collection of integers that can be accessed globally.
+- **Description**: This variable is a global instance of `std::vector<int>`, initialized with the values {1, 2, 3, 4, 5}. It stores a collection of integers.
+- **Use**: It is used to hold a dynamic array of integers that can be accessed globally.
 
 
 ---
 ### decltype\_int
-- **Type**: `int`
-- **Description**: This variable uses `decltype` to define its type based on the type of `global_int`. It is initialized with the value 100.
-- **Use**: It is used to demonstrate type deduction in global scope.
+- **Type**: `decltype_int`
+- **Description**: This variable uses `decltype` to determine its type based on `global_int`, which is an `int`. It is initialized with the value 100.
+- **Use**: It stores an integer value that is determined by the type of `global_int`.
 
 
 ---
 ### decltype\_auto\_var
 - **Type**: `decltype(auto)`
-- **Description**: This variable uses `decltype` to deduce its type from `global_double`. It holds a reference to the value of `global_double`, which is a `double`.
-- **Use**: It is used to create a variable that automatically matches the type of `global_double`.
+- **Description**: This variable uses `decltype` to deduce its type from `global_double`, which is a `double`. It allows for automatic type inference based on the type of the expression provided.
+- **Use**: It is used to create a variable that has the same type as `global_double`.
 
 
 ---
 ### global\_array
 - **Type**: `int[10]`
 - **Description**: This variable is an array of integers with a size of 10. It is initialized with the values {1, 2, 3, 4, 5} and the remaining elements are set to zero.
-- **Use**: It is used to store a fixed set of integer values for global access.
+- **Use**: It stores a fixed set of integer values for use throughout the program.
 
 
 ---
 ### matrix
-- **Type**: `array of arrays`
+- **Type**: `array`
 - **Description**: This variable is a two-dimensional array of type `double` with dimensions 3x3. It is initialized to represent the identity matrix, where the diagonal elements are 1.0 and all other elements are 0.0.
 - **Use**: It is used to store and manipulate matrix data in mathematical operations.
 
@@ -200,7 +200,7 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### string\_array
 - **Type**: `array of std::string`
-- **Description**: This variable is an array of `std::string` containing three elements: "One", "Two", and "Three". It is defined at the global scope and can be accessed from any function within the same translation unit.
+- **Description**: This variable is an array that holds three `std::string` elements: "One", "Two", and "Three". It is defined at the global scope, making it accessible throughout the program.
 - **Use**: It is used to store a fixed set of string values.
 
 
@@ -214,78 +214,78 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### string\_vector
 - **Type**: `std::vector<std::string>`
-- **Description**: This variable is a global instance of `std::vector` that holds a collection of `std::string` elements. It is initialized with three string values: 'Alpha', 'Beta', and 'Gamma'.
-- **Use**: It is used to store and manage a list of string values.
+- **Description**: This variable is a global instance of `std::vector` that holds a list of `std::string` elements. It is initialized with three string values: 'Alpha', 'Beta', and 'Gamma'.
+- **Use**: It is used to store and manage a collection of string values.
 
 
 ---
 ### unique\_int\_ptr
 - **Type**: `std::unique_ptr<int>`
 - **Description**: This variable holds a smart pointer that manages a dynamically allocated `int`. It is initialized with the value `999`.
-- **Use**: It is used to ensure proper memory management for the integer value.
+- **Use**: It is used to ensure proper memory management for the integer it points to.
 
 
 ---
 ### shared\_string\_ptr
 - **Type**: `std::shared_ptr<std::string>`
-- **Description**: This variable holds a shared pointer to a `std::string` object. It is initialized with a new `std::string` containing the text 'Shared String'.
-- **Use**: It is used to manage shared ownership of the string data in memory.
+- **Description**: This variable holds a shared pointer to a `std::string` object. It is initialized with a new `std::string` containing the text 'Shared String'. Multiple shared pointers can manage the same string object.
+- **Use**: It is used to share ownership of a string between different parts of the program.
 
 
 ---
 ### weak\_string\_ptr
 - **Type**: `std::weak_ptr<std::string>`
-- **Description**: This variable holds a weak reference to a `std::string` object. It allows access to the string without affecting its reference count, preventing memory leaks.
-- **Use**: It is used to observe the `shared_string_ptr` without taking ownership.
+- **Description**: This variable holds a weak reference to a `std::string` object. It does not manage the lifetime of the object it points to, allowing for the object to be deleted if there are no strong references.
+- **Use**: It is used to prevent circular references in smart pointer management.
 
 
 ---
 ### atomic\_counter
 - **Type**: `std::atomic<int>`
-- **Description**: This variable is an atomic integer that allows safe concurrent access from multiple threads. It is initialized to zero and can be used to count or track values in a thread-safe manner.
-- **Use**: It is used to store and manage a counter that can be safely updated by multiple threads.
+- **Description**: This variable is an atomic integer that allows safe concurrent access from multiple threads. It is initialized to zero and can be used to count or track operations in a thread-safe manner.
+- **Use**: It is used to store and manage a counter that can be safely modified by multiple threads.
 
 
 ---
 ### thread\_local\_var
 - **Type**: `thread_local int`
-- **Description**: This variable is declared with the `thread_local` storage class specifier. It is initialized to `0` and is unique to each thread that accesses it.
-- **Use**: It is used to store a value that is specific to the thread context.
+- **Description**: This variable is declared with the `thread_local` storage class specifier. It means that each thread has its own instance of this variable, initialized to `0`.
+- **Use**: It is used to store thread-specific data.
 
 
 ---
 ### lambda\_var
 - **Type**: `function`
-- **Description**: This variable is a lambda function that takes two integers as input and returns their sum. It uses the syntax of a lambda expression to define an anonymous function.
-- **Use**: It is used to perform addition of two integers.
+- **Description**: This variable is a lambda function that takes two integers as input and returns their sum as an integer. It uses the syntax of a lambda expression to define an anonymous function.
+- **Use**: It is used as a function pointer to perform addition of two integers.
 
 
 ---
 ### debug\_level
 - **Type**: `int`
-- **Description**: This variable holds an integer value that indicates the level of debugging output. It is used to control the verbosity of debug messages in the application.
-- **Use**: It is used to set the level of detail for debug output during program execution.
+- **Description**: This variable holds an integer value that indicates the level of debugging output. The value can be adjusted to control the verbosity of debug messages.
+- **Use**: It is used to set the debugging level for logging purposes.
 
 
 ---
 ### debug\_output\_file
 - **Type**: `const char*`
-- **Description**: This variable holds the name of a file used for debug output. It is defined as a constant character pointer that points to the string 'debug.log'.
-- **Use**: It is used to specify the file where debug information is written.
+- **Description**: This variable holds the name of a file used for debug output. It is a constant pointer to a character array that points to the string 'debug.log'.
+- **Use**: It is used to specify the file where debug information is logged when the `DEBUG_MODE` is defined.
 
 
 ---
 ### enable\_logging
 - **Type**: `bool`
-- **Description**: This variable controls whether logging is enabled in the application. It is defined as a static global variable, which means it has internal linkage and is only accessible within the file it is declared.
-- **Use**: It is used to determine if logging functionality should be active or not.
+- **Description**: This variable controls whether logging is enabled in the application. It is defined as a static variable, meaning it has internal linkage and is only accessible within the file it is declared.
+- **Use**: It is used to determine if logging should occur during the execution of the program.
 
 
 ---
 ### global\_buffer
 - **Type**: `array`
-- **Description**: This variable is an array of `char` with a size defined by `BUFFER_SIZE`. It is used to store a sequence of characters.
-- **Use**: It serves as a buffer for data processing.
+- **Description**: This variable is an array of `char` with a size defined by `BUFFER_SIZE`. It is used to store a buffer of characters for various operations.
+- **Use**: It is used as a global buffer for character data.
 
 
 ---
@@ -299,21 +299,21 @@ The file serves as a demonstration of C++ language features and variable managem
 ### instance\_count
 - **Type**: `int`
 - **Description**: This variable holds the count of instances of the `GlobalState` class. It is initialized to zero and can be modified to reflect the number of active instances.
-- **Use**: It is used to track how many instances of `GlobalState` have been created.
+- **Use**: It tracks how many instances of `GlobalState` are created during the program execution.
 
 
 ---
 ### VERSION
 - **Type**: `const double`
-- **Description**: This variable holds the version number of the application as a constant double value. It is defined in the `GlobalState` class and is used to indicate the current version of the software.
-- **Use**: It is used to provide version information for the application.
+- **Description**: This variable holds the version number of the application as a constant double value. It is defined in the `GlobalState` class and is set to `1.0`.
+- **Use**: It is used to provide the version information of the application.
 
 
 ---
 ### application\_name
 - **Type**: `std::string`
 - **Description**: This variable holds the name of the application as a string. It is a static member of the `GlobalState` class.
-- **Use**: It is used to store and access the application's name throughout the program.
+- **Use**: It is used to identify the application throughout the program.
 
 
 ---
@@ -326,57 +326,57 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### unused\_variable
 - **Type**: `int`
-- **Description**: This variable is declared with the `[[maybe_unused]]` attribute, indicating that it may not be used in the code. It is initialized to `0`.
+- **Description**: This variable is declared with the attribute `[[maybe_unused]]`, indicating that it may not be used in the code. It is initialized to zero.
 - **Use**: It serves as a placeholder variable that can be ignored by the compiler if not used.
 
 
 ---
 ### old\_variable
 - **Type**: `int`
-- **Description**: This variable holds an integer value of `123`. It is marked as deprecated, indicating that it should not be used in new code.
+- **Description**: This variable holds an integer value of 123. It is marked as deprecated, indicating that it should not be used in new code.
 - **Use**: It serves as a legacy variable that may be replaced by `new_variable`.
 
 
 ---
 ### volatile\_flag
 - **Type**: `volatile int`
-- **Description**: This variable is a global integer that is declared as `volatile`. It indicates that the value may be changed by external factors, such as hardware or other threads, and prevents the compiler from optimizing accesses to it.
-- **Use**: It is used to ensure that the most recent value is always read from memory.
+- **Description**: This variable is a global integer that is declared as `volatile`. It indicates that the value may change at any time, preventing the compiler from optimizing accesses to it.
+- **Use**: It is used to ensure that the value is always read from memory, rather than from a cached copy.
 
 
 ---
 ### volatile\_atomic\_flag
-- **Type**: `std::atomic<bool>`
-- **Description**: This variable is a global atomic flag that can be accessed and modified safely across multiple threads. It is marked as `volatile`, indicating that its value may change unexpectedly, and it is initialized to `false`.
-- **Use**: It is used to manage synchronization in a multithreaded environment.
+- **Type**: `volatile std::atomic<bool>`
+- **Description**: This variable is a global atomic boolean flag that is marked as `volatile`. It is used to indicate a state that may change unexpectedly, such as in multi-threaded environments.
+- **Use**: It is used to safely manage state changes across different threads.
 
 
 ---
 ### global\_flags
 - **Type**: `struct Flags`
-- **Description**: This variable is an instance of the `Flags` structure, which contains four bitfields. The bitfields represent different flags, with three being used for specific purposes and one reserved.
+- **Description**: This variable is an instance of the `Flags` structure, which contains bitfields to represent multiple boolean flags. It has four fields: `flag1`, `flag2`, `flag3`, and `reserved`, where the first three are used for flags and the last one is reserved for future use.
 - **Use**: It is used to store and manage the state of various flags in the program.
 
 
 ---
 ### global\_data
 - **Type**: `union Data`
-- **Description**: This variable is a union that can store either an `int`, a `float`, or a character array of four elements. It is initialized with an integer value of `0x12345678`.
-- **Use**: It is used to hold different types of data in a single memory location.
+- **Description**: This variable is a union named `Data` that can store either an `int`, a `float`, or a character array of size 4. The current value stored in the union is an integer, initialized to `0x12345678`.
+- **Use**: It is used to hold different types of data in a single variable, allowing for memory-efficient storage.
 
 
 ---
 ### key\_value\_pairs
 - **Type**: `std::vector<std::pair<std::string, int>>`
-- **Description**: This variable stores a collection of key-value pairs. Each pair consists of a `std::string` as the key and an `int` as the value.
-- **Use**: It is used to manage and access pairs of strings and integers.
+- **Description**: This variable holds a collection of key-value pairs. Each pair consists of a `std::string` as the key and an `int` as the value.
+- **Use**: It is used to store and manage pairs of fruit names and their corresponding quantities.
 
 
 ---
 ### matrix\_vector
 - **Type**: `std::vector<std::vector<int>>`
 - **Description**: This variable is a two-dimensional vector that holds integers. It is initialized with three rows, each containing three integers.
-- **Use**: It is used to represent a matrix of integers.
+- **Use**: It is used to store and manage a matrix of integers.
 
 
 ---
@@ -396,29 +396,29 @@ The file serves as a demonstration of C++ language features and variable managem
 ---
 ### origin
 - **Type**: `Point`
-- **Description**: This variable represents a point in a two-dimensional space with `x` and `y` coordinates. It is initialized to the coordinates (0.0, 0.0).
-- **Use**: It is used to define the starting position in a coordinate system.
+- **Description**: Represents a point in a 2D space with `x` and `y` coordinates. The `origin` variable is initialized to the coordinates (0.0, 0.0).
+- **Use**: Used to define the starting point for calculations or graphical representations.
 
 
 ---
 ### destination
-- **Type**: `Point`
+- **Type**: `struct Point`
 - **Description**: This variable holds a `Point` structure that represents a point in a 2D space with `x` and `y` coordinates. It is initialized with the values `10.0` for `x` and `20.0` for `y`.
 - **Use**: It is used to define a specific location in a 2D coordinate system.
 
 
 ---
 ### times\_two
-- **Type**: `Multiplier`
-- **Description**: Represents a function object that multiplies an integer by a specified factor. The `times_two` instance is initialized with a factor of 2.
-- **Use**: Used to multiply input values by 2.
+- **Type**: `Function object`
+- **Description**: Represents a functor that multiplies an integer by a specified factor. The `Multiplier` struct has a member variable `factor` that stores the multiplication factor.
+- **Use**: Used to create instances that can multiply input values by their respective factors.
 
 
 ---
 ### times\_three
 - **Type**: `Multiplier`
-- **Description**: This variable is an instance of the `Multiplier` struct, initialized with a factor of 3. It is used to multiply input values by three.
-- **Use**: It is used as a function object to perform multiplication on integers.
+- **Description**: This variable is an instance of the `Multiplier` struct, initialized with a factor of 3. It provides a way to multiply an integer by three.
+- **Use**: It is used to perform multiplication in the main function.
 
 
 ---
@@ -443,9 +443,9 @@ The file serves as a demonstration of C++ language features and variable managem
 
 - **Type**: `class`
 - **Members**:
-    - ``instance_count``: A static integer that tracks the number of instances.
-    - ``VERSION``: A static constant double that holds the version number.
-    - ``application_name``: A static string that stores the name of the application.
+    - ``instance_count``: A static integer that counts the number of instances.
+    - ``VERSION``: A static constant double that represents the version number.
+    - ``application_name``: A static string that holds the name of the application.
     - ``initialized``: A static boolean that indicates if the state is initialized.
 - **Description**: Manages global state information with static members, including instance count, version, application name, and initialization status.
 
@@ -456,8 +456,8 @@ The file serves as a demonstration of C++ language features and variable managem
 
 - **Type**: ``class``
 - **Members**:
-    - ``count``: A static integer that keeps track of the count.
-- **Description**: Defines a template class `Counter` that maintains a static count of objects or events. The class provides static methods `increment` to increase the count and `getCount` to retrieve the current count. The `count` variable is shared across all instances of the class template, making it suitable for tracking a global count for a specific type `T`.
+    - ``count``: A static integer that tracks the count of instances or operations.
+- **Description**: Represents a template class that maintains a static count of instances or operations for a given type `T`. The class provides static methods to increment the count and retrieve the current count value.
 
 **Methods**
 
@@ -465,10 +465,10 @@ The file serves as a demonstration of C++ language features and variable managem
 #### Counter::increment<!-- {{#callable:Counter::increment}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_variables.cpp#L130>)
 
-Increments the static member `count` of the `Counter` template class by one.
+Increments the static member `count` of the `Counter` class template by one.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the static member `count` of the `Counter` template class.
+    - Accesses the static member `count` of the `Counter` class template.
     - Increments the value of `count` by one using the pre-increment operator `++`.
 - **Output**: No output is returned as the function has a `void` return type.
 - **See also**: [`Counter`](<test_classes.cpp.md#counter>)  (Data Structure)
@@ -478,12 +478,12 @@ Increments the static member `count` of the `Counter` template class by one.
 #### Counter::getCount<!-- {{#callable:Counter::getCount}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_variables.cpp#L131>)
 
-Returns the current value of the static member variable `count`.
+Returns the current value of the static member `count` in the `Counter` class template.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the static member variable `count`.
+    - Accesses the static member `count` of the `Counter` class template.
     - Returns the value of `count`.
-- **Output**: The function returns an integer representing the current value of the static member variable `count`.
+- **Output**: The current value of the static member `count` as an `int`.
 - **See also**: [`Counter`](<test_classes.cpp.md#counter>)  (Data Structure)
 
 
@@ -494,11 +494,11 @@ Returns the current value of the static member variable `count`.
 
 - **Type**: ``struct``
 - **Members**:
-    - ``flag1``: A 1-bit unsigned integer field.
-    - ``flag2``: A 1-bit unsigned integer field.
-    - ``flag3``: A 1-bit unsigned integer field.
-    - ``reserved``: A 29-bit unsigned integer field reserved for future use or padding.
-- **Description**: Defines a bitfield structure with three 1-bit flags and a 29-bit reserved field, allowing for compact storage of flag states in a 32-bit unsigned integer.
+    - ``flag1``: A 1-bit unsigned integer representing the first flag.
+    - ``flag2``: A 1-bit unsigned integer representing the second flag.
+    - ``flag3``: A 1-bit unsigned integer representing the third flag.
+    - ``reserved``: A 29-bit unsigned integer reserved for future use or padding.
+- **Description**: Defines a bitfield structure with three 1-bit flags and a 29-bit reserved field, allowing efficient storage and manipulation of flag states within a 32-bit unsigned integer.
 
 
 ---
@@ -510,7 +510,7 @@ Returns the current value of the static member variable `count`.
     - ``int_value``: Stores an integer value.
     - ``float_value``: Stores a floating-point value.
     - ``char_array``: Stores a character array of size 4.
-- **Description**: A `union` that can store an integer, a floating-point number, or a character array of size 4, but only one of these at a time.
+- **Description**: Represents a `union` that can store an `int`, a `float`, or a `char` array of size 4, but only one of these at a time.
 
 
 ---
@@ -519,9 +519,9 @@ Returns the current value of the static member variable `count`.
 
 - **Type**: ``enum class``
 - **Members**:
-    - ``RED``: Represents the color red.
-    - ``GREEN``: Represents the color green.
-    - ``BLUE``: Represents the color blue.
+    - `RED`: Represents the color red.
+    - `GREEN`: Represents the color green.
+    - `BLUE`: Represents the color blue.
 - **Description**: Defines a strongly-typed enumeration for colors with three possible values: `RED`, `GREEN`, and `BLUE`.
 
 
@@ -531,8 +531,8 @@ Returns the current value of the static member variable `count`.
 
 - **Type**: ``struct``
 - **Members**:
-    - ``x``: Represents the x-coordinate of the point.
-    - ``y``: Represents the y-coordinate of the point.
+    - `x`: Represents the x-coordinate of the point.
+    - `y`: Represents the y-coordinate of the point.
 - **Description**: Represents a point in a 2D space with `x` and `y` coordinates, and provides a constructor to initialize these coordinates.
 
 **Methods**
@@ -548,8 +548,8 @@ Initializes a `Point` object with specified x and y coordinates.
 - **Logic and Control Flow**:
     - Assigns the value of `x_val` to the member variable `x`.
     - Assigns the value of `y_val` to the member variable `y`.
-- **Output**: A `Point` object with initialized x and y coordinates.
-- **See also**: [`Point`](<../c/test_structs.c.md#point>)  (Data Structure)
+- **Output**: A `Point` object with the specified x and y coordinates.
+- **See also**: [`Point`](<test_func_defs.cpp.md#point>)  (Data Structure)
 
 
 
@@ -559,8 +559,8 @@ Initializes a `Point` object with specified x and y coordinates.
 
 - **Type**: ``struct``
 - **Members**:
-    - ``factor``: Stores the multiplication factor.
-- **Description**: Defines a functor that multiplies an integer by a specified factor. The `factor` member is initialized through the constructor, and the `operator()` is overloaded to perform the multiplication when the functor is called with an integer argument.
+    - ``factor``: Stores the multiplication factor as an integer.
+- **Description**: Represents a functor that multiplies a given integer by a predefined factor. The `Multiplier` struct contains a single integer member `factor`, which is initialized through its constructor. The `operator()` is overloaded to take an integer `x` and return the product of `x` and `factor`, allowing instances of `Multiplier` to be used as function objects.
 - **Member Functions**:
     - [`Multiplier::Multiplier`](<#multipliermultiplier>)
     - [`Multiplier::operator()`](<#multiplieroperator)>)
@@ -573,11 +573,11 @@ Initializes a `Point` object with specified x and y coordinates.
 
 Multiplies an integer by a predefined factor.
 - **Inputs**:
-    - `f`: An integer that initializes the `factor` member variable.
+    - `f`: An integer used to initialize the `factor` member variable.
     - `x`: An integer to be multiplied by the `factor`.
 - **Logic and Control Flow**:
     - The constructor `Multiplier(int f)` initializes the `factor` member variable with the value of `f`.
-    - The `operator()(int x) const` function takes an integer `x` and returns the product of `x` and the `factor`.
+    - The `operator()(int x) const` function multiplies the input `x` by the `factor` and returns the result.
 - **Output**: Returns the product of the input integer `x` and the `factor`.
 - **See also**: [`Multiplier`](<#multiplier>)  (Data Structure)
 
@@ -605,7 +605,7 @@ Multiplies the input integer by the `factor` member of the `Multiplier` struct.
 - **Type**: ``class``
 - **Members**:
     - ``file``: A pointer to a `FILE` object that represents an open file.
-- **Description**: Manages a file resource using the RAII pattern, ensuring that the file is opened upon construction and closed upon destruction. The constructor opens a file with the specified filename and mode, while the destructor closes the file if it is open. Provides a method to access the underlying `FILE` pointer.
+- **Description**: Manages a file resource using the RAII (Resource Acquisition Is Initialization) pattern. It opens a file in the constructor using `fopen` and closes it in the destructor using `fclose`, ensuring that the file is properly closed when the `FileHandle` object goes out of scope. The `get` method provides access to the underlying `FILE` pointer.
 - **Member Functions**:
     - [`FileHandle::FileHandle`](<#filehandlefilehandle>)
     - [`FileHandle::~FileHandle`](<#filehandlefilehandle>)
@@ -617,10 +617,10 @@ Multiplies the input integer by the `factor` member of the `Multiplier` struct.
 #### FileHandle::FileHandle<!-- {{#callable:FileHandle::FileHandle}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_variables.cpp#L207>)
 
-Manages a file resource by opening a file in a specified mode and ensuring it is closed upon destruction.
+Manages a file resource by opening a file in a specified mode and ensuring it is closed when the object is destroyed.
 - **Inputs**:
-    - `filename`: A pointer to a constant character string that specifies the name of the file to open.
-    - `mode`: A pointer to a constant character string that specifies the mode in which to open the file (e.g., "r" for read, "w" for write).
+    - ``filename``: A pointer to a constant character string that specifies the name of the file to open.
+    - ``mode``: A pointer to a constant character string that specifies the mode in which to open the file (e.g., "r" for read, "w" for write).
 - **Logic and Control Flow**:
     - Initializes the `file` member by calling `fopen` with `filename` and `mode` to open the file.
     - Checks if the `file` member is not null in the destructor, and if so, calls `fclose` to close the file.
@@ -637,7 +637,7 @@ Ensures the file associated with the `FileHandle` object is closed when the obje
 - **Logic and Control Flow**:
     - Checks if the `file` member is not null.
     - If `file` is not null, calls `fclose(file)` to close the file.
-- **Output**: No output is returned as this is a destructor.
+- **Output**: No return value (destructor).
 - **See also**: [`FileHandle`](<#filehandle>)  (Data Structure)
 
 
@@ -650,7 +650,7 @@ Returns the `FILE*` pointer associated with the `FileHandle` object.
 - **Logic and Control Flow**:
     - Accesses the private member `file` of the `FileHandle` class.
     - Returns the `file` pointer.
-- **Output**: A `FILE*` pointer that represents the file handle managed by the `FileHandle` object.
+- **Output**: A `FILE*` pointer representing the file handle.
 - **See also**: [`FileHandle`](<#filehandle>)  (Data Structure)
 
 
@@ -667,34 +667,32 @@ Defines local variables to test that they are not captured.
     - Declare an integer `local_variable` and initialize it to 999.
     - Declare a static integer `static_local` and initialize it to 888.
     - Declare a constant integer `const_local` and initialize it to 777.
-- **Output**: No output is produced as the function does not return a value or perform any operations.
+- **Output**: No output is produced as the function does not return a value or perform any operations beyond variable declarations.
 
 
 ---
 ### main<!-- {{#callable:main}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_variables.cpp#L226>)
 
-Executes a series of tests and outputs the results to the console, demonstrating the use of various C++ features and constructs.
+Executes a series of tests on various C++ features and prints their results to the console.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Outputs the values of global variables, including `global_int`, `global_string`, `CONST_VALUE`, and `CONSTEXPR_PI`.
-    - Outputs the values of auto-deduced variables `auto_int` and `auto_string`.
-    - Attempts to modify the value pointed to by `int_pointer` and outputs the value of `int_reference`.
-    - Outputs the first element of `global_array` and the first element of `matrix`.
-    - Outputs the size of `global_vector`.
-    - Checks if `unique_int_ptr` is not null and outputs its value if true.
-    - Stores the value 100 in `atomic_counter` and outputs its value.
-    - Outputs the values of namespace variables `Config::MAX_CONNECTIONS` and `Config::Database::query_timeout`.
-    - Outputs the values of static class members `GlobalState::instance_count` and `GlobalState::VERSION`.
-    - Increments the static member `Counter<int>::count` and outputs its value.
-    - Outputs the values of template variables `pi<double>` and `pi<float>`.
-    - Outputs the values of structured bindings `first_name`, `last_name`, and `age`.
-    - Outputs the integer representation of `current_color` and the coordinates of `origin`.
-    - Outputs the results of function objects `times_two` and `times_three` applied to integers 5 and 7, respectively.
-    - Outputs the value of the inline variable `INLINE_VERSION`.
-    - Outputs the value of the anonymous namespace variable `anonymous_global`.
+    - Prints the values of global variables, constants, and constexpr variables.
+    - Prints the values of auto-deduced variables.
+    - Attempts to modify a value through a pointer and prints a reference value.
+    - Prints elements from arrays and matrices.
+    - Prints the size of a vector and values from smart pointers if they are initialized.
+    - Stores a value in an atomic variable and prints it.
+    - Prints values from namespace variables.
+    - Prints static class member values.
+    - Increments a template class static member and prints its value.
+    - Prints template variable values for different types.
+    - Prints values from structured bindings.
+    - Prints values from custom types and function objects.
+    - Prints the value of an inline variable.
+    - Prints the value of a variable from an anonymous namespace.
     - Returns 0 to indicate successful execution.
-- **Output**: Returns 0 to indicate successful execution.
+- **Output**: Returns an integer value of 0, indicating successful execution.
 
 
 

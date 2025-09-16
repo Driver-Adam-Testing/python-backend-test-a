@@ -6,7 +6,7 @@
 Alembic migration script to add a non-nullable `workspace_id` column to the `derived_contents` table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It adds a new column named `workspace_id` to the `derived_contents` table. The `workspace_id` column is of type UUID, is not nullable, and initially has a default value of `00000000-0000-0000-0000-000000000000`. The script updates the `workspace_id` for each row in `derived_contents` by selecting the corresponding `workspace_id` from the `source_contents` table based on a matching `source_content_id`. After populating the `workspace_id`, the script removes the temporary default value. The [`downgrade`](<#downgrade>) function removes the `workspace_id` column, allowing the migration to be reversed if necessary.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It adds a new column named `workspace_id` to the `derived_contents` table. The `workspace_id` column is of type UUID, is not nullable, and initially has a default value of `00000000-0000-0000-0000-000000000000`. The script updates the `workspace_id` for each row in `derived_contents` by selecting the corresponding `workspace_id` from the `source_contents` table based on a matching `source_content_id`. After populating the `workspace_id`, the script removes the temporary default value. The [`downgrade`](<#downgrade>) function reverses these changes by removing the `workspace_id` column from the `derived_contents` table.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic migrations. It is used to track the version of the database schema.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Used by Alembic to identify the parent revision of the current migration.
+- **Use**: Used by Alembic to track the previous revision in the migration sequence.
 
 
 ---
@@ -54,19 +54,19 @@ Adds a new column `workspace_id` to the `derived_contents` table and populates i
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Adds a new column `workspace_id` to the `derived_contents` table with a default UUID value.
-    - Executes an SQL update statement to populate `workspace_id` in `derived_contents` using corresponding values from `source_contents`.
+    - Executes an SQL update statement to populate the `workspace_id` column with values from the `source_contents` table based on a matching `source_content_id`.
     - Removes the default value for the `workspace_id` column after populating it.
-- **Output**: No output is returned.
+- **Output**: No explicit return value; modifies the database schema and data.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1113-5684bc66ddb3_add_workspace_id_to_derivedcontent.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1113-5684bc66ddb3_add_workspace_id_to_derivedcontent.py#L44>)
 
-Removes the `workspace_id` column from the `derived_contents` table.
+Removes the 'workspace_id' column from the 'derived_contents' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.drop_column` to remove the `workspace_id` column from the `derived_contents` table.
+    - Calls the 'drop_column' method from the 'op' module to remove the 'workspace_id' column from the 'derived_contents' table.
 - **Output**: No output is returned.
 
 

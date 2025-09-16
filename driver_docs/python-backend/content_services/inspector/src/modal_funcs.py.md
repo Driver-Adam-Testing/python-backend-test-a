@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for generating, exporting, and managing technical documentation using Modal and OpenAI models.
+Functions for generating, exporting, and pushing technical documentation using Modal and AWS S3.
 
 # Purpose
-The code is a Python module designed to automate the generation and management of technical documentation for a codebase. It uses the `modal` library to define several functions that are executed as serverless functions, each with specific roles in the documentation process. The module imports various utilities and models to facilitate its operations, including handling file and folder structures, symbol documentation, and top-level codebase comprehension. The functions leverage a language model (`ChatOpenAI`) to process and generate documentation content, which is then stored or exported as needed.
+The code is a Python module that defines a set of functions for generating and managing technical documentation for a codebase. It uses the `modal` library to define functions that can be executed in a distributed environment, leveraging containerized execution with specific configurations such as maximum containers, timeouts, and secrets management. The module imports various utilities and models from other parts of the codebase to perform tasks such as file comprehension, symbol documentation, and folder-level documentation.
 
-Key functions include [`make_tech_doc`](<#make_tech_doc>), [`make_symbol_docs`](<#make_symbol_docs>), [`make_folder_tech_doc`](<#make_folder_tech_doc>), [`make_toplevel_tech_docs`](<#make_toplevel_tech_docs>), and [`make_codebase_tags`](<#make_codebase_tags>), each responsible for different levels of documentation granularity, from individual files to entire codebases. The [`export_tech_docs_to_zip`](<#export_tech_docs_to_zip>) function compiles the generated documentation into a ZIP archive and uploads it to an S3 bucket, while [`push_tech_docs`](<#push_tech_docs>) handles the asynchronous task of pushing documentation updates. The module also configures the environment and dependencies required for these operations, such as setting up Docker images with necessary packages and defining secrets for secure access to external services.
+The primary functions include [`make_tech_doc`](<#make_tech_doc>), [`make_symbol_docs`](<#make_symbol_docs>), [`make_folder_tech_doc`](<#make_folder_tech_doc>), [`make_toplevel_tech_docs`](<#make_toplevel_tech_docs>), [`make_codebase_tags`](<#make_codebase_tags>), [`export_tech_docs_to_zip`](<#export_tech_docs_to_zip>), and [`push_tech_docs`](<#push_tech_docs>). These functions are designed to process different levels of documentation, from individual files and symbols to entire folders and codebases. The module also handles exporting the generated documentation to a ZIP file and uploading it to an S3 bucket. The use of `ChatOpenAI` models suggests that some of the documentation generation involves natural language processing. The module is structured to be part of a larger system, likely intended for automated documentation generation and management in a cloud environment.
 # Imports and Dependencies
 
 ---
@@ -19,6 +19,8 @@ Key functions include [`make_tech_doc`](<#make_tech_doc>), [`make_symbol_docs`](
 - `inspection.files.comprehend_file_top_down`
 - `utils.dag.LiteNode`
 - `utils.models.ChatOpenAI`
+- `pickle`
+- `boto3`
 - `inspection.symbols.document_symbols_in_file`
 - `inspection.folders.comprehend_folder_top_down`
 - `inspection.toplevel.comprehend_codebase_top_down`
@@ -27,13 +29,12 @@ Key functions include [`make_tech_doc`](<#make_tech_doc>), [`make_symbol_docs`](
 - `tempfile`
 - `pathlib.Path`
 - `shutil.make_archive`
-- `boto3`
 - `database.db.engine`
-- `database.models_v1.DerivedContent`
-- `database.models_v2.Node`
-- `database.models_v2.Version`
-- `database.models_v2_enums.ContentKind`
-- `database.models_v2_enums.NodeKind`
+- `database.models.DerivedContent`
+- `database.models.Node`
+- `database.models.Version`
+- `database.models_enums.ContentKind`
+- `database.models_enums.NodeKind`
 - `sqlalchemy.orm.selectinload`
 - `sqlmodel.Session`
 - `sqlmodel.select`
@@ -46,49 +47,49 @@ Key functions include [`make_tech_doc`](<#make_tech_doc>), [`make_symbol_docs`](
 ---
 ### image
 - **Type**: ``modal.Image``
-- **Description**: The `image` variable is an instance of `modal.Image` that is configured with a Debian Slim base image using Python 3.12. It installs necessary system packages and Python dependencies, and includes local directories and files required for the application.
-- **Use**: Used to define the environment configuration for functions in the application, specifying system and Python dependencies, and including necessary local resources.
+- **Description**: Represents a Docker image configuration using the `modal` library. It is based on a Debian slim image with Python 3.12 and includes various installations and configurations.
+- **Use**: Used to define the environment for functions in the application, including system packages, local directories, files, and Python packages.
 
 
 ---
 ### function\_cfg
 - **Type**: ``dict``
-- **Description**: Contains configuration settings for functions, including secrets and image specifications. The `secrets` key holds a list of secrets, specifically a secret named 'open-ai', and the `image` key references a pre-configured `image` object.
-- **Use**: Used to pass configuration settings to functions via the `@app.function` decorator.
+- **Description**: Contains configuration settings for functions, including secrets and image specifications. The `secrets` key holds a list of secrets, such as `modal.Secret.from_name("open-ai")`, and the `image` key references the `image` variable defined earlier in the code.
+- **Use**: Used to configure functions with specific secrets and image settings by passing it as keyword arguments in function decorators.
 
 
 ---
 ### CHUNK\_SIZE
-- **Type**: `int`
-- **Description**: Defines the size of each chunk of data to process, set to 64,000 bytes.
-- **Use**: Used to specify the chunk size for processing data in functions like `comprehend_file_top_down` and `comprehend_folder_top_down`.
+- **Type**: ``int``
+- **Description**: Defines the size of each chunk of data to process, set to 64,000 bytes. This value is used to determine how much data to handle in one operation.
+- **Use**: Used in functions like `comprehend_file_top_down` and `comprehend_folder_top_down` to specify the size of data chunks for processing.
 
 
 ---
 ### CHUNK\_OVERLAP
-- **Type**: `int`
-- **Description**: Defines the number of characters that overlap between consecutive chunks of text when processing files for technical documentation.
-- **Use**: Used to ensure continuity and context between chunks during file comprehension.
+- **Type**: ``int``
+- **Description**: Defines the number of characters that overlap between consecutive chunks of text when processing files. This overlap helps maintain context across chunks during text comprehension.
+- **Use**: Used in functions like `comprehend_file_top_down` and `comprehend_folder_top_down` to specify the overlap size between text chunks.
 
 
 ---
 ### COMPRESSION\_LOOP\_MAX\_ITR
 - **Type**: ``int``
-- **Description**: Defines the maximum number of iterations allowed in a compression loop. This variable is set to an integer value of 10.
+- **Description**: Defines the maximum number of iterations allowed in a compression loop. This variable is set to 10, indicating that the loop can iterate up to 10 times before stopping.
 - **Use**: Used to limit the number of iterations in compression loops within the code.
 
 
 ---
 ### MAX\_NUM\_CHUNKS\_FILE
 - **Type**: ``int``
-- **Description**: Defines the maximum number of chunks that a file can be divided into during processing. This limit is set to ensure that the file processing does not exceed a certain number of chunks, which could impact performance or resource usage.
+- **Description**: Defines the maximum number of chunks that a file can be divided into during processing.
 - **Use**: Used in the `comprehend_file_top_down` function to limit the number of chunks a file can be split into.
 
 
 ---
 ### FILE\_TECH\_DOC\_LLM\_TIMEOUT
 - **Type**: ``int``
-- **Description**: Defines the timeout duration in seconds for processing file-level technical documentation using a language model.
+- **Description**: Defines the timeout duration in seconds for processing technical documentation of a file using a language model.
 - **Use**: Used to set the `request_timeout` parameter for the `ChatOpenAI` instance in the `make_tech_doc` function.
 
 
@@ -96,44 +97,46 @@ Key functions include [`make_tech_doc`](<#make_tech_doc>), [`make_symbol_docs`](
 ### FOLDER\_TECH\_DOC\_LLM\_TIMEOUT
 - **Type**: ``int``
 - **Description**: Defines the timeout duration in seconds for processing folder-level technical documentation using a language model.
-- **Use**: Used to set the `request_timeout` parameter for the `ChatOpenAI` instance in the `make_folder_tech_doc` function.
+- **Use**: Used to set the request timeout for the `ChatOpenAI` instance in the `make_folder_tech_doc` function.
 
 
 ---
 ### TOP\_LEVEL\_DOC\_LLM\_TIMEOUT
 - **Type**: ``int``
-- **Description**: Defines the timeout duration in seconds for requests made to the language model when generating top-level documentation.
-- **Use**: Used to set the `request_timeout` parameter for the `ChatOpenAI` instance in the `make_toplevel_tech_docs` and `make_codebase_tags` functions.
+- **Description**: Defines the timeout duration for top-level document processing using a language model. The value is set to 500 seconds.
+- **Use**: Used to specify the maximum time allowed for processing top-level documents with a language model.
 
 
 # Functions
 
 ---
 ### make\_tech\_doc<!-- {{#callable:python-backend/content_services/inspector/src/modal_funcs.make_tech_doc}} -->
-[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L59>)
+[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L57>)
 
-Generates technical documentation for a given code node using a language model.
+Generates technical documentation for a given codebase node using a language model and optional symbol table from S3.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `node`: A `LiteNode` object representing the code node to document.
+    - `node`: A `LiteNode` object representing the codebase node to document.
     - `source_code`: A string containing the source code of the node.
     - `codebase_name`: A string representing the name of the codebase.
-    - `reified_symbols`: An optional dictionary containing reified symbols, or `None` if not provided.
+    - `sym_table_s3_key`: An optional string representing the S3 key for the symbol table, or `None` if not provided.
 - **Logic and Control Flow**:
     - Prints a message indicating the start of processing for the given node.
-    - Initializes a [`ChatOpenAI`](<utils/models.py.md#chatopenai>) object with specific model parameters for generating documentation.
-    - Calls the [`comprehend_file_top_down`](<inspection/files.py.md#comprehend_file_top_down>) function with the language model and input parameters to generate documentation.
+    - Initializes a [`ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenai>) object with specific model parameters.
+    - Checks if `sym_table_s3_key` is not `None` to decide whether to load a symbol table from S3.
+    - If `sym_table_s3_key` is provided, uses `boto3` to retrieve and deserialize the symbol table from S3.
+    - Calls [`comprehend_file_top_down`](<inspection/files.py.md#comprehend_file_top_down>) with the language model, node, source code, codebase name, and other parameters to generate documentation.
     - Prints a message indicating the completion of documentation creation for the node.
-    - Returns a tuple containing a boolean indicating success, the generated documentation as a dictionary, and the original `LiteNode` object.
+    - Returns a tuple containing a success flag, the generated documentation, and the node.
 - **Output**: A tuple containing a boolean indicating success, a dictionary with the generated documentation, and the `LiteNode` object.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<utils/models.py.md#chatopenai>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai_async.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai_async.py.md#chatopenai>)
     - [`python-backend/content_services/inspector/src/inspection/files.comprehend_file_top_down`](<inspection/files.py.md#comprehend_file_top_down>)
 
 
 ---
 ### make\_symbol\_docs<!-- {{#callable:python-backend/content_services/inspector/src/modal_funcs.make_symbol_docs}} -->
-[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L96>)
+[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L118>)
 
 Generates documentation for symbols in a given source code file.
 - **Decorators**: `@app.function`
@@ -143,11 +146,10 @@ Generates documentation for symbols in a given source code file.
     - `file_description_paragraph`: A string providing a description of the file.
     - `symbol_count_limit`: An optional integer specifying the maximum number of symbols to document.
 - **Logic and Control Flow**:
-    - Imports the [`document_symbols_in_file`](<inspection/symbols.py.md#document_symbols_in_file>) function from the `inspection.symbols` module.
-    - Prints a message indicating the start of symbol documentation processing for the given `node`.
-    - Calls [`document_symbols_in_file`](<inspection/symbols.py.md#document_symbols_in_file>) with the provided arguments to generate symbol documentation.
-    - Prints a message indicating the completion of symbol documentation creation for the given `node`.
-    - Returns the list of symbol documentation generated by [`document_symbols_in_file`](<inspection/symbols.py.md#document_symbols_in_file>).
+    - Logs the start of the symbol documentation process for the given node.
+    - Calls the [`document_symbols_in_file`](<inspection/symbols.py.md#document_symbols_in_file>) function with the provided arguments to generate symbol documentation.
+    - Logs the completion of the symbol documentation process for the given node.
+    - Returns the generated symbol documentation.
 - **Output**: A list of dictionaries, each representing documentation for a symbol in the source code.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/inspection/symbols.document_symbols_in_file`](<inspection/symbols.py.md#document_symbols_in_file>)
@@ -155,7 +157,7 @@ Generates documentation for symbols in a given source code file.
 
 ---
 ### make\_folder\_tech\_doc<!-- {{#callable:python-backend/content_services/inspector/src/modal_funcs.make_folder_tech_doc}} -->
-[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L116>)
+[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L138>)
 
 Generates technical documentation for a folder in a codebase using a language model.
 - **Decorators**: `@app.function`
@@ -179,7 +181,7 @@ Generates technical documentation for a folder in a codebase using a language mo
 
 ---
 ### make\_toplevel\_tech\_docs<!-- {{#callable:python-backend/content_services/inspector/src/modal_funcs.make_toplevel_tech_docs}} -->
-[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L148>)
+[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L170>)
 
 Generates top-level technical documentation for a given codebase using a language model.
 - **Decorators**: `@app.function`
@@ -201,9 +203,9 @@ Generates top-level technical documentation for a given codebase using a languag
 
 ---
 ### make\_codebase\_tags<!-- {{#callable:python-backend/content_services/inspector/src/modal_funcs.make_codebase_tags}} -->
-[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L176>)
+[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L198>)
 
-Generates tags for a codebase using a language model and returns them as a dictionary.
+Generates tags for a codebase using a language model and returns them.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `codebase_name`: The name of the codebase for which to generate tags.
@@ -224,25 +226,24 @@ Generates tags for a codebase using a language model and returns them as a dicti
 
 ---
 ### export\_tech\_docs\_to\_zip<!-- {{#callable:python-backend/content_services/inspector/src/modal_funcs.export_tech_docs_to_zip}} -->
-[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L201>)
+[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L223>)
 
 Exports technical documentation to a ZIP file and uploads it to an S3 bucket.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `version_id`: A UUID that identifies the version of the documentation to export.
-    - `install_id`: An optional string that identifies the installation, used for metadata in S3 upload.
+    - `version_id`: A UUID representing the version of the documentation to export.
+    - `install_id`: An optional string representing the installation ID, used for metadata in S3 upload.
 - **Logic and Control Flow**:
-    - Import necessary modules and establish a database session.
-    - Execute SQL queries to retrieve long and short descriptions and version information from the database.
-    - Hash the organization ID to create a unique S3 bucket name.
-    - Iterate over long description rows to generate markdown files with combined short and long descriptions.
-    - Replace links in the content with markdown-compatible links and write the content to files in a temporary directory.
-    - Create a ZIP archive of the generated documentation files.
-    - Upload the ZIP file to an S3 bucket, using the hashed organization ID as the bucket name.
-    - If `install_id` is provided, include it as metadata in the S3 upload.
-    - Print the S3 destination path after upload.
-    - If `auto_commit_docs` is true, attempt to push the documentation to a remote repository, printing status messages based on the availability of `install_id`.
-- **Output**: No return value; the function performs file creation, archiving, and uploading operations.
+    - Imports necessary modules and sets up the database session.
+    - Executes SQL queries to retrieve long and short descriptions of nodes and version information from the database.
+    - Processes each node to generate markdown files with combined short and long descriptions, replacing links as necessary.
+    - Creates a temporary directory to store the generated markdown files.
+    - Writes the combined content to markdown files, adding comments and end notes.
+    - Archives the markdown files into a ZIP file named 'tech_docs.zip'.
+    - Uploads the ZIP file to an S3 bucket using the organization ID hash as the bucket name and constructs the S3 destination path.
+    - Checks if `install_id` is provided to include it as metadata during the S3 upload.
+    - Prints the S3 upload path and checks if auto-commit is enabled to decide whether to push the documentation or not.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/content_services/inspector/src/utils/export_utils.replace_driver_compatible_links_with_markdown_links`](<utils/export_utils.py.md#replace_driver_compatible_links_with_markdown_links>)
@@ -250,14 +251,14 @@ Exports technical documentation to a ZIP file and uploads it to an S3 bucket.
 
 ---
 ### push\_tech\_docs<!-- {{#callable:python-backend/content_services/inspector/src/modal_funcs.push_tech_docs}} -->
-[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L363>)
+[View Source →](<../../../../../content_services/inspector/src/modal_funcs.py#L384>)
 
-Pushes technical documentation to an S3 bucket.
+Pushes technical documentation to an S3 bucket asynchronously.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `version_id`: A string representing the version identifier of the technical documentation to push.
+    - `version_id`: A string that identifies the version of the technical documentation to push.
 - **Logic and Control Flow**:
-    - Imports the [`push_docs`](<onboarding/push_bot.py.md#push_docs>) function from `onboarding.push_bot`.
+    - Imports the [`push_docs`](<onboarding/push_bot.py.md#push_docs>) function from the `onboarding.push_bot` module.
     - Calls the [`push_docs`](<onboarding/push_bot.py.md#push_docs>) function asynchronously with the `version_id` argument.
 - **Output**: Does not return any value (returns `None`).
 - **Functions Called**:

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Java interfaces demonstrating features like constants, abstract, default, static methods, and a functional interface.
+Java interfaces demonstrating features like constants, abstract, default, static methods, and nested interfaces.
 
 # Purpose
-The code defines several interfaces within the `com.example` package, demonstrating various features of Java interfaces. The primary interface, `Drawable`, includes a constant `DEFAULT_COLOR`, an abstract method `draw()`, a default method `setColor(String color)`, and a static method `info()`. These elements illustrate the capabilities of Java interfaces, such as defining constants, abstract methods, and providing default and static methods starting from Java 8.
+The code defines several interfaces that demonstrate various features of Java interfaces. The `Drawable` interface provides a basic structure for objects that can be drawn. It includes a constant `DEFAULT_COLOR`, an abstract method `draw()`, a default method `setColor(String color)`, and a static method `info()`. The default and static methods illustrate features introduced in Java 8, allowing interfaces to have method implementations.
 
-Additionally, the code defines the `Resizable` interface, which extends `Drawable` and adds the `resize(int width, int height)` method. It also includes a nested interface, `ResizeListener`, which provides a method `onResize(int oldWidth, int oldHeight, int newWidth, int newHeight)` to handle resize events. The code also includes a `Calculator` interface, marked with the `@FunctionalInterface` annotation, indicating it is intended to be used as a functional interface with a single abstract method `calculate(int a, int b)`. This collection of interfaces demonstrates the use of inheritance, nested interfaces, and functional interfaces in Java.
+The `Resizable` interface extends `Drawable`, adding functionality for objects that can be resized. It introduces the `resize(int width, int height)` method and includes a nested interface `ResizeListener`, which defines a callback method `onResize(int oldWidth, int oldHeight, int newWidth, int newHeight)`. This nested interface allows for event-driven programming related to resizing actions. Additionally, the `Calculator` interface is marked with the `@FunctionalInterface` annotation, indicating it is intended to be used as a functional interface with a single abstract method `calculate(int a, int b)`. This setup supports lambda expressions and method references in Java.
 # Imports and Dependencies
 
 ---
@@ -21,7 +21,7 @@ Additionally, the code defines the `Resizable` interface, which extends `Drawabl
 ### Drawable<!-- {{#interface:com.example.Drawable}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_interfaces.java#L6>)
 
-- **Description**: Defines a contract for objects that can be drawn. It includes an abstract method `draw()` that must be implemented by any class that implements this interface. It also provides a default method `setColor(String color)` to set the color, which prints the color being set, and a static method `info()` that prints a message about the interface. The constant `DEFAULT_COLOR` is defined as "black" and is implicitly public, static, and final.
+- **Description**: Defines a contract for objects that can be drawn. It includes an abstract method `draw()` that must be implemented by any class that implements this interface. The interface also provides a default method `setColor(String color)` to set the color, which prints the color being set, and a static method `info()` that prints a message about the interface. The constant `DEFAULT_COLOR` is defined as "black" and is implicitly public, static, and final.
 
 **Methods**
 - `draw`<!-- {{#callable:com.example.Drawable.draw}} -->
@@ -33,7 +33,7 @@ Additionally, the code defines the `Resizable` interface, which extends `Drawabl
 ### Resizable<!-- {{#interface:com.example.Resizable}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_interfaces.java#L24>)
 
-- **Description**: Provides the ability to resize objects by defining a `resize` method that takes new width and height parameters. It extends the `Drawable` interface, inheriting its drawing capabilities. Additionally, it includes a nested `ResizeListener` interface, which allows for handling resize events by implementing the `onResize` method to respond to changes in dimensions.
+- **Description**: Provides functionality to resize objects by defining a `resize` method that takes new width and height as parameters. It extends the `Drawable` interface, inheriting its drawing capabilities. Additionally, it includes a nested interface `ResizeListener` that allows for handling resize events by implementing the `onResize` method, which receives the old and new dimensions of the object.
 - **Extends/Implements**:
     - [`com.example.Drawable`](<#drawable>)
 

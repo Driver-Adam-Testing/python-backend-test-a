@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A dependency graph for the `uctags` component, showing its relationships with various libraries.
+A dependency graph for various libraries including libyaml, libjansson, uctags, libz, libxml2, and libiconv.
 
 # Purpose
-The diagram illustrates the dependencies between various libraries and tools in a software codebase. `libyaml` is at the top of the hierarchy, indicating it is a primary dependency for other components. `uctags` depends on `libyaml` and serves as a central node connecting to other libraries such as `libjansson`, `libxml2`, and `libiconv`. `libxml2` further depends on `libz`, and `libiconv` is a terminal node, indicating it does not have further dependencies within this diagram. This structure helps developers understand the relationships and dependencies between different components, which is essential for managing updates and troubleshooting issues.
+The diagram illustrates the dependencies between various libraries and components in a software codebase. `libyaml` is a central library that does not depend on other components, but other components depend on it. `uctags` depends on `libyaml` and also has dependencies on `libjansson` and `libxml2`. `libxml2` further depends on `libz` and `libiconv`, indicating a hierarchical structure where `libiconv` and `libz` are at the base level. This structure helps in understanding the order of library initialization and the potential impact of changes in one library on others.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

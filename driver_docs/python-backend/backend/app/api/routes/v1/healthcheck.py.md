@@ -3,35 +3,38 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines health check endpoints using FastAPI, including a status check and an error trigger for debugging.
+Defines a FastAPI health check endpoint and a route to trigger an error for debugging.
 
 # Purpose
-This code defines a FastAPI router with two endpoints for health monitoring and error testing. The `HealthCheck` class, a Pydantic model, specifies the response structure for the health check endpoint, which returns a status of "OK". The [`get_health`](<#get_health>) function is a synchronous endpoint that performs a health check, returning an HTTP status code 200 to indicate the service is operational. The `/sentry-debug` endpoint is an asynchronous function designed to trigger an error by dividing by zero, which can be useful for testing error handling and monitoring systems like Sentry. The code provides narrow functionality focused on health monitoring and error testing within an API service.
+The code defines a FastAPI router that provides two endpoints for health monitoring and error testing. The primary endpoint, accessible via a GET request to the root path `'/'`, performs a health check. It returns a JSON response with a status message that includes the current git commit and branch information, which is retrieved from environment variables `GIT_COMMIT` and `GIT_BRANCH`. This endpoint is intended to be used for container orchestration and management, ensuring that dependent services only deploy when the API service is functioning correctly.
+
+Additionally, the code includes a secondary endpoint at `'/sentry-debug'` designed to trigger an error by performing a division by zero operation. This endpoint is likely used for testing error handling and monitoring systems, such as Sentry, to ensure they correctly capture and report errors. The use of `APIRouter` allows these endpoints to be modularly included in a larger FastAPI application. The code does not define public APIs or external interfaces beyond these endpoints.
 # Imports and Dependencies
 
 ---
 - `fastapi.APIRouter`
 - `pydantic.BaseModel`
+- `os`
 
 
 # Global Variables
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: An instance of the `APIRouter` class from FastAPI, which is used to define and manage routes for the application. It allows the organization of endpoints and their associated logic in a modular way.
-- **Use**: Used to register and manage HTTP endpoints for the application, such as the health check and error trigger routes.
+- **Type**: ``APIRouter``
+- **Description**: Creates an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage API routes within the application.
+- **Use**: Used to register and handle HTTP routes and endpoints for the FastAPI application.
 
 
 # Classes
 
 ---
 ### HealthCheck<!-- {{#class:python-backend/backend/app/api/routes/v1/healthcheck.HealthCheck}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/healthcheck.py#L7>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/healthcheck.py#L8>)
 
 - **Members**:
-    - `status`: Indicates the health status with a default value of 'OK'.
-- **Description**: Represents a response model for health check operations, providing a status attribute to indicate the health status of the system.
+    - `status`: Stores the health status message with git commit and branch information.
+- **Description**: Represents a response model for health checks, providing a status message that includes the current git commit and branch information.
 - **Inherits From**:
     - `BaseModel`
 
@@ -40,28 +43,30 @@ This code defines a FastAPI router with two endpoints for health monitoring and 
 
 ---
 ### get\_health<!-- {{#callable:python-backend/backend/app/api/routes/v1/healthcheck.get_health}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/healthcheck.py#L13>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/healthcheck.py#L14>)
 
-Provides a health check endpoint that returns a JSON response with a status of 'OK'.
+Performs a health check and returns the health status of the API service.
 - **Decorators**: `@router.get`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Returns a [`HealthCheck`](<#healthcheck>) object with the status set to 'OK'.
-- **Output**: A [`HealthCheck`](<#healthcheck>) object with the status 'OK'.
+    - Returns a [`HealthCheck`](<#healthcheck>) object with a status string.
+    - The status string includes 'OK', the current Git commit, and the Git branch.
+    - Uses environment variables `GIT_COMMIT` and `GIT_BRANCH` to get the commit and branch information, defaulting to 'unknown' if not set.
+- **Output**: A [`HealthCheck`](<#healthcheck>) object with a status string indicating the health of the API service.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v1/healthcheck.HealthCheck`](<#healthcheck>)
 
 
 ---
 ### trigger\_error<!-- {{#callable:python-backend/backend/app/api/routes/v1/healthcheck.trigger_error}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/healthcheck.py#L31>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/healthcheck.py#L32>)
 
 Triggers a division by zero error for debugging purposes.
 - **Decorators**: `@router.get`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Executes a division by zero operation, which raises a `ZeroDivisionError`.
-- **Output**: Does not return any value as it raises an exception.
+- **Output**: Does not return any output as it raises an exception.
 
 
 

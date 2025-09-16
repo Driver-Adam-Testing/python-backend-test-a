@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for DataSource class methods and LlmMessage functionalities, including conversions and persistence.
+Tests for DataSource class methods and LlmMessage conversions, interactions, and history.
 
 
 ## Files
 - **[test_datasource.py](test_datasource.py.md)**: Tests for the DataSource class methods from_node_ids, from_page_id, and is_in_scope.
-- **[test_llm_message.py](test_llm_message.py.md)**: Tests for LlmMessage functionality, including conversions and tool call responses, using pytest fixtures.
-- **[test_llm_message_history.py](test_llm_message_history.py.md)**: Tests for LlmMessage and LlmMessageHistory functionalities, including persistence and format conversion.
+- **[test_llm_message.py](test_llm_message.py.md)**: Tests for LlmMessage conversions and interactions with OpenAI and Anthropic message types.
+- **[test_llm_message_history.py](test_llm_message_history.py.md)**: Tests for the conversion, persistence, and manipulation of LlmMessage and LlmMessageHistory objects.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

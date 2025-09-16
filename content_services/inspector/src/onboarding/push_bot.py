@@ -47,8 +47,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
     import tempfile
 
     from database.db import engine
-    from database.models_v1 import GitProviderAppInstallation
-    from database.models_v2 import PrimaryAssetProvider
+    from database.models import GitProviderAppInstallation, PrimaryAssetProvider
     from onboarding import bitbucket_ops, gh_ops, gitlab_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
@@ -122,7 +121,6 @@ async def push_docs(version_id: uuid.UUID) -> None:
             raise ValueError(f"Unsupported provider: {provider}")
 
         repo_dir = Path(temp_dir) / full_name
-        print(f"Cloning repository {clone_url} into {repo_dir}")
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
             run(f"git clone {clone_url} {repo_dir}")
@@ -139,7 +137,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             shutil.rmtree(driver_docs_path)
 
         dst_path = repo_dir / "driver_docs" / repo_name
-        COMMIT_MESSAGE = "Bot: update driver docs for commit: " + commit_slug
+        COMMIT_MESSAGE = "Docs: update driver docs for commit: " + commit_slug
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)
@@ -157,13 +155,15 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
         # Create pull request based on provider
         if provider == PrimaryAssetProvider.GITHUB:
-            gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
+            gh_ops.create_pull_request_with_bot_cleanup(
+                full_name, branch, access_token, commit_slug
+            )
         elif provider == PrimaryAssetProvider.BITBUCKET:
             bitbucket_ops.create_pull_request_with_bot_cleanup(
                 workspace, repo_slug, access_token, branch, commit_slug
             )
         elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
-            gitlab_ops.create_pull_request(
+            gitlab_ops.create_pull_request_with_bot_cleanup(
                 base_url, repo_id, access_token, branch, commit_slug
             )
 

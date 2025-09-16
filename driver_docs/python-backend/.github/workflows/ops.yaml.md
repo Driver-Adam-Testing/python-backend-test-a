@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GitHub Actions workflow for deploying backend operations with Node.js, Python, and AWS configuration.
+GitHub Actions workflow for deploying backend operations on the "ops" branch using Node.js, Python, and AWS.
 
 # Purpose
-The YAML configuration file defines a GitHub Actions workflow named `Backend Ops Deployment`. This workflow triggers on pushes to the `ops` branch and can also be manually initiated from the Actions tab. It ensures that only one instance of the workflow runs at a time by using a concurrency group based on the workflow and reference. The workflow requires specific permissions, including writing `id-token` and reading `contents`. The `ops` job runs on the latest Ubuntu environment and sets up Node.js version 20.x and Python version 3.12. It installs dependencies using Poetry without creating a virtual environment and configures AWS credentials for deployment. Finally, it executes a CDK deployment command with the `ops` environment, bypassing approval requirements.
+The YAML configuration file defines a GitHub Actions workflow named `Backend Ops Deployment`. This workflow triggers on pushes to the `ops` branch and can also be manually initiated from the Actions tab. It manages concurrency by grouping jobs based on the workflow and reference, ensuring that only one job runs at a time by canceling any in-progress jobs. The workflow requires permissions to write `id-token` and read `contents`. It includes a job named `ops` that runs on the latest Ubuntu environment and sets up Node.js version 20.x and Python version 3.12. The job installs dependencies using Poetry without creating a virtual environment and configures AWS credentials for deployment. Finally, it executes a deployment using the AWS CDK with the `ops` environment, bypassing approval requirements.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

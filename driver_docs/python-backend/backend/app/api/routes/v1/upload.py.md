@@ -6,9 +6,9 @@
 Defines API endpoints for creating upload URLs for files and custom configurations with permission checks.
 
 # Purpose
-This code defines a FastAPI router that provides endpoints for creating upload URLs. It includes two main endpoints: one for uploading a zip or PDF file and another for uploading a custom configuration. Both endpoints require `ContentEditorPermission` as a dependency, ensuring that only authorized users can access these functionalities. The endpoints use the `UploadService` to handle the creation of asset versions and upload URLs, leveraging the current session and user token for authentication and session management.
+The code defines an API router using FastAPI to handle upload-related operations. It includes two main endpoints: one for creating an upload URL for a standard file (such as a zip or pdf) and another for creating an upload URL for a custom configuration. Both endpoints require a `ContentEditorPermission` dependency, ensuring that only authorized users can access these functionalities. The endpoints use the `UploadService` to process the requests, which involves creating asset versions and generating upload URLs.
 
-The code imports several components from different modules, such as `CurrentSession`, `UserToken`, and various request and response schemas, to facilitate the upload process. The [`create_upload_url`](<#create_upload_url>) function handles standard file uploads, while the [`create_upload_url_for_custom_config`](<#create_upload_url_for_custom_config>) function manages uploads for custom configurations. Logging is used to record when each endpoint is called, providing traceability for requests. This module is intended to be part of a larger application, serving as a backend service for managing file uploads through a RESTful API.
+The code imports several components, including schemas for request and response validation (`UploadRequest`, `UploadResponse`, `UploadAutoDocConfigRequest`, `UploadAutoDocConfigResponse`), and a logging utility to record operations. The [`create_upload_url`](<#create_upload_url>) and [`create_upload_url_for_custom_config`](<#create_upload_url_for_custom_config>) functions are the primary handlers for the respective endpoints, utilizing the `UploadService` to perform the necessary backend operations. This module is intended to be part of a larger application, providing specific API endpoints for managing file uploads.
 # Imports and Dependencies
 
 ---
@@ -29,8 +29,8 @@ The code imports several components from different modules, such as `CurrentSess
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage a group of related API endpoints.
-- **Use**: Used to register and organize API routes for handling HTTP requests in the application.
+- **Description**: The `router` is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API endpoints in the application. The `router` allows the organization of related routes and their associated request handling logic.
+- **Use**: Used to register and manage API routes for handling HTTP requests in the application.
 
 
 # Functions
@@ -39,11 +39,11 @@ The code imports several components from different modules, such as `CurrentSess
 ### create\_upload\_url<!-- {{#callable:python-backend/backend/app/api/routes/v1/upload.create_upload_url}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v1/upload.py#L17>)
 
-Generates an upload URL for a zip or pdf file.
+Creates an upload URL for a zip or pdf file.
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `session`: The current session object, which provides context for the operation.
-    - `user`: The user token, which identifies the user making the request.
+    - `user`: The user token object, which represents the authenticated user making the request.
     - `request`: The upload request object, which contains details about the file to upload.
 - **Logic and Control Flow**:
     - Logs the call to the function with the request details.
@@ -59,17 +59,17 @@ Generates an upload URL for a zip or pdf file.
 ### create\_upload\_url\_for\_custom\_config<!-- {{#callable:python-backend/backend/app/api/routes/v1/upload.create_upload_url_for_custom_config}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v1/upload.py#L33>)
 
-Creates an upload URL for a custom configuration file.
+Creates an upload URL for a custom configuration.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: The current session object, which provides context for the operation.
-    - `user`: The user token object, which represents the authenticated user making the request.
-    - `request`: An instance of `UploadAutoDocConfigRequest`, which contains the details of the custom configuration to upload.
+    - `session`: The current session object, which manages the state and interactions with the database or other services.
+    - `user`: The user token object, which contains authentication and authorization information for the current user.
+    - `request`: An object of type `UploadAutoDocConfigRequest`, which contains the details of the custom configuration to upload.
 - **Logic and Control Flow**:
-    - Logs the call to the function with the request details.
-    - Initializes an [`UploadService`](<../../../services/upload_service.py.md#uploadservice>) object with the current session.
-    - Calls the [`create_custom_config_and_upload_url`](<../../../services/upload_service.py.md#uploadservicecreate_custom_config_and_upload_url>) method of the [`UploadService`](<../../../services/upload_service.py.md#uploadservice>) with the user and request to generate the upload URL.
-- **Output**: Returns an `UploadAutoDocConfigResponse` object, which contains the upload URL and related information.
+    - Logs the call to the function with the request details for debugging or auditing purposes.
+    - Initializes an [`UploadService`](<../../../services/upload_service.py.md#uploadservice>) object with the current session to handle the upload process.
+    - Calls the [`create_custom_config_and_upload_url`](<../../../services/upload_service.py.md#uploadservicecreate_custom_config_and_upload_url>) method of the [`UploadService`](<../../../services/upload_service.py.md#uploadservice>) object, passing the user and request objects to generate and return the upload URL.
+- **Output**: An `UploadAutoDocConfigResponse` object, which contains the upload URL and possibly other related information.
 - **Functions Called**:
     - [`python-backend/backend/app/services/upload_service.UploadService`](<../../../services/upload_service.py.md#uploadservice>)
     - [`python-backend/backend/app/services/upload_service.UploadService.create_custom_config_and_upload_url`](<../../../services/upload_service.py.md#uploadservicecreate_custom_config_and_upload_url>)

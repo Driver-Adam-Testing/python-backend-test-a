@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A prompt template for business development professionals analyzing technical products.
+Defines a prompt for curating content aimed at business development professionals.
 
 # Purpose
-The code defines a string variable `BUSINESS_DEVELOPMENT` that contains a detailed description of a target reader persona. This persona is a business development professional interested in technical product analysis, focusing on aspects such as scalability, integration capabilities, and technological robustness. The content aims to address how a codebase can contribute to business growth, enhance user experience, and maintain sustainability in a changing market. This string can be used in applications that require tailoring content to specific audience profiles, particularly in business and technical contexts.
+The code defines a single string variable `BUSINESS_DEVELOPMENT` that contains a detailed description of a reader persona. This persona is a business development professional interested in technical product analysis, focusing on scalability, integration capabilities, and technological robustness. The description emphasizes the professional's interest in understanding how a codebase can contribute to business growth, enhance user experience, and maintain sustainability in a changing market. This string can be used in applications or systems that require user persona definitions for content curation or targeted communication strategies.
 # Global Variables
 
 ---
 ### BUSINESS\_DEVELOPMENT
 - **Type**: ``str``
-- **Description**: A multi-line string that describes the content curation requirements for a business development professional. It outlines the key areas of interest such as product scalability, integration capabilities, and technological robustness.
-- **Use**: Used to guide content creation for business development professionals by specifying their interests and focus areas.
+- **Description**: A multi-line string that describes the profile of a business development professional. It outlines the professional's interest in technical product analysis, focusing on scalability, integration, and technological robustness.
+- **Use**: Used to provide context or guidance for content curation aimed at business development professionals.
 
 
 

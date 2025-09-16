@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines various system messages for a documentation generation system using LLMs in the Driver application.
+Defines various message classes for a documentation generation system, each with specific content and guidelines for interacting with users and generating technical documentation.
 
 # Purpose
 This code defines a set of classes that extend the `LlmMessage` class, each representing a specific type of system message within a documentation generation system. The classes include `DriverApplicationMessage`, `AgenticContextMessage`, `ChatContextMessage`, `OverviewOfDriverMessage`, `HowDriverWorksMessage`, `PromptGuidelinesMessage`, `ContentStructureMessage`, `SmartOutlineMessage`, and `TemplatesMessage`. Each class has a `message_kind` attribute set to `MessageKind.SYSTEM` and a `content` attribute that contains a detailed string describing various aspects of the system's functionality, such as the purpose of the application, guidelines for creating documentation, and the structure of content. These messages are part of a larger system designed to assist in generating technical documentation by leveraging large language models (LLMs) to process user inputs and source materials.
@@ -21,9 +21,9 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/driver_app_messages.py#L4>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as `MessageKind.SYSTEM`.
-    - `content`: Contains a detailed description of the documentation generation system and its purpose.
-- **Description**: Extends `LlmMessage` to represent a system message that provides information about a documentation generation system, which assists in creating technical documentation such as diagrams, tables, and code snippets. The message content explains the system's goal to streamline documentation generation for user-uploaded codebases and related technical documentation, with all requests rendered as markdown.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
+    - `content`: Contains a predefined message about the documentation generation system.
+- **Description**: Represents a message in a documentation generation system, providing information about the system's purpose and capabilities in generating technical documentation, which is ultimately rendered as markdown.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -35,7 +35,7 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 - **Members**:
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
     - `content`: Contains a predefined message string that describes the role and collaborative nature of the LLM system.
-- **Description**: Extends `LlmMessage` to define a system message that explains the collaborative and interconnected nature of a system of LLMs, emphasizing their roles in retrieving, preparing, and composing information to generate technical documentation.
+- **Description**: Represents a message within a system of interconnected LLMs, emphasizing collaboration and the role of each LLM in generating technical documentation.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -45,9 +45,9 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/driver_app_messages.py#L25>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as `MessageKind.SYSTEM`.
-    - `content`: Contains a detailed string that instructs the chat assistant on how to interact with users and handle user prompts.
-- **Description**: Inherits from `LlmMessage` and provides specific instructions for a chat assistant named 'Driver' within the 'Driver Studio' application. The assistant retrieves and prepares information to respond to user queries, focusing on clarity, accuracy, and brevity. It uses provided sources and previous messages to understand user intent and employs tools to answer prompts, except when questions pertain to 'Driver' or 'Driver Studio'. The assistant avoids preambles, tool descriptions, and iterative responses, especially in small talk scenarios.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
+    - `content`: Contains a detailed string that defines the behavior and guidelines for the chat assistant named 'Driver'.
+- **Description**: Represents a chat assistant message for the 'Driver Studio' application, providing guidelines and instructions for interacting with users to generate technical documentation. The message includes directives on how to respond to user prompts, handle greetings, and utilize tools without additional commentary or preamble.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -58,8 +58,8 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 
 - **Members**:
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
-    - `content`: Contains a description of Driver as a B2B SaaS startup and its product features.
-- **Description**: Inherits from `LlmMessage` and provides a system message detailing the nature and functionality of Driver, a B2B SaaS startup that automates technical documentation creation using LLMs. The message highlights the product's capability to generate content interactively through a feature called Smart Instructions.
+    - `content`: Contains a description of Driver as a B2B SaaS startup that automates technical documentation creation.
+- **Description**: Represents a message that provides an overview of Driver, a B2B SaaS startup that automates the creation of technical documentation using large language models (LLMs).
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -69,9 +69,9 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/driver_app_messages.py#L56>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as `MessageKind.SYSTEM`.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
     - `content`: Contains a detailed description of how users create and use Pages and Smart Instructions in Driver.
-- **Description**: Describes the process by which users create Pages using manual text editing and Smart Instructions in Driver. Users specify sources, which can be PDF files or Codebases, to generate content. Driver searches these sources for relevant material and generates output formatted in Markdown, including text, lists, tables, code blocks, and diagrams using Mermaid JS.
+- **Description**: Represents a message that explains the process by which users create Pages using manual text editing and Smart Instructions in the Driver application. It details how users specify sources, such as PDF files and Codebases, and how Driver searches these sources to generate output formatted in Markdown, including text, lists, tables, code blocks, and diagrams using Mermaid JS.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -83,7 +83,7 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 - **Members**:
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
     - `content`: Contains guidelines for creating Smart Instructions to guide LLM document generation.
-- **Description**: Provides guidelines for creating Smart Instructions, which are prompts used to guide document generation by an LLM. The guidelines emphasize conciseness, focus on a single topic, and the use of explicit keywords to help isolate and reference specific objects in the sources. It advises against including references to other Smart Instructions or Page content and suggests best practices for describing the requested output format.
+- **Description**: Provides guidelines for creating Smart Instructions, which are prompts used to guide document generation by an LLM. The guidelines emphasize conciseness, focus on a single topic, and the use of explicit keywords to reference specific objects. It advises against including references to other Smart Instructions or Page content and suggests best practices for describing output format and content length.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -95,7 +95,7 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 - **Members**:
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
     - `content`: Contains a description of the format or structure of the generated content by a Smart Instruction.
-- **Description**: Describes the format or structure of content generated by a Smart Instruction, including types like text, tables, diagrams, code blocks, and lists, without specific syntax requirements.
+- **Description**: Represents a message that describes the format or structure of content generated by a Smart Instruction, including types like text, tables, diagrams, code blocks, and lists, without specific syntax requirements.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -105,9 +105,9 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/driver_app_messages.py#L94>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as `MessageKind.SYSTEM`.
-    - `content`: Contains a description of a Smart Outline and its usage in the Driver application.
-- **Description**: Represents a message that describes the concept of a Smart Outline within the Driver application, which is a workflow for creating structured documents using section headings and Smart Instructions.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
+    - `content`: Contains a detailed description of a Smart Outline and its usage in the Driver application.
+- **Description**: Represents a message that describes the concept of a Smart Outline within the Driver application, which is a workflow pattern for creating structured documents using manually created section headings and Smart Instructions.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -117,9 +117,9 @@ This code defines a set of classes that extend the `LlmMessage` class, each repr
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/driver_app_messages.py#L104>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as `MessageKind.SYSTEM`.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
     - `content`: Contains a detailed explanation of templates and their use in documentation.
-- **Description**: Represents a message that explains the concept of templates, which are reusable Smart Outlines designed to work across various sources. Unlike Smart Outlines, templates are not specific to a single set of sources and can include conditional logic to handle different scenarios.
+- **Description**: Represents a message that explains the concept of templates, which are reusable Smart Outlines designed to work across various sources. Unlike Smart Outlines, templates must accommodate a wide range of sources and may include conditional logic to handle source-specific instructions.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 

@@ -1,10 +1,17 @@
+from datetime import datetime, timezone
+from logging import getLogger
 from enum import StrEnum
 from uuid import UUID
 
 import modal
-from database.models_v1 import DocumentSource
-from database.models_v2 import AutoDocStatusHistory, Node, PrimaryAsset, Version
-from database.models_v2_enums import (
+from database.models import (
+    AutoDocStatusHistory,
+    DocumentSource,
+    Node,
+    PrimaryAsset,
+    Version,
+)
+from database.models_enums import (
     AutoDocConfigKind,
     AutoDocStatusMessageKind,
     PrimaryAssetKind,
@@ -20,8 +27,11 @@ from app.api.auth import (
 )
 from app.api.session import CurrentSession
 from app.core.config import settings
+from app.services.onboarding_checklist_service import OnboardingChecklistService
 
 router = APIRouter()
+
+logger = getLogger(__name__)
 
 
 class AutoDocSize(StrEnum):
@@ -187,6 +197,12 @@ def run_autodoc(
     session.add(autodoc_status)
     session.commit()
     session.refresh(autodoc_status)
+
+    OnboardingChecklistService.get_or_create_checklist(
+        session=session,
+        organization_id=user.organization_id,
+        user_id=user.user_id,
+    ).mark_generate_autodoc_completed(datetime.now(timezone.utc))
 
     return autodoc_status
 

@@ -3,21 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Authentication tools with FastAPI, CLI interfaces, Auth0 management, developer setup, and ngrok management.
+Auth0 and OAuth2 authentication tools, CLI tools, environment and secret management, developer setup, GitHub and ngrok management, and data models.
 
 ## Folders
-- **[auth](auth/README.md)**: Auth0 and OAuth2 authentication tools with FastAPI, including CLI interfaces and token management.
+- **[auth](auth/README.md)**: Auth0 and OAuth2 authentication tools with CLI interfaces, token management, and server implementations.
 
 ## Files
-- **[auth0_apps.py](auth0_apps.py.md)**: Functions for creating, deleting, and managing Auth0 applications and APIs, including role permissions.
-- **[cli.py](cli.py.md)**: Command-line interface for setting up, generating configs, tearing down, and running ngrok tunnels for developer environments.
-- **[config.py](config.py.md)**: Configuration settings management using Pydantic for environment variables and secrets.
+- **[auth0_apps.py](auth0_apps.py.md)**: Functions for managing Auth0 applications and APIs, including creation, deletion, and role assignments.
+- **[cli.py](cli.py.md)**: CLI tool for setting up, configuring, and managing developer environments and ngrok tunnels.
+- **[config.py](config.py.md)**: Loads environment variables and defines application settings using Pydantic BaseSettings.
 - **[deploy_secrets.py](deploy_secrets.py.md)**: Deploys secrets to AWS Secrets Manager using CloudFormation stack outputs and command line arguments.
 - **[developer_setup.py](developer_setup.py.md)**: Functions and classes for setting up, managing, and tearing down developer resources and configurations.
 - **[github_setup.py](github_setup.py.md)**: Generates a GitHub App setup guide in Markdown format based on a given configuration.
 - **[main.py](main.py.md)**: CLI for setting up and tearing down developer environments with state management.
 - **[modal_scripts.py](modal_scripts.py.md)**: Generates a bash script for deploying services to a specified environment using modal and poetry.
-- **[models.py](models.py.md)**: Defines data models and configurations for Auth0 applications, Ngrok domains, developer resources, and GitHub apps.
+- **[models.py](models.py.md)**: Defines data models for Auth0 applications, Ngrok domains, developer resources, and GitHub app configurations.
 - **[ngrok.py](ngrok.py.md)**: Manages ngrok tunnels, including creating, deleting, and running HTTP and TCP tunnels asynchronously.
 - **[ngrok_server.py](ngrok_server.py.md)**: Implements a FastAPI server for managing WebSocket connections and tunnel clients with a web UI.
 - **[utils.py](utils.py.md)**: Functions to load a wordlist, generate a webhook secret, and load secrets from a JSON file.

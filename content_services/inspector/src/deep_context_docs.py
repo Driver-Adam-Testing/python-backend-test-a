@@ -4,7 +4,7 @@ import uuid
 
 import modal
 from common import app
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 
 deep_context_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -55,8 +55,8 @@ deep_context_image = (
     # whitelist this IP with ScaleGrid for our DB.
     proxy=(
         modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-        else None
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
     ),
     timeout=60 * 60,
     region="us-east",
@@ -67,7 +67,7 @@ async def make_changelog(
     install_id: str,
 ) -> None:
     from database.db import async_engine
-    from database.models_v1 import DerivedContent
+    from database.models import DerivedContent
     from inspection.changelog import create_changelog
     from sqlmodel import delete
     from sqlmodel.ext.asyncio.session import AsyncSession
@@ -126,9 +126,11 @@ async def make_changelog(
     secrets=[
         modal.Secret.from_name("db"),
     ],
-    proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    proxy=(
+        modal.Proxy.from_name("my-proxy")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
+    ),
     memory=4096,
     timeout=3600 * 12,
     region="us-east",
@@ -139,7 +141,7 @@ async def deep_context_docs(
     version_id: uuid.UUID,
     install_id: str | None,
 ) -> list:
-    from database.models_v2_enums import AutoDocConfigKind, VersionStatus
+    from database.models_enums import AutoDocConfigKind, VersionStatus
     from utils.db import get_version_by_id
     from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
     from utils.synthesis.deep_context_prompts import (

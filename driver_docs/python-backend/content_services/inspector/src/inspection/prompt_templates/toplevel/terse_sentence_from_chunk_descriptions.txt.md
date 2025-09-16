@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A guide for writing concise descriptions of codebases based on overlapping subcomponent descriptions.
+A guide for writing concise, high-level descriptions of codebases based on overlapping module descriptions.
 
 # Purpose
-The content defines a process for generating a concise, high-level description of a software codebase by synthesizing multiple descriptions of its subcomponents. Each description provides details about a subset of the codebase, and the task is to create a single sentence that encapsulates the overall purpose and content of the entire codebase. The process involves analyzing the given descriptions, identifying overlapping information, and distilling it into a coherent summary without introducing any new information. This approach ensures that the final description accurately reflects the codebase's functionality based on the provided subset descriptions.
+The content defines a process for generating a concise, high-level description of a software codebase by synthesizing multiple descriptions of its subcomponents. Each description provides details about a subset of the codebase, and the task is to create a single, short sentence that encapsulates the overall purpose and content of the entire codebase. The process involves analyzing the given descriptions, identifying overlapping information, and distilling it into a coherent summary without introducing any new or speculative information. This approach ensures that the final description is accurate and reflective of the provided data.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

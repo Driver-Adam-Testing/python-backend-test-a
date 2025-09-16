@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to update derived_contents status to 'generation-complete' for specific codebases.
+An Alembic migration script that updates the status of specific derived contents to 'generation-complete'.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that updates the `status` field to 'generation-complete' in the `derived_contents` table for records associated with `codebase` content types, where the `codebase_id` corresponds to entries in the `codebases` table with a status of 'processing-complete'. The script includes metadata for Alembic, such as `revision`, `down_revision`, and other identifiers, to manage the migration's versioning. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration is not reversible through this script.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that updates the `status` field to 'generation-complete' in the `derived_contents` table for records associated with 'codebase' content types, where the `codebase_id` corresponds to entries in the `codebases` table with a 'processing-complete' status. The script includes metadata for Alembic, such as `revision`, `down_revision`, and other identifiers, to manage the migration's versioning. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration is not reversible through this script.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in the Alembic migration script. It is used to track the specific version of the database schema that this migration script applies to.
-- **Use**: Used by Alembic to identify the current migration version.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Used by Alembic to identify the parent revision of the current migration.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations. It is used by Alembic, a database migration tool, to determine the order of migrations.
+- **Use**: Used to specify the predecessor revision in Alembic migration scripts.
 
 
 ---
@@ -41,7 +41,7 @@ This code is a database migration script using Alembic, a database migration too
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration.
+- **Use**: Indicates that this migration does not depend on any other migration.
 
 
 # Functions
@@ -53,7 +53,9 @@ This code is a database migration script using Alembic, a database migration too
 Updates the status of specific records in the `derived_contents` table to 'generation-complete'.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a SQL update statement to change the status of records in the `derived_contents` table where the `content_type_id` matches the ID of 'codebase' in the `derived_content_types` table and the `codebase_id` matches IDs in the `codebases` table with status 'processing-complete'.
+    - Defines an SQL update statement to change the status of records in the `derived_contents` table to 'generation-complete'.
+    - The update targets records where `content_type_id` matches the ID of the 'codebase' type in the `derived_content_types` table.
+    - The update further filters records where `codebase_id` is in the set of IDs from the `codebases` table with a status of 'processing-complete'.
     - Gets a database connection using `op.get_bind()`.
     - Executes the SQL update statement using the connection.
 - **Output**: Does not return any value.
@@ -63,11 +65,11 @@ Updates the status of specific records in the `derived_contents` table to 'gener
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_26_0948-5c80dca0c06c_codebase_records_to_generation_complete.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_26_0948-5c80dca0c06c_codebase_records_to_generation_complete.py#L29>)
 
-Defines a placeholder for the downgrade operation in a database migration script.
+Does not perform any operations.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Contains no implementation and does nothing when called.
-- **Output**: Returns `None`, indicating no operation is performed.
+    - The function body contains only the `pass` statement, indicating no operations are performed.
+- **Output**: Returns `None` as it does not perform any operations.
 
 
 

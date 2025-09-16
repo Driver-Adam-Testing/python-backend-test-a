@@ -6,28 +6,30 @@
 GitHub Actions workflow for deploying the Python backend to the development environment after successful tests.
 
 # Purpose
-This YAML file is a GitHub Actions workflow configuration for deploying a backend development environment. It triggers on the completion of a "Unit Test" workflow or manually via `workflow_dispatch`. The workflow includes concurrency control to prevent overlapping runs and sets permissions for `id-token` and `contents`. The deployment job runs on a self-hosted runner and includes steps to set up Node.js and Python environments, install dependencies, configure AWS credentials, and build and push a Docker image to Amazon ECR. It also uses AWS CDK to deploy infrastructure and parses the outputs for further deployment steps. The workflow deploys several services using Poetry and Modal, each within its respective directory, ensuring that the deployment environment is consistent and secure.
+This YAML file is a GitHub Actions workflow configuration for deploying a backend development environment. It triggers on the completion of a "Unit Test" workflow or manually via `workflow_dispatch`. The workflow ensures concurrency by canceling in-progress runs of the same group. It sets permissions for `id-token` and `contents` and defines a job named `deploy` that runs on a self-hosted runner. The deployment process includes checking out the code, setting up Node.js and Python environments, installing dependencies, configuring AWS credentials, and building and pushing a Docker image to Amazon ECR. It uses AWS CDK to deploy infrastructure and parses the outputs to update an ECS service. The workflow also includes steps to deploy various services such as Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation using Poetry and Modal.
 # Content Summary
-This configuration file is a GitHub Actions workflow for deploying a backend development environment. The workflow is named "Backend Dev Deployment" and is triggered by two events: the completion of a "Unit Test" workflow on the "develop" branch, or a manual dispatch via `workflow_dispatch`.
+This configuration file is a GitHub Actions workflow for deploying a backend development environment. The workflow is named "Backend Dev Deployment" and is triggered by two events: the completion of a "Unit Test" workflow on the "develop" branch and manual dispatch via `workflow_dispatch`.
 
-The workflow uses concurrency control to ensure that only one deployment runs at a time for a given branch, with the option to cancel any in-progress deployments if a new one starts. It requires permissions to write an ID token and read repository contents.
+The workflow uses concurrency control to prevent overlapping runs, with a group identifier based on the workflow and reference. It grants specific permissions for writing ID tokens and reading contents.
 
-The main job, named "Deploy to Dev Environment," runs on a self-hosted runner, with a fallback to `ubuntu-latest` if the self-hosted runner is unavailable. The deployment process includes several steps:
+The main job, named "Deploy to Dev Environment," runs on a self-hosted runner, with a fallback to `ubuntu-latest` if the self-hosted runner is unavailable. The job executes only if triggered by `workflow_dispatch` or if a preceding workflow run concludes successfully.
 
-1. **Checkout Code**: The repository code is checked out using `actions/checkout@v4`.
-2. **Setup Node.js**: Node.js version 20.x is set up with npm caching.
-3. **Install Node.js Dependencies**: Node.js dependencies are installed using `npm ci`.
-4. **Setup Python**: Python version 3.12 is set up.
-5. **Install Poetry**: Poetry is installed for managing Python dependencies.
-6. **Install Python Dependencies**: Python dependencies are installed without using a virtual environment.
-7. **Configure AWS Credentials**: AWS credentials are configured for the `us-east-1` region, using a role specified by `AWS_CICD_ROLE`.
-8. **Login to Amazon ECR**: The workflow logs into Amazon Elastic Container Registry (ECR).
-9. **Build and Push Docker Image**: A Docker image for the Python backend is built, tagged, and pushed to Amazon ECR.
-10. **CDK Deployment**: The AWS Cloud Development Kit (CDK) is used to deploy infrastructure, with outputs saved to a file.
-11. **Parse CDK Outputs**: The CDK outputs are parsed to extract Amazon ECS cluster and service ARNs.
-12. **Force ECS Deployment**: A new deployment is forced on the ECS service using the parsed ARNs.
+The deployment process involves several steps:
+1. **Checkout Code**: Uses the `actions/checkout@v4` to pull the repository code.
+2. **Setup Node.js**: Configures Node.js version 20.x with npm caching.
+3. **Install Node.js Dependencies**: Runs `npm ci` to install Node.js dependencies.
+4. **Setup Python**: Configures Python version 3.12.
+5. **Install Poetry**: Uses `snok/install-poetry@v1` to install Poetry.
+6. **Install Python Dependencies**: Installs dependencies using Poetry without creating a virtual environment.
+7. **Configure AWS Credentials**: Sets AWS credentials for the `us-east-1` region using a role specified by `AWS_CICD_ROLE`.
+8. **Login to Amazon ECR**: Authenticates with Amazon ECR.
+9. **Build and Push Docker Image**: Builds a Docker image for the Python backend and pushes it to Amazon ECR.
+10. **CDK Deployment**: Deploys infrastructure using AWS CDK without requiring approval, and outputs results to a file.
+11. **Parse CDK Outputs**: Extracts ECS cluster and service ARNs from the CDK outputs.
+12. **Force ECS Deployment**: Updates the ECS service to force a new deployment.
+13. **Deploy Services**: Deploys various services (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, Generation) using Poetry and Modal, with environment variables for authentication and environment configuration.
 
-The workflow also includes several deployment steps for different services within the `content_services` directory. Each service (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) is deployed using Poetry and a custom `modal deploy` command. These deployments use environment variables for authentication and configuration, including `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, and `MODAL_ENV`. Each deployment is tagged with the first eight characters of the current GitHub SHA.
+Each deployment step for the services uses a specific working directory and environment variables for Modal authentication and environment settings. The deployments are tagged with the current GitHub SHA.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

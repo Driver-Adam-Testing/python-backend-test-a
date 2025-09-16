@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a GraphQL schema with context and routing for a FastAPI application using Strawberry.
+Defines a GraphQL schema and context for FastAPI with JWT authentication and logging extensions.
 
 # Purpose
-The code defines a GraphQL API using the `strawberry` library, integrated with the `fastapi` framework. It sets up a GraphQL schema with query and mutation capabilities by importing `Query` and `Mutation` classes. The schema configuration includes disabling automatic camel case conversion and overriding the default scalar for dictionaries with a custom `JSON` scalar. The code also extends the schema with a `LoggingExtension` to add logging functionality.
+The code defines a GraphQL API using the `strawberry` library, integrated with the `fastapi` framework. It sets up a GraphQL schema with a query component imported from the `queries` module and configures it with specific options, such as disabling automatic camel case conversion and overriding the default scalar for dictionaries with a custom `JSON` scalar. The schema also includes a `LoggingExtension` to extend its functionality.
 
-The code defines a `Context` class that inherits from `BaseContext`, which holds a database session and user-related data. The [`get_context`](<#get_context>) function is an asynchronous dependency that provides the `Context` object, ensuring that each request has access to the necessary session and user information. Two `GraphQLRouter` instances are created: `graphql_router` for the main API and `sandbox_router` for an Apollo Sandbox IDE, both using the defined schema and context getter. This setup allows the application to handle GraphQL requests and provide an interactive development environment for testing queries and mutations.
+The code defines a `Context` class that inherits from `BaseContext`, which is used to manage the session and user-related data for each request. The [`get_context`](<#get_context>) function is an asynchronous dependency that provides the `Context` object, ensuring that each request has access to the database session and user information, validated through JWT middleware. Two `GraphQLRouter` instances are created: `graphql_router` for the main API and `sandbox_router` for an Apollo Sandbox IDE, both using the defined schema and context getter.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,6 @@ The code defines a `Context` class that inherits from `BaseContext`, which holds
 - `strawberry.fastapi.GraphQLRouter`
 - `strawberry.schema.config.StrawberryConfig`
 - `.logging_extension.LoggingExtension`
-- `.mutations.Mutation`
 - `.queries.Query`
 
 
@@ -32,21 +31,21 @@ The code defines a `Context` class that inherits from `BaseContext`, which holds
 ---
 ### schema
 - **Type**: ``strawberry.Schema``
-- **Description**: Defines a GraphQL schema using the `strawberry` library. It includes a query type, a mutation type, and configuration options such as disabling automatic camel case conversion. It also specifies custom scalar type overrides and includes extensions for additional functionality.
+- **Description**: Defines a GraphQL schema using the Strawberry library. It specifies the query type, configuration options, scalar type overrides, and extensions for the schema.
 - **Use**: Used to create and configure the GraphQL schema for the application.
 
 
 ---
 ### graphql\_router
 - **Type**: ``GraphQLRouter``
-- **Description**: Initializes a `GraphQLRouter` instance with a specified GraphQL schema and a context getter function. The schema defines the GraphQL API structure, including queries and mutations, while the context getter function provides the necessary context for each request, such as user and session information.
-- **Use**: Used to route GraphQL requests in a FastAPI application, providing the necessary schema and context for processing these requests.
+- **Description**: Initializes a `GraphQLRouter` instance with a specified GraphQL schema and a context getter function. The schema is defined using the `strawberry.Schema` with a query, configuration, scalar overrides, and extensions. The context getter function, `get_context`, provides the necessary context for each request, including session and user information.
+- **Use**: Used to handle GraphQL requests in a FastAPI application by routing them through the specified schema and context.
 
 
 ---
 ### sandbox\_router
 - **Type**: ``GraphQLRouter``
-- **Description**: Configures a GraphQL router for the Apollo Sandbox environment. It uses the `schema` defined with `strawberry.Schema` and sets the path to `/apollo-sandbox/`. The `graphql_ide` is specified as `apollo-sandbox`, and it uses the `get_context` function to provide the context for each request.
+- **Description**: Configures a GraphQL router for the Apollo Sandbox environment. It uses the `schema` defined with `strawberry.Schema` and sets the path to `/apollo-sandbox/`. The `graphql_ide` is specified as `apollo-sandbox`, and it uses the `get_context` function to provide the request context.
 - **Use**: Used to handle GraphQL requests in the Apollo Sandbox environment with specific configurations.
 
 
@@ -54,13 +53,13 @@ The code defines a `Context` class that inherits from `BaseContext`, which holds
 
 ---
 ### Context<!-- {{#class:python-backend/backend/app/api/routes/legacy/schema.Context}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/legacy/schema.py#L24>)
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/schema.py#L22>)
 
 - **Members**:
     - `session`: Stores the database session.
     - `user`: Holds the user information as a `BaseModel` instance.
-    - `m2m`: Contains the m2m information as a `BaseModel` instance.
-- **Description**: Extends `BaseContext` to include session, user, and m2m information for use in a GraphQL context.
+    - `m2m`: Contains the many-to-many relationship data as a `BaseModel` instance.
+- **Description**: Inherits from `BaseContext` and initializes with a database session, user information, and many-to-many relationship data.
 - **Methods**:
     - [`python-backend/backend/app/api/routes/legacy/schema.Context.__init__`](<#context__init__>)
 - **Inherits From**:
@@ -70,21 +69,21 @@ The code defines a `Context` class that inherits from `BaseContext`, which holds
 
 ---
 #### Context\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/api/routes/legacy/schema.Context.__init__}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/legacy/schema.py#L25>)
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/schema.py#L23>)
 
-Initializes an instance of the `Context` class with session, user, and m2m attributes.
+Initializes a `Context` object with a session, user, and m2m model, and calls the parent class initializer.
 - **Inputs**:
     - `session`: A `Session` object that represents the database session.
     - `user`: A `BaseModel` object that represents the user.
     - `m2m`: A `BaseModel` object that represents the many-to-many relationship model.
 - **Logic and Control Flow**:
-    - Assigns the `session` parameter to the `self.session` attribute.
-    - Assigns the `user` parameter to the `self.user` attribute.
-    - Assigns the `m2m` parameter to the `self.m2m` attribute.
-    - Calls the [`__init__`](<../../../repositories/base_repository.py.md#baserepository__init__>) method of the superclass `BaseContext`.
+    - Assigns the `session` parameter to the `session` attribute of the instance.
+    - Assigns the `user` parameter to the `user` attribute of the instance.
+    - Assigns the `m2m` parameter to the `m2m` attribute of the instance.
+    - Calls the [`__init__`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository__init__>) method of the parent class `BaseContext`.
 - **Output**: None
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.__init__`](<../../../repositories/base_repository.py.md#baserepository__init__>)
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.__init__`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository__init__>)
 - **See also**: [`python-backend/backend/app/api/routes/legacy/schema.Context`](<#context>)  (Base Class)
 
 
@@ -93,7 +92,7 @@ Initializes an instance of the `Context` class with session, user, and m2m attri
 
 ---
 ### get\_context<!-- {{#callable:python-backend/backend/app/api/routes/legacy/schema.get_context}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/legacy/schema.py#L32>)
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/schema.py#L30>)
 
 Creates and returns a [`Context`](<#context>) object using dependencies for user, m2m, and session.
 - **Inputs**:
@@ -101,7 +100,8 @@ Creates and returns a [`Context`](<#context>) object using dependencies for user
     - `m2m`: A `BaseModel` instance obtained from the `require_jwt` dependency, representing the machine-to-machine authentication context.
     - `session`: A `Session` instance obtained from the `get_db` dependency, representing the database session.
 - **Logic and Control Flow**:
-    - Create a [`Context`](<#context>) object using the `session`, `user`, and `m2m` parameters.
+    - Use the `Depends` function to resolve dependencies for `user`, `m2m`, and `session` before executing the function.
+    - Create a [`Context`](<#context>) object with the resolved `session`, `user`, and `m2m` values.
     - Return the created [`Context`](<#context>) object.
 - **Output**: A [`Context`](<#context>) object initialized with the provided `session`, `user`, and `m2m`.
 - **Functions Called**:

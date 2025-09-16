@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Manages subscription services and defines pricing tiers for consumption and seats.
+Subscription management and pricing tier definitions for organizations.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[billing_service.py](billing_service.py.md)**: Manages subscription creation and retrieval for organizations using a database session.
-- **[consumption_tiers.py](consumption_tiers.py.md)**: Defines consumption and seat pricing tiers with corresponding price ranges and rates.
+- **[billing_service.py](billing_service.py.md)**: Manages subscription creation and retrieval for organizations, including error handling and logging.
+- **[consumption_tiers.py](consumption_tiers.py.md)**: Defines consumption and seat pricing tiers with corresponding limits and prices.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

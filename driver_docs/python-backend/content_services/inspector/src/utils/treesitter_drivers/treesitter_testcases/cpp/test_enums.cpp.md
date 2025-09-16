@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Demonstrates various C++ enum types, including scoped, bit flags, and usage in classes and templates.
+Demonstrates various enum types and their usage in C++ including scoped, bit flags, and templates.
 
 # Purpose
-The code file demonstrates various uses of enumerations (`enum` and `enum class`) in C++. It includes examples of basic C-style enums, enums with explicit values, scoped enums (introduced in C++11), and enums with specified underlying types. The file also shows how to use enums in different contexts, such as within classes, namespaces, and templates. Additionally, it includes examples of using enums for bit flags, which is a common pattern for representing combinations of options. The code also demonstrates operator overloading for bitwise operations on scoped enums.
+The code file demonstrates various uses of enumerations (`enum` and `enum class`) in C++. It includes examples of basic C-style enums, scoped enums introduced in C++11, enums with explicit values, and enums with specified underlying types. The file also illustrates the use of enums within namespaces, classes, and templates, as well as the use of enums for bit flag operations. Additionally, it shows how enums can be used in function signatures and how to perform operations like converting enums to their underlying types using `std::underlying_type`.
 
-The file contains several functions and classes that utilize these enums, such as [`colorToString`](<#colortostring>) and [`getOppositeDirection`](<#getoppositedirection>), which operate on `Color` and `Direction` enums, respectively. It also includes a [`GameEntity`](<#gameentitygameentity>) class that uses enums to define entity types and movement types, and a `Task` template class that uses an enum parameter to determine task priority. The [`main`](<#main>) function provides examples of how to instantiate and use these enums in practice, demonstrating their integration into a C++ program. The code also includes conditional compilation with enums and demonstrates the use of `std::underlying_type` to retrieve the underlying integer type of an enum.
+The code also includes practical applications of enums, such as defining constants, using enums in conditional compilation, and implementing operator overloads for bitwise operations on enums. The [`main`](<#main>) function demonstrates how to instantiate and use these enums in various contexts, such as setting task priorities, determining directions, and managing file permissions. The file serves as a comprehensive guide to using enums in C++ for different purposes, including type safety, code readability, and efficient value representation.
 # Imports and Dependencies
 
 ---
@@ -22,7 +22,7 @@ The file contains several functions and classes that utilize these enums, such a
 ---
 ### WeekEnd
 - **Type**: `enum`
-- **Description**: Defines the `WeekEnd` enumeration which includes the days `SATURDAY` and `SUNDAY`. This enumeration is part of a C-style enum declaration that also includes the `WeekDay` enumeration.
+- **Description**: Defines the `WeekEnd` enumeration which includes the days `SATURDAY` and `SUNDAY`. This enumeration is declared alongside `WeekDay` in a single statement.
 - **Use**: Used to represent the weekend days in a week.
 
 
@@ -32,12 +32,12 @@ The file contains several functions and classes that utilize these enums, such a
 ### Color<!-- {{#data_structure:Color}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L5>)
 
-- **Type**: `enum`
+- **Type**: ``enum``
 - **Members**:
     - ``RED``: Represents the color red.
     - ``GREEN``: Represents the color green.
     - ``BLUE``: Represents the color blue.
-- **Description**: Defines a set of named integer constants for basic colors: red, green, and blue. This enumeration is a simple C-style enum, which means the constants are unscoped and can be used directly without a prefix.
+- **Description**: Defines a set of named integer constants for basic colors: red, green, and blue.
 
 
 ---
@@ -50,7 +50,7 @@ The file contains several functions and classes that utilize these enums, such a
     - `ERROR_FILE_NOT_FOUND`: Indicates a file not found error with a value of 404.
     - `ERROR_PERMISSION_DENIED`: Indicates a permission denied error with a value of 403.
     - `ERROR_INTERNAL`: Represents an internal error with a value of 500.
-- **Description**: Defines a set of status codes used to represent the outcome of operations, with specific integer values assigned to each code to indicate different types of errors or success.
+- **Description**: Defines a set of status codes used to represent the outcome of operations, with specific integer values assigned to each code for easy identification and handling of different error conditions.
 
 
 ---
@@ -59,11 +59,11 @@ The file contains several functions and classes that utilize these enums, such a
 
 - **Type**: ``enum class``
 - **Members**:
-    - ``LOW``: Represents a low priority level with an integer value of 1.
-    - ``MEDIUM``: Represents a medium priority level with an integer value of 5.
-    - ``HIGH``: Represents a high priority level with an integer value of 10.
-    - ``CRITICAL``: Represents a critical priority level with an integer value of 20.
-- **Description**: Defines a strongly typed enumeration for task priority levels with explicit integer values, allowing for clear and type-safe priority management in applications.
+    - ``LOW``: Represents a low priority level with a value of 1.
+    - ``MEDIUM``: Represents a medium priority level with a value of 5.
+    - ``HIGH``: Represents a high priority level with a value of 10.
+    - ``CRITICAL``: Represents a critical priority level with a value of 20.
+- **Description**: Defines different levels of priority with explicit integer values, allowing for clear and type-safe priority management in applications.
 
 
 ---
@@ -83,7 +83,7 @@ The file contains several functions and classes that utilize these enums, such a
 ### Grade<!-- {{#data_structure:Grade}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L36>)
 
-- **Type**: ``enum class``
+- **Type**: `enum class`
 - **Members**:
     - `A`: Represents the grade 'A' with the character 'A'.
     - `B`: Represents the grade 'B' with the character 'B'.
@@ -102,7 +102,7 @@ The file contains several functions and classes that utilize these enums, such a
     - `WIREFRAME`: Represents a rendering mode where only the edges of the shapes are drawn.
     - `SOLID`: Represents a rendering mode where shapes are filled with a solid color.
     - `TEXTURED`: Represents a rendering mode where textures are applied to the surfaces of shapes.
-    - `RAYTRACED`: Represents a rendering mode that uses ray tracing to simulate realistic lighting and shadows.
+    - `RAYTRACED`: Represents a rendering mode that simulates the effects of light rays on surfaces.
 - **Description**: Defines different modes for rendering graphics, each mode specifying a distinct way to visualize 3D objects in a graphical application.
 
 
@@ -112,13 +112,13 @@ The file contains several functions and classes that utilize these enums, such a
 
 - **Type**: `enum class`
 - **Members**:
-    - ``NORMAL``: Represents the normal blend mode with a value of 0.
-    - ``MULTIPLY``: Represents the multiply blend mode with a value of 1.
-    - ``SCREEN``: Represents the screen blend mode with a value of 2.
-    - ``OVERLAY``: Represents the overlay blend mode with a value of 3.
-    - ``SOFT_LIGHT``: Represents the soft light blend mode with a value of 4.
-    - ``HARD_LIGHT``: Represents the hard light blend mode with a value of 5.
-- **Description**: Defines different blend modes used in graphics rendering, each associated with an integer value to specify the type of blending effect to apply.
+    - `NORMAL`: Represents the normal blending mode with a value of 0.
+    - `MULTIPLY`: Represents the multiply blending mode with a value of 1.
+    - `SCREEN`: Represents the screen blending mode with a value of 2.
+    - `OVERLAY`: Represents the overlay blending mode with a value of 3.
+    - `SOFT_LIGHT`: Represents the soft light blending mode with a value of 4.
+    - `HARD_LIGHT`: Represents the hard light blending mode with a value of 5.
+- **Description**: Defines different blending modes used in graphics rendering, each represented by an integer value.
 
 
 ---
@@ -141,14 +141,14 @@ The file contains several functions and classes that utilize these enums, such a
 #### GameEntity::GameEntity<!-- {{#callable:GameEntity::GameEntity}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L97>)
 
-Initializes a `GameEntity` object with specified entity type and movement type.
+Initializes a `GameEntity` object with specified entity and movement types.
 - **Inputs**:
     - `t`: The `EntityType` of the game entity, which can be `PLAYER`, `ENEMY`, `NPC`, `ITEM`, or `OBSTACLE`.
     - `m`: The `MovementType` of the game entity, which can be `STATIC`, `LINEAR`, `CURVED`, `RANDOM`, or `AI_CONTROLLED`.
 - **Logic and Control Flow**:
     - Assigns the input `EntityType` `t` to the private member `type`.
     - Assigns the input `MovementType` `m` to the private member `movement`.
-- **Output**: A `GameEntity` object initialized with the specified `EntityType` and `MovementType`.
+- **Output**: A `GameEntity` object with initialized `type` and `movement` attributes.
 - **See also**: [`GameEntity`](<#gameentity>)  (Data Structure)
 
 
@@ -190,7 +190,7 @@ Returns the `MovementType` of the `GameEntity`.
     - `NPC`: Represents a non-player character entity.
     - `ITEM`: Represents an item entity.
     - `OBSTACLE`: Represents an obstacle entity.
-- **Description**: Defines different types of entities that can exist in a game, such as players, enemies, non-player characters, items, and obstacles.
+- **Description**: Defines different types of entities in a game, such as players, enemies, non-player characters, items, and obstacles.
 
 
 ---
@@ -204,7 +204,7 @@ Returns the `MovementType` of the `GameEntity`.
     - `CURVED`: Represents a movement type where the entity moves along a curved path.
     - `RANDOM`: Represents a movement type where the entity moves in a random pattern.
     - `AI_CONTROLLED`: Represents a movement type where the entity's movement is controlled by artificial intelligence.
-- **Description**: Defines different types of movement behaviors for a game entity, using an underlying type of `unsigned char` to ensure efficient storage.
+- **Description**: Defines different types of movement behaviors for a game entity, using an underlying type of `unsigned char` for efficient storage.
 
 
 ---
@@ -212,7 +212,7 @@ Returns the `MovementType` of the `GameEntity`.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L104>)
 
 - **Type**: ``class``
-- **Description**: Defines a template class `Task` that takes a `Priority` enum value as a template parameter. It provides a static method `getPriority` to return the priority level and an `execute` method to perform an action, printing the task's priority to the console.
+- **Description**: Represents a template class `Task` that takes a `Priority` enum as a template parameter. It provides a static method `getPriority` to return the priority level and an `execute` method to perform an action, printing the task's priority to the console.
 - **Member Functions**:
     - [`Task::getPriority`](<#taskgetpriority>)
     - [`Task::execute`](<#taskexecute>)
@@ -223,11 +223,11 @@ Returns the `MovementType` of the `GameEntity`.
 #### Task::getPriority<!-- {{#callable:Task::getPriority}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L107>)
 
-Returns the priority level of a `Task` instance as defined by the template parameter `P`.
+Returns the priority level of a `Task` object as defined by the template parameter `P`.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Returns the value of the template parameter `P`.
-- **Output**: The output is a `Priority` enum value, which represents the priority level of the `Task` instance.
+    - Returns the value of the template parameter `P`, which represents the priority level of the `Task`.
+- **Output**: A `Priority` enum value representing the priority level of the `Task`.
 - **See also**: [`Task`](<#task>)  (Data Structure)
 
 
@@ -238,8 +238,10 @@ Returns the priority level of a `Task` instance as defined by the template param
 Outputs a message indicating the execution of a task with its priority level.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Outputs the string 'Executing task with priority: ' followed by the integer value of the priority `P` to the standard output stream.
-- **Output**: No return value; the function outputs directly to the console.
+    - Outputs a message to the standard output stream using `std::cout`.
+    - The message includes the text 'Executing task with priority: ' followed by the integer value of the priority `P`.
+    - The priority `P` is cast to an integer using `static_cast<int>(P)` before output.
+- **Output**: No return value; the function outputs a message to the console.
 - **See also**: [`Task`](<#task>)  (Data Structure)
 
 
@@ -254,9 +256,9 @@ Outputs a message indicating the execution of a task with its priority level.
     - ``READ``: Represents read permission with a value of 1.
     - ``WRITE``: Represents write permission with a value of 2.
     - ``EXECUTE``: Represents execute permission with a value of 4.
-    - ``READ_WRITE``: Represents combined read and write permissions using a bitwise OR of `READ` and `WRITE`.
-    - ``ALL``: Represents all permissions (read, write, execute) using a bitwise OR of `READ`, `WRITE`, and `EXECUTE`.
-- **Description**: Defines a set of file permission flags using bitwise operations to combine different permissions. Each permission is represented by a unique bit, allowing combinations of permissions to be easily managed using bitwise operations.
+    - ``READ_WRITE``: Represents combined read and write permissions using bitwise OR of `READ` and `WRITE`.
+    - ``ALL``: Represents all permissions (read, write, execute) using bitwise OR of `READ`, `WRITE`, and `EXECUTE`.
+- **Description**: Defines a set of file permission flags using bitwise operations to combine different permissions. Each permission is represented by a unique bit, allowing combinations of permissions through bitwise OR operations.
 
 
 ---
@@ -265,15 +267,15 @@ Outputs a message indicating the execution of a task with its priority level.
 
 - **Type**: `enum class`
 - **Members**:
-    - ``NONE``: Represents no access with a value of `0u`.
-    - ``READ``: Represents read access with a value of `1u`.
-    - ``WRITE``: Represents write access with a value of `2u`.
-    - ``EXECUTE``: Represents execute access with a value of `4u`.
-    - ``DELETE``: Represents delete access with a value of `8u`.
-    - ``CREATE``: Represents create access with a value of `16u`.
-    - ``MODIFY``: Represents modify access with a value of `32u`.
-    - ``FULL_ACCESS``: Represents full access by combining all other access flags.
-- **Description**: Defines a set of access flags using an `enum class` with an underlying type of `unsigned int`, allowing for bitwise operations to manage access permissions such as read, write, execute, delete, create, and modify.
+    - ``NONE``: Represents no access permissions with a value of `0u`.
+    - ``READ``: Represents read access permission with a value of `1u`.
+    - ``WRITE``: Represents write access permission with a value of `2u`.
+    - ``EXECUTE``: Represents execute access permission with a value of `4u`.
+    - ``DELETE``: Represents delete access permission with a value of `8u`.
+    - ``CREATE``: Represents create access permission with a value of `16u`.
+    - ``MODIFY``: Represents modify access permission with a value of `32u`.
+    - ``FULL_ACCESS``: Represents full access permissions by combining all other permissions.
+- **Description**: Defines a set of access permissions using bit flags, allowing for combinations of permissions such as read, write, execute, delete, create, and modify. The underlying type is `unsigned int`, and the enum supports bitwise operations to combine or check permissions.
 
 
 ---
@@ -282,11 +284,11 @@ Outputs a message indicating the execution of a task with its priority level.
 
 - **Type**: `enum class`
 - **Members**:
-    - `DISCONNECTED`: Represents a state where the network is not connected.
-    - `CONNECTING`: Represents a state where the network is in the process of connecting.
-    - `CONNECTED`: Represents a state where the network is successfully connected.
-    - `ERROR`: Represents a state where there is an error in the network connection.
-- **Description**: Defines the possible states of a network connection using an `unsigned char` as the underlying type, allowing for clear and type-safe representation of network states.
+    - `DISCONNECTED`: Represents a network state where the connection is not established.
+    - `CONNECTING`: Represents a network state where a connection attempt is in progress.
+    - `CONNECTED`: Represents a network state where the connection is successfully established.
+    - `ERROR`: Represents a network state where an error has occurred, using the maximum value of an unsigned char.
+- **Description**: Defines different states of a network connection using an `unsigned char` as the underlying type, allowing for a compact representation of the states.
 
 
 ---
@@ -297,7 +299,7 @@ Outputs a message indicating the execution of a task with its priority level.
 - **Members**:
     - ``policy``: Defines the insertion policy for the container.
     - ``order``: Specifies the sort order for the container.
-- **Description**: Represents a template class `Container` that manages elements with specified insertion and sorting policies. The `InsertionPolicy` enum defines how elements are inserted, with options to replace existing elements, ignore duplicates, or always append. The `SortOrder` enum class specifies the order in which elements are sorted, with options for ascending, descending, or no sorting. The class constructor initializes these policies with default values if not provided.
+- **Description**: Represents a template class `Container` that manages elements with specified insertion and sorting policies. The `InsertionPolicy` enum defines how elements are inserted, with options to replace existing elements, ignore duplicates, or always append. The `SortOrder` enum class specifies the order in which elements are sorted, with options for ascending, descending, or no sorting. The constructor initializes the container with default or specified policies.
 
 **Methods**
 
@@ -307,13 +309,13 @@ Outputs a message indicating the execution of a task with its priority level.
 
 Initializes a `Container` object with specified insertion policy and sort order.
 - **Inputs**:
-    - `p`: An `InsertionPolicy` enum value that specifies how to handle data insertion, with a default value of `REPLACE_EXISTING`.
-    - `o`: A `SortOrder` enum value that specifies the order in which data should be sorted, with a default value of `SortOrder::NONE`.
+    - `p`: An `InsertionPolicy` enum value that determines how data is inserted into the container. Default is `REPLACE_EXISTING`.
+    - `o`: A `SortOrder` enum value that specifies the order in which data is sorted. Default is `SortOrder::NONE`.
 - **Logic and Control Flow**:
-    - Assigns the provided `InsertionPolicy` value `p` to the member variable `policy`.
-    - Assigns the provided `SortOrder` value `o` to the member variable `order`.
+    - Assigns the value of `p` to the member variable `policy`.
+    - Assigns the value of `o` to the member variable `order`.
 - **Output**: A `Container` object initialized with the specified insertion policy and sort order.
-- **See also**: [`Container`](<test_func_calls.cpp.md#container>)  (Data Structure)
+- **See also**: [`Container`](<test_func_defs.cpp.md#container>)  (Data Structure)
 
 
 
@@ -324,9 +326,9 @@ Initializes a `Container` object with specified insertion policy and sort order.
 - **Type**: `enum`
 - **Members**:
     - ``REPLACE_EXISTING``: Indicates that existing elements should be replaced during insertion.
-    - ``IGNORE_DUPLICATES``: Indicates that duplicate elements should be ignored during insertion.
-    - ``APPEND_ALWAYS``: Indicates that new elements should always be appended during insertion.
-- **Description**: Defines policies for handling element insertion in a container, specifying whether to replace existing elements, ignore duplicates, or always append new elements.
+    - ``IGNORE_DUPLICATES``: Specifies that duplicate elements should be ignored during insertion.
+    - ``APPEND_ALWAYS``: Ensures that new elements are always appended, regardless of duplicates.
+- **Description**: Defines policies for handling element insertion in a container, allowing for replacement, ignoring duplicates, or always appending new elements.
 
 
 ---
@@ -338,34 +340,34 @@ Initializes a `Container` object with specified insertion policy and sort order.
     - `ASCENDING`: Represents sorting in ascending order.
     - `DESCENDING`: Represents sorting in descending order.
     - `NONE`: Represents no specific sorting order.
-- **Description**: Defines sorting order options for a container, allowing specification of ascending, descending, or no sorting order.
+- **Description**: Defines sorting order options for a container, allowing specification of ascending, descending, or no sorting.
 
 
 ---
 ### DebugLevel<!-- {{#data_structure:DebugLevel}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L239>)
 
-- **Type**: ``enum``
+- **Type**: `enum`
 - **Members**:
     - ``DEBUG_NONE``: Represents no debugging information.
     - ``DEBUG_BASIC``: Represents basic debugging information.
     - ``DEBUG_VERBOSE``: Represents verbose debugging information.
     - ``DEBUG_FULL``: Represents full debugging information.
-- **Description**: Defines different levels of debugging information that can be used to control the amount of detail provided during debugging. The levels range from `DEBUG_NONE`, which provides no information, to `DEBUG_FULL`, which provides the most detailed information.
+- **Description**: Defines different levels of debugging information that can be used to control the amount of detail provided during debugging. The levels range from `DEBUG_NONE` for no information to `DEBUG_FULL` for the most detailed information.
 
 
 ---
 ### WeekDay<!-- {{#data_structure:WeekDay}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L248>)
 
-- **Type**: ``enum``
+- **Type**: `enum`
 - **Members**:
-    - `MONDAY`: Represents Monday.
-    - `TUESDAY`: Represents Tuesday.
-    - `WEDNESDAY`: Represents Wednesday.
-    - `THURSDAY`: Represents Thursday.
-    - `FRIDAY`: Represents Friday.
-- **Description**: Defines the days of the work week as enumerated constants, allowing for easy reference and comparison of weekdays in the program.
+    - `MONDAY`: Represents the first day of the work week.
+    - `TUESDAY`: Represents the second day of the work week.
+    - `WEDNESDAY`: Represents the middle day of the work week.
+    - `THURSDAY`: Represents the fourth day of the work week.
+    - `FRIDAY`: Represents the last day of the work week.
+- **Description**: Defines the days of the work week as enumerated constants, allowing for easy reference and comparison in code.
 
 
 # Functions
@@ -379,12 +381,12 @@ Performs a bitwise OR operation on two `AccessFlags` values and returns the resu
     - `lhs`: The left-hand side `AccessFlags` operand for the bitwise OR operation.
     - `rhs`: The right-hand side `AccessFlags` operand for the bitwise OR operation.
 - **Logic and Control Flow**:
-    - Convert `lhs` to its underlying `unsigned int` type.
-    - Convert `rhs` to its underlying `unsigned int` type.
+    - Convert `lhs` to its underlying `unsigned int` type using `static_cast`.
+    - Convert `rhs` to its underlying `unsigned int` type using `static_cast`.
     - Perform a bitwise OR operation on the two `unsigned int` values.
-    - Cast the result back to `AccessFlags`.
-    - Return the resulting `AccessFlags`.
-- **Output**: The result of the bitwise OR operation as an `AccessFlags`.
+    - Convert the result back to `AccessFlags` using `static_cast`.
+    - Return the resulting `AccessFlags` value.
+- **Output**: An `AccessFlags` value that represents the result of the bitwise OR operation on the input flags.
 
 
 ---
@@ -396,10 +398,10 @@ Performs a bitwise AND operation on two `AccessFlags` values and returns the res
     - `lhs`: The left-hand side `AccessFlags` operand for the bitwise AND operation.
     - `rhs`: The right-hand side `AccessFlags` operand for the bitwise AND operation.
 - **Logic and Control Flow**:
-    - Convert `lhs` to an `unsigned int` using `static_cast`.
-    - Convert `rhs` to an `unsigned int` using `static_cast`.
+    - Convert `lhs` to its underlying `unsigned int` type.
+    - Convert `rhs` to its underlying `unsigned int` type.
     - Perform a bitwise AND operation on the two `unsigned int` values.
-    - Convert the result back to `AccessFlags` using `static_cast`.
+    - Cast the result back to `AccessFlags`.
     - Return the resulting `AccessFlags`.
 - **Output**: The result of the bitwise AND operation as an `AccessFlags`.
 
@@ -410,31 +412,31 @@ Performs a bitwise AND operation on two `AccessFlags` values and returns the res
 
 Converts a `Color` enum value to its corresponding string representation.
 - **Inputs**:
-    - `color`: A `Color` enum value that represents a color.
+    - `color`: A `Color` enum value representing a color.
 - **Logic and Control Flow**:
     - Use a `switch` statement to check the value of `color`.
     - If `color` is `RED`, return the string "Red".
     - If `color` is `GREEN`, return the string "Green".
     - If `color` is `BLUE`, return the string "Blue".
     - For any other value, return the string "Unknown".
-- **Output**: A `std::string` that represents the name of the color.
+- **Output**: A `std::string` representing the name of the color or "Unknown" if the color is not recognized.
 
 
 ---
 ### getOppositeDirection<!-- {{#callable:getOppositeDirection}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L194>)
 
-Returns the opposite cardinal direction for a given `Direction` enum value.
+Returns the opposite direction of the given `Direction` enum value.
 - **Inputs**:
     - ``dir``: A `Direction` enum value representing the current direction.
 - **Logic and Control Flow**:
-    - Use a `switch` statement to evaluate the input `dir`.
+    - Use a `switch` statement to check the value of `dir`.
     - If `dir` is `Direction::NORTH`, return `Direction::SOUTH`.
     - If `dir` is `Direction::SOUTH`, return `Direction::NORTH`.
     - If `dir` is `Direction::EAST`, return `Direction::WEST`.
     - If `dir` is `Direction::WEST`, return `Direction::EAST`.
-    - If `dir` does not match any case, return `Direction::NORTH` as a default, although this should not occur.
-- **Output**: A `Direction` enum value representing the opposite direction of the input.
+    - If `dir` does not match any case, return `Direction::NORTH` as a default.
+- **Output**: A `Direction` enum value that is the opposite of the input direction.
 
 
 ---
@@ -459,13 +461,13 @@ Converts a `Grade` enum value to its corresponding GPA value.
 - **Inputs**:
     - `g`: A `Grade` enum value representing a student's grade.
 - **Logic and Control Flow**:
-    - Use a `switch` statement to check the value of `g`.
-    - If `g` is `Grade::A`, return 4.0.
-    - If `g` is `Grade::B`, return 3.0.
-    - If `g` is `Grade::C`, return 2.0.
-    - If `g` is `Grade::D`, return 1.0.
-    - If `g` is `Grade::F`, return 0.0.
-    - If `g` does not match any case, return 0.0 as a default.
+    - Use a `switch` statement to evaluate the input `Grade` value `g`.
+    - Return `4.0` if `g` is `Grade::A`.
+    - Return `3.0` if `g` is `Grade::B`.
+    - Return `2.0` if `g` is `Grade::C`.
+    - Return `1.0` if `g` is `Grade::D`.
+    - Return `0.0` if `g` is `Grade::F`.
+    - Return `0.0` for any other value of `g` not explicitly handled.
 - **Output**: A `double` representing the GPA value corresponding to the input `Grade`.
 
 
@@ -477,7 +479,7 @@ Returns the default priority level as `Priority::MEDIUM`.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Return the value `Priority::MEDIUM`.
-- **Output**: A `Priority` enum value representing the default priority level, specifically `Priority::MEDIUM`.
+- **Output**: A `Priority` enum value representing the default priority, specifically `Priority::MEDIUM`.
 
 
 ---
@@ -486,10 +488,10 @@ Returns the default priority level as `Priority::MEDIUM`.
 
 Converts a `Priority` enum value to its corresponding integer value.
 - **Inputs**:
-    - `p`: A `Priority` enum value that represents the priority level.
+    - `p`: A `Priority` enum value that specifies the priority level.
 - **Logic and Control Flow**:
     - Use `static_cast<int>` to convert the `Priority` enum value `p` to its underlying integer type.
-- **Output**: Returns the integer value corresponding to the `Priority` enum value.
+- **Output**: Returns the integer representation of the `Priority` enum value.
 
 
 ---
@@ -498,7 +500,7 @@ Converts a `Priority` enum value to its corresponding integer value.
 
 Converts an enumeration value to its underlying integer type.
 - **Inputs**:
-    - `E e`: An enumeration value of type `E`.
+    - ``e``: An enumeration value of type `E`.
 - **Logic and Control Flow**:
     - Uses `std::underlying_type_t<E>` to determine the underlying type of the enumeration `E`.
     - Casts the enumeration value `e` to its underlying type using `static_cast`.
@@ -513,19 +515,18 @@ Demonstrates the use of various enum types and their applications in C++.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initializes a `Color` enum variable `favorite_color` with `RED` and prints its string representation using [`colorToString`](<#colortostring>).
-    - Initializes a `Direction` enum class variable `current_direction` with `Direction::NORTH` and finds its opposite using [`getOppositeDirection`](<#getoppositedirection>).
+    - Initializes a `Direction` enum class variable `current_direction` with `Direction::NORTH` and determines its opposite using [`getOppositeDirection`](<#getoppositedirection>).
     - Initializes a `StatusCode` enum variable `result` with `SUCCESS` and checks if the operation was successful, printing a message if true.
     - Initializes a `Priority` enum class variable `task_priority` with `Priority::HIGH` and prints its integer value.
     - Initializes a `Grade` enum class variable `student_grade` with `Grade::A` and prints the corresponding GPA using [`gradeToGPA`](<#gradetogpa>).
     - Declares a character buffer with size `BUFFER_SIZE` and prints the buffer size.
     - Initializes `Graphics::RenderMode` and `Graphics::BlendMode` enum variables with `Graphics::TEXTURED` and `Graphics::BlendMode::MULTIPLY`, respectively.
     - Creates a `GameEntity` object `player` with type `GameEntity::PLAYER` and movement `GameEntity::MovementType::AI_CONTROLLED`, then prints the player type.
-    - Creates a `Task` object `high_priority_task` with `Priority::HIGH` and executes it, printing the task priority.
+    - Creates a `Task` object `high_priority_task` with `Priority::HIGH` and executes it, printing the task's priority.
     - Initializes `FilePermissions` and `AccessFlags` variables with `READ_WRITE` and a combination of `AccessFlags::READ` and `AccessFlags::WRITE`, respectively.
     - Prints the underlying integer value of `current_direction` using [`toUnderlying`](<#tounderlying>).
     - Creates a `Container<int>` object `int_container` with insertion policy `Container<int>::REPLACE_EXISTING` and sort order `Container<int>::SortOrder::ASCENDING`.
-    - Returns 0 to indicate successful execution.
-- **Output**: Returns an integer value 0 to indicate successful execution.
+- **Output**: Returns 0 to indicate successful execution.
 - **Functions Called**:
     - [`colorToString`](<#colortostring>)
     - [`getOppositeDirection`](<#getoppositedirection>)

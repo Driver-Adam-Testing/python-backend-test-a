@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for writing a single paragraph description of a folder in a software codebase.
+Instructions for writing a single paragraph description of a folder in a software codebase using overlapping chunk descriptions.
 
 # Purpose
 Folder content subset 1 description for folder `data_processing`:
 
-The `data_processing` folder contains scripts for cleaning and transforming raw data. These scripts remove duplicates, handle missing values, and standardize data formats to ensure consistency. The folder also includes configuration files that specify parameters for data processing tasks, such as input file paths and processing options.
+The `data_processing` folder contains scripts for cleaning and transforming raw data. These scripts remove duplicates, handle missing values, and standardize data formats to ensure consistency. The folder also includes configuration files that define parameters for data processing tasks, such as batch size and processing intervals.
 
 Folder content subset 2 description for folder `data_processing`:
 
-In addition to data cleaning scripts, the `data_processing` folder includes modules for data validation. These modules check data integrity by verifying data types, ranges, and constraints. The folder also contains logging utilities that record processing steps and errors for auditing and debugging purposes.
+In addition to data cleaning scripts, the `data_processing` folder includes modules for data validation. These modules check data integrity by verifying data types and value ranges. The folder also contains logging utilities that record processing activities and errors for monitoring and debugging purposes.
 
 ---
 
-The `data_processing` folder is designed to handle the preparation and validation of raw data. It includes scripts that perform data cleaning tasks such as removing duplicates, managing missing values, and standardizing formats. Configuration files within the folder define parameters for these tasks, including input file paths and specific processing options. The folder also contains modules dedicated to data validation, ensuring data integrity by checking types, ranges, and constraints. Additionally, logging utilities are present to document processing steps and errors, facilitating auditing and debugging.
+The `data_processing` folder is designed to handle the preparation and validation of raw data. It includes scripts that perform data cleaning tasks such as removing duplicates, handling missing values, and standardizing data formats. Configuration files within the folder specify parameters for processing tasks, including batch size and processing intervals. The folder also contains modules for data validation, which ensure data integrity by checking data types and value ranges. Additionally, logging utilities are present to record processing activities and errors, aiding in monitoring and debugging. This folder is essential for ensuring that data is consistent and reliable before further analysis or use.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

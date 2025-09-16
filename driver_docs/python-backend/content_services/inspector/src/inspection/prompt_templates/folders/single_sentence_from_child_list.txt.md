@@ -3,18 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for summarizing the contents of a folder based on its child files and folders.
+Instructions for summarizing the contents of a software folder based on its child files and folders.
 
 # Purpose
-`Makefile`: Automates the build process by defining a set of tasks to compile and link the program, specifying dependencies and rules for building the software.
-
-`README.md`: Provides an overview of the project, including installation instructions, usage guidelines, and any other relevant information for users and developers.
-
-`config.json`: Stores configuration settings in a structured format, allowing the software to read and apply these settings at runtime.
-
-`src/`: Contains the source code files for the project, organized in a way that supports the development and maintenance of the software.
-
-`tests/`: Includes test scripts and files used to verify the functionality and correctness of the software components.
+The `Makefile` is used to automate the build process of the software project. It defines a set of tasks to be executed, such as compiling source code, linking binaries, and cleaning up build artifacts. The file specifies dependencies between files and the commands needed to update them, ensuring that only the necessary parts of the project are rebuilt when changes occur. This helps in maintaining an efficient and consistent build environment.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

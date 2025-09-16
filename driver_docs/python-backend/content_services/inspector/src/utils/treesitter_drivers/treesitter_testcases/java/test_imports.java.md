@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Demonstrates the use of various Java imports and static imports in a class method.
+Demonstrates the use of various Java imports in a class with a method that utilizes them.
 
 # Purpose
-The `ImportExamples` class demonstrates the use of various Java imports to perform different tasks. It imports classes from the `java.util` package to create a `List` and an `ArrayList`, which are used to store a collection of `String` objects. The `java.io.File` class is imported to create a `File` object representing a file named "test.txt". Additionally, the code uses static imports from the `java.lang.Math` class to access the constant `PI` and the method `pow` for calculating the area of a circle with a given radius. This code provides narrow functionality by illustrating how to use imports to access specific classes and methods in Java.
+The `ImportExamples` class demonstrates the use of various Java imports to perform different tasks. It imports classes from the `java.util` package to create a `List` and an `ArrayList`, which are used to store a collection of `String` objects. The `java.io.File` class is imported to create a `File` object representing a file named "test.txt". Additionally, the code uses static imports from the `java.lang.Math` class to access the constant `PI` and the method `pow` for calculating the area of a circle with a given radius. This code provides narrow functionality by illustrating how to use specific imports in Java for basic operations.
 # Imports and Dependencies
 
 ---
@@ -44,7 +44,7 @@ Demonstrates the use of various Java imports by creating a list, a file, and cal
     - Initializes a `double` variable `radius` with the value `5.0`.
     - Calculates the area of a circle using the formula `PI * pow(radius, 2)` and assigns the result to the variable `area`.
 - **Output**:
-    - No output is returned as the method is `void`.
+    - The method does not return any value.
 - **See also**: [`com.example.imports.ImportExamples`](<#importexamples>)  (Base Class)
 
 

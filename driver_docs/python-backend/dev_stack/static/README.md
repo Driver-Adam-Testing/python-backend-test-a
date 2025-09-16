@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-HTML page for managing Ngrok tunnels with controls and WebSocket connectivity.
+Web interface for managing Ngrok tunnels with controls for status, start, and stop actions.
 
 
 ## Files
-- **[index.html](index.html.md)**: HTML page for managing Ngrok tunnels with controls and WebSocket connectivity.
+- **[index.html](index.html.md)**: Web interface for managing Ngrok tunnels with controls for status, start, and stop actions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

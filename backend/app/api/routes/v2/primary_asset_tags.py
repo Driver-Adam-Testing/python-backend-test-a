@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models_v2 import PrimaryAsset, PrimaryAssetTag
+from database.models import PrimaryAsset, PrimaryAssetTag
 from fastapi import Body, HTTPException, Path, Response
 from sqlmodel import select
 

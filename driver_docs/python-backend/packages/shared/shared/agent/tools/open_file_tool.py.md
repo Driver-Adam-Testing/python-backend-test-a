@@ -6,15 +6,15 @@
 A strict tool class to open a file at a given path and display its content, excluding PDFs.
 
 # Purpose
-The code defines a class `OpenFileTool`, which is a specialized tool for opening and reading the content of a file specified by a file path. It inherits from `ToolStrict`, indicating that it follows strict operational guidelines. The primary function of this class is to retrieve and display the content of a file, excluding PDFs, by interacting with a database to fetch content chunks and embeddings associated with the file. The class uses SQLAlchemy and SQLModel to perform database operations, specifically selecting and loading related content from the `ChunkAndEmbedding` and `DerivedContent` models.
+The code defines a class `OpenFileTool`, which is a specialized tool for opening and displaying the content of a file specified by a file path. It inherits from `ToolStrict`, indicating that it follows strict operational guidelines. The primary function of this class is to read the content of a file, excluding PDFs, and present it in a structured format. The [`execute`](<#openfiletoolexecute>) method is the core component, which interacts with a database to retrieve and assemble content chunks associated with the file path. It uses SQLAlchemy and SQLModel to perform database operations, ensuring that the content is retrieved and ordered correctly.
 
-The [`execute`](<#openfiletoolexecute>) method is the core component of the `OpenFileTool` class. It takes an `AgentBase` instance as an argument and uses it to determine the data scope for the file path. The method retrieves content chunks from the database, processes them to form a complete document, and checks if the document exceeds a specified length. If the content is too long, it raises an exception. The method also constructs a `SearchResult` object with the retrieved content and adds it to the agent's search results. Additionally, the code includes a class method [`system_prompt`](<#system_prompt>) that provides a prompt for using the `OpenFileTool` to read source code files.
+The [`execute`](<#openfiletoolexecute>) method also handles potential issues such as content overlap between chunks and file length limitations. If the content exceeds a certain length, it raises an exception, suggesting the use of a different tool for context retrieval. The method concludes by creating a `SearchResult` object, which encapsulates the full text and metadata about the file, and adds it to the agent's search results. The class also includes a [`system_prompt`](<#system_prompt>) class method, which provides guidance on using the `OpenFileTool` to read source code files with known extensions. This code is intended to be part of a larger system where it interacts with other components like agents and databases.
 # Imports and Dependencies
 
 ---
 - `database.db.get_session`
-- `database.models_v1.ChunkAndEmbedding`
-- `database.models_v1.DerivedContent`
+- `database.models.ChunkAndEmbedding`
+- `database.models.DerivedContent`
 - `sqlalchemy.orm.selectinload`
 - `sqlmodel.select`
 - `shared.agent.agent_base.AgentBase`
@@ -32,7 +32,7 @@ The [`execute`](<#openfiletoolexecute>) method is the core component of the `Ope
 
 - **Members**:
     - `file_path`: The path to the file to be opened, excluding PDFs.
-- **Description**: Facilitates opening a file at a specified path and displaying its content, excluding PDF files. It processes the file content by retrieving chunks and embeddings from a database, reconstructing the full text, and handling potential exceptions. The class also integrates with an agent to add search results based on the file content.
+- **Description**: Represents a tool that opens a file at a specified path and displays its content, excluding PDFs. It processes the file content by retrieving chunks and embeddings from a database, reconstructs the full text, and handles exceptions if the file is too long or if no content is found.
 - **Methods**:
     - [`python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool.execute`](<#openfiletoolexecute>)
 - **Inherits From**:
@@ -44,19 +44,20 @@ The [`execute`](<#openfiletoolexecute>) method is the core component of the `Ope
 #### OpenFileTool\.execute<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool.execute}} -->
 [View Source →](<../../../../../../../packages/shared/shared/agent/tools/open_file_tool.py#L22>)
 
-Processes a file path to retrieve and format content from a database, then returns the full text or an error message.
+Processes a file path to retrieve, format, and return the full text content of a file, while handling potential exceptions.
 - **Inputs**:
-    - `agent`: An instance of `AgentBase` that provides the scope for data retrieval.
+    - `agent`: An instance of `AgentBase` that provides the scope and methods to interact with the file content.
 - **Logic and Control Flow**:
     - Attempts to create a child datascope from the agent's scope using the file path.
-    - Opens a database session and executes a query to retrieve `ChunkAndEmbedding` objects related to the file path.
-    - Checks if any chunks are retrieved; if not, returns a message indicating no content was found.
-    - Iterates over the retrieved chunks to format them into a continuous text, handling overlaps between chunks.
-    - Joins the formatted chunks into a single string of full text.
-    - Checks if the full text exceeds a length of 75000 characters and raises an exception if it does.
-    - Creates a [`SearchResult`](<../../interfaces/search.py.md#searchresult>) object with the full text and adds it to the agent's search results.
-    - Returns the full text of the document.
-- **Output**: A string containing the full text of the document or an error message if no content is found.
+    - Opens a database session to execute a query that selects `ChunkAndEmbedding` records joined with `DerivedContent` based on the node ID from the datascope.
+    - Checks if any chunks and embeddings are retrieved; if not, returns a message indicating no content found for the file path.
+    - Iterates over the retrieved chunks to format them into a full document by removing overlapping text between consecutive chunks.
+    - Joins the formatted chunks into a single string `full_text`.
+    - Checks if the length of `full_text` exceeds 75000 characters and raises an exception if it does.
+    - Creates a [`SearchResult`](<../../interfaces/search.py.md#searchresult>) object with the full text and metadata, then adds it to the agent's search results.
+    - Returns the `full_text` content.
+    - Catches and prints any exceptions that occur during execution, then re-raises the exception.
+- **Output**: A string containing the full text content of the file, or an error message if no content is found.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](<../../interfaces/agents/data_scope.py.md#datascopeto_child_datascope>)
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
@@ -73,13 +74,13 @@ Processes a file path to retrieve and format content from a database, then retur
 ### system\_prompt<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/open_file_tool.system_prompt}} -->
 [View Source →](<../../../../../../../packages/shared/shared/agent/tools/open_file_tool.py#L89>)
 
-Returns a system prompt message for using the OpenFileTool to read a source code file.
+Returns a system prompt message for using the OpenFileTool.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: Represents the class itself, not an instance of the class.
+    - `cls`: The class object on which this method is called.
 - **Logic and Control Flow**:
-    - Returns a predefined string message that instructs to use the OpenFileTool for reading a source code file.
-- **Output**: A string message that provides instructions for using the OpenFileTool.
+    - Returns a predefined string message that instructs to use the OpenFileTool to read a source code file completely.
+- **Output**: A string containing the system prompt message.
 
 
 

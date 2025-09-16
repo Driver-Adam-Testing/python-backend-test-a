@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Resolves C/C++ #include directives to corresponding project files using a minimal matching strategy.
+Resolves C/C++ #include directives to corresponding project files.
 
 # Purpose
-The `CCppResolver` class extends the `ImportResolver` class to handle the resolution of C/C++ `#include` directives within a project. It provides a method [`resolve_import`](<#ccppresolverresolve_import>) that attempts to map an `#include` directive to a specific file path within the project. The method first checks if the included file exists directly in the same directory as the `current_file`. If not, it searches for files in the project that end with the same name as the included file. If multiple matches are found, it selects the first match. This functionality is specific to resolving file paths for C/C++ projects, using the `RawTreeSitterSymbolData` to represent the symbols involved in the import resolution process.
+The `CCppResolver` class extends the `ImportResolver` class to handle the resolution of C/C++ `#include` directives within a project. It defines a method [`resolve_import`](<#ccppresolverresolve_import>) that attempts to map an `#include` directive to a specific file path within the project. The method first checks if the file specified by the `#include` directive exists directly in the same directory as the `current_file`. If not, it searches through the project's files to find any that end with the same name as the `#include` directive. If multiple files match, it selects the first one found. This functionality is specific to resolving file paths for C/C++ projects, as indicated by the `language` attribute set to `"c_cpp"`.
 # Imports and Dependencies
 
 ---
@@ -48,7 +48,7 @@ Resolves C/C++ #include directives to corresponding project files.
     - If `possible_matches` is empty, return `None`.
     - If `possible_matches` contains exactly one path, return that path.
     - If `possible_matches` contains multiple paths, return the first path in the list.
-- **Output**: A `Path` object representing the resolved file, a list of `Path` objects if multiple matches are found, or `None` if no match is found.
+- **Output**: Returns a `Path` object if a matching file is found, a list of `Path` objects if multiple matches are found, or `None` if no match is found.
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver`](<#ccppresolver>)  (Base Class)
 
 

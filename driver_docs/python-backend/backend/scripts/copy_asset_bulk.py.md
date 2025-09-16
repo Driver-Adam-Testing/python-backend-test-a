@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Script for copying CODEBASE primary assets and related data between databases using bulk operations.
+Script to copy primary assets and related data between databases using bulk operations for efficiency.
 
 # Purpose
-The code is a script designed to copy primary assets and their related data from one database to another using bulk operations for improved performance. It is intended to be executed from the command line, where users must provide the source and destination database URLs as environment variables. The script requires the user to specify the UUIDs of the assets to be copied and the destination organization ID. Optional flags allow users to skip copying embeddings or perform a dry run without committing changes.
+The code is a script designed to copy primary assets and their related data from one database to another using bulk operations for improved performance. It is intended to be executed from the command line, where users can specify the asset IDs to copy, the destination organization ID, and optional flags to skip copying embeddings or perform a dry run. The script requires environment variables `SOURCE_DATABASE_URL` and `DESTINATION_DATABASE_URL` to be set, which define the source and destination database connections.
 
-The script defines a `BulkAssetCopier` class that handles the copying process. This class connects to the source and destination databases and retrieves the specified assets and their related data, such as versions, nodes, derived contents, chunks, embeddings, and inspector runs. The data is then inserted into the destination database, with the option to update certain fields, such as the organization ID. The script uses the `sqlmodel` library for database interactions and supports error handling to manage exceptions during the copying process. The [`main`](<#main>) function parses command-line arguments and initializes the `BulkAssetCopier` to execute the asset copying operation.
+The main technical component is the `BulkAssetCopier` class, which handles the copying process. It fetches primary assets and their related data, such as versions, nodes, derived contents, chunks, embeddings, and inspector runs, from the source database. It then inserts this data into the destination database, updating certain fields like the organization ID. The script uses SQLModel sessions to manage database interactions and includes error handling to manage exceptions during the copying process. The script defines a public API through command-line arguments, allowing users to control its behavior and specify the data to be copied.
 # Imports and Dependencies
 
 ---
@@ -16,17 +16,17 @@ The script defines a `BulkAssetCopier` class that handles the copying process. T
 - `os`
 - `sys`
 - `uuid.UUID`
+- `database.models.InspectorRun`
+- `database.models.Node`
+- `database.models.PrimaryAsset`
+- `database.models.Version`
 - `sqlmodel.Session`
 - `sqlmodel.create_engine`
 - `sqlmodel.select`
-- `driver_db.database.models_v1.ChunkAndEmbedding`
-- `driver_db.database.models_v1.DerivedContent`
-- `driver_db.database.models_v1.InspectorRun`
-- `driver_db.database.models_v2.Node`
-- `driver_db.database.models_v2.NodeKind`
-- `driver_db.database.models_v2.PrimaryAsset`
-- `driver_db.database.models_v2.PrimaryAssetKind`
-- `driver_db.database.models_v2.Version`
+- `driver_db.database.models.ChunkAndEmbedding`
+- `driver_db.database.models.DerivedContent`
+- `driver_db.database.models.NodeKind`
+- `driver_db.database.models.PrimaryAssetKind`
 - `sqlalchemy.text`
 
 
@@ -34,13 +34,13 @@ The script defines a `BulkAssetCopier` class that handles the copying process. T
 
 ---
 ### BulkAssetCopier<!-- {{#class:python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier}} -->
-[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L33>)
+[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L32>)
 
 - **Members**:
     - `source_engine`: Stores the source database engine for asset copying.
     - `dest_engine`: Stores the destination database engine for asset copying.
     - `dry_run`: Indicates if the operation is a dry run without committing changes.
-- **Description**: Facilitates the bulk copying of CODEBASE primary assets and their related data from a source database to a destination database. It supports dry run operations and can skip copying embeddings if specified.
+- **Description**: Facilitates the copying of CODEBASE primary assets and their related data from a source database to a destination database, with an option for a dry run to simulate the process without actual data transfer.
 - **Methods**:
     - [`python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier.__init__`](<#bulkassetcopier__init__>)
     - [`python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier.copy_assets`](<#bulkassetcopiercopy_assets>)
@@ -49,24 +49,24 @@ The script defines a `BulkAssetCopier` class that handles the copying process. T
 
 ---
 #### BulkAssetCopier\.\_\_init\_\_<!-- {{#callable:python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier.__init__}} -->
-[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L34>)
+[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L33>)
 
-Initializes the `BulkAssetCopier` class with source and destination database engines and an optional dry run flag.
+Initializes a `BulkAssetCopier` instance with source and destination database engines and an optional dry run flag.
 - **Inputs**:
     - `source_engine`: The database engine for the source database from which assets will be copied.
     - `dest_engine`: The database engine for the destination database to which assets will be copied.
-    - `dry_run`: A boolean flag indicating whether to perform a dry run without committing changes; defaults to `False`.
+    - `dry_run`: A boolean flag indicating whether to perform a dry run without committing changes; defaults to False.
 - **Logic and Control Flow**:
-    - Assigns the `source_engine` parameter to the `self.source_engine` attribute.
-    - Assigns the `dest_engine` parameter to the `self.dest_engine` attribute.
-    - Assigns the `dry_run` parameter to the `self.dry_run` attribute.
-- **Output**: No output is returned; the method initializes the instance attributes.
+    - Assigns the `source_engine` parameter to the instance variable `self.source_engine`.
+    - Assigns the `dest_engine` parameter to the instance variable `self.dest_engine`.
+    - Assigns the `dry_run` parameter to the instance variable `self.dry_run`.
+- **Output**: No output; this is a constructor method that initializes instance variables.
 - **See also**: [`python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier`](<#bulkassetcopier>)  (Base Class)
 
 
 ---
 #### BulkAssetCopier\.copy\_assets<!-- {{#callable:python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier.copy_assets}} -->
-[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L39>)
+[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L38>)
 
 Copies CODEBASE primary assets and their related data to a different database instance.
 - **Inputs**:
@@ -82,9 +82,9 @@ Copies CODEBASE primary assets and their related data to a different database in
     - If the dry run flag is set, print a message and return True without copying data.
     - Open a session with the destination database engine.
     - Try to bulk insert the fetched data into the destination database, updating organization IDs and handling foreign key constraints.
-    - Commit the transaction if successful, print a success message, and return True.
     - If an exception occurs, print the error, rollback the transaction, and raise the exception.
-- **Output**: Returns a boolean indicating the success of the copy operation; True if successful, False otherwise.
+    - Commit the transaction if successful and return True.
+- **Output**: Returns a boolean indicating the success of the copy operation.
 - **See also**: [`python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier`](<#bulkassetcopier>)  (Base Class)
 
 
@@ -93,22 +93,21 @@ Copies CODEBASE primary assets and their related data to a different database in
 
 ---
 ### main<!-- {{#callable:python-backend/backend/scripts/copy_asset_bulk.main}} -->
-[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L266>)
+[View Source →](<../../../../backend/scripts/copy_asset_bulk.py#L265>)
 
-Parses command-line arguments and initiates the process to copy CODEBASE primary assets from a source database to a destination database.
+Parses command-line arguments and initiates the process to copy CODEBASE primary assets to another database.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Create an argument parser with a description of the operation.
-    - Add required command-line arguments: `--asset-ids`, `--destination-org-id`, `--skip-embeddings`, and `--dry-run`.
-    - Parse the command-line arguments into `args`.
-    - Retrieve `SOURCE_DATABASE_URL` and `DESTINATION_DATABASE_URL` from environment variables.
-    - Check if `source_db` and `dest_db` are set; if not, print an error message and return 1.
-    - Initialize an empty list `asset_ids` and convert each `asset_id_str` from `args.asset_ids` to a `UUID`, appending to `asset_ids`; if conversion fails, print an error and return 1.
-    - Create database engines `source_engine` and `dest_engine` using `create_engine` with `source_db` and `dest_db`.
-    - Instantiate [`BulkAssetCopier`](<#bulkassetcopier>) with `source_engine`, `dest_engine`, and `args.dry_run`.
-    - Call [`copy_assets`](<#bulkassetcopiercopy_assets>) method on `copier` with `asset_ids`, `args.destination_org_id`, and `args.skip_embeddings`.
-    - Return 0 if [`copy_assets`](<#bulkassetcopiercopy_assets>) is successful, otherwise return 1.
-- **Output**: Returns 0 if the asset copying process is successful, otherwise returns 1.
+    - Creates an argument parser with a description and adds arguments for asset IDs, destination organization ID, skip embeddings, and dry run options.
+    - Parses the command-line arguments using `parser.parse_args()`.
+    - Retrieves the source and destination database URLs from environment variables `SOURCE_DATABASE_URL` and `DESTINATION_DATABASE_URL`.
+    - Checks if the source and destination database URLs are available; if not, prints an error message and returns 1.
+    - Converts the asset IDs from strings to UUID objects, printing an error and returning 1 if any conversion fails.
+    - Creates database engine connections for the source and destination databases using `create_engine()`.
+    - Initializes a [`BulkAssetCopier`](<#bulkassetcopier>) object with the source and destination engines and the dry run option.
+    - Calls the [`copy_assets`](<#bulkassetcopiercopy_assets>) method of the [`BulkAssetCopier`](<#bulkassetcopier>) object with the parsed arguments.
+    - Returns 0 if the asset copying is successful, otherwise returns 1.
+- **Output**: Returns 0 if the asset copying is successful, otherwise returns 1.
 - **Functions Called**:
     - [`python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier`](<#bulkassetcopier>)
     - [`python-backend/backend/scripts/copy_asset_bulk.BulkAssetCopier.copy_assets`](<#bulkassetcopiercopy_assets>)

@@ -6,14 +6,14 @@
 Functions to convert between bytes and source lines of code (SLOC) using a conversion factor.
 
 # Purpose
-The code provides a narrow functionality for converting between bytes and source lines of code (SLOC). It defines a constant `CONVERSION_FACTOR` with a value of 50, which is used in two functions. The [`bytes_to_sloc`](<#bytes_to_sloc>) function takes an integer `bytes` as input and returns the equivalent SLOC by dividing the absolute value of `bytes` by `CONVERSION_FACTOR`. The [`sloc_to_bytes`](<#sloc_to_bytes>) function takes an integer `sloc` as input and returns the equivalent number of bytes by multiplying `sloc` by `CONVERSION_FACTOR`.
+The code provides a narrow functionality for converting between bytes and source lines of code (SLOC). It defines a constant `CONVERSION_FACTOR` with a value of 50, which is used in two functions. The [`bytes_to_sloc`](<#bytes_to_sloc>) function takes an integer `bytes` as input and returns the absolute value of `bytes` divided by `CONVERSION_FACTOR`, effectively converting bytes to SLOC. The [`sloc_to_bytes`](<#sloc_to_bytes>) function takes an integer `sloc` as input and returns the product of `sloc` and `CONVERSION_FACTOR`, converting SLOC back to bytes. This code is a simple utility for performing these specific conversions.
 # Global Variables
 
 ---
 ### CONVERSION\_FACTOR
 - **Type**: ``int``
 - **Description**: A constant integer value that represents the factor used to convert between bytes and source lines of code (SLOC).
-- **Use**: Used in conversion calculations between bytes and SLOC in the `bytes_to_sloc` and `sloc_to_bytes` functions.
+- **Use**: Used in conversion functions to calculate SLOC from bytes and vice versa.
 
 
 # Functions
@@ -26,8 +26,8 @@ Converts a given number of bytes to source lines of code (SLOC) using a predefin
 - **Inputs**:
     - `bytes`: An integer representing the number of bytes to convert to SLOC.
 - **Logic and Control Flow**:
-    - Calculate the absolute value of the input `bytes`.
-    - Divide the absolute value by the constant `CONVERSION_FACTOR` using integer division.
+    - Calculate the absolute value of the input `bytes` to ensure the conversion is non-negative.
+    - Divide the absolute value of `bytes` by the constant `CONVERSION_FACTOR` using integer division to obtain the SLOC equivalent.
 - **Output**: An integer representing the equivalent number of source lines of code (SLOC).
 
 

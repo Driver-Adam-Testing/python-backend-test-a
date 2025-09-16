@@ -6,9 +6,9 @@
 Defines authentication and permission dependencies for FastAPI routes using JWT and API key middleware.
 
 # Purpose
-This code defines authentication and authorization mechanisms for a FastAPI application. It imports several dependencies and middleware components related to API key and JWT (JSON Web Token) authentication. The code specifies user roles and permissions, such as `CONTENT_EDITOR`, `ORG_MANAGER`, and `GIT_PROVIDER_MANAGER`, which are used to enforce access control within the application. The [`require_permission`](<#require_permission>) function is a factory that creates dependencies to check if a user has the necessary permissions encoded in their JWT. If a user does not have the required permissions, the function raises an `HTTPException` with a 403 status code, indicating insufficient permissions.
+This code defines authentication and authorization mechanisms for a FastAPI application. It imports necessary modules and functions from FastAPI and custom middleware and models related to authentication, such as `require_api_key`, `require_jwt`, and `require_m2m_jwt`. The code uses these imports to create annotated types like `UserToken`, `ApiKeyToken`, and `M2MToken`, which are used to enforce authentication in route signatures by depending on the respective middleware functions.
 
-The code also defines type aliases using `Annotated` and `Depends` to simplify route signatures by associating user tokens with their respective authentication requirements. These aliases include `UserToken`, `ApiKeyToken`, and `M2MToken`, which correspond to different authentication methods. The code is structured to be part of a larger application, likely serving as a library file that provides authentication and authorization utilities to be imported and used in other parts of the application. The commented-out section suggests paths that do not require authentication, indicating areas of the application that are publicly accessible.
+The code also defines a function [`require_permission`](<#require_permission>), which is a factory function that returns a dependency to enforce specific permissions in JSON Web Tokens (JWT). This function checks if a given permission is present in the user's payload and raises an `HTTPException` if the permission is insufficient. The code then creates several permission dependencies, such as `ContentEditorPermission` and `OrgManagerPermission`, by calling [`require_permission`](<#require_permission>) with different permission constants. These dependencies can be used in route definitions to ensure that users have the necessary permissions to access certain endpoints.
 # Imports and Dependencies
 
 ---
@@ -36,65 +36,65 @@ The code also defines type aliases using `Annotated` and `Depends` to simplify r
 
 ---
 ### UserToken
-- **Type**: ``Annotated``
-- **Description**: `UserToken` is an `Annotated` type that combines the `User` model with a dependency on the `require_jwt` function. This setup ensures that any route using `UserToken` will require a valid JSON Web Token (JWT) for authentication.
-- **Use**: Used to enforce JWT-based authentication for routes that require a `User` object.
+- **Type**: ``Annotated[User, Depends(require_jwt)]``
+- **Description**: Represents a type annotation for a `User` object that is dependent on the `require_jwt` function. This setup is used to enforce JWT-based authentication for routes in a FastAPI application.
+- **Use**: Used as a type alias in route signatures to ensure that a valid JWT is required for accessing certain endpoints.
 
 
 ---
 ### ApiKeyToken
 - **Type**: ``Annotated``
-- **Description**: `ApiKeyToken` is an `Annotated` type that combines the `User` model with a dependency on the `require_api_key` function. This setup is used to enforce API key authentication for routes that require a user context.
-- **Use**: Used to enforce API key authentication by associating a `User` model with the `require_api_key` dependency in route signatures.
+- **Description**: Associates the `User` model with a dependency on the `require_api_key` function. This setup is used to enforce API key authentication for routes that require a `User` object.
+- **Use**: Used in FastAPI route signatures to ensure that the request includes a valid API key for user authentication.
 
 
 ---
 ### M2MToken
 - **Type**: ``Annotated``
-- **Description**: `M2MToken` is an annotated type that combines the `M2M` model with a dependency on the `require_m2m_jwt` function. This setup is used to enforce that a valid machine-to-machine JSON Web Token (JWT) is present when accessing certain routes or resources.
-- **Use**: Used to ensure that requests include a valid machine-to-machine JWT by integrating the `require_m2m_jwt` dependency.
+- **Description**: Represents a type annotation for the `M2M` model, combined with a dependency on the `require_m2m_jwt` function. This setup is used to enforce that a valid machine-to-machine JSON Web Token (JWT) is present when accessing certain routes or resources.
+- **Use**: Used to annotate route parameters in FastAPI to ensure that requests include a valid M2M JWT.
 
 
 ---
 ### ContentEditorPermission
-- **Type**: `Depends`
-- **Description**: `ContentEditorPermission` is a dependency that enforces the `CONTENT_EDITOR` permission in a JSON Web Token (JWT). It is created using the `Depends` function from FastAPI, which calls the `require_permission` function with `CONTENT_EDITOR` as an argument.
-- **Use**: Used to ensure that a user has the `CONTENT_EDITOR` permission when accessing certain routes in a FastAPI application.
+- **Type**: ``Depends``
+- **Description**: Represents a dependency that enforces the `CONTENT_EDITOR` permission in a JWT. It uses the `require_permission` function to create a callable that checks if the `CONTENT_EDITOR` permission is present in the user's JWT payload.
+- **Use**: Used to ensure that a user has the `CONTENT_EDITOR` permission before accessing certain routes or resources.
 
 
 ---
 ### ContentReadonlyPermission
 - **Type**: ``Depends``
 - **Description**: Represents a dependency that enforces the `CONTENT_READONLY` permission in JWT authentication. It uses the `require_permission` function to create a callable that checks if the `CONTENT_READONLY` permission is present in the user's JWT payload.
-- **Use**: Used to ensure that a user has the `CONTENT_READONLY` permission before accessing certain resources.
+- **Use**: Used to ensure that a user has the `CONTENT_READONLY` permission before accessing certain routes or resources.
 
 
 ---
 ### OrgManagerPermission
 - **Type**: `Depends`
-- **Description**: Represents a dependency that enforces the `ORG_MANAGER` permission in a JSON Web Token (JWT). It uses the `require_permission` function to create a callable that checks if the `ORG_MANAGER` permission is present in the user's JWT payload.
-- **Use**: Used to ensure that a user has the `ORG_MANAGER` permission before accessing certain routes or functionalities.
+- **Description**: Represents a dependency that enforces the 'ORG_MANAGER' permission in a JWT token. It uses the `require_permission` function to create a callable that checks if the 'ORG_MANAGER' permission is present in the user's permissions.
+- **Use**: Used to ensure that a user has the 'ORG_MANAGER' permission before accessing certain routes or functionalities.
 
 
 ---
 ### UsageCreditPermission
-- **Type**: `Depends`
-- **Description**: This variable is a dependency that enforces the `USAGE_CREDITOR` permission in a JSON Web Token (JWT). It is created using the `Depends` function from FastAPI, which integrates with the `require_permission` function to check if the `USAGE_CREDITOR` permission is present in the user's JWT payload.
-- **Use**: Used to ensure that a user has the `USAGE_CREDITOR` permission before accessing certain routes or functionalities in the application.
+- **Type**: ``Depends``
+- **Description**: The `UsageCreditPermission` variable is a dependency that enforces the `USAGE_CREDITOR` permission in JWT authentication. It is created using the `Depends` function from FastAPI, which calls the `require_permission` function with `USAGE_CREDITOR` as an argument.
+- **Use**: Used to ensure that a user has the `USAGE_CREDITOR` permission when accessing certain routes in a FastAPI application.
 
 
 ---
 ### SubscriptionManagerPermission
-- **Type**: `Depends`
-- **Description**: Represents a dependency that enforces the `SUBSCRIPTION_MANAGER` permission in a JWT. It uses the `require_permission` function to create a dependency that checks if the `SUBSCRIPTION_MANAGER` permission is present in the user's JWT payload.
-- **Use**: Used to ensure that a user has the `SUBSCRIPTION_MANAGER` permission before accessing certain routes or functionalities.
+- **Type**: ``Depends``
+- **Description**: Represents a dependency injection for a permission check in a FastAPI application. It uses the `require_permission` function to enforce that the `SUBSCRIPTION_MANAGER` permission is present in the JWT payload of a user.
+- **Use**: Used to ensure that a user has the `SUBSCRIPTION_MANAGER` permission when accessing certain routes in the application.
 
 
 ---
 ### GitProviderManagerPermission
-- **Type**: `Depends`
+- **Type**: ``Depends``
 - **Description**: Represents a dependency that enforces the `GIT_PROVIDER_MANAGER` permission in JWT authentication. It uses the `require_permission` function to create a callable that checks if the `GIT_PROVIDER_MANAGER` permission is present in the user's JWT payload.
-- **Use**: Used to ensure that a user has the `GIT_PROVIDER_MANAGER` permission when accessing certain routes or functionalities.
+- **Use**: Used to ensure that a user has the `GIT_PROVIDER_MANAGER` permission before accessing certain routes or functionalities.
 
 
 # Functions

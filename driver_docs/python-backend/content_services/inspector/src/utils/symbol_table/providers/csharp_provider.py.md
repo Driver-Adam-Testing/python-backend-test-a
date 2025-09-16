@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-CSharp language provider with methods to get a parser and resolver.
+CSharp language provider with methods to get a parser and resolver for CSharp symbols.
 
 # Purpose
-The `CSharpLanguageProvider` class extends the `LanguageProvider` class to support the C# programming language. It defines the `language` attribute as "csharp" and provides two class methods: [`get_parser`](<#csharplanguageproviderget_parser>) and [`get_resolver`](<#csharplanguageproviderget_resolver>). The [`get_parser`](<#csharplanguageproviderget_parser>) method returns an instance of `CSharpParser`, while the [`get_resolver`](<#csharplanguageproviderget_resolver>) method returns an instance of `CSharpResolver`. This code is part of a system that manages language-specific parsing and resolution, specifically for C#.
+The `CSharpLanguageProvider` class extends the `LanguageProvider` class to support the C# programming language. It specifies the language as "csharp" and provides two class methods, [`get_parser`](<#csharplanguageproviderget_parser>) and [`get_resolver`](<#csharplanguageproviderget_resolver>), which return instances of `CSharpParser` and `CSharpResolver`, respectively. This code is part of a system that likely deals with symbol table management or language processing, specifically for C#. The class methods facilitate the integration of C# parsing and resolution capabilities into a broader framework.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ The `CSharpLanguageProvider` class extends the `LanguageProvider` class to suppo
 
 - **Members**:
     - `language`: Specifies the programming language as 'csharp'.
-- **Description**: Provides language-specific functionality for C# by implementing methods to return a parser and a resolver for C# code.
+- **Description**: Provides language-specific functionality for C# by implementing methods to obtain a parser and a resolver for C# code.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_parser`](<#csharplanguageproviderget_parser>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_resolver`](<#csharplanguageproviderget_resolver>)

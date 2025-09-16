@@ -6,7 +6,7 @@
 Configures API routes for search, user, ping, and migrated studio endpoints using FastAPI.
 
 # Purpose
-This code defines an API router using FastAPI's `APIRouter` to organize and manage different API endpoints. It imports several route modules: `migrated_studio_endpoints`, `ping`, `search`, and `user` from the `app.api.routes.api` package. Each of these modules is included in the main `api_router` with specific URL prefixes and tags, which help categorize the endpoints. The `search` routes are accessible under the `/search` prefix, `migrated_studio_endpoints` under `/tmp`, `user` under `/user`, and `ping` under `/ping`. This setup allows for modular and organized routing of API requests within the application.
+This code defines an API router using FastAPI's `APIRouter` to organize and manage different API endpoints. It imports several route modules: `migrated_studio_endpoints`, `ping`, `search`, and `user` from the `app.api.routes.api` package. The `api_router` object includes these routers with specific URL prefixes and tags, which help categorize the endpoints. The `search` router is accessible under the `/search` prefix, `migrated_studio_endpoints` under `/tmp`, `user` under `/user`, and `ping` under `/ping`. This setup allows for modular and organized API endpoint management within a FastAPI application.
 # Imports and Dependencies
 
 ---

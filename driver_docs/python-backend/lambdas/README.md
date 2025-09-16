@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS Lambda function for handling and logging usage events with Pydantic configuration and Poetry.
+Configuration management, AWS Lambda event handling, usage event handling, and dependency management.
 
 ## Folders
-- **[metrics_handler](metrics_handler/README.md)**: AWS Lambda function for handling and logging usage events with Pydantic configuration and Poetry management.
+- **[metrics_handler](metrics_handler/README.md)**: Configuration management, AWS Lambda event handling, usage event handling, and dependency management.
 
 
 ---

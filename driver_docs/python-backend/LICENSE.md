@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-MIT License for the software, granting permission to use, copy, modify, and distribute.
+MIT License for the software, allowing free use, modification, and distribution.
 
 # Purpose
-The MIT License is a permissive free software license that allows users to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software. It requires that the copyright notice and permission notice are included in all copies or substantial portions of the software. The license disclaims any warranties, including those of merchantability, fitness for a particular purpose, and noninfringement. It also limits the liability of the authors or copyright holders for any claims, damages, or other liabilities that may arise from the use or distribution of the software.
+The MIT License is a permissive free software license that allows users to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software. It grants these rights without restriction, provided that the copyright notice and permission notice are included in all copies or substantial portions of the software. The license disclaims any warranties, including those of merchantability, fitness for a particular purpose, and noninfringement. It also limits the liability of the authors or copyright holders for any claims, damages, or other liabilities that may arise from the use or distribution of the software.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

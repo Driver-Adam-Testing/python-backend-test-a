@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Abstract base class for an agent with logging, message handling, and iteration capabilities.
+Abstract base class for an agent with logging, message handling, and iteration control.
 
 # Purpose
-The code defines an abstract base class `AgentBase` that serves as a framework for creating agent instances capable of executing iterative tasks. The class is designed to manage interactions with a model, track iterations, and log messages. It uses several imported modules and classes, such as `DataScope`, `LLMUsageSession`, and `ModelConfig`, to handle data scope, session management, and model configuration, respectively. The class constructor initializes various attributes, including the model, scope, tools, and logging options. It also manages the creation and retrieval of agent instances from a database using the `RuntimeLogAgentInstance` and `RuntimeLogAgentMessage` models.
+The code defines an abstract base class `AgentBase` that serves as a framework for creating agent instances capable of iterative processing and interaction. The class is designed to manage the lifecycle of an agent, including initialization, message handling, and iteration control. It uses several imported modules and classes, such as `DataScope`, `LLMUsageSession`, and `ModelConfig`, to define the agent's operational context and configuration. The class also integrates with a database to log agent instances and their messages, using `RuntimeLogAgentInstance` and `RuntimeLogAgentMessage` for persistence.
 
-The `AgentBase` class includes methods for adding messages and search results, printing messages, and managing iteration logic. It defines two abstract methods, [`_generate_response`](<#agentbase_generate_response>) and [`_execute_iteration`](<#agentbase_execute_iteration>), which must be implemented by subclasses to provide specific functionality. The [`invoke`](<#agentbaseinvoke>) method orchestrates the iterative process, handling prompts, executing iterations, and logging messages. The class is intended to be extended by other classes that implement the abstract methods, allowing for customized behavior while maintaining a consistent interface for agent operations.
+The `AgentBase` class includes methods for adding messages and search results, printing messages for debugging, and managing iteration through prompts. It defines two abstract methods, [`_generate_response`](<#agentbase_generate_response>) and [`_execute_iteration`](<#agentbase_execute_iteration>), which must be implemented by subclasses to provide specific functionality for generating responses and executing iterations. The [`invoke`](<#agentbaseinvoke>) method orchestrates the agent's operation by iterating through prompts and executing iterations until a valid response is generated or the maximum number of iterations is reached. This class is intended to be extended by other classes that implement the abstract methods to provide specific agent behaviors.
 # Imports and Dependencies
 
 ---
@@ -17,8 +17,8 @@ The `AgentBase` class includes methods for adding messages and search results, p
 - `abc.ABC`
 - `abc.abstractmethod`
 - `database.db.get_session`
-- `database.models_v1.RuntimeLogAgentInstance`
-- `database.models_v1.RuntimeLogAgentMessage`
+- `database.models.RuntimeLogAgentInstance`
+- `database.models.RuntimeLogAgentMessage`
 - `pydantic.BaseModel`
 - `shared.agent.models.llm_models.ModelConfig`
 - `shared.interfaces.agents.data_scope.DataScope`
@@ -43,13 +43,13 @@ The `AgentBase` class includes methods for adding messages and search results, p
     - `debug`: Indicates if debug mode is active.
     - `agent_id`: Stores the unique identifier for the agent instance.
     - `tools`: Holds a list of tools available to the agent.
-    - `max_iterations`: Sets the maximum number of iterations allowed.
+    - `max_iterations`: Specifies the maximum number of iterations allowed.
     - `iteration`: Tracks the current iteration count.
     - `messages`: Contains a list of messages processed by the agent.
-    - `search_results`: Stores search results obtained by the agent.
+    - `search_results`: Stores search results obtained during execution.
     - `response_format`: Defines the format for the agent's response.
-    - `llm_usage_session`: Represents the session for LLM usage.
-- **Description**: Defines an abstract base class for agents that interact with models and manage iterations, logging, and message handling. It requires subclasses to implement methods for generating responses and executing iterations. The class manages agent state, including model configuration, message history, and search results, and supports logging and debugging functionalities.
+    - `llm_usage_session`: Holds the session information for LLM usage.
+- **Description**: Represents an abstract base class for agents that interact with models and execute iterations. It manages logging, message handling, and iteration control. The class requires subclasses to implement the `_generate_response` and `_execute_iteration` methods. It also supports logging of agent messages and search results, and can format responses based on a specified type.
 - **Methods**:
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__`](<#agentbase__init__>)
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.model_config`](<#agentbasemodel_config>)
@@ -69,28 +69,27 @@ The `AgentBase` class includes methods for adding messages and search results, p
 #### AgentBase\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__}} -->
 [View Source →](<../../../../../../packages/shared/shared/agent/agent_base.py#L22>)
 
-Initializes an instance of the `AgentBase` class with configuration parameters and sets up logging and message handling.
+Initializes an instance of the `AgentBase` class with specified parameters and sets up logging and message handling.
 - **Inputs**:
     - `model`: A string representing the model name.
-    - `scope`: An instance of `DataScope` defining the data access scope.
+    - `scope`: An instance of `DataScope` defining the data scope.
     - `tools`: A list of tools or `None`, defaulting to an empty list if not provided.
-    - `max_iterations`: An integer specifying the maximum number of iterations allowed, defaulting to 1.
-    - `agent_id`: A UUID representing the agent's unique identifier or `None`.
-    - `response_format`: A type for formatting responses or `None`.
+    - `max_iterations`: An integer specifying the maximum number of iterations, defaulting to 1.
+    - `agent_id`: A UUID for the agent or `None`, used to identify the agent instance.
+    - `response_format`: A type for the response format or `None`, used to format the response.
     - `log`: A boolean indicating whether to enable logging, defaulting to `True`.
     - `debug`: A boolean indicating whether to enable debug mode, defaulting to `True`.
-    - `llm_usage_session`: An instance of `LLMUsageSession` or `None`.
+    - `llm_usage_session`: An instance of `LLMUsageSession` or `None`, used for tracking LLM usage.
 - **Logic and Control Flow**:
-    - Assigns input parameters to instance variables.
-    - Initializes `tools` to an empty list if not provided.
-    - Sets `iteration`, `messages`, and `search_results` to initial values.
-    - Checks if `agent_id` is provided; if so, retrieves and adds messages from the database.
-    - If `agent_id` is not provided and logging is enabled, creates a new [`RuntimeLogAgentInstance`](<../../../../driver_db/database/models_v1.py.md#runtimelogagentinstance>) in the database and assigns its ID to `agent_id`.
+    - Assigns input parameters to instance variables, initializing `tools` to an empty list if `None` is provided.
+    - Initializes `iteration`, `messages`, and `search_results` as empty lists or zero.
+    - Checks if `agent_id` is provided; if so, retrieves the corresponding [`RuntimeLogAgentInstance`](<../../../../driver_db/database/models.py.md#runtimelogagentinstance>) and adds its messages to the instance.
+    - If `agent_id` is not provided and logging is enabled, creates a new [`RuntimeLogAgentInstance`](<../../../../driver_db/database/models.py.md#runtimelogagentinstance>), adds it to the session, commits, and refreshes to obtain the new `agent_id`.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<#agentbaseadd_message>)
-    - [`python-backend/driver_db/database/models_v1.RuntimeLogAgentInstance`](<../../../../driver_db/database/models_v1.py.md#runtimelogagentinstance>)
+    - [`python-backend/driver_db/database/models.RuntimeLogAgentInstance`](<../../../../driver_db/database/models.py.md#runtimelogagentinstance>)
 - **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#agentbase>)  (Base Class)
 
 
@@ -103,8 +102,8 @@ Provides access to the model configuration based on the model name.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the [`from_name`](<models/llm_models.py.md#modelconfigfrom_name>) method of the `ModelConfig` class with `self.model` as the argument.
-    - Returns the result of the `ModelConfig.from_name(self.model)` call.
-- **Output**: An instance of `ModelConfig` corresponding to the model name.
+    - Returns the `ModelConfig` object obtained from the [`from_name`](<models/llm_models.py.md#modelconfigfrom_name>) method.
+- **Output**: A `ModelConfig` object corresponding to the model name.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<models/llm_models.py.md#modelconfigfrom_name>)
 - **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#agentbase>)  (Base Class)
@@ -131,10 +130,10 @@ Adds a message to the agent's message list, converting it to a dictionary if nec
 - **Inputs**:
     - `message`: The message to add, which can be a string or an object with a 'to_dict' method.
 - **Logic and Control Flow**:
-    - Checks if 'message' is a string; if so, converts it to a dictionary with 'role' as 'user' and 'content' as the message.
-    - Checks if 'message' has a 'to_dict' method and if it is callable; if so, converts 'message' to a dictionary using this method.
-    - Appends the processed message to the 'messages' list.
-    - If 'debug' is True, calls '_print_agent_message' to print the message.
+    - Check if 'message' is a string; if true, convert it to a dictionary with 'role' as 'user' and 'content' as the message.
+    - Check if 'message' has a 'to_dict' method and is callable; if true, convert 'message' to a dictionary using this method.
+    - Append the 'message' to the 'messages' list.
+    - If 'debug' is true, call '_print_agent_message' to print the message.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._print_agent_message`](<#agentbase_print_agent_message>)
@@ -163,12 +162,12 @@ Prints a given message using the [`print_dict`](<../utils/bcolors.py.md#print_di
 Increments the iteration counter and adds a message based on the current iteration state.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Increments the `iteration` attribute by 1.
-    - Checks if `max_iterations` is greater than 1 to determine if messages should be added.
-    - If `iteration` is 1, adds a message formatted with `PROMPT_FIRST_ITERATION`.
-    - If `iteration` is less than `max_iterations`, adds a message formatted with `PROMPT_MIDDLE_ITERATION`.
-    - If `iteration` equals `max_iterations`, adds a message with `PROMPT_FINAL_ITERATION`.
-    - Returns `True` if `iteration` is less than or equal to `max_iterations`, otherwise returns `False`.
+    - Increment the `iteration` attribute by 1.
+    - Check if `max_iterations` is greater than 1.
+    - If `iteration` is 1, add a message using `PROMPT_FIRST_ITERATION` with the remaining iterations.
+    - If `iteration` is less than `max_iterations`, add a message using `PROMPT_MIDDLE_ITERATION` with the remaining iterations.
+    - If `iteration` equals `max_iterations`, add a message using `PROMPT_FINAL_ITERATION`.
+    - Return `True` if `iteration` is less than or equal to `max_iterations`, otherwise return `False`.
 - **Output**: Returns a boolean indicating whether the current iteration is within the allowed maximum iterations.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<#agentbaseadd_message>)
@@ -179,13 +178,13 @@ Increments the iteration counter and adds a message based on the current iterati
 #### AgentBase\.\_generate\_response<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_base.AgentBase._generate_response}} -->
 [View Source →](<../../../../../../packages/shared/shared/agent/agent_base.py#L112>)
 
-Defines an abstract method to generate a response based on provided completion arguments.
+Defines an abstract method to generate a response based on given completion arguments.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `completion_kwargs`: A dictionary containing keyword arguments necessary for generating a response.
+    - `completion_kwargs`: A dictionary containing the arguments necessary for generating a response.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError to enforce implementation in subclasses.
-- **Output**: Any type, as determined by the implementation in a subclass.
+- **Output**: Any type of response generated by the implemented method in a subclass.
 - **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#agentbase>)  (Base Class)
 
 
@@ -193,7 +192,7 @@ Defines an abstract method to generate a response based on provided completion a
 #### AgentBase\.\_execute\_iteration<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_base.AgentBase._execute_iteration}} -->
 [View Source →](<../../../../../../packages/shared/shared/agent/agent_base.py#L116>)
 
-Defines an abstract method for executing a single iteration of an agent's process.
+Defines an abstract method for executing an iteration in an agent-based system.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
@@ -206,27 +205,27 @@ Defines an abstract method for executing a single iteration of an agent's proces
 #### AgentBase\.invoke<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke}} -->
 [View Source →](<../../../../../../packages/shared/shared/agent/agent_base.py#L120>)
 
-Executes a series of iterations to generate a response based on a given prompt, logging messages if enabled, and returns the formatted response or raises an error if no valid response is produced.
+Executes a series of iterations to generate a response based on a given prompt, with optional logging and response formatting.
 - **Inputs**:
-    - `prompt`: An optional string input that represents the user's message to be processed.
+    - `prompt`: An optional string input that represents the user's message to the agent.
 - **Logic and Control Flow**:
-    - Initialize the iteration counter to 0.
+    - Initialize the iteration counter to zero.
     - If a prompt is provided, add it as a message with the role 'user'.
-    - Enter a loop that continues while [`_increment_iterator_message`](<#agentbase_increment_iterator_message>) returns True.
+    - Enter a loop that continues while [`_increment_iterator_message`](<#agentbase_increment_iterator_message>) returns `True`.
     - In each iteration, call [`_execute_iteration`](<#agentbase_execute_iteration>) to get a response.
-    - If a response is obtained, check if `response_format` is defined.
+    - If a response is received, check if `response_format` is defined.
     - If `response_format` is defined, parse the response using `json.loads` and apply the format; otherwise, use the raw response.
-    - If logging is enabled, log each message in `self.messages` to the database using [`RuntimeLogAgentMessage`](<../../../../driver_db/database/models_v1.py.md#runtimelogagentmessage>).
+    - If logging is enabled, log each message in `self.messages` to the database using [`RuntimeLogAgentMessage`](<../../../../driver_db/database/models.py.md#runtimelogagentmessage>).
     - Commit the session to save the logs.
-    - Return the final response if a valid response is obtained.
-    - If the loop completes without returning a response, raise a `RuntimeError` indicating failure to produce a valid response.
-- **Output**: Returns a formatted response as a string or `BaseModel`, or raises a `RuntimeError` if no valid response is produced within the allowed iterations.
+    - Return the final response if a valid response is generated.
+    - Raise a `RuntimeError` if no valid response is produced within the allowed iterations.
+- **Output**: Returns a formatted response as a string or a `BaseModel` instance, or raises a `RuntimeError` if no valid response is generated.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<#agentbaseadd_message>)
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._increment_iterator_message`](<#agentbase_increment_iterator_message>)
     - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._execute_iteration`](<#agentbase_execute_iteration>)
     - [`python-backend/driver_db/database/db.get_session`](<../../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/driver_db/database/models_v1.RuntimeLogAgentMessage`](<../../../../driver_db/database/models_v1.py.md#runtimelogagentmessage>)
+    - [`python-backend/driver_db/database/models.RuntimeLogAgentMessage`](<../../../../driver_db/database/models.py.md#runtimelogagentmessage>)
 - **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#agentbase>)  (Base Class)
 
 

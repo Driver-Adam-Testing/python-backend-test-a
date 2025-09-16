@@ -16,10 +16,10 @@ There are two major categories of tools in the Driver MCP service:
 2. Granular Navigational Tools: More granular and structured tools to aid in navigation, discovery, and surface lower-level documentation.
 
 ## Deep Context Tools
-These are static documents (typically 1 -- 2 pages in length) that provide dense and complete compilations of critical information. Use and read these documents at the beginning of your workflows to immediately get critical context and best plan your next steps given holistic and exhauxtive context. At the beginning of a session, always read each of the deep context documents to get oriented with the codebase well for all future tasks.
+These are static documents (typically 1 -- 2 pages in length) that provide dense and complete compilations of critical information. Use and read these documents at the beginning of your workflows to immediately get critical context and best plan your next steps given holistic and exhaustive context. At the beginning of a session, always read each of the deep context documents to get oriented with the codebase well for all future tasks.
 
 ### get_architecture_guide
-- **Purpose**: Returns a single page document describing, exhuastively and densely, the architecture of the whole codebase, optimized to inform an LLM agent.
+- **Purpose**: Returns a single page document describing, exhaustively and densely, the architecture of the whole codebase, optimized to inform an LLM agent.
 - **When to Use**: At the beginning of a workflow triggered by user input, **especially** if the user's query/input/task requires broad or holistic architecture knowledge.
 
 ### get_llm_onboarding_guide
@@ -30,7 +30,7 @@ These are static documents (typically 1 -- 2 pages in length) that provide dense
 - **Purpose**: Returns a single page document with an exhaustive change log, broken down by year and month, describing the development process for this codebase over time. This can provide rich information about major feature development and intent -- "the why" -- for components of the codebase that are not possible to understand looking at any single state/snapshot of the codebase.
 - **When to Use**: At the beginning of a workflow triggered by user input in which information about the historical development of the codebase could be useful. Examples include if the user is asking you to think about how a new feature should be implemented or extended or refactored. By consulting the change log and historical development first, you will be much better positioned to reason about these kind of tasks.
 
-## Grangular Navigation Tools
+## Granular Navigation Tools
 
 ### get_code_map
 - **Purpose**: A navigable tree structure for the codebase queryable at any place in the directory structure that will return terse descriptions and metadata for that node and children up to a specified depth.

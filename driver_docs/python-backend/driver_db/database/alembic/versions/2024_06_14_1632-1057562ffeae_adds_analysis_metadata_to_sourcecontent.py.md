@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add and remove the `analysis_metadata` column in `source_contents`.
+Alembic migration script to add and remove the 'analysis_metadata' column in 'source_contents'.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `analysis_metadata` of type `JSONB` to the `source_contents` table, allowing for the storage of JSON data. The [`downgrade`](<#downgrade>) function removes this column, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function. The script includes revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `analysis_metadata` of type `JSONB` to the `source_contents` table, allowing for the storage of JSON data. The [`downgrade`](<#downgrade>) function removes the `analysis_metadata` column from the same table, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -21,15 +21,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific version of the database schema that this migration script represents.
+- **Use**: Used by Alembic to identify the current migration version.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
-- **Use**: Used by Alembic to determine the order of database migrations.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring a sequential order of migrations.
+- **Use**: Used by Alembic to track the order of database schema migrations.
 
 
 ---
@@ -52,12 +52,13 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_06_14_1632-1057562ffeae_adds_analysis_metadata_to_sourcecontent.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_06_14_1632-1057562ffeae_adds_analysis_metadata_to_sourcecontent.py#L20>)
 
-Adds a new column named `analysis_metadata` of type JSONB to the `source_contents` table.
+Adds a new column named `analysis_metadata` to the `source_contents` table in the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Uses the `op.add_column` function to add a new column to the `source_contents` table.
-    - Defines the new column `analysis_metadata` with type `postgresql.JSONB` and allows it to be nullable.
-- **Output**: No output is returned.
+    - Uses the `op.add_column` function from Alembic to add a new column to the `source_contents` table.
+    - Defines the new column `analysis_metadata` with the type `postgresql.JSONB`, allowing for JSON data storage.
+    - Sets the `analysis_metadata` column to be nullable, meaning it can contain NULL values.
+- **Output**: No return value; modifies the database schema by adding a column.
 
 
 ---

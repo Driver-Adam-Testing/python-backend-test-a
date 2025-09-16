@@ -6,7 +6,7 @@
 Instructions for writing a single sentence description of a codebase using detailed module descriptions.
 
 # Purpose
-The configuration file defines the structure and organization of a software codebase by providing detailed descriptions of its modules, including files and folders. Each file and folder is identified by its name and path, followed by a description that explains its purpose and functionality within the codebase. This metadata helps developers understand the role of each component, facilitating easier navigation and maintenance of the codebase. By outlining the relationships and dependencies between different parts of the software, the configuration file serves as a guide for developers to efficiently manage and modify the codebase.
+The configuration file defines the settings and parameters necessary for the software to function correctly. It specifies key-value pairs that configure various aspects of the application, such as database connections, API endpoints, and authentication credentials. The file may also include environment-specific configurations to ensure the software operates as intended in different deployment scenarios. By centralizing these settings, the file allows for easy updates and maintenance without altering the core application code.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,18 +6,19 @@
 API routes for creating, retrieving, and deleting API keys with user authentication and query utilities.
 
 # Purpose
-The code defines a set of API endpoints for managing API keys using the FastAPI framework. It includes three main operations: creating, retrieving, and deleting API keys. The [`create_api_key`](<#create_api_key>) function allows the creation of a new API key associated with a user's organization and user ID. The [`get_api_keys`](<#get_api_keys>) function retrieves a list of API keys for the authenticated user, with support for filtering and sorting through query parameters. The [`delete_api_key`](<#delete_api_key>) function removes an API key specified by its UUID, ensuring that the key belongs to the authenticated user.
+The code defines a set of API endpoints for managing API keys using the FastAPI framework. It includes three main operations: creating, retrieving, and deleting API keys. The [`create_api_key`](<#create_api_key>) function allows users to generate a new API key associated with their user and organization IDs. The [`get_api_keys`](<#get_api_keys>) function retrieves a list of API keys for the authenticated user, applying optional filters and sorting based on query parameters. It returns the results along with the total count of API keys. The [`delete_api_key`](<#delete_api_key>) function enables users to delete a specific API key by its UUID, ensuring that the key belongs to the requesting user and organization.
 
-The code uses several components to achieve its functionality. It imports models and utilities for database operations, such as `ApiKey` and `select`, and uses FastAPI's `APIRouter` to define the routes. The `UserToken` is used for authentication, ensuring that operations are performed in the context of the authenticated user. The code also utilizes pagination and query utilities to manage large datasets efficiently. The endpoints are designed to be part of a larger application, as indicated by the use of `CurrentSession` for database interactions and the structured routing provided by FastAPI.
+The code uses several imported components to facilitate these operations. It leverages `CurrentSession` for database interactions and `UserToken` for user authentication. The `Pagination`, `apply_filters_to_query`, and `apply_sorting_to_query` utilities are used to manage query parameters and results. The `ApiKey` model represents the API key data structure, and the `ListWithCount` schema is used to format the response for the list of API keys. The `APIRouter` from FastAPI is used to define and organize the API routes.
 # Imports and Dependencies
 
 ---
 - `uuid.UUID`
-- `database.models_v2.ApiKey`
+- `database.models.ApiKey`
 - `fastapi.APIRouter`
 - `fastapi.HTTPException`
 - `fastapi.Path`
 - `fastapi.Request`
+- `sqlmodel.func`
 - `sqlmodel.select`
 - `app.api.auth.UserToken`
 - `app.api.routes.v2.query_utils.Pagination`
@@ -32,8 +33,8 @@ The code uses several components to achieve its functionality. It imports models
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: Defines a router instance for handling API routes in a FastAPI application. It is used to register and manage the API endpoints defined in the module.
-- **Use**: Used to organize and manage the API routes for creating, retrieving, and deleting API keys.
+- **Description**: Provides a routing mechanism for defining API endpoints in a FastAPI application. It allows the organization of routes and their associated request handlers.
+- **Use**: Used to define and manage API routes for creating, retrieving, and deleting API keys.
 
 
 # Functions
@@ -46,58 +47,61 @@ Creates a new API key for a user and commits it to the database.
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `session`: The current database session used to interact with the database.
-    - `user`: The user token containing user information, including organization and user IDs.
+    - `user`: The user token containing user and organization identifiers.
 - **Logic and Control Flow**:
-    - Prints the user information to the console for debugging or logging purposes.
-    - Creates a new [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance using the `organization_id` and `user_id` from the `user` token.
-    - Adds the new [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance to the database session.
-    - Commits the current transaction to save the new API key to the database.
-    - Refreshes the `api_key` instance to ensure it has the latest data from the database.
-    - Returns the newly created [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance.
-- **Output**: An [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance representing the newly created API key.
+    - Create a new [`ApiKey`](<../../../../../driver_db/database/models.py.md#apikey>) instance with the `organization_id` and `user_id` from the `user` token.
+    - Add the new [`ApiKey`](<../../../../../driver_db/database/models.py.md#apikey>) instance to the `session`.
+    - Commit the transaction to save the new API key to the database.
+    - Refresh the `api_key` instance to reflect the latest state from the database.
+- **Output**: Returns the newly created [`ApiKey`](<../../../../../driver_db/database/models.py.md#apikey>) instance.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>)
+    - [`python-backend/driver_db/database/models.ApiKey`](<../../../../../driver_db/database/models.py.md#apikey>)
 
 
 ---
 ### get\_api\_keys<!-- {{#callable:python-backend/backend/app/api/routes/v2/api_key.get_api_keys}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/api_key.py#L35>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/api_key.py#L34>)
 
-Retrieves a list of API keys for a specific user with optional filtering and sorting.
+Retrieves a list of API keys for a user, applies filters and sorting, and returns the results with a total count.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: The current database session used to execute queries.
-    - `user`: The user token containing user information, specifically the user ID.
-    - `pagination`: The pagination object that contains sorting and pagination details.
+    - `user`: The user token containing user and organization identifiers.
+    - `pagination`: The pagination object that specifies sorting and pagination details.
     - `request`: The HTTP request object containing query parameters for filtering.
 - **Logic and Control Flow**:
-    - Selects API keys from the database where the `user_id` matches the `user.user_id`.
+    - Selects API keys from the database where the user ID and organization ID match those in the user token.
     - Converts query parameters from the request into a dictionary of filters.
-    - Applies these filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
-    - Applies sorting to the query using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>) based on the pagination object.
-    - Executes the query using the session and retrieves all matching API keys.
-- **Output**: A list of API keys that match the specified user and any applied filters and sorting.
+    - Applies these filters to the query using the [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>) function.
+    - Creates a count query to determine the total number of API keys that match the filters.
+    - Executes the count query to get the total count of matching API keys.
+    - Applies sorting to the query using the [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>) function based on pagination details.
+    - Executes the query to retrieve all matching API keys.
+    - Obfuscates the API key values by replacing the middle part with dots, keeping only the last three characters visible.
+    - Returns a [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of API keys and the total count.
+- **Output**: A [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of API keys and the total count of matching API keys.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#listwithcount>)
 
 
 ---
 ### delete\_api\_key<!-- {{#callable:python-backend/backend/app/api/routes/v2/api_key.delete_api_key}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/api_key.py#L50>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/api_key.py#L60>)
 
-Deletes an API key for a specific user if it exists.
+Deletes an API key from the database if it exists and belongs to the authenticated user and organization.
 - **Decorators**: `@router.delete`
 - **Inputs**:
     - `session`: The current database session used to execute queries.
-    - `user`: The user token containing user information, including the user ID.
+    - `user`: The authenticated user token containing user and organization identifiers.
     - `api_key_id`: The UUID of the API key to delete, provided as a path parameter.
 - **Logic and Control Flow**:
-    - Selects the `ApiKey` from the database where the `id` matches `api_key_id` and `user_id` matches the user's ID.
+    - Selects the `ApiKey` from the database where the `id` matches `api_key_id`, and the `user_id` and `organization_id` match those of the authenticated user.
     - Checks if the `api_key` exists; if not, raises an `HTTPException` with a 404 status code indicating the API key is not found.
     - Deletes the `api_key` from the session if it exists.
-    - Commits the transaction to the database to persist the deletion.
-- **Output**: Returns `None` after deleting the API key or raising an exception if the key is not found.
+    - Commits the transaction to persist the deletion in the database.
+- **Output**: Returns `None` after attempting to delete the API key.
 
 
 

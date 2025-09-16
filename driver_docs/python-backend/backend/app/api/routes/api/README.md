@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-FastAPI endpoints for health checks, chat streaming, assets, ping, search, and user info.
+API routes for health check, user info, chat streaming, assets, search, and Auth0 authentication.
 
 
 ## Files
-- **[healthcheck.py](healthcheck.py.md)**: Defines health check and user info endpoints using FastAPI.
-- **[migrated_studio_endpoints.py](migrated_studio_endpoints.py.md)**: Defines FastAPI endpoints for chat streaming, primary assets, contents, codebase tree, and document sets.
+- **[healthcheck.py](healthcheck.py.md)**: Defines API routes for health check and user information retrieval using FastAPI.
+- **[migrated_studio_endpoints.py](migrated_studio_endpoints.py.md)**: Defines API endpoints for chat streaming, primary assets, contents, codebase tree, and document sets.
 - **[ping.py](ping.py.md)**: Defines a FastAPI route for a ping endpoint that returns the user ID from an API key token.
 - **[search.py](search.py.md)**: Defines an API endpoint for executing a hybrid search using node IDs or relative paths.
-- **[user.py](user.py.md)**: Defines API routes for retrieving user profile and organization information using Auth0.
+- **[user.py](user.py.md)**: Defines API routes for retrieving user and organization information using Auth0 authentication.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,21 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-FastAPI and GraphQL APIs, scripts for various operations, Docker and Git ignore files, dependency management, and test scripts.
+API routes, authentication, configuration, Git tools, scripts for database and S3, Docker and Git ignore files, dependency management, shell scripts for startup and testing, and FastAPI setup.
 
 ## Folders
-- **[app](app/README.md)**: FastAPI and GraphQL APIs, authentication, configuration, Git provider management, repositories, schemas, services, tests, utilities, and database initialization.
-- **[scripts](scripts/README.md)**: Scripts for asset copying, database migration, server configuration, linting, S3 operations, app startup, and testing.
+- **[app](app/README.md)**: API routes, authentication, configuration, Git provider tools, repository management, Pydantic models, services, tests, utilities, and FastAPI setup.
+- **[scripts](scripts/README.md)**: Scripts for database and S3 operations, server configuration, linting, app startup, and testing.
 
 ## Files
 - **[.dockerignore](.dockerignore.md)**: Specifies files and directories for Docker to ignore in the Python backend project.
 - **[.gitignore](.gitignore.md)**: Specifies files and directories for Git to ignore in the Python backend project.
-- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
-- **[prestart.sh](prestart.sh.md)**: A shell script to start the database, run migrations, and create initial data.
+- **[poetry.lock](poetry.lock.md)**: Manages Python project dependencies with locked versions, package details, and integrity checks.
+- **[prestart.sh](prestart.sh.md)**: Shell script to start the database, run migrations, and create initial data.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies, build system, and testing tools.
 - **[README.md](README.md.md)**: Instructions for setting up and developing a FastAPI backend using Docker, Poetry, and VS Code, including testing and database migrations.
 - **[tests-start.sh](tests-start.sh.md)**: Shell script to run pre-start tests and execute the main test script with arguments.
-- **[tst.py](tst.py.md)**: Tests for `LlmConfig` methods including `default` and `from_name` with valid and invalid inputs.
+- **[tst.py](tst.py.md)**: Tests for `LlmConfig` methods, including default and `from_name` with valid and invalid model names.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

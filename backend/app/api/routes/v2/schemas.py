@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from database.models_v2_enums import (
+from database.models_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,
@@ -182,6 +182,7 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
         creator: UserRead | None
 
     most_recent_version: PrimaryAssetVersionRead | None
+    most_recent_completed_version: PrimaryAssetVersionRead | None
     tags: list[TagRead] | None
     codebase_settings_auto_commit_docs: bool | None = None
 

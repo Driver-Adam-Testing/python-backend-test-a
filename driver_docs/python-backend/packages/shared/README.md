@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, performance testing tools, Docker ignore rules, dependency lock file, and Python package configuration.
+Functions, classes, and tools for agent creation, billing, text processing, file storage, and usage management.
 
 ## Folders
-- **[shared](shared/README.md)**: Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, and performance testing tools.
+- **[shared](shared/README.md)**: Functions, classes, and tools for agent creation, billing, text processing, file storage, and usage management.
 
 ## Files
-- **[.dockerignore](.dockerignore.md)**: Specifies files and directories to ignore in Docker builds, specifically the `.venv` directory.
+- **[.dockerignore](.dockerignore.md)**: Specifies files and directories to ignore in Docker builds, including the `.venv` directory.
 - **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python package using Poetry, specifying dependencies and build system details.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).

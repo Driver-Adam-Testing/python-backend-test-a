@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines templates for inspecting small Rust source code, focusing on imports, variables, macros, traits, data structures, and functions.
+Templates for generating structured prompts and analyzing Rust code components like functions and macros.
 
 # Purpose
-This code defines a configuration for processing and analyzing Rust source code. It imports various components and utilities from different modules to facilitate structured prompting and language specialization. The `SOURCE_CODE_SMALL_TEMPLATE_RUST` list contains tuples that define different sections for analyzing Rust code, such as imports, global variables, macros, traits, data structures, and functions. Each tuple specifies a section title, a method for static analysis, a method for processing with a language model, and an optional transformation function. This setup is used to generate structured prompts and analyze Rust code components systematically.
+The code is a configuration file that defines a template for processing Rust source code. It imports various components and utilities from different modules to facilitate structured prompting and analysis of Rust code. The `SOURCE_CODE_SMALL_TEMPLATE_RUST` list contains tuples that specify different sections of the template, such as purpose, imports and dependencies, global variables, macros, traits, data structures, and functions. Each section uses specific components and instructions to generate prompts or perform static analysis, enabling the extraction and organization of information from Rust source code. This setup is useful for creating structured documentation or analysis reports for Rust projects.
 # Imports and Dependencies
 
 ---
@@ -35,9 +35,9 @@ This code defines a configuration for processing and analyzing Rust source code.
 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_RUST
-- **Type**: `list`
-- **Description**: A list of tuples, where each tuple contains a condition type, a description string, a function or method for processing, and optional additional parameters. The list is used to define a template for processing Rust source code in a structured manner.
-- **Use**: Used to define and organize the processing of different components of Rust source code, such as imports, global variables, macros, traits, data structures, and functions.
+- **Type**: ``list``
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_RUST` is a list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to Rust code analysis and generation. These components include prompts, instructions, and functions for checking imports, analyzing global variables, macros, traits, data structures, and functions in Rust code.
+- **Use**: Used to define a structured template for processing and analyzing Rust source code with specific instructions and components.
 
 
 

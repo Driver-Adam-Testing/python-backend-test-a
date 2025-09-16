@@ -6,7 +6,7 @@
 Dockerfile for setting up a Python backend environment with Poetry and start scripts.
 
 # Purpose
-The Dockerfile defines the environment and steps to build a Docker image for a Python application. It starts from a base image `python:3.12-slim` and sets the working directory to `/app/`. The file installs necessary system packages and the Poetry tool for managing Python dependencies. It configures Poetry to install dependencies directly into the system environment instead of creating virtual environments. The file copies application code and configuration files into the image, installs dependencies based on the `INSTALL_DEV` argument, and sets up executable scripts for starting the application. Finally, it cleans up unnecessary packages to reduce the image size and specifies the command to run the application, choosing between development and production start scripts based on the `INSTALL_DEV` argument.
+The Dockerfile defines the steps to create a Docker image for a Python application. It starts from a base image `python:3.12-slim` and sets the working directory to `/app/`. The file installs necessary system packages and the Poetry tool for dependency management, configuring it to avoid creating virtual environments. It copies application components, including the `driver_db` package, `pyproject.toml`, and `poetry.lock` files, to optimize caching. The file sets environment variables for the Python path and Git information, and it includes conditional logic to install dependencies and execute start scripts based on the `INSTALL_DEV` argument. The final command determines which start script to run, depending on whether the development mode is enabled.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

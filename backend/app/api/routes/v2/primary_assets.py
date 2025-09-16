@@ -4,13 +4,20 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from database.models_v1 import DerivedContent, InspectorRun
-from database.models_v2 import Node, PrimaryAsset, PrimaryAssetTag, Version
-from database.models_v2_enums import (
+from database.models import (
+    DerivedContent,
+    InspectorRun,
+    Node,
+    PrimaryAsset,
+    PrimaryAssetTag,
+    Version,
+)
+from database.models_enums import (
     ContentKind,
     PrimaryAssetKind,
     PrimaryAssetProvider,
     VcsAutoUpdatePolicy,
+    VersionStatus,
 )
 from fastapi import Body, HTTPException, Path, Request
 from sqlalchemy.orm import selectinload, with_loader_criteria
@@ -65,6 +72,16 @@ def _list_primary_assets(
                 Version.creator
             ),
             selectinload(PrimaryAsset.most_recent_version)
+            .selectinload(Version.root_node)
+            .selectinload(Node.contents),
+            selectinload(PrimaryAsset.most_recent_completed_version),
+            selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
+                Version.root_node
+            ),
+            selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
+                Version.creator
+            ),
+            selectinload(PrimaryAsset.most_recent_completed_version)
             .selectinload(Version.root_node)
             .selectinload(Node.contents),
             with_loader_criteria(

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines and loads Git provider configuration for applications with computed authorization and access URLs.
+Defines and loads Git provider configurations using Pydantic models and application-specific logic.
 
 
 ## Files
-- **[config.py](config.py.md)**: Defines a Pydantic model for Git provider configuration with computed URLs for authorization and access.
-- **[config_loader.py](config_loader.py.md)**: Loads configuration for Git provider applications based on their kind and optional client secret.
+- **[config.py](config.py.md)**: Defines a Pydantic model for Git provider configuration with computed URL properties.
+- **[config_loader.py](config_loader.py.md)**: Loads and returns Git provider configuration based on the application and provider kind.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions and classes for determining file types, generating descriptions, and handling templates for code inspection.
+Functions and classes for determining file types, generating descriptions, and handling code chunk processing using language models.
 
 # Purpose
-The code is a Python module that provides functionality for analyzing and categorizing files based on their content and type. It uses the `openai` library to interact with a language model to generate descriptions and classifications of files. The module defines several classes and functions to handle different file types, such as source code and metadata, and to generate descriptions in various formats, including single sentences, paragraphs, and detailed long descriptions.
-
-Key components include the `FileKind` and `FileEnum` classes, which categorize files into different types, and the [`comprehend_file_top_down`](<#comprehend_file_top_down>) function, which processes files by splitting them into chunks, determining their type, and generating descriptions using predefined templates. The module also includes mappings of templates for different programming languages and file types, allowing it to handle a wide range of file formats. The code is designed to be part of a larger system, likely a library, that can be imported and used to analyze and document codebases.
+The code is a Python module that provides functionality for analyzing and categorizing files based on their content and size. It uses the `openai` library to generate descriptions of files, leveraging language models to determine the type of file (e.g., source code or metadata) and its size category (small, medium, or large). The module defines several classes, such as `FileEnum` and `FileKind`, to represent different file types and their characteristics. It also includes functions to generate file descriptions in various formats, such as single sentences, paragraphs, or detailed long descriptions, using predefined templates for different programming languages. The module imports several utilities and templates from other modules to facilitate its operations, and it handles exceptions related to OpenAI API requests.
 # Imports and Dependencies
 
 ---
@@ -80,64 +78,64 @@ Key components include the `FileKind` and `FileEnum` classes, which categorize f
 
 ---
 ### PARENT\_PATH
-- **Type**: `Path`
+- **Type**: ``Path` object`
 - **Description**: Represents the directory path of the current file's parent directory. It uses the `Path` class from the `pathlib` module to determine the parent directory of the file where this code is executed.
 - **Use**: Used to construct file paths relative to the current file's directory.
 
 
 ---
 ### SMALL\_METADATA\_FILE\_CUTOFF\_BYTES
-- **Type**: `int`
-- **Description**: Defines the byte size limit for categorizing a metadata file as small. This value is set to 500 bytes.
+- **Type**: ``int``
+- **Description**: Defines the byte size limit for categorizing a metadata file as small. This variable is set to 500 bytes.
 - **Use**: Used to determine if a metadata file is small based on its byte size.
 
 
 ---
 ### MEDIUM\_METADATA\_FILE\_CUTOFF\_BYTES
-- **Type**: `int`
-- **Description**: Defines the byte size limit for medium-sized metadata files. This value is used to categorize metadata files based on their size.
-- **Use**: Used to determine if a metadata file is classified as medium-sized based on its byte size.
+- **Type**: ``int``
+- **Description**: Defines the byte size threshold for categorizing a metadata file as medium-sized. This threshold is set to 2500 bytes.
+- **Use**: Used to determine if a metadata file should be classified as medium based on its byte size.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_BY\_LANG
 - **Type**: ``dict``
-- **Description**: Maps language identifiers from the `Lang` enum to corresponding large source code templates. Each key in the dictionary is a language identifier, and each value is a template for large source code in that language.
-- **Use**: Used to retrieve the appropriate large source code template based on the language identifier.
+- **Description**: Maps programming languages to their corresponding large source code templates. Each key in the dictionary is a member of the `Lang` enumeration, and each value is a template for large source code specific to that language.
+- **Use**: Used to retrieve the appropriate large source code template for a given programming language.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_BY\_LANG
 - **Type**: ``dict``
-- **Description**: Maps each language in the `Lang` enumeration to its corresponding small source code template. The keys are language identifiers from the `Lang` enum, and the values are template variables specific to each language.
+- **Description**: A dictionary that maps programming languages, represented by the `Lang` enum, to their corresponding small source code templates. Each key in the dictionary is a language identifier, and each value is a template for small source code snippets in that language.
 - **Use**: Used to retrieve the appropriate small source code template for a given programming language.
 
 
 ---
 ### METADATA\_SMALL\_BY\_LANG
 - **Type**: ``dict``
-- **Description**: Maps different programming languages to a common metadata template. Each key in the dictionary is a language from the `Lang` enumeration, and the value is the `METADATA_SMALL_TEMPLATE`.
-- **Use**: Used to provide a consistent metadata template for various programming languages.
+- **Description**: Maps each language in the `Lang` enumeration to the `METADATA_SMALL_TEMPLATE`. This dictionary is used to associate a small metadata template with various programming languages.
+- **Use**: Used to retrieve the small metadata template for a given programming language.
 
 
 ---
 ### METADATA\_MEDIUM\_BY\_LANG
-- **Type**: `dict`
-- **Description**: A dictionary that maps different programming languages, represented by the `Lang` enum, to a common metadata template `METADATA_MEDIUM_TEMPLATE`. This mapping includes languages such as C, C++, Python, Verilog, Rust, Assembly, Java, Ruby, C#, TypeScript, and JavaScript.
-- **Use**: Used to associate each language with a medium-sized metadata template for further processing or documentation.
+- **Type**: ``dict``
+- **Description**: A dictionary that maps different programming languages, represented by the `Lang` enum, to a common metadata template, `METADATA_MEDIUM_TEMPLATE`. This template is used for medium-sized metadata files across various languages.
+- **Use**: Used to provide a consistent metadata template for medium-sized files across multiple programming languages.
 
 
 ---
 ### METADATA\_LARGE\_BY\_LANG
-- **Type**: `dict`
-- **Description**: Contains mappings from different programming languages to a metadata template. Each key in the dictionary is a language from the `Lang` enumeration, and the value is the `METADATA_LARGE_TEMPLATE`.
-- **Use**: Used to associate each language with a large metadata template for processing or generating metadata.
+- **Type**: ``dict``
+- **Description**: Maps each language in the `Lang` enumeration to the `METADATA_LARGE_TEMPLATE`. This dictionary is used to associate a large metadata template with different programming languages.
+- **Use**: Used to retrieve the `METADATA_LARGE_TEMPLATE` for a given language key from the `Lang` enumeration.
 
 
 ---
 ### TEMPLATE\_DATA
 - **Type**: ``dict``
-- **Description**: Maps file types from the `FileEnum` enumeration to their corresponding language-specific template dictionaries. Each key in the dictionary is a `FileEnum` value, and each value is a dictionary that maps `Lang` enumeration values to specific template variables.
+- **Description**: Contains mappings of file types to their respective language-specific template dictionaries. Each key in the dictionary is a `FileEnum` member, and each value is a dictionary that maps `Lang` members to their corresponding template variables.
 - **Use**: Used to retrieve the appropriate template for a given file type and language.
 
 
@@ -151,7 +149,7 @@ Key components include the `FileKind` and `FileEnum` classes, which categorize f
     - `SOURCE_CODE_LARGE`: Represents the enumeration value for large source code files.
     - `SOURCE_CODE_SMALL`: Represents the enumeration value for small source code files.
     - `METADATA`: Represents the enumeration value for metadata files.
-- **Description**: Defines an enumeration for different file types, specifically large source code, small source code, and metadata, using integer values.
+- **Description**: Defines an enumeration for different types of file categories, specifically large source code, small source code, and metadata, using integer values.
 - **Inherits From**:
     - `IntEnum`
 
@@ -162,8 +160,8 @@ Key components include the `FileKind` and `FileEnum` classes, which categorize f
 
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `kind`: Specifies the file kind using the `_FileEnumLLM` enumeration.
-- **Description**: Represents a model for file kind classification using the `_FileEnumLLM` enumeration to specify the type of file.
+    - `kind`: Specifies the type of file using the `_FileEnumLLM` enumeration.
+- **Description**: Defines a data model for file types using the `_FileEnumLLM` enumeration to categorize files.
 - **Inherits From**:
     - `BaseModel`
 
@@ -173,12 +171,12 @@ Key components include the `FileKind` and `FileEnum` classes, which categorize f
 [View Source →](<../../../../../../content_services/inspector/src/inspection/files.py#L166>)
 
 - **Members**:
-    - `SOURCE_CODE_LARGE`: Represents a large source code file with a value of 0.
-    - `SOURCE_CODE_SMALL`: Represents a small source code file with a value of 1.
-    - `METADATA_LARGE`: Represents a large metadata file with a value of 2.
-    - `METADATA_MEDIUM`: Represents a medium metadata file with a value of 3.
-    - `METADATA_SMALL`: Represents a small metadata file with a value of 4.
-- **Description**: Defines an enumeration for different types of files, categorizing them by size and type, such as source code or metadata.
+    - `SOURCE_CODE_LARGE`: Represents a large source code file type with a value of 0.
+    - `SOURCE_CODE_SMALL`: Represents a small source code file type with a value of 1.
+    - `METADATA_LARGE`: Represents a large metadata file type with a value of 2.
+    - `METADATA_MEDIUM`: Represents a medium metadata file type with a value of 3.
+    - `METADATA_SMALL`: Represents a small metadata file type with a value of 4.
+- **Description**: Defines an enumeration for different types of files, categorizing them into large or small source code files and large, medium, or small metadata files.
 - **Inherits From**:
     - `IntEnum`
 
@@ -189,7 +187,7 @@ Key components include the `FileKind` and `FileEnum` classes, which categorize f
 
 - **Members**:
     - `kind`: Specifies the type of file using the `FileEnum` enumeration.
-- **Description**: Represents a file type classification based on its content and size. It uses the `FileEnum` to categorize files into different types such as source code or metadata, and further distinguishes metadata files by size. The class provides methods to determine the file kind from a language model response or based on file content characteristics.
+- **Description**: Represents a file type classification based on its content, using the `FileEnum` enumeration to categorize files as source code or metadata of varying sizes.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/inspection/files.FileKind._from_file_kind_llm`](<#filekind_from_file_kind_llm>)
     - [`python-backend/content_services/inspector/src/inspection/files.FileKind.from_llm`](<#filekindfrom_llm>)
@@ -202,20 +200,19 @@ Key components include the `FileKind` and `FileEnum` classes, which categorize f
 #### FileKind\.\_from\_file\_kind\_llm<!-- {{#callable:python-backend/content_services/inspector/src/inspection/files.FileKind._from_file_kind_llm}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/files.py#L177>)
 
-Determines the file kind based on the provided code and file kind LLM object.
+Determines the file kind based on the provided code and file kind information.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the code content of the file.
-    - `fk_llm`: An instance of `_FileKindLLM` that indicates the kind of file.
+    - `fk_llm`: An instance of `_FileKindLLM` that contains the kind of file as determined by an LLM.
 - **Logic and Control Flow**:
     - Uses a match-case statement to check the `kind` attribute of `fk_llm`.
-    - If `fk_llm.kind` is `_FileEnumLLM.METADATA`, it calculates the number of bytes in `code` encoded in UTF-8.
-    - Compares the byte length of `code` against predefined cutoff values to determine if the file is small, medium, or large metadata.
-    - Returns an instance of `cls` with the appropriate `FileEnum` kind based on the byte length.
-    - If `fk_llm.kind` is `_FileEnumLLM.SOURCE_CODE_LARGE`, returns an instance of `cls` with `FileEnum.SOURCE_CODE_LARGE`.
-    - If `fk_llm.kind` is `_FileEnumLLM.SOURCE_CODE_SMALL`, returns an instance of `cls` with `FileEnum.SOURCE_CODE_SMALL`.
-    - Raises a `ValueError` if `fk_llm.kind` does not match any expected case.
-- **Output**: An instance of `cls` with the determined `FileEnum` kind.
+    - If the kind is `_FileEnumLLM.METADATA`, calculates the number of bytes in the `code` string when encoded in UTF-8.
+    - Compares the byte count against predefined cutoff values to determine if the file is small, medium, or large metadata, and returns a corresponding `FileKind` instance.
+    - If the kind is `_FileEnumLLM.SOURCE_CODE_LARGE`, returns a `FileKind` instance with `FileEnum.SOURCE_CODE_LARGE`.
+    - If the kind is `_FileEnumLLM.SOURCE_CODE_SMALL`, returns a `FileKind` instance with `FileEnum.SOURCE_CODE_SMALL`.
+    - Raises a `ValueError` if the kind does not match any expected case.
+- **Output**: Returns an instance of `FileKind` with the determined file kind.
 - **See also**: [`python-backend/content_services/inspector/src/inspection/files.FileKind`](<#filekind>)  (Base Class)
 
 
@@ -232,12 +229,13 @@ Determines the file kind using a language model and returns a `FileKind` instanc
     - `code`: The content of the file to be analyzed.
     - `fallback_kind`: A default `FileEnum` value to use if the language model fails to determine the file kind.
 - **Logic and Control Flow**:
-    - Generates a system prompt using a template file to determine the file kind.
-    - Creates a human-readable prompt with the file name and contents.
-    - Uses the language model (`llm`) to generate a response based on the prompts.
-    - Attempts to parse the response as an integer to create a [`_FileKindLLM`](<#_filekindllm>) instance.
-    - Calls [`_from_file_kind_llm`](<#filekind_from_file_kind_llm>) to determine the `FileKind` based on the parsed response.
-    - Handles `ValueError` and `ValidationError` exceptions by logging warnings and using the `fallback_kind`.
+    - Generates a system prompt using a template file located at `PARENT_PATH/prompt_templates/files/determine_file_kind.txt`.
+    - Creates a human-readable prompt that includes the file name and its contents.
+    - Uses the `llm` to generate a response based on the system and human prompts.
+    - Attempts to parse the response from the `llm` as an integer to create a [`_FileKindLLM`](<#_filekindllm>) instance.
+    - Calls the [`_from_file_kind_llm`](<#filekind_from_file_kind_llm>) method to determine the file kind based on the parsed [`_FileKindLLM`](<#_filekindllm>) instance.
+    - If a `ValueError` occurs during parsing, logs a warning and assigns the `fallback_kind` to `file_kind`.
+    - If a `ValidationError` occurs during parsing, logs a warning and assigns the `fallback_kind` to `file_kind`.
 - **Output**: Returns an instance of `FileKind` representing the determined or fallback file kind.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
@@ -254,7 +252,7 @@ Determines the file kind using a language model and returns a `FileKind` instanc
 ### file\_long\_from\_code<!-- {{#callable:python-backend/content_services/inspector/src/inspection/files.file_long_from_code}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/files.py#L310>)
 
-Generates a response from a language model based on a system prompt and user prompt derived from file details and code.
+Generates a response from a language model based on a system prompt and user prompt derived from code information.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
     - `file_name`: The name of the file as a string.
@@ -262,11 +260,11 @@ Generates a response from a language model based on a system prompt and user pro
     - `path`: The path to the file, which can be a string or a `Path` object.
     - `code`: The code content of the file as a string.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template and a general style instruction to an empty `Prompt` object, then converts it to a string.
-    - Constructs a `user_prompt` string that includes the file name, codebase name, path, and code content.
-    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` as arguments.
-    - Returns the response generated by the `llm`.
-- **Output**: A string response generated by the language model.
+    - Creates a `system_prompt` by initializing an empty `Prompt`, appending a [`Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a prompt template, and adding a general style instruction.
+    - Converts the `system_prompt` to a string using `into_str()`.
+    - Constructs a `user_prompt` string that includes the `file_name`, `codebase_name`, `path`, and `code`.
+    - Calls [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) on the `llm` object with `system_prompt` and `user_prompt` to generate a response.
+- **Output**: Returns a string response generated by the language model.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -287,12 +285,12 @@ Generates a single sentence description from multiple code chunk descriptions us
     - `file_name`: The name of the file being described.
     - `codebase_name`: The name of the codebase containing the file.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by loading a prompt template from a file and appending a general style instruction.
-    - Initializes an empty `user_prompt_structured` and appends specific style instructions for nodes and single sentence descriptions.
-    - Iterates over each chunk in `chunks`, appending a formatted description of each chunk to `user_prompt_structured`.
-    - Converts `user_prompt_structured` to a string `user_prompt`.
+    - Creates a `system_prompt` by appending a prompt template and a general style instruction to an empty `Prompt` object, then converts it to a string.
+    - Initializes an empty `Prompt` object for `user_prompt_structured` and appends specific style instructions to it.
+    - Iterates over the `chunks` list, appending each chunk description to `user_prompt_structured` with its index, file name, and codebase name.
+    - Converts `user_prompt_structured` to a string to form `user_prompt`.
     - Calls `llm.generate_response` with `system_prompt` and `user_prompt` to generate a single sentence description.
-- **Output**: Returns a single sentence description as a string.
+- **Output**: A string containing a single sentence description generated by the language model.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -309,16 +307,16 @@ Generates a single sentence description from multiple code chunk descriptions us
 Generates a single paragraph description from a list of chunk descriptions using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
-    - `chunks`: A list of strings, each representing a description of a chunk of code.
+    - `chunks`: A list of strings, each representing a description of a chunk of a file.
     - `file_name`: The name of the file being described.
-    - `codebase_name`: The name of the codebase containing the file.
+    - `codebase_name`: The name of the codebase to which the file belongs.
 - **Logic and Control Flow**:
     - Creates a `system_prompt` by appending a prompt template and a general style instruction to an empty `Prompt` object, then converts it to a string.
     - Initializes an empty `Prompt` object called `user_prompt_structured` and appends a no-restatement style instruction to it.
     - Iterates over the `chunks` list, appending each chunk description to `user_prompt_structured` with its index, file name, and codebase name.
     - Converts `user_prompt_structured` to a string called `user_prompt`.
     - Calls `llm.generate_response` with `system_prompt` and `user_prompt` to generate a single paragraph description.
-- **Output**: Returns a string containing a single paragraph description generated by the language model.
+- **Output**: A string containing the generated single paragraph description.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -332,21 +330,19 @@ Generates a single paragraph description from a list of chunk descriptions using
 ### file\_long\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/files.file_long_from_chunk_descriptions}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/files.py#L391>)
 
-Generates a detailed response from an LLM based on chunk descriptions of a file.
+Generates a detailed response from chunk descriptions using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
-    - `chunks`: A list of strings, each representing a chunk description of the file.
+    - `chunks`: A list of strings, each representing a chunk description.
     - `file_name`: The name of the file being described.
-    - `codebase_name`: The name of the codebase to which the file belongs.
+    - `codebase_name`: The name of the codebase containing the file.
 - **Logic and Control Flow**:
-    - Creates an empty `Prompt` object and appends a system prompt template to it.
-    - Appends a general style instruction to the system prompt.
-    - Converts the system prompt to a string format.
-    - Initializes an empty `Prompt` object for the user prompt.
-    - Iterates over each chunk in `chunks`, appending a formatted description of each chunk to the user prompt.
-    - Converts the user prompt to a string format.
-    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of `llm` with the system and user prompts to generate a response.
-- **Output**: Returns a string response generated by the LLM based on the provided prompts.
+    - Creates a `system_prompt` by appending a prompt template and a general style instruction to an empty `Prompt` object, then converts it to a string.
+    - Initializes an empty `Prompt` object called `user_prompt_structured`.
+    - Iterates over the `chunks` list, appending each chunk description to `user_prompt_structured` with its index and file information.
+    - Converts `user_prompt_structured` to a string called `user_prompt`.
+    - Calls `llm.generate_response` with `system_prompt` and `user_prompt` to generate a response.
+- **Output**: Returns a string generated by the language model based on the provided prompts.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -366,9 +362,9 @@ Generates a compressed response for a file's chunk descriptions using a language
     - `file_name`: The name of the file for which chunk descriptions are provided.
     - `description_chunk`: A string containing the chunk descriptions of the file.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template and a general instruction to an empty `Prompt` object, then converts it to a string.
+    - Creates a `system_prompt` by appending a prompt template and a general style instruction, then converts it to a string.
     - Formats a `user_prompt` string that includes the file name and the provided `description_chunk`.
-    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a compressed response.
+    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a response.
 - **Output**: Returns a string response generated by the language model.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -387,13 +383,13 @@ Generates a description for a code chunk using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
     - `file_name`: The name of the file containing the code chunk, as a string or `Path` object.
-    - `codebase_name`: The name of the codebase where the file is located.
+    - `codebase_name`: The name of the codebase to which the file belongs.
     - `path`: The path to the file, as a string or `Path` object.
     - `code_chunk`: The specific piece of code to describe.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template and a general style instruction to an empty `Prompt` object, then converts it to a string.
+    - Creates a `system_prompt` by appending a prompt template and a general style instruction, then converts it to a string.
     - Formats a `user_prompt` string that includes the file name, codebase name, path, and the code chunk.
-    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a description of the code chunk.
+    - Calls `llm.generate_response` with the `system_prompt` and `user_prompt` to generate a description of the code chunk.
 - **Output**: Returns a string containing the generated description of the code chunk.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -416,10 +412,10 @@ Generates a single sentence description of a file's code using a language model.
     - `path`: The path to the file as a string or `Path` object.
     - `code`: The code content of the file as a string.
 - **Logic and Control Flow**:
-    - Creates a `system_prompt` by appending a prompt template and a style instruction to an empty `Prompt` object, then converts it to a string.
-    - Creates a `user_prompt` by appending style instructions and the file details to an empty `Prompt` object, then converts it to a string.
+    - Creates a `system_prompt` by appending a prompt template and a style instruction to an empty `Prompt` object and converting it to a string.
+    - Creates a `user_prompt` by appending style instructions and the file details to an empty `Prompt` object and converting it to a string.
     - Calls `llm.generate_response` with `system_prompt` and `user_prompt` to generate a single sentence description of the file's code.
-- **Output**: Returns a string containing the generated single sentence description of the file's code.
+- **Output**: Returns a string containing a single sentence description of the file's code.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -442,9 +438,9 @@ Generates a single-paragraph description of a code file using a language model.
     - `code`: The source code of the file as a string.
 - **Logic and Control Flow**:
     - Creates a `system_prompt` by appending a prompt template and a general style instruction to an empty `Prompt` object, then converts it to a string.
-    - Creates a `user_prompt` by appending a no-restatement style instruction and a component containing the file details and code to an empty `Prompt` object, then converts it to a string.
-    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a response.
-- **Output**: Returns a string containing the generated single-paragraph description of the code file.
+    - Creates a `user_prompt` by appending a no-restatement style instruction and a component containing file details and code to an empty `Prompt` object, then converts it to a string.
+    - Calls the [`generate_response`](<../utils/models.py.md#chatopenaigenerate_response>) method of the `llm` object with `system_prompt` and `user_prompt` to generate a single-paragraph description of the code file.
+- **Output**: Returns a string containing the single-paragraph description generated by the language model.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -458,21 +454,21 @@ Generates a single-paragraph description of a code file using a language model.
 ### \_return\_with\_simple\_message<!-- {{#callable:python-backend/content_services/inspector/src/inspection/files._return_with_simple_message}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/files.py#L528>)
 
-Returns a dictionary with the given message in multiple fields.
+Creates a dictionary with a given message repeated in different keys.
 - **Inputs**:
-    - `message`: A string that contains the message to include in the output dictionary.
+    - `message`: A string that contains the message to include in the dictionary.
 - **Logic and Control Flow**:
     - Creates a dictionary with keys 'chunk_descriptions', 'short', 'long', and 'architecture'.
-    - Assigns the input 'message' to the 'chunk_descriptions', 'short.single_sentence', 'short.single_paragraph', and 'long' keys.
+    - Assigns the input 'message' to the 'chunk_descriptions', 'long', and both 'single_sentence' and 'single_paragraph' keys within the 'short' dictionary.
     - Sets the 'architecture' key to an empty string.
-- **Output**: A dictionary with the input message assigned to several keys and an empty string for the 'architecture' key.
+- **Output**: A dictionary with the input message assigned to specific keys.
 
 
 ---
 ### comprehend\_file\_top\_down<!-- {{#callable:python-backend/content_services/inspector/src/inspection/files.comprehend_file_top_down}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/files.py#L541>)
 
-Analyzes and processes source code files to generate detailed descriptions and summaries.
+Analyzes and generates descriptions for a source code file using a language model.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for language model operations.
     - `node`: A `LiteNode` object representing the file node in the codebase.
@@ -481,20 +477,20 @@ Analyzes and processes source code files to generate detailed descriptions and s
     - `chunk_size`: The size of each chunk when splitting the source code.
     - `chunk_overlap`: The overlap size between consecutive chunks.
     - `compression_loop_max_itr`: The maximum number of iterations for the compression loop.
-    - `max_num_chunks`: The maximum number of chunks to use in processing.
-    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing symbols in the code.
+    - `max_num_chunks`: The maximum number of chunks to use for processing.
+    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing symbols to consider during analysis.
     - `raise_hard_errors`: A boolean indicating whether to raise hard errors during processing, default is `True`.
 - **Logic and Control Flow**:
     - Log the incorporation of the file path from `node`.
-    - Check if `source_code` is empty; if so, return a message indicating an empty file.
+    - Check if `source_code` is empty; if so, return a failure message.
     - Split `source_code` into chunks using [`split_text`](<../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) with `chunk_size` and `chunk_overlap`.
-    - If there are multiple chunks, process each chunk to determine the file kind using `FileKind.from_llm`.
-    - Select a template based on the file kind and language, then generate a long description using `Template.run_with_code`.
-    - Split the long description into smaller chunks and generate single sentence and paragraph descriptions.
-    - Handle `openai.BadRequestError` by logging the error and sending an exception email, then return a failure message.
-    - If there is only one chunk, determine the file kind and language, select a template, and generate descriptions similarly.
-    - Replace null characters in the generated descriptions and log the short description.
-    - Return a tuple with success status and a dictionary containing detailed descriptions.
+    - If more than one chunk exists, process each chunk to determine the file kind using `FileKind.from_llm`.
+    - Based on the file kind, select a template and generate a long description using `Template.run_with_code`.
+    - Split the long description into chunks and generate single sentence and paragraph descriptions.
+    - Handle `openai.BadRequestError` by sending an exception email and returning a failure message.
+    - If only one chunk exists, determine the file kind and language, select a template, and generate descriptions.
+    - Replace null characters in the generated descriptions.
+    - Log the short description and return success with the results.
 - **Output**: A tuple containing a boolean indicating success and a dictionary with detailed descriptions of the file.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/inspection/files._return_with_simple_message`](<#_return_with_simple_message>)

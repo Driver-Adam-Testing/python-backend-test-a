@@ -3,27 +3,29 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-API routes and utilities for managing keys, autodocs, chat, codebase cards, content, documents, nodes, assets, tags, and versions using FastAPI.
+API routes and utilities for managing surveys, keys, autodocs, chat, codebase cards, content, documents, nodes, assets, tags, and versions using FastAPI.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
+- **[about_you_survey.py](about_you_survey.py.md)**: API endpoints for submitting and checking the submission status of an "About You" survey.
 - **[api_key.py](api_key.py.md)**: API routes for creating, retrieving, and deleting API keys with user authentication and query utilities.
-- **[autodocs.py](autodocs.py.md)**: API routes for generating, checking the status of, and canceling autodoc generation using FastAPI.
-- **[chat.py](chat.py.md)**: Defines a FastAPI route for streaming chat responses using a POST request with user and session data.
-- **[codebase_card.py](codebase_card.py.md)**: Defines API routes and data models for managing and retrieving codebase card information.
-- **[contents.py](contents.py.md)**: API endpoints for listing and creating derived content with authorization and query utilities.
+- **[autodocs.py](autodocs.py.md)**: API routes for managing autodoc generation, including creation, status retrieval, and cancellation.
+- **[chat.py](chat.py.md)**: Defines a FastAPI route for streaming chat responses using a POST request with user authentication.
+- **[codebase_card.py](codebase_card.py.md)**: Defines API routes for retrieving `CodebaseCard` objects with filtering, sorting, and pagination.
+- **[contents.py](contents.py.md)**: API endpoints for listing and creating derived content with optional content field loading.
 - **[convenience_endpoints.py](convenience_endpoints.py.md)**: Defines FastAPI endpoints for editing pages, creating new pages, and creating new templates.
-- **[document_sources.py](document_sources.py.md)**: API endpoints for listing, creating, and deleting document sources with pagination and filtering.
-- **[generate.py](generate.py.md)**: API routes for inline editing and content generation with support for remote and local execution.
-- **[nodes.py](nodes.py.md)**: API endpoints for listing, creating, and updating nodes with authorization and query utilities.
+- **[document_sources.py](document_sources.py.md)**: API endpoints for listing, creating, and deleting document sources with batch operations support.
+- **[generate.py](generate.py.md)**: Defines FastAPI routes for inline editing and content generation with support for remote execution.
+- **[nodes.py](nodes.py.md)**: API endpoints for listing, creating, and updating nodes with authorization checks.
+- **[onboarding_checklist.py](onboarding_checklist.py.md)**: API endpoint for managing and inferring completion of onboarding checklist tasks.
 - **[primary_asset_tags.py](primary_asset_tags.py.md)**: API endpoints for creating and deleting primary asset tags with authorization checks.
 - **[primary_assets.py](primary_assets.py.md)**: API endpoints for listing, creating, updating, and deleting primary assets with database and AWS S3 interactions.
 - **[query_utils.py](query_utils.py.md)**: Utilities for applying filters, sorting, and pagination to SQLAlchemy/SQLModel queries.
 - **[router.py](router.py.md)**: Defines an API router using FastAPI's APIRouter.
 - **[schemas.py](schemas.py.md)**: Defines Pydantic schemas for reading, creating, and updating various entities like assets, nodes, and tags.
 - **[tags.py](tags.py.md)**: API endpoints for listing, updating, and creating tags with authentication and query utilities.
-- **[versions.py](versions.py.md)**: API endpoints for listing and updating version data with filtering, sorting, and pagination.
+- **[versions.py](versions.py.md)**: API endpoints for listing and updating version data with authentication and query utilities.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

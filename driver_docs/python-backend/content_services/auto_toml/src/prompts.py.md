@@ -6,7 +6,7 @@
 Functions and components for generating and appending prompts for creating technical documentation from TOML files.
 
 # Purpose
-The code defines a set of functions and components for generating prompts used in a documentation tool. It imports `Component` and `Prompt` from a shared module and uses them to create structured prompts for different tasks, such as summarizing source material, generating a TOML configuration file, and appending sections to an existing TOML file. The code includes several string templates and guidelines that dictate how to format and structure the prompts. These prompts are designed to guide a language model in creating technical documentation based on user-defined goals and source material. The code provides narrow functionality focused on generating and managing prompts for a specific documentation generation process.
+The code defines a set of functions and components for generating prompts used in a documentation tool that creates technical documents from a TOML configuration file. It includes several `Component` objects that contain string templates and guidelines for creating structured prompts. These prompts are used to guide the generation of sections in a document, ensuring they follow specific instructions and formatting rules. The functions [`summary_system_prompt`](<#summary_system_prompt>), [`summary_user_prompt`](<#summary_user_prompt>), [`generate_system_prompt`](<#generate_system_prompt>), [`generate_user_prompt`](<#generate_user_prompt>), [`append_system_prompt`](<#append_system_prompt>), and [`append_user_prompt`](<#append_user_prompt>) are responsible for assembling these components into complete prompt strings based on user-defined goals, context, and source material. The code provides a narrow functionality focused on creating structured prompts for documentation generation.
 # Imports and Dependencies
 
 ---
@@ -19,106 +19,106 @@ The code defines a set of functions and components for generating prompts used i
 ---
 ### \_BASE\_SYSTEM\_PROMPT
 - **Type**: ``Component``
-- **Description**: Defines a `Component` instance that contains a multi-line string. This string provides detailed instructions and guidelines for creating technical documentation using a TOML configuration file. The string includes templates, examples, and guidelines for specifying keys like 'title', 'level', 'instruction', and 'content_structure' in the TOML file.
-- **Use**: Used to provide a structured prompt for generating technical documentation from a TOML configuration file.
+- **Description**: Defines a `Component` instance that contains a multi-line string. This string serves as a template and guideline for generating technical documentation from a TOML configuration file. The string includes detailed instructions and examples for specifying sections, headings, and content structure in the TOML file.
+- **Use**: Used to provide a structured prompt for generating technical documentation based on a TOML configuration file.
 
 
 ---
 ### \_GUIDANCE\_ON\_CONTENT\_TO\_AVOID
 - **Type**: ``Component``
-- **Description**: A `Component` instance that contains a string with guidelines on avoiding speculative or suggestive content in documentation. It advises against including sections on future enhancements or unnecessary summaries and conclusions unless explicitly required.
-- **Use**: Used to provide guidance on content to avoid in documentation.
+- **Description**: Represents a component with a string attribute that provides guidance on content to avoid in documentation. The string contains instructions to exclude speculative or suggestive content unless explicitly required by the document's goal.
+- **Use**: Used to define a component that holds guidance on avoiding certain types of content in documentation.
 
 
 ---
 ### NO\_CONTENT\_FOUND\_RESPONSE
 - **Type**: ``str``
 - **Description**: A string variable that holds the text 'NO CONTENT FOUND'. This string is used as a response when no relevant content is found in the source material.
-- **Use**: Used to indicate the absence of relevant content in the source material.
+- **Use**: Used to indicate the absence of relevant content in a given context.
 
 
 ---
 ### \_SUMMARY\_SYSTEM\_PROMPT
 - **Type**: ``Component``
-- **Description**: The `_SUMMARY_SYSTEM_PROMPT` is an instance of the `Component` class. It contains a formatted string that provides instructions for generating a summary of source material relevant to a user's document goal. The string includes critical instructions to ensure the summary is concise, accurate, and easy for a language model to consume.
+- **Description**: Represents a `Component` object that contains a formatted string used as a system prompt for summarizing source material. The string provides detailed instructions for creating a summary that is easy for a language model to consume, ensuring technical detail, accuracy, and relevance.
 - **Use**: Used to define the system prompt for summarizing source material in a form suitable for language model consumption.
 
 
 ---
 ### \_SUMMARY\_USER\_PROMPT\_TEMPLATE
 - **Type**: `str`
-- **Description**: The `_SUMMARY_USER_PROMPT_TEMPLATE` is a string template used to format a user-defined document description, user context, and source material into a structured prompt.
-- **Use**: Used to create a formatted prompt for summarizing source material based on user input.
+- **Description**: A string template used to format a user prompt for summarizing a document goal, user context, and source material. It includes placeholders for `document_goal`, `user_context`, and `source_material` to be filled with specific content.
+- **Use**: Used to generate a formatted string for user prompts in a documentation tool.
 
 
 ---
 ### \_GENERATE\_SYSTEM\_PROMPT
 - **Type**: ``Component``
-- **Description**: Defines a `Component` instance with a multi-line string that provides instructions for generating a TOML configuration file based on a user's document goal and context. The string includes critical instructions for ensuring the document is well-structured and cohesive.
-- **Use**: Used to provide a system prompt for generating a TOML configuration file that aligns with a user's document goal.
+- **Description**: Defines a `Component` instance with a multi-line string that provides instructions for generating a TOML configuration file. The string includes critical instructions and guidelines for structuring the final document.
+- **Use**: Used to guide the creation of a TOML configuration file that aligns with a user's document goal.
 
 
 ---
 ### \_GENERATE\_USER\_PROMPT\_TEMPLATE
 - **Type**: `str`
-- **Description**: A string template used to generate a user prompt for a document creation task. The template includes placeholders for `document_goal`, `user_context`, and `source_summary`, which are filled with specific content when creating the prompt.
-- **Use**: Used to format and generate a user prompt by inserting specific document goal, user context, and source summary into the template.
+- **Description**: A string template used to generate a user prompt for creating a technical document. The template includes placeholders for the document goal, user context, and a summary of the source material.
+- **Use**: Used to format and generate a user prompt by filling in the placeholders with specific information about the document goal, user context, and source summary.
 
 
 ---
 ### \_APPEND\_SYSTEM\_PROMPT
 - **Type**: ``Component``
-- **Description**: Defines a `Component` object with a string attribute that contains detailed instructions for appending sections to a TOML configuration file. The instructions guide the user on how to analyze source material and define additional sections to align with a document goal.
-- **Use**: Used to provide structured guidance for appending new sections to a TOML configuration file based on a document goal and source material analysis.
+- **Description**: Defines a `Component` object with a multi-line string that provides instructions for appending sections to a TOML configuration file. The string includes critical instructions and guidelines for ensuring the final document is well-structured and cohesive.
+- **Use**: Used to provide detailed instructions for appending new sections to a TOML configuration file based on a document goal.
 
 
 ---
 ### \_APPEND\_USER\_PROMPT\_TEMPLATE
 - **Type**: ``str``
-- **Description**: A multi-line string template that defines the structure for appending user-specific information to a document. It includes placeholders for `document_goal`, `user_context`, `source_summary`, and `user_toml`, which are intended to be filled with user-provided data.
-- **Use**: Used to format and append user-specific information to a document by replacing placeholders with actual data.
+- **Description**: A multi-line string template that defines the structure for appending user prompts in a document. It includes placeholders for `document_goal`, `user_context`, `source_summary`, and `user_toml`.
+- **Use**: Used to format and append user prompts with specific details into a document.
 
 
 ---
 ### \_NO\_USER\_CONTEXT
 - **Type**: ``str``
-- **Description**: A string variable that holds the message 'No user context provided'. This message indicates that no specific user context is available or has been supplied.
-- **Use**: Used to represent a default message when user context is absent.
+- **Description**: A string variable that holds the message 'No user context provided'. This message indicates that no additional user context is available or supplied.
+- **Use**: Used to represent the absence of user context in various functions or processes.
 
 
 ---
 ### \_USER\_CONTEXT\_SIZE\_SHORT
 - **Type**: ``Component``
-- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file. The instructions emphasize creating a concise and well-structured document, ideally around one page in length, by carefully crafting sections to fit the document goal and source material.
-- **Use**: Used to provide guidelines for creating a short and cohesive TOML configuration file.
+- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file. The instructions emphasize creating a concise and well-structured document, ideally around one page in length.
+- **Use**: Used to provide guidelines for creating a short TOML configuration file that meets specific document goals.
 
 
 ---
 ### \_USER\_CONTEXT\_SIZE\_MEDIUM
 - **Type**: ``Component``
-- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file to produce a medium-length document. The instructions emphasize the importance of a cohesive and well-structured configuration, allowing for a mix of longer and shorter sections as needed to meet the document goal.
+- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file to produce a medium-length document. The instructions emphasize the importance of a cohesive and well-structured configuration, with sections tailored to the document goal and source material.
 - **Use**: Used to guide the creation of a TOML configuration file that results in a medium-length document.
 
 
 ---
 ### \_USER\_CONTEXT\_SIZE\_LONG
 - **Type**: ``Component``
-- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file intended to produce a long document, ideally 5+ pages. The instructions emphasize the importance of section length and content structure to achieve a comprehensive and well-structured final document.
+- **Description**: Represents a `Component` instance that contains a string with detailed instructions for structuring a TOML configuration file to create a long document. The instructions emphasize the need for a comprehensive and well-structured document that is ideally 5+ pages long.
 - **Use**: Used to provide guidelines for creating a TOML configuration that results in a long, detailed document.
 
 
 ---
 ### USER\_CONTEXT\_BASE
 - **Type**: ``Component``
-- **Description**: Represents a `Component` instance with a string attribute that specifies a requirement for the final TOML configuration file. The string indicates that the configuration file must include the minimum number of sections necessary to fulfill the document goal.
-- **Use**: Used to define a base requirement for the TOML configuration file in the context of generating technical documentation.
+- **Description**: Represents a `Component` instance that contains a string specifying that the final TOML configuration file must include the minimum number of sections necessary to fulfill the document goal.
+- **Use**: Used to define a base requirement for the TOML configuration file in the context of document generation.
 
 
 ---
 ### \_USER\_CONTEXT\_SIZE\_MAP
-- **Type**: `dict`
-- **Description**: Maps user context size identifiers ('SHORT', 'MEDIUM', 'LONG') to their corresponding `Component` instances (`_USER_CONTEXT_SIZE_SHORT`, `_USER_CONTEXT_SIZE_MEDIUM`, `_USER_CONTEXT_SIZE_LONG`).
-- **Use**: Used to retrieve the appropriate `Component` based on the specified user context size.
+- **Type**: ``dict``
+- **Description**: Maps user context size identifiers ('SHORT', 'MEDIUM', 'LONG') to their corresponding `Component` objects. These components contain specific instructions for structuring TOML configuration files based on the desired document length.
+- **Use**: Used to select the appropriate content structure instructions based on the specified user context size.
 
 
 # Functions
@@ -147,16 +147,15 @@ Generates a string representation of the summary system prompt.
 
 Formats a user prompt for summarizing source material based on a document goal and user context.
 - **Inputs**:
-    - `document_goal`: A string that specifies the goal of the document the user wants to create.
+    - `document_goal`: A string that describes the goal of the document the user wants to create.
     - `user_context`: A string that provides additional instructions or guidance from the user, or a default message if not provided.
     - `source_content`: A string containing the source material to be summarized.
 - **Logic and Control Flow**:
-    - Create an empty `Prompt` object.
-    - Format the `_SUMMARY_USER_PROMPT_TEMPLATE` string with `document_goal`, `user_context`, and `source_content`.
-    - Create a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) object with the formatted string.
-    - Append the [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt`.
-    - Convert the `Prompt` to a string and return it.
-- **Output**: A string that represents the formatted user prompt for summarizing the source material.
+    - Creates an empty `Prompt` object.
+    - Formats the `_SUMMARY_USER_PROMPT_TEMPLATE` string with the provided `document_goal`, `user_context`, and `source_content`.
+    - Appends a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) containing the formatted string to the `Prompt` object.
+    - Converts the `Prompt` object to a string using `into_str()` and returns it.
+- **Output**: A string representing the formatted user prompt for summarizing the source material.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -189,13 +188,13 @@ Generates a system prompt by combining several predefined components into a sing
 
 Formats a user prompt using a predefined template with provided document goal, user context, and source summary.
 - **Inputs**:
-    - `document_goal`: A string that specifies the goal of the document.
-    - `user_context`: A string that provides additional context or instructions from the user.
-    - `source_summary`: A string that contains a summary of the source material relevant to the document.
+    - `document_goal`: A string representing the goal of the document.
+    - `user_context`: A string providing additional context from the user, or a default value if not provided.
+    - `source_summary`: A string summarizing the source material relevant to the document.
 - **Logic and Control Flow**:
     - Uses the `_GENERATE_USER_PROMPT_TEMPLATE` to format the user prompt.
     - Substitutes placeholders in the template with the provided `document_goal`, `user_context`, and `source_summary`.
-    - If `user_context` is not provided, substitutes it with `_NO_USER_CONTEXT`.
+    - If `user_context` is not provided, uses `_NO_USER_CONTEXT` as the default value.
 - **Output**: Returns a formatted string that represents the user prompt.
 
 
@@ -207,8 +206,8 @@ Appends predefined system prompts to an empty prompt and converts it to a string
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Creates an empty `Prompt` object using `Prompt.empty()`.
-    - Appends `_BASE_SYSTEM_PROMPT` to the empty prompt.
-    - Appends `_APPEND_SYSTEM_PROMPT` to the prompt.
+    - Appends the `_BASE_SYSTEM_PROMPT` component to the empty prompt.
+    - Appends the `_APPEND_SYSTEM_PROMPT` component to the prompt.
     - Converts the final prompt into a string using `into_str()`.
 - **Output**: A string that represents the combined system prompts.
 - **Functions Called**:
@@ -228,10 +227,10 @@ Formats a user prompt by filling a template with provided document goal, user co
     - `source_summary`: A string summarizing the source material relevant to the document.
     - `user_toml`: A string containing the user's TOML configuration file to extend.
 - **Logic and Control Flow**:
-    - Uses the `_APPEND_USER_PROMPT_TEMPLATE` to format the user prompt.
+    - Uses the `_APPEND_USER_PROMPT_TEMPLATE` to format a string.
     - Substitutes placeholders in the template with the provided `document_goal`, `user_context`, `source_summary`, and `user_toml`.
-    - If `user_context` is not provided, defaults to `_NO_USER_CONTEXT`.
-- **Output**: Returns a formatted string that represents the user prompt.
+    - If `user_context` is not provided, uses `_NO_USER_CONTEXT` as a default value.
+- **Output**: Returns a formatted string with the user prompt.
 
 
 

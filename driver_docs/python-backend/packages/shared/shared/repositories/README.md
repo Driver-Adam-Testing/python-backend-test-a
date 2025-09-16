@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Generic SQLModel repository for CRUD and querying; usage event repository for categorization.
+Generic repository class for SQLModel and usage event management by type, date, and organization.
 
 
 ## Files
-- **[base_repository.py](base_repository.py.md)**: A generic SQLModel repository class for CRUD operations and querying with conditions and joins.
-- **[usage_event_repository.py](usage_event_repository.py.md)**: Repository for querying and categorizing usage events by type, date, and organization.
+- **[base_repository.py](base_repository.py.md)**: A generic repository class for SQLModel with CRUD operations and query capabilities.
+- **[usage_event_repository.py](usage_event_repository.py.md)**: Manages retrieval and categorization of usage events by type, date, and organization.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

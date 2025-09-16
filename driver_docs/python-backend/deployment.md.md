@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for setting environment variables and generating secret keys for deploying a FastAPI project.
+Instructions for setting environment variables for deploying a FastAPI project using AWS.
 
 # Purpose
-The document provides instructions for configuring environment variables necessary for deploying a FastAPI project. It specifies the need to set the `ENVIRONMENT` variable, which defaults to `local` for development but should be set to `staging` or `production` for server deployment. The `DOMAIN` variable should also be configured, defaulting to `localhost` but requiring a custom domain for deployment. Additional environment variables include `BACKEND_CORS_ORIGINS`, `SECRET_KEY`, `USERS_OPEN_REGISTRATION`, and SMTP-related settings for email functionality. Database connection details such as `POSTGRES_SERVER`, `POSTGRES_PORT`, `POSTGRES_PASSWORD`, `POSTGRES_USER`, and `POSTGRES_DB` are also outlined, with defaults provided for local development. The document advises generating secure secret keys for certain variables using a Python command, ensuring the security of the deployment.
+The document provides instructions for configuring environment variables necessary for deploying a FastAPI project. It specifies that the `ENVIRONMENT` variable should be set to indicate the deployment stage, such as `local`, `staging`, or `production`. The `DOMAIN` variable should be set to the appropriate domain name for deployment. Additional environment variables include `BACKEND_CORS_ORIGINS` for CORS configuration, `SECRET_KEY` for token signing, and SMTP-related variables for email functionality. PostgreSQL connection details are also configurable, including `POSTGRES_SERVER`, `POSTGRES_PORT`, `POSTGRES_PASSWORD`, `POSTGRES_USER`, and `POSTGRES_DB`. The document advises generating secure secret keys for certain variables using a Python command.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

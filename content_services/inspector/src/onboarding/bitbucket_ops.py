@@ -187,7 +187,11 @@ def get_latest_commit(
 
 
 def fetch_vcs_info(
-    workspace: str, repo_slug: str, access_token: str, commit_sha: str
+    workspace: str,
+    repo_slug: str,
+    access_token: str,
+    commit_sha: str,
+    tracked_branch: str | None = None,
 ) -> VersionControlInfo:
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -201,6 +205,8 @@ def fetch_vcs_info(
     )
 
     default_branch = repo_data.get("mainbranch", {}).get("name", "main")
+
+    branch_name = tracked_branch if tracked_branch is not None else default_branch
 
     # Fetch detailed commit information
     commit_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commit/{commit_sha}"
@@ -229,7 +235,7 @@ def fetch_vcs_info(
         author=author_info,
     )
 
-    branch_info = BranchInfo(name=default_branch)
+    branch_info = BranchInfo(name=branch_name)
 
     repo_info = RepoInfo(
         name=repo_data.get("name", ""),
@@ -317,22 +323,24 @@ def download_and_upload_repo(
         else:
             commit = repo["latest_commit"]
 
-    if not commit:
-        commit = get_latest_commit(
-            workspace, repo_slug, access_token, repo["default_branch"]
-        )
-
     installation_id = repo.get("installation_id")
     if not installation_id:
         print(f"Missing installation_id for repo {repo_name}")
         return repo_name
 
-    # Fetch version control information
+    tracked_branch = repo.get("tracked_branch")
+
+    if not commit:
+        branch_to_check = tracked_branch if tracked_branch else repo["default_branch"]
+        commit = get_latest_commit(workspace, repo_slug, access_token, branch_to_check)
+
+    # Fetch version control information with tracked branch
     vcs_info = fetch_vcs_info(
         workspace=workspace,
         repo_slug=repo_slug,
         access_token=access_token,
         commit_sha=commit,
+        tracked_branch=tracked_branch,
     )
 
     try:

@@ -473,6 +473,7 @@ class BitbucketProvider(GitProviderInterface):
                                 "id": commit_hash,
                             },
                             "workspace": workspace,  # Add workspace at top level too
+                            "tracked_branch": tracked_branch,
                         }
                     ]
 

@@ -436,6 +436,8 @@ class GitProviderKind(str, enum.Enum):
     BITBUCKET = "BITBUCKET"
     BITBUCKET_DATA_CENTER = "BITBUCKET_DATA_CENTER"
     BITBUCKET_SERVER = "BITBUCKET_SERVER"
+    # Azure DevOps
+    AZURE_DEVOPS_CLOUD = "AZURE_DEVOPS_CLOUD"
 
     def __str__(self) -> str:
         return self.name

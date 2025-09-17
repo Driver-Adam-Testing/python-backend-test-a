@@ -289,6 +289,12 @@ def connect_git_provider_repo(
             "handle_bitbucket_events",
             environment_name=settings.MODAL_ENVIRONMENT,
         )
+    elif app.provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
+        handle_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_azure_devops_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
+        )
     else:
         raise HTTPException(
             status_code=400, detail=f"Unsupported provider kind: {app.provider_kind}"
@@ -657,15 +663,21 @@ def webhook(
 def git_provider_webhook(
     session: CurrentSession,
     body_data: dict = Depends(_extract_body_and_headers),
-    installation_id: str | None = Query(None),  # NEW: For Bitbucket query param
+    installation_id: str | None = Query(None),  # For Bitbucket query param
 ) -> JSONResponse:
-    """Generic webhook handler for GitLab and Bitbucket"""
+    """Generic webhook handler for GitLab, Bitbucket, and Azure DevOps"""
     body = body_data["json_body"]
     headers = body_data["headers"]
     logger.info("Received webhook event: %s", body)
+    
     # Get installation_id from query param OR header
     if not installation_id:
-        installation_id = headers.get("x-driver-token")
+        # Try different header names for different providers
+        installation_id = (
+            headers.get("x-driver-token") or  # GitLab
+            headers.get("x-installation-id") or  # Azure DevOps
+            headers.get("X-Installation-ID")  # Azure DevOps (case variant)
+        )
 
     if not installation_id:
         logger.error("Installation ID not found in headers or query params")

@@ -10,6 +10,7 @@ class TokenType(str, Enum):
     WORKSPACE_ACCESS_TOKEN = "workspace_access_token"  # Bitbucket
     PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket
     REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket
+    PERSONAL_ACCESS_TOKEN = "personal_access_token"  # Azure DevOps
 
     def __str__(self) -> str:
         return self.name
@@ -28,6 +29,7 @@ class AccessTokenData(BaseModel):
         return self.token_type in [
             TokenType.GROUP_ACCESS_TOKEN,
             TokenType.WORKSPACE_ACCESS_TOKEN,
+            TokenType.PERSONAL_ACCESS_TOKEN,
         ]
 
 

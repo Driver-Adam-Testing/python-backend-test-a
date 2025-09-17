@@ -18,6 +18,7 @@ from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
     WebhookEventContext,
 )
+from app.git_providers.providers.azure_devops_provider import AzureDevOpsProvider
 from app.git_providers.providers.bitbucket_provider import BitbucketProvider
 from app.git_providers.providers.gitlab_provider import GitLabProvider
 from app.git_providers.utils.errors import (
@@ -45,6 +46,7 @@ class GitProviderService:
     PROVIDERS: ClassVar[dict[GitProviderKind, type[GitProviderInterface]]] = {
         GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED: GitLabProvider,
         GitProviderKind.BITBUCKET: BitbucketProvider,
+        GitProviderKind.AZURE_DEVOPS_CLOUD: AzureDevOpsProvider,
     }
 
     def __init__(self, aws_config: AWSClientConfig) -> None:
@@ -297,6 +299,15 @@ class GitProviderService:
                 ssl_verification=True,
                 triggers=["push events", "Project or group access token events"],
             )
+        elif installation.git_provider_app.provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
+            # Azure DevOps service hooks (manually configured)
+            webhook_info = WebhookInfo(
+                callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
+                custom_headers={"X-Installation-ID": installation_id},
+                secret_token=secret.get("secret_token"),
+                ssl_verification=True,
+                triggers=["git.push", "git.pullrequest.created", "git.pullrequest.updated"],
+            )
         else:
             raise ValueError(
                 f"Unsupported provider kind: {installation.git_provider_app.provider_kind}"
@@ -323,6 +334,9 @@ class GitProviderService:
                 # Would need to query DB to find installation by workspace
                 # This is a simplified version
                 return None
+        elif provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
+            # Azure DevOps service hooks include installation ID in headers
+            return headers.get("x-installation-id")
 
         return None
 

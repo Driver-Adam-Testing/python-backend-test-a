@@ -603,10 +603,12 @@ def create_pull_request(
     access_token: str,
     branch: str,
     commit_slug: str,
+    tracked_branch: str | None,
 ) -> None:
-    default_branch = fetch_bitbucket_default_branch_name(
-        workspace, repo_slug, access_token
-    )
+    if tracked_branch is None:
+        tracked_branch = fetch_bitbucket_default_branch_name(
+            workspace, repo_slug, access_token
+        )
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
@@ -616,7 +618,7 @@ def create_pull_request(
         "title": f"Update driver docs for commit {commit_slug}",
         "description": f"Automated update of driver documentation for commit {commit_slug}",
         "source": {"branch": {"name": branch}},
-        "destination": {"branch": {"name": default_branch}},
+        "destination": {"branch": {"name": tracked_branch}},
         "close_source_branch": False,
     }
 
@@ -645,6 +647,7 @@ def create_pull_request_with_bot_cleanup(
     access_token: str,
     branch: str,
     commit_slug: str,
+    tracked_branch: str | None,
 ) -> None:
     """Create a pull request and close any existing bot PRs from docs_* branches."""
     BOT_NAME = "docs-bot"
@@ -693,4 +696,6 @@ def create_pull_request_with_bot_cleanup(
         print(f"Error listing pull requests: {e}")
 
     # Create new pull request
-    create_pull_request(workspace, repo_slug, access_token, branch, commit_slug)
+    create_pull_request(
+        workspace, repo_slug, access_token, branch, commit_slug, tracked_branch
+    )

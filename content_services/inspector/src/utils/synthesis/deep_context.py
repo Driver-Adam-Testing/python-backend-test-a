@@ -224,7 +224,7 @@ Code diff content deemed relevant to updating the current document has been prev
 
         task_afterword = Component(
             string="""
-It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what and how you update the existing document. Make sure to update/replace any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed.
+It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what and how you update the existing document. Make sure to update/replace any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed. Make sure the edits you suggest truly should be made per the document's goals and level of abstraction -- we want to avoid inappropriate recency bias in the document or adding content just because it changed but not because it belongs in the document.
 
 You will be given the aggregated diff content of relevant changed files first followed by the target document's previous version content. You will respond with a dense description of how the document should be edited, so that a copy editor can take the original document and your description of edits and update the final document with no other context. It is important to be dense and terse in describing the required edits but provide enough detail and direction so that the copy editor can be successful. If edits should be small and light -- communicate this in the output description of edits to be made that you will provide.
             """
@@ -288,7 +288,7 @@ Code diff content deemed relevant to updating the current document will be provi
 
         task_afterword = Component(
             string="""
-It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what you describe as needing to be edited/changed in the document. Make sure to edit any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and articulate as few changes to the original document in your edit descriptions as needed. While you are asked to write no more than 1 -- 3 paragraphs, if little to no edits are required in your judgment, then return little or no content back as the suggested edit.
+It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what you describe as needing to be edited/changed in the document. Make sure to edit any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and articulate as few changes to the original document in your edit descriptions as needed. While you are asked to write no more than 1 -- 3 paragraphs, if little to no edits are required in your judgment, then return little or no content back as the suggested edit. Make sure the edits you suggest truly should be made per the document's goals and level of abstraction -- we want to avoid inappropriate recency bias in the document or adding content just because it changed but not because it belongs in the document.
 
 You will be given the diff content for a changed file followed by the target document's previous version content. You will respond with no more than 1 -- 3 paragraphs of content describing how the previous version of the document should be edited to be up-to-date in view of the diff content.
             """
@@ -523,6 +523,10 @@ In general, your edited output document should be about the same length as the o
         ]
         is_relevant_diffs = [d for _n, d, _c in is_relevant_list]
         is_relevant_diffs_with_nodes = [(n, d) for n, d, _c in is_relevant_list]
+
+        print(
+            f"{len(is_relevant_list)}/{len(relevance_list)} node diffs considered relevant..."
+        )
 
         # If nothing is relevant, return the original document
         # TODO: should this be a deep copy?

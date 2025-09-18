@@ -6,7 +6,7 @@
 Alembic migration script to make the "status" column in "derived_contents" table nullable.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script alters the `status` column in the `derived_contents` table to allow null values, which is indicated by setting `nullable=True` in the [`upgrade`](<#upgrade>) function. This change is intended to facilitate copying data from another source, as suggested by the comment. The [`downgrade`](<#downgrade>) function reverses this change by setting `nullable=False`, making the `status` column non-nullable again. The script includes revision identifiers `ccbc4d05e796` and `85d10103ad3e` to track the migration's position in the version history.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script modifies the `status` column in the `derived_contents` table to allow null values by altering its existing PostgreSQL ENUM type. The [`upgrade`](<#upgrade>) function makes the `status` column nullable, while the [`downgrade`](<#downgrade>) function reverts this change, making the column non-nullable again. The script includes revision identifiers `ccbc4d05e796` and `85d10103ad3e` to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -19,28 +19,28 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
 - **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: Used by Alembic to track the order of database schema migrations.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration script.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Use**: Used to define branch labels for the migration script, but currently not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
 - **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
@@ -50,24 +50,24 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1404-ccbc4d05e796_make_dc_status_nullable_for_copying_.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1404-ccbc4d05e796_make_dc_status_nullable_for_copying_.py#L18>)
 
-Alters the 'status' column in the 'derived_contents' table to be nullable.
+Alters the 'status' column in the 'derived_contents' table to allow null values.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Uses the Alembic operation `op.alter_column` to modify the 'status' column in the 'derived_contents' table.
-    - Changes the 'status' column to allow null values by setting `nullable=True`.
-    - The column type is an ENUM with values 'generating', 'generation-complete', and 'generation-error'.
-- **Output**: No output is returned as this function performs a database schema migration.
+    - Calls the `alter_column` function from Alembic's `op` module.
+    - Modifies the 'status' column in the 'derived_contents' table to be nullable.
+    - Specifies the existing type of the column as an ENUM with specific values.
+- **Output**: No output is returned.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1404-ccbc4d05e796_make_dc_status_nullable_for_copying_.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1404-ccbc4d05e796_make_dc_status_nullable_for_copying_.py#L36>)
 
-Reverts the `status` column in the `derived_contents` table to be non-nullable.
+Reverts the 'status' column in the 'derived_contents' table to be non-nullable.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.alter_column` to modify the `status` column in the `derived_contents` table.
-    - Sets the `nullable` attribute of the `status` column to `False`, making it non-nullable.
+    - Calls the `op.alter_column` function to modify the 'status' column in the 'derived_contents' table.
+    - Sets the 'status' column to be non-nullable, using the existing ENUM type 'enum_derived_content_status'.
 - **Output**: No output is returned.
 
 

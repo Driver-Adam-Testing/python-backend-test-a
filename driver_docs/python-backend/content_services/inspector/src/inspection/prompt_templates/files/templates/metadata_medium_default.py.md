@@ -6,7 +6,7 @@
 Defines a metadata medium template using structured prompting and language specialization utilities.
 
 # Purpose
-This code defines a configuration for a metadata template used in a structured prompting system. It imports several components and prompts from different modules, such as `GENERAL_STE_STYLE_INSTRUCTION` and `METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT`, which are used to construct the template. The `METADATA_MEDIUM_TEMPLATE` is a list containing tuples that define the structure and content of prompts, including instructions for style and purpose. The code uses the `Prompt` and `Component` classes to build and format the template strings, ensuring they adhere to specific style instructions. This setup is likely part of a larger system that generates or processes structured prompts for metadata purposes.
+This code defines a configuration for generating metadata templates using structured prompting. It imports several components and prompts from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.metadata`, to construct a list named `METADATA_MEDIUM_TEMPLATE`. This list contains tuples that define the structure and content of metadata prompts, including instructions for style and formatting, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`. The code uses the `Prompt` and `Component` classes to build and format these prompts, which are then converted into strings using the `into_str()` method. This setup is intended for creating consistent and standardized metadata prompts for medium-sized systems.
 # Imports and Dependencies
 
 ---
@@ -25,8 +25,8 @@ This code defines a configuration for a metadata template used in a structured p
 ---
 ### METADATA\_MEDIUM\_TEMPLATE
 - **Type**: ``list``
-- **Description**: Contains a list with a single tuple that defines a structured prompt template for metadata. The tuple includes a prompt type, a section header, and two formatted prompt strings created by appending components and instructions to empty prompts.
-- **Use**: Used to define a medium complexity metadata prompt template for structured prompting.
+- **Description**: Contains a list with a single tuple that defines a structured prompt template for medium-sized metadata. The tuple includes a prompt type, a section header, and two formatted prompt strings created by appending components and instructions to empty prompts.
+- **Use**: Used to define and store a structured prompt template for generating medium-sized metadata.
 
 
 

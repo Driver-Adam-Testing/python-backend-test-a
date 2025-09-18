@@ -24,7 +24,7 @@ The code defines a class `JavaResolver` that extends `ImportResolver` to handle 
 
 - **Members**:
     - `language`: Specifies the programming language as 'java'.
-- **Description**: Resolves Java import statements to corresponding project files by analyzing the import symbol and matching it with available project files.
+- **Description**: Extends the `ImportResolver` class to resolve Java import statements to corresponding project files. It attempts to match import paths with file paths in the project, handling both direct class imports and package imports. The class uses a mapping of project files to symbols to determine the correct file paths for given import statements.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/java_resolver.JavaResolver.resolve_import`](<#javaresolverresolve_import>)
 - **Inherits From**:
@@ -38,18 +38,18 @@ The code defines a class `JavaResolver` that extends `ImportResolver` to handle 
 
 Resolves Java import statements to corresponding project files.
 - **Inputs**:
-    - `current_file`: The current file path where the import statement is located.
-    - `import_sym`: The symbol data representing the import statement to resolve.
-    - `project_files_to_symbols_map`: A dictionary mapping project file paths to lists of symbol data.
+    - `current_file`: The current file being processed, represented as a `Path` object.
+    - `import_sym`: The import symbol data, represented as a `RawTreeSitterSymbolData` object.
+    - `project_files_to_symbols_map`: A dictionary mapping `Path` objects to lists of `RawTreeSitterSymbolData`, representing the project files and their associated symbols.
 - **Logic and Control Flow**:
-    - Convert the import symbol name to a path format and append the '.java' suffix.
-    - Iterate over the list of project files to find a match for the import path.
-    - If a match is found, return the corresponding project file path in a list.
-    - If the parent of the candidate path is the current directory, return None.
-    - If no direct match is found, attempt to handle package imports by checking if the file path ends with the package string.
-    - Collect all matching package paths and return them as a list.
-    - If no matches are found, return None.
-- **Output**: A path or list of paths to the resolved project files, or None if no resolution is possible.
+    - Convert the import symbol name to a path-like string and append the `.java` suffix.
+    - Iterate over the list of project files to find a match for the import statement.
+    - If a direct match is found, return the corresponding project file as a list.
+    - If the parent directory of the candidate is the current directory, return `None`.
+    - For package imports, iterate over the project files to find matches for the package path.
+    - If matches are found for package imports, return the list of matching project files.
+    - If no matches are found, return `None`.
+- **Output**: Returns a `Path` object, a list of `Path` objects, or `None` depending on whether the import statement resolves to a specific file, multiple files, or no files.
 - **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/java_resolver.JavaResolver`](<#javaresolver>)  (Base Class)
 
 

@@ -6,7 +6,7 @@
 Instructions for writing detailed descriptions of a software codebase, including purpose, logic, and APIs.
 
 # Purpose
-The `Makefile` in this codebase automates the build process for the software project. It defines a set of tasks to compile and link the source code, ensuring that the project is built correctly and efficiently. The `Makefile` specifies targets, dependencies, and commands, allowing developers to execute complex build sequences with simple commands. By using this file, developers can streamline the build process, reduce manual errors, and maintain consistency across different development environments. The `Makefile` is essential for integrating the build process into continuous integration and deployment pipelines.
+Certainly, please provide the contents of the metadata or configuration file that you would like documented.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

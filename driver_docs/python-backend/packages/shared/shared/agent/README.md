@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agent classes for Anthropic and OpenAI, chat interfaces, agent factory, and tools for codebase management.
+Functions for formatting, parsing, and language model configurations, tools for codebase analysis, and classes for agent creation and chat interfaces with OpenAI and Anthropic.
 
 ## Folders
-- **[models](models/README.md)**: Functions for formatting and parsing, document querying and summarization, and LLM configuration management.
-- **[tools](tools/README.md)**: Tools for codebase folder summary, file opening, searching, and tool registration in a registry.
+- **[models](models/README.md)**: Functions for formatting and parsing, OpenAI API queries, and language model configurations.
+- **[tools](tools/README.md)**: Tools for codebase folder summary, file opening, searching, and strict tool execution with Pydantic.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[agent_anthropic_strict.py](agent_anthropic_strict.py.md)**: Implements the AnthropicStrictAgent class for executing tool calls and creating message completions.
-- **[agent_base.py](agent_base.py.md)**: Abstract base class for an agent with logging, message handling, and iteration capabilities.
-- **[agent_factory.py](agent_factory.py.md)**: Factory function to create agents based on model provider, supporting OpenAI and Anthropic agents.
+- **[agent_base.py](agent_base.py.md)**: Abstract base class for an agent with logging, message handling, and iteration control.
+- **[agent_factory.py](agent_factory.py.md)**: Creates agents based on model configuration, supporting OpenAI and Anthropic providers.
 - **[agent_openai_strict.py](agent_openai_strict.py.md)**: Implements an OpenAI agent with strict tool handling and response generation capabilities.
 - **[chat_openai.py](chat_openai.py.md)**: Implements a chat interface with OpenAI, supporting different output configurations and retry logic.
-- **[chat_openai_async.py](chat_openai_async.py.md)**: Asynchronous OpenAI chat client with configurable output formats and retry logic.
+- **[chat_openai_async.py](chat_openai_async.py.md)**: Asynchronous OpenAI chat response generation with configurable output formats and retry logic.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

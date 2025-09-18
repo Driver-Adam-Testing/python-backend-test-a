@@ -57,6 +57,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
+    tracked_branch = version.primary_asset.vcs_tracked_branch
     repo_id = version.primary_asset.repository_id
     repo_name = version.primary_asset.display_name
     org_id = version.primary_asset.organization_id
@@ -121,10 +122,11 @@ async def push_docs(version_id: uuid.UUID) -> None:
             raise ValueError(f"Unsupported provider: {provider}")
 
         repo_dir = Path(temp_dir) / full_name
-        print(f"Cloning repository {clone_url} into {repo_dir}")
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
             run(f"git clone {clone_url} {repo_dir}")
+            if tracked_branch is not None:
+                run(f"git checkout {tracked_branch}", cwd=repo_dir)
 
         run(f"git checkout -B {branch}", cwd=repo_dir)
         src_path = os.path.abspath(extracted_path)
@@ -138,7 +140,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             shutil.rmtree(driver_docs_path)
 
         dst_path = repo_dir / "driver_docs" / repo_name
-        COMMIT_MESSAGE = "Bot: update driver docs for commit: " + commit_slug
+        COMMIT_MESSAGE = "Docs: update driver docs for commit: " + commit_slug
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)
@@ -156,13 +158,20 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
         # Create pull request based on provider
         if provider == PrimaryAssetProvider.GITHUB:
-            gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
+            gh_ops.create_pull_request_with_bot_cleanup(
+                full_name, branch, access_token, commit_slug
+            )
         elif provider == PrimaryAssetProvider.BITBUCKET:
             bitbucket_ops.create_pull_request_with_bot_cleanup(
-                workspace, repo_slug, access_token, branch, commit_slug
+                workspace,
+                repo_slug,
+                access_token,
+                branch,
+                commit_slug,
+                tracked_branch,
             )
         elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
-            gitlab_ops.create_pull_request(
+            gitlab_ops.create_pull_request_with_bot_cleanup(
                 base_url, repo_id, access_token, branch, commit_slug
             )
 

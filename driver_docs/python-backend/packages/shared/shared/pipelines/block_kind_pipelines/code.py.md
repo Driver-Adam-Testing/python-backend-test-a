@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Executes a code block agent to generate and correct code snippets using an LLM session.
+Executes a code block agent to generate and correct code snippets using various tools and prompts.
 
 # Purpose
-The code defines a function [`execute_code_block_agent`](<#execute_code_block_agent>) that orchestrates the execution of an agent designed to process and correct code snippets. It imports various components from shared modules, such as `create_agent`, `OpenFileTool`, `SearchTool`, and several interfaces related to pipeline configuration and usage metadata. The function takes a `PipelineInput` object as input and returns a `PipelineResponse` object. It initializes a usage session with metadata and creates an agent with specified tools and response types. The agent processes input prompts and generates a response, which is then passed to a code critic function `run_agent_code_critic__extract_verify_correct` to verify and correct the code. The function compiles the final result by applying any corrections to the initial response and returns a structured response containing the agent's results and any corrections made.
+The code defines a function [`execute_code_block_agent`](<#execute_code_block_agent>) that orchestrates the execution of an agent designed to process and correct code snippets. It imports various components from shared modules, including tools for file operations and search, interfaces for pipeline configuration, and prompts for agent communication. The function takes a `PipelineInput` object and returns a `PipelineResponse` object. It initializes a usage session with metadata and creates an agent using the `create_agent` function. The agent is configured with specific tools and messages to guide its operation.
 
-This code is part of a larger system that likely involves automated code review or code generation processes. It uses a combination of tools and agents to analyze and improve code snippets, ensuring they meet certain standards or requirements. The function is designed to be part of a pipeline, indicating it is likely used in a sequence of processing steps, possibly in a continuous integration or development environment. The use of shared components and interfaces suggests that this code is intended to be integrated with other parts of a software system, providing a specific functionality related to code analysis and correction.
+The agent processes the input prompt and generates a response, which is then passed to a code critic function `run_agent_code_critic__extract_verify_correct` to verify and correct the code. The function checks for corrections and applies them to the final result if necessary. The response includes both the agent's initial output and any corrections made. This code is part of a broader system that automates code review and correction, leveraging language model sessions and predefined prompts to enhance the quality of code snippets.
 # Imports and Dependencies
 
 ---
@@ -32,8 +32,8 @@ This code is part of a larger system that likely involves automated code review 
 ---
 ### PROMPT\_AUG\_PROMPT\_SUFFIX
 - **Type**: ``str``
-- **Description**: A string that contains the instruction to generate comprehensive code snippets as the desired output.
-- **Use**: Used as a suffix in prompt augmentation to guide the generation of code snippets.
+- **Description**: A string variable that contains a prompt instruction to generate comprehensive code snippets as the desired output.
+- **Use**: Used as a suffix in prompt augmentation to instruct the generation of detailed code snippets.
 
 
 # Functions
@@ -46,16 +46,16 @@ Executes a code block agent to process input, invoke an agent, and apply code co
 - **Inputs**:
     - `input`: An instance of `PipelineInput` that contains the scope and prompt for the agent.
 - **Logic and Control Flow**:
-    - Creates a [`UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#usagesessionmetadata>) object with content type and ID.
-    - Initializes an [`LLMUsageSession`](<../../usage/llm_session.py.md#llmusagesession>) with organization and user IDs from the input scope and the session metadata.
-    - Creates an agent using [`create_agent`](<../../agent/agent_factory.py.md#create_agent>) with specified tools and response type.
-    - Adds multiple messages to the agent from predefined prompts.
-    - Invokes the agent with the input prompt converted to a string.
-    - Runs [`run_agent_code_critic__extract_verify_correct`](<../agents/agent_code_critic.py.md#run_agent_code_critic__extract_verify_correct>) to get code corrections based on the agent's response.
-    - Converts the agent's response to markdown format for the final result.
-    - Checks if code corrections are a list and iterates over them to replace input code with corrected code if available.
-    - Creates a [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>) object with step responses and the final result.
-    - Returns the [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>) object.
+    - Create a [`UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#usagesessionmetadata>) object with content type and ID.
+    - Start a [`LLMUsageSession`](<../../usage/llm_session.py.md#llmusagesession>) with organization ID, user ID, and session metadata.
+    - Create an agent using [`create_agent`](<../../agent/agent_factory.py.md#create_agent>) with specified tools and response type.
+    - Add multiple messages to the agent from predefined prompts.
+    - Invoke the agent with the input prompt converted to a string.
+    - Run [`run_agent_code_critic__extract_verify_correct`](<../agents/agent_code_critic.py.md#run_agent_code_critic__extract_verify_correct>) to get code corrections.
+    - Convert the agent's response to markdown format for the final result.
+    - If code corrections are a list, iterate through them and apply corrections to the final result.
+    - Create a [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>) with step responses and the final result.
+    - Return the [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>).
 - **Output**: An instance of [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>) containing the agent's response, code corrections, and the final result.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#usagesessionmetadata>)

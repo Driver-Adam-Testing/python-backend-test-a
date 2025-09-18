@@ -3,31 +3,31 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Curates content to explain computers and software to fifth graders with illustrations and experiments.
+Defines a prompt and message structure for explaining computers and software to a fifth grader.
 
 # Purpose
-This code defines a simple structure for a conversation between a user and an assistant. The `PROMPT` variable contains a string that describes the reader's profile and interests, specifically targeting a fifth grader who wants to learn about computers and software in an engaging way. The `MESSAGE` dictionary stores the role of the user and the content of the prompt. The `ASSISTANT_MESSAGE` dictionary specifies the role of the assistant and its response content, indicating that the assistant will tailor its response to suit a fifth-grade audience. This setup is useful for creating interactive educational content or chat-based applications.
+This code defines a configuration for a conversational AI system. The `PROMPT` variable contains a string that describes the target audience and the type of content they are interested in, specifically tailored for a fifth grader. The `MESSAGE` dictionary stores the role of the user and the content of the prompt. The `ASSISTANT_MESSAGE` dictionary specifies the role of the assistant and its response strategy. This setup is used to guide the AI in generating responses that are suitable for a young audience, focusing on simple explanations and engaging content.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
 - **Description**: A multi-line string that describes the content to be curated for a fifth-grade reader. It includes instructions to create engaging and simple explanations of computers and software, with illustrations, diagrams, and interactive elements.
-- **Use**: Used to define the content and style of communication for a specific reader persona.
+- **Use**: Used to define the content requirements for a specific reader persona.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has the value `user`, and the `content` key holds the value of the `PROMPT` variable, which is a multi-line string describing a reader persona and their interests.
-- **Use**: Used to store and organize information about the user's role and the content they are interested in.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has the value `user`, and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store and organize user-related information, specifically the role and content for a user prompt.
 
 
 ---
 ### ASSISTANT\_MESSAGE
 - **Type**: ``dict``
-- **Description**: A dictionary that contains two key-value pairs: `role` and `content`. The `role` key has the value `assistant`, and the `content` key has a string value that indicates the assistant's response style.
-- **Use**: Used to define the response style and role of the assistant in a conversation.
+- **Description**: A dictionary that contains two key-value pairs. The first key is `role` with the value `assistant`, and the second key is `content` with the value `I will respond as I would to a fifth grader.`
+- **Use**: Used to define the role and content of the assistant's response.
 
 
 

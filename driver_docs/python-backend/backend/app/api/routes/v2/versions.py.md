@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-API endpoints for listing and updating version data with filtering, sorting, and pagination.
+API endpoints for listing and updating version data with authentication and query utilities.
 
 # Purpose
-The code defines two API endpoints for managing `Version` entities within an application using the FastAPI framework. It is part of a broader application that interacts with a database, as indicated by the use of SQLAlchemy and SQLModel for database operations. The endpoints are integrated into a router, which is a common practice in FastAPI to organize and manage routes.
+The code defines two API endpoints using the FastAPI framework, which are part of a version management system. The first endpoint, [`list_versions`](<#list_versions>), is a GET request handler that retrieves a list of version records associated with a user's organization. It uses SQLAlchemy and SQLModel to construct a query that joins the `Version` and `PrimaryAsset` models, applying filters and sorting based on query parameters. The endpoint returns a `ListWithCount` object containing the list of versions and the total count of records.
 
-The first endpoint, [`list_versions`](<#list_versions>), is a GET request handler that retrieves a list of `Version` objects associated with a user's organization. It supports filtering, sorting, and pagination of results. The function constructs a query to select `Version` records, applies filters and sorting based on query parameters, and returns the results along with a total count. The second endpoint, [`update_version`](<#update_version>), is a PUT request handler that updates a specific `Version` entity identified by `version_id`. It checks if the `Version` exists and belongs to the user's organization before applying updates from the request body. If the `Version` is not found, it raises a 404 HTTP exception. Both endpoints utilize authentication and session management to ensure secure and consistent access to the database.
+The second endpoint, [`update_version`](<#update_version>), is a PUT request handler that updates a specific version record identified by a `version_id`. It checks if the version exists and belongs to the user's organization. If the version is found, it updates the version's status based on the provided payload and commits the changes to the database. If the version is not found, it raises an HTTP 404 error. Both endpoints use dependency injection to access the current session and user token, ensuring that operations are performed within the context of the authenticated user's organization.
 # Imports and Dependencies
 
 ---
 - `uuid.UUID`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.Version`
+- `database.models.PrimaryAsset`
+- `database.models.Version`
 - `fastapi.Body`
 - `fastapi.HTTPException`
 - `fastapi.Path`
@@ -42,16 +42,16 @@ The first endpoint, [`list_versions`](<#list_versions>), is a GET request handle
 Retrieves a list of version details filtered and sorted based on request parameters and user organization.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `request`: The HTTP request object containing query parameters for filtering.
-    - `session`: The current database session used to execute queries.
-    - `user`: The user token object containing user information, including organization ID.
-    - `pagination`: The pagination object containing sorting and pagination details.
+    - `request`: An instance of `Request` containing query parameters for filtering.
+    - `session`: An instance of `CurrentSession` used to execute database queries.
+    - `user`: An instance of `UserToken` representing the authenticated user, used to filter versions by organization.
+    - `pagination`: An instance of `Pagination` containing sorting and pagination information.
 - **Logic and Control Flow**:
-    - Create a query to select `Version` records joined with `PrimaryAsset` where the `organization_id` matches the user's organization ID.
-    - Apply `selectinload` options to eagerly load related `root_node`, `primary_asset`, and `creator` for each `Version`.
+    - Create a query to select `Version` records joined with `PrimaryAsset` where the `organization_id` matches the user's organization.
+    - Load related data for `Version` using `selectinload` for `root_node`, `primary_asset`, and `creator`.
     - Convert request query parameters to a dictionary and apply them as filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
-    - Create a count query to count the total number of filtered versions and execute it to get `total_count`.
-    - Apply sorting to the query based on pagination details using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
+    - Create a count query to determine the total number of filtered versions and execute it to get `total_count`.
+    - Apply sorting to the query based on pagination information using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
     - Execute the query to retrieve all matching version records.
     - Return a [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of versions and the total count.
 - **Output**: A [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of `VersionDetailRead` objects and the total count of versions.
@@ -70,15 +70,13 @@ Updates a version's status in the database if it exists and belongs to the user'
 - **Inputs**:
     - `session`: The current database session used to execute queries.
     - `user`: The user token containing information about the authenticated user.
-    - `version_id`: The UUID of the version to update, provided as a path parameter.
-    - `payload`: The data for updating the version, provided in the request body.
+    - `version_id`: The UUID of the version to update, extracted from the path.
+    - `payload`: The data containing the updated fields for the version, provided in the request body.
 - **Logic and Control Flow**:
-    - Selects the version from the database where the version ID matches and the organization ID matches the user's organization ID.
-    - Checks if the version exists; if not, raises an HTTP 404 exception with the message 'Version not found'.
-    - If the payload contains a status, updates the version's status with the new value.
-    - Adds the updated version to the session and commits the changes to the database.
-    - Refreshes the version instance to reflect the latest state from the database.
-    - Returns the updated version.
+    - Selects the `Version` from the database where the `version_id` matches and the `PrimaryAsset` belongs to the user's organization.
+    - Checks if the `version` exists; if not, raises an `HTTPException` with a 404 status code.
+    - If the `payload` contains a `status`, updates the `version`'s status.
+    - Adds the `version` to the session, commits the transaction, and refreshes the `version` to reflect the changes.
 - **Output**: The updated `Version` object.
 
 

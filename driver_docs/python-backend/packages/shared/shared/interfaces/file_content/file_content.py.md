@@ -6,7 +6,7 @@
 Defines a Pydantic model for processed file content with a string attribute.
 
 # Purpose
-The code defines a data model using the `pydantic` library, which is used for data validation and settings management in Python. The `ProcessedFileContent` class inherits from `BaseModel` and includes a single attribute, `content`, which is a string. The commented-out section suggests an intention to include a custom initializer that prints the model's data in a formatted manner using the `pprint` module, but this functionality is currently inactive. This code provides narrow functionality, focusing on representing and validating the structure of processed file content.
+The code defines a data model using the `pydantic` library, which is used for data validation and settings management in Python. The `ProcessedFileContent` class inherits from `BaseModel` and includes a single attribute, `content`, which is a string. The commented-out section suggests an intention to initialize the class with additional functionality for pretty-printing the model's data, but this is not active in the current code. This code provides narrow functionality, focusing on representing and validating the structure of processed file content.
 # Imports and Dependencies
 
 ---
@@ -19,10 +19,10 @@ The code defines a data model using the `pydantic` library, which is used for da
 ### ProcessedFileContent<!-- {{#class:python-backend/packages/shared/shared/interfaces/file_content/file_content.ProcessedFileContent}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/file_content/file_content.py#L4>)
 
-- **Decorators**: `@dataclass`
+- **Decorators**: `@BaseModel`
 - **Members**:
     - `content`: Stores the content of a file as a string.
-- **Description**: Represents the content of a file that has been processed, inheriting from `BaseModel` to leverage data validation and serialization features.
+- **Description**: Represents the content of a file that has been processed, inheriting from Pydantic's `BaseModel` to provide data validation and serialization.
 - **Inherits From**:
     - `BaseModel`
 

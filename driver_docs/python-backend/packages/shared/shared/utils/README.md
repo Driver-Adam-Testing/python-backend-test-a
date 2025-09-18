@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Classes for text styling, decorators for caching and logging, Mermaid rendering, OpenAI file upload, and Puppeteer configuration.
+Classes for terminal text styling, function decorators, tests, Mermaid rendering, OpenAI file upload, and Puppeteer configuration.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[bcolors.py](bcolors.py.md)**: Defines classes for text color, background, and weight, and a function to print colored dictionary keys.
-- **[decorators.py](decorators.py.md)**: Decorators for caching, suppressing logging, and retrying with exponential backoff.
-- **[decorators_test.py](decorators_test.py.md)**: Tests for the `expiring_cache` decorator, including caching, expiry, and cache clearing behavior.
+- **[bcolors.py](bcolors.py.md)**: Defines classes for text color, background, and weight in terminal output, and a function to print colored dictionary keys.
+- **[decorators.py](decorators.py.md)**: Decorators for caching, suppressing logging, and retrying functions with exponential backoff.
+- **[decorators_test.py](decorators_test.py.md)**: Tests for the `expiring_cache` decorator, verifying caching, expiry, and cache clearing behavior.
 - **[mermaid_render.py](mermaid_render.py.md)**: Checks if Mermaid code can be rendered using the Mermaid CLI and handles temporary file management.
 - **[openai_file.py](openai_file.py.md)**: Uploads a file to OpenAI and returns the file ID.
-- **[puppeteer-config.json](puppeteer-config.json.md)**: Configuration for Puppeteer with arguments to disable sandboxing.
+- **[puppeteer-config.json](puppeteer-config.json.md)**: Configuration for Puppeteer with no-sandbox and disable-setuid-sandbox arguments.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -8,7 +8,7 @@ Defines a CDK construct for a Lambda function with CloudWatch alarms and event h
 # Purpose
 The code defines a construct for deploying a Lambda function and its associated resources using the AWS Cloud Development Kit (CDK). The primary component is the `MetricsLambda` class, which extends the `Construct` class from the `constructs` module. This class is responsible for setting up a Lambda function that processes metrics, along with the necessary infrastructure such as a VPC, event bus, and dead-letter queue (DLQ). The `MetricsLambdaParams` dataclass is used to pass configuration parameters to the construct, including environment settings and optional database and CloudWatch alarm ARNs.
 
-The `MetricsLambda` construct configures a Python-based AWS Lambda function using the `aws_lambda_python_alpha` module. It sets up the function's environment variables, VPC configuration, and bundling options. The construct also creates an event bus and a rule to trigger the Lambda function based on specific event patterns. Additionally, it sets up CloudWatch alarms to monitor the DLQ and Lambda function error rates, with optional SNS notifications for alarm actions. The construct outputs the secret name for the database URL, which is stored in AWS Secrets Manager, as a CloudFormation output. This code is intended to be part of a larger infrastructure deployment and is not a standalone script.
+The `MetricsLambda` construct configures a Python-based AWS Lambda function using the `aws_lambda_python_alpha` module. It specifies the function's entry point, runtime, and environment variables. The construct also sets up an event bus and a rule to trigger the Lambda function based on specific event patterns. Additionally, it configures CloudWatch alarms to monitor the DLQ and Lambda function error rates, with optional SNS notifications for alarm actions. The construct outputs the secret name for the database URL, which is stored in AWS Secrets Manager, as a CloudFormation output. This setup is intended for environments such as development, staging, and production, with specific configurations for each.
 # Imports and Dependencies
 
 ---
@@ -40,10 +40,10 @@ The `MetricsLambda` construct configures a Python-based AWS Lambda function usin
 - **Decorators**: `@dataclass`
 - **Members**:
     - `environment`: Specifies the environment in which the Lambda function operates.
-    - `cdk_prefix`: Defines a prefix for AWS CDK resources.
+    - `cdk_prefix`: Defines a prefix used for naming resources in AWS CDK.
     - `database_url`: Holds the URL of the database, if available.
-    - `cloudwatch_alarm_arn`: Contains the ARN of a CloudWatch alarm, if specified.
-- **Description**: Defines parameters for configuring a metrics-related AWS Lambda function, including environment settings, resource prefixes, and optional database and CloudWatch alarm configurations.
+    - `cloudwatch_alarm_arn`: Contains the ARN of a CloudWatch alarm, if available.
+- **Description**: Defines parameters for configuring a Lambda function, including environment settings, resource naming, and optional database and CloudWatch alarm configurations.
 
 
 ---
@@ -52,13 +52,13 @@ The `MetricsLambda` construct configures a Python-based AWS Lambda function usin
 
 - **Members**:
     - `lambda_function`: Holds the AWS Lambda function for processing metrics.
-    - `metrics_dlq`: Represents the dead-letter queue for metrics.
+    - `metrics_dlq`: Represents the dead-letter queue for undelivered metrics.
     - `metrics_bus`: Represents the event bus for metrics events.
     - `metrics_rule`: Defines the rule for processing metrics events.
     - `metric_dlq_alarm`: Monitors the dead-letter queue for undelivered metrics.
     - `metric_message_age_alarm`: Monitors the age of messages in the dead-letter queue.
     - `lambda_error_rate_alarm`: Monitors the error rate of the Lambda function.
-- **Description**: Facilitates the deployment and configuration of an AWS Lambda function for processing metrics, including setting up related AWS resources such as a dead-letter queue, event bus, and CloudWatch alarms for monitoring purposes.
+- **Description**: Manages AWS resources for a Lambda function that processes metrics, including setting up a VPC, event bus, and alarms for monitoring the function and its associated dead-letter queue.
 - **Methods**:
     - [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda.__init__`](<#metricslambda__init__>)
 - **Inherits From**:
@@ -70,24 +70,24 @@ The `MetricsLambda` construct configures a Python-based AWS Lambda function usin
 #### MetricsLambda\.\_\_init\_\_<!-- {{#callable:python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda.__init__}} -->
 [View Source →](<../../../../../dev_stack/cdk/constructs/metrics_lambda.py#L34>)
 
-Initializes a `MetricsLambda` construct with AWS resources and configurations for a Lambda function, event bus, and CloudWatch alarms.
+Initializes the `MetricsLambda` construct with AWS resources and configurations for a Lambda function, event bus, and CloudWatch alarms.
 - **Inputs**:
     - `scope`: A `Construct` object that defines the scope in which this construct is created.
     - `id`: A string that serves as the unique identifier for this construct.
-    - `params`: An instance of `MetricsLambdaParams` containing configuration parameters such as environment, CDK prefix, database URL, and CloudWatch alarm ARN.
+    - `params`: An instance of `MetricsLambdaParams` containing configuration parameters such as environment, CDK prefix, and optional database URL and CloudWatch alarm ARN.
 - **Logic and Control Flow**:
-    - Calls the parent class `__init__` method to initialize the base `Construct` class.
-    - Creates a secret in AWS Secrets Manager for the database URL using the CDK prefix from `params`.
-    - Retrieves the VPC ID from AWS SSM Parameter Store and uses it to look up the VPC in AWS EC2.
-    - Determines the absolute path to the driver database and prints it.
-    - Creates a Python Lambda function with specified configurations including VPC settings, environment variables, and bundling options.
-    - Grants the Lambda function read access to the database URL secret.
+    - Calls the parent class `__init__` method to initialize the base `Construct`.
+    - Creates a secret in AWS Secrets Manager for the database URL.
+    - Retrieves the VPC ID from AWS SSM Parameter Store and looks up the VPC using AWS EC2.
+    - Determines the absolute path for the driver database and prints it.
+    - Creates a Python Lambda function with specified configurations including VPC, environment variables, and bundling options.
+    - Grants read access to the database URL secret for the Lambda function.
     - Creates an SQS queue for the dead-letter queue (DLQ).
-    - Creates an event bus and associates it with the DLQ, then sets up a rule to trigger the Lambda function based on specific event patterns.
-    - If the environment is 'development', 'staging', or 'production', sets up CloudWatch alarms for DLQ message count, message age, and Lambda error rate.
-    - If a CloudWatch alarm ARN is provided, adds SNS actions to the alarms for notifications; otherwise, prints a warning message.
-    - Outputs the secret name of the database URL secret as a CloudFormation output.
-- **Output**: None, as this is a constructor method for initializing the `MetricsLambda` construct.
+    - Creates an EventBus and a Rule to process events from the source `metrics.client`.
+    - Sets up CloudWatch alarms for DLQ message count, message age, and Lambda error rate if the environment is development, staging, or production.
+    - Adds SNS actions to the alarms if a CloudWatch alarm ARN is provided, otherwise prints a warning message.
+    - Outputs the secret name for the database URL as a CloudFormation output.
+- **Output**: None
 - **See also**: [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda`](<#metricslambda>)  (Base Class)
 
 

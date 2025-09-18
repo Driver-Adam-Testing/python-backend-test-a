@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 import time
@@ -23,7 +24,7 @@ def expiring_cache(duration_sec: int) -> Callable:
         cache: dict[str, Any] = {"value": None, "expires_at": 0}
         lock = Lock()
 
-        def wrapped(*args: object, **kwargs: object) -> Any:  # noqa: ANN401
+        def wrapped(*args: object, **kwargs: object) -> Any:
             nonlocal cache
             current_time = time.time()
 
@@ -84,7 +85,7 @@ def async_retry_with_exponential_backoff(
                 try:
                     return await func(*args, **kwargs)
 
-                except errors:
+                except errors as e:
                     exception_str = traceback.format_exc()
                     print(f"Retrying with exception {exception_str}")
 
@@ -93,7 +94,7 @@ def async_retry_with_exponential_backoff(
                     if num_retries > max_retries:
                         raise Exception(
                             f"Maximum number of retries ({max_retries}) exceeded."
-                        )
+                        ) from e
 
                     delay *= exponential_base * (1 + jitter * random.random())
 
@@ -101,7 +102,7 @@ def async_retry_with_exponential_backoff(
                         f"Retrying {func.__name__} in {delay} sec with args={args} kwargs={kwargs}"
                     )
 
-                    time.sleep(delay)
+                    await asyncio.sleep(delay)
 
                 # Raise exceptions for any errors not specified
                 except Exception as e:
@@ -135,7 +136,7 @@ def retry_with_exponential_backoff(
                 try:
                     return func(*args, **kwargs)
 
-                except errors:
+                except errors as e:
                     exception_str = traceback.format_exc()
                     logging.debug(f"Retrying with exception {exception_str}")
 
@@ -144,7 +145,7 @@ def retry_with_exponential_backoff(
                     if num_retries > max_retries:
                         raise Exception(
                             f"Maximum number of retries ({max_retries}) exceeded."
-                        )
+                        ) from e
 
                     delay *= exponential_base * (1 + jitter * random.random())
 

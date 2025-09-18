@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for LlmMessage and LlmMessageHistory functionalities, including persistence and format conversion.
+Tests for the conversion, persistence, and manipulation of LlmMessage and LlmMessageHistory objects.
 
 # Purpose
-This code is a test suite for validating the functionality of message handling and persistence in a system that uses large language model (LLM) messages. It uses the `pytest` framework to define fixtures and test cases that check the conversion of `LlmMessage` and `LlmMessageHistory` objects to their persistent counterparts, `RuntimeLlmMessage` and `RuntimeLlmMessageHistory`. The tests cover various scenarios, including adding messages to a history, converting message histories to different formats, and ensuring that message histories can be saved and loaded correctly. The code also verifies that the conversion to an Anthropic format is accurate and that different message kinds are handled as expected.
+This code is a test suite for validating the functionality of message handling and persistence in a system that uses large language model (LLM) messages. It uses the `pytest` framework to define fixtures and test cases that check the conversion of `LlmMessage` and `LlmMessageHistory` objects to their persistent counterparts, `RuntimeLlmMessage` and `RuntimeLlmMessageHistory`. The tests cover various scenarios, including adding messages to a history, converting message histories to different formats, and ensuring that message histories can be saved and loaded correctly. The code also verifies that different message kinds are handled properly and that the conversion to an Anthropic format is accurate.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

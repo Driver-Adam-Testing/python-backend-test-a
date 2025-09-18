@@ -6,9 +6,9 @@
 A C# Tree-sitter driver for parsing and extracting symbols, classes, methods, and interfaces from C# source code.
 
 # Purpose
-The code is a Python module designed to parse and extract various C# language constructs from source code using the `tree_sitter` library. It defines several classes and functions to identify and categorize different C# elements such as imports, methods, classes, interfaces, and data structures. The module uses regular expressions and tree-sitter queries to parse C# syntax and extract relevant information, which is then encapsulated in data structures for further processing.
+The code is a Python module designed to parse and extract symbols from C# source code using the `tree_sitter` library. It defines several classes and functions to identify and categorize different C# constructs such as imports, methods, classes, interfaces, and data structures. The module uses regular expressions and tree-sitter queries to parse C# syntax and extract relevant information, which is then encapsulated in data structures for further processing.
 
-Key components include enumerations like `CSharpImportScopeKind`, `CSharpCallKind`, and `CSharpMethodModifier`, which categorize different C# constructs. The `CSharpDriverTree` class extends `DriverTree` and provides methods to extract symbols from C# code, such as [`extract_imports`](<#csharpdrivertreeextract_imports>), [`extract_callable_definitions`](<#csharpdrivertreeextract_callable_definitions>), and [`extract_class_definitions`](<#csharpdrivertreeextract_class_definitions>). These methods return lists of `RawTreeSitterSymbolData` objects, which contain detailed information about each symbol, including its name, type, location, and additional metadata. The module is intended to be part of a larger system for analyzing and documenting C# code, providing a structured way to access and manipulate C# language elements.
+Key components include enumerations for different C# constructs like `CSharpImportScopeKind`, `CSharpCallKind`, and `CSharpMethodModifier`, which help categorize the extracted symbols. The `CSharpDriverTree` class extends `DriverTree` and provides methods to extract various C# symbols, such as [`extract_imports`](<#csharpdrivertreeextract_imports>), [`extract_callable_definitions`](<#csharpdrivertreeextract_callable_definitions>), and [`extract_class_definitions`](<#csharpdrivertreeextract_class_definitions>). These methods use tree-sitter queries to navigate the syntax tree and collect data about the symbols, which are then stored in instances of `RawTreeSitterSymbolData`. The module is intended to be part of a larger system that processes C# code, likely for documentation or analysis purposes.
 # Imports and Dependencies
 
 ---
@@ -29,22 +29,22 @@ Key components include enumerations like `CSharpImportScopeKind`, `CSharpCallKin
 
 ---
 ### TERMINAL\_GENERICS\_PARSER
-- **Type**: `re.Pattern`
-- **Description**: Compiles a regular expression pattern that matches a string ending with a generic type enclosed in angle brackets, such as '<T>'. The pattern is defined as '<[^>]+>$', where '<[^>]+>' matches any sequence of characters between '<' and '>', and '$' asserts the position at the end of the string.
-- **Use**: Used to identify and match terminal generic type declarations in strings.
+- **Type**: ``re.Pattern``
+- **Description**: Compiles a regular expression pattern that matches a string ending with a generic type enclosed in angle brackets, such as '<T>'. This pattern is used to identify terminal generics in strings.
+- **Use**: Used to match and parse terminal generics in strings.
 
 
 ---
 ### ANYWHERE\_GENERICS\_PARSER
 - **Type**: ``re.Pattern``
-- **Description**: Compiles a regular expression pattern that matches any sequence of characters enclosed in angle brackets ('<' and '>').
-- **Use**: Used to identify and parse generic type parameters in strings.
+- **Description**: Compiles a regular expression pattern that matches any substring enclosed in angle brackets ('<' and '>'). This pattern does not require the angle brackets to be at the end of the string.
+- **Use**: Used to identify and extract generic type parameters from strings.
 
 
 ---
 ### TERMINAL\_PAREN\_PARSER
 - **Type**: ``re.Pattern``
-- **Description**: Compiles a regular expression pattern that matches a string ending with parentheses containing any characters except a closing parenthesis. This pattern is used to identify and extract such substrings from a given text.
+- **Description**: Compiles a regular expression pattern that matches a string ending with parentheses containing any characters except a closing parenthesis. This pattern is used to identify terminal parentheses in a string.
 - **Use**: Used to match and parse strings that end with a parenthetical expression.
 
 
@@ -62,11 +62,11 @@ Key components include enumerations like `CSharpImportScopeKind`, `CSharpCallKin
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L46>)
 
 - **Members**:
-    - `LOCAL_USING`: Represents a local using directive in C#.
-    - `GLOBAL_USING`: Represents a global using directive in C#.
-    - `NAMESPACE_BLOCK_SCOPE_DECL`: Represents a namespace block scope declaration in C#.
-    - `NAMESPACE_FILE_SCOPE_DECL`: Represents a namespace file scope declaration in C#.
-- **Description**: Defines different kinds of import scopes in C# using string enumeration.
+    - `LOCAL_USING`: Represents a local using directive.
+    - `GLOBAL_USING`: Represents a global using directive.
+    - `NAMESPACE_BLOCK_SCOPE_DECL`: Represents a namespace block scope declaration.
+    - `NAMESPACE_FILE_SCOPE_DECL`: Represents a namespace file scope declaration.
+- **Description**: Defines different kinds of import scopes in C# using string enumeration values.
 - **Inherits From**:
     - `StrEnum`
 
@@ -76,17 +76,17 @@ Key components include enumerations like `CSharpImportScopeKind`, `CSharpCallKin
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L53>)
 
 - **Members**:
-    - `METHOD`: Defines the string value 'method'.
-    - `CONSTRUCTOR`: Defines the string value 'constructor'.
-    - `DESTRUCTOR`: Defines the string value 'destructor'.
-    - `OP_OVERLOAD`: Defines the string value 'operator_overload'.
-    - `CONVERSION`: Defines the string value 'conversion_operator_declaration'.
-    - `LOCAL_FN`: Defines the string value 'local_function'.
-    - `PROPERTY`: Defines the string value 'property'.
-    - `INDEXER`: Defines the string value 'indexer'.
-    - `EVENT_FIELD_LIKE`: Defines the string value 'event_field_like'.
-    - `EVENT_PROPERTY_LIKE`: Defines the string value 'event_property_like'.
-- **Description**: Enumerates different kinds of C# call types, each represented as a string value, such as methods, constructors, destructors, operator overloads, and various other function-like constructs.
+    - `METHOD`: Represents a method call in C#.
+    - `CONSTRUCTOR`: Represents a constructor call in C#.
+    - `DESTRUCTOR`: Represents a destructor call in C#.
+    - `OP_OVERLOAD`: Represents an operator overload call in C#.
+    - `CONVERSION`: Represents a conversion operator declaration in C#.
+    - `LOCAL_FN`: Represents a local function call in C#.
+    - `PROPERTY`: Represents a property call in C#.
+    - `INDEXER`: Represents an indexer call in C#.
+    - `EVENT_FIELD_LIKE`: Represents an event field-like call in C#.
+    - `EVENT_PROPERTY_LIKE`: Represents an event property-like call in C#.
+- **Description**: Defines different kinds of calls in C# programming, such as methods, constructors, destructors, operator overloads, conversion operators, local functions, properties, indexers, and event-related calls.
 - **Inherits From**:
     - `StrEnum`
 
@@ -95,22 +95,7 @@ Key components include enumerations like `CSharpImportScopeKind`, `CSharpCallKin
 ### CSharpMethodModifier<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpMethodModifier}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L66>)
 
-- **Members**:
-    - `PUBLIC`: Represents the 'public' access modifier for a C# method.
-    - `PRIVATE`: Represents the 'private' access modifier for a C# method.
-    - `PROTECTED`: Represents the 'protected' access modifier for a C# method.
-    - `INTERNAL`: Represents the 'internal' access modifier for a C# method.
-    - `VIRTUAL`: Represents the 'virtual' modifier for a C# method, allowing it to be overridden.
-    - `OVERRIDE`: Represents the 'override' modifier for a C# method, indicating it overrides a base class method.
-    - `ABSTRACT`: Represents the 'abstract' modifier for a C# method, indicating it has no implementation.
-    - `SEALED`: Represents the 'sealed' modifier for a C# method, preventing further overriding.
-    - `STATIC`: Represents the 'static' modifier for a C# method, indicating it belongs to the class rather than an instance.
-    - `ASYNC`: Represents the 'async' modifier for a C# method, indicating it supports asynchronous operations.
-    - `EXTERN`: Represents the 'extern' modifier for a C# method, indicating it is implemented externally.
-    - `UNSAFE`: Represents the 'unsafe' modifier for a C# method, allowing the use of unsafe code.
-    - `IMPLICIT`: Represents the 'implicit' modifier for a C# method, indicating an implicit conversion operator.
-    - `EXPLICIT`: Represents the 'explicit' modifier for a C# method, indicating an explicit conversion operator.
-- **Description**: Defines various method modifiers used in C# programming, such as access levels and method behaviors, by extending the `StrEnum` class. These modifiers include access specifiers like 'public', 'private', and 'protected', as well as method-specific keywords like 'virtual', 'override', and 'static'. The class provides a method `from_str` to retrieve a modifier from a string representation.
+- **Description**: Defines a set of string constants representing method modifiers in C# programming, such as `public`, `private`, `protected`, and others. These modifiers specify the accessibility and behavior of methods in C# classes.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpMethodModifier.from_str`](<#csharpmethodmodifierfrom_str>)
 - **Inherits From**:
@@ -127,9 +112,10 @@ Converts a string representation of a C# method modifier to its corresponding `C
 - **Inputs**:
     - `candidate`: A string that represents a C# method modifier.
 - **Logic and Control Flow**:
-    - Calls the [`_method_modifier_lookup`](<#_method_modifier_lookup>) function to get a dictionary mapping string representations of method modifiers to `CSharpMethodModifier` enum values.
+    - Calls the [`_method_modifier_lookup`](<#_method_modifier_lookup>) function to get a dictionary mapping string representations to `CSharpMethodModifier` enum values.
     - Uses the `get` method on the dictionary to find the `CSharpMethodModifier` corresponding to the `candidate` string.
-- **Output**: Returns the `CSharpMethodModifier` enum value corresponding to the `candidate` string, or `None` if the `candidate` is not a valid method modifier.
+    - Returns the `CSharpMethodModifier` if found, otherwise returns `None`.
+- **Output**: A `CSharpMethodModifier` enum value corresponding to the input string, or `None` if the string does not match any modifier.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._method_modifier_lookup`](<#_method_modifier_lookup>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpMethodModifier`](<#csharpmethodmodifier>)  (Base Class)
@@ -140,6 +126,7 @@ Converts a string representation of a C# method modifier to its corresponding `C
 ### CSharpClassKind<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpClassKind}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L87>)
 
+- **Decorators**: ``
 - **Members**:
     - `STANDARD`: Represents a standard C# class.
     - `RECORD`: Represents a C# record class.
@@ -162,7 +149,7 @@ Converts a string representation of a C# method modifier to its corresponding `C
     - `STATIC`: Represents the 'static' modifier for a C# class.
     - `PARTIAL`: Represents the 'partial' modifier for a C# class.
     - `UNSAFE`: Represents the 'unsafe' modifier for a C# class.
-- **Description**: Defines various access and class-level modifiers for C# classes using string enumeration. These modifiers include access levels such as 'public', 'private', 'internal', and 'protected', as well as class-level modifiers like 'abstract', 'sealed', 'static', 'partial', and 'unsafe'. The class provides a method to retrieve a modifier from a string representation.
+- **Description**: Defines various access and class-level modifiers for C# classes, such as 'public', 'private', 'abstract', and others, using the `StrEnum` enumeration.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpClassModifier.from_str`](<#csharpclassmodifierfrom_str>)
 - **Inherits From**:
@@ -177,11 +164,11 @@ Converts a string representation of a C# method modifier to its corresponding `C
 Converts a string representation of a C# class modifier to its corresponding `CSharpClassModifier` enum value.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `candidate`: A string representing a C# class modifier.
+    - `candidate`: A string that represents a C# class modifier.
 - **Logic and Control Flow**:
-    - Calls the [`_class_modifier_lookup`](<#_class_modifier_lookup>) function to get a dictionary mapping string representations to `CSharpClassModifier` enum values.
-    - Uses the `get` method on the dictionary to retrieve the enum value corresponding to the `candidate` string.
-- **Output**: Returns the `CSharpClassModifier` enum value corresponding to the input string, or `None` if the string does not match any modifier.
+    - Calls the [`_class_modifier_lookup`](<#_class_modifier_lookup>) function to get a dictionary mapping string representations of class modifiers to `CSharpClassModifier` enum values.
+    - Uses the `get` method on the dictionary to retrieve the `CSharpClassModifier` enum value corresponding to the `candidate` string.
+- **Output**: Returns a `CSharpClassModifier` enum value if the `candidate` string matches a known class modifier, otherwise returns `None`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._class_modifier_lookup`](<#_class_modifier_lookup>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpClassModifier`](<#csharpclassmodifier>)  (Base Class)
@@ -193,10 +180,10 @@ Converts a string representation of a C# class modifier to its corresponding `CS
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L108>)
 
 - **Members**:
-    - `ENUM`: Defines the string value 'enum'.
-    - `STRUCT`: Defines the string value 'struct'.
-    - `RECORD_STRUCT`: Defines the string value 'record_struct'.
-- **Description**: Defines different kinds of C# data structures as string enumerations, including 'enum', 'struct', and 'record_struct'.
+    - `ENUM`: Represents the C# 'enum' data structure kind.
+    - `STRUCT`: Represents the C# 'struct' data structure kind.
+    - `RECORD_STRUCT`: Represents the C# 'record struct' data structure kind.
+- **Description**: Defines different kinds of C# data structures, specifically 'enum', 'struct', and 'record struct', using string enumeration.
 - **Inherits From**:
     - `StrEnum`
 
@@ -214,9 +201,9 @@ Converts a string representation of a C# class modifier to its corresponding `CS
     - `STATIC`: Represents the 'static' modifier.
     - `PARTIAL`: Represents the 'partial' modifier.
     - `UNSAFE`: Represents the 'unsafe' modifier.
-    - `REF`: Represents the 'ref' keyword, used as a custom modifier.
+    - `REF`: Represents the 'ref' keyword, used as a modifier in this context.
     - `RECORD`: Represents the 'record' modifier.
-- **Description**: Defines various C# data structure modifiers as string enumerations, allowing for easy reference and comparison of these modifiers in code. Includes a class method `from_str` to retrieve a modifier from a string representation.
+- **Description**: Defines a set of string-based constants that represent various C# data structure modifiers, such as access levels and other attributes, and provides a method to retrieve a modifier from a string.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDataStructureModifier.from_str`](<#csharpdatastructuremodifierfrom_str>)
 - **Inherits From**:
@@ -228,14 +215,14 @@ Converts a string representation of a C# class modifier to its corresponding `CS
 #### CSharpDataStructureModifier\.from\_str<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDataStructureModifier.from_str}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L127>)
 
-Retrieves a `CSharpDataStructureModifier` instance from a string representation if it exists in the lookup dictionary.
+Converts a string representation of a C# data structure modifier to its corresponding enum value.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `candidate`: A string representing a potential C# data structure modifier.
+    - `candidate`: A string representing a C# data structure modifier.
 - **Logic and Control Flow**:
-    - Calls the [`_data_structure_modifier_lookup`](<#_data_structure_modifier_lookup>) function to get a dictionary mapping string representations to `CSharpDataStructureModifier` instances.
-    - Uses the `get` method on the dictionary to retrieve the `CSharpDataStructureModifier` instance corresponding to the `candidate` string, if it exists.
-- **Output**: A `CSharpDataStructureModifier` instance if the `candidate` string matches a key in the lookup dictionary, otherwise `None`.
+    - Calls the [`_data_structure_modifier_lookup`](<#_data_structure_modifier_lookup>) function to get a dictionary mapping string representations to `CSharpDataStructureModifier` enum values.
+    - Uses the `get` method on the dictionary to retrieve the enum value corresponding to the `candidate` string.
+- **Output**: Returns the corresponding `CSharpDataStructureModifier` enum value if found, otherwise returns `None`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._data_structure_modifier_lookup`](<#_data_structure_modifier_lookup>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDataStructureModifier`](<#csharpdatastructuremodifier>)  (Base Class)
@@ -265,14 +252,14 @@ Retrieves a `CSharpDataStructureModifier` instance from a string representation 
 #### CSharpInterfaceModifier\.from\_str<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpInterfaceModifier.from_str}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L140>)
 
-Converts a string representation of a C# interface modifier to its corresponding enum value.
+Converts a string representation of a C# interface modifier to its corresponding `CSharpInterfaceModifier` enum value.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `candidate`: A string representing a C# interface modifier.
 - **Logic and Control Flow**:
     - Calls the [`_interface_modifier_lookup`](<#_interface_modifier_lookup>) function to get a dictionary mapping string representations to `CSharpInterfaceModifier` enum values.
-    - Uses the `get` method on the dictionary to retrieve the enum value corresponding to the `candidate` string.
-- **Output**: Returns the `CSharpInterfaceModifier` enum value corresponding to the input string, or `None` if the string does not match any modifier.
+    - Uses the `get` method on the dictionary to find the enum value corresponding to the `candidate` string.
+- **Output**: Returns the corresponding `CSharpInterfaceModifier` enum value if found, otherwise returns `None`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._interface_modifier_lookup`](<#_interface_modifier_lookup>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpInterfaceModifier`](<#csharpinterfacemodifier>)  (Base Class)
@@ -287,7 +274,7 @@ Converts a string representation of a C# interface modifier to its corresponding
     - `scoping_kind`: Defines the scope kind of the C# import.
     - `alias_name`: Stores the alias name for the import, if any.
     - `model_config`: Holds the configuration settings for the model, set to frozen.
-- **Description**: Represents data related to C# import statements, including scope kind and optional alias name, with configuration settings for immutability.
+- **Description**: Represents data related to C# import statements, including scope kind and optional alias name, with configuration settings.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.BespokeMarker`](<../lang_specialization/symbol_common.py.md#bespokemarker>)
 
@@ -297,11 +284,11 @@ Converts a string representation of a C# interface modifier to its corresponding
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L171>)
 
 - **Members**:
-    - `kind`: Specifies the kind of C# call, such as method or constructor.
-    - `modifiers`: Holds a tuple of C# method modifiers, like public or static.
-    - `return_ty`: Indicates the return type of the method, or None if not applicable.
-    - `model_config`: Contains configuration settings, set to frozen.
-- **Description**: Represents data related to C# method-like constructs, including their kind, modifiers, and return type.
+    - `kind`: Specifies the kind of C# method-like construct.
+    - `modifiers`: Holds a tuple of C# method modifiers.
+    - `return_ty`: Indicates the return type of the method-like construct.
+    - `model_config`: Contains configuration settings for the model, set to frozen.
+- **Description**: Represents data related to C# method-like constructs, including their kind, modifiers, and return type, with configuration settings for immutability.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.BespokeMarker`](<../lang_specialization/symbol_common.py.md#bespokemarker>)
 
@@ -312,10 +299,10 @@ Converts a string representation of a C# interface modifier to its corresponding
 
 - **Members**:
     - `kind`: Specifies the kind of C# data structure.
-    - `modifiers`: Holds a tuple of modifiers applicable to the C# data structure.
+    - `modifiers`: Holds a tuple of modifiers for the C# data structure.
     - `underlying_ty`: Indicates the underlying type of the data structure, if any.
-    - `model_config`: Contains configuration settings for the model, set to be immutable.
-- **Description**: Represents data related to a C# data structure, including its kind, applicable modifiers, and optional underlying type. Inherits from `BespokeMarker` and uses a frozen configuration to ensure immutability.
+    - `model_config`: Contains configuration settings for the model, set to frozen.
+- **Description**: Represents data related to a C# data structure, including its kind, modifiers, and optional underlying type.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.BespokeMarker`](<../lang_specialization/symbol_common.py.md#bespokemarker>)
 
@@ -325,10 +312,10 @@ Converts a string representation of a C# interface modifier to its corresponding
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L185>)
 
 - **Members**:
-    - `kind`: Specifies the kind of C# class.
-    - `modifiers`: Holds a tuple of C# class modifiers.
-    - `model_config`: Contains configuration settings for the model, set to frozen.
-- **Description**: Represents data related to a C# class, including its kind and modifiers, and is configured with a frozen model configuration.
+    - `kind`: Specifies the kind of C# class, such as standard or record.
+    - `modifiers`: Holds a tuple of C# class modifiers, like public or static.
+    - `model_config`: Contains configuration settings, set to be immutable.
+- **Description**: Represents data related to a C# class, including its kind and modifiers, with configuration settings that ensure immutability.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.BespokeMarker`](<../lang_specialization/symbol_common.py.md#bespokemarker>)
 
@@ -339,9 +326,9 @@ Converts a string representation of a C# interface modifier to its corresponding
 
 - **Members**:
     - `base_names`: Stores the names of base interfaces as a tuple of strings.
-    - `modifiers`: Contains a tuple of `CSharpInterfaceModifier` elements that define the interface's modifiers.
-    - `type_params`: Holds the type parameters of the interface as a tuple of strings.
-    - `model_config`: Contains configuration settings, set to be immutable with `ConfigDict(frozen=True)`.
+    - `modifiers`: Holds the modifiers for the interface as a tuple of `CSharpInterfaceModifier`.
+    - `type_params`: Contains the type parameters for the interface as a tuple of strings.
+    - `model_config`: Defines the configuration for the model, set to frozen.
 - **Description**: Represents data related to a C# interface, including its base interfaces, modifiers, and type parameters. Inherits from `BespokeMarker` and uses a frozen configuration to ensure immutability.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.BespokeMarker`](<../lang_specialization/symbol_common.py.md#bespokemarker>)
@@ -352,10 +339,10 @@ Converts a string representation of a C# interface modifier to its corresponding
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L198>)
 
 - **Members**:
-    - `args`: Stores the arguments of the C# invocation as a tuple of strings.
-    - `concrete_type_params`: Holds the concrete type parameters of the C# invocation as a tuple of strings.
-    - `model_config`: Contains configuration settings, set to be immutable with `ConfigDict(frozen=True)`.
-- **Description**: Represents data related to a C# invocation, including arguments and type parameters, with configuration settings for immutability.
+    - `args`: Stores a tuple of argument strings.
+    - `concrete_type_params`: Stores a tuple of concrete type parameter strings.
+    - `model_config`: Holds a frozen configuration dictionary.
+- **Description**: Represents invocation data for C# methods, including arguments and type parameters, with a frozen configuration.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.BespokeMarker`](<../lang_specialization/symbol_common.py.md#bespokemarker>)
 
@@ -367,8 +354,8 @@ Converts a string representation of a C# interface modifier to its corresponding
 - **Decorators**: `@dataclass`
 - **Members**:
     - `language`: Specifies the programming language as 'csharp'.
-    - `extensions`: Contains a set of file extensions associated with C# files, specifically '.cs'.
-- **Description**: Represents a specialized driver tree for parsing and extracting symbols from C# source code. It extends the `DriverTree` class and provides methods to extract various C# constructs such as imports, classes, interfaces, and method-like definitions. The class is designed to work with the Tree-sitter parsing library to navigate and analyze the syntax tree of C# code.
+    - `extensions`: Contains a set of file extensions associated with C# files.
+- **Description**: Represents a specialized driver tree for parsing and extracting symbols from C# source code. It extends the `DriverTree` class and provides methods to extract various C# constructs such as imports, classes, interfaces, and method-like definitions. The class uses the `tree_sitter` library to navigate and query the syntax tree of C# code.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree._get_fully_qualified_path_to_parent`](<#csharpdrivertree_get_fully_qualified_path_to_parent>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_all_symbols`](<#csharpdrivertreeextract_all_symbols>)
@@ -394,21 +381,21 @@ Converts a string representation of a C# interface modifier to its corresponding
 #### CSharpDriverTree\.\_get\_fully\_qualified\_path\_to\_parent<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree._get_fully_qualified_path_to_parent}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L216>)
 
-Generates a fully qualified path to the parent node in a C# syntax tree.
+Generates a fully qualified name path to the parent node in a C# syntax tree.
 - **Inputs**:
     - `node`: A `tree_sitter.Node` object representing the current node in the syntax tree.
     - `sep`: A string used as a separator for the path components, defaulting to '.'.
 - **Logic and Control Flow**:
-    - Initialize an empty list `path_parts` to store path components.
-    - Set `current` to the parent of the input `node`.
-    - Iterate while `current` is not `None`.
-    - If `current` is a `compilation_unit`, iterate over its children to find a `file_scoped_namespace_declaration` and append its name to `path_parts`, then break the loop.
+    - Initialize an empty list `path_parts` to store parts of the path.
+    - Set `current` to the parent of the given `node`.
+    - Enter a while loop that continues as long as `current` is not `None`.
+    - Check if `current` is a 'compilation_unit'. If true, iterate over its children to find a 'file_scoped_namespace_declaration' and append its name to `path_parts`, then break the loop.
     - If `current` is a declaration type (class, struct, enum, interface, delegate, method), append its name to `path_parts`.
-    - If `current` is a `namespace_declaration`, append its name to `path_parts`.
-    - Set `current` to its parent to continue traversing up the tree.
+    - If `current` is a 'namespace_declaration', append its name to `path_parts`.
+    - Update `current` to its parent and continue the loop.
     - Reverse the `path_parts` list to get the correct order of the path.
-    - Join the `path_parts` with the separator `sep` and return the result.
-- **Output**: A string representing the fully qualified path to the parent node, with components separated by the specified separator.
+    - Join the elements of `path_parts` using the `sep` separator and return the result.
+- **Output**: A string representing the fully qualified path to the parent node, using the specified separator.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree`](<#csharpdrivertree>)  (Base Class)
 
 
@@ -419,14 +406,14 @@ Generates a fully qualified path to the parent node in a C# syntax tree.
 Extracts all symbols from the source code by aggregating results from various extraction methods.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initialize an empty list `symbols` to store extracted symbols.
+    - Initialize an empty list `symbols`.
     - Call `self.extract_imports()` and extend `symbols` with its result.
     - Call `self.extract_callable_definitions()` and extend `symbols` with its result.
     - Call `self.extract_data_structure_definitions()` and extend `symbols` with its result.
     - Call `self.extract_class_definitions()` and extend `symbols` with its result.
     - Call `self.extract_interfaces()` and extend `symbols` with its result.
     - Call `self.extract_function_calls()` and extend `symbols` with its result.
-    - Return the `symbols` list containing all extracted symbols.
+    - Return the `symbols` list.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing all extracted symbols.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_imports`](<#csharpdrivertreeextract_imports>)
@@ -442,13 +429,13 @@ Extracts all symbols from the source code by aggregating results from various ex
 #### CSharpDriverTree\.extract\_imports<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_imports}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L268>)
 
-Combines the results of [`extract_using_imports`](<#csharpdrivertreeextract_using_imports>) and [`extract_namespace_declarations`](<#csharpdrivertreeextract_namespace_declarations>) to return a list of import symbols.
+Extracts and combines import statements and namespace declarations from C# source code.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Call [`extract_using_imports`](<#csharpdrivertreeextract_using_imports>) to get a list of using import symbols.
-    - Call [`extract_namespace_declarations`](<#csharpdrivertreeextract_namespace_declarations>) to get a list of namespace import symbols.
-    - Combine the lists from [`extract_using_imports`](<#csharpdrivertreeextract_using_imports>) and [`extract_namespace_declarations`](<#csharpdrivertreeextract_namespace_declarations>).
-- **Output**: A list of `RawTreeSitterSymbolData` objects representing import symbols.
+    - Call [`extract_using_imports`](<#csharpdrivertreeextract_using_imports>) to get a list of using import statements.
+    - Call [`extract_namespace_declarations`](<#csharpdrivertreeextract_namespace_declarations>) to get a list of namespace declarations.
+    - Combine the results from [`extract_using_imports`](<#csharpdrivertreeextract_using_imports>) and [`extract_namespace_declarations`](<#csharpdrivertreeextract_namespace_declarations>) into a single list.
+- **Output**: A list of `RawTreeSitterSymbolData` objects representing import statements and namespace declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_using_imports`](<#csharpdrivertreeextract_using_imports>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_namespace_declarations`](<#csharpdrivertreeextract_namespace_declarations>)
@@ -459,25 +446,26 @@ Combines the results of [`extract_using_imports`](<#csharpdrivertreeextract_usin
 #### CSharpDriverTree\.extract\_using\_imports<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_using_imports}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L273>)
 
-Extracts and processes 'using' import statements from a C# source code tree, resolving names and aliases, and returns them as sorted symbol data.
+Extracts and processes C# `using` directives from a syntax tree to create a list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Define a query string to match 'using' directives in the source code.
+    - Define a query string to match `using` directives in the syntax tree.
     - Execute the query on the root node of the syntax tree to find matches.
-    - Iterate over each match to process the 'using' statement node.
-    - Check if the 'using' statement is global by examining its children for the 'global' keyword.
-    - Check if the 'using' statement uses an alias by looking for the '=' character among its children.
-    - If a qualified name is present without an alias, resolve the name directly from the node's text.
-    - If no qualified name is present or an alias is used, collect identifiers and resolve the name and alias accordingly.
-    - If unable to resolve a name, print a message indicating the unresolved import.
-    - Retrieve the line range and byte range for the 'using' statement node.
-    - Determine the fully qualified path to the parent node and the scoping kind (global or local).
-    - Create a bespoke data object for the import, including scoping kind and alias name.
-    - Parse the type parameter from the resolved name, if any.
-    - Create a 'RawTreeSitterSymbolData' object for the import and add it to the list of imports.
-    - Sort the list of imports by their start byte position.
-    - Return the sorted list of imports.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the 'using' import statements.
+    - Iterate over each match to process the `using` directive node.
+    - Check if the `using` directive is global by examining its children for the `global` keyword.
+    - Check if the `using` directive uses an alias by looking for the `=` symbol among its children.
+    - If a qualified name is present without an alias, extract the name directly from the node.
+    - If no qualified name is present or an alias is used, collect identifiers and determine the alias and name based on the presence of `=`.
+    - If unable to resolve a name, print a message and set the name to `None`.
+    - Determine the line range and byte range of the `using` directive node.
+    - Get the fully qualified path to the parent node of the `using` directive.
+    - Determine the scoping kind of the `using` directive (global or local).
+    - Create a [`CSharpImportData`](<#csharpimportdata>) object with the scoping kind and alias name.
+    - Parse the type parameter from the name if applicable.
+    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object with the extracted information and add it to the imports list.
+    - Sort the imports list by the start byte of each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object.
+    - Return the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the `using` directives found in the syntax tree.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree._get_fully_qualified_path_to_parent`](<#csharpdrivertree_get_fully_qualified_path_to_parent>)
@@ -492,23 +480,20 @@ Extracts and processes 'using' import statements from a C# source code tree, res
 #### CSharpDriverTree\.extract\_namespace\_declarations<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_namespace_declarations}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L370>)
 
-Extracts namespace declarations from a C# source code tree using Tree-sitter and returns them as a list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+Extracts namespace declarations from a C# source file using Tree-sitter queries.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Define a query string to match block-scoped and file-scoped namespace declarations.
-    - Use the Tree-sitter language to query the root node of the tree with the defined query string.
-    - Iterate over the matches returned by the query.
-    - For each match, determine if it is a block-scoped or file-scoped namespace declaration using pattern matching on `pattern_idx`.
-    - Extract the namespace name and node from the captures by name.
-    - Determine the namespace kind based on the match type (block or file-scoped).
-    - If both namespace name and node are present, calculate the start and end lines and bytes of the namespace node.
-    - Get the file path and fully qualified parent path for the namespace node.
-    - Convert the namespace node to text to get the symbol code.
-    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object with the extracted data and append it to the `namespaces` list.
-    - If the namespace name or node is missing, print a message indicating the missing data.
-    - Sort the `namespaces` list by the start byte of each namespace.
-    - Return the sorted list of namespaces.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the namespace declarations found in the source code.
+    - Execute the query on the root node of the syntax tree to find matches.
+    - Iterate over each match to extract the namespace name and node based on the pattern index.
+    - Determine the kind of namespace (block-scoped or file-scoped) based on the pattern index.
+    - If both namespace name and node are present, calculate the line and byte range for the namespace node.
+    - Get the fully qualified path to the parent of the namespace node.
+    - Convert the namespace node to text and create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object with the extracted data.
+    - Append the [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to the `namespaces` list.
+    - If namespace name or node is missing, print a message indicating the missing data.
+    - Sort the `namespaces` list by the start byte of each namespace and return it.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing namespace declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree._get_fully_qualified_path_to_parent`](<#csharpdrivertree_get_fully_qualified_path_to_parent>)
@@ -522,7 +507,7 @@ Extracts namespace declarations from a C# source code tree using Tree-sitter and
 #### CSharpDriverTree\.extract\_callable\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_callable_definitions}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L441>)
 
-Returns a list of method-like definitions by calling the [`extract_method_like_definitions`](<#csharpdrivertreeextract_method_like_definitions>) method.
+Returns a list of method-like definitions by calling another method.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the [`extract_method_like_definitions`](<#csharpdrivertreeextract_method_like_definitions>) method.
@@ -540,12 +525,13 @@ Returns a list of method-like definitions by calling the [`extract_method_like_d
 Extracts method-like definitions from a C# source code tree using Tree-sitter queries.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a query string `method_query_str` to match various C# method-like constructs such as methods, constructors, destructors, operators, properties, and events.
+    - Defines a query string `method_query_str` to match various C# method-like constructs such as methods, constructors, destructors, operator overloads, conversion operators, local functions, properties, indexers, and events.
     - Executes the query on the root node of the syntax tree to find matches.
-    - Iterates over each match to extract relevant information such as the name, node, kind, and return type of the callable entity.
-    - Uses a `match` statement to handle different types of method-like constructs, setting specific attributes based on the type of construct (e.g., method, constructor, destructor).
-    - For each match, extracts modifiers and other metadata, constructs a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object, and appends it to the `method_likes` list.
-    - Sorts the `method_likes` list by the start byte of each symbol and returns the sorted list.
+    - Iterates over each match to extract relevant information such as the name, node, kind, modifiers, and return type of the callable entity.
+    - Handles different types of method-like constructs using a `match` statement on `pattern_idx` to determine the kind of callable and extract specific details.
+    - For each match, constructs a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object with the extracted information and appends it to the `method_likes` list.
+    - Sorts the `method_likes` list by the starting byte position of each method-like definition.
+    - Returns the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing method-like definitions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._parse_type_param`](<#_parse_type_param>)
@@ -565,9 +551,10 @@ Extracts method-like definitions from a C# source code tree using Tree-sitter qu
 Extracts and returns a list of enum and struct definitions from the source code.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls [`extract_enum_definitions`](<#csharpdrivertreeextract_enum_definitions>) to get a list of enum definitions.
-    - Calls [`extract_struct_definitions`](<#csharpdrivertreeextract_struct_definitions>) to get a list of struct definitions.
-    - Combines the lists of enums and structs and returns the result.
+    - Call [`extract_enum_definitions`](<#csharpdrivertreeextract_enum_definitions>) to get a list of enum definitions.
+    - Call [`extract_struct_definitions`](<#csharpdrivertreeextract_struct_definitions>) to get a list of struct definitions.
+    - Combine the lists of enums and structs.
+    - Return the combined list.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing enum and struct definitions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_enum_definitions`](<#csharpdrivertreeextract_enum_definitions>)
@@ -582,16 +569,15 @@ Extracts and returns a list of enum and struct definitions from the source code.
 Extracts and returns a list of enum definitions from a C# source code tree.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a query string to match enum declarations in the source code.
-    - Executes the query on the root node of the syntax tree to find matches.
-    - Iterates over each match to extract the enum node, name, and modifiers.
-    - Checks for a base list to determine the underlying type and base class names.
-    - Calculates the start and end line, byte positions, and fully qualified path for each enum.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each enum with the extracted data.
-    - Appends each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to the `enums` list.
-    - Sorts the `enums` list by the start byte of each enum.
-    - Returns the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing enum definitions.
+    - Define a query string to match enum declarations in the source code.
+    - Execute the query on the root node of the syntax tree to find matches.
+    - Iterate over each match to extract details about the enum, such as its name, modifiers, and base class names.
+    - For each enum, determine its underlying type and any base class names or interfaces it implements.
+    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each enum with the extracted information.
+    - Append each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to a list.
+    - Sort the list of enums by their starting byte position in the source code.
+    - Return the sorted list of enums.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the enum definitions found in the source code.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDataStructureModifier.from_str`](<#csharpdatastructuremodifierfrom_str>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._parse_type_param`](<#_parse_type_param>)
@@ -610,18 +596,21 @@ Extracts and returns a list of enum definitions from a C# source code tree.
 Extracts and returns a list of C# struct and record struct definitions from a syntax tree.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a query string to match struct and record declarations in the syntax tree.
-    - Executes the query on the root node of the syntax tree to find matches.
-    - Iterates over each match to extract relevant information about the struct or record struct.
-    - Checks if the match is a record struct and skips non-struct records.
-    - Determines if the struct is a reference type by checking for 'ref' children nodes.
-    - Extracts the struct or record name and decodes it to a string.
-    - Collects modifiers for the struct from the captured nodes and converts them to `CSharpDataStructureModifier` instances.
-    - Identifies base class names if a base list is present in the struct node.
-    - Retrieves the line and byte range for the struct node and other metadata like file path and fully qualified parent path.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each struct with the collected data and appends it to the list.
-    - Sorts the list of structs by their starting byte position before returning.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the struct and record struct definitions found in the syntax tree.
+    - Define a query string to match C# struct and record struct declarations.
+    - Execute the query on the syntax tree to find matches.
+    - Iterate over each match to extract relevant information about the struct or record struct.
+    - Check if the match is a record struct and skip if it is a record (reference type).
+    - Determine if the struct is a reference type by checking for 'ref' children.
+    - Extract the struct or record struct name and decode it to a string.
+    - Collect modifiers for the struct from the query captures and add them to a list.
+    - Identify base class names if a base list is present in the struct node's children.
+    - Get the line range and byte range for the struct node.
+    - Retrieve the fully qualified path to the parent node for the struct.
+    - Convert the struct node to text to get the symbol code.
+    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object with the extracted information and add it to the list of structs.
+    - Sort the list of structs by their start byte position.
+    - Return the sorted list of structs.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the extracted struct and record struct definitions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDataStructureModifier.from_str`](<#csharpdatastructuremodifierfrom_str>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._parse_type_param`](<#_parse_type_param>)
@@ -637,18 +626,17 @@ Extracts and returns a list of C# struct and record struct definitions from a sy
 #### CSharpDriverTree\.extract\_function\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_function_calls}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L842>)
 
-Extracts function and constructor calls from a C# syntax tree and returns them as a list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+Extracts and returns a list of function and constructor call symbols from a C# syntax tree.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Defines a query string to match invocation expressions and object creation expressions in the syntax tree.
     - Executes the query on the root node of the syntax tree to find matches.
-    - Iterates over each match to extract the invocation node, invoked method or constructor name, and arguments.
-    - Parses the full name of the invoked method or constructor to extract the last identifier and any type parameters.
-    - If arguments are present, decodes and splits them into a list.
-    - Checks for type parameters in the invoked name and adjusts the name and type parameters accordingly.
-    - For each valid invocation, retrieves the line range, byte range, and symbol code from the syntax tree node.
-    - Constructs a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each invocation with the extracted data and appends it to the `invocations` list.
-    - Sorts the list of invocations by their start byte position.
+    - Iterates over each match to extract the invocation node and the invoked method or constructor name.
+    - Parses the arguments and type parameters from the invocation if available.
+    - Determines the start and end lines and bytes of the invocation node.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each invocation with relevant data such as name, lines, bytes, and bespoke data.
+    - Appends each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to the `invocations` list.
+    - Sorts the `invocations` list by the start byte of each invocation.
     - Returns the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing function and constructor calls.
 - **Functions Called**:
@@ -696,13 +684,17 @@ Extracts class and record definitions from a C# source code tree using Tree-sitt
     - Defines a query string to match class and record declarations in the source code.
     - Executes the query on the root node of the syntax tree to find matches.
     - Iterates over each match to extract class or record node and name.
-    - Checks if the match is a record and assigns the appropriate name.
-    - If the class name is not found, logs an error message.
+    - Checks if the match is a record or a class and assigns the appropriate name.
+    - If a class or record name is found, decodes it from bytes to a string.
     - Initializes lists for base class names and modifiers.
-    - Iterates over the children of the class node to extract base class names and modifiers.
-    - If the class node and name are valid, retrieves line and byte ranges, symbol code, and fully qualified parent path.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each class or record and appends it to the list.
-    - Sorts the list of class definitions by their start byte and returns it.
+    - Iterates over the children of the class node to find base classes and modifiers.
+    - If a base list is found, extracts and decodes base class names.
+    - Attempts to decode each child node's text to identify modifiers and adds them to the modifier list.
+    - If both class node and name are valid, retrieves line and byte range of the class node.
+    - Converts the class node to text and gets the fully qualified path to the parent node.
+    - Determines the class kind (standard or record) and creates a bespoke data object.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object with extracted information and appends it to the list of classes.
+    - Sorts the list of class definitions by their start byte position.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing class and record definitions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpClassModifier.from_str`](<#csharpclassmodifierfrom_str>)
@@ -718,18 +710,21 @@ Extracts class and record definitions from a C# source code tree using Tree-sitt
 #### CSharpDriverTree\.extract\_interfaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_interfaces}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L1032>)
 
-Extracts interface definitions from a C# source code tree using Tree-sitter.
+Extracts interface declarations from a C# source code tree using Tree-sitter.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Define a query string to match interface declarations in C# code.
-    - Execute the query on the root node of the syntax tree to find matches.
-    - Initialize an empty list to store interface data.
-    - Iterate over each match to extract interface details such as name, modifiers, type parameters, and constraining interfaces.
-    - For each interface, determine its start and end lines, bytes, and fully qualified parent path.
-    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each interface with the extracted data and append it to the list.
+    - Use Tree-sitter to execute the query on the root node of the syntax tree.
+    - Iterate over the matches found by the query.
+    - For each match, extract the interface node and name from the captures.
+    - Initialize an empty list for interface modifiers and populate it if modifiers are present in the captures.
+    - Initialize an empty list for type parameters and populate it if type parameters are present in the captures.
+    - Initialize an empty list for constraining implementations and populate it if constraining interfaces are present in the captures.
+    - If both the interface node and name are present, extract additional data such as line range, byte range, symbol code, and fully qualified parent path.
+    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each interface with the extracted data and append it to the interfaces list.
     - Sort the list of interfaces by their start byte position.
     - Return the sorted list of interfaces.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the interfaces found in the source code.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the extracted interfaces.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpInterfaceModifier.from_str`](<#csharpinterfacemodifierfrom_str>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -755,10 +750,10 @@ Parses a string to extract type parameters enclosed in angle brackets and return
     - Iterate over each character in the string `s` with its index.
     - If the character is '<', append the index to `left_brackets`.
     - If the character is '>', append the index to `right_brackets`.
-    - Check if the number of '<' and '>' characters are equal and non-zero; if not, return an empty list and the original string `s`.
-    - If the counts are equal, extract the substring between the first '<' and the last '>' as the type parameter.
-    - Remove the extracted type parameter from the original string `s` to form `s_trimmed`.
-    - Return the type parameter and the trimmed string `s_trimmed`.
+    - Check if the number of '<' and '>' characters are equal and not zero; if not, return an empty list and the original string `s`.
+    - If the counts are equal, extract the substring between the first '<' and the last '>' as `type_param`.
+    - Remove the extracted type parameter from the string `s` to form `s_trimmed`.
+    - Return `type_param` and `s_trimmed`.
 - **Output**: A tuple containing a list with the extracted type parameter and the remaining string after removing the type parameter.
 
 
@@ -780,14 +775,14 @@ Extracts the last identifier from a string using a specified separator.
 ### \_method\_modifier\_lookup<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver._method_modifier_lookup}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L145>)
 
-Creates a dictionary mapping string values of `CSharpMethodModifier` enum members to their corresponding enum members.
+Creates a dictionary mapping string values of C# method modifiers to their corresponding `CSharpMethodModifier` enum members.
 - **Decorators**: `@cache`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Iterates over all members of the `CSharpMethodModifier` enum.
-    - Creates a dictionary where each key is the string value of an enum member and each value is the enum member itself.
+    - Creates a dictionary where each key is the string value of a `CSharpMethodModifier` member and each value is the corresponding `CSharpMethodModifier` member itself.
     - Returns the constructed dictionary.
-- **Output**: A dictionary with string keys representing `CSharpMethodModifier` values and values as `CSharpMethodModifier` enum members.
+- **Output**: A dictionary with string keys representing C# method modifiers and values as `CSharpMethodModifier` enum members.
 
 
 ---
@@ -813,9 +808,9 @@ Creates a dictionary mapping string values of `CSharpDataStructureModifier` enum
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Iterates over all members of the `CSharpDataStructureModifier` enum.
-    - Creates a dictionary where each key is the string value of an enum member and each value is the enum member itself.
+    - For each member, adds an entry to the dictionary with the member's string value as the key and the member itself as the value.
     - Returns the constructed dictionary.
-- **Output**: A dictionary with string keys representing `CSharpDataStructureModifier` values and values as the corresponding enum members.
+- **Output**: A dictionary where keys are string values of `CSharpDataStructureModifier` enum members and values are the corresponding enum members.
 
 
 ---
@@ -827,25 +822,25 @@ Creates a dictionary mapping string values of `CSharpInterfaceModifier` enum mem
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Iterates over all members of the `CSharpInterfaceModifier` enum.
-    - For each member, adds an entry to the dictionary with the member's string value as the key and the member itself as the value.
+    - Creates a dictionary where each key is the string value of an enum member and each value is the enum member itself.
     - Returns the constructed dictionary.
-- **Output**: A dictionary where keys are string values of `CSharpInterfaceModifier` enum members and values are the corresponding enum members.
+- **Output**: A dictionary with string keys representing the values of `CSharpInterfaceModifier` enum members and values as the corresponding enum members.
 
 
 ---
 ### cs\_node\_to\_text<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.cs_node_to_text}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver.py#L204>)
 
-Extracts a substring from `source_bytes` based on the byte range specified by a `tree_sitter.Node` and decodes it to a UTF-8 string.
+Extracts a substring from `source_bytes` based on the byte range specified by a `tree_sitter.Node`.
 - **Inputs**:
-    - `source_bytes`: A bytes object containing the source data from which to extract a substring.
-    - `node`: A `tree_sitter.Node` object that specifies the start and end byte positions for the substring extraction.
+    - `source_bytes`: A bytes object containing the source data from which to extract text.
+    - `node`: A `tree_sitter.Node` object that specifies the start and end byte positions for the text extraction.
 - **Logic and Control Flow**:
     - Get the start byte position from the `node` using `node.start_byte`.
     - Get the end byte position from the `node` using `node.end_byte`.
     - Extract the substring from `source_bytes` using the start and end byte positions.
-    - Decode the extracted substring from bytes to a UTF-8 string.
-- **Output**: A string that is the UTF-8 decoded substring extracted from `source_bytes`.
+    - Decode the extracted bytes to a UTF-8 string.
+- **Output**: A string that represents the decoded text extracted from the specified byte range in `source_bytes`.
 
 
 

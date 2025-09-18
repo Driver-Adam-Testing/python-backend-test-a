@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Enum classes for asset kinds, providers, version statuses, node kinds, autodoc statuses, content kinds, file types, and LLM pipeline kinds, plus a function to get file type by extension.
+Defines various enums for asset kinds, providers, update policies, version statuses, node kinds, document statuses, content kinds, file types, and pipeline kinds, along with a function to map file extensions to file types.
 
 # Purpose
-The code defines several enumerations and a function to categorize file types based on their extensions. The enumerations, implemented using Python's `enum` module, represent various categories and statuses relevant to asset management, document generation, and file handling. These include `PrimaryAssetKind`, `PrimaryAssetProvider`, `VersionStatus`, `NodeKind`, `AutoDocStatusMessageKind`, `AutoDocConfigKind`, `ContentKind`, `FileTypeEnum`, and `LlmPipelineKind`. Each enumeration provides a set of predefined string constants that can be used to standardize the representation of specific concepts or states within a software system.
+The code defines several enumerations and a function to categorize and manage different types of assets, version statuses, and file types. The enumerations include `PrimaryAssetKind`, `PrimaryAssetProvider`, `VcsAutoUpdatePolicy`, `VersionStatus`, `NodeKind`, `AutoDocStatusMessageKind`, `AutoDocConfigKind`, `ContentKind`, `FileTypeEnum`, and `LlmPipelineKind`. Each enumeration represents a specific category of constants, such as types of assets, version statuses, or file types, and is used to standardize and simplify the handling of these categories within a software system.
 
-The [`get_file_type`](<#get_file_type>) function maps file extensions to their corresponding `FileTypeEnum` values. This function uses a dictionary to associate common file extensions with their respective file types, allowing for the identification of file types based on their extensions. If an extension is not recognized, the function returns `FileTypeEnum.UNKNOWN`. The code is structured to be part of a library or module that can be imported and used in other parts of a software system to ensure consistent handling of file types and asset-related statuses. The use of `strawberry.enum` for the `ContentKind` class suggests integration with the Strawberry GraphQL library, indicating that some of these enumerations may be used in GraphQL schemas.
+The [`get_file_type`](<#get_file_type>) function maps file extensions to their corresponding `FileTypeEnum` values, allowing the system to identify the type of a file based on its extension. This function returns a `FileTypeEnum` value, which can be used to determine how to process or handle the file. The use of the `strawberry.enum` decorator on the `ContentKind` class indicates that it is intended for use with the Strawberry GraphQL library, suggesting that this code may be part of a larger system that interacts with GraphQL APIs. Overall, the code provides a structured way to manage and categorize various elements within a software application.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
 # Classes
 
 ---
-### PrimaryAssetKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.PrimaryAssetKind}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L6>)
+### PrimaryAssetKind<!-- {{#class:python-backend/driver_db/database/models_enums.PrimaryAssetKind}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L6>)
 
 - **Description**: Defines different types of primary assets as enumeration values, such as `CODEBASE`, `FILE`, `PAGE`, and `PAGE_TEMPLATE`.
 - **Inherits From**:
@@ -29,22 +29,61 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
 
 
 ---
-### PrimaryAssetProvider<!-- {{#class:python-backend/driver_db/database/models_v2_enums.PrimaryAssetProvider}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L13>)
+### PrimaryAssetProvider<!-- {{#class:python-backend/driver_db/database/models_enums.PrimaryAssetProvider}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L13>)
 
 - **Members**:
     - `GITHUB`: Represents the GitHub asset provider.
     - `GITLAB_SELF_MANAGED`: Represents the self-managed GitLab asset provider.
     - `BITBUCKET`: Represents the Bitbucket asset provider.
     - `USER`: Represents a user-defined asset provider.
-- **Description**: Defines a set of constants for different primary asset providers using the `enum.StrEnum` class, allowing for easy identification and use of these providers in the code.
+- **Description**: Defines an enumeration for primary asset providers, including GitHub, self-managed GitLab, Bitbucket, and user-defined options.
 - **Inherits From**:
     - `enum.StrEnum`
 
 
 ---
-### VersionStatus<!-- {{#class:python-backend/driver_db/database/models_v2_enums.VersionStatus}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L20>)
+### VcsAutoUpdatePolicy<!-- {{#class:python-backend/driver_db/database/models_enums.VcsAutoUpdatePolicy}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L20>)
+
+- **Members**:
+    - `NEVER`: Represents a policy where no automatic updates occur.
+    - `AFTER_EVERY_COMMIT`: Represents a policy where updates occur after every commit.
+    - `AFTER_ONE_DAY_OR_MORE`: Represents a policy where updates occur if at least one day has passed since the last update.
+    - `AFTER_THREE_DAYS_OR_MORE`: Represents a policy where updates occur if at least three days have passed since the last update.
+    - `AFTER_ONE_WEEK_OR_MORE`: Represents a policy where updates occur if at least one week has passed since the last update.
+    - `AFTER_TWO_WEEKS_OR_MORE`: Represents a policy where updates occur if at least two weeks have passed since the last update.
+    - `AFTER_FOUR_WEEKS_OR_MORE`: Represents a policy where updates occur if at least four weeks have passed since the last update.
+- **Description**: Configures the frequency of automatic updates triggered by VCS push events, allowing updates based on the time elapsed since the last update.
+- **Methods**:
+    - [`python-backend/driver_db/database/models_enums.VcsAutoUpdatePolicy.to_seconds`](<#vcsautoupdatepolicyto_seconds>)
+- **Inherits From**:
+    - `enum.StrEnum`
+
+**Methods**
+
+---
+#### VcsAutoUpdatePolicy\.to\_seconds<!-- {{#callable:python-backend/driver_db/database/models_enums.VcsAutoUpdatePolicy.to_seconds}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L37>)
+
+Converts a `VcsAutoUpdatePolicy` enum value to its corresponding time in seconds or returns `None` for certain policies.
+- **Inputs**: None
+- **Logic and Control Flow**:
+    - Uses a `match` statement to compare `self` against different `VcsAutoUpdatePolicy` enum values.
+    - Returns `None` if `self` is `VcsAutoUpdatePolicy.NEVER` or `VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT`.
+    - Returns `24 * 60 * 60` if `self` is `VcsAutoUpdatePolicy.AFTER_ONE_DAY_OR_MORE`.
+    - Returns `3 * 24 * 60 * 60` if `self` is `VcsAutoUpdatePolicy.AFTER_THREE_DAYS_OR_MORE`.
+    - Returns `7 * 24 * 60 * 60` if `self` is `VcsAutoUpdatePolicy.AFTER_ONE_WEEK_OR_MORE`.
+    - Returns `14 * 24 * 60 * 60` if `self` is `VcsAutoUpdatePolicy.AFTER_TWO_WEEKS_OR_MORE`.
+    - Returns `28 * 24 * 60 * 60` if `self` is `VcsAutoUpdatePolicy.AFTER_FOUR_WEEKS_OR_MORE`.
+- **Output**: An integer representing the number of seconds for the policy, or `None` for certain policies.
+- **See also**: [`python-backend/driver_db/database/models_enums.VcsAutoUpdatePolicy`](<#vcsautoupdatepolicy>)  (Base Class)
+
+
+
+---
+### VersionStatus<!-- {{#class:python-backend/driver_db/database/models_enums.VersionStatus}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L53>)
 
 - **Members**:
     - `GENERATING`: Indicates the version is in the process of being generated.
@@ -54,29 +93,29 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
     - `CONNECTING`: Indicates an attempt to establish a connection is in progress.
     - `CONNECTION_FAILED`: Indicates a failure occurred while trying to establish a connection.
     - `INSUFFICIENT_BALANCE`: Indicates there is not enough balance to proceed.
-- **Description**: Defines various statuses related to version generation and connection processes, using string values for each status.
+- **Description**: Defines various statuses related to version generation and connection processes, using string values to represent each status.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
 
 
 ---
-### NodeKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.NodeKind}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L30>)
+### NodeKind<!-- {{#class:python-backend/driver_db/database/models_enums.NodeKind}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L63>)
 
 - **Members**:
     - `CODEBASE_FILE`: Represents a file in the codebase.
     - `CODEBASE_DIRECTORY`: Represents a directory in the codebase.
-    - `OTHER`: Represents an unspecified or other type of node.
-- **Description**: Defines different types of nodes in a codebase, such as files, directories, or other unspecified types.
+    - `OTHER`: Represents any other type of node not specified.
+- **Description**: Defines different types of nodes that can exist within a codebase, such as files, directories, or other unspecified types.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
 
 
 ---
-### AutoDocStatusMessageKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.AutoDocStatusMessageKind}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L36>)
+### AutoDocStatusMessageKind<!-- {{#class:python-backend/driver_db/database/models_enums.AutoDocStatusMessageKind}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L69>)
 
 - **Members**:
     - `NOT_STARTED`: Indicates the process has not started.
@@ -89,30 +128,30 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
     - `COPY_EDITING`: Indicates the process is copy editing.
     - `GENERATION_COMPLETE`: Indicates the document generation is complete.
     - `GENERATION_ERROR`: Indicates an error occurred during document generation.
-- **Description**: Defines various stages of an automated documentation generation process as enumeration values.
+- **Description**: Represents different stages in the document generation process, each stage being a specific status message kind.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
 
 
 ---
-### AutoDocConfigKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.AutoDocConfigKind}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L49>)
+### AutoDocConfigKind<!-- {{#class:python-backend/driver_db/database/models_enums.AutoDocConfigKind}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L82>)
 
 - **Members**:
     - `ADI_DRIVER`: Represents the configuration kind for ADI driver.
     - `ARCHITECTURE`: Represents the configuration kind for architecture.
     - `CUSTOM`: Represents a custom configuration kind.
     - `FROM_DOCUMENT_GOAL`: Represents the configuration kind derived from a document goal.
-- **Description**: Defines different kinds of configuration for autodoc generation, such as ADI driver, architecture, custom, and from document goal.
+- **Description**: Defines different kinds of configuration for autodoc generation, each represented as a string enumeration.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
 
 
 ---
-### ContentKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.ContentKind}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L58>)
+### ContentKind<!-- {{#class:python-backend/driver_db/database/models_enums.ContentKind}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L91>)
 
 - **Decorators**: `@strawberry.enum`
 - **Members**:
@@ -126,11 +165,11 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
     - `TERSE_SENTENCE_DESCRIPTION`: Represents a terse sentence description.
     - `LONG_DESCRIPTION`: Represents a long description.
     - `QUICK_START_ENTRY`: Represents a quick start entry.
-    - `QUICK_START_GETTING_STARTED`: Represents a quick start getting started guide.
+    - `QUICK_START_GETTING_STARTED`: Represents a quick start guide for getting started.
     - `QUICK_START_DEPENDENCIES`: Represents quick start dependencies.
     - `QUICK_START_USE`: Represents quick start usage instructions.
     - `ARCHITECTURE_DIAGRAM`: Represents an architecture diagram.
-    - `CHUNK_DESCRIPTIONS`: Represents chunk descriptions.
+    - `CHUNK_DESCRIPTIONS`: Represents descriptions of chunks.
     - `application_note`: Represents an application note.
     - `SHORT_SENTENCE_DESCRIPTION`: Represents a short sentence description.
     - `SYMBOL`: Represents a symbol.
@@ -147,15 +186,19 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
     - `TOP_LEVEL_SHORT_PARAGRAPH`: Represents a top-level short paragraph.
     - `TOP_LEVEL_TERSE_SENTENCE`: Represents a top-level terse sentence.
     - `TOP_LEVEL_LONG_DESCRIPTION`: Represents a top-level long description.
-- **Description**: Defines various kinds of content types as enumeration values, each representing a specific type of content such as summaries, descriptions, and codebase elements.
+    - `DEEP_CONTEXT_ARCHITECTURE`: Represents deep context architecture.
+    - `DEEP_CONTEXT_LLM_ONBOARDING`: Represents deep context LLM onboarding.
+    - `DEEP_CONTEXT_CHANGELOG`: Represents a deep context changelog.
+    - `DEEP_CONTEXT_BESPOKE`: Represents deep context bespoke content.
+- **Description**: Defines various kinds of content types as enumeration values, each representing a specific type of content such as summaries, descriptions, diagrams, and codebase elements.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
 
 
 ---
-### FileTypeEnum<!-- {{#class:python-backend/driver_db/database/models_v2_enums.FileTypeEnum}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L93>)
+### FileTypeEnum<!-- {{#class:python-backend/driver_db/database/models_enums.FileTypeEnum}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L130>)
 
 - **Members**:
     - `PYTHON`: Represents the Python file type.
@@ -218,14 +261,14 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
     - `LST`: Represents the LST file type.
     - `DRIVER_PAGE`: Represents the driver page file type.
     - `UNKNOWN`: Represents an unknown file type.
-- **Description**: Defines an enumeration for various file types, each represented by a string constant, to categorize files based on their type or extension.
+- **Description**: Defines an enumeration for various file types, each represented by a string constant, to categorize files based on their programming language or format.
 - **Inherits From**:
     - `enum.Enum`
 
 
 ---
-### LlmPipelineKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.LlmPipelineKind}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L238>)
+### LlmPipelineKind<!-- {{#class:python-backend/driver_db/database/models_enums.LlmPipelineKind}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L275>)
 
 - **Members**:
     - `DEFAULT`: Represents the default pipeline kind.
@@ -241,16 +284,16 @@ The [`get_file_type`](<#get_file_type>) function maps file extensions to their c
 # Functions
 
 ---
-### get\_file\_type<!-- {{#callable:python-backend/driver_db/database/models_v2_enums.get_file_type}} -->
-[View Source →](<../../../../driver_db/database/models_v2_enums.py#L156>)
+### get\_file\_type<!-- {{#callable:python-backend/driver_db/database/models_enums.get_file_type}} -->
+[View Source →](<../../../../driver_db/database/models_enums.py#L193>)
 
 Maps a file extension to its corresponding `FileTypeEnum` value.
 - **Inputs**:
     - `extension`: A string representing the file extension to map.
 - **Logic and Control Flow**:
     - Defines a dictionary `extension_map` that maps file extensions to `FileTypeEnum` values.
-    - Uses the `get` method of the dictionary to retrieve the `FileTypeEnum` value for the given `extension`.
-    - Returns `FileTypeEnum.UNKNOWN` if the `extension` is not found in the dictionary.
+    - Uses the `get` method on `extension_map` to retrieve the `FileTypeEnum` value for the given `extension`.
+    - Returns `FileTypeEnum.UNKNOWN` if the `extension` is not found in the `extension_map`.
 - **Output**: A `FileTypeEnum` value corresponding to the given file extension, or `FileTypeEnum.UNKNOWN` if the extension is not recognized.
 
 

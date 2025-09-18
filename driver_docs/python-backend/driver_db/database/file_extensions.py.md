@@ -6,7 +6,7 @@
 Defines an enumeration for file types and a function to map file extensions to these types.
 
 # Purpose
-This code defines an enumeration `FileTypeEnum` that categorizes various file types by their extensions. It includes a function [`get_file_type`](<#get_file_type>) that maps file extensions to their corresponding `FileTypeEnum` values. The function uses a dictionary `extension_map` to associate common file extensions with their respective file types, such as `.py` for Python files or `.java` for Java files. If the provided extension does not match any known types, the function returns `FileTypeEnum.UNKNOWN`. This code provides a narrow functionality focused on identifying file types based on their extensions.
+The code defines an enumeration `FileTypeEnum` that categorizes various file types based on their extensions. It includes a wide range of programming, scripting, markup, and configuration languages. The function [`get_file_type`](<#get_file_type>) takes a file extension as input and returns the corresponding `FileTypeEnum` value. If the extension is not recognized, it returns `FileTypeEnum.UNKNOWN`. This code provides a narrow functionality focused on mapping file extensions to their respective file types.
 # Imports and Dependencies
 
 ---
@@ -20,7 +20,7 @@ This code defines an enumeration `FileTypeEnum` that categorizes various file ty
 [View Source →](<../../../../driver_db/database/file_extensions.py#L4>)
 
 - **Decorators**: `@Enum`
-- **Description**: Defines an enumeration for different file types, each represented by a string constant. This enumeration includes a wide range of programming, scripting, markup, and configuration file types, providing a standardized way to refer to these file types within the code.
+- **Description**: Defines an enumeration for different file types, each represented by a string constant.
 - **Inherits From**:
     - `Enum`
 
@@ -31,13 +31,13 @@ This code defines an enumeration `FileTypeEnum` that categorizes various file ty
 ### get\_file\_type<!-- {{#callable:python-backend/driver_db/database/file_extensions.get_file_type}} -->
 [View Source →](<../../../../driver_db/database/file_extensions.py#L67>)
 
-Maps a file extension to its corresponding `FileTypeEnum` value.
+Maps a file extension to its corresponding file type enumeration.
 - **Inputs**:
-    - `extension`: A string representing the file extension to map.
+    - `extension`: A string representing the file extension to map to a file type.
 - **Logic and Control Flow**:
     - Defines a dictionary `extension_map` that maps file extensions to `FileTypeEnum` values.
     - Uses the `get` method of the dictionary to retrieve the `FileTypeEnum` value for the given `extension`.
-    - Returns `FileTypeEnum.UNKNOWN` if the `extension` is not found in the dictionary.
+    - Returns `FileTypeEnum.UNKNOWN` if the `extension` is not found in the `extension_map`.
 - **Output**: A `FileTypeEnum` value corresponding to the given file extension, or `FileTypeEnum.UNKNOWN` if the extension is not recognized.
 
 

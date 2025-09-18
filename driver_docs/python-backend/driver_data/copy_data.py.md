@@ -6,9 +6,9 @@
 Script for migrating codebase data and related content between databases and syncing S3 objects.
 
 # Purpose
-The code is a script designed to facilitate the migration of codebase data and associated content from a source environment to a destination environment. It handles both database records and S3 storage, ensuring that all related data is transferred correctly. The script uses SQLAlchemy to interact with the database and boto3 to manage S3 operations. It includes functions to map content types, update content type IDs, copy codebases, derived content, and chunks and embeddings. The [`migrate_codebase_data`](<#migrate_codebase_data>) function orchestrates the migration process, ensuring that all components are transferred in the correct order and with updated references.
+The code is a script designed to facilitate the migration of codebase data and associated content from a source environment to a destination environment. It handles both database records and S3 storage, ensuring that all related data is transferred correctly. The script uses SQLAlchemy sessions to interact with the database and boto3 to manage S3 operations. It includes functions to map content types, update content type IDs, copy codebases, derived content, and chunks and embeddings. The [`migrate_codebase_data`](<#migrate_codebase_data>) function orchestrates the migration process, ensuring that all components are transferred in the correct order and dependencies are maintained.
 
-The script also includes a [`main`](<#main>) function that serves as the entry point when the script is executed. It uses the `argparse` module to parse command-line arguments, which specify the organization ID, codebase ID, and whether to skip certain parts of the migration process (database or S3). The script loads environment variables using `dotenv` to configure database and S3 connections. The [`sync_s3_to_minio`](<#sync_s3_to_minio>) function handles the transfer of S3 objects, ensuring that data is moved from the source to the target S3 storage. The script is intended to be run as a standalone program, as indicated by the `if __name__ == "__main__":` block.
+The script also includes a [`sync_s3_to_minio`](<#sync_s3_to_minio>) function to handle the transfer of S3 objects between accounts, using local disk storage as an intermediary. The [`main`](<#main>) function sets up the necessary database connections and initiates the migration process based on command-line arguments. The script is intended to be run as a standalone program, as indicated by the `if __name__ == "__main__":` block, which parses command-line arguments and calls the [`main`](<#main>) function. This script is designed to be executed in an environment where the necessary environment variables and dependencies are configured, as it relies on external services and configurations.
 # Imports and Dependencies
 
 ---
@@ -56,7 +56,7 @@ Generates a mapping of content type IDs from a source session to a destination s
 ### update\_content\_types<!-- {{#callable:python-backend/driver_data/copy_data.update_content_types}} -->
 [View Source →](<../../../driver_data/copy_data.py#L44>)
 
-Updates the content type IDs of derived content based on a provided mapping.
+Updates the content type IDs of derived content objects based on a provided mapping.
 - **Inputs**:
     - `derived_contents`: A list of `DerivedContent` objects whose content type IDs need updating.
     - `content_type_mapping`: A dictionary mapping old content type IDs to new content type IDs.
@@ -64,47 +64,45 @@ Updates the content type IDs of derived content based on a provided mapping.
     - Iterates over each `DerivedContent` object in the `derived_contents` list.
     - Checks if the `content_type_id` of the current `DerivedContent` object exists in the `content_type_mapping` dictionary.
     - If the `content_type_id` exists in the mapping, updates the `content_type_id` of the `DerivedContent` object to the new ID from the mapping.
-    - If the `content_type_id` does not exist in the mapping, raises a `ValueError` indicating the ID was not found.
-- **Output**: No output is returned as the function modifies the `derived_contents` list in place.
+    - If the `content_type_id` does not exist in the mapping, raises a `ValueError` indicating the missing content type ID.
+- **Output**: The function does not return any value; it updates the `content_type_id` of the `DerivedContent` objects in place.
 
 
 ---
 ### copy\_codebase<!-- {{#callable:python-backend/driver_data/copy_data.copy_codebase}} -->
 [View Source →](<../../../driver_data/copy_data.py#L56>)
 
-Copies a codebase to a new workspace with updated identifiers and adds it to the destination session.
+Copies a codebase to a new workspace with updated identifiers and storage URL.
 - **Inputs**:
     - `destination_session`: A `Session` object representing the destination database session where the new codebase will be added.
     - `codebase`: A `Codebase` object representing the codebase to be copied.
     - `new_workspace_id`: A `UUID` representing the new workspace ID for the copied codebase.
-    - `new_storage_url`: A `str` representing the new storage URL for the copied codebase.
-    - `new_creator_id`: A `str` representing the new creator ID for the copied codebase.
+    - `new_storage_url`: A string representing the new storage URL for the copied codebase.
+    - `new_creator_id`: A string representing the new creator ID for the copied codebase.
 - **Logic and Control Flow**:
-    - Update the `workspace_id`, `storage_url`, and `creator_id` attributes of the `codebase` object with the new values provided.
-    - Create a new `Codebase` object by unpacking the updated `codebase` object's dictionary representation.
+    - Update the `workspace_id`, `storage_url`, and `creator_id` of the `codebase` object with the new values provided.
+    - Create a new `Codebase` object using the updated attributes of the `codebase` object.
     - Add the new `Codebase` object to the `destination_session`.
     - Flush the `destination_session` to persist the changes to the database.
-- **Output**: None
+- **Output**: Does not return a value; modifies the database state by adding a new codebase.
 
 
 ---
 ### copy\_derived\_content<!-- {{#callable:python-backend/driver_data/copy_data.copy_derived_content}} -->
 [View Source →](<../../../driver_data/copy_data.py#L72>)
 
-Copies derived content records to a new workspace in a destination session, handling dependencies based on the presence of a source content ID.
+Copies derived content records to a new workspace in the destination session, handling dependencies based on the presence of a source content ID.
 - **Inputs**:
     - `destination_session`: A `Session` object representing the destination database session where the derived content will be copied.
-    - `derived_contents`: A list of [`DerivedContent`](<../driver_db/database/models_v1.py.md#derivedcontent>) objects that need to be copied to the new workspace.
-    - `new_workspace_id`: A `UUID` representing the ID of the new workspace where the derived content will be associated.
+    - `derived_contents`: A list of `DerivedContent` objects that need to be copied to the new workspace.
+    - `new_workspace_id`: A `UUID` representing the ID of the new workspace to which the derived content will be assigned.
 - **Logic and Control Flow**:
     - Separate `derived_contents` into two groups: those with `source_content_id` as `None` and those with `source_content_id` not `None`.
-    - For each content in the group with `source_content_id` as `None`, set its `workspace_id` to `new_workspace_id`, create a new [`DerivedContent`](<../driver_db/database/models_v1.py.md#derivedcontent>) object with the same attributes, and add it to `destination_session`.
+    - For each content in the group with `source_content_id` as `None`, set its `workspace_id` to `new_workspace_id`, create a new `DerivedContent` object, and add it to `destination_session`.
     - Flush the `destination_session` to persist changes for the first group.
-    - For each content in the group with `source_content_id` not `None`, set its `workspace_id` to `new_workspace_id`, create a new [`DerivedContent`](<../driver_db/database/models_v1.py.md#derivedcontent>) object with the same attributes, and add it to `destination_session`.
+    - For each content in the group with `source_content_id` not `None`, set its `workspace_id` to `new_workspace_id`, create a new `DerivedContent` object, and add it to `destination_session`.
     - Flush the `destination_session` again to persist changes for the second group.
-- **Output**: The function does not return any value; it modifies the `destination_session` by adding new [`DerivedContent`](<../driver_db/database/models_v1.py.md#derivedcontent>) records.
-- **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../driver_db/database/models_v1.py.md#derivedcontent>)
+- **Output**: The function does not return any value; it modifies the `destination_session` by adding new `DerivedContent` records.
 
 
 ---
@@ -113,20 +111,18 @@ Copies derived content records to a new workspace in a destination session, hand
 
 Copies chunks and embeddings from a source session to a destination session for specified derived content IDs.
 - **Inputs**:
-    - `source_session`: A `Session` object representing the source database session from which to copy data.
-    - `destination_session`: A `Session` object representing the destination database session to which data will be copied.
-    - `derived_content_ids`: A list of `UUID` objects representing the IDs of the derived content for which chunks and embeddings will be copied.
+    - `source_session`: A `Session` object representing the source database session.
+    - `destination_session`: A `Session` object representing the destination database session.
+    - `derived_content_ids`: A list of `UUID` objects representing the IDs of the derived content to copy.
 - **Logic and Control Flow**:
     - Iterates over each `derived_content_id` in `derived_content_ids`.
-    - Prints a message indicating the start of copying chunks for the current `derived_content_id`.
-    - Executes a query on `source_session` to select all [`ChunkAndEmbedding`](<../driver_db/database/models_v1.py.md#chunkandembedding>) records where `content_id` matches the current `derived_content_id`.
+    - For each `derived_content_id`, prints a message indicating the start of the copy process.
+    - Executes a query on `source_session` to select all `ChunkAndEmbedding` records with the current `derived_content_id`.
     - Prints the number of chunks retrieved for the current `derived_content_id`.
-    - Creates a list of new [`ChunkAndEmbedding`](<../driver_db/database/models_v1.py.md#chunkandembedding>) objects by copying the attributes of each chunk retrieved from the source session.
-    - Adds all new chunks to the `destination_session`.
+    - Creates new `ChunkAndEmbedding` objects by copying the attributes of the retrieved chunks.
+    - Adds the new chunks to `destination_session`.
     - Flushes the `destination_session` to persist the changes.
-- **Output**: The function does not return any value; it performs operations on the database sessions to copy data.
-- **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.ChunkAndEmbedding`](<../driver_db/database/models_v1.py.md#chunkandembedding>)
+- **Output**: Returns `None` as it performs operations on the database sessions without returning a value.
 
 
 ---
@@ -151,10 +147,9 @@ Migrates a codebase and its related content from a source database to a destinat
     - Copy the chunks and embeddings for each derived content using [`copy_chunks_and_embeddings`](<#copy_chunks_and_embeddings>) function.
     - If an exception occurs, roll back the transaction in the destination session.
     - Commit the transaction in the destination session after successful migration.
-- **Output**: Does not return a value; performs operations on the database sessions to migrate data.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/driver_data/copy_data.generate_content_type_mapping`](<#generate_content_type_mapping>)
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../driver_db/database/models_v1.py.md#derivedcontent>)
     - [`python-backend/driver_data/copy_data.update_content_types`](<#update_content_types>)
     - [`python-backend/driver_data/copy_data.copy_codebase`](<#copy_codebase>)
     - [`python-backend/driver_data/copy_data.copy_derived_content`](<#copy_derived_content>)
@@ -165,20 +160,19 @@ Migrates a codebase and its related content from a source database to a destinat
 ### sync\_s3\_to\_minio<!-- {{#callable:python-backend/driver_data/copy_data.sync_s3_to_minio}} -->
 [View Source →](<../../../driver_data/copy_data.py#L248>)
 
-Synchronizes files from an S3 bucket to a MinIO bucket using local storage as an intermediary.
+Synchronizes files from an S3 bucket to a MinIO bucket by downloading them locally and then uploading them to the target.
 - **Inputs**:
     - `bucket_name`: The name of the S3 bucket to synchronize from.
-    - `codebase_id`: The UUID of the codebase to filter objects in the S3 bucket.
+    - `codebase_id`: The UUID of the codebase, used as a prefix to filter objects in the S3 bucket.
 - **Logic and Control Flow**:
     - Create a source AWS session using credentials from environment variables.
     - Create a target AWS session using credentials from environment variables.
     - Access the source S3 bucket using the source session.
-    - Filter objects in the source bucket with a prefix matching the `codebase_id`.
-    - For each object, download it to the local file system, creating directories as needed.
-    - Check if the target bucket exists in the MinIO server; create it if it does not exist.
-    - Upload each downloaded file from the local file system to the target bucket in MinIO.
-    - Remove the local directory corresponding to the `codebase_id` to clean up.
-- **Output**: No return value; performs synchronization as a side effect.
+    - Filter objects in the source bucket using the `codebase_id` as a prefix and download each object to the local file system.
+    - Check if the target bucket exists in the target S3 service; if not, create it.
+    - Upload each downloaded file from the local file system to the target S3 bucket.
+    - Remove the local directory corresponding to `codebase_id` to clean up downloaded files.
+- **Output**: None
 
 
 ---
@@ -187,18 +181,17 @@ Synchronizes files from an S3 bucket to a MinIO bucket using local storage as an
 
 Migrates data from a source to a target database and synchronizes S3 objects to a local MinIO instance based on given parameters.
 - **Inputs**:
-    - `org_id`: The organization ID as a string, used to identify the organization whose data is being migrated.
-    - `codebase_id`: A UUID representing the codebase ID to be migrated.
+    - `org_id`: A string representing the organization ID for which data is to be migrated.
+    - `codebase_id`: A UUID representing the codebase ID for which data is to be migrated.
     - `skip_db`: A boolean flag indicating whether to skip the database migration process.
     - `skip_s3`: A boolean flag indicating whether to skip the S3 synchronization process.
 - **Logic and Control Flow**:
     - Retrieve source and target database URLs from environment variables.
     - Print a message indicating the start of migration for the given organization and codebase IDs.
-    - Generate a bucket name using a SHA-256 hash of the organization ID, and construct a new storage URL.
-    - Set a new creator ID to 'DRIVER_DATA_COPY'.
+    - Generate a bucket name using a SHA-256 hash of the organization ID and create a new storage URL.
     - If `skip_db` is False, create database engine connections for the source and target databases.
     - Begin a transaction with the destination database session.
-    - Check if a default workspace exists in the destination database; if not, create and commit a new default workspace.
+    - Check if a default workspace exists in the destination database; if not, create and commit a new one.
     - Call [`migrate_codebase_data`](<#migrate_codebase_data>) to migrate the codebase data from the source to the destination database.
     - If `skip_s3` is False, call [`sync_s3_to_minio`](<#sync_s3_to_minio>) to synchronize S3 objects to the local MinIO instance.
 - **Output**: No output is returned as the function's return type is None.

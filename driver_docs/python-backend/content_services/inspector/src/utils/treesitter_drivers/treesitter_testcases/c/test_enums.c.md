@@ -6,7 +6,7 @@
 Demonstrates various enumeration types and their usage in C, including named, unnamed, and typedef enums.
 
 # Purpose
-This C source code file demonstrates the use of enumerations in various forms. It includes examples of named enumerations with and without `typedef`, unnamed enumerations, and combined enumeration definitions with variable declarations. The code defines several enumerations such as `Color`, `Weekday`, and `Direction`, and uses them to declare and initialize variables. The [`main`](<#main>) function assigns values to these variables and prints their integer representations using `printf`. This file serves as an educational example to illustrate different ways to define and use enumerations in C programming.
+This C source code file demonstrates the use of enumerations in various forms. It includes examples of named and unnamed enumerations, as well as the use of `typedef` to create type aliases for enumerations. The code defines several enumerations such as `Color`, `Weekday`, and `Direction`, and shows how to declare and initialize variables of these types. Additionally, it illustrates the declaration of global variables using unnamed enumerations and the combination of enumeration definitions with variable declarations. The [`main`](<#main>) function initializes these enumeration variables and prints their integer values, which are implementation-defined, to the standard output.
 # Imports and Dependencies
 
 ---
@@ -18,22 +18,22 @@ This C source code file demonstrates the use of enumerations in various forms. I
 ---
 ### globalEnum
 - **Type**: ``enum``
-- **Description**: An unnamed enumeration at the global scope that defines two constants, `XX` and `YY`, and declares a variable `globalEnum` of this unnamed enum type.
-- **Use**: Used to store one of the two possible values, `XX` or `YY`, at the global scope.
+- **Description**: Declares an unnamed enumeration with two constants, `XX` and `YY`, and a variable `globalEnum` of this enumeration type at the global scope.
+- **Use**: Used to store and manipulate values defined by the unnamed enumeration in the program.
 
 
 ---
 ### dir1
 - **Type**: ``enum Direction``
-- **Description**: Represents a direction with possible values `NORTH`, `SOUTH`, `EAST`, and `WEST`. It is declared as a global variable of the `enum Direction` type.
-- **Use**: Used to store a direction value, initially set to `NORTH` in the `main` function.
+- **Description**: Represents a direction with possible values `NORTH`, `SOUTH`, `EAST`, and `WEST`. It is declared as a global variable of type `enum Direction`. The variable `dir1` is used to store one of these directional values.
+- **Use**: Used to store and manipulate directional values in the program.
 
 
 ---
 ### dir2
 - **Type**: ``enum Direction``
 - **Description**: Represents a direction with possible values `NORTH`, `SOUTH`, `EAST`, and `WEST`. The variable `dir2` is initialized to `EAST`.
-- **Use**: Used to store and manipulate directional values in the program.
+- **Use**: Used to store and represent a direction value in the program.
 
 
 # Data Structures
@@ -42,27 +42,27 @@ This C source code file demonstrates the use of enumerations in various forms. I
 ### Color
 - **Type**: ``enum``
 - **Members**:
-    - `RED`: Represents the color red.
-    - `GREEN`: Represents the color green.
-    - `BLUE`: Represents the color blue.
-- **Description**: Defines a set of named integer constants representing colors, which can be used to improve code readability and maintainability by using descriptive names instead of numeric values.
+    - ``RED``: Represents the color red.
+    - ``GREEN``: Represents the color green.
+    - ``BLUE``: Represents the color blue.
+- **Description**: Defines a set of named integer constants representing colors: red, green, and blue.
 
 
 ---
 ### Weekday
 - **Type**: ``enum``
 - **Members**:
-    - ``MON``: Represents Monday.
-    - ``TUE``: Represents Tuesday.
-    - ``WED``: Represents Wednesday.
-    - ``THU``: Represents Thursday.
-    - ``FRI``: Represents Friday.
+    - `MON`: Represents Monday.
+    - `TUE`: Represents Tuesday.
+    - `WED`: Represents Wednesday.
+    - `THU`: Represents Thursday.
+    - `FRI`: Represents Friday.
 - **Description**: Defines an enumeration for the weekdays, providing symbolic names for the days from Monday to Friday.
 
 
 ---
 ### MyAnonEnum
-- **Type**: ``typedef enum``
+- **Type**: ``enum``
 - **Members**:
     - ``ALPHA``: Represents the first enumerator in the `MyAnonEnum` enumeration.
     - ``BETA``: Represents the second enumerator in the `MyAnonEnum` enumeration.
@@ -85,11 +85,10 @@ This C source code file demonstrates the use of enumerations in various forms. I
 ### Kind
 - **Type**: ``enum``
 - **Members**:
-    - `ALPHA`: Represents the first enumerator in the `Kind` enumeration.
-    - `BETA`: Represents the second enumerator in the `Kind` enumeration.
-    - `GAMMA`: Represents the third enumerator in the `Kind` enumeration.
-    - `KindPtr`: Defines a pointer type to the `Kind` enumeration.
-- **Description**: Defines an unnamed enumeration with three enumerators: `ALPHA`, `BETA`, and `GAMMA`, and provides a typedef for the enumeration as `Kind` and a pointer to it as `KindPtr`.
+    - `ALPHA`: Represents the first enumerated value in the `Kind` enumeration.
+    - `BETA`: Represents the second enumerated value in the `Kind` enumeration.
+    - `GAMMA`: Represents the third enumerated value in the `Kind` enumeration.
+- **Description**: Defines an unnamed enumeration with three possible values: `ALPHA`, `BETA`, and `GAMMA`. The `typedef` creates an alias `Kind` for this enumeration and `KindPtr` as a pointer to `Kind`.
 
 
 # Functions
@@ -98,7 +97,7 @@ This C source code file demonstrates the use of enumerations in various forms. I
 ### main<!-- {{#callable:main}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_enums.c#L50>)
 
-Initializes and assigns values to various enumerated types and prints their integer representations.
+Initializes and prints the integer values of various enumerated types.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Declare and initialize a variable `c` of type `enum Color` with the value `GREEN`.
@@ -108,7 +107,7 @@ Initializes and assigns values to various enumerated types and prints their inte
     - Assign the value `NORTH` to the variable `dir1`.
     - Print the integer values of `c`, `w`, `e`, `globalEnum`, `dir1`, and `dir2` using `printf`.
     - Return 0 to indicate successful execution.
-- **Output**: Returns an integer value `0` to indicate successful execution.
+- **Output**: Returns 0 to indicate successful execution.
 
 
 

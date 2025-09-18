@@ -187,7 +187,11 @@ def get_latest_commit(
 
 
 def fetch_vcs_info(
-    workspace: str, repo_slug: str, access_token: str, commit_sha: str
+    workspace: str,
+    repo_slug: str,
+    access_token: str,
+    commit_sha: str,
+    tracked_branch: str | None = None,
 ) -> VersionControlInfo:
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -201,6 +205,8 @@ def fetch_vcs_info(
     )
 
     default_branch = repo_data.get("mainbranch", {}).get("name", "main")
+
+    branch_name = tracked_branch if tracked_branch is not None else default_branch
 
     # Fetch detailed commit information
     commit_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commit/{commit_sha}"
@@ -229,7 +235,7 @@ def fetch_vcs_info(
         author=author_info,
     )
 
-    branch_info = BranchInfo(name=default_branch)
+    branch_info = BranchInfo(name=branch_name)
 
     repo_info = RepoInfo(
         name=repo_data.get("name", ""),
@@ -317,31 +323,25 @@ def download_and_upload_repo(
         else:
             commit = repo["latest_commit"]
 
-    if not commit:
-        try:
-            commit = get_latest_commit(
-                workspace, repo_slug, access_token, repo["default_branch"]
-            )
-        except Exception as e:
-            print(f"Failed to get latest commit for {repo_name}: {e}")
-            return repo_name
-
     installation_id = repo.get("installation_id")
     if not installation_id:
         print(f"Missing installation_id for repo {repo_name}")
         return repo_name
 
-    # Fetch version control information
-    try:
-        vcs_info = fetch_vcs_info(
-            workspace=workspace,
-            repo_slug=repo_slug,
-            access_token=access_token,
-            commit_sha=commit,
-        )
-    except Exception as e:
-        print(f"Failed to fetch VCS info for {repo_name}: {e}")
-        vcs_info = None
+    tracked_branch = repo.get("tracked_branch")
+
+    if not commit:
+        branch_to_check = tracked_branch if tracked_branch else repo["default_branch"]
+        commit = get_latest_commit(workspace, repo_slug, access_token, branch_to_check)
+
+    # Fetch version control information with tracked branch
+    vcs_info = fetch_vcs_info(
+        workspace=workspace,
+        repo_slug=repo_slug,
+        access_token=access_token,
+        commit_sha=commit,
+        tracked_branch=tracked_branch,
+    )
 
     try:
         with Session(engine) as session, session.begin():
@@ -411,91 +411,7 @@ def download_and_upload_repo(
                                 f"Ignoring push event to allow current generation to complete."
                             )
                             return repo
-                            # # Cancel existing run and create new version
-                            # run_statement = (
-                            #     select(InspectorRun)
-                            #     .where(InspectorRun.version_id == version.id)
-                            #     .order_by(InspectorRun.created_at.desc())
-                            # )
-                            # run = session.exec(run_statement).first()
-                            #
-                            # if run is not None:
-                            #     call_id = run.call_id
-                            #     modal_call = modal.FunctionCall.from_id(call_id)
-                            #     modal_call.cancel()
-                            #
-                            # session.delete(version)
-                            #
-                            # # Handle usage credits
-                            # usage_session_statement = (
-                            #     select(UsageSession)
-                            #     .join(
-                            #         UsageEvent, UsageSession.id == UsageEvent.session_id
-                            #     )
-                            #     .where(
-                            #         UsageSession.session_metadata["version_id"].astext
-                            #         == str(version.id)
-                            #     )
-                            #     .where(
-                            #         UsageEvent.event_type
-                            #         == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
-                            #     )
-                            #     .options(selectinload(UsageSession.usage_events))
-                            # )
-                            # usage_session = session.exec(
-                            #     usage_session_statement
-                            # ).first()
-                            #
-                            # if usage_session is not None:
-                            #     usage_event = next(
-                            #         (
-                            #             event
-                            #             for event in usage_session.usage_events
-                            #             if event.event_type
-                            #             == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
-                            #         ),
-                            #         None,
-                            #     )
-                            #     if usage_event is not None:
-                            #         new_usage_session = UsageSession(
-                            #             status=usage_session.status,
-                            #             organization_id=usage_session.organization_id,
-                            #             user_id="SYSTEM",
-                            #             session_metadata=usage_session.session_metadata,
-                            #         )
-                            #         session.add(new_usage_session)
-                            #         usage_event_credit = UsageEvent(
-                            #             **usage_event.dict(
-                            #                 exclude={
-                            #                     "id",
-                            #                     "bytes_in",
-                            #                     "session_id",
-                            #                     "timestamp",
-                            #                     "event_type",
-                            #                 }
-                            #             ),
-                            #             event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
-                            #             session_id=new_usage_session.id,
-                            #             bytes_in=abs(usage_event.bytes_in),
-                            #             timestamp=datetime.now(tz=UTC),
-                            #         )
-                            #         session.add(usage_event_credit)
-                            #
-                            # new_version = Version(
-                            #     primary_asset_id=primary_asset.id,
-                            #     vcs_hash=commit,
-                            #     status=VersionStatus.GENERATING,
-                            #     previous_version_id=version.previous_version_id,
-                            #     vcs_metadata=vcs_info.model_dump()
-                            #     if vcs_info
-                            #     else None,
-                            # )
-                            # session.add(new_version)
-                            # version_id = new_version.id
-                            # print(
-                            #     f"Version already in generating state for {repo_name}, deleting existing version and restarting inspection with new version..."
-                            # )
-                            # break
+
                 elif (
                     primary_asset.versions
                     and primary_asset.versions[0].status == VersionStatus.CONNECTING
@@ -552,12 +468,8 @@ def download_and_upload_repo(
     )
 
     # Download repository
-    try:
-        zip_content = download_repo(workspace, repo_slug, commit, access_token)
-        print(f"Repository downloaded successfully. Size: {len(zip_content)} bytes")
-    except Exception as e:
-        print(f"Failed to download repository {repo_name}: {e}")
-        return repo_name
+    zip_content = download_repo(workspace, repo_slug, commit, access_token)
+    print(f"Repository downloaded successfully. Size: {len(zip_content)} bytes")
 
     # Upload to S3
     org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
@@ -699,10 +611,12 @@ def create_pull_request(
     access_token: str,
     branch: str,
     commit_slug: str,
+    tracked_branch: str | None,
 ) -> None:
-    default_branch = fetch_bitbucket_default_branch_name(
-        workspace, repo_slug, access_token
-    )
+    if tracked_branch is None:
+        tracked_branch = fetch_bitbucket_default_branch_name(
+            workspace, repo_slug, access_token
+        )
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
@@ -712,7 +626,7 @@ def create_pull_request(
         "title": f"Update driver docs for commit {commit_slug}",
         "description": f"Automated update of driver documentation for commit {commit_slug}",
         "source": {"branch": {"name": branch}},
-        "destination": {"branch": {"name": default_branch}},
+        "destination": {"branch": {"name": tracked_branch}},
         "close_source_branch": False,
     }
 
@@ -741,6 +655,7 @@ def create_pull_request_with_bot_cleanup(
     access_token: str,
     branch: str,
     commit_slug: str,
+    tracked_branch: str | None,
 ) -> None:
     """Create a pull request and close any existing bot PRs from docs_* branches."""
     BOT_NAME = "docs-bot"
@@ -789,4 +704,6 @@ def create_pull_request_with_bot_cleanup(
         print(f"Error listing pull requests: {e}")
 
     # Create new pull request
-    create_pull_request(workspace, repo_slug, access_token, branch, commit_slug)
+    create_pull_request(
+        workspace, repo_slug, access_token, branch, commit_slug, tracked_branch
+    )

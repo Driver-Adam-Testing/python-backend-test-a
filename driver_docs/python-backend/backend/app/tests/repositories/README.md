@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock.
+Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock session.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[test_base_repository.py](test_base_repository.py.md)**: Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock.
+- **[test_base_repository.py](test_base_repository.py.md)**: Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock session.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

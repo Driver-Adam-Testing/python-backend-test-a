@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Import resolvers, language providers, symbol parsers, and utilities for symbol table construction and management.
+Resolves imports, provides language support, parses symbols, and manages symbol tables for multiple languages.
 
 ## Folders
-- **[import_resolvers](import_resolvers/README.md)**: C/C++, C#, Java, JavaScript/TypeScript, and Python import resolvers with tests for JavaScript/TypeScript.
-- **[providers](providers/README.md)**: Language providers for C, C++, CSharp, Java, JavaScript, TypeScript, and Python with parsers and resolvers.
-- **[symbol_parsers](symbol_parsers/README.md)**: Parsers for C, C++, C#, Java, JavaScript, TypeScript, and Python code using various drivers.
+- **[import_resolvers](import_resolvers/README.md)**: Resolves import statements for C/C++, C#, Java, TypeScript, and Python to project files.
+- **[providers](providers/README.md)**: Language providers for C, C++, CSharp, Java, JavaScript, TypeScript, and Python with parser and resolver functionalities.
+- **[symbol_parsers](symbol_parsers/README.md)**: Parsers for C, C++, C#, Java, JavaScript, TypeScript, and Python code using tree-sitter drivers.
 
 ## Files
-- **[__init__.py](__init__.py.md)**: Exports functions for language support, symbol table construction, and summary printing.
+- **[__init__.py](__init__.py.md)**: Imports and exposes functions for language support and symbol table operations.
 - **[base.py](base.py.md)**: Abstract base classes for language-specific symbol parsing, import resolution, and language implementation.
 - **[comparison.py](comparison.py.md)**: Utilities for timing, comparing, and reporting on symbol table construction and visibility map approaches.
 - **[core.py](core.py.md)**: Implements classes and methods for parsing, linking, and computing visibility of symbols in a project.
-- **[language_utils.py](language_utils.py.md)**: Defines language providers and retrieves supported programming languages.
-- **[orchestrator.py](orchestrator.py.md)**: Builds and prints a symbol table for various programming languages, with timing and summary options.
+- **[language_utils.py](language_utils.py.md)**: Defines language providers for Python, C/C++, Java, C#, and JavaScript/TypeScript.
+- **[orchestrator.py](orchestrator.py.md)**: Builds a symbol table by grouping files by language, constructing language-specific tables, and printing summaries.
 - **[utils.py](utils.py.md)**: Utilities for symbol disambiguation and management using caching and optional LLM assistance.
 
 ---

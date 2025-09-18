@@ -6,7 +6,7 @@
 A GraphQL logging extension that logs query execution details.
 
 # Purpose
-The code defines a `LoggingExtension` class that extends `SchemaExtension` from the `strawberry` library. It provides narrow functionality by implementing the [`on_execute`](<#loggingextensionon_execute>) method, which logs the first 128 characters of a GraphQL query from the `execution_context`. The log entry replaces newline characters with an empty string to ensure a single-line log message. This extension is useful for monitoring and debugging GraphQL queries by recording them in the application's log.
+The code defines a `LoggingExtension` class that extends `SchemaExtension` from the `strawberry` library. It provides narrow functionality by implementing a logging mechanism for GraphQL queries. The [`on_execute`](<#loggingextensionon_execute>) method logs the first 128 characters of the GraphQL query, removing any newline characters, using the `logging` module. This class is intended to be used as an extension in a GraphQL schema to monitor and log query execution details.
 # Imports and Dependencies
 
 ---
@@ -20,8 +20,8 @@ The code defines a `LoggingExtension` class that extends `SchemaExtension` from 
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows for logging messages that are specific to the module where the logger is defined.
-- **Use**: Used to log informational messages about the execution of GraphQL queries in the `LoggingExtension` class.
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name.
+- **Use**: Used to log informational messages about GraphQL query execution in the `LoggingExtension` class.
 
 
 # Classes
@@ -45,7 +45,7 @@ The code defines a `LoggingExtension` class that extends `SchemaExtension` from 
 Logs the first 128 characters of a GraphQL query and yields control.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Logs the first 128 characters of the GraphQL query from `self.execution_context.query` after removing newline characters.
+    - Logs the first 128 characters of the GraphQL query from the `execution_context` after removing newline characters.
     - Yields control back to the caller.
 - **Output**: An iterator that yields `None`.
 - **See also**: [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension`](<#loggingextension>)  (Base Class)

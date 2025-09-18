@@ -6,9 +6,9 @@
 Functions for formatting tool prompts and results, and parsing tool calls from XML responses.
 
 # Purpose
-The code provides functionality for formatting and parsing tool-related data in an XML-like structure. It includes functions to format tool prompts, parse tool calls from a response, and format tool results. The [`format_tool_prompt`](<#format_tool_prompt>) function generates a structured prompt that describes available tools, their names, descriptions, and parameters. This prompt is intended for environments where tools can be invoked programmatically. The [`parse_tool_calls_from_response`](<#parse_tool_calls_from_response>) function extracts tool call information from a given response string, which is expected to contain XML-like blocks. It identifies tool invocations and their parameters, creating instances of the `Function` and `ToolCall` classes to represent them. The [`format_tool_results`](<#format_tool_results>) function formats the results of tool executions, associating tool names with their respective arguments and outputs.
+The code provides functionality for formatting and parsing tool-related data in an XML-like structure. It includes functions to format tool prompts, parse tool calls from a response, and format tool results. The [`format_tool_prompt`](<#format_tool_prompt>) function generates a structured prompt that describes available tools, their names, descriptions, and parameters. This prompt is intended for environments where tools can be invoked programmatically. The [`parse_tool_calls_from_response`](<#parse_tool_calls_from_response>) function extracts tool invocation details from a given response string, identifying tool names and their parameters, and encapsulates them in `Function` and `ToolCall` objects. The [`format_tool_results`](<#format_tool_results>) function formats the results of tool executions, associating tool names with their respective outputs.
 
-The code defines two classes, `Function` and `ToolCall`, which are used to encapsulate information about tool functions and their invocations. The `Function` class stores the name and arguments of a tool function, while the `ToolCall` class associates a `Function` instance with an optional identifier. The code is structured to be part of a larger system where tools are dynamically described, invoked, and their results processed. It does not define a public API or external interfaces but provides utility functions and classes for handling tool-related data in a structured format.
+The code defines two classes, `Function` and `ToolCall`, which are used to encapsulate information about tool functions and their invocations. The `Function` class stores the name and arguments of a tool function, while the `ToolCall` class associates a `Function` object with an optional identifier. The code is structured to handle XML-like data, using regular expressions and the `xml.etree.ElementTree` module to parse and construct XML elements. This code is likely intended to be part of a larger system where tools are dynamically invoked and their results are processed in a structured format.
 # Imports and Dependencies
 
 ---
@@ -26,7 +26,7 @@ The code defines two classes, `Function` and `ToolCall`, which are used to encap
 - **Members**:
     - `name`: Stores the name of the function.
     - `arguments`: Holds the arguments for the function.
-- **Description**: Represents a function with a name and a set of arguments.
+- **Description**: Represents a function with a name and its associated arguments.
 - **Methods**:
     - [`python-backend/packages/shared/shared/agent/models/claude/helpers.Function.__init__`](<#function__init__>)
 
@@ -38,8 +38,8 @@ The code defines two classes, `Function` and `ToolCall`, which are used to encap
 
 Initializes a `Function` object with a name and arguments.
 - **Inputs**:
-    - `name`: The name of the function, which is a string.
-    - `arguments`: The arguments of the function, which is a dictionary or similar data structure.
+    - `name`: The name of the function to initialize.
+    - `arguments`: The arguments associated with the function.
 - **Logic and Control Flow**:
     - Assigns the input `name` to the instance variable `self.name`.
     - Assigns the input `arguments` to the instance variable `self.arguments`.
@@ -65,7 +65,7 @@ Initializes a `Function` object with a name and arguments.
 #### ToolCall\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall.__init__}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L61>)
 
-Initializes a `ToolCall` object with a given function and sets its `id` attribute to `None`.
+Initializes a `ToolCall` object with a given function and sets its `id` to `None`.
 - **Inputs**:
     - `function`: A function object that the `ToolCall` will use.
 - **Logic and Control Flow**:
@@ -84,18 +84,18 @@ Initializes a `ToolCall` object with a given function and sets its `id` attribut
 
 Formats a prompt string that describes available tools and their parameters for use in a specific environment.
 - **Inputs**:
-    - `tools`: A list of tool objects, each containing a `name`, `description`, and `function` with parameters.
+    - `tools`: A list of tool objects, each containing a `name`, `description`, and a `function` with parameters.
 - **Logic and Control Flow**:
     - Initialize an empty list `tool_descriptions` to store formatted tool descriptions.
     - Iterate over each `tool` in the `tools` list.
     - For each `tool`, create a string `tool_description` that includes the tool's name and description.
     - Use the `signature` function from the `inspect` module to get the parameters of the tool's function.
     - Iterate over the parameters of the tool's function, excluding the parameter named `agent_context`.
-    - For each parameter, append its name and type (always 'string') to the `tool_description`.
-    - Close the `parameters` and `tool_description` tags and append the `tool_description` to `tool_descriptions`.
-    - Create a string `CLAUDE_TOOL_PROMPT` that includes instructions and the concatenated `tool_descriptions`.
+    - For each parameter, append its name, type, and description to the `tool_description` string.
+    - Append the completed `tool_description` to the `tool_descriptions` list.
+    - Create a string `CLAUDE_TOOL_PROMPT` that includes a template for invoking tools and the concatenated `tool_descriptions`.
     - Return the `CLAUDE_TOOL_PROMPT` string.
-- **Output**: A formatted string (`CLAUDE_TOOL_PROMPT`) that describes the available tools and their parameters in a structured format.
+- **Output**: A formatted string (`CLAUDE_TOOL_PROMPT`) that describes how to use the available tools and their parameters.
 
 
 ---
@@ -104,14 +104,15 @@ Formats a prompt string that describes available tools and their parameters for 
 
 Extracts and constructs [`ToolCall`](<#toolcall>) objects from XML-formatted function call data in a response string.
 - **Inputs**:
-    - `response`: A string containing XML-formatted data with function call information.
+    - `response`: A string containing XML-formatted function call data.
 - **Logic and Control Flow**:
     - Initialize an empty list `tool_calls` to store [`ToolCall`](<#toolcall>) objects.
     - Use a regular expression to find all XML blocks enclosed by `<function_calls>` tags in the `response`.
     - Iterate over each `xml_block` found.
     - Parse each `xml_block` into an XML tree structure using `ET.fromstring`.
     - Find all `<invoke>` elements within the XML tree.
-    - For each `function_call` element, extract the `tool_name` and parameters.
+    - For each `<invoke>` element, extract the `tool_name` from the `<tool_name>` tag.
+    - Extract parameters from the `<parameters>` tag, creating a dictionary where keys are parameter names and values are parameter texts.
     - Create a [`Function`](<#function>) object with the extracted `tool_name` and parameters.
     - Create a [`ToolCall`](<#toolcall>) object with the [`Function`](<#function>) object.
     - Append the [`ToolCall`](<#toolcall>) object to the `tool_calls` list.

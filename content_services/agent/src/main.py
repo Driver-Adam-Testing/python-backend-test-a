@@ -29,8 +29,12 @@ agent_model_config = {
     "max_containers": 36,
 }
 
-if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]:
-    agent_model_config["proxy"] = modal.Proxy.from_name("my-proxy")
+
+agent_model_config["proxy"] = (
+    modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod")
+)
 
 
 @app.function(timeout=3600, **agent_model_config, min_containers=10)

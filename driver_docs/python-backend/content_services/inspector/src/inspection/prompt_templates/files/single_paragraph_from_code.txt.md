@@ -3,22 +3,25 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for writing a single paragraph description of a software file.
+Instructions for summarizing a software file in a single paragraph.
 
 # Purpose
-```yaml
-name: "example-project"
-version: "1.0.0"
-description: "An example project configuration"
-dependencies:
-  - "library-one>=1.0.0"
-  - "library-two>=2.0.0"
-scripts:
-  start: "node index.js"
-  test: "jest"
+```
+{
+  "name": "example-project",
+  "version": "1.0.0",
+  "description": "An example project configuration",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "John Doe",
+  "license": "ISC"
+}
 ```
 
-The YAML file defines the configuration for a project named `example-project` with version `1.0.0`. It includes a brief description of the project as "An example project configuration." The file specifies dependencies required for the project, listing `library-one` with a minimum version of `1.0.0` and `library-two` with a minimum version of `2.0.0`. Additionally, it defines scripts for common tasks, such as `start`, which runs the command `node index.js`, and `test`, which executes the `jest` testing framework. This configuration file is essential for managing project dependencies and automating tasks.
+This JSON file is a configuration file for a Node.js project. It specifies the project's metadata, including the `name`, `version`, and `description`. The `main` field indicates the entry point of the application, which is `index.js`. The `scripts` section defines command-line scripts that can be run, such as `start` to execute the main file using Node.js and `test` to run a placeholder test command. The `author` field provides the name of the person responsible for the project, and the `license` field specifies the licensing terms under which the project is distributed.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

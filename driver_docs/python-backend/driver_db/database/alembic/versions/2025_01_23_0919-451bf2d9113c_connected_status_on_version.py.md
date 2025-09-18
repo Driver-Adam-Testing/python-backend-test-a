@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add and remove the 'CONNECTED' value in the 'versionstatus' enum type.
+Alembic migration script to add and remove the 'CONNECTED' value in the 'versionstatus' enum.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the `versionstatus` enum type in a PostgreSQL database. The [`upgrade`](<#upgrade>) function adds a new value, `'CONNECTED'`, to the `versionstatus` enum. The [`downgrade`](<#downgrade>) function provides a workaround to remove the `'CONNECTED'` value by creating a new enum type `versionstatus_new`, updating the `v2_version` table to replace `'CONNECTED'` with `'GENERATION_ERROR'`, and then replacing the old enum type with the new one. The script uses Alembic's `op.execute` to run raw SQL commands for these operations.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), to modify the `versionstatus` enum type in a PostgreSQL database. The [`upgrade`](<#upgrade>) function adds a new enum value, 'CONNECTED', to the `versionstatus` type. The [`downgrade`](<#downgrade>) function provides a method to revert this change by creating a new enum type without the 'CONNECTED' value, updating existing records, and replacing the old enum type with the new one. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -18,22 +18,22 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic migrations.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
+- **Use**: Used as a revision identifier in Alembic migrations to apply or rollback database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
-- **Use**: Used by Alembic to determine the order of migrations by identifying the parent revision of the current migration.
+- **Description**: A string that specifies the identifier of the previous database schema revision in a migration script. It is used by Alembic to determine the order of migrations.
+- **Use**: Used to track the predecessor of the current revision in the Alembic migration process.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for database schema revisions.
+- **Use**: Indicates that there are no branch labels associated with this particular database schema revision.
 
 
 ---
@@ -67,7 +67,7 @@ Reverts the database schema by removing the 'CONNECTED' enum value from the 'ver
     - Updates the 'v2_version' table to change any 'CONNECTED' status to 'GENERATION_ERROR'.
     - Alters the 'status' column in the 'v2_version' table to use the new enum type 'versionstatus_new'.
     - Drops the old 'versionstatus' enum type.
-    - Renames 'versionstatus_new' to 'versionstatus' to replace the old type.
+    - Renames 'versionstatus_new' to 'versionstatus' to complete the downgrade.
 - **Output**: No output is returned as the function returns None.
 
 

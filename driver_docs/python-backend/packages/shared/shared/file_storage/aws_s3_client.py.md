@@ -6,9 +6,9 @@
 AWS S3 client for creating buckets, generating presigned URLs, and uploading/downloading files.
 
 # Purpose
-The code defines a class `AWSS3Client` that provides functionality for interacting with Amazon S3 storage services. It uses the `boto3` library to create and manage S3 buckets and objects. The class requires an `AWSClientConfig` object for configuration, which includes AWS credentials and region information. The `AWSS3Client` class includes methods to create a bucket if it does not exist, generate pre-signed URLs for both uploading and downloading objects, upload files or byte content to S3, and download files using pre-signed URLs. 
+The code provides functionality for interacting with Amazon S3 storage using the AWS SDK for Python, `boto3`. It defines a class `AWSS3Client` that encapsulates methods for managing S3 buckets and objects. The class requires an `AWSClientConfig` object for initialization, which contains AWS credentials and configuration details. The `AWSS3Client` class includes methods to create an S3 bucket if it does not exist, generate pre-signed URLs for GET and PUT operations, upload files and byte content to S3, and download files using pre-signed URLs.
 
-Additionally, the code includes a utility function [`org_id_to_hash`](<#org_id_to_hash>) that converts an organization ID into a hashed string, which is used as a bucket name. The class methods handle various tasks such as generating pre-signed URLs for secure access to S3 objects, uploading files with optional metadata and content type, and downloading files from S3 using HTTP requests. The code is structured to be used as a library, providing a public API for S3 operations, and is intended to be imported and used in other parts of a software system.
+The [`org_id_to_hash`](<#org_id_to_hash>) function is a utility that converts an organization ID into a hashed string, which can be used as a bucket name or part of a key. The class methods [`generate_get_presigned_url`](<#awss3clientgenerate_get_presigned_url>) and [`generate_put_presigned_url`](<#awss3clientgenerate_put_presigned_url>) create pre-signed URLs that allow temporary access to S3 objects. The [`upload_to_s3`](<#awss3clientupload_to_s3>) and [`upload_file_to_s3`](<#awss3clientupload_file_to_s3>) methods handle uploading data to S3, with the former using pre-signed URLs and the latter using direct S3 client operations. The [`download_file_from_presigned_url`](<#awss3clientdownload_file_from_presigned_url>) method facilitates downloading files from S3 using a pre-signed URL. The code is structured as a library file intended to be imported and used in other Python scripts or applications that require S3 interactions.
 # Imports and Dependencies
 
 ---
@@ -63,12 +63,12 @@ Initializes an instance of the `AWSS3Client` class with AWS configuration and cr
 
 Checks if an S3 bucket exists and creates it if it does not.
 - **Inputs**:
-    - `bucket_name`: The name of the S3 bucket to check and potentially create.
+    - `bucket_name`: The name of the S3 bucket to check or create.
 - **Logic and Control Flow**:
     - Attempts to access the specified S3 bucket using the `head_bucket` method to check if it exists.
     - If a `ClientError` is raised, indicating the bucket does not exist, creates the bucket using the `create_bucket` method.
     - Prints a message indicating the bucket was created if it did not exist.
-- **Output**: No output is returned, but a message is printed if a bucket is created.
+- **Output**: None
 - **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#awss3client>)  (Base Class)
 
 
@@ -93,18 +93,18 @@ Generates a pre-signed URL for retrieving an object from an S3 bucket.
 #### AWSS3Client\.generate\_put\_presigned\_url<!-- {{#callable:python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_put_presigned_url}} -->
 [View Source →](<../../../../../../packages/shared/shared/file_storage/aws_s3_client.py#L49>)
 
-Generates a pre-signed URL for uploading an object to an S3 bucket.
+Generates a pre-signed URL for uploading an object to an S3 bucket using the PUT method.
 - **Inputs**:
     - `key`: The key (name) of the object to upload to the S3 bucket.
     - `bucket`: The name of the S3 bucket where the object will be uploaded.
     - `content_type`: The MIME type of the object to upload.
-    - `metadata`: Optional metadata to associate with the object, default is None.
-    - `expires`: The time in seconds for which the pre-signed URL is valid, default is 3600 seconds (1 hour).
+    - `metadata`: Optional metadata to associate with the object, provided as a dictionary.
+    - `expires`: The time in seconds for which the pre-signed URL is valid, defaulting to 3600 seconds (1 hour).
 - **Logic and Control Flow**:
     - Calls the `generate_presigned_url` method of the `s3_client` with `ClientMethod` set to 'put_object'.
     - Passes the `bucket`, `key`, `content_type`, and `metadata` as parameters to the `generate_presigned_url` method.
     - Sets the `ExpiresIn` parameter to the value of `expires`.
-- **Output**: Returns a pre-signed URL as a string that allows uploading an object to the specified S3 bucket.
+- **Output**: Returns a string containing the pre-signed URL for uploading the object to the specified S3 bucket.
 - **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#awss3client>)  (Base Class)
 
 
@@ -112,13 +112,13 @@ Generates a pre-signed URL for uploading an object to an S3 bucket.
 #### AWSS3Client\.get\_presigned\_url<!-- {{#callable:python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.get_presigned_url}} -->
 [View Source →](<../../../../../../packages/shared/shared/file_storage/aws_s3_client.py#L68>)
 
-Generates a pre-signed URL for accessing an S3 object using an organization-specific bucket identifier.
+Generates a pre-signed URL for accessing an S3 object using an organization-specific bucket.
 - **Inputs**:
     - `organization_id`: A string representing the unique identifier of the organization.
-    - `path`: A string representing the path or key of the object in the S3 bucket.
+    - `path`: A string representing the path to the object in the S3 bucket.
 - **Logic and Control Flow**:
-    - Compute a SHA-256 hash of the `organization_id` and truncate it to 63 characters to form the bucket identifier.
-    - Call [`generate_get_presigned_url`](<#awss3clientgenerate_get_presigned_url>) with the `path` as the key and the computed hash as the bucket name.
+    - Compute a SHA-256 hash of the `organization_id` and truncate it to 63 characters to form the bucket name.
+    - Call [`generate_get_presigned_url`](<#awss3clientgenerate_get_presigned_url>) with the `path` as the key and the computed bucket name to generate the pre-signed URL.
 - **Output**: A string containing the pre-signed URL for accessing the specified S3 object.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_get_presigned_url`](<#awss3clientgenerate_get_presigned_url>)
@@ -131,18 +131,18 @@ Generates a pre-signed URL for accessing an S3 object using an organization-spec
 
 Uploads a zip file to an S3 bucket using a pre-signed URL.
 - **Inputs**:
-    - `zip_content`: The content of the zip file to upload, in bytes.
+    - `zip_content`: The binary content of the zip file to upload.
     - `metadata`: A dictionary containing metadata to associate with the uploaded file.
     - `upload_key`: The key under which to store the uploaded file in the S3 bucket.
     - `bucket`: The name of the S3 bucket to upload the file to.
 - **Logic and Control Flow**:
-    - Calls [`create_bucket_if_dne`](<#awss3clientcreate_bucket_if_dne>) to ensure the specified bucket exists.
+    - Calls [`create_bucket_if_dne`](<#awss3clientcreate_bucket_if_dne>) to ensure the specified S3 bucket exists.
     - Generates a pre-signed URL for uploading the file using [`generate_put_presigned_url`](<#awss3clientgenerate_put_presigned_url>).
     - Prints the generated S3 URL for debugging purposes.
-    - Checks if the URL generation was successful; if not, prints an error message and returns `False`.
-    - Sets the headers for the HTTP PUT request, including content type and content length.
+    - Checks if the pre-signed URL generation was successful; if not, prints an error message and returns `False`.
+    - Sets HTTP headers for the upload, including content type and content length.
     - Uses `httpx.put` to upload the file to the S3 bucket using the pre-signed URL.
-    - Raises an exception if the HTTP request fails.
+    - Raises an exception if the HTTP request fails using `response.raise_for_status()`.
     - Returns `True` if the upload is successful (HTTP status code 200), otherwise returns `False`.
 - **Output**: Returns `True` if the file upload is successful, otherwise returns `False`.
 - **Functions Called**:
@@ -157,18 +157,17 @@ Uploads a zip file to an S3 bucket using a pre-signed URL.
 
 Uploads a file to an S3 bucket, creating the bucket if it does not exist, and optionally sets metadata and content type.
 - **Inputs**:
-    - `self`: Represents the instance of the class `AWSS3Client`.
-    - `file_path`: A `Path` object that specifies the path to the file to upload.
-    - `bucket`: A string that specifies the name of the S3 bucket.
-    - `upload_key`: A string that specifies the key under which to store the file in the S3 bucket.
-    - `metadata`: An optional dictionary that contains metadata to associate with the file.
-    - `content_type`: An optional string that specifies the content type of the file.
+    - `file_path`: The path to the file to upload, specified as a `Path` object.
+    - `bucket`: The name of the S3 bucket where the file will be uploaded.
+    - `upload_key`: The key under which the file will be stored in the S3 bucket.
+    - `metadata`: Optional dictionary containing metadata to associate with the file.
+    - `content_type`: Optional string specifying the content type of the file.
 - **Logic and Control Flow**:
     - Calls [`create_bucket_if_dne`](<#awss3clientcreate_bucket_if_dne>) to ensure the specified bucket exists.
-    - Initializes an empty dictionary `extra_args` to hold optional arguments for the upload.
-    - Checks if `metadata` is provided; if so, adds it to `extra_args` under the key 'Metadata'.
-    - Checks if `content_type` is provided; if so, adds it to `extra_args` under the key 'ContentType'.
-    - Calls `self.s3_client.upload_file` with the file path, bucket name, upload key, and any extra arguments to upload the file to S3.
+    - Initializes an empty dictionary `extra_args` to hold optional upload parameters.
+    - Adds `Metadata` to `extra_args` if `metadata` is provided.
+    - Adds `ContentType` to `extra_args` if `content_type` is provided.
+    - Uses `self.s3_client.upload_file` to upload the file to the specified bucket with the given key and extra arguments.
 - **Output**: Does not return a value; performs the upload operation as a side effect.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.create_bucket_if_dne`](<#awss3clientcreate_bucket_if_dne>)
@@ -185,10 +184,10 @@ Downloads a file from a given presigned URL and saves it to a specified local pa
     - `download_destination`: A `Path` object representing the local file path where the downloaded file will be saved.
 - **Logic and Control Flow**:
     - Opens a streaming HTTP GET request to the `presigned_url` using `httpx.stream`.
-    - Checks the HTTP response status and raises an error if the status indicates a failure.
+    - Checks the HTTP response status and raises an error if the status is not successful.
     - Opens the `download_destination` file in binary write mode.
     - Iterates over the bytes in the HTTP response and writes each chunk to the `download_destination` file.
-- **Output**: None
+- **Output**: No output is returned; the function writes the downloaded file to the specified `download_destination`.
 - **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#awss3client>)  (Base Class)
 
 
@@ -203,8 +202,8 @@ Converts an organization ID into a 63-character SHA-256 hash string.
 - **Inputs**:
     - `organization_id`: A string representing the organization ID to be hashed.
 - **Logic and Control Flow**:
-    - Encodes the `organization_id` string to UTF-8 format.
-    - Computes the SHA-256 hash of the encoded string.
+    - Encodes the input `organization_id` as a UTF-8 byte string.
+    - Computes the SHA-256 hash of the encoded byte string.
     - Converts the hash to a hexadecimal string representation.
     - Truncates the hexadecimal string to the first 63 characters.
 - **Output**: A 63-character string representing the truncated SHA-256 hash of the input organization ID.

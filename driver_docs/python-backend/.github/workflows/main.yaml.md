@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GitHub Actions workflow for deploying the backend to the production environment.
+GitHub Actions workflow for deploying the Python backend to production, including AWS and Modal deployments.
 
 # Purpose
-This file is a GitHub Actions workflow configuration for deploying a backend application to a production environment. It triggers on pushes to the `main` branch and uses concurrency control to manage workflow execution. The workflow grants specific permissions, such as writing `id-token` and reading `contents`. It defines a job that runs on the `ubuntu-latest` environment and includes several steps: checking out the code, setting up Node.js and Python environments, installing dependencies with Poetry, configuring AWS credentials, and deploying various services using the AWS CDK and Modal. Each deployment step is associated with a specific service directory and uses environment variables for configuration, ensuring that deployments are consistent and secure.
+This YAML configuration file defines a GitHub Actions workflow for deploying a backend application to a production environment. The workflow triggers on pushes to the `main` branch and uses concurrency controls to manage workflow execution. It sets permissions for GitHub tokens and specifies a job that runs on the `ubuntu-latest` environment. The job includes steps to check out the code, set up Node.js and Python environments, install dependencies, and configure AWS credentials. It builds and pushes a Docker image to Amazon ECR, deploys infrastructure using AWS CDK, and forces a new ECS deployment. Additionally, it deploys several services, such as Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation, using the `modal` tool, with environment variables for authentication and configuration.
 # Content Summary
-This configuration file is a GitHub Actions workflow for deploying a backend application to a production environment. The workflow is triggered by a push event to the "main" branch. It uses concurrency control to ensure that only one deployment runs at a time, canceling any in-progress deployments if a new one starts.
+This configuration file is a GitHub Actions workflow for deploying a backend application to a production environment. The workflow triggers on pushes to the "main" branch and uses concurrency control to manage workflow runs, ensuring that only one run per branch is active at a time.
 
 The workflow requires specific permissions, allowing write access to the id-token and read access to the contents. It defines a single job named "main" that runs on the latest Ubuntu environment and targets the production environment.
 
@@ -16,9 +16,9 @@ The job consists of several steps:
 
 1. **Checkout Code**: Uses the `actions/checkout@v4` action to check out the repository code.
 
-2. **Setup Node.js**: Configures Node.js version 20.x using `actions/setup-node@v4`, with npm caching enabled.
+2. **Setup Node.js**: Configures Node.js version 20.x using `actions/setup-node@v4` and enables npm caching.
 
-3. **Install Node.js Dependencies**: Runs `npm ci` to install Node.js dependencies.
+3. **Install Node.js Dependencies**: Executes `npm ci` to install Node.js dependencies.
 
 4. **Setup Python**: Configures Python version 3.12 using `actions/setup-python@v5`.
 
@@ -26,13 +26,21 @@ The job consists of several steps:
 
 6. **Install Python Dependencies**: Installs dependencies using Poetry without creating a virtual environment.
 
-7. **Configure AWS Credentials**: Uses `aws-actions/configure-aws-credentials@v4` to set up AWS credentials for the deployment, assuming a role specified by the `AWS_CICD_ROLE` variable.
+7. **Configure AWS Credentials**: Sets up AWS credentials using `aws-actions/configure-aws-credentials@v4`, assuming a role specified by the `AWS_CICD_ROLE` variable.
 
-8. **CDK Deployment**: Deploys infrastructure using AWS CDK with the command `poetry run npx cdk deploy`, bypassing approval prompts.
+8. **Login to Amazon ECR**: Logs into Amazon Elastic Container Registry (ECR) using `aws-actions/amazon-ecr-login@v2`.
 
-9. **Deploy Services**: Deploys several services (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) using the `modal deploy` command. Each service is deployed from its respective directory under `content_services`. The deployment uses environment variables for authentication and environment configuration, including `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, and `MODAL_ENV`.
+9. **Build and Push Docker Image**: Builds, tags, and pushes a Docker image of the Python backend to Amazon ECR.
 
-Each deployment step uses Poetry to install dependencies and execute the deployment script, tagging the deployment with the first eight characters of the current Git commit SHA.
+10. **CDK Deployment**: Deploys infrastructure using AWS Cloud Development Kit (CDK) with no approval required, and outputs the results to a JSON file.
+
+11. **Parse CDK Outputs**: Extracts ECS cluster and service ARNs from the CDK outputs using `jq` and stores them in GitHub outputs.
+
+12. **Force ECS Deployment**: Forces a new deployment of the ECS service using the parsed ARNs.
+
+13. **Deploy Services**: Deploys several services (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) using Poetry and Modal, a deployment tool. Each service is deployed from its respective directory with environment variables for authentication and environment configuration.
+
+The workflow uses environment variables and secrets for configuration, ensuring secure handling of sensitive information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

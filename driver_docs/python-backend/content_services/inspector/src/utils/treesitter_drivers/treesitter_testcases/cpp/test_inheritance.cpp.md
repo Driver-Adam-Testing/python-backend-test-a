@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test cases for various C++ inheritance scenarios, including public, private, protected, virtual, and template inheritance.
+Inheritance test cases for various scenarios including access levels, virtual inheritance, templates, and namespaces.
 
 # Purpose
-The code is a collection of test cases that demonstrate various inheritance scenarios in C++. It covers a wide range of inheritance types, including public, private, and protected inheritance, as well as more complex forms such as virtual inheritance, multiple inheritance, and template-based inheritance. The code also explores specific cases like inheritance from nested classes, inheritance with forward-declared bases, and inheritance within anonymous namespaces. Each test case is designed to illustrate a particular aspect of C++ inheritance, making it a comprehensive resource for understanding how inheritance works in different contexts.
+The code is a collection of test cases that demonstrate various inheritance scenarios in C++. It covers a wide range of inheritance types, including public, private, and protected inheritance, as well as more complex forms such as virtual inheritance, multiple inheritance, and template-based inheritance. Each test case is designed to illustrate a specific aspect of inheritance, such as the default access levels for classes and structs, the use of virtual inheritance to solve the diamond problem, and the behavior of inheritance with forward-declared classes.
 
-The code does not define any public APIs or external interfaces; instead, it serves as a set of examples or test cases for educational or testing purposes. The classes are organized to show different inheritance patterns, such as simple inheritance, virtual inheritance to solve the diamond problem, and the use of templates in inheritance. Additionally, the code includes examples of deep inheritance hierarchies and abstract base classes with derived classes implementing pure virtual functions. This collection of test cases can be used to verify the behavior of inheritance in C++ and to ensure that different inheritance scenarios are correctly implemented and understood.
+The code also explores advanced inheritance concepts, such as nested class inheritance, qualified base class names, and inheritance involving anonymous namespaces. Additionally, it includes examples of abstract base classes with derived classes implementing pure virtual functions, as well as deep inheritance hierarchies. The test cases serve as a comprehensive reference for understanding the nuances of inheritance in C++, providing clear examples of how different inheritance mechanisms can be implemented and combined.
 # Data Structures
 
 ---
@@ -16,7 +16,10 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L4>)
 
 - **Type**: `class`
-- **Description**: Represents a base class with no members or methods, serving as a simple example for inheritance in C++.
+- **Description**: Represents a base class with no members or methods defined within it. It serves as a simple example of a class that can be inherited by other classes, demonstrating basic inheritance in C++.
+- **Member Functions**:
+    - [`Base::virtualMethod`](<test_func_calls.cpp.md#basevirtualmethod>)
+    - [`Base::~Base`](<test_func_calls.cpp.md#basebase>)
 
 
 ---
@@ -24,7 +27,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L5>)
 
 - **Type**: `class`
-- **Description**: Inherits publicly from the `Base` class, meaning all public and protected members of `Base` are accessible in `PublicDerived` with the same access level.
+- **Description**: Inherits publicly from the `Base` class, allowing access to public and protected members of `Base`.
 - **Inherits From**:
     - [`Base`](<#base>)
 
@@ -34,7 +37,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L8>)
 
 - **Type**: `class`
-- **Description**: Uses private inheritance to derive from the `Base` class, meaning that all public and protected members of `Base` become private members of `PrivateDerived`. This restricts access to the inherited members from outside the class, effectively hiding the base class interface from the users of `PrivateDerived`.
+- **Description**: Represents a class that inherits privately from the `Base` class, meaning that all public and protected members of `Base` become private members of `PrivateDerived`.
 - **Inherits From**:
     - [`Base`](<#base>)
 
@@ -43,8 +46,8 @@ The code does not define any public APIs or external interfaces; instead, it ser
 ### ProtectedDerived<!-- {{#data_structure:ProtectedDerived}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L11>)
 
-- **Type**: ``class``
-- **Description**: Uses protected inheritance from the `Base` class, which means that all public and protected members of `Base` become protected members of `ProtectedDerived`. This restricts access to the inherited members to `ProtectedDerived` and its derived classes, but not to other classes or functions.
+- **Type**: `class`
+- **Description**: Represents a class that inherits from the `Base` class using protected inheritance. This means that the public and protected members of `Base` become protected members of `ProtectedDerived`, restricting access to these members to `ProtectedDerived` and its derived classes.
 - **Inherits From**:
     - [`Base`](<#base>)
 
@@ -54,7 +57,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L14>)
 
 - **Type**: `class`
-- **Description**: Inherits from `Base` with default private access, as it is a class.
+- **Description**: `DefaultClassDerived` inherits from `Base` using default private inheritance, which is the default access specifier for classes in C++. This means that all public and protected members of `Base` become private members of `DefaultClassDerived`.
 - **Inherits From**:
     - [`Base`](<#base>)
 
@@ -73,8 +76,8 @@ The code does not define any public APIs or external interfaces; instead, it ser
 ### VirtualBase<!-- {{#data_structure:VirtualBase}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L18>)
 
-- **Type**: ``class``
-- **Description**: Represents a base class used for virtual inheritance, allowing derived classes to share a single instance of the base class when multiple paths of inheritance exist.
+- **Type**: `class`
+- **Description**: Represents a base class used for virtual inheritance, allowing derived classes to share a common base class without ambiguity.
 
 
 ---
@@ -82,7 +85,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L19>)
 
 - **Type**: `class`
-- **Description**: Inherits from `VirtualBase` using virtual inheritance, which helps to solve the diamond problem by ensuring that only one instance of `VirtualBase` is present in the inheritance hierarchy.
+- **Description**: Inherits from `VirtualBase` using virtual public inheritance, which helps to solve the diamond problem in multiple inheritance scenarios by ensuring that only one instance of `VirtualBase` is present in the inheritance hierarchy.
 - **Inherits From**:
     - [`VirtualBase`](<#virtualbase>)
 
@@ -92,7 +95,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L22>)
 
 - **Type**: `class`
-- **Description**: Defines an empty class with no members or methods, serving as a base class for inheritance.
+- **Description**: Represents a base class with no members or methods, used for inheritance purposes.
 
 
 ---
@@ -100,7 +103,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L23>)
 
 - **Type**: `class`
-- **Description**: `BaseB` is an empty class used in a multiple inheritance scenario, where it is inherited privately by the `MultipleInheritance` class. It does not contain any members or methods, serving as a placeholder for demonstrating inheritance access levels.
+- **Description**: `BaseB` is an empty class used in multiple inheritance scenarios, specifically in the `MultipleInheritance` class where it is inherited privately. It serves as a base class to demonstrate different access levels in inheritance.
 
 
 ---
@@ -108,15 +111,15 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L24>)
 
 - **Type**: `class`
-- **Description**: `BaseC` is an empty class used as a base class in multiple inheritance scenarios. It is inherited with protected access in the `MultipleInheritance` class, demonstrating the use of different access specifiers in multiple inheritance.
+- **Description**: Represents a base class used in multiple inheritance scenarios, specifically in the `MultipleInheritance` class where it is inherited with protected access.
 
 
 ---
 ### MultipleInheritance<!-- {{#data_structure:MultipleInheritance}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L25>)
 
-- **Type**: `class`
-- **Description**: Enables multiple inheritance by deriving from three base classes: `BaseA` with public access, `BaseB` with private access, and `BaseC` with protected access.
+- **Type**: ``class``
+- **Description**: Implements multiple inheritance by deriving from three base classes: `BaseA` with public access, `BaseB` with private access, and `BaseC` with protected access. This class demonstrates the use of different access specifiers in multiple inheritance scenarios.
 - **Inherits From**:
     - [`BaseA`](<#basea>)
     - [`BaseB`](<#baseb>)
@@ -128,9 +131,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L28>)
 
 - **Type**: `class`
-- **Members**:
-    - `species`: Stores the species of the animal as a string.
-- **Description**: Represents a base class for animals, providing a common interface for derived classes like `Mammal` and `Bird`. It includes a constructor that initializes the `species` attribute.
+- **Description**: Represents a base class in a virtual inheritance hierarchy, serving as a common ancestor for classes like `Mammal` and `Bird`.
 - **Member Functions**:
     - [`Animal::Animal`](<test_classes.cpp.md#animalanimal>)
 
@@ -140,7 +141,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L29>)
 
 - **Type**: `class`
-- **Description**: Represents a `Mammal` that inherits virtually from the `Animal` class, allowing for shared base class functionality in a multiple inheritance scenario, such as the diamond problem. The `Mammal` class constructor takes a `std::string` parameter and passes it to the `Animal` constructor. The `nurse` method outputs "Nursing babies" to the standard output, indicating a behavior specific to mammals.
+- **Description**: Represents a `Mammal` that inherits virtually from the `Animal` class, allowing for shared base class functionality in a multiple inheritance scenario, such as the diamond problem. The `Mammal` class constructor takes a `std::string` parameter and passes it to the `Animal` constructor. It also includes a `nurse` method that outputs "Nursing babies" to the console.
 - **Member Functions**:
     - [`Mammal::Mammal`](<test_classes.cpp.md#mammalmammal>)
     - [`Mammal::nurse`](<test_classes.cpp.md#mammalnurse>)
@@ -153,7 +154,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L30>)
 
 - **Type**: `class`
-- **Description**: Represents a class that inherits virtually from the `Animal` class, indicating that it is part of a virtual inheritance hierarchy. This class is used in conjunction with the `FlyingMammal` class, which inherits from both `Mammal` and `Bird`, to demonstrate multiple inheritance and the diamond problem solution in C++.
+- **Description**: Represents a class that inherits virtually from the `Animal` class, allowing it to be part of a multiple inheritance hierarchy without causing the diamond problem. It is used as a base class for `FlyingMammal`, which inherits from both `Mammal` and `Bird`, demonstrating virtual inheritance to ensure a single instance of `Animal` in the hierarchy.
 - **Member Functions**:
     - [`Bird::Bird`](<test_classes.cpp.md#birdbird>)
     - [`Bird::fly`](<test_classes.cpp.md#birdfly>)
@@ -166,7 +167,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L31>)
 
 - **Type**: `class`
-- **Description**: Represents a class that inherits from both `Mammal` and `Bird` using public inheritance, allowing it to exhibit characteristics of both base classes.
+- **Description**: Represents a class that inherits from both `Mammal` and `Bird` using virtual inheritance, which helps to solve the diamond problem by ensuring that `Animal`, the common base class, is only included once in the inheritance hierarchy.
 - **Inherits From**:
     - [`Mammal`](<#mammal>)
     - [`Bird`](<#bird>)
@@ -177,14 +178,14 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L34>)
 
 - **Type**: ``class``
-- **Description**: Defines a template class with a single type parameter `T`. It serves as a base class for other classes that can specify the type `T` when inheriting from it. The class does not contain any members or methods, making it a simple template base class.
+- **Description**: Defines a template class with a single type parameter `T`. It serves as a base class for other classes that specify the type parameter when inheriting from it. The class does not contain any members or methods, making it a simple template base class for inheritance purposes.
 
 
 ---
 ### TemplateInheritance<!-- {{#data_structure:TemplateInheritance}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L37>)
 
-- **Type**: ``class``
+- **Type**: `class`
 - **Description**: Inherits from the `TemplateBase` class with `int` as the template parameter, demonstrating template inheritance.
 - **Inherits From**:
     - [`TemplateBase`](<#templatebase>)
@@ -195,7 +196,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L41>)
 
 - **Type**: `class`
-- **Description**: Defines an empty class within the `NS` namespace, which can be used as a base class for inheritance.
+- **Description**: Represents a class within the `NS` namespace with no members or methods defined. It serves as a base class for inheritance purposes, as demonstrated by the `QualifiedInheritance` class inheriting from `NS::NamespacedBase`.
 
 
 ---
@@ -212,10 +213,10 @@ The code does not define any public APIs or external interfaces; instead, it ser
 ### Outer<!-- {{#data_structure:Outer}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L47>)
 
-- **Type**: ``class``
+- **Type**: `class`
 - **Members**:
-    - ``Inner``: A nested class within `Outer`.
-- **Description**: Defines a class `Outer` that contains a nested class `Inner`. The `Outer` class has a constructor that initializes an integer value and a method `createInner` that returns an instance of `Inner`. The `Inner` class is used in inheritance scenarios as shown in the `InheritFromNested` class.
+    - `Inner`: Defines a nested class within `Outer`.
+- **Description**: Represents a class with a nested class `Inner`. The `Outer` class constructor initializes an integer value `outer_value`, and it provides a method `createInner` to create an instance of the `Inner` class with a given integer value.
 - **Member Functions**:
     - [`Outer::Outer`](<test_classes.cpp.md#outerouter>)
     - [`Outer::createInner`](<test_classes.cpp.md#outercreateinner>)
@@ -225,8 +226,8 @@ The code does not define any public APIs or external interfaces; instead, it ser
 ### Inner<!-- {{#data_structure:Outer::Inner}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L49>)
 
-- **Type**: ``class``
-- **Description**: Represents a nested class within the `Outer` class. The `Inner` class does not have any members or methods defined within it, but it is used as a base class for `InheritFromNested`, demonstrating nested class inheritance.
+- **Type**: `class`
+- **Description**: Represents a nested class within the `Outer` class, but does not contain any members or methods within its definition.
 - **Member Functions**:
     - [`Outer::Inner::Inner`](<test_classes.cpp.md#innerinner>)
     - [`Outer::Inner::getValue`](<test_classes.cpp.md#innergetvalue>)
@@ -247,14 +248,14 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L55>)
 
 - **Type**: ``class``
-- **Description**: Defines a template class with two parameters: a type `T` and an integer `N`. This class does not have any members or methods defined in the provided code, and it serves as a base class for other classes to inherit from, allowing them to specify a type and an integer as template arguments.
+- **Description**: Defines a template class with two parameters: a type `T` and an integer `N`. This class does not have any members or methods defined in the provided code, serving as a base for inheritance or further specialization.
 
 
 ---
 ### ComplexTemplateInheritance<!-- {{#data_structure:ComplexTemplateInheritance}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L58>)
 
-- **Type**: ``class``
+- **Type**: `class`
 - **Description**: Inherits from the `ComplexTemplate` class with `std::string` as the template type and `42` as the template integer parameter, demonstrating complex template inheritance.
 - **Inherits From**:
     - [`ComplexTemplate`](<#complextemplate>)
@@ -265,7 +266,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L61>)
 
 - **Type**: `class`
-- **Description**: `MixedBase1` is an empty class that serves as a base class for inheritance purposes. It is used in the context of mixed virtual and non-virtual inheritance, as seen in the `MixedInheritance` class, which inherits from `MixedBase1` virtually.
+- **Description**: Represents a class with no members or methods, used in the context of mixed virtual and non-virtual inheritance.
 
 
 ---
@@ -273,7 +274,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L62>)
 
 - **Type**: `class`
-- **Description**: `MixedBase2` is an empty class used in the context of inheritance, specifically in the `MixedInheritance` class where it is inherited privately. It serves as a base class in a mixed inheritance scenario, demonstrating the use of both virtual and non-virtual inheritance.
+- **Description**: Represents a class used in a mixed inheritance scenario, specifically as a private base class in the `MixedInheritance` class.
 
 
 ---
@@ -281,7 +282,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L63>)
 
 - **Type**: `class`
-- **Description**: Uses mixed inheritance by inheriting virtually from `MixedBase1` and privately from `MixedBase2`. This allows `MixedInheritance` to share a common base class with other classes that also virtually inherit from `MixedBase1`, while keeping the details of `MixedBase2` private.
+- **Description**: Implements a class that uses mixed inheritance, inheriting virtually from `MixedBase1` and privately from `MixedBase2`. This allows the class to resolve potential ambiguities in the inheritance hierarchy while controlling access to the base classes.
 - **Inherits From**:
     - [`MixedBase1`](<#mixedbase1>)
     - [`MixedBase2`](<#mixedbase2>)
@@ -291,8 +292,8 @@ The code does not define any public APIs or external interfaces; instead, it ser
 ### LongBase1<!-- {{#data_structure:LongBase1}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L66>)
 
-- **Type**: ``class``
-- **Description**: Defines an empty class with no members or methods, serving as a base class for inheritance.
+- **Type**: `class`
+- **Description**: Represents a class with no members or methods, serving as a base class for inheritance purposes.
 
 
 ---
@@ -300,7 +301,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L67>)
 
 - **Type**: `class`
-- **Description**: `LongBase2` is an empty class used in the context of demonstrating inheritance with a very long base class list. It does not contain any members or methods and serves as a placeholder for inheritance testing.
+- **Description**: `LongBase2` is an empty class used in the context of demonstrating inheritance with very long base class lists. It does not contain any members or methods.
 
 
 ---
@@ -308,7 +309,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L68>)
 
 - **Type**: `class`
-- **Description**: `LongBase3` is an empty class used in the context of demonstrating inheritance with very long base class lists. It does not contain any members or methods.
+- **Description**: `LongBase3` is an empty class used in the context of demonstrating inheritance with a very long base class list. It does not contain any members or methods and serves as a placeholder for inheritance testing.
 
 
 ---
@@ -316,7 +317,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L69>)
 
 - **Type**: `class`
-- **Description**: `LongBase4` is a class that is part of a complex inheritance hierarchy. It is used as a virtual public base class in the `VeryLongInheritance` class, which demonstrates inheritance with a long list of base classes, including virtual inheritance.
+- **Description**: Represents a class used in a very long base class list for inheritance, specifically as a virtual public base class in the `VeryLongInheritance` class.
 
 
 ---
@@ -332,7 +333,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L71>)
 
 - **Type**: ``class``
-- **Description**: Represents a class that inherits from multiple base classes with different access specifiers and virtual inheritance. Inherits publicly from `LongBase1`, protectedly from `LongBase2`, privately from `LongBase3`, virtually and publicly from `LongBase4`, and virtually and protectedly from `LongBase5`. This class demonstrates complex inheritance patterns, including virtual inheritance to address potential diamond problem scenarios.
+- **Description**: Represents a class that inherits from multiple base classes with different access specifiers and virtual inheritance. It inherits publicly from `LongBase1`, protectedly from `LongBase2`, privately from `LongBase3`, virtually and publicly from `LongBase4`, and virtually and protectedly from `LongBase5`. This setup demonstrates complex inheritance scenarios, including virtual inheritance to address potential diamond problem issues.
 - **Inherits From**:
     - [`LongBase1`](<#longbase1>)
     - [`LongBase2`](<#longbase2>)
@@ -346,7 +347,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L78>)
 
 - **Type**: `struct`
-- **Description**: Represents a base structure with no members or methods, serving as a base for derived structures.
+- **Description**: Represents a base structure for inheritance, with no additional members or functionality defined.
 
 
 ---
@@ -354,7 +355,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L79>)
 
 - **Type**: `struct`
-- **Description**: Inherits publicly from `StructBase`, which means all public and protected members of `StructBase` are accessible in `StructDerived`.
+- **Description**: Inherits publicly from `StructBase`, which means all public and protected members of `StructBase` are accessible in `StructDerived` as public members. This struct demonstrates simple public inheritance in C++.
 - **Inherits From**:
     - [`StructBase`](<#structbase>)
 
@@ -364,7 +365,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L80>)
 
 - **Type**: `struct`
-- **Description**: Inherits privately from `StructBase`, meaning that all public and protected members of `StructBase` become private members of `StructExplicitPrivate`.
+- **Description**: Represents a structure that inherits privately from `StructBase`, meaning that all public and protected members of `StructBase` become private members of `StructExplicitPrivate`.
 - **Inherits From**:
     - [`StructBase`](<#structbase>)
 
@@ -374,7 +375,7 @@ The code does not define any public APIs or external interfaces; instead, it ser
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L83>)
 
 - **Type**: ``class``
-- **Description**: Defines an abstract base class with a virtual destructor and a pure virtual function `pure_virtual`. This class serves as a base for other classes to inherit from, ensuring that derived classes implement the `pure_virtual` function.
+- **Description**: Defines an abstract base class with a virtual destructor and a pure virtual function `pure_virtual`, which must be implemented by derived classes.
 - **Member Functions**:
     - [`AbstractBase::~AbstractBase`](<#abstractbaseabstractbase>)
 
@@ -384,12 +385,12 @@ The code does not define any public APIs or external interfaces; instead, it ser
 #### AbstractBase::\~AbstractBase<!-- {{#callable:AbstractBase::~AbstractBase}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L85>)
 
-Defines a virtual destructor and a pure virtual function to make the class abstract.
+Defines an abstract base class with a virtual destructor and a pure virtual function.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a virtual destructor `~AbstractBase()` with a default implementation to ensure proper cleanup of derived class objects.
-    - Declares a pure virtual function `pure_virtual()` which must be implemented by any non-abstract derived class.
-- **Output**: An abstract base class that cannot be instantiated directly and requires derived classes to implement the `pure_virtual()` function.
+    - The destructor `~AbstractBase()` is declared as `virtual` and `default`, allowing derived classes to clean up resources properly when an object is deleted through a base class pointer.
+    - The `pure_virtual()` function is declared as a pure virtual function (`= 0`), making `AbstractBase` an abstract class that cannot be instantiated directly and must be implemented by derived classes.
+- **Output**: No direct output, as this is an abstract class definition meant to be inherited and implemented by derived classes.
 - **See also**: [`AbstractBase`](<#abstractbase>)  (Data Structure)
 
 
@@ -398,8 +399,8 @@ Defines a virtual destructor and a pure virtual function to make the class abstr
 ### ConcreteA<!-- {{#data_structure:ConcreteA}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L89>)
 
-- **Type**: `class`
-- **Description**: Inherits from `AbstractBase` and provides an implementation for the pure virtual function `pure_virtual`. This class is a concrete implementation of an abstract base class, allowing instantiation and use of objects of this type.
+- **Type**: ``class``
+- **Description**: Inherits from `AbstractBase` and provides an implementation for the pure virtual function `pure_virtual`. This class is part of a test case for inheritance, demonstrating how a concrete class can implement an abstract base class.
 - **Member Functions**:
     - [`ConcreteA::pure_virtual`](<#concreteapure_virtual>)
 - **Inherits From**:
@@ -411,7 +412,7 @@ Defines a virtual destructor and a pure virtual function to make the class abstr
 #### ConcreteA::pure\_virtual<!-- {{#callable:ConcreteA::pure_virtual}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L91>)
 
-Implements the pure virtual function `pure_virtual` from the `AbstractBase` class with an empty body.
+Implements the pure virtual function `pure_virtual` from the `AbstractBase` class.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Overrides the pure virtual function `pure_virtual` from the `AbstractBase` class.
@@ -425,8 +426,8 @@ Implements the pure virtual function `pure_virtual` from the `AbstractBase` clas
 ### ConcreteB<!-- {{#data_structure:ConcreteB}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L94>)
 
-- **Type**: ``class``
-- **Description**: Inherits from `AbstractBase` and provides an implementation for the pure virtual function `pure_virtual`. This class is part of a set of classes demonstrating various inheritance scenarios.
+- **Type**: `class`
+- **Description**: Inherits from `AbstractBase` and provides an implementation for the pure virtual function `pure_virtual`. This class is part of a test case for inheritance functionality, specifically demonstrating how a concrete class can implement an abstract base class.
 - **Member Functions**:
     - [`ConcreteB::pure_virtual`](<#concretebpure_virtual>)
 - **Inherits From**:
@@ -438,7 +439,7 @@ Implements the pure virtual function `pure_virtual` from the `AbstractBase` clas
 #### ConcreteB::pure\_virtual<!-- {{#callable:ConcreteB::pure_virtual}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L96>)
 
-Implements an empty override of the pure virtual function `pure_virtual` from the `AbstractBase` class.
+Overrides the pure virtual function `pure_virtual` from the `AbstractBase` class with an empty implementation.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Overrides the `pure_virtual` function from the `AbstractBase` class.
@@ -460,8 +461,8 @@ Implements an empty override of the pure virtual function `pure_virtual` from th
 ### Level2<!-- {{#data_structure:Level2}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L101>)
 
-- **Type**: ``class``
-- **Description**: Inherits publicly from `Level1`, forming part of a deep inheritance hierarchy that includes `Level1`, `Level2`, `Level3`, and `Level4`.
+- **Type**: `class`
+- **Description**: Inherits from `Level1` and serves as an intermediate class in a deep inheritance hierarchy, with `Level3` inheriting from it.
 - **Inherits From**:
     - [`Level1`](<#level1>)
 
@@ -471,7 +472,7 @@ Implements an empty override of the pure virtual function `pure_virtual` from th
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L102>)
 
 - **Type**: `class`
-- **Description**: Inherits publicly from `Level2`, forming part of a deep inheritance hierarchy that extends from `Level1` to `Level4`.
+- **Description**: Inherits from `Level2`, forming part of a deep inheritance hierarchy that extends from `Level1` to `Level4`.
 - **Inherits From**:
     - [`Level2`](<#level2>)
 
@@ -480,8 +481,8 @@ Implements an empty override of the pure virtual function `pure_virtual` from th
 ### Level4<!-- {{#data_structure:Level4}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L103>)
 
-- **Type**: ``class``
-- **Description**: Inherits from `Level3`, which is part of a deep inheritance hierarchy starting from `Level1`. This class does not add any new members or methods, serving as a further extension in the hierarchy.
+- **Type**: `class`
+- **Description**: Inherits from `Level3`, which is part of a deep inheritance hierarchy starting from `Level1`. This class does not add any new members or methods, and it serves as a continuation of the inheritance chain.
 - **Inherits From**:
     - [`Level3`](<#level3>)
 
@@ -491,7 +492,7 @@ Implements an empty override of the pure virtual function `pure_virtual` from th
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L107>)
 
 - **Type**: `class`
-- **Description**: Inherits from a forward-declared base class `ForwardDeclaredBase`, allowing the class to be defined before the base class is fully defined.
+- **Description**: Inherits from a forward-declared base class `ForwardDeclaredBase`, which is defined later in the code. This demonstrates the use of forward declaration in inheritance, allowing the class to be declared before the full definition of its base class is available.
 - **Inherits From**:
     - [`ForwardDeclaredBase`](<#forwarddeclaredbase>)
 
@@ -501,7 +502,7 @@ Implements an empty override of the pure virtual function `pure_virtual` from th
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L110>)
 
 - **Type**: ``class``
-- **Description**: Represents a base class with a virtual destructor, allowing derived classes to clean up resources properly when deleted through a base class pointer. This class is forward-declared before its definition, which is useful in scenarios where the full definition is not needed immediately, such as in header files to reduce dependencies.
+- **Description**: Represents a base class with a virtual destructor, allowing derived classes to clean up resources properly when deleted through a base class pointer. It is forward-declared before its definition, which is useful in scenarios where the full definition is not immediately needed.
 - **Member Functions**:
     - [`ForwardDeclaredBase::~ForwardDeclaredBase`](<#forwarddeclaredbaseforwarddeclaredbase>)
 
@@ -514,9 +515,9 @@ Implements an empty override of the pure virtual function `pure_virtual` from th
 Defines a virtual destructor for the `ForwardDeclaredBase` class.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The destructor is declared as `virtual`, allowing derived classes to override it if necessary.
+    - The destructor is declared as virtual to ensure that derived class destructors are called when an object is deleted through a base class pointer.
     - The destructor is defined as `default`, indicating that the compiler should generate the default implementation.
-- **Output**: No explicit output is produced; the destructor ensures proper cleanup of resources when an object of `ForwardDeclaredBase` or its derived class is destroyed.
+- **Output**: No return value, as it is a destructor.
 - **See also**: [`ForwardDeclaredBase`](<#forwarddeclaredbase>)  (Data Structure)
 
 
@@ -526,7 +527,7 @@ Defines a virtual destructor for the `ForwardDeclaredBase` class.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L116>)
 
 - **Type**: ``class``
-- **Description**: Defines a template class with a single type parameter `T`. It serves as a base class for other template classes, allowing them to inherit its properties and behaviors. The class does not contain any members or methods, making it a simple placeholder for inheritance purposes.
+- **Description**: Defines a template class with a single type parameter `T`, serving as a base class for other template classes. It does not contain any members or methods, acting as a simple placeholder for inheritance.
 
 
 ---
@@ -534,7 +535,7 @@ Defines a virtual destructor for the `ForwardDeclaredBase` class.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L119>)
 
 - **Type**: ``class``
-- **Description**: Inherits from the `TemplateBaseClass` using a template parameter `U`. This class demonstrates template inheritance, allowing for the creation of derived classes that can operate with different data types specified by the template parameter.
+- **Description**: Inherits from the `TemplateBaseClass` with a template parameter `U`, allowing for the creation of derived classes that can work with any type specified by `U`. This class does not introduce any new members or methods, serving primarily as a mechanism to extend the functionality of `TemplateBaseClass` with a specific type.
 - **Inherits From**:
     - [`TemplateBaseClass`](<#templatebaseclass>)
 
@@ -544,15 +545,15 @@ Defines a virtual destructor for the `ForwardDeclaredBase` class.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L128>)
 
 - **Type**: ``class``
-- **Description**: Represents a class defined within an anonymous namespace, which limits its visibility to the translation unit in which it is defined. This class does not have any members or methods, serving as a base class for inheritance within the same translation unit.
+- **Description**: Represents a class defined within an anonymous namespace, which limits its visibility to the translation unit where it is defined. This class does not have any members or methods and serves as a base class for `InheritFromAnonymous`.
 
 
 ---
 ### InheritFromAnonymous<!-- {{#data_structure:InheritFromAnonymous}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_inheritance.cpp#L131>)
 
-- **Type**: ``class``
-- **Description**: Inherits from an anonymous base class `AnonymousBase` within an unnamed namespace, demonstrating the use of anonymous namespaces to limit the scope of the base class to the current translation unit.
+- **Type**: `class`
+- **Description**: Inherits from an anonymous base class `AnonymousBase` within an unnamed namespace, demonstrating the use of anonymous namespaces for encapsulation and preventing external linkage.
 - **Inherits From**:
     - [`(anonymous)::AnonymousBase`](<#anonymous)::AnonymousBase>)
 

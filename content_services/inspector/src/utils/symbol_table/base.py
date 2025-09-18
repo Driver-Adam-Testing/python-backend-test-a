@@ -2,7 +2,10 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar
 
-from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
+from utils.lang_specialization.symbol_common import (
+    RawTreeSitterSymbolData,
+    SymbolKind,
+)
 from utils.treesitter_drivers.base import DriverTree
 
 from .utils import build_containment_map, to_root_relative
@@ -51,19 +54,24 @@ class SymbolParser(ABC):
             raise TypeError(f"{cls.__name__} must define 'tree' class attribute")
 
 
-class ImportResolver(ABC):
-    """Abstract base for language-specific import resolution."""
+class SymbolResolver(ABC):
+    """Abstract base for language-specific symbol resolution from imports."""
 
     language: ClassVar[str]
 
     @abstractmethod
-    def resolve_import(
+    def resolve_imports_to_symbols(
         self,
-        current_file: Path,
-        import_str: str,
-        project_files_to_symbols_map: dict[Path, list[RawTreeSitterSymbolData]],
-    ) -> Path | list[Path] | None:
-        """Resolve an import string to a project file path."""
+        all_file_imports: dict[Path, list[RawTreeSitterSymbolData]],
+        all_files_symbols: dict[Path, list[RawTreeSitterSymbolData]],
+        num_workers: int | None,
+    ) -> dict[Path, set[RawTreeSitterSymbolData]]:
+        """
+        Given a file's imports, return all symbols visible through those imports.
+        Each language implements its own logic:
+        """
+        # NOTE: consider making this NOT an abstractmethod, and then having abstractmethods for
+        # `resolve_global_imports` (for C#) and `resolve_file_imports` which can be parallelizable
 
     def __init_subclass__(cls, **kwargs) -> None:  # noqa: ANN003
         super().__init_subclass__(**kwargs)
@@ -83,7 +91,7 @@ class LanguageProvider(ABC):
 
     @classmethod
     @abstractmethod
-    def get_resolver(cls) -> ImportResolver:
+    def get_resolver(cls) -> SymbolResolver:
         """Return the import resolver instance."""
 
     @classmethod

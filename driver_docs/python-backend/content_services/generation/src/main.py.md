@@ -6,9 +6,9 @@
 Defines asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
 
 # Purpose
-The code defines a set of asynchronous functions within a `modal.App` application, which is configured to use a specific Docker image and a set of secrets. The application is named "generation" and is built using the `modal` library. The Docker image is based on a Debian Slim distribution with Python 3.12, and it includes additional dependencies installed via `pip` and `poetry`. The code integrates local directories into the image, which suggests that it relies on external resources or modules located in these directories.
+The code defines a set of asynchronous functions within a `modal` application named "generation." These functions are designed to process input data using specific pipeline requests and return results as asynchronous generators. The code uses the `modal` library to configure the application environment, including the use of a Debian Slim image with Python 3.12, and installs necessary dependencies via `pip` and `poetry`. It also configures access to external resources by specifying secrets for services like OpenAI, a database, and AWS Inspector S3.
 
-The primary functionality of the code is to provide asynchronous processing pipelines for two main tasks: `inline_edit` and `smart_instruction`. Each task has two associated functions: one for streaming results ([`inline_edit_stream`](<#inline_edit_stream>) and [`smart_instruction_stream`](<#smart_instruction_stream>)) and another for running the process to completion ([`inline_edit_run`](<#inline_edit_run>) and [`smart_instruction_run`](<#smart_instruction_run>)). These functions use input data in the form of dictionaries, which are parsed into specific request objects (`InlineEditPipelineRequest` and `SmartInstructionPipelineRequest`) from the `shared.v3.app.pipelines` module. The functions then either yield results incrementally or return the final output of the processing pipeline. The use of `AsyncGenerator` indicates that the functions are designed to handle asynchronous data streams, which is useful for applications that require real-time data processing or interaction.
+The primary functionality of the code is to provide asynchronous processing capabilities for two types of operations: `inline_edit` and `smart_instruction`. Each operation has two associated functions: one for streaming results ([`inline_edit_stream`](<#inline_edit_stream>) and [`smart_instruction_stream`](<#smart_instruction_stream>)) and another for executing the operation and returning the final result ([`inline_edit_run`](<#inline_edit_run>) and [`smart_instruction_run`](<#smart_instruction_run>)). These functions import and utilize specific pipeline request classes from a shared module to parse input data and execute the corresponding operations. The code is structured to be part of a larger system, likely intended for deployment in a cloud environment where it can be invoked as part of a service.
 # Imports and Dependencies
 
 ---
@@ -24,22 +24,22 @@ The primary functionality of the code is to provide asynchronous processing pipe
 ---
 ### app
 - **Type**: ``modal.App``
-- **Description**: Represents an instance of a `modal.App` with the name 'generation'. This instance is used to define and manage functions that can be executed in a distributed environment.
-- **Use**: Used to register functions with specific configurations such as `image` and `secrets` for execution.
+- **Description**: Represents an instance of a `modal.App` with the name 'generation'. This instance is used to define and manage functions that are decorated with `@app.function`, which allows them to be executed in a specific environment with defined images and secrets.
+- **Use**: Used to create and manage functions that are executed with specific configurations, such as images and secrets, in a `modal` application.
 
 
 ---
 ### image
 - **Type**: ``modal.Image``
-- **Description**: The `image` variable is an instance of the `modal.Image` class, specifically configured using the `debian_slim` method with Python version 3.12. It includes additional configurations such as adding local directories to specified remote paths and installing dependencies from a `pyproject.toml` file using Poetry.
-- **Use**: Used to define the environment for functions decorated with `@app.function`, specifying the base image, local directories, and dependencies.
+- **Description**: The `image` variable is an instance of the `modal.Image` class, specifically using the `debian_slim` base image with Python version 3.12. It is configured to include local directories from `../../driver_db/` and `../../packages/shared`, which are copied to specified remote paths. Additionally, it installs dependencies specified in the `pyproject.toml` file using Poetry.
+- **Use**: Used to define the execution environment for functions decorated with `@app.function`, specifying the base image, included directories, and installed dependencies.
 
 
 ---
 ### secrets
 - **Type**: ``list``
-- **Description**: A list of `modal.Secret` objects created using the `from_name` method. Each secret corresponds to a specific service or resource, such as 'open-ai', 'db', and 'aws-inspector-s3'. These secrets are likely used for authentication or configuration purposes.
-- **Use**: Used to provide authentication or configuration secrets to the `@app.function` decorators.
+- **Description**: Contains a list of `modal.Secret` objects created from specific secret names. Each secret is retrieved using the `modal.Secret.from_name` method with the names 'open-ai', 'db', and 'aws-inspector-s3'. These secrets are likely used for authentication or configuration purposes in the application.
+- **Use**: Used to provide secret credentials to the `@app.function` decorators for secure access to external services.
 
 
 # Functions
@@ -48,16 +48,16 @@ The primary functionality of the code is to provide asynchronous processing pipe
 ### inline\_edit\_stream<!-- {{#callable:python-backend/content_services/generation/src/main.inline_edit_stream}} -->
 [View Source →](<../../../../../content_services/generation/src/main.py#L25>)
 
-Processes an input dictionary to generate a stream of data chunks using the `InlineEditPipelineRequest`.
+Streams chunks of data from an inline edit pipeline request.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `input`: A dictionary that contains the data to be processed by the `InlineEditPipelineRequest`.
+    - `input`: A dictionary that contains the input data for the inline edit pipeline request.
 - **Logic and Control Flow**:
-    - Imports `InlineEditPipelineRequest` from the `shared.v3.app.pipelines.inline_edit` module.
-    - Converts the input dictionary into an `InlineEditPipelineRequest` object using the [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequestfrom_dict>) method.
-    - Iterates asynchronously over the stream of data chunks produced by the [`stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>) method of the `InlineEditPipelineRequest` object.
-    - Yields each data chunk in the stream.
-- **Output**: An asynchronous generator that yields data chunks of type `BaseModel`.
+    - Imports `InlineEditPipelineRequest` from `shared.v3.app.pipelines.inline_edit`.
+    - Parses the `input` dictionary into an `InlineEditPipelineRequest` object using [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequestfrom_dict>).
+    - Iterates asynchronously over the chunks produced by the [`stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>) method of the `parsed_input` object.
+    - Yields each chunk as it is received from the [`stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>) method.
+- **Output**: An asynchronous generator that yields chunks of data as `BaseModel` instances.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequestfrom_dict>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>)
@@ -90,11 +90,11 @@ Streams processed data chunks from a smart instruction pipeline.
 - **Inputs**:
     - `input`: A dictionary containing the input data for the smart instruction pipeline.
 - **Logic and Control Flow**:
-    - Imports `SmartInstructionPipelineRequest` from the `shared.v3.app.pipelines.smart_instruction` module.
-    - Parses the `input` dictionary into a `SmartInstructionPipelineRequest` object using the [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequestfrom_dict>) method.
-    - Iterates asynchronously over the chunks produced by the [`stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>) method of the `parsed_input` object.
+    - Imports `SmartInstructionPipelineRequest` from `shared.v3.app.pipelines.smart_instruction`.
+    - Parses the `input` dictionary into a `SmartInstructionPipelineRequest` object using [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequestfrom_dict>).
+    - Iterates asynchronously over the chunks produced by the [`stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>) method of the `SmartInstructionPipelineRequest` object.
     - Yields each chunk as it is processed.
-- **Output**: An asynchronous generator that yields instances of `BaseModel`.
+- **Output**: An asynchronous generator that yields chunks of data as `BaseModel` instances.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequestfrom_dict>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#pipelinerequeststream>)

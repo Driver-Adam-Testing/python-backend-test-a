@@ -6,7 +6,7 @@
 Defines a FastAPI route for searching content with user authentication and session management.
 
 # Purpose
-This code defines an API endpoint using FastAPI to perform a search operation. It imports necessary components such as `APIRouter` for routing, `SearchInput` and `SearchResults` for handling search data, and `search_content` for executing the search logic. The endpoint is protected by a dependency on `ContentReadonlyPermission`, ensuring that only users with read-only access can perform searches. The [`search`](<#search>) function takes a `CurrentSession`, a `UserToken`, and a `SearchInput` as parameters, modifies the `organization_id` of the input to match the user's organization, and returns the search results. This setup is part of a broader application that manages user sessions and permissions.
+This code defines an API endpoint using FastAPI for searching content. It uses an `APIRouter` instance to create a POST endpoint at the root path (`"/"`) with a summary and response description. The endpoint function, [`search`](<#search>), requires a `CurrentSession`, a `UserToken`, and a `SearchInput` as parameters, and it returns `SearchResults`. The function modifies the `SearchInput` by setting its `organization_id` to the `organization_id` from the `UserToken`. The `search_content` function is then called with the modified input and session to perform the search operation. The endpoint is protected by a dependency on `ContentReadonlyPermission`, ensuring that only users with the appropriate permissions can access it.
 # Imports and Dependencies
 
 ---
@@ -24,8 +24,8 @@ This code defines an API endpoint using FastAPI to perform a search operation. I
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: The `router` is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API, allowing the organization of endpoints and their associated logic.
-- **Use**: Used to register and manage API routes and their dependencies.
+- **Description**: Initializes an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage API routes within the application.
+- **Use**: Used to register and handle API endpoints and their associated operations.
 
 
 # Functions
@@ -34,16 +34,16 @@ This code defines an API endpoint using FastAPI to perform a search operation. I
 ### search<!-- {{#callable:python-backend/backend/app/api/routes/v1/search.search}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v1/search.py#L11>)
 
-Executes a search for content based on user and session data.
+Executes a search for content based on the user's organization ID and session information.
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `session`: The current session object, which provides context for the search operation.
-    - `user`: A `UserToken` object representing the authenticated user, which includes user-specific data such as organization ID.
-    - `input`: A `SearchInput` object containing the search parameters and criteria.
+    - `user`: A token representing the authenticated user, which includes user-specific information such as organization ID.
+    - `input`: An instance of `SearchInput` containing the search parameters.
 - **Logic and Control Flow**:
-    - Assigns the `organization_id` from the `user` object to the `input` object to ensure the search is scoped to the user's organization.
-    - Calls the [`search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>) function with the `session` and modified `input` to perform the search operation.
-- **Output**: Returns a `SearchResults` object containing the results of the search operation.
+    - Assigns the user's organization ID to the `organization_id` attribute of the `input` object.
+    - Calls the [`search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>) function with the current session and modified input to perform the search.
+- **Output**: Returns an instance of `SearchResults` containing the results of the search operation.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/search.search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>)
 

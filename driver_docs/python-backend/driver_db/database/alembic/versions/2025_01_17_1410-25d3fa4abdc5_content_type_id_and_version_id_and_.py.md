@@ -6,7 +6,7 @@
 Alembic migration script to drop and add columns in the 'derived_contents' table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that removes three columns: `source_content_id`, `version_id`, and `content_type_id` from the `derived_contents` table. The [`downgrade`](<#downgrade>) function reverses this operation by adding these columns back to the table, each defined as a UUID type and nullable. The script includes revision identifiers `revision` and `down_revision` to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function removes three columns: `source_content_id`, `version_id`, and `content_type_id` from the `derived_contents` table. Conversely, the [`downgrade`](<#downgrade>) function adds these columns back to the `derived_contents` table, with each column being of type `UUID` and allowing null values. The script includes revision identifiers, `revision` and `down_revision`, which Alembic uses to track the migration history. This script is part of a version control system for database schemas, allowing developers to apply and revert changes to the database structure.
 # Imports and Dependencies
 
 ---
@@ -20,15 +20,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for a specific database schema revision in Alembic.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific state of the database schema at a given point in time.
+- **Use**: Used by Alembic to identify the current migration version of the database schema.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring a sequential order of migrations.
-- **Use**: Indicates the parent revision ID that the current migration script depends on.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration script.
 
 
 ---
@@ -42,7 +42,7 @@ This code is a database migration script using Alembic, a database migration too
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -57,20 +57,20 @@ Removes specified columns from the 'derived_contents' table in the database sche
     - Calls `op.drop_column` to remove the 'source_content_id' column from the 'derived_contents' table.
     - Calls `op.drop_column` to remove the 'version_id' column from the 'derived_contents' table.
     - Calls `op.drop_column` to remove the 'content_type_id' column from the 'derived_contents' table.
-- **Output**: No output is returned.
+- **Output**: No output is returned; the function modifies the database schema by dropping columns.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_17_1410-25d3fa4abdc5_content_type_id_and_version_id_and_.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_17_1410-25d3fa4abdc5_content_type_id_and_version_id_and_.py#L28>)
 
-Reverts the database schema changes by adding back columns to the 'derived_contents' table.
+Adds columns back to the 'derived_contents' table in a database schema during a downgrade operation.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Adds a column named 'content_type_id' of type UUID to the 'derived_contents' table, allowing null values.
+    - Uses the Alembic 'op' object to add a column named 'content_type_id' of type UUID to the 'derived_contents' table, allowing null values.
     - Adds a column named 'version_id' of type UUID to the 'derived_contents' table, allowing null values.
     - Adds a column named 'source_content_id' of type UUID to the 'derived_contents' table, allowing null values.
-- **Output**: No output is returned.
+- **Output**: No explicit return value; modifies the database schema by adding columns.
 
 
 

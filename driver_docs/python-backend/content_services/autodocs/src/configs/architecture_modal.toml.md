@@ -3,64 +3,42 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for generating a detailed architecture document with specified sections and models.
+Configuration file for generating a detailed architecture document with specified sections and models.
 
 # Purpose
-This configuration file defines the structure and content of an architecture document for a software codebase. It specifies models and methods for generating different sections of the document, such as `tag_model`, `section_init_model`, and `copy_editor_model`, which are used to guide the document creation process. The file outlines the document's goals, format, and version, and includes detailed instructions for each section, such as "Overview," "Technology Stack and Dependencies," and "Key Architectural Decisions." Each section has attributes like `title`, `level`, `required`, `instruction`, and `content_structure`, which dictate the content and format of the section. The file ensures that the document is comprehensive by covering various aspects of the codebase, including architecture, components, constraints, and testing strategies.
+This configuration file defines the setup for generating an architecture document for a software codebase. It specifies models for different tasks such as tagging, section initialization, and copy editing under the `[llm]` section, indicating the use of language models like `gpt-4o` and `o3-mini`. The `[document]` section outlines the document's goal, format, and tagging usage, with metadata like `config_name` and `config_version`. The file also includes multiple `[[sections]]` entries, each detailing a specific section of the document, such as "Overview," "Technology Stack and Dependencies," and "Key Architectural Decisions." Each section entry specifies attributes like `title`, `level`, `required`, `instruction`, `content_structure`, and `section_creation_method`, guiding the content creation process for each part of the document. This structured approach ensures that the architecture document is comprehensive and follows a consistent format, facilitating clear communication of the codebase's architecture and related information.
 # Content Summary
 This configuration file defines the structure and content requirements for an architecture document related to a software codebase. It specifies the use of different language models for various tasks, such as tagging, section initialization, and copy editing, with models like "gpt-4o" and "o3-mini" being utilized.
 
-The document's goal is to create a comprehensive architecture document, with a format defined as "defined_sections." Tagging is enabled, and the configuration is named "Architecture" with version "[V1]."
+The document's goal is to create a comprehensive architecture document, formatted with defined sections. The configuration includes metadata such as the document's goal, format, tagging usage, and versioning information.
 
-The file outlines multiple sections, each with specific instructions, content structures, and methods for creation. Key sections include:
+The file outlines multiple sections, each with specific instructions, content structures, and methods for creation. These sections cover a wide range of topics, including:
 
-1. **Overview**: Provides an introduction to the library, detailing its purpose, scope, and capabilities in 2-3 paragraphs.
+1. **Overview**: An introduction to the library, detailing its purpose, scope, and capabilities.
+2. **Technology Stack and Dependencies**: A table format description of the core technology stack and critical dependencies.
+3. **System Constraints and Limitations**: A paragraph identifying major constraints or limitations.
+4. **Key Architectural Decisions**: A subsection for each architectural decision, with a brief description.
+5. **Target Use Cases**: A list of applications and use cases with descriptions.
+6. **Architecture**: A single sentence describing the overarching architecture.
+7. **Architecture Diagram**: A high-level block diagram with a caption.
+8. **Core Components**: Detailed descriptions and code snippets for core components.
+9. **Key Interactions and Data Flow**: Descriptions and a data flow diagram of system interactions.
+10. **Code Examples**: Subsections with code examples and explanations.
+11. **Entry Points**: A table of entry points with descriptions.
+12. **API Specifications**: Descriptions of formal APIs.
+13. **Setup and Configuration**: Sentences describing setup and configuration requirements.
+14. **Installation Requirements**: Details on necessary installations.
+15. **Hardware Configuration**: Descriptions of required hardware configurations.
+16. **Compilation and Build Steps**: Steps for compiling and building.
+17. **Global State and Environment Variables**: A list of required global states and environment variables.
+18. **Testing**: A sentence on the testing strategy.
+19. **Organization of Tests**: A paragraph on test organization.
+20. **Unit Tests**: Descriptions of unit tests.
+21. **Integration Tests**: Descriptions of integration tests.
+22. **Invoking and Running Tests**: A list of methods to run tests.
+23. **CI/CD**: A paragraph on CI/CD strategies.
 
-2. **Technology Stack and Dependencies**: Describes the core technology stack and critical dependencies in a tabular format.
-
-3. **System Constraints and Limitations**: Identifies major constraints or limitations in a single paragraph.
-
-4. **Key Architectural Decisions**: Details main architectural decisions with subsections for each decision.
-
-5. **Target Use Cases**: Lists typical applications and use cases with brief descriptions.
-
-6. **Architecture**: Describes the overarching architecture in a single sentence.
-
-7. **Architecture Diagram**: Includes a high-level block diagram with a caption.
-
-8. **Core Components**: Identifies and describes core components with code snippets.
-
-9. **Key Interactions and Data Flow**: Describes interactions and data flow with a data flow diagram.
-
-10. **Code Examples**: Provides code examples for new developers.
-
-11. **Entry Points**: Details entry points into the codebase in a table format.
-
-12. **API Specifications**: Describes formal APIs in 2-3 paragraphs.
-
-13. **Setup and Configuration**: Outlines setup and configuration in 2-3 sentences.
-
-14. **Installation Requirements**: Details installation needs in 1-3 paragraphs.
-
-15. **Hardware Configuration**: Describes necessary hardware configurations.
-
-16. **Compilation and Build Steps**: Outlines compilation and build steps.
-
-17. **Global State and Environment Variables**: Lists required global states and environment variables.
-
-18. **Testing**: Describes the testing strategy in a single sentence.
-
-19. **Organization of Tests**: Details test organization in a paragraph.
-
-20. **Unit Tests**: Describes unit tests in 2-3 paragraphs.
-
-21. **Integration Tests**: Details integration tests in 2-3 paragraphs.
-
-22. **Invoking and Running Tests**: Lists ways to run tests with descriptions.
-
-23. **CI/CD**: Describes CI/CD strategies in a paragraph.
-
-Each section is created using the "scatter_gather" method, ensuring a structured and detailed approach to documenting the architecture of the codebase.
+Each section is marked as required or optional, with specific instructions on how to create and format the content, ensuring a structured and detailed architecture document.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

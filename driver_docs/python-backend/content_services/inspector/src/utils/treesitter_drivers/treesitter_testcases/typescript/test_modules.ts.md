@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test cases for TypeScript modules and namespaces, including declarations, merging, and augmentations.
+Tests for TypeScript modules and namespaces, including declarations, augmentations, and merging.
 
 # Purpose
-The code is a comprehensive test suite for TypeScript modules and namespaces, demonstrating various TypeScript features and patterns. It includes examples of namespaces, modules, interfaces, classes, functions, enums, and type aliases. The code illustrates how to define and use namespaces, including nested and merged namespaces, and how to extend classes with namespaces. It also shows how to declare global and module augmentations, ambient module declarations, and wildcard module declarations. The code provides examples of using namespaces as types, conditional types, and type-only exports.
+The code is a comprehensive test suite for TypeScript modules and namespaces, demonstrating various TypeScript features and patterns. It includes examples of namespaces, modules, interfaces, classes, functions, enums, and type aliases. The code illustrates how to define and use namespaces, including nested namespaces, namespace merging, and namespaces with private members. It also shows how to declare modules, augment existing modules, and use ambient module declarations for JSON, CSS, and legacy libraries.
 
-The file also demonstrates advanced TypeScript features such as declaration merging, where namespaces are merged with functions, classes, and enums. It includes examples of the UMD module pattern and the use of triple-slash directives for module resolution. Additionally, the code shows how to handle dynamic namespace member access and the use of side effects within modules. The file serves as a reference for understanding the structure and capabilities of TypeScript's module and namespace system, providing a wide range of examples for different use cases.
+The code further demonstrates advanced TypeScript features such as global augmentation, module augmentation, and wildcard module declarations. It includes examples of declaration merging with functions, classes, and enums, as well as the use of namespaces within classes and modules with side effects. The code also covers export patterns, including default exports with namespaces and the UMD module pattern. Additionally, it shows how to use conditional types, type-only exports, and dynamic namespace member access. The code concludes with examples of using triple-slash directives and module resolution.
 # Imports and Dependencies
 
 ---
@@ -21,29 +21,29 @@ The file also demonstrates advanced TypeScript features such as declaration merg
 ---
 ### namespaceUsage
 - **Type**: ``BasicNamespace.NamespaceClass``
-- **Description**: Creates a new instance of the `NamespaceClass` from the `BasicNamespace` namespace. This class contains a method that returns a string 'namespace class'.
+- **Description**: Creates a new instance of the `NamespaceClass` from the `BasicNamespace` namespace. The `NamespaceClass` includes a method that returns a string 'namespace class'.
 - **Use**: Used to instantiate and interact with the `NamespaceClass` from the `BasicNamespace`.
 
 
 ---
 ### enumUsage
 - **Type**: ``EnumNamespace.Direction``
-- **Description**: Represents a constant value from the `EnumNamespace.Direction` enum, specifically the `Up` direction. This enum is part of the `EnumNamespace` and defines possible directions as `Up`, `Down`, `Left`, and `Right`. The `enumUsage` variable is set to the `Up` direction.
-- **Use**: Used to store the `Up` direction from the `EnumNamespace.Direction` enum.
+- **Description**: Represents a variable that is assigned the value `EnumNamespace.Direction.Up`. It uses the `Direction` enum from the `EnumNamespace` namespace.
+- **Use**: Used to store a specific direction value from the `Direction` enum.
 
 
 ---
 ### dynamicAccess
 - **Type**: ``any``
-- **Description**: `dynamicAccess` is a global variable that holds the value of the `value` property from the `BasicNamespace` namespace. The `value` property is a constant with a value of 42.
-- **Use**: Accesses the `value` property of `BasicNamespace` dynamically using bracket notation.
+- **Description**: Accesses the `value` property of the `BasicNamespace` using dynamic property access syntax. The `value` is a constant exported from the `BasicNamespace` and is set to 42.
+- **Use**: Used to dynamically access the `value` property from the `BasicNamespace`.
 
 
 ---
 ### dynamicMethod
 - **Type**: ``function``
 - **Description**: References the `helper` function from the `BasicNamespace` namespace. The `helper` function returns the string 'helper'.
-- **Use**: Used to dynamically access and invoke the `helper` function from `BasicNamespace`.
+- **Use**: Used to dynamically access and reference the `helper` function from `BasicNamespace`.
 
 
 # Classes
@@ -65,8 +65,8 @@ The file also demonstrates advanced TypeScript features such as declaration merg
 Returns the string 'namespace class'.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the string 'namespace class'.
-- **Output**: A string with the value 'namespace class'.
+    - Return the string 'namespace class'.
+- **Output**: The string 'namespace class'.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.BasicNamespace.NamespaceClass`](<#namespaceclass>)  (Base Class)
 
 
@@ -76,9 +76,9 @@ Returns the string 'namespace class'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L42>)
 
 - **Members**:
-    - `id`: A string that represents the unique identifier of the module.
-    - `name`: A string that represents the name of the module.
-- **Description**: Implements the `ModuleInterface` and provides a constructor to initialize the `id` and `name` properties of the module.
+    - `id`: A string identifier for the module.
+    - `name`: A string name for the module.
+- **Description**: Implements the `ModuleInterface` and initializes with an `id` and `name`.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MyModule.ModuleClass.constructor`](<#moduleclassconstructor>)
 - **Extends/Implements**:
@@ -90,13 +90,13 @@ Returns the string 'namespace class'.
 #### ModuleClass\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MyModule.ModuleClass.constructor}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L43>)
 
-Initializes a new instance of the `ModuleClass` with specified `id` and `name` properties.
+Initializes a new instance of the `ModuleClass` with the specified `id` and `name`.
 - **Inputs**:
-    - `id`: A string that represents the unique identifier for the `ModuleClass` instance.
-    - `name`: A string that represents the name for the `ModuleClass` instance.
+    - `id`: A string representing the unique identifier for the module.
+    - `name`: A string representing the name of the module.
 - **Control Flow**:
-    - Assigns the `id` parameter to the `id` property of the `ModuleClass` instance.
-    - Assigns the `name` parameter to the `name` property of the `ModuleClass` instance.
+    - Assigns the `id` parameter to the `id` property of the instance.
+    - Assigns the `name` parameter to the `name` property of the instance.
 - **Output**: A new instance of the `ModuleClass` with `id` and `name` properties initialized.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MyModule.ModuleClass`](<#moduleclass>)  (Base Class)
 
@@ -106,7 +106,7 @@ Initializes a new instance of the `ModuleClass` with specified `id` and `name` p
 ### PublicClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.PrivateNamespace.PublicClass}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L64>)
 
-- **Description**: Provides access to a private variable `privateLet` within the `PrivateNamespace` by using the `getPrivate` method.
+- **Description**: Represents a class within the `PrivateNamespace` that provides access to a private variable `privateLet` through the `getPrivate` method.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.PrivateNamespace.PublicClass.getPrivate`](<#publicclassgetprivate>)
 
@@ -137,7 +137,7 @@ Returns the value of the private variable `privateLet` from the `PrivateNamespac
 ### NormalClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ComplexNamespace.NormalClass}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L197>)
 
-- **Description**: Represents a class with a single method `method` that returns the string 'class method'.
+- **Description**: Represents a class with a single method that returns a string 'class method'.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ComplexNamespace.NormalClass.method`](<#normalclassmethod>)
 
@@ -160,7 +160,7 @@ Returns the string 'class method'.
 ### AbstractClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ComplexNamespace.AbstractClass}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L203>)
 
-- **Description**: Represents an abstract class that defines an abstract method `abstractMethod`, which must be implemented by any subclass.
+- **Description**: Defines an abstract class with an abstract method `abstractMethod` that must be implemented by subclasses.
 
 
 ---
@@ -179,13 +179,13 @@ Returns the string 'class method'.
 #### ExtendedClass\.extendedMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ImportExportNamespace.ExtendedClass.extendedMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L245>)
 
-Extends the `method` from the `Alias` class and appends the string ' extended' to its result.
+Extends the `method` from the parent class `Alias` and appends the string ' extended' to its result.
 - **Inputs**: None
 - **Control Flow**:
-    - Calls the `method` from the superclass `Alias` using `super.method()`.
+    - Calls the `method` from the parent class using `super.method()`.
     - Appends the string ' extended' to the result of `super.method()`.
     - Returns the concatenated string.
-- **Output**: A string that is the result of `super.method()` concatenated with ' extended'.
+- **Output**: A string that is the result of the parent class's `method` with ' extended' appended to it.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ImportExportNamespace.ExtendedClass`](<#extendedclass>)  (Base Class)
 
 
@@ -194,7 +194,9 @@ Extends the `method` from the `Alias` class and appends the string ' extended' t
 ### ClassWithNamespace<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ClassWithNamespace}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L252>)
 
-- **Description**: Defines a class with a static nested class `Namespace` that contains a static property `value` and a static method `method`. The `useNamespace` method returns the `value` from the nested `Namespace` class.
+- **Members**:
+    - `Namespace`: A static nested class with a static value and method.
+- **Description**: Defines a class with a static nested class named `Namespace`, which contains a static property `value` and a static method `method`. The `useNamespace` method returns the `value` from the `Namespace` class.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ClassWithNamespace.method`](<#classwithnamespacemethod>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ClassWithNamespace.useNamespace`](<#classwithnamespaceusenamespace>)
@@ -205,10 +207,10 @@ Extends the `method` from the `Alias` class and appends the string ' extended' t
 #### ClassWithNamespace\.method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ClassWithNamespace.method}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L255>)
 
-Returns a string indicating the method is in the class namespace.
+Returns a string indicating the method is within the class namespace.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the string 'method in class namespace'.
+    - Return the string 'method in class namespace'.
 - **Output**: A string 'method in class namespace'.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ClassWithNamespace`](<#classwithnamespace>)  (Base Class)
 
@@ -217,12 +219,12 @@ Returns a string indicating the method is in the class namespace.
 #### ClassWithNamespace\.useNamespace<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ClassWithNamespace.useNamespace}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L260>)
 
-Returns the static `value` property from the `Namespace` class nested within `ClassWithNamespace`.
+Returns the static value from the nested `Namespace` class within `ClassWithNamespace`.
 - **Inputs**: None
 - **Control Flow**:
     - Accesses the `Namespace` class within `ClassWithNamespace`.
-    - Returns the `value` property of the `Namespace` class.
-- **Output**: The output is the string 'class namespace'.
+    - Returns the static `value` property from the `Namespace` class.
+- **Output**: The static string 'class namespace' from `ClassWithNamespace.Namespace.value`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ClassWithNamespace`](<#classwithnamespace>)  (Base Class)
 
 
@@ -231,7 +233,7 @@ Returns the static `value` property from the `Namespace` class nested within `Cl
 ### BaseForNamespace<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.BaseForNamespace}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L281>)
 
-- **Description**: Represents a base class with a single method `baseMethod` that returns the string 'base'. This class can be extended by other classes or namespaces to inherit its functionality.
+- **Description**: Represents a base class with a method `baseMethod` that returns the string 'base'.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.BaseForNamespace.baseMethod`](<#basefornamespacebasemethod>)
 
@@ -244,7 +246,7 @@ Returns the static `value` property from the `Namespace` class nested within `Cl
 Returns the string 'base'.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the string 'base'.
+    - Return the string 'base'.
 - **Output**: The string 'base'.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.BaseForNamespace`](<#basefornamespace>)  (Base Class)
 
@@ -254,7 +256,7 @@ Returns the string 'base'.
 ### Extended<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ExtendingNamespace.Extended}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L288>)
 
-- **Description**: Extends the `BaseForNamespace` class and provides an `extendedMethod` that appends ' from namespace' to the result of the `baseMethod`.
+- **Description**: Extends the `BaseForNamespace` class and adds an `extendedMethod` that appends ' from namespace' to the result of `baseMethod`.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ExtendingNamespace.Extended.extendedMethod`](<#extendedextendedmethod>)
 - **Extends/Implements**:
@@ -266,11 +268,11 @@ Returns the string 'base'.
 #### Extended\.extendedMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ExtendingNamespace.Extended.extendedMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L289>)
 
-Appends ' from namespace' to the result of `baseMethod`.
+Implements a method that extends the functionality of `baseMethod` by appending a string.
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `this.baseMethod()` to get a base string.
-    - Appends ' from namespace' to the result of `this.baseMethod()`.
+    - Calls `this.baseMethod()` to get its return value.
+    - Appends the string ' from namespace' to the result of `this.baseMethod()`.
     - Returns the concatenated string.
 - **Output**: A string that combines the result of `baseMethod` with ' from namespace'.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ExtendingNamespace.Extended`](<#extended>)  (Base Class)
@@ -282,8 +284,8 @@ Appends ' from namespace' to the result of `baseMethod`.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L308>)
 
 - **Members**:
-    - `staticValue`: Holds a static value from the namespace.
-- **Description**: Represents a class that is merged with a namespace, allowing for additional static properties and interfaces to be associated with the class.
+    - `staticValue`: A static value from the namespace.
+- **Description**: Represents a class that merges with a namespace, providing a method and a static value.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MergedClass.method`](<#mergedclassmethod>)
 
@@ -297,7 +299,7 @@ Returns the string 'class method'.
 - **Inputs**: None
 - **Control Flow**:
     - Returns the string 'class method'.
-- **Output**: A string with the value 'class method'.
+- **Output**: A string 'class method'.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MergedClass`](<#mergedclass>)  (Base Class)
 
 
@@ -310,7 +312,7 @@ Returns the string 'class method'.
 
 - **Members**:
     - `prop`: Defines a string property for the interface.
-- **Description**: Defines a contract for objects with a single string property `prop`, used within the `InnerNamespace` of the `OuterNamespace`.
+- **Description**: Represents an interface with a single string property `prop`, used to define the shape of objects within the `InnerNamespace` of the `OuterNamespace`.
 
 
 ---
@@ -329,7 +331,7 @@ Returns the string 'class method'.
 
 - **Members**:
     - `prop2`: Defines a numeric property for the interface.
-- **Description**: Defines a contract for objects that must include a numeric property `prop2`. This interface is part of a namespace merging pattern, where it extends the `MergedInterface` from the `MergedNamespace` to include additional properties.
+- **Description**: Defines a contract for objects that must include a numeric property `prop2`. This interface is part of a namespace merging process, where it combines with another interface of the same name to form a complete definition.
 
 
 ---
@@ -337,8 +339,8 @@ Returns the string 'class method'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L90>)
 
 - **Members**:
-    - `myGlobal`: Defines an object with a `value` property of type `string` and a `method` function that returns `void`.
-- **Description**: Defines a contract for the `Window` object to include a `myGlobal` property, which is an object containing a `value` of type `string` and a `method` that performs an action without returning a value. This interface extends the global `Window` object to include custom properties and methods.
+    - `myGlobal`: Defines a global object with a `value` property and a `method` function.
+- **Description**: Defines a contract for the global `Window` object, adding a `myGlobal` property that contains a `value` of type `string` and a `method` function that returns `void`. This interface extends the global `Window` object to include custom properties and methods.
 
 
 ---
@@ -346,8 +348,8 @@ Returns the string 'class method'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L98>)
 
 - **Members**:
-    - `customGlobal`: A string property that can be used to store a custom global value.
-- **Description**: Defines a contract for the NodeJS global object, adding a `customGlobal` string property to it. This interface allows for the augmentation of the global object in a NodeJS environment, enabling the storage and retrieval of a custom global value.
+    - `customGlobal`: Defines a string property for global use in NodeJS.
+- **Description**: Defines a contract for the NodeJS global object, adding a `customGlobal` string property to it.
 
 
 ---
@@ -357,7 +359,7 @@ Returns the string 'class method'.
 - **Members**:
     - `user`: Optional property that contains an object with `id`, `name`, and `role` as strings.
     - `session`: Optional property that contains an object with a `token` as a string.
-- **Description**: Defines the structure for a request object, which can optionally include a `user` object with identification and role information, and a `session` object with a session token.
+- **Description**: Defines the structure for a `Request` object, which can optionally include a `user` object with identification and role information, and a `session` object with a session token.
 
 
 ---
@@ -365,8 +367,8 @@ Returns the string 'class method'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L117>)
 
 - **Members**:
-    - `sendJson`: Sends JSON data as a response.
-- **Description**: Defines a contract for objects that can send JSON data as a response, typically used in HTTP response handling within a server framework like Express.
+    - `sendJson`: Sends JSON data in the response.
+- **Description**: Defines a contract for objects that can send JSON data as a response, typically used in HTTP server frameworks to handle client requests.
 
 
 ---
@@ -384,8 +386,8 @@ Returns the string 'class method'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L155>)
 
 - **Members**:
-    - `id`: Represents the unique identifier for a user.
-    - `status`: Indicates the current status of a user, which can be 'active' or 'inactive'.
+    - `id`: Represents the unique identifier of the user as a string.
+    - `status`: Indicates the current status of the user, which can be 'active' or 'inactive'.
 - **Description**: Defines the structure for a user object, specifying that it must have an 'id' of type 'ID' and a 'status' of type 'Status', where 'ID' is a string and 'Status' is a union type of 'active' or 'inactive'.
 
 
@@ -395,7 +397,7 @@ Returns the string 'class method'.
 
 - **Members**:
     - `prop`: Defines a string property for the interface.
-- **Description**: Defines a contract for objects that must have a single string property named `prop`. This interface is part of the `ComplexNamespace` and provides a simple structure for objects that need to adhere to this specific property requirement.
+- **Description**: Defines a contract for objects that must have a single string property named `prop`.
 
 
 ---
@@ -413,7 +415,7 @@ Returns the string 'class method'.
 
 - **Members**:
     - `prop`: Defines a string property for the interface.
-- **Description**: Defines a contract for objects that must have a single string property named `prop`. This interface is part of a namespace and is used to ensure that objects conform to a specific structure with a string property.
+- **Description**: Defines a contract for objects that must have a single string property named `prop`.
 
 
 ---
@@ -421,8 +423,8 @@ Returns the string 'class method'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L344>)
 
 - **Members**:
-    - `id`: A string property that represents the unique identifier for the object.
-- **Description**: Defines a contract for objects that must have a string property `id`, which serves as a unique identifier.
+    - `id`: Represents a unique identifier as a string.
+- **Description**: Defines a contract for objects that must have an `id` property of type string, ensuring that any object implementing this interface can be uniquely identified by this property.
 
 
 ---
@@ -431,7 +433,7 @@ Returns the string 'class method'.
 
 - **Members**:
     - `prop`: Defines a string property for the interface.
-- **Description**: Defines a contract for objects that must have a single string property named `prop`. This interface is part of an ambient namespace, which means it is used to describe types that are available globally or in a specific context without being explicitly imported.
+- **Description**: Defines a contract for objects that must have a single string property named `prop`. This interface is part of an ambient namespace, which means it is declared in a way that can be used globally without an explicit import.
 
 
 ---
@@ -439,7 +441,7 @@ Returns the string 'class method'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L391>)
 
 - **Members**:
-    - `prop`: Defines a string property.
+    - `prop`: Defines a string property for the interface.
 - **Description**: Defines a contract for objects that must have a single string property named `prop`.
 
 
@@ -454,7 +456,7 @@ Returns the string 'class method'.
     - `Down`: Represents the downward direction.
     - `Left`: Represents the leftward direction.
     - `Right`: Represents the rightward direction.
-- **Description**: The `Direction` enum defines a set of named constants representing four cardinal directions: `Up`, `Down`, `Left`, and `Right`. This enum can be used to specify or check the direction in which an object or entity should move or face in a program.
+- **Description**: The `Direction` enum defines a set of named constants representing four cardinal directions: `Up`, `Down`, `Left`, and `Right`. This enum is used to specify directionality in a type-safe manner, allowing developers to use these predefined values instead of arbitrary strings or numbers.
 
 
 ---
@@ -465,7 +467,7 @@ Returns the string 'class method'.
     - `A`: Represents the first enumerated value in `NormalEnum`.
     - `B`: Represents the second enumerated value in `NormalEnum`.
     - `C`: Represents the third enumerated value in `NormalEnum`.
-- **Description**: `NormalEnum` is an enumeration type that defines a set of named constants, `A`, `B`, and `C`, which can be used to represent a fixed set of related values. This type provides a way to define a collection of related values that can be used as a type in TypeScript, ensuring that variables of this type can only be assigned one of the specified enumerated values.
+- **Description**: `NormalEnum` is an enumeration type that defines a set of named constants, `A`, `B`, and `C`, which can be used to represent a fixed set of related values. This enum provides a way to define a collection of related values that can be used as a type in TypeScript, allowing for more readable and maintainable code.
 
 
 ---
@@ -475,7 +477,7 @@ Returns the string 'class method'.
 - **Members**:
     - `X`: Represents the numeric value 10.
     - `Y`: Represents the numeric value 20.
-- **Description**: The `ConstEnum` is a constant enumeration that defines two numeric values, `X` and `Y`, with assigned values of 10 and 20 respectively. This type provides a way to define a set of named constants that can be used to represent specific numeric values in a TypeScript program.
+- **Description**: The `ConstEnum` is a constant enumeration that defines two named constants, `X` and `Y`, with assigned numeric values of 10 and 20, respectively. This type provides a way to define a set of named constants with specific values, which can be used to improve code readability and maintainability by replacing magic numbers with meaningful names.
 
 
 ---
@@ -487,7 +489,7 @@ Returns the string 'class method'.
     - `B`: Represents the second enumerated value in `MergedEnum`.
     - `C`: Represents the third enumerated value in `MergedEnum`.
     - `isValid`: Checks if a given number is a valid `MergedEnum` value.
-- **Description**: `MergedEnum` is an enumeration that defines three possible values: `A`, `B`, and `C`. It also includes a namespace extension that provides a function `isValid` to verify if a number corresponds to one of the enumerated values. This type is used to represent a set of named constants and provides a utility function to validate these constants.
+- **Description**: `MergedEnum` is an enumeration that defines three possible values: `A`, `B`, and `C`. It also includes a namespace extension that provides a function `isValid` to verify if a number corresponds to a valid `MergedEnum` value. This type is used to represent a set of named constants and provides a utility function to validate these constants.
 - **Member Functions**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MergedEnum.isValid`](<#mergedenumisvalid>)
 
@@ -501,8 +503,11 @@ Checks if a given number is a valid member of the `MergedEnum` enumeration.
 - **Inputs**:
     - `value`: A number to check against the `MergedEnum` enumeration.
 - **Control Flow**:
-    - Evaluates if `value` is greater than or equal to 0 and less than or equal to 2.
-- **Output**: Returns `true` if `value` is within the range of `MergedEnum` values, otherwise returns `false`.
+    - The function checks if the `value` is greater than or equal to 0.
+    - The function checks if the `value` is less than or equal to 2.
+    - If both conditions are true, the function returns `true`.
+    - If any condition is false, the function returns `false`.
+- **Output**: A boolean indicating whether the `value` is a valid member of the `MergedEnum` enumeration.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MergedEnum`](<#mergedenum>)  (Data Structure)
 
 
@@ -516,7 +521,7 @@ Checks if a given number is a valid member of the `MergedEnum` enumeration.
 Provides a string indicating the function is an exported helper.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the string 'exported helper'.
+    - Return the string 'exported helper'.
 - **Output**: A string 'exported helper'.
 
 
@@ -527,22 +532,22 @@ Provides a string indicating the function is an exported helper.
 Returns the string 'inner'.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the string 'inner'.
-- **Output**: The function returns the string 'inner'.
+    - Return the string 'inner'.
+- **Output**: The string 'inner'.
 
 
 ---
 ### createInstance<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.MyModule.createInstance}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_modules.ts#L46>)
 
-Creates a new instance of `ModuleClass` with a given `id` and a fixed name 'Module'.
+Creates and returns a new instance of `ModuleClass` with a specified `id` and a fixed name 'Module'.
 - **Inputs**:
     - `id`: A string that represents the identifier for the new `ModuleClass` instance.
 - **Control Flow**:
     - The function takes a single argument `id`.
-    - It calls the constructor of `ModuleClass` with `id` and the string 'Module' as arguments.
-    - It returns the newly created `ModuleClass` instance.
-- **Output**: A new instance of `ModuleClass` initialized with the provided `id` and the name 'Module'.
+    - It creates a new instance of `ModuleClass` using the `id` and a fixed string 'Module' as the constructor arguments.
+    - The function returns the newly created `ModuleClass` instance.
+- **Output**: A new instance of `ModuleClass` with the specified `id` and the name 'Module'.
 
 
 ---
@@ -553,7 +558,7 @@ Returns the value of the private constant `privateConst`.
 - **Inputs**: None
 - **Control Flow**:
     - Returns the value of `privateConst`.
-- **Output**: The output is the string value of `privateConst`, which is 'private'.
+- **Output**: The function returns the string value 'private'.
 
 
 ---
@@ -600,8 +605,8 @@ Logs a message indicating the direction of movement based on the provided `Direc
 Returns the string 'function'.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the string 'function'.
-- **Output**: A string with the value 'function'.
+    - Return the string 'function'.
+- **Output**: The function returns a string with the value 'function'.
 
 
 ---
@@ -612,6 +617,7 @@ Returns the string 'arrow'.
 - **Inputs**: None
 - **Control Flow**:
     - The function is defined as an arrow function with no parameters.
+    - The function body consists of a single return statement.
     - The function returns the string 'arrow'.
 - **Output**: The output is a string with the value 'arrow'.
 

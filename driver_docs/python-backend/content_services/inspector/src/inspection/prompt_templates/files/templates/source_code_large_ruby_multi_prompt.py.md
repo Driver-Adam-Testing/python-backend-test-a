@@ -6,9 +6,9 @@
 Templates for generating multi-prompt structures for large Ruby source code analysis.
 
 # Purpose
-The code defines a structured template for generating prompts related to Ruby source code analysis. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ruby`. The main purpose of the code is to create a multi-prompt template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY`, which is used to analyze and document Ruby source code. This template includes sections for determining the purpose of the code, checking imports and dependencies, and identifying modules and classes within the Ruby code.
+The code defines a structured prompting template for processing Ruby source code. It imports several components and utilities from different modules, which are used to construct a multi-prompt template. This template is specifically designed to analyze and document the purpose, imports, dependencies, modules, and classes within Ruby source code. The template uses a combination of static analysis and language model (LLM) outputs to gather information about the Ruby code structure.
 
-The template is structured as a list of tuples, each representing a different aspect of the analysis. Each tuple contains a specific type of prompt or function, such as `S.MULTI_PROMPT_TEXT` for generating text prompts and `S.FN_COND_JSON` for function-based analysis. The code uses components like `Prompt` and `Component` to build and format these prompts. The template is designed to facilitate the extraction of structured information from Ruby source code, making it easier to document and understand the code's purpose, structure, and dependencies.
+The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY` is a list of tuples, each representing a different aspect of the Ruby code analysis. Each tuple contains a specific type of prompt or function, such as `S.MULTI_PROMPT_TEXT` for general purpose analysis, `S.MULTI_LLM_COND_JSON` for checking imports and dependencies, and `S.FN_COND_JSON` for identifying modules and classes. The template uses components like `Prompt`, `Component`, and various instructions to build and format the prompts. This setup allows for a comprehensive analysis of Ruby source code, facilitating the extraction of structured information about its components and their purposes.
 # Imports and Dependencies
 
 ---
@@ -33,7 +33,7 @@ The template is structured as a list of tuples, each representing a different as
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_RUBY
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string identifier, a description, and a series of prompts or functions related to Ruby code analysis and generation. The list is structured to handle different aspects of Ruby code, such as purpose, imports, modules, and classes.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a comment string, and a series of prompt components or functions related to Ruby code analysis and generation. The list is structured to handle different aspects of Ruby code, such as purpose, imports, modules, and classes.
 - **Use**: Used to define a structured template for generating and analyzing Ruby code prompts and components.
 
 

@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Database migration script to convert string columns to enum types and update data accordingly.
+Alembic migration script to convert string columns to enum types and update data in a database.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates two new ENUM types, `primaryassetkind` and `versionstatus`, and updates the `v2_version` table to replace hyphens with underscores in the `status` column. It also alters the `kind` column in the `v2_primary_asset` table and the `status` column in the `v2_version` table to use the newly created ENUM types. The [`downgrade`](<#downgrade>) function reverses these changes by altering the columns back to `VARCHAR` and dropping the ENUM types. This script provides narrow functionality focused on modifying specific database schema elements.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates two new ENUM types, `primaryassetkind` and `versionstatus`, and updates the `v2_version` table to replace hyphens with underscores in the `status` column. It then alters the `kind` column in the `v2_primary_asset` table and the `status` column in the `v2_version` table to use these new ENUM types. The [`downgrade`](<#downgrade>) function reverses these changes by altering the columns back to `VARCHAR` type and dropping the ENUM types.
+
+The script is identified by a unique revision ID `047a6ed8fdaa` and is intended to be part of a sequence of migrations, as indicated by the `down_revision` attribute pointing to the previous migration `4c5c3428bf03`. This script is a part of a broader database schema management process, ensuring that the database structure evolves in a controlled manner. It does not define public APIs or external interfaces but rather focuses on internal database schema transformations.
 # Imports and Dependencies
 
 ---
@@ -18,15 +20,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database migration revision. It is used to track the specific state of the database schema at a given point in time.
-- **Use**: Used by Alembic to identify the current migration version in the database schema migration process.
+- **Description**: A string that represents the unique identifier for the current database migration revision. It is used by Alembic, a database migration tool, to track changes in the database schema.
+- **Use**: Used to identify the current state of the database schema in the migration process.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations. It is used in Alembic migrations to specify the revision that the current migration is based on.
-- **Use**: Indicates the parent revision for the current migration script in Alembic.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the order of migrations.
+- **Use**: Indicates the immediate predecessor revision in the migration history.
 
 
 ---
@@ -40,7 +42,7 @@ This code is a database migration script using Alembic, a database migration too
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migration.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -49,15 +51,15 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_07_1019-047a6ed8fdaa_strs_to_enums.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_07_1019-047a6ed8fdaa_strs_to_enums.py#L17>)
 
-Executes database schema changes to create new enum types and update existing data and columns.
+Executes database schema changes to create new ENUM types and update existing data and columns.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Execute SQL command to create a new enum type `primaryassetkind` with values 'CODEBASE', 'FILE', 'PAGE', and 'PAGE_TEMPLATE'.
-    - Execute SQL command to create a new enum type `versionstatus` with values 'GENERATING', 'GENERATION_COMPLETE', and 'GENERATION_ERROR'.
-    - Execute SQL command to update the `status` column in the `v2_version` table, replacing '-' with '_'.
-    - Execute SQL command to alter the `kind` column in the `v2_primary_asset` table to use the `primaryassetkind` enum type, casting existing values accordingly.
-    - Execute SQL command to alter the `status` column in the `v2_version` table to use the `versionstatus` enum type, casting existing values accordingly.
-- **Output**: No output is returned as the function returns `None`.
+    - Execute SQL command to create ENUM type `primaryassetkind` with values 'CODEBASE', 'FILE', 'PAGE', 'PAGE_TEMPLATE'.
+    - Execute SQL command to create ENUM type `versionstatus` with values 'GENERATING', 'GENERATION_COMPLETE', 'GENERATION_ERROR'.
+    - Execute SQL command to update `v2_version` table by replacing '-' with '_' in the `status` column.
+    - Execute SQL command to alter `kind` column in `v2_primary_asset` table to use `primaryassetkind` ENUM type, casting existing values.
+    - Execute SQL command to alter `status` column in `v2_version` table to use `versionstatus` ENUM type, casting existing values.
+- **Output**: No output is returned as the function performs database operations in place.
 
 
 ---

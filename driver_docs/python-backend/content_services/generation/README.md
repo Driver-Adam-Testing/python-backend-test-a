@@ -6,10 +6,10 @@
 Asynchronous functions for inline editing, smart instruction processing, and Python project configuration.
 
 ## Folders
-- **[src](src/README.md)**: Defines asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
+- **[src](src/README.md)**: Asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[poetry.lock](poetry.lock.md)**: Manages Python project dependencies, package versions, and metadata for consistent environments.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies and build system details.
 
 ---

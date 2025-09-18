@@ -6,7 +6,7 @@
 Imports and exports pipeline request and response classes for inline edit, reformat, and smart instruction.
 
 # Purpose
-This code is a module that imports and re-exports specific classes from several other modules within the same package. It imports classes related to pipeline requests and responses from modules named `inline_edit`, `pipeline_request`, `pipeline_response`, `reformat`, and `smart_instruction`. The `__all__` list defines the public API of this module by specifying which classes are available for import when using a wildcard import statement. This module provides narrow functionality by organizing and exposing a set of related classes for handling different types of pipeline operations.
+This code is a module that imports and re-exports specific classes from several other modules within the same package. It imports `InlineEditPipelineRequest` and `InlineEditPipelineResponse` from `inline_edit`, `PipelineRequest` from `pipeline_request`, `PipelineResponse` from `pipeline_response`, `ReformatPipelineRequest` and `ReformatPipelineResponse` from `reformat`, and `SmartInstructionPipelineRequest` and `SmartInstructionPipelineResponse` from `smart_instruction`. The `__all__` list defines the public API of this module by specifying which classes are available for import when using a wildcard import statement. This module provides a narrow functionality by organizing and exposing a set of pipeline-related classes for use in other parts of the application.
 # Imports and Dependencies
 
 ---
@@ -25,8 +25,8 @@ This code is a module that imports and re-exports specific classes from several 
 ---
 ### \_\_all\_\_
 - **Type**: ``list``
-- **Description**: Defines a list of public objects of the module that will be exported when `from module import *` is used. It includes class names related to pipeline requests and responses, such as `PipelineResponse`, `PipelineRequest`, and others specific to inline editing, smart instruction, and reformatting.
-- **Use**: Controls the public API of the module by specifying which classes are accessible when the module is imported.
+- **Description**: Defines a list of public objects of the module. It specifies which classes are available for import when the module is imported using the `from module import *` syntax.
+- **Use**: Controls the export of module components to other modules.
 
 
 

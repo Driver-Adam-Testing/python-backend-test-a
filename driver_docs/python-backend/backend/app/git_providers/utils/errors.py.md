@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Custom exception classes for handling Git provider app revoke and access token errors.
+Defines custom exceptions for Git provider app revoke and access token errors.
 
 # Purpose
-The code defines two custom exception classes, `GitProviderAppRevokeError` and `GitProviderAccessTokenError`, which are used to handle specific error conditions related to a Git provider application. The `GitProviderAppRevokeError` class extends the base `Exception` class and includes an optional `original_exception` attribute to store the original exception that caused the error, providing additional context for error handling. The `GitProviderAccessTokenError` class is defined as a placeholder for future implementation, indicating that it will be used to handle errors related to access tokens in the Git provider context. This code provides narrow functionality focused on error handling for a specific application domain.
+The code defines two custom exception classes, `GitProviderAppRevokeError` and `GitProviderAccessTokenError`, which are used to handle specific error conditions related to a Git provider application. The `GitProviderAppRevokeError` class extends the base `Exception` class and includes an optional `original_exception` attribute to store the original exception that caused the error, providing additional context for error handling. The `GitProviderAccessTokenError` class is defined but does not include any additional functionality beyond the base `Exception` class. This code provides narrow functionality focused on error handling for Git provider applications.
 # Classes
 
 ---
@@ -14,8 +14,8 @@ The code defines two custom exception classes, `GitProviderAppRevokeError` and `
 [View Source →](<../../../../../../backend/app/git_providers/utils/errors.py#L1>)
 
 - **Members**:
-    - `original_exception`: Stores the original exception that caused this error.
-- **Description**: Represents an error that occurs when revoking a Git provider app, with an optional reference to the original exception.
+    - `original_exception`: Stores the original exception that caused this error, if any.
+- **Description**: Represents an error that occurs when revoking a Git provider application, extending the base `Exception` class to include an optional original exception.
 - **Methods**:
     - [`python-backend/backend/app/git_providers/utils/errors.GitProviderAppRevokeError.__init__`](<#gitproviderapprevokeerror__init__>)
 - **Inherits From**:

@@ -6,7 +6,7 @@
 Configuration settings management using Pydantic for environment and database parameters.
 
 # Purpose
-This code defines a configuration class `Settings` using the `pydantic_settings` library, which is designed to manage application settings. The `Settings` class inherits from `BaseSettings` and specifies a configuration dictionary `model_config` that includes settings for environment file handling and extra fields behavior. The class defines several configuration variables: `ENVIRONMENT`, which is a `Literal` type restricted to specific environment names with a default value of "local"; `DATABASE_URL`, which is an optional string; and `DATABASE_URL_SECRET_NAME`, which is a required string. An instance of the `Settings` class is created and assigned to the variable `settings`, allowing the application to access these configuration settings.
+This code defines a configuration class `Settings` using the `pydantic_settings` library, which is designed to manage application settings. The `Settings` class inherits from `BaseSettings` and specifies a configuration dictionary `model_config` that indicates the use of an environment file `.env`, ignores empty environment variables, and ignores extra fields. The class includes several configuration attributes: `ENVIRONMENT`, which is a `Literal` type restricted to specific environment names, and two database-related attributes, `DATABASE_URL` and `DATABASE_URL_SECRET_NAME`, where `DATABASE_URL` can be `None`. An instance of the `Settings` class is created and assigned to the variable `settings`, allowing the application to access these settings throughout its execution.
 # Imports and Dependencies
 
 ---
@@ -20,8 +20,8 @@ This code defines a configuration class `Settings` using the `pydantic_settings`
 ---
 ### settings
 - **Type**: ``Settings``
-- **Description**: Represents an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This instance is configured to read environment variables from a file named `.env` and has attributes such as `ENVIRONMENT`, `DATABASE_URL`, and `DATABASE_URL_SECRET_NAME`.
-- **Use**: Used to manage application configuration by loading settings from environment variables.
+- **Description**: Represents an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This instance is configured to read environment variables from a file named `.env` and to ignore empty environment variables. It includes configuration for different environments and database connection details.
+- **Use**: Used to manage application configuration by loading settings from environment variables and providing them as attributes.
 
 
 # Classes
@@ -32,10 +32,10 @@ This code defines a configuration class `Settings` using the `pydantic_settings`
 
 - **Members**:
     - `model_config`: Defines configuration for environment variables and extra settings.
-    - `ENVIRONMENT`: Specifies the current environment setting with a default of 'local'.
+    - `ENVIRONMENT`: Specifies the environment type with a default value of 'local'.
     - `DATABASE_URL`: Holds the database URL or None if not set.
     - `DATABASE_URL_SECRET_NAME`: Stores the secret name for the database URL.
-- **Description**: Configures application settings using environment variables and provides attributes for environment type and database connection details.
+- **Description**: Inherits from `BaseSettings` to manage application settings, including environment configuration and database connection details.
 - **Inherits From**:
     - `BaseSettings`
 

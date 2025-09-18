@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Git provider configuration, interfaces, OAuth strategy, provider functionality, API resource management, and utilities.
+Git provider configurations, interfaces, OAuth strategies, providers, resources, and utilities.
 
 ## Folders
-- **[core](core/README.md)**: Defines and loads Git provider configuration for applications with computed authorization and access URLs.
+- **[core](core/README.md)**: Defines and loads Git provider configurations using Pydantic models and application-specific logic.
 - **[interfaces](interfaces/README.md)**: Abstract interface for Git providers with methods for configuration, token validation, and more.
-- **[oauth](oauth/README.md)**: Implements GitLab OAuth strategy for token management and user authentication.
-- **[providers](providers/README.md)**: Implements Bitbucket and GitLab provider functionality for token management and repository operations.
-- **[resources](resources/README.md)**: Bitbucket and GitLab API resource management for repositories, commits, webhooks, and archives.
-- **[utils](utils/README.md)**: Custom exception classes for Git provider errors and metadata generation for codebases.
+- **[oauth](oauth/README.md)**: Implements GitLab OAuth strategy for token management and authorization URL generation.
+- **[providers](providers/README.md)**: Bitbucket and GitLab providers for managing access tokens, webhooks, and repository interactions.
+- **[resources](resources/README.md)**: Bitbucket and GitLab API resource management for token validation, repository handling, and more.
+- **[utils](utils/README.md)**: Custom exceptions for Git provider errors, metadata generation, and VCS update determination.
 
 
 ---

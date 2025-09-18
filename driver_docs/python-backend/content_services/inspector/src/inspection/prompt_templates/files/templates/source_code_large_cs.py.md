@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating structured prompts and analyzing C# source code components like classes, structs, and interfaces.
+Templates for generating structured prompts and analyzing C# source code components.
 
 # Purpose
-The code defines a template for generating structured documentation for C# source code. It imports several components and utilities from different modules to facilitate this process. The primary purpose is to create a structured format for documenting the purpose, imports, classes, structs, and interfaces found in C# code. The template uses a combination of static analysis and language model (LLM) outputs to gather information about the C# code components.
+The code defines a structured template for generating documentation related to C# source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting`, `utils.lang_specialization.c_sharp`, and `utils.lang_specialization.default`. These imports provide instructions and components necessary for creating structured prompts and handling C# specific elements like classes, interfaces, and structs.
 
-The `SOURCE_CODE_LARGE_TEMPLATE_CS` variable is a list of tuples, each representing a section of the documentation. Each tuple contains a section identifier, a title, and a series of instructions or functions to generate the content for that section. The sections include "Purpose," "Imports and Dependencies," "Classes," "Structs," and "Interfaces." The code uses various imported functions and classes, such as `Prompt`, `Component`, and collections for C# classes, structs, and interfaces, to build the documentation content. This setup allows for the automated generation of detailed and structured documentation for C# source code files.
+The `SOURCE_CODE_LARGE_TEMPLATE_CS` is a list of tuples, each representing a section of the documentation template. Each tuple contains a section identifier, a title, and a series of prompts or functions that generate or process content for that section. The template includes sections for the purpose of the code, imports and dependencies, classes, structs, and interfaces. The template uses components like `Prompt` and `Component` to build structured text, and it employs functions like `from_static_analysis` and `from_llm` to gather information about C# code elements. This setup is intended to automate the generation of detailed and structured documentation for C# source code files.
 # Imports and Dependencies
 
 ---
@@ -34,8 +34,8 @@ The `SOURCE_CODE_LARGE_TEMPLATE_CS` variable is a list of tuples, each represent
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_CS
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string identifier, a section title, and a series of instructions or functions related to C# code analysis and transformation. Each tuple is designed to handle a specific aspect of C# code, such as purpose, imports, classes, structs, and interfaces.
-- **Use**: Used to define a structured template for processing and analyzing large C# source code files.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to C# code analysis and generation. Each tuple is structured to facilitate the generation of structured prompts and the analysis of C# code components such as classes, structs, and interfaces.
+- **Use**: Used to define a template for generating structured prompts and analyzing C# code components.
 
 
 

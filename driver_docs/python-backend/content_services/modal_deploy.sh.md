@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Bash script for deploying multiple services with a specified environment argument.
+A Bash script for deploying multiple services with a specified environment argument.
 
 # Purpose
-This script automates the deployment process for multiple components of a software system. It requires an environment argument to specify the deployment environment, such as development, testing, or production. The script navigates to specific directories, namely `inspector`, `onboarding`, `pdf_preprocessing`, and `embedding`, and executes a `modal deploy` command on the `src/main.py` file within each directory, using the provided environment argument. The `set -e` command ensures that the script stops execution if any command fails, preventing further actions that depend on successful completion of previous steps. This script facilitates consistent and repeatable deployments across different environments.
+This script automates the deployment process for multiple components of a software system. It requires an environment argument to specify the target environment for deployment. The script navigates through several directories, including `inspector`, `onboarding`, `pdf_preprocessing`, and `embedding`, and executes the `modal deploy` command on the `src/main.py` file within each directory. The `--env` flag is used to pass the specified environment argument to the deployment command. The script ensures that if any command fails, the execution stops immediately due to the `set -e` option.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

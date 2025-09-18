@@ -7,7 +7,7 @@ Bash script for deploying services to a specified environment using Poetry and M
 
 
 ## Files
-- **[modal_deploy.sh](modal_deploy.sh.md)**: Bash script for deploying services to a specified environment using Poetry and Modal.
+- **[modal_deploy.sh](modal_deploy.sh.md)**: Bash script to deploy services to a specified environment using Poetry and Modal.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

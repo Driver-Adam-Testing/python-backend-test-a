@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configures and runs database migrations using Alembic in both offline and online modes.
+Configures and runs Alembic database migrations in both offline and online modes.
 
 # Purpose
-This code is a configuration and execution script for database migrations using Alembic, a database migration tool for SQLAlchemy. It sets up the environment for running migrations in both "offline" and "online" modes. The script imports necessary modules and configurations, including database settings and model versions (`V1` and `V2`). It defines a function [`get_url`](<#get_url>) to retrieve the database connection URL from the settings and an [`include_object`](<#include_object>) function to filter out specific database objects from the migration process, such as certain indexes and columns.
+This code is a configuration and execution script for database migrations using Alembic, a database migration tool for SQLAlchemy. It defines functions to handle both offline and online migration modes. The script configures the Alembic context with the necessary database connection details and metadata from the `SQLModel`. It uses the [`get_url`](<#get_url>) function to retrieve the database URI from the application settings.
 
-The script contains two main functions, [`run_migrations_offline`](<#run_migrations_offline>) and [`run_migrations_online`](<#run_migrations_online>), which handle migrations in offline and online modes, respectively. In offline mode, it configures the migration context with the database URL and other options, then runs the migrations without a live database connection. In online mode, it establishes a connection to the database, configures the migration context, and checks for the existence of the `alembic_version` table to manage concurrency during migrations. The script uses the `context.is_offline_mode()` function to determine which migration mode to execute.
+The script includes logic to exclude certain database objects, such as specific indexes and columns, from the migration process through the [`include_object`](<#include_object>) function. The [`run_migrations_offline`](<#run_migrations_offline>) function configures the context for offline migrations, while the [`run_migrations_online`](<#run_migrations_online>) function sets up the connection and context for online migrations. The online migration function also includes a check to lock the `alembic_version` table to prevent concurrency issues during migration. The script determines the mode of operation (offline or online) and executes the corresponding migration function.
 # Imports and Dependencies
 
 ---
@@ -16,39 +16,37 @@ The script contains two main functions, [`run_migrations_offline`](<#run_migrati
 - `logging.config.fileConfig`
 - `alembic.context`
 - `database.config.settings`
-- `database.models_v1.SQLModel`
-- `database.models_v2.SQLModel`
 - `sqlalchemy.engine_from_config`
 - `sqlalchemy.inspect`
 - `sqlalchemy.pool`
 - `sqlalchemy.text`
 - `sqlalchemy.engine.Connection`
-- `sqlmodel.SQLModel`
+- `database.models.SQLModel`
 
 
 # Global Variables
 
 ---
 ### config
-- **Type**: ``config``
-- **Description**: Represents the configuration object obtained from the `context` module. This object is used to access configuration settings for the Alembic migration environment.
-- **Use**: Used to configure logging and database connection settings for running migrations.
+- **Type**: ``context.config``
+- **Description**: Represents the Alembic configuration object that provides access to the values within the .ini file in use. This object is used to configure the Alembic environment for database migrations.
+- **Use**: Used to access configuration settings for Alembic, including the configuration file name and sections for setting up database connections.
 
 
 ---
 ### target\_metadata
 - **Type**: ``SQLModel.metadata``
-- **Description**: Represents the metadata of the `SQLModel` class, which includes information about the database schema such as tables, columns, and constraints. This metadata is used by SQLAlchemy to understand the structure of the database and to perform operations like migrations.
-- **Use**: Used to configure the Alembic context for database migrations by providing the schema information needed to apply changes.
+- **Description**: Represents the metadata of the SQLModel, which includes information about the database schema such as tables, columns, and relationships. This metadata is used by Alembic to manage database migrations.
+- **Use**: Used to configure Alembic's migration context with the database schema information.
 
 
 # Functions
 
 ---
 ### get\_url<!-- {{#callable:python-backend/driver_db/database/alembic/env.get_url}} -->
-[View Source →](<../../../../../driver_db/database/alembic/env.py#L21>)
+[View Source →](<../../../../../driver_db/database/alembic/env.py#L19>)
 
-Retrieves the SQLAlchemy database URI from the settings.
+Returns the SQLAlchemy database URI as a string.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `SQLALCHEMY_DATABASE_URI` attribute from the `settings` module.
@@ -59,7 +57,7 @@ Retrieves the SQLAlchemy database URI from the settings.
 
 ---
 ### include\_object<!-- {{#callable:python-backend/driver_db/database/alembic/env.include_object}} -->
-[View Source →](<../../../../../driver_db/database/alembic/env.py#L25>)
+[View Source →](<../../../../../driver_db/database/alembic/env.py#L23>)
 
 Determines whether Alembic should process a given database object based on its type and name.
 - **Inputs**:
@@ -67,26 +65,26 @@ Determines whether Alembic should process a given database object based on its t
     - `name`: The name of the database object.
     - `type_`: The type of the database object, such as 'index' or 'column'.
     - `reflected`: A parameter indicating if the object is reflected from the database schema.
-    - `compare_to`: A parameter for comparison purposes, typically used in migrations.
+    - `compare_to`: A parameter for comparison purposes, typically used in schema migrations.
 - **Logic and Control Flow**:
-    - Check if the `type_` is 'index' and the `name` is in a predefined list of manually managed indexes; if so, return `False`.
-    - Check if the `type_` is 'column' and the `name` is '__ts_vector__'; if so, return `False`.
-    - Return `True` if none of the above conditions are met, allowing Alembic to process the object normally.
-- **Output**: A boolean value indicating whether Alembic should process the object (`True`) or ignore it (`False`).
+    - Check if the object type is 'index' and its name matches specific manually managed index names; if so, return False.
+    - Check if the object type is 'column' and its name is '__ts_vector__'; if so, return False.
+    - If none of the above conditions are met, return True to allow Alembic to process the object normally.
+- **Output**: Returns a boolean value indicating whether Alembic should process the object (True) or ignore it (False).
 
 
 ---
 ### run\_migrations\_offline<!-- {{#callable:python-backend/driver_db/database/alembic/env.run_migrations_offline}} -->
-[View Source →](<../../../../../driver_db/database/alembic/env.py#L40>)
+[View Source →](<../../../../../driver_db/database/alembic/env.py#L38>)
 
-Executes database migrations in an offline mode using Alembic.
+Executes database migrations in offline mode using Alembic.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Retrieve the database URL by calling the [`get_url`](<#get_url>) function.
     - Configure the Alembic context with the retrieved URL, target metadata, and other options such as `literal_binds`, `compare_type`, and `dialect_opts`.
-    - Specify the `include_object` function to filter objects during migration.
+    - Specify the `include_object` function to determine which database objects to include in the migration.
     - Begin a transaction using `context.begin_transaction()`.
-    - Run the migrations using `context.run_migrations()`.
+    - Execute the migrations using `context.run_migrations()`.
 - **Output**: No output is returned as the function returns `None`.
 - **Functions Called**:
     - [`python-backend/driver_db/database/alembic/env.get_url`](<#get_url>)
@@ -94,7 +92,7 @@ Executes database migrations in an offline mode using Alembic.
 
 ---
 ### table\_exists<!-- {{#callable:python-backend/driver_db/database/alembic/env.table_exists}} -->
-[View Source →](<../../../../../driver_db/database/alembic/env.py#L56>)
+[View Source →](<../../../../../driver_db/database/alembic/env.py#L54>)
 
 Checks if a specified table exists in the database connected through the given connection.
 - **Inputs**:
@@ -102,28 +100,28 @@ Checks if a specified table exists in the database connected through the given c
     - `table_name`: A string representing the name of the table to check for existence.
 - **Logic and Control Flow**:
     - Create an inspector object using the provided `connection`.
-    - Check if `table_name` is in the list of table names returned by `inspector.get_table_names()`.
+    - Retrieve the list of table names from the inspector.
+    - Check if `table_name` is in the list of table names and return the result.
 - **Output**: A boolean value indicating whether the specified table exists in the database.
 
 
 ---
 ### run\_migrations\_online<!-- {{#callable:python-backend/driver_db/database/alembic/env.run_migrations_online}} -->
-[View Source →](<../../../../../driver_db/database/alembic/env.py#L61>)
+[View Source →](<../../../../../driver_db/database/alembic/env.py#L59>)
 
-Executes database migrations in an online mode with a live database connection.
+Executes database migrations in an online mode using a live database connection.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Retrieve the configuration section from the Alembic configuration object.
-    - Set the 'sqlalchemy.url' in the configuration to the database URL obtained from `get_url()`.
-    - Create a connectable engine using `engine_from_config` with the given configuration and a `NullPool`.
+    - Retrieve the configuration section from the Alembic config object and set the SQLAlchemy URL using the [`get_url`](<#get_url>) function.
+    - Create a connectable engine using the `engine_from_config` function with the specified configuration and a `NullPool`.
     - Establish a connection to the database using the connectable engine.
-    - Configure the Alembic context with the connection, target metadata, and other options.
-    - Begin a transaction within the context.
-    - Check if the 'alembic_version' table exists in the database using [`table_exists`](<#table_exists>).
-    - If the 'alembic_version' table exists, lock it to prevent concurrent migrations.
-    - Print the current time and execute the migrations using `context.run_migrations()`.
-    - Print the completion time of the migrations.
-- **Output**: No return value; performs database migrations in an online mode.
+    - Configure the Alembic context with the active connection, target metadata, and other options like `compare_type` and `include_object`.
+    - Begin a transaction within the Alembic context.
+    - Check if the `alembic_version` table exists in the database using the [`table_exists`](<#table_exists>) function.
+    - If the `alembic_version` table exists, lock it to prevent concurrency issues by executing a SQL command to lock the table in exclusive mode.
+    - Print the current timestamp and run the migrations using `context.run_migrations()`.
+    - Print the completion timestamp after migrations are complete.
+- **Output**: No output is returned as the function performs operations directly on the database.
 - **Functions Called**:
     - [`python-backend/driver_db/database/alembic/env.get_url`](<#get_url>)
     - [`python-backend/driver_db/database/alembic/env.table_exists`](<#table_exists>)

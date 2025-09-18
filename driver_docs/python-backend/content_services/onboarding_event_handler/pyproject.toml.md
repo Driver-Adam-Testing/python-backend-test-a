@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for the onboarding-event-handler project using Poetry, specifying dependencies and test settings.
+Configuration for the onboarding-event-handler project using Poetry, specifying dependencies and build settings.
 
 # Purpose
-The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project. It specifies the project metadata, including the project name `onboarding-event-handler`, version `0.1.0`, and author information. The file defines the dependencies required for the project, such as `boto3`, `httpx`, and `pydantic`, with specific version constraints. It also includes development dependencies under the `[tool.poetry.group.dev.dependencies]` section, like `pytest` and `moto`, which are used for testing purposes. Additionally, the `[tool.pytest.ini_options]` section configures pytest to look for tests in the `tests` directory and includes the `src` directory in the Python path.
+The configuration file defines the setup for a Python project using Poetry, a dependency management tool. It specifies the project metadata, including the project name `onboarding-event-handler`, version `0.1.0`, and author information. The file lists the dependencies required for the project, such as `boto3`, `httpx`, and `pydantic`, with specified version constraints. It also includes development dependencies under the `dev` group, like `pytest` and `moto`, which are used for testing purposes. Additionally, the file configures the build system to use `poetry-core` and sets options for `pytest`, indicating the directories for test discovery and the Python path.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

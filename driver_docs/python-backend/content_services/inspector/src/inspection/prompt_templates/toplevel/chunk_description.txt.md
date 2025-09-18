@@ -3,28 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for summarizing module descriptions in the `python-backend` codebase.
+Instructions for summarizing module descriptions in a codebase.
 
 # Purpose
-Chunk of content descriptions for codebase `ProjectX`:
+Chunk of content descriptions for codebase `WeatherApp`:
 
 File `config.json` at `config/config.json` description:
 
-The `config.json` file contains configuration settings for the application. It specifies parameters such as the server port, database connection details, and logging levels. These settings are used to initialize the application environment and ensure that it operates with the correct parameters. The file is structured in JSON format, allowing for easy parsing and modification of configuration values.
+The `config.json` file contains configuration settings for the `WeatherApp`. It specifies parameters such as the API endpoint URL, the API key for authentication, and the default location for weather data retrieval. This file also includes settings for units of measurement (e.g., Celsius or Fahrenheit) and language preferences for the application interface. The configuration settings in this file are essential for establishing connections to external weather data services and customizing the user experience.
 
-Folder `utils` at `src/utils` description:
+Folder `services` at `src/services` description:
 
-The `utils` folder contains utility functions and helper modules that support the main application logic. These functions perform common tasks such as data validation, formatting, and conversion. By centralizing these operations, the folder promotes code reuse and simplifies maintenance across the codebase.
+The `services` folder contains modules responsible for handling external API interactions and data processing within the `WeatherApp`. It includes files that define functions for making HTTP requests to weather data providers, parsing the received data, and transforming it into a format suitable for the application. The main business logic in this folder involves managing the flow of data from external sources to the application, ensuring that the data is accurate and up-to-date. Critical APIs in this folder include functions for fetching current weather conditions, forecasts, and historical weather data.
 
 File `main.py` at `src/main.py` description:
 
-The `main.py` file serves as the entry point for the application. It initializes the application by loading configuration settings, setting up necessary resources, and starting the main application loop. The file contains the primary business logic that orchestrates the application's core functionalities, ensuring that all components work together seamlessly.
-
-Folder `api` at `src/api` description:
-
-The `api` folder contains modules that define the application's API endpoints. These modules handle incoming requests, process data, and return responses to clients. The folder is critical for managing the interaction between the application and external systems, providing a structured way to expose the application's functionalities.
-
-In summary, the `ProjectX` codebase is organized to facilitate configuration management, utility function reuse, application initialization, and API endpoint handling. The `config.json` file is crucial for setting up the application environment, while the `utils` folder provides reusable functions to support various operations. The `main.py` file is the central hub for application startup and execution, and the `api` folder defines the interfaces for external communication.
+The `main.py` file serves as the entry point for the `WeatherApp`. It initializes the application, loads configuration settings from `config.json`, and sets up necessary services and components. This file orchestrates the overall application flow, including user interface initialization and event handling. The main business logic involves coordinating the interaction between different modules and ensuring that the application responds correctly to user inputs and external data updates. Critical APIs in this file include functions for starting the application, handling user commands, and updating the display with new weather information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

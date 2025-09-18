@@ -17,11 +17,14 @@ Instructions for writing a single paragraph description of a software folder bas
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "John Doe",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
 ```
 
-This JSON file is a `package.json` file used in a Node.js project. It defines the project's metadata, including the `name` as "example-project" and the `version` as "1.0.0". The `description` provides a brief overview of the project. The `main` field specifies `index.js` as the entry point of the application. The `scripts` section includes commands for starting the application with `node index.js` and a placeholder for testing. The `author` field lists "John Doe" as the creator, and the `license` field indicates the project is licensed under ISC.
+The JSON file defines the configuration for a Node.js project named `example-project` with version `1.0.0`. It specifies `index.js` as the main entry point of the application. The `scripts` section includes commands to start the application using Node.js and a placeholder for testing. The project is authored by John Doe and uses the ISC license. The `dependencies` section lists `express` version `^4.17.1` as a required package for the project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

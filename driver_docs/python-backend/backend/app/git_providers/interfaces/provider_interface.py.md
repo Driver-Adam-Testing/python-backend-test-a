@@ -6,9 +6,9 @@
 Abstract interface for Git providers, defining methods for configuration, token validation, installation management, secret handling, repository access, webhook event handling, and access revocation.
 
 # Purpose
-The code defines an abstract interface for Git provider integrations, which is intended to be implemented by specific Git provider classes. The primary purpose of this interface is to standardize the methods required for managing Git provider applications and their installations. It includes methods for creating provider instances from configuration, validating access tokens, creating and managing installation records, storing and updating secrets, fetching repositories, handling webhook events, and revoking access. The interface ensures that any Git provider implementation will have a consistent set of functionalities, facilitating integration with different Git services.
+The code defines an abstract interface for Git providers, which is intended to be implemented by specific Git provider classes. The primary purpose of this interface is to standardize the interactions with different Git providers by defining a set of methods that all providers must implement. These methods include operations for validating access tokens, creating and managing installations, storing and fetching secrets, handling webhook events, and managing repositories. The interface ensures that any Git provider implementation will have a consistent API for these operations, facilitating integration with other parts of the system.
 
-The code also includes data classes `WebhookConfig` and `WebhookEventContext` to encapsulate configuration details for webhooks and context for webhook events, respectively. These data classes provide structured ways to handle webhook-related data, such as callback URLs, event triggers, and context identifiers like app and organization IDs. The interface and data classes together form a cohesive framework for managing Git provider interactions, focusing on installation management, secret handling, and webhook processing.
+Additionally, the code includes data classes `WebhookConfig` and `WebhookEventContext` to encapsulate configuration and context information related to webhooks. The `WebhookConfig` class holds details such as callback URLs, event triggers, and security settings, while `WebhookEventContext` provides context for handling webhook events, including application and installation identifiers. The use of abstract methods in the `GitProviderInterface` class enforces that any subclass must provide concrete implementations for these methods, ensuring that all necessary functionality is covered for interacting with Git providers.
 # Imports and Dependencies
 
 ---
@@ -17,46 +17,48 @@ The code also includes data classes `WebhookConfig` and `WebhookEventContext` to
 - `dataclasses.dataclass`
 - `typing.Any`
 - `app.schemas.git_provider_schema.GitRepository`
-- `database.models_v1.GitProviderApp`
-- `database.models_v1.GitProviderAppInstallation`
+- `database.models.GitProviderApp`
+- `database.models.GitProviderAppInstallation`
 - `shared.interfaces.aws_client_config.AWSClientConfig`
+- `sqlmodel.Session`
 
 
 # Classes
 
 ---
 ### WebhookConfig<!-- {{#class:python-backend/backend/app/git_providers/interfaces/provider_interface.WebhookConfig}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L10>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L11>)
 
 - **Decorators**: `@dataclass`
 - **Members**:
     - `callback_url`: Specifies the URL to which the webhook will send data.
     - `triggers`: Lists provider-specific event names that trigger the webhook.
     - `secret_token`: Holds a secret token for security, or uses a stored secret if None.
-    - `custom_headers`: Contains custom headers to include in the webhook request.
+    - `custom_headers`: Contains custom HTTP headers to include in the webhook request.
     - `ssl_verification`: Indicates whether SSL verification is enabled for the webhook.
     - `description`: Provides an optional description of the webhook configuration.
-- **Description**: Defines the configuration for a generic webhook, including the callback URL, event triggers, security token, custom headers, SSL verification, and an optional description.
+- **Description**: Represents a generic configuration for a webhook, including details such as the callback URL, event triggers, security tokens, custom headers, SSL verification, and an optional description.
 
 
 ---
 ### WebhookEventContext<!-- {{#class:python-backend/backend/app/git_providers/interfaces/provider_interface.WebhookEventContext}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L22>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L23>)
 
 - **Decorators**: `@dataclass`
 - **Members**:
     - `app_id`: Stores the application ID related to the webhook event.
     - `installation_id`: Stores the installation ID related to the webhook event.
     - `organization_id`: Stores the organization ID related to the webhook event.
-- **Description**: Provides context for a webhook event by storing identifiers such as application ID, installation ID, and organization ID.
+    - `session`: Holds the SQLAlchemy session for database operations.
+- **Description**: Represents the context for a webhook event, including identifiers for the application, installation, and organization, as well as a database session for operations.
 
 
 ---
 ### GitProviderInterface<!-- {{#class:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L29>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L31>)
 
 - **Decorators**: `@classmethod`, `@abstractmethod`
-- **Description**: Defines an abstract interface for Git providers, requiring implementation of methods for configuration, token validation, installation creation, secret management, repository access, webhook handling, and access revocation.
+- **Description**: Defines an abstract interface for Git providers, requiring implementation of methods for configuration, token validation, installation management, secret storage, repository access, webhook handling, and access revocation.
 - **Methods**:
     - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.from_config`](<#gitproviderinterfacefrom_config>)
     - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.validate_access_token`](<#gitproviderinterfacevalidate_access_token>)
@@ -75,7 +77,7 @@ The code also includes data classes `WebhookConfig` and `WebhookEventContext` to
 
 ---
 #### GitProviderInterface\.from\_config<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.from_config}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L32>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L34>)
 
 Creates a provider instance from the given app and AWS configuration.
 - **Decorators**: `@classmethod`, `@abstractmethod`
@@ -83,19 +85,18 @@ Creates a provider instance from the given app and AWS configuration.
     - `app`: Git provider app configuration.
     - `aws_config`: AWS configuration.
 - **Logic and Control Flow**:
-    - The method is a class method, meaning it is called on the class itself rather than an instance.
+    - The method is a class method, meaning it is called on the class itself rather than an instance of the class.
     - The method is abstract, indicating that subclasses must implement this method.
-    - The method takes two parameters: `app` and `aws_config`.
-    - The method returns an instance of `GitProviderInterface`.
+    - The method takes two parameters: `app` and `aws_config`, which are used to configure the provider instance.
 - **Output**: An instance of `GitProviderInterface`.
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 
 ---
 #### GitProviderInterface\.validate\_access\_token<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.validate_access_token}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L47>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L49>)
 
-Validates an access token before installation for a Git provider.
+Validates an access token before installation.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
     - `token_data`: Provider-specific token data.
@@ -109,24 +110,24 @@ Validates an access token before installation for a Git provider.
 
 ---
 #### GitProviderInterface\.create\_installation<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.create_installation}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L58>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L60>)
 
 Creates an installation record for a Git provider application.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `organization_id`: A string representing the organization ID.
-    - `app_id`: A string representing the Git provider application ID.
+    - `organization_id`: The ID of the organization.
+    - `app_id`: The ID of the Git provider application.
     - `token_data`: A dictionary containing provider-specific token data.
 - **Logic and Control Flow**:
-    - This method is abstract and must be implemented by subclasses of `GitProviderInterface`.
-    - The method is intended to create a new `GitProviderAppInstallation` instance using the provided `organization_id`, `app_id`, and `token_data`.
-- **Output**: A `GitProviderAppInstallation` instance that is not yet persisted.
+    - The method is abstract and must be implemented by subclasses of `GitProviderInterface`.
+    - The method is intended to create a new installation record but does not persist it.
+- **Output**: An instance of `GitProviderAppInstallation` that represents the installation record.
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 
 ---
 #### GitProviderInterface\.store\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.store_secrets}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L73>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L75>)
 
 Stores access token and related secrets for a Git provider installation.
 - **Decorators**: `@abstractmethod`
@@ -134,15 +135,15 @@ Stores access token and related secrets for a Git provider installation.
     - `installation`: The installation record of type `GitProviderAppInstallation`.
     - `token_data`: A dictionary containing provider-specific token data.
 - **Logic and Control Flow**:
-    - This method is abstract and must be implemented by subclasses of `GitProviderInterface`.
-    - The method takes an installation record and token data as inputs and stores the access token and related secrets.
-- **Output**: None
+    - This is an abstract method, so it does not contain any implementation in the `GitProviderInterface` class.
+    - Subclasses must implement this method to store the access token and related secrets for a given installation.
+- **Output**: Does not return any value (returns `None`).
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 
 ---
 #### GitProviderInterface\.update\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.update_secrets}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L84>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L86>)
 
 Updates the access token for a Git provider installation while preserving other secrets.
 - **Inputs**:
@@ -150,7 +151,7 @@ Updates the access token for a Git provider installation while preserving other 
     - `token_data`: A dictionary containing provider-specific token data, including the new access token.
 - **Logic and Control Flow**:
     - Calls the [`store_secrets`](<#gitproviderinterfacestore_secrets>) method with `installation` and `token_data` as arguments.
-    - The default implementation is intended for backward compatibility and may be overridden by providers to preserve webhook secrets.
+    - The default implementation is intended for backward compatibility, and providers should override this method to ensure webhook secrets are preserved.
 - **Output**: No return value (`None`).
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.store_secrets`](<#gitproviderinterfacestore_secrets>)
@@ -159,54 +160,54 @@ Updates the access token for a Git provider installation while preserving other 
 
 ---
 #### GitProviderInterface\.fetch\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.fetch_secrets}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L98>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L100>)
 
 Fetches stored secrets for a given Git provider installation.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `installation`: An instance of `GitProviderAppInstallation` representing the installation record for which secrets are to be fetched.
+    - `installation`: The installation record for which to fetch secrets.
 - **Logic and Control Flow**:
-    - The method is abstract and must be implemented by subclasses of `GitProviderInterface`.
-    - The method takes an `installation` object as input and returns a dictionary containing the stored secrets for that installation.
-- **Output**: A dictionary containing the secrets associated with the given installation, such as access tokens.
+    - The method is abstract and must be implemented by subclasses.
+    - It takes an installation record as input and returns a dictionary of secrets.
+- **Output**: A dictionary containing secrets related to the installation, such as access tokens.
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 
 ---
 #### GitProviderInterface\.fetch\_repositories<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.fetch_repositories}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L107>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L109>)
 
 Fetches repositories accessible by a given installation.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `installation`: An instance of `GitProviderAppInstallation` representing the installation record.
+    - `installation`: The installation record of type `GitProviderAppInstallation`.
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses of `GitProviderInterface`.
-    - The method takes an `installation` parameter and returns a list of `GitRepository` objects accessible by this installation.
-- **Output**: A list of `GitRepository` objects.
+    - The method takes an `installation` object as input and returns a list of `GitRepository` objects.
+- **Output**: A list of `GitRepository` objects that are accessible by the given installation.
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 
 ---
 #### GitProviderInterface\.handle\_webhook\_event<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.handle_webhook_event}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L142>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L144>)
 
 Handles incoming webhook events by processing HTTP headers, JSON payload, and context information.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
     - `headers`: HTTP headers from the webhook request.
     - `payload`: JSON payload from the webhook request.
-    - `webhook_event_ctx`: Context containing `app_id`, `installation_id`, and `organization_id`.
+    - `webhook_event_ctx`: Context containing app_id, installation_id, and organization_id.
 - **Logic and Control Flow**:
     - This is an abstract method, so it does not contain any implementation details.
-    - Subclasses must implement this method to handle webhook events according to their specific requirements.
-- **Output**: A dictionary representing the result of processing the webhook event.
+    - Subclasses must implement this method to define how to handle webhook events.
+- **Output**: A dictionary representing the result of handling the webhook event.
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 
 ---
 #### GitProviderInterface\.revoke\_access<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.revoke_access}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L154>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L156>)
 
 Revokes access for a specified Git provider app installation.
 - **Decorators**: `@abstractmethod`
@@ -214,14 +215,14 @@ Revokes access for a specified Git provider app installation.
     - `installation`: The `GitProviderAppInstallation` instance for which access is to be revoked.
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses of `GitProviderInterface`.
-    - The method takes a single argument, `installation`, which represents the installation whose access is to be revoked.
+    - The method does not contain any logic in the provided code, as it serves as a placeholder for subclasses to define specific behavior for revoking access.
 - **Output**: No output is returned as the method's return type is `None`.
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 
 ---
 #### GitProviderInterface\.register\_webhook<!-- {{#callable:python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.register_webhook}} -->
-[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L162>)
+[View Source →](<../../../../../../backend/app/git_providers/interfaces/provider_interface.py#L164>)
 
 Registers a webhook for a given installation with specified configuration and optional scope.
 - **Decorators**: `@abstractmethod`
@@ -232,8 +233,8 @@ Registers a webhook for a given installation with specified configuration and op
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses of `GitProviderInterface`.
     - The method takes three parameters: `installation`, `config`, and an optional `scope`.
-    - The method returns a dictionary containing details of the registered webhook, such as its ID, URL, active status, and creation date.
-- **Output**: A dictionary containing details of the registered webhook, including its ID, URL, active status, and creation date.
+    - The method is expected to return a dictionary containing details of the registered webhook, such as its ID, URL, active status, and creation timestamp.
+- **Output**: A dictionary containing details of the registered webhook, including its ID, URL, active status, and creation timestamp.
 - **See also**: [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<#gitproviderinterface>)  (Base Class)
 
 

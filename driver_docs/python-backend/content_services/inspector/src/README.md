@@ -3,18 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates, file analysis, GitHub utilities, code analysis tools, and functions for symbol tables and documentation.
+Templates, utilities, and scripts for code inspection, version control, symbol management, and documentation.
 
 ## Folders
-- **[inspection](inspection/README.md)**: Templates, file and folder analysis, symbol management, and codebase description functions.
-- **[onboarding](onboarding/README.md)**: Functions and utilities for Bitbucket, GitHub, and GitLab operations, language metadata, and version control data models.
-- **[utils](utils/README.md)**: Utilities for code analysis, symbol mapping, task management, database operations, and language model integration.
+- **[inspection](inspection/README.md)**: Templates for structured prompts, changelog generation, file and folder analysis, and symbol management.
+- **[onboarding](onboarding/README.md)**: Functions and utilities for managing repositories and version control operations across Bitbucket, GitHub, and GitLab.
+- **[utils](utils/README.md)**: Utilities for code symbol extraction, symbol tables, DAG management, Git operations, and task management.
 
 ## Files
 - **[common.py](common.py.md)**: Initializes a Modal app named "inspector-v2".
 - **[compare_visibility_algorithms.py](compare_visibility_algorithms.py.md)**: Compares multiple visibility algorithms for symbol table construction and analyzes their performance.
-- **[main.py](main.py.md)**: A script for inspecting codebases, managing tasks, and handling versioning with integration to AWS S3 and OpenAI.
-- **[modal_funcs.py](modal_funcs.py.md)**: Functions for generating, exporting, and managing technical documentation using Modal and OpenAI models.
+- **[deep_context_docs.py](deep_context_docs.py.md)**: Asynchronous functions for generating changelogs and deep context documentation using Modal and database interactions.
+- **[main.py](main.py.md)**: A script for inspecting and processing codebase versions, managing tasks, and handling exceptions with email notifications.
+- **[modal_funcs.py](modal_funcs.py.md)**: Functions for generating, exporting, and pushing technical documentation using Modal and AWS S3.
 - **[run_symbol_table.py](run_symbol_table.py.md)**: Builds and displays a symbol table for a project using a specified visibility algorithm.
 - **[tasks.py](tasks.py.md)**: Defines asynchronous tasks for generating technical documentation, symbol tables, and embeddings for codebases, with database integration for storing derived content.
 

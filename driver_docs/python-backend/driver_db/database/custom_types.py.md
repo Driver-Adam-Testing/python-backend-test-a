@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A custom SQLAlchemy type decorator for PostgreSQL TSVECTOR.
+A custom SQLAlchemy type decorator for PostgreSQL's TSVECTOR.
 
 # Purpose
-The code defines a custom SQLAlchemy type decorator named `TSVector` for use with PostgreSQL databases. It extends the `TypeDecorator` class from SQLAlchemy and specifies `TSVECTOR` as its implementation type. The `cache_ok` attribute is set to `True`, indicating that the type can be safely cached by SQLAlchemy. This code provides narrow functionality by creating a specific type for handling PostgreSQL's `TSVECTOR` data type within SQLAlchemy ORM mappings.
+The code defines a custom SQLAlchemy type decorator named `TSVector`. This class extends `sa.types.TypeDecorator` and specifies `TSVECTOR` as its implementation type, which is a PostgreSQL-specific data type used for full-text search. The `cache_ok` attribute is set to `True`, indicating that the type can be safely cached by SQLAlchemy. This code provides narrow functionality by creating a specialized type for use in SQLAlchemy models that interact with PostgreSQL databases.
 # Imports and Dependencies
 
 ---
@@ -21,9 +21,9 @@ The code defines a custom SQLAlchemy type decorator named `TSVector` for use wit
 [View Source →](<../../../../driver_db/database/custom_types.py#L5>)
 
 - **Members**:
-    - `impl`: Specifies the underlying type as `TSVECTOR`.
+    - `impl`: Specifies the underlying database type as `TSVECTOR`.
     - `cache_ok`: Indicates that the type can be safely cached.
-- **Description**: Extends `TypeDecorator` to represent a PostgreSQL `TSVECTOR` type, allowing for custom behavior and caching in SQLAlchemy ORM.
+- **Description**: Extends `TypeDecorator` to represent a PostgreSQL `TSVECTOR` type in SQLAlchemy, allowing for full-text search capabilities.
 - **Inherits From**:
     - `sa.types.TypeDecorator`
 

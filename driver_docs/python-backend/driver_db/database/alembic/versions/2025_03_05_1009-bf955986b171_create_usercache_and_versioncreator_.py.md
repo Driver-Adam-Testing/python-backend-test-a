@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to create UserCache and VersionCreator tables with indexes and constraints.
+Creates `UserCache` and `VersionCreator` tables with indexes and foreign key constraints using Alembic.
 
 # Purpose
-The code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates two tables: `user_cache` and `version_creator`. The `user_cache` table includes columns for `id`, `full_name`, and `email`, with `id` as the primary key. The `version_creator` table includes columns for `version_id` and `user_id`, with foreign key constraints linking `user_id` to the `user_cache` table and `version_id` to the `v2_version` table. It also creates indexes on the `user_id` and `version_id` columns in the `version_creator` table.
-
-The [`downgrade`](<#downgrade>) function reverses these changes by dropping the indexes and tables created in the [`upgrade`](<#upgrade>) function. The script uses Alembic's operations module to execute these schema changes, and it includes revision identifiers to track the migration's place in the sequence of database changes. This script is part of a series of migrations that manage the evolution of the database schema over time.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function to create two tables: `user_cache` and `version_creator`. The `user_cache` table includes columns for `id`, `full_name`, and `email`, with `id` as the primary key. The `version_creator` table includes `version_id` and `user_id` columns, with foreign key constraints linking `user_id` to `user_cache.id` and `version_id` to `v2_version.id`, both with cascade delete options. The script also creates indexes on the `user_id` and `version_id` columns in the `version_creator` table. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the indexes and tables.
 # Imports and Dependencies
 
 ---
@@ -22,8 +20,8 @@ The [`downgrade`](<#downgrade>) function reverses these changes by dropping the 
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
-- **Use**: Used to identify the current state of the database schema in Alembic migrations.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
@@ -37,14 +35,14 @@ The [`downgrade`](<#downgrade>) function reverses these changes by dropping the 
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no specific branch labels associated with this migration script.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration script does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
@@ -56,25 +54,25 @@ The [`downgrade`](<#downgrade>) function reverses these changes by dropping the 
 Creates the `user_cache` and `version_creator` tables and their associated indexes in the database.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates a table named `user_cache` with columns `id`, `full_name`, and `email`, all of which are non-nullable and `id` is the primary key.
-    - Creates a table named `version_creator` with columns `version_id` and `user_id`, both non-nullable, with `version_id` as the primary key.
-    - Adds foreign key constraints to `version_creator` linking `user_id` to `user_cache.id` and `version_id` to `v2_version.id`, both with `CASCADE` delete behavior.
+    - Calls `op.create_table` to create the `user_cache` table with columns `id`, `full_name`, and `email`, all of which are non-nullable and `id` is the primary key.
+    - Calls `op.create_table` to create the `version_creator` table with columns `version_id` and `user_id`, both non-nullable, and sets `version_id` as the primary key.
+    - Adds foreign key constraints to `version_creator` linking `user_id` to `user_cache.id` and `version_id` to `v2_version.id`, both with `ondelete="CASCADE"`.
     - Creates a non-unique index on the `user_id` column of the `version_creator` table.
     - Creates a non-unique index on the `version_id` column of the `version_creator` table.
-- **Output**: No output is returned.
+- **Output**: No return value; modifies the database schema by creating tables and indexes.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_03_05_1009-bf955986b171_create_usercache_and_versioncreator_.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_03_05_1009-bf955986b171_create_usercache_and_versioncreator_.py#L49>)
 
-Reverts the database schema changes by dropping the `version_creator` and `user_cache` tables and their associated indexes.
+Reverses the database schema changes by dropping specific tables and indexes.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Drops the index `ix_version_creator_version_id` from the `version_creator` table.
-    - Drops the index `ix_version_creator_user_id` from the `version_creator` table.
-    - Drops the `version_creator` table.
-    - Drops the `user_cache` table.
+    - Drop the index `ix_version_creator_version_id` from the `version_creator` table.
+    - Drop the index `ix_version_creator_user_id` from the `version_creator` table.
+    - Drop the `version_creator` table.
+    - Drop the `user_cache` table.
 - **Output**: No output is returned.
 
 

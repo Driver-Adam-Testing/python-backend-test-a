@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Template for a getting started guide with prompts for codebase purpose, user information, and technical overview.
+Template prompts for creating a comprehensive getting started guide for a codebase.
 
 # Purpose
-The code is a configuration template for generating a "Getting Started Guide" for a codebase. It uses a series of prompts to guide the creation of documentation sections, such as purpose, problem statement, functionality overview, and user information. The `GETTING_STARTED_GUIDE_TEMPLATE` is a list of tuples, each containing a section type and associated prompt or raw text. The template is designed to be used with a system that processes these prompts to produce structured documentation. The import statement `from utils.templates import S` suggests that `S` is a utility for handling different types of template sections, such as raw text or single prompt text.
+This code defines a template for a "Getting Started Guide" for a codebase, using a structured format to organize documentation content. It imports a utility class `S` from `utils.templates`, which is used to specify different sections and prompts within the guide. The template includes various prompts such as `PURPOSE_PROMPT`, `PROBLEM_STATEMENT_PROMPT`, and `FUNCTIONALITY_OVERVIEW_PROMPT`, each designed to elicit specific information about the codebase. The `GETTING_STARTED_GUIDE_TEMPLATE` is a list of tuples, where each tuple contains a type of content (e.g., raw text or a single prompt) and the corresponding text or prompt to be included in the guide. This template provides a comprehensive framework for documenting the purpose, functionality, user interactions, and technical details of a codebase, facilitating a structured approach to creating user-friendly documentation.
 # Imports and Dependencies
 
 ---
@@ -18,22 +18,22 @@ The code is a configuration template for generating a "Getting Started Guide" fo
 ---
 ### PURPOSE\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that instructs the user to provide a concise statement about the purpose of the codebase. It specifies that the statement should be a single paragraph consisting of 3 to 5 sentences.
+- **Description**: A multi-line string that instructs the user to provide a concise statement of the codebase's purpose in a single paragraph of 3 to 5 sentences.
 - **Use**: Used as a prompt to guide users in writing a purpose statement for the codebase.
 
 
 ---
 ### PROBLEM\_STATEMENT\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that prompts the user to describe the problem(s) that the codebase solves. It is used as a template for documentation purposes.
-- **Use**: Used to guide users in articulating the problems addressed by the codebase.
+- **Description**: A multi-line string that prompts the user to describe the problems that the codebase solves. It is intended to elicit a detailed explanation of the issues addressed by the code.
+- **Use**: Used as a prompt in documentation or user interfaces to gather information about the problems the codebase addresses.
 
 
 ---
 ### FUNCTIONALITY\_OVERVIEW\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that prompts for a high-level overview of the codebase's functionality.
-- **Use**: Used to guide the creation of documentation that summarizes the main functionalities of the codebase.
+- **Description**: A multi-line string that serves as a prompt for providing a high-level overview of the codebase's functionality.
+- **Use**: Used to guide the generation of a summary that describes the overall functionality of the codebase.
 
 
 ---
@@ -46,14 +46,14 @@ The code is a configuration template for generating a "Getting Started Guide" fo
 ---
 ### USE\_CASES\_AND\_USER\_INTERACTIONS\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that prompts users to list and briefly describe the main use cases and user interactions with the codebase.
-- **Use**: Used to guide users in documenting the primary use cases and interactions within the codebase.
+- **Description**: A multi-line string that prompts the user to list and briefly describe the main use cases and how users interact with the codebase.
+- **Use**: Used as a template prompt in documentation to guide users in describing use cases and user interactions.
 
 
 ---
 ### USER\_JOURNEYS\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a template for listing user journeys in a bulleted format. Each item in the list follows the format: 'As a user, I want to <X> so that I can <Y>', where <X> and <Y> are placeholders for user goals and motivations.
+- **Description**: A multi-line string that provides a template for listing user journeys in a bulleted format. Each journey is described using a specific format that includes the user's goal and the reason for that goal.
 - **Use**: Used to guide the documentation of user journeys by providing a consistent format for describing user goals and motivations.
 
 
@@ -67,14 +67,14 @@ The code is a configuration template for generating a "Getting Started Guide" fo
 ---
 ### CODEBASE\_ORGANIZATION\_AND\_STRUCTURE\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that prompts the user to explain the overall organization and structure of the codebase. It is intended to guide users in providing a detailed description of how the codebase is organized and structured.
-- **Use**: Used as a prompt in documentation or user guides to elicit information about the codebase's organization and structure.
+- **Description**: A multi-line string that prompts the user to explain the overall organization and structure of the codebase. This prompt is likely used in documentation or user guides to elicit detailed information about how the codebase is organized and structured.
+- **Use**: Used to request an explanation of the codebase's organization and structure.
 
 
 ---
 ### MAJOR\_MODULES\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that prompts the user to list and describe the major modules or services that are unique to the codebase. It instructs the user not to include components that are standard to all similar projects.
+- **Description**: A multi-line string that prompts the user to list and describe the major modules or services that are unique to the codebase. It instructs not to include components that are standard to all similar projects.
 - **Use**: Used to guide users in documenting the unique major modules or services of the codebase.
 
 
@@ -88,20 +88,20 @@ The code is a configuration template for generating a "Getting Started Guide" fo
 ---
 ### SETUP\_AND\_INSTALLATION\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that contains instructions for setting up and installing the codebase. It is intended to guide users through the installation process.
-- **Use**: Used to provide users with step-by-step setup and installation instructions for the codebase.
+- **Description**: Contains a string that instructs users to provide step-by-step instructions for setting up and installing the codebase.
+- **Use**: Used as a prompt in documentation or guides to instruct users on how to set up and install the codebase.
 
 
 ---
 ### CONTINUED\_EXPLORATION\_PROMPT
 - **Type**: ``str``
 - **Description**: A multi-line string that provides a prompt for outlining further learning about the codebase. It is intended to guide users in exploring the codebase beyond initial understanding.
-- **Use**: Used as a template prompt to help users continue their exploration and learning of the codebase.
+- **Use**: Used as a template prompt to help users continue learning about the codebase.
 
 
 ---
 ### GETTING\_STARTED\_GUIDE\_TEMPLATE
-- **Type**: `list`
+- **Type**: ``list``
 - **Description**: A list of tuples that define the structure and content of a getting started guide for a codebase. Each tuple contains a type from the `S` module, a section title, and optionally a prompt string that provides guidance on what content to include in that section.
 - **Use**: Used to generate a structured guide for users to understand and interact with the codebase.
 

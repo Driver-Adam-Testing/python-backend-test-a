@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines health check and user info endpoints using FastAPI.
+Defines API routes for health check and user information retrieval using FastAPI.
 
 # Purpose
-This code defines a FastAPI router with two endpoints, providing narrow functionality related to health checks and user information retrieval. The first endpoint, accessible via a GET request to the root path `/`, returns a health status message along with the current date and time. The second endpoint, accessible via a GET request to `/user_info`, returns user information based on an `ApiKeyToken` object, which is expected to be provided as an argument. The code imports necessary modules and classes, such as `datetime` for time-related operations, `ApiKeyToken` for authentication, and `User` for user data representation.
+This code defines a FastAPI router with two asynchronous endpoint functions. The first endpoint, accessible via a GET request to the root path `/`, performs a health check and returns a JSON response indicating the service status along with the current date and time. The second endpoint, accessible via a GET request to `/user_info`, returns user information by accepting an `ApiKeyToken` object and returning a `User` object. The code provides narrow functionality focused on health checking and user information retrieval within a FastAPI application.
 # Imports and Dependencies
 
 ---
@@ -21,8 +21,8 @@ This code defines a FastAPI router with two endpoints, providing narrow function
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: The `router` is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the application.
-- **Use**: Defines and manages HTTP routes for the application.
+- **Description**: Initializes an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage routes for the application.
+- **Use**: Used to register and handle HTTP routes and endpoints in the FastAPI application.
 
 
 # Functions
@@ -31,25 +31,27 @@ This code defines a FastAPI router with two endpoints, providing narrow function
 ### healthcheck<!-- {{#callable:python-backend/backend/app/api/routes/api/healthcheck.healthcheck}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/api/healthcheck.py#L10>)
 
-Provides a health status message with the current date and time.
+Returns a health status message with the current date and time.
 - **Decorators**: `@router.get`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Returns a dictionary with a status message that includes the current date and time.
-- **Output**: A dictionary with a key `status` containing a string message about the health status and the current date and time.
+    - Uses the `datetime.now()` function to get the current date and time.
+    - Formats a string with a health status message and the current date and time.
+    - Returns the formatted string in a dictionary with the key `status`.
+- **Output**: A dictionary containing a health status message with the current date and time.
 
 
 ---
 ### user\_info<!-- {{#callable:python-backend/backend/app/api/routes/api/healthcheck.user_info}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/api/healthcheck.py#L17>)
 
-Returns the `User` object associated with the provided `ApiKeyToken`.
+Returns the `user` object provided as an input.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `user`: An instance of `ApiKeyToken` representing the authenticated user.
 - **Logic and Control Flow**:
     - Returns the `user` object directly without modification.
-- **Output**: The `User` object associated with the provided `ApiKeyToken`.
+- **Output**: An instance of `User` representing the authenticated user.
 
 
 

@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS Lambda constructs for asset onboarding and metrics processing with SNS, S3, and CloudWatch integration.
+AWS Lambda constructs for asset onboarding and metrics processing with S3, SNS, and CloudWatch integrations.
 
 
 ## Files
-- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: Defines an AWS Lambda construct for asset onboarding with SNS event source and S3 bucket access.
+- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: Defines an AWS Lambda construct for asset onboarding with S3 and SNS integrations.
 - **[metrics_lambda.py](metrics_lambda.py.md)**: Defines a CDK construct for a Lambda function with CloudWatch alarms and event handling for metrics processing.
 
 ---

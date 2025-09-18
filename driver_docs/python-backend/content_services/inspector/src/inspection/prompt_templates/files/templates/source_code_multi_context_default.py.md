@@ -6,9 +6,9 @@
 Defines a template for multi-context source code inspection with prompts for purpose, imports, variables, data structures, and functions.
 
 # Purpose
-The code defines a configuration for a multi-context template used in a structured prompting system. It imports several components and instructions from different modules, which are used to construct prompts and manage language specialization. The primary purpose of this code is to create a structured template that can handle multiple contexts, specifically for analyzing source code. The template is organized into sections such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each section uses specific prompts and components to extract and organize information from the source code.
+The code defines a configuration for a multi-context template used in a structured prompting system. It imports several components and instructions from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`, which are used to construct prompts and manage language specialization. The main purpose of the code is to create a structured template that can handle multiple contexts, specifically for analyzing source code. This template includes sections for purpose, imports and dependencies, global variables, data structures, and functions.
 
-The `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT` variable is a list of tuples, each representing a different section of the template. Each tuple contains a section identifier, a description, and a series of prompts or functions that process the source code to extract relevant information. The code uses components like `Prompt`, `Component`, and various collections to build these sections. The template is designed to facilitate the analysis of source code by breaking it down into manageable parts, allowing for a detailed examination of its structure and components.
+The `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT` variable is a list of tuples, each representing a different aspect of the source code analysis. Each tuple contains a specific type of prompt or condition, such as `S.MULTI_PROMPT_TEXT` or `S.MULTI_LLM_COND_JSON`, and associates it with a particular section of the analysis, like "# Purpose" or "# Functions". The code uses various collections and functions, such as `DefaultVariableCollection` and `DefaultFnCollection`, to extract and organize information about the source code's components. This setup is intended for use in a system that requires detailed analysis and documentation of source code, leveraging structured prompts to achieve this goal.
 # Imports and Dependencies
 
 ---
@@ -35,8 +35,8 @@ The `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT` variable is a list of tuples, e
 ---
 ### SOURCE\_CODE\_MULTI\_CONTEXT\_TEMPLATE\_DEFAULT
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string identifier, a description string, and a series of prompts or functions related to code analysis and transformation. Each tuple is designed to handle a specific aspect of code, such as purpose, imports, global variables, data structures, and functions.
-- **Use**: Used to define a template for multi-context code analysis and transformation, organizing different code components and their processing instructions.
+- **Description**: A list of tuples where each tuple contains a string identifier, a description string, and a series of prompts or functions related to code analysis and transformation. Each tuple is designed to handle a specific aspect of code, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: Used to define a template for multi-context code analysis and transformation tasks.
 
 
 

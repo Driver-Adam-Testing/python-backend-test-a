@@ -6,9 +6,9 @@
 Functions and classes for extracting, documenting, and managing symbols in source code files.
 
 # Purpose
-The code is a module designed to document symbols within a source code file. It extracts symbols using the `extract_symbols_w_ctags` function and generates descriptions for each symbol. The module uses a function named [`document_symbols_in_file`](<#document_symbols_in_file>) to process a file, extract its symbols, and document them. It handles exceptions and limits the number of symbols processed if a limit is specified. The [`extract_context_lines`](<#extract_context_lines>) function helps in extracting relevant lines of code around a symbol to provide context for documentation.
+The code is a module designed to document symbols within a source code file. It extracts symbols using the `extract_symbols_w_ctags` function and generates descriptions for each symbol by analyzing its context within the file. The module includes functions such as [`extract_context_lines`](<#extract_context_lines>), which retrieves lines of code surrounding a target symbol, and [`_document_symbol`](<#_document_symbol>), which creates a detailed description of a symbol by leveraging a language model. The [`document_symbols_in_file`](<#document_symbols_in_file>) function orchestrates the process of extracting and documenting symbols, handling cases where files are empty or contain too many symbols.
 
-The module also includes a custom exception, `ContextSizeError`, to handle cases where the context size exceeds the model's limits. The [`symbol_single_paragraph_from_code_and_file_description`](<#symbol_single_paragraph_from_code_and_file_description>) function generates a description for a symbol using a language model, selecting the appropriate model based on the input context size. The module imports several utility functions and classes from other modules, indicating that it is part of a larger system. The code is structured to be used as part of a library, rather than a standalone script, and it does not define public APIs or external interfaces directly.
+The module also defines a custom exception, `ContextSizeError`, to handle scenarios where the context size exceeds the model's limits. The [`symbol_single_paragraph_from_code_and_file_description`](<#symbol_single_paragraph_from_code_and_file_description>) function selects an appropriate language model based on the input context size and generates a description for a symbol using the `ChatOpenAI` class. The module is intended to be part of a larger system that processes source code files, extracts relevant symbols, and documents them for further use or analysis.
 # Imports and Dependencies
 
 ---
@@ -41,7 +41,7 @@ The module also includes a custom exception, `ContextSizeError`, to handle cases
 
 - **Members**:
     - `message`: Stores the error message for the exception.
-- **Description**: Represents a custom exception that indicates when a context size exceeds a predefined maximum limit.
+- **Description**: Represents a custom exception that indicates when a context size exceeds a predefined maximum limit. It inherits from the built-in `Exception` class and initializes with a default error message, which can be overridden by providing a custom message.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/inspection/symbols.ContextSizeError.__init__`](<#contextsizeerror__init__>)
 - **Inherits From**:
@@ -55,11 +55,11 @@ The module also includes a custom exception, `ContextSizeError`, to handle cases
 
 Initializes a `ContextSizeError` instance with a custom or default error message.
 - **Inputs**:
-    - `message`: A string that specifies the error message to use when the exception is raised. Defaults to 'Context size exceeds the maximum limit'.
+    - `message`: A string that specifies the error message for the exception. Defaults to 'Context size exceeds the maximum limit'.
 - **Logic and Control Flow**:
-    - Assigns the provided `message` to the instance variable `self.message`.
+    - Assigns the input `message` to the instance variable `self.message`.
     - Calls the parent class `Exception`'s `__init__` method with `self.message` to initialize the exception.
-- **Output**: None, as this is an initializer for an exception class.
+- **Output**: None, as it is a constructor for the `ContextSizeError` class.
 - **See also**: [`python-backend/content_services/inspector/src/inspection/symbols.ContextSizeError`](<#contextsizeerror>)  (Base Class)
 
 
@@ -70,20 +70,20 @@ Initializes a `ContextSizeError` instance with a custom or default error message
 ### extract\_context\_lines<!-- {{#callable:python-backend/content_services/inspector/src/inspection/symbols.extract_context_lines}} -->
 [View Source →](<../../../../../../content_services/inspector/src/inspection/symbols.py#L14>)
 
-Extracts a specified range of lines from a given file content with optional padding lines above and below the target range.
+Extracts a specified range of lines from a given file content with optional padding lines at the top and bottom.
 - **Inputs**:
-    - `file_content`: A string representing the content of a file, where each line is separated by a newline character.
-    - `target_line_start`: An integer representing the starting line number (1-based index) of the target range to extract.
-    - `target_line_end`: An integer representing the ending line number (1-based index) of the target range to extract.
-    - `padding_lines_top`: An optional integer specifying the number of lines to include above the target range; defaults to 100.
-    - `padding_lines_bottom`: An optional integer specifying the number of lines to include below the target range; defaults to 100.
+    - `file_content`: A string representing the content of a file.
+    - `target_line_start`: An integer indicating the starting line number (1-based) of the target range to extract.
+    - `target_line_end`: An integer indicating the ending line number (1-based) of the target range to extract.
+    - `padding_lines_top`: An optional integer specifying the number of lines to include as padding before the target range; defaults to 100.
+    - `padding_lines_bottom`: An optional integer specifying the number of lines to include as padding after the target range; defaults to 100.
 - **Logic and Control Flow**:
-    - Split the `file_content` into a list of lines using the `splitlines()` method.
+    - Split the `file_content` into a list of lines using `splitlines()`.
     - Calculate `actual_start` as the maximum of 0 and the adjusted start line index minus `padding_lines_top`.
     - Calculate `actual_end` as the minimum of the total number of lines and the adjusted end line index plus `padding_lines_bottom`.
     - Extract the lines from `actual_start` to `actual_end` from the list of lines.
-    - Join the extracted lines into a single string with newline characters separating each line.
-- **Output**: A string containing the extracted lines from the specified range, including any padding lines.
+    - Join the extracted lines into a single string with newline characters and return it.
+- **Output**: A string containing the extracted lines from the file content, including any specified padding.
 
 
 ---
@@ -92,17 +92,19 @@ Extracts a specified range of lines from a given file content with optional padd
 
 Documents a symbol by extracting its context and generating a description using a language model.
 - **Inputs**:
-    - `symbol`: A dictionary containing details about the symbol to document, including its name, kind, and line number.
+    - `symbol`: A dictionary containing details about the symbol to document, such as its name, line number, and kind.
     - `file_node`: An instance of `LiteNode` representing the file in which the symbol is located.
-    - `file_description_paragraph`: A string containing a description of the file.
-    - `file_content`: A string containing the full content of the file.
+    - `file_description_paragraph`: A string containing a description of the file where the symbol is located.
+    - `file_content`: A string containing the full content of the file where the symbol is located.
 - **Logic and Control Flow**:
-    - Attempts to extract context lines from the file content based on the symbol's line information.
-    - Creates a deep copy of the symbol to avoid modifying the original data.
-    - Attempts to generate a description for the symbol using the [`symbol_single_paragraph_from_code_and_file_description`](<#symbol_single_paragraph_from_code_and_file_description>) function.
-    - Handles `ContextSizeError` by setting the symbol's description to `None` if the context size is too large.
-    - Returns the updated symbol with the new description and model used, or the original symbol if an error occurs.
-- **Output**: A dictionary representing the updated symbol, including its context and description if successfully documented.
+    - Extracts context lines from the file content around the symbol's location using [`extract_context_lines`](<#extract_context_lines>).
+    - Creates a deep copy of the `symbol` dictionary to avoid modifying the original data.
+    - Attempts to generate a description for the symbol using [`symbol_single_paragraph_from_code_and_file_description`](<#symbol_single_paragraph_from_code_and_file_description>).
+    - If a `ContextSizeError` occurs, logs a message and sets the symbol's description to `None`.
+    - If no error occurs, updates the symbol's description and model used in the `updated_symbol` dictionary.
+    - Returns the `updated_symbol` dictionary with the new description and context.
+    - If any other exception occurs, logs an error message and returns the original `symbol` dictionary unmodified.
+- **Output**: A dictionary representing the updated symbol, including its context and description if successfully generated.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/inspection/symbols.extract_context_lines`](<#extract_context_lines>)
     - [`python-backend/content_services/inspector/src/inspection/symbols.symbol_single_paragraph_from_code_and_file_description`](<#symbol_single_paragraph_from_code_and_file_description>)
@@ -122,15 +124,15 @@ Extracts and documents symbols from a source code file, returning a list of docu
     - Redirects standard output to a `StringIO` object to silence printing.
     - Prints a message indicating the start of symbol extraction and documentation for the given file.
     - Checks if the `source_code` is empty; if so, prints a message and returns an empty list.
-    - Attempts to extract symbols using [`extract_symbols_w_ctags`](<../utils/codemap_ctags.py.md#extract_symbols_w_ctags>); if an exception occurs, prints an error message and returns an empty list.
+    - Attempts to extract symbols from the source code using [`extract_symbols_w_ctags`](<../utils/codemap_ctags.py.md#extract_symbols_w_ctags>); if an exception occurs, prints an error message and returns an empty list.
     - Prints the number of extracted symbols.
-    - Checks if no symbols are found; if so, prints a message and returns an empty list.
+    - Checks if no symbols were found; if so, prints a message and returns an empty list.
     - Checks if the number of symbols exceeds `symbol_count_limit`; if so, prints a message and returns an empty list.
-    - Sorts the symbols by their line number.
-    - Documents each symbol using [`_document_symbol`](<#_document_symbol>), storing the results in `results`.
-    - Replaces the original symbols with the documented versions from `results`.
-    - Removes the 'context' and 'model_used' keys from each symbol for debugging purposes.
-    - Returns the list of documented symbols.
+    - Sorts the symbols by their line number in ascending order.
+    - Documents each symbol using the [`_document_symbol`](<#_document_symbol>) function, storing the results in a list.
+    - Replaces the original symbols with their documented versions from the results.
+    - Removes the 'context' key from each symbol, as it is only used for debugging.
+    - Removes the 'model_used' key from each symbol, as it is only used for debugging.
 - **Output**: A list of dictionaries, each representing a documented symbol with its details.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../utils/codemap_ctags.py.md#extract_symbols_w_ctags>)
@@ -152,12 +154,10 @@ Generates a single-paragraph description of a symbol using a language model base
     - Retrieves a system prompt template from a predefined file path.
     - Constructs a human-readable prompt using the provided file and symbol details.
     - Appends the code context to the human prompt, formatted as a code block.
-    - Defines a timeout, temperature, and maximum token limit for the language model response.
-    - Defines a dictionary of model limits based on token capacity.
-    - Defines a nested function `select_model` to choose an appropriate model based on input token size.
-    - Calculates the number of tokens in the combined system and human prompts using a utility function.
-    - Selects a model using the `select_model` function based on the calculated token size.
-    - Initializes a [`ChatOpenAI`](<../utils/models.py.md#chatopenai>) object with the selected model and parameters.
+    - Defines a function `select_model` to choose an appropriate language model based on input token size.
+    - Calculates the number of tokens in the combined system and human prompts using [`num_tokens_from_messages_open_ai`](<../utils/llm.py.md#num_tokens_from_messages_open_ai>).
+    - Selects a language model using the `select_model` function based on the calculated token size.
+    - Initializes a [`ChatOpenAI`](<../utils/models.py.md#chatopenai>) object with the selected model, temperature, and request timeout.
     - Generates a description of the symbol using the language model and returns it along with the model name.
 - **Output**: A tuple containing the generated symbol description and the name of the model used.
 - **Functions Called**:

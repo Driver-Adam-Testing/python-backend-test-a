@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-AWS Lambda constructs for asset onboarding and metrics processing, and a development stack for infrastructure deployment.
+AWS Lambda constructs for asset onboarding and metrics processing, and a CDK stack for development infrastructure.
 
 ## Folders
-- **[constructs](constructs/README.md)**: AWS Lambda constructs for asset onboarding and metrics processing with SNS, S3, and CloudWatch integration.
+- **[constructs](constructs/README.md)**: AWS Lambda constructs for asset onboarding and metrics processing with S3, SNS, and CloudWatch integrations.
 
 ## Files
-- **[dev_stack.py](dev_stack.py.md)**: Defines a development stack for deploying additional infrastructure with S3 bucket and Lambda functions.
+- **[dev_stack.py](dev_stack.py.md)**: Defines a CDK stack for deploying additional infrastructure in a development environment.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

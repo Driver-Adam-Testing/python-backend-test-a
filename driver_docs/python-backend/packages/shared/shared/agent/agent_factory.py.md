@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Factory function to create agents based on model provider, supporting OpenAI and Anthropic agents.
+Creates agents based on model configuration, supporting OpenAI and Anthropic providers.
 
 # Purpose
-The code defines a function [`create_agent`](<#create_agent>) that instantiates and returns an agent object based on the specified model provider. It imports several components from shared modules, including `AnthropicStrictAgent`, `OpenAIStrictAgent`, `ModelConfig`, `ModelProvider`, `DataScope`, and `LLMUsageSession`. The function takes several parameters, such as `scope`, `model`, `max_iterations`, `tools`, `response_type`, `debug`, `log`, and `llm_usage_session`, to configure the agent's behavior. Depending on the `model` parameter, the function determines the appropriate model configuration and creates an instance of either `OpenAIStrictAgent` or `AnthropicStrictAgent`. If the model provider is not recognized, the function raises a `ValueError`.
-
-This code is part of a broader system that manages language model agents, providing a mechanism to create agents with specific configurations. It serves as a factory function, abstracting the details of agent creation and configuration based on the model provider. The function supports both OpenAI and Anthropic model providers, allowing for flexibility in agent deployment. The use of `BaseModel` for `response_type` suggests integration with Pydantic for data validation, while `LLMUsageSession` indicates tracking or managing usage sessions for language model interactions.
+The code defines a function [`create_agent`](<#create_agent>) that instantiates and returns an agent object based on the specified model provider. It imports several classes and modules, including `AnthropicStrictAgent`, `OpenAIStrictAgent`, `ModelConfig`, `ModelProvider`, `DataScope`, and `LLMUsageSession`, which are used to configure and create the agent. The function takes parameters such as `scope`, `model`, `max_iterations`, `tools`, `response_type`, `debug`, `log`, and `llm_usage_session` to customize the agent's behavior. Depending on the `model` parameter, the function creates either an `OpenAIStrictAgent` or an `AnthropicStrictAgent`, using the `ModelConfig` to determine the appropriate provider. If the provider is not supported, the function raises a `ValueError`.
 # Imports and Dependencies
 
 ---
@@ -29,23 +27,23 @@ This code is part of a broader system that manages language model agents, provid
 
 Creates an agent based on the specified model provider and configuration.
 - **Inputs**:
-    - `scope`: Defines the data scope for the agent.
-    - `model`: Specifies the model name or uses the default if None.
-    - `max_iterations`: Sets the maximum number of iterations for the agent.
-    - `tools`: Provides optional tools for the agent.
-    - `response_type`: Specifies the response type as a Pydantic BaseModel or None.
-    - `debug`: Enables or disables debug mode.
-    - `log`: Enables or disables logging.
-    - `llm_usage_session`: Specifies the LLM usage session or None.
+    - `scope`: A `DataScope` object that defines the data scope for the agent.
+    - `model`: An optional string specifying the model name; defaults to `None`.
+    - `max_iterations`: An integer specifying the maximum number of iterations; defaults to 1.
+    - `tools`: An optional object specifying tools for the agent; defaults to `None`.
+    - `response_type`: An optional `BaseModel` specifying the response type; defaults to `None`.
+    - `debug`: A boolean indicating whether to enable debug mode; defaults to `True`.
+    - `log`: A boolean indicating whether to enable logging; defaults to `True`.
+    - `llm_usage_session`: An optional `LLMUsageSession` object for tracking usage; defaults to `None`.
 - **Logic and Control Flow**:
-    - Determines the model configuration using the provided model name or defaults if None.
-    - Checks the model provider from the configuration.
-    - If the provider is 'OPENAI', returns an 'OpenAIStrictAgent' with the specified parameters.
-    - If the provider is 'ANTHROPIC', returns an 'AnthropicStrictAgent' with the specified parameters.
-    - Raises a 'ValueError' if the provider is not supported.
-- **Output**: Returns an instance of 'OpenAIStrictAgent' or 'AnthropicStrictAgent' based on the model provider.
+    - Determine the model configuration using `ModelConfig.default()` if `model` is `None`, otherwise use `ModelConfig.from_name(model)`.
+    - Check the `provider` attribute of `model_config`.
+    - If the provider is `ModelProvider.OPENAI`, create and return an [`OpenAIStrictAgent`](<agent_openai_strict.py.md#openaistrictagent>) with the specified parameters.
+    - If the provider is `ModelProvider.ANTHROPIC`, create and return an [`AnthropicStrictAgent`](<agent_anthropic_strict.py.md#anthropicstrictagent>) with the specified parameters.
+    - If the provider is neither `OPENAI` nor `ANTHROPIC`, raise a `ValueError` indicating the provider is not supported.
+- **Output**: Returns an instance of either [`OpenAIStrictAgent`](<agent_openai_strict.py.md#openaistrictagent>) or [`AnthropicStrictAgent`](<agent_anthropic_strict.py.md#anthropicstrictagent>) based on the model provider.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<models/llm_models.py.md#modelconfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](<chat_openai.py.md#outputconfigdefault>)
     - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<models/llm_models.py.md#modelconfigfrom_name>)
     - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<agent_openai_strict.py.md#openaistrictagent>)
     - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<agent_anthropic_strict.py.md#anthropicstrictagent>)

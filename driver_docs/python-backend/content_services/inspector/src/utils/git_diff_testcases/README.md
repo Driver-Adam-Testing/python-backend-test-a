@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Calculates and prints Fibonacci numbers using recursive functions.
+Calculates and prints Fibonacci numbers using recursive functions in `file_a.py` and `file_b.py`.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[empty_file.py](empty_file.py.md)**: Empty file (no analyzable contents).
 - **[file_a.py](file_a.py.md)**: Calculates and prints Fibonacci numbers using a recursive function.
-- **[file_b.py](file_b.py.md)**: Defines a recursive function to compute Fibonacci numbers and a main function to print the first five.
+- **[file_b.py](file_b.py.md)**: A recursive function to calculate Fibonacci numbers and a main function to print the first five.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Java syntax tree analysis and symbol extraction using Tree-sitter for Java source code.
+Java Tree-sitter driver for extracting symbols, imports, and declarations from Java source code.
 
 # Purpose
-The code is a Python module designed to parse and analyze Java source code using the `tree_sitter` library. It defines a class `JavaDriverTree`, which extends `DriverTree`, to facilitate the extraction of various Java code elements such as classes, interfaces, enums, methods, constructors, fields, and import statements. The module provides functions to convert Java nodes to text, determine if a method is part of a class or interface, and extract method names and parameters. The `JavaDriverTree` class includes methods to extract and organize symbols from Java code, returning them as instances of `RawTreeSitterSymbolData`.
+The code is a Python module designed to parse and extract various elements from Java source code using the `tree_sitter` library. It defines a class `JavaDriverTree` that extends `DriverTree` and provides methods to extract symbols such as classes, interfaces, enums, methods, constructors, fields, and imports from Java code. The module uses `tree_sitter` to navigate the abstract syntax tree (AST) of Java code and identify specific node types, such as `class_declaration` or `method_declaration`, to extract relevant information.
 
-The module is structured to support the analysis of Java code by identifying and categorizing different code constructs. It uses queries to match specific Java syntax patterns and extract relevant information, such as fully qualified names and line ranges. The extracted data is sorted and returned in a structured format, which can be used for further processing or analysis. The module is intended to be part of a larger system that requires detailed information about Java source code, and it provides a public API for extracting and organizing this information.
+The module includes several functions and methods that facilitate the extraction of Java code elements. Functions like [`java_node_to_text`](<#java_node_to_text>), [`is_class_method`](<#is_class_method>), and [`is_interface_method`](<#is_interface_method>) help in processing and identifying specific nodes within the AST. The `JavaDriverTree` class contains methods such as [`extract_all_symbols`](<#javadrivertreeextract_all_symbols>), [`extract_imports`](<#javadrivertreeextract_imports>), [`extract_callable_definitions`](<#javadrivertreeextract_callable_definitions>), and others, which return lists of `RawTreeSitterSymbolData` objects. These objects encapsulate details about the extracted symbols, including their names, types, positions in the source code, and fully qualified paths. The module is intended to be part of a larger system that analyzes Java code, providing a structured way to access and manipulate Java source code elements programmatically.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ The module is structured to support the analysis of Java code by identifying and
 - **Members**:
     - `language`: Specifies the programming language as 'java'.
     - `extensions`: Contains a set of file extensions associated with Java, specifically '.java'.
-- **Description**: Facilitates the extraction and processing of Java source code symbols using the Tree-sitter parsing library. It extends the `DriverTree` class and provides methods to extract various Java code elements such as imports, classes, interfaces, enums, methods, constructors, and variables. The class also constructs fully qualified paths for Java nodes, which is useful for understanding the hierarchical structure of Java code.
+- **Description**: Facilitates the extraction and processing of Java source code symbols using the Tree-sitter parsing library. It provides methods to extract various Java code elements such as imports, classes, interfaces, enums, methods, constructors, fields, and function calls. The class also constructs fully qualified paths for Java nodes, which is useful for understanding the hierarchical structure of Java code.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree._get_fully_qualified_path_to_parent`](<#javadrivertree_get_fully_qualified_path_to_parent>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_all_symbols`](<#javadrivertreeextract_all_symbols>)
@@ -62,12 +62,11 @@ Builds the fully qualified path to the parent of a given node in a Java syntax t
     - Initialize an empty list `path_parts` to store path components.
     - Set `current` to the parent of the given `node`.
     - Check for a package declaration at the root level of the syntax tree and extract the package name if present.
-    - Iterate through the ancestors of the `node` while `current` is not `None`.
-    - For each ancestor, check if it is a class, interface, enum, method, or constructor declaration.
-    - If it is, extract the name and append it to `path_parts`.
-    - Reverse the `path_parts` list to get the correct order from root to node.
+    - Iterate through the ancestors of the `node` starting from its parent, checking if each ancestor is a class, interface, enum, method, or constructor declaration.
+    - For each valid ancestor, extract its name and append it to `path_parts`.
+    - Reverse the `path_parts` list to get the correct order from root to the node.
     - If a package name was found, insert it at the beginning of `path_parts`.
-    - Join the components in `path_parts` using the `sep` separator and return the result.
+    - Join the elements of `path_parts` using the `sep` separator and return the resulting string.
 - **Output**: A string representing the fully qualified path to the parent of the given node, using the specified separator.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree`](<#javadrivertree>)  (Base Class)
 
@@ -79,14 +78,14 @@ Builds the fully qualified path to the parent of a given node in a Java syntax t
 Extracts all symbols from Java source code and returns them sorted by their starting byte position.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initialize an empty list `symbols` to store extracted symbols.
-    - Call [`extract_imports`](<#javadrivertreeextract_imports>) and extend `symbols` with its result.
-    - Call [`extract_callable_definitions`](<#javadrivertreeextract_callable_definitions>) and extend `symbols` with its result.
-    - Call [`extract_data_structure_definitions`](<#javadrivertreeextract_data_structure_definitions>) and extend `symbols` with its result.
-    - Call [`extract_function_calls`](<#javadrivertreeextract_function_calls>) and extend `symbols` with its result.
-    - Call [`extract_variables`](<#javadrivertreeextract_variables>) and extend `symbols` with its result.
+    - Initialize an empty list `symbols`.
+    - Call `self.extract_imports()` and extend `symbols` with the result.
+    - Call `self.extract_callable_definitions()` and extend `symbols` with the result.
+    - Call `self.extract_data_structure_definitions()` and extend `symbols` with the result.
+    - Call `self.extract_function_calls()` and extend `symbols` with the result.
+    - Call `self.extract_variables()` and extend `symbols` with the result.
     - Sort the `symbols` list by the `start_byte` attribute of each symbol.
-- **Output**: A list of `RawTreeSitterSymbolData` objects representing all extracted symbols, sorted by their starting byte position.
+- **Output**: A list of `RawTreeSitterSymbolData` objects, sorted by their `start_byte` attribute.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_imports`](<#javadrivertreeextract_imports>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_callable_definitions`](<#javadrivertreeextract_callable_definitions>)
@@ -103,7 +102,7 @@ Extracts all symbols from Java source code and returns them sorted by their star
 Returns an empty list of `RawTreeSitterSymbolData` objects.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Return an empty list.
+    - Returns an empty list without performing any operations.
 - **Output**: An empty list of `RawTreeSitterSymbolData` objects.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree`](<#javadrivertree>)  (Base Class)
 
@@ -172,7 +171,7 @@ Extracts method declarations from Java source code, excluding constructors.
 Extracts constructor declarations from Java source code.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the [`_extract_callable_definitions_by_type`](<#javadrivertree_extract_callable_definitions_by_type>) method with the parameters `"constructor_declaration"` and `is_class_method`.
+    - Calls the private method [`_extract_callable_definitions_by_type`](<#javadrivertree_extract_callable_definitions_by_type>) with the arguments `"constructor_declaration"` and `is_class_method`.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing constructor declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree._extract_callable_definitions_by_type`](<#javadrivertree_extract_callable_definitions_by_type>)
@@ -188,16 +187,16 @@ Extracts callable definitions of a specified type from a syntax tree and returns
     - `node_type`: A string that specifies the type of node to query for callable definitions.
     - `filter_fn`: A callable function that takes a `tree_sitter.Node` and returns a boolean to filter nodes.
 - **Logic and Control Flow**:
-    - Constructs a query string using the `node_type` to identify callable definitions.
+    - Constructs a query string using the `node_type` to identify callable definitions in the syntax tree.
     - Executes the query on the root node of the syntax tree to find matches.
     - Iterates over each match to process the captured callable definition node.
-    - Applies the `filter_fn` to each node; if the function returns false, the node is skipped.
-    - Extracts the method name and parameters from the node using [`get_method_name_and_params`](<#get_method_name_and_params>); if the name is not found, logs a message and skips the node.
-    - Retrieves the start and end line numbers of the node using [`get_node_line_range`](<base.py.md#drivertreeget_node_line_range>).
-    - Determines the fully qualified path to the parent node using [`_get_fully_qualified_path_to_parent`](<#javadrivertree_get_fully_qualified_path_to_parent>).
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each valid callable definition and appends it to the `callables` list.
-    - Sorts the `callables` list by the `start_byte` of each symbol.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the callable definitions found.
+    - Applies the `filter_fn` to each node, and skips nodes that do not pass the filter.
+    - Extracts the method name and parameters from the node using [`get_method_name_and_params`](<#get_method_name_and_params>).
+    - If the method name is not found, logs a message and skips the node.
+    - Retrieves the line range and fully qualified path for the node.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each valid callable definition and appends it to the list.
+    - Sorts the list of callable symbols by their starting byte position before returning.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing the callable definitions found in the syntax tree.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.get_method_name_and_params`](<#get_method_name_and_params>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -214,10 +213,10 @@ Extracts callable definitions of a specified type from a syntax tree and returns
 Extracts class, interface, and enum declarations from Java source code.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls [`extract_class_definitions`](<#javadrivertreeextract_class_definitions>) to get class declarations.
-    - Calls [`extract_interface_definitions`](<#javadrivertreeextract_interface_definitions>) to get interface declarations.
-    - Calls [`extract_enum_definitions`](<#javadrivertreeextract_enum_definitions>) to get enum declarations.
-    - Combines the results from the three extraction methods into a single list.
+    - Call [`extract_class_definitions`](<#javadrivertreeextract_class_definitions>) to get class declarations.
+    - Call [`extract_interface_definitions`](<#javadrivertreeextract_interface_definitions>) to get interface declarations.
+    - Call [`extract_enum_definitions`](<#javadrivertreeextract_enum_definitions>) to get enum declarations.
+    - Combine the results from the three extraction methods into a single list.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing class, interface, and enum declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<#javadrivertreeextract_class_definitions>)
@@ -239,11 +238,11 @@ Extracts class declarations from a Java source code tree and returns them as a l
     - Checks if the class name node is valid; if not, logs an error and continues to the next match.
     - Decodes the class name from the class name node.
     - Gets the line range and fully qualified parent path for the class node.
-    - Initializes an empty list to store base class names.
+    - Initializes an empty list to store base class names (superclasses and interfaces).
     - Checks for a superclass node and extracts its name if present.
     - Checks for an interfaces node and extracts interface names if present.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each class with its details and appends it to the list of classes.
-    - Sorts the list of class symbols by their start byte before returning.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each class with its details and appends it to the `classes` list.
+    - Sorts the `classes` list by the start byte of each class node.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing class declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -264,13 +263,12 @@ Extracts interface declarations from a Java source code tree using Tree-sitter.
     - Executes the query on the root node of the syntax tree to find matches.
     - Iterates over each match to extract the interface node and its name node.
     - Checks if the interface name node is valid; if not, logs an error and continues to the next match.
-    - Decodes the interface name from bytes to a UTF-8 string.
+    - Decodes the interface name from the node text.
     - Gets the line range and fully qualified path for the interface node.
-    - Initializes a list to store names of extended interfaces.
-    - Iterates over the children of the interface node to find and extract extended interfaces.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each interface with its details.
-    - Appends the created symbol data to the list of interfaces.
-    - Sorts the list of interfaces by their starting byte position.
+    - Initializes a list to store base interface names.
+    - Iterates over the children of the interface node to find extended interfaces and adds their names to the list.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each interface with its details and appends it to the `interfaces` list.
+    - Sorts the list of interface symbols by their starting byte position.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing interface declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -284,20 +282,19 @@ Extracts interface declarations from a Java source code tree using Tree-sitter.
 #### JavaDriverTree\.extract\_enum\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_enum_definitions}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver.py#L392>)
 
-Extracts enum declarations from a Java source code tree and returns them as a list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+Extracts enum declarations from a Java source code tree using Tree-sitter.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a query string `enum_query_str` to match enum declarations in the source code.
-    - Uses `tree_sitter_lang.query` to create a query object from the query string.
-    - Executes the query against the root node of the syntax tree to find matches.
+    - Defines a query string to match enum declarations in the Java source code.
+    - Executes the query on the root node of the syntax tree to find matches.
     - Iterates over each match to extract the enum node and its name node.
     - Checks if the enum name node is valid; if not, logs an error and continues to the next match.
     - Decodes the enum name from bytes to a UTF-8 string.
-    - Retrieves the start and end line numbers of the enum node using [`get_node_line_range`](<base.py.md#drivertreeget_node_line_range>).
-    - Determines the fully qualified path to the parent of the enum node using [`_get_fully_qualified_path_to_parent`](<#javadrivertree_get_fully_qualified_path_to_parent>).
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each enum with relevant details and appends it to the `enums` list.
-    - Sorts the `enums` list by the `start_byte` attribute of each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object.
-    - Returns the sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+    - Retrieves the start and end line numbers of the enum node.
+    - Gets the fully qualified path to the parent of the enum node using the [`_get_fully_qualified_path_to_parent`](<#javadrivertree_get_fully_qualified_path_to_parent>) method.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each enum, containing its name, line range, byte range, file path, fully qualified parent path, and code representation.
+    - Appends the [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to the `enums` list.
+    - Sorts the `enums` list by the start byte of each enum and returns it.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing enum declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -314,7 +311,7 @@ Extracts enum declarations from a Java source code tree and returns them as a li
 Extracts field declarations and local variables from Java source code.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the [`extract_field_definitions`](<#javadrivertreeextract_field_definitions>) method to retrieve field declarations.
+    - Calls the [`extract_field_definitions`](<#javadrivertreeextract_field_definitions>) method to get field declarations.
     - Returns the list of field declarations.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing field declarations.
 - **Functions Called**:
@@ -330,15 +327,15 @@ Extracts field declarations from Java classes and interfaces using Tree-sitter.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Defines a query string to match field declarations in Java code.
-    - Executes the query on the root node of the syntax tree to find matches.
-    - Iterates over each match to extract field nodes and their names.
+    - Uses Tree-sitter to execute the query on the root node of the syntax tree.
+    - Iterates over the matches found by the query.
+    - For each match, retrieves the field node and field name node from the captures.
     - Checks if the field name node is valid; if not, logs an error and continues to the next match.
-    - Decodes the field name from bytes to a UTF-8 string.
-    - Retrieves the line range and fully qualified path for each field node.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each field with its details.
-    - Appends each field symbol to the `fields` list.
+    - Decodes the field name from the field name node.
+    - Gets the line range and fully qualified path to the parent for the field node.
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each field with relevant details.
+    - Appends the field symbol to the `fields` list.
     - Sorts the `fields` list by the start byte of each field symbol.
-    - Returns the sorted list of field symbols.
 - **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing field declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
@@ -352,19 +349,20 @@ Extracts field declarations from Java classes and interfaces using Tree-sitter.
 #### JavaDriverTree\.extract\_function\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_function_calls}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver.py#L480>)
 
-Extracts method invocations from a Java source code tree and returns them as a sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
+Extracts method invocations from a Java source code tree and returns them as a list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Defines a query string `call_query_str` to match method invocations in the Java source code.
     - Uses `tree_sitter_lang.query` to compile the query string into a query object.
-    - Executes the query against the root node of the syntax tree to find matches.
+    - Executes the query on the root node of the syntax tree to find matches for method invocations.
     - Iterates over each match to extract the method invocation node (`call_node`) and the method name node (`call_name_node`).
     - Checks if `call_name_node` is valid; if not, it continues to the next match.
-    - Decodes the method name from `call_name_node` and retrieves the line range of `call_node`.
-    - Calls [`_get_fully_qualified_path_to_parent`](<#javadrivertree_get_fully_qualified_path_to_parent>) to get the fully qualified path to the parent of `call_node`.
-    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each method invocation with relevant details and appends it to `function_calls`.
-    - Sorts the `function_calls` list by the `start_byte` of each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object before returning it.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing method invocations.
+    - Decodes the method name from `call_name_node` and retrieves the line range of the method invocation node using [`get_node_line_range`](<base.py.md#drivertreeget_node_line_range>).
+    - Determines the fully qualified path to the parent of the method invocation node using [`_get_fully_qualified_path_to_parent`](<#javadrivertree_get_fully_qualified_path_to_parent>).
+    - Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object for each method invocation with relevant details such as name, line range, byte range, file path, and symbol code.
+    - Appends each [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object to the `function_calls` list.
+    - Sorts the `function_calls` list by the start byte of each method invocation and returns it.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) objects representing method invocations in the Java source code.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree._get_fully_qualified_path_to_parent`](<#javadrivertree_get_fully_qualified_path_to_parent>)
@@ -380,13 +378,13 @@ Extracts method invocations from a Java source code tree and returns them as a s
 ### java\_node\_to\_text<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.java_node_to_text}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver.py#L10>)
 
-Converts a `tree_sitter.Node` to a UTF-8 decoded string representation of its text.
+Converts a `tree_sitter.Node` object to a UTF-8 decoded string representation of its text.
 - **Inputs**:
-    - `node`: A `tree_sitter.Node` object representing a node in the syntax tree.
+    - `node`: A `tree_sitter.Node` object representing a node in a syntax tree.
 - **Logic and Control Flow**:
     - Access the `text` attribute of the `node` object.
-    - Decode the `text` using UTF-8 encoding.
-- **Output**: A string that is the UTF-8 decoded text of the given `tree_sitter.Node`.
+    - Decode the `text` attribute using UTF-8 encoding.
+- **Output**: A string that is the UTF-8 decoded text of the input `node`.
 
 
 ---
@@ -395,7 +393,7 @@ Converts a `tree_sitter.Node` to a UTF-8 decoded string representation of its te
 
 Determines if a method declaration is within a class, enum, or interface body.
 - **Inputs**:
-    - `node`: A `tree_sitter.Node` object representing a node in the syntax tree.
+    - `node`: A `tree_sitter.Node` object representing a method declaration.
 - **Logic and Control Flow**:
     - Initialize `parent` with the parent of the `node`.
     - Enter a loop that continues as long as `parent` is not `None`.
@@ -403,7 +401,7 @@ Determines if a method declaration is within a class, enum, or interface body.
     - Check if `parent.type` is 'program'; if true, return `False`.
     - Update `parent` to its own parent and continue the loop.
     - If the loop exits without returning, return `False`.
-- **Output**: Returns `True` if the method declaration is inside a class, enum, or interface body; otherwise, returns `False`.
+- **Output**: A boolean value indicating whether the method declaration is inside a class, enum, or interface body.
 
 
 ---
@@ -417,9 +415,9 @@ Checks if a method declaration is inside an interface body.
     - Get the parent of the `node` and assign it to `parent`.
     - Enter a loop that continues as long as `parent` is not `None`.
     - Check if `parent.type` is `interface_body`; if true, return `True`.
-    - Check if `parent.type` is either `class_body` or `program`; if true, return `False`.
+    - Check if `parent.type` is `class_body` or `program`; if true, return `False`.
     - Update `parent` to its own parent and continue the loop.
-    - If the loop exits without returning, return `False`.
+    - Return `False` if the loop exits without finding an `interface_body`.
 - **Output**: Returns `True` if the method is inside an interface body, otherwise `False`.
 
 
@@ -431,11 +429,11 @@ Extracts the method name and parameters from a method or constructor declaration
 - **Inputs**:
     - `method_node`: A `tree_sitter.Node` object representing a method or constructor declaration.
 - **Logic and Control Flow**:
-    - Check if `method_node` is of type `method_declaration` or `constructor_declaration`.
-    - If true, get the child node with the field name `name` and assign it to `name_node`.
-    - Get the child node with the field name `parameters` and assign it to `params_node`.
-    - If `name_node` exists and its type is `identifier`, return the decoded text of `name_node` and `params_node`.
-    - If conditions are not met, return `None, None`.
+    - Checks if `method_node` is of type `method_declaration` or `constructor_declaration`.
+    - Retrieves the child node with the field name `name` and assigns it to `name_node`.
+    - Retrieves the child node with the field name `parameters` and assigns it to `params_node`.
+    - If `name_node` exists and its type is `identifier`, decodes its text to a UTF-8 string and returns it along with `params_node`.
+    - If conditions are not met, returns `(None, None)`.
 - **Output**: A tuple containing the method name as a string and the parameters node, or `(None, None)` if the method name cannot be extracted.
 
 

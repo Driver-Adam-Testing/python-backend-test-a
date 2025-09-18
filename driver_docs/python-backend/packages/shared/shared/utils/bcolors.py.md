@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines classes for text color, background, and weight, and a function to print colored dictionary keys.
+Defines classes for text color, background, and weight in terminal output, and a function to print colored dictionary keys.
 
 # Purpose
 The code provides functionality for printing text with various colors and styles in a terminal. It defines several classes that contain ANSI escape codes for text formatting. The `print_text_color` class includes constants for different text colors, such as `BLACK`, `RED`, and `GREEN`. The `print_text_background` class provides constants for background colors, like `BG_BLACK` and `BG_RED`. The `text_weight` class defines text styles, including `BOLD` and `UNDERLINE`. The `text_reset` class contains a constant `ENDC` to reset text formatting to default.
 
-Additionally, the code includes a function [`print_dict`](<#print_dict>) that prints the keys and values of a dictionary with colored keys. The function uses a list of color codes from the `print_text_color` class and assigns a color to each key based on a hash of the key. The function uses the `hashlib` library to generate a checksum for each key, ensuring consistent color assignment. The function prints each key-value pair with the key in color and the value in default text style, resetting the color after each line. This code is suitable for use in scripts where colored terminal output is needed to enhance readability or highlight specific information.
+Additionally, the code includes a function [`print_dict`](<#print_dict>) that prints the keys and values of a dictionary with colored keys. The function uses a list of colors from the `print_text_color` class and assigns a color to each key based on a hash of the key. This ensures that each key is consistently printed in the same color. The function uses the `text_reset.ENDC` constant to reset the text color after each key-value pair is printed. The code is suitable for use in scripts where colored terminal output is needed to enhance readability or highlight specific information.
 # Imports and Dependencies
 
 ---
@@ -64,8 +64,8 @@ Additionally, the code includes a function [`print_dict`](<#print_dict>) that pr
 [View Source →](<../../../../../../packages/shared/shared/utils/bcolors.py#L28>)
 
 - **Members**:
-    - `ENDC`: Defines the ANSI escape code for resetting text formatting.
-- **Description**: Defines a constant for resetting text formatting to default using ANSI escape codes.
+    - `ENDC`: Holds the ANSI escape code to reset text formatting.
+- **Description**: Provides an ANSI escape code to reset text formatting to default settings.
 
 
 # Functions
@@ -78,14 +78,14 @@ Prints each key-value pair from a dictionary with a color-coded key.
 - **Inputs**:
     - `dict_to_print`: A dictionary containing key-value pairs to print.
 - **Logic and Control Flow**:
-    - Define a list of color codes from the `print_text_color` class.
+    - Define a list of colors from the `print_text_color` class.
     - Convert the dictionary keys to a list.
-    - Define a nested function `get_color_for_key` that calculates a color for a key using an MD5 checksum and the list of colors.
+    - Define a nested function `get_color_for_key` to determine the color for each key based on its MD5 checksum.
     - Iterate over each key in the dictionary.
-    - For each key, determine its color using `get_color_for_key`.
-    - Retrieve the corresponding value from the dictionary.
-    - Print the key-value pair with the key in its assigned color and reset the text color after printing.
-- **Output**: No return value; the function prints output directly to the console.
+    - For each key, get the corresponding color using `get_color_for_key`.
+    - Retrieve the value associated with the key from the dictionary.
+    - Print the key-value pair with the key in the determined color and reset the text color after printing.
+- **Output**: None
 
 
 

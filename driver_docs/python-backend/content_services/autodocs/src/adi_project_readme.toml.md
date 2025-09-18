@@ -6,39 +6,35 @@
 Configuration for generating a structured README for ADI's `no-OS` codebase projects, including evaluation board details and example setups.
 
 # Purpose
-This configuration file is used to define the structure and content of a README document for projects within the `no-OS` codebase by Analog Devices, Inc. (ADI). It specifies models for different sections of the document, such as `tag_model`, `section_init_model`, and others, which guide the generation of content. The file includes sections for various evaluation boards, such as `ADXRS290` and `AD74416H`, and provides substitution keys for device and evaluation board names. It also outlines the structure and instructions for each section of the README, such as "Supported Evaluation Boards," "Overview," and "Applications," detailing how content should be formatted and what information should be included. Additionally, the file includes instructions for platform-specific sections, such as "ADuCM Platform" and "MAXIM Platform," indicating how to document hardware and connection details for different platforms.
+This configuration file is used to define the structure and content of a README document for projects within the `no-OS` codebase by Analog Devices, Inc. (ADI). It specifies models for language processing tasks, such as tagging and section formatting, and outlines the goals and format for the document. The file includes sections for different evaluation boards, detailing their specific configurations, such as power supply requirements, jumper settings, and pin descriptions. It also provides instructions for building and running example projects on various platforms, including ADuCM, MAXIM, XILINX, PICO, STM32, INTEL, and MBED. The file uses placeholders for device and board names, which are substituted with actual values to generate the final document. Additionally, it includes references to related PDF documents and code paths, ensuring that the README is comprehensive and aligned with the project's technical requirements.
 # Content Summary
-The provided configuration file is structured to guide the creation of a README document for a project within the `no-OS` codebase by Analog Devices, Inc. (ADI). The file is divided into several sections, each specifying different aspects of the README content and the models used for various tasks.
+The provided configuration file is structured to guide the creation of a README document for a project within the `no-OS` codebase by Analog Devices, Inc. (ADI). The file is organized into several sections, each with specific instructions and content structures to ensure a consistent and comprehensive README.
 
 ### Key Sections and Details:
 
-1. **Language Model Configuration (`[llm]`):**
-   - Specifies different models for tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing. Models like "gpt-4o" and "o3-mini" are used.
+1. **Language Model Configuration**:
+   - The `[llm]` section specifies different models for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing. Models like "gpt-4o" and "o3-mini" are used.
 
-2. **Document Configuration (`[document]`):**
-   - Sets the goal to write a structured README.
-   - Uses a format with defined sections and tagging.
-   - Specifies configuration name and version.
+2. **Document Goals and Format**:
+   - The `[document]` section outlines the goal of writing a structured README and specifies the format as "defined_sections". It also includes metadata like `config_name` and `config_version`.
 
-3. **Scope and Substitutions (`[scope]` and `[[substitutions]]`):**
-   - Defines a preamble and lists substitutions for device and evaluation board names.
-   - Includes PDF references and code paths for specific devices like ADXRS290 and AD74416H.
+3. **Scope and Substitutions**:
+   - The `[scope]` section includes preamble settings and lists substitutions for device and evaluation board names. These substitutions are used to dynamically insert specific hardware names into the document.
 
-4. **Sections for README:**
-   - **Supported Evaluation Boards:** Lists evaluation boards with hyperlinks if available.
-   - **Overview:** Summarizes the general description from the user guide.
-   - **Applications:** Lists applications from the data sheet.
-   - **Hardware Specifications and No-OS Supported Platforms:** These sections are empty.
-   - **Power Supply Requirements:** Details power requirements in a table format.
-   - **Jumper Settings and Pin Description:** Provides information on jumper settings and pin descriptions in table format.
-   - **No-OS Build Setup:** Directs to a specific wiki page for build setup.
-   - **No-OS Supported Examples:** Describes examples in the project directory, including initialization data and macros.
-   - **Platform-Specific Sections (ADuCM, MAXIM, XILINX, PICO, STM32, INTEL, MBED):** Each platform has sections for used hardware, connections, and build commands, with some sections being empty or commented out.
+4. **PDF and Code References**:
+   - The file lists PDF documents and code paths relevant to the project, such as user guides and datasheets for specific devices like ADXRS290 and AD74416H.
 
-5. **Platform-Specific Instructions:**
-   - Each platform section includes instructions for listing used hardware, detailing connections, and providing build commands. These sections are committed with their respective platform headings.
+5. **Section Instructions**:
+   - The file contains detailed instructions for each section of the README, specifying the content structure and method of creation. Sections include "Supported Evaluation Boards", "Overview", "Applications", "Hardware Specifications", and more.
+   - Each section has specific instructions on how to gather and present information, such as listing evaluation boards, summarizing user guides, and detailing power supply requirements.
 
-This configuration file is essential for developers to understand the structure and content required for the README, ensuring consistency and completeness in documentation across different platforms and devices.
+6. **Platform-Specific Instructions**:
+   - The file includes instructions for various platforms (e.g., ADuCM, MAXIM, XILINX, PICO, STM32, INTEL, MBED) to determine support and provide platform-specific details like used hardware, connections, and build commands.
+
+7. **Example Projects**:
+   - The "No-OS Supported Examples" section provides guidance on describing example projects, including initialization data paths and macro definitions.
+
+This configuration file serves as a template to ensure that the README is comprehensive and follows a structured format, making it easier for developers to understand and use the project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

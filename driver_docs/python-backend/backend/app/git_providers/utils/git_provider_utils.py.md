@@ -6,7 +6,7 @@
 Generates metadata for a codebase using organization and repository details.
 
 # Purpose
-This code defines a function [`generate_codebase_metadata`](<#generate_codebase_metadata>) that creates a dictionary containing metadata for a codebase. The function takes several parameters, including `org_id`, `org_name`, `repo`, `repo_id`, `owner`, `provider`, `commit`, and `upload_key`. It uses the `org_id_to_hash` function from the `shared.file_storage.aws_s3_client` module to convert the `org_id` into a hashed value. The resulting dictionary includes both the unhashed and hashed organization IDs, the organization name, creator ID, file path, codebase name, content type, provider (in lowercase), version, and repository ID. This function provides narrow functionality, specifically for generating structured metadata for codebases.
+The code defines a function [`generate_codebase_metadata`](<#generate_codebase_metadata>) that creates a dictionary containing metadata for a codebase. It takes several parameters, including `org_id`, `org_name`, `repo`, `repo_id`, `owner`, `provider`, `commit`, and `upload_key`. The function uses the `org_id_to_hash` function from the `shared.file_storage.aws_s3_client` module to convert the `org_id` into a hashed value. The resulting dictionary includes both the unhashed and hashed organization IDs, along with other details such as the organization name, repository information, and the commit version. This function provides narrow functionality, specifically for generating structured metadata for codebase management.
 # Imports and Dependencies
 
 ---
@@ -30,9 +30,8 @@ Generates metadata for a codebase using organization and repository details.
     - `commit`: The commit hash or version of the codebase.
     - `upload_key`: The file path or key for the uploaded codebase.
 - **Logic and Control Flow**:
-    - Call [`org_id_to_hash`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>) with `org_id` to get a hashed version of the organization ID.
+    - Convert `org_id` to a hash using the [`org_id_to_hash`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>) function.
     - Create a dictionary with metadata fields including unhashed and hashed organization IDs, organization name, creator ID, file path, codebase name, content type, provider, version, and repository ID.
-    - Convert the `provider` to lowercase before adding it to the dictionary.
     - Return the constructed metadata dictionary.
 - **Output**: A dictionary containing metadata about the codebase.
 - **Functions Called**:

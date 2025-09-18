@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tools and scripts for agent interfaces, TOML and documentation generation, code analysis, and service deployment.
+Tools and scripts for agent interfaces, TOML and OpenAI utilities, documentation, and service deployment.
 
 ## Folders
-- **[agent](agent/README.md)**: Exposes a modal interface for block kind agents, tests Mermaid CLI rendering, and manages Python dependencies.
-- **[auto_toml](auto_toml/README.md)**: Classes and interfaces for TOML generation, OpenAI chat, logging, and prompts; dependency management.
-- **[autodocs](autodocs/README.md)**: Configuration files, utilities for OpenAI chat models, scripts for automated documentation, and Poetry dependency management.
+- **[agent](agent/README.md)**: Exposes a modal interface for block kind agents, tests for Mermaid CLI, and Poetry configuration files.
+- **[auto_toml](auto_toml/README.md)**: Classes, interfaces, and functions for TOML content, logging, OpenAI chat, and project configuration.
+- **[autodocs](autodocs/README.md)**: Configuration files, utilities for OpenAI chat, scripts for automated documentation, and Poetry configuration.
 - **[generation](generation/README.md)**: Asynchronous functions for inline editing, smart instruction processing, and Python project configuration.
-- **[inspector](inspector/README.md)**: Templates, file and code analysis tools, GitHub utilities, uctags configuration, and project setup files.
-- **[mermaid_validator](mermaid_validator/README.md)**: Validates Mermaid diagram syntax and checks CLI version with Node.js, Chromium, and Poetry configuration.
-- **[onboarding_event_handler](onboarding_event_handler/README.md)**: AWS Lambda function for S3 event processing, tests, dependency management, and configuration files.
-- **[pdf_preprocessing](pdf_preprocessing/README.md)**: PDF preprocessing and embedding functions with exception handling, database persistence, and Poetry configuration.
+- **[inspector](inspector/README.md)**: Templates, utilities, scripts, configuration files, dependency management, and documentation for Inspector.
+- **[mermaid_validator](mermaid_validator/README.md)**: Validates Mermaid diagram syntax with Node.js and Chromium, using Poetry for dependency management.
+- **[onboarding_event_handler](onboarding_event_handler/README.md)**: AWS Lambda function for S3 event processing, tests, and Poetry configuration for dependencies.
+- **[pdf_preprocessing](pdf_preprocessing/README.md)**: Processes PDF files, manages dependencies and build settings, and specifies ignored directories for version control.
 
 ## Files
-- **[modal_deploy.sh](modal_deploy.sh.md)**: Bash script for deploying multiple services with a specified environment argument.
+- **[modal_deploy.sh](modal_deploy.sh.md)**: A Bash script for deploying multiple services with a specified environment argument.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

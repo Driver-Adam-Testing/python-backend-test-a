@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for the `expiring_cache` decorator, including caching, expiry, and cache clearing behavior.
+Tests for the `expiring_cache` decorator, verifying caching, expiry, and cache clearing behavior.
 
 # Purpose
-This code is a test suite for verifying the functionality of an `expiring_cache` decorator. It uses the `pytest` framework to define tests that ensure the decorator correctly caches function results and expires them after a specified duration. The [`mock_time`](<#mock_time>) fixture is used to mock the `time.time` function, allowing control over the perceived passage of time during tests. The tests include scenarios for caching results within the expiration time, ensuring cache expiry after the specified duration, and verifying that clearing the cache forces a new function call. The use of `unittest.mock.Mock` allows the tests to track function call counts and validate caching behavior.
+This code is a test suite for verifying the functionality of an `expiring_cache` decorator. It uses the `pytest` framework to define tests that ensure the decorator correctly caches function results and expires them after a specified duration. The [`mock_time`](<#mock_time>) fixture is used to mock the `time.time` function, allowing controlled simulation of time progression during tests. The tests include scenarios for caching within the expiration time, cache expiry after the specified duration, and cache clearing to force a function call. The use of `unittest.mock.Mock` allows the tests to verify the number of times the decorated function is called, ensuring the cache behaves as expected.
 # Imports and Dependencies
 
 ---
@@ -28,10 +28,10 @@ Mocks the `time.time` function to return a fixed time value for testing purposes
 - **Inputs**:
     - `monkeypatch`: An instance of `MonkeyPatch` used to modify or replace attributes in modules during testing.
 - **Logic and Control Flow**:
-    - Initialize `current_time` as a list containing the current time obtained from `time.time()` to allow updates.
-    - Define an inner function `mock_time_func` that returns the first element of `current_time`.
+    - Initialize `current_time` as a list containing the current time using `time.time()` to allow updates to the time value.
+    - Define an inner function `mock_time_func` that returns the first element of `current_time`, simulating a fixed time.
     - Use `monkeypatch.setattr` to replace `time.time` with `mock_time_func`, effectively mocking the time function.
-    - Return the `current_time` list to allow test functions to manipulate the mocked time.
+    - Return the `current_time` list, allowing tests to modify the time value as needed.
 - **Output**: A list containing a single float value representing the mocked current time.
 
 
@@ -47,7 +47,7 @@ Tests that the [`expiring_cache`](<decorators.py.md#expiring_cache>) decorator c
     - Define a function `wrapped_func` decorated with `@expiring_cache(10)` to cache its result for 10 seconds.
     - Call `wrapped_func` twice within the expiration time and store the results in `result1` and `result2`.
     - Assert that both `result1` and `result2` are equal to 'cached_result'.
-    - Assert that `mock_func` is called only once, confirming the result is cached.
+    - Assert that `mock_func` is called only once, confirming that the result was cached.
 - **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/utils/decorators.expiring_cache`](<decorators.py.md#expiring_cache>)
@@ -58,16 +58,15 @@ Tests that the [`expiring_cache`](<decorators.py.md#expiring_cache>) decorator c
 [View Source →](<../../../../../../packages/shared/shared/utils/decorators_test.py#L40>)
 
 Tests that the cache expires and refreshes after the specified duration.
-- **Decorators**: `@pytest.fixture`
 - **Inputs**:
     - `mock_time`: A list containing a single float value representing the current time, which can be modified to simulate time advancement.
 - **Logic and Control Flow**:
     - Create a mock function `mock_func` that returns 'new_result'.
-    - Define a `wrapped_func` decorated with `@expiring_cache(10)` to cache the result of `mock_func` for 10 seconds.
-    - Call `wrapped_func` for the first time and assert that it returns 'new_result' and `mock_func` is called once.
-    - Simulate time advancement by adding 11 seconds to `mock_time[0]`, exceeding the cache expiration duration.
-    - Call `wrapped_func` again and assert that it returns 'new_result' and `mock_func` is called a second time, indicating the cache was refreshed.
-- **Output**: None, but asserts that the cache expires and the function is called again after the expiration duration.
+    - Define a `wrapped_func` function decorated with `@expiring_cache(10)` to cache its result for 10 seconds.
+    - Call `wrapped_func` for the first time, store the result in `result1`, and assert that it equals 'new_result' and `mock_func` is called once.
+    - Simulate time advancement by adding 11 seconds to `mock_time[0]`.
+    - Call `wrapped_func` again, store the result in `result2`, and assert that it equals 'new_result' and `mock_func` is called twice, indicating cache expiration and refresh.
+- **Output**: No return value; the function uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/utils/decorators.expiring_cache`](<decorators.py.md#expiring_cache>)
 
@@ -82,9 +81,9 @@ Tests that clearing the cache of a decorated function forces a new function call
 - **Logic and Control Flow**:
     - Create a mock function `mock_func` that returns 'cleared_result'.
     - Define a function `wrapped_func` decorated with `@expiring_cache(10)` that calls `mock_func`.
-    - Call `wrapped_func` once and assert that the result is 'cleared_result' and `mock_func` is called once.
+    - Call `wrapped_func` once and assert the result is 'cleared_result' and `mock_func` is called once.
     - Clear the cache of `wrapped_func` using `wrapped_func.clear_cache()`.
-    - Call `wrapped_func` again and assert that the result is 'cleared_result' and `mock_func` is called a second time.
+    - Call `wrapped_func` again and assert the result is 'cleared_result' and `mock_func` is called twice.
 - **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/utils/decorators.expiring_cache`](<decorators.py.md#expiring_cache>)

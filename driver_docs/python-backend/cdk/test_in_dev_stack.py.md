@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A CDK stack for manually deploying additional infrastructure for testing in a development environment.
+A stack for manually deploying additional infrastructure for testing in a development environment.
 
 # Purpose
-The code defines a class `TestInDevStack` that extends the AWS CDK `Stack` class. It is designed to manually deploy additional infrastructure for testing purposes alongside existing resources in a development environment. The stack includes a `MetricsLambda` construct, which is initialized with parameters such as `environment` and `database_url`, sourced from environment variables. This setup is intended for temporary use and may be deleted after its purpose is fulfilled.
+The code defines a class `TestInDevStack` that extends the `Stack` class from the AWS Cloud Development Kit (CDK). This class is used to manually deploy additional infrastructure for testing purposes alongside existing resources in a development environment. The `TestInDevStack` class initializes a `MetricsLambda` construct, which is configured with parameters such as `environment` and `database_url` obtained from environment variables. The stack is intended for temporary use and may be deleted after its purpose is fulfilled.
 # Imports and Dependencies
 
 ---
@@ -24,8 +24,8 @@ The code defines a class `TestInDevStack` that extends the AWS CDK `Stack` class
 [View Source →](<../../../cdk/test_in_dev_stack.py#L13>)
 
 - **Members**:
-    - `metrics_lambda`: Holds an instance of `MetricsLambda` configured with environment and database URL parameters.
-- **Description**: Provides a stack for deploying additional infrastructure for testing in a development environment. It initializes a `MetricsLambda` instance with parameters sourced from environment variables.
+    - `metrics_lambda`: Holds an instance of `MetricsLambda` initialized with environment and database URL parameters.
+- **Description**: Extends the `Stack` class to deploy additional infrastructure for testing purposes in a development environment. It initializes a `MetricsLambda` instance with parameters obtained from environment variables.
 - **Methods**:
     - [`python-backend/cdk/test_in_dev_stack.TestInDevStack.__init__`](<#testindevstack__init__>)
 - **Inherits From**:
@@ -37,15 +37,16 @@ The code defines a class `TestInDevStack` that extends the AWS CDK `Stack` class
 #### TestInDevStack\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/test_in_dev_stack.TestInDevStack.__init__}} -->
 [View Source →](<../../../cdk/test_in_dev_stack.py#L14>)
 
-Initializes a `TestInDevStack` instance and sets up a [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) with environment and database URL parameters.
+Initializes the `TestInDevStack` class and sets up a [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) instance with environment variables.
 - **Inputs**:
-    - `scope`: A `Construct` object that defines the scope in which this stack is created.
+    - `scope`: A `Construct` object that defines the scope in which this construct is created.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
-    - `kwargs`: Additional keyword arguments that are passed to the parent class `Stack`.
+    - `kwargs`: Additional keyword arguments that are passed to the parent class constructor.
 - **Logic and Control Flow**:
-    - Calls the parent class `Stack`'s [`__init__`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda__init__>) method with `scope`, `construct_id`, and `kwargs` to initialize the stack.
-    - Creates a [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) instance and assigns it to `self.metrics_lambda`.
-    - Retrieves the environment variable `ENVIRONMENT` with a default value of 'development' and the `DATABASE_URL` to pass as parameters to [`MetricsLambdaParams`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambdaparams>).
+    - Calls the parent class [`__init__`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda__init__>) method with `scope`, `construct_id`, and `kwargs` to initialize the base `Stack` class.
+    - Creates an instance of [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) and assigns it to `self.metrics_lambda`.
+    - Uses `os.getenv` to retrieve the `ENVIRONMENT` and `DATABASE_URL` environment variables, defaulting to 'development' if `ENVIRONMENT` is not set.
+    - Passes the retrieved environment variables to [`MetricsLambdaParams`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambdaparams>) to configure the [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) instance.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda.__init__`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda__init__>)

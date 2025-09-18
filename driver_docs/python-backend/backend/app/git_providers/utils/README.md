@@ -3,13 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Custom exception classes for Git provider errors and metadata generation for codebases.
+Custom exceptions for Git provider errors, metadata generation, and VCS update determination.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[errors.py](errors.py.md)**: Custom exception classes for handling Git provider app revoke and access token errors.
+- **[errors.py](errors.py.md)**: Defines custom exceptions for Git provider app revoke and access token errors.
 - **[git_provider_utils.py](git_provider_utils.py.md)**: Generates metadata for a codebase using organization and repository details.
+- **[vcs_auto_update.py](vcs_auto_update.py.md)**: Determines if a codebase update is needed based on version control system policies.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

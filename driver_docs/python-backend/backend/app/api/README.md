@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-FastAPI and GraphQL API routes, authentication, logging middleware, and database session management.
+API routes for various services, authentication, logging, session management, and unprotected endpoints using FastAPI.
 
 ## Folders
-- **[routes](routes/README.md)**: FastAPI and GraphQL API routes for health checks, chat, assets, search, user info, and more.
+- **[routes](routes/README.md)**: API routes for health check, user info, chat, assets, search, Auth0, agent sequences, codebase, content, documents, Git, onboarding, organizations, subscriptions, tags, uploads, usage, user management, keys, nodes, and versions, plus legacy data structures, GraphQL, ORM, S3, scalars, schema, and tree functions.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
@@ -15,7 +15,7 @@ FastAPI and GraphQL API routes, authentication, logging middleware, and database
 - **[logging_middleware.py](logging_middleware.py.md)**: Middleware for logging HTTP requests and responses with unique IDs and response times.
 - **[session.py](session.py.md)**: Defines a database session generator and an annotated current session dependency for FastAPI.
 - **[studio_router.py](studio_router.py.md)**: Configures and includes various API routes for the studio application using FastAPI.
-- **[unprotected_router.py](unprotected_router.py.md)**: Defines API routes that do not require JWT authentication for uptime checks, web-hooks, and sandbox tools.
+- **[unprotected_router.py](unprotected_router.py.md)**: Defines API endpoints that do not require JWT authentication, including health checks and webhooks.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

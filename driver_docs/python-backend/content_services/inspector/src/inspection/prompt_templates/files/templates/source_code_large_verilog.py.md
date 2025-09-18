@@ -6,9 +6,9 @@
 Templates for generating structured prompts and analyzing Verilog source code.
 
 # Purpose
-The code defines a template for generating structured prompts related to Verilog source code. It imports several components and instructions from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`. These components and instructions are used to create a list of tuples, `SOURCE_CODE_LARGE_TEMPLATE_VERILOG`, which specifies how to generate prompts for different sections of Verilog code, including the purpose, modules, and functions/tasks.
+The code defines a structured template for generating documentation related to Verilog source code. It imports several components and instructions from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`. These imports include style instructions and prompt components that are used to construct documentation prompts. The template, `SOURCE_CODE_LARGE_TEMPLATE_VERILOG`, is a list of tuples, each representing a different section of the documentation, such as "Purpose", "Modules", and "Functions and Tasks".
 
-Each tuple in the `SOURCE_CODE_LARGE_TEMPLATE_VERILOG` list represents a different section of the prompt. The first tuple defines the prompt for the purpose of the Verilog code, using components like `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION` to ensure the prompt follows specific style guidelines. The subsequent tuples define prompts for Verilog modules and functions/tasks, using collections like `VerilogModuleRawSymbolCollection` and `VerilogFnTaskRawSymbolCollection` to gather relevant symbols from static analysis. This code is intended to be part of a larger system that generates documentation or analysis for Verilog source code.
+Each tuple in the template specifies a format or condition for generating documentation. For example, the "Purpose" section uses a combination of prompts and style instructions to create a structured prompt string. The "Modules" and "Functions and Tasks" sections use collections derived from static analysis and language model outputs to gather information about Verilog modules and functions. This code is intended to be part of a larger system that automates the generation of structured documentation for Verilog code, focusing on clarity and adherence to specific style guidelines.
 # Imports and Dependencies
 
 ---
@@ -31,7 +31,7 @@ Each tuple in the `SOURCE_CODE_LARGE_TEMPLATE_VERILOG` list represents a differe
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_VERILOG
 - **Type**: ``list``
-- **Description**: A list of tuples that define structured prompts and processing instructions for Verilog code analysis. Each tuple contains a prompt type, a description, and a series of components or functions that process Verilog code or generate prompts.
+- **Description**: A list of tuples that define structured prompts and processing instructions for Verilog code analysis. Each tuple contains a prompt type, a description, and a series of components or functions related to Verilog code processing.
 - **Use**: Used to configure and manage the generation and processing of prompts for Verilog code analysis.
 
 

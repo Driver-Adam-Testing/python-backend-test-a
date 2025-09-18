@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add Bitbucket types to the gitproviderkind enum and a metadata column.
+Alembic migration script to add Bitbucket values to the gitproviderkind type and a metadata column.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `metadata` of type `JSONB` to the `git_provider_apps` table and adds new values to the `gitproviderkind` enum type: 'BITBUCKET', 'BITBUCKET_DATA_CENTER', and 'BITBUCKET_SERVER'. The [`downgrade`](<#downgrade>) function removes the `metadata` column from the `git_provider_apps` table. The script includes revision identifiers to track the migration's position in the sequence of migrations.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade function that adds a new column named `metadata` of type `JSONB` to the `git_provider_apps` table and extends the `gitproviderkind` enum type by adding three new values: `'BITBUCKET'`, `'BITBUCKET_DATA_CENTER'`, and `'BITBUCKET_SERVER'`. The [`downgrade`](<#downgrade>) function reverses the changes made by the upgrade by removing the `metadata` column from the `git_provider_apps` table. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -20,22 +20,22 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script. This identifier is used to track the specific state of the database schema at the time of the migration.
-- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
+- **Use**: Used to identify the current state of the database schema in Alembic migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
 - **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
-- **Use**: Used by Alembic to determine the order of migrations and to apply them correctly.
+- **Use**: Used by Alembic to determine the order of schema migrations.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: It is used to define the branch labels for the migration, but currently, it is not assigned any value.
+- **Use**: Indicates that there are no branch labels associated with this Alembic migration.
 
 
 ---
@@ -51,12 +51,12 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_07_15_1446-0d8a28ac87e5_add_bitbucket_gitproviderkinds.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2025_07_15_1446-0d8a28ac87e5_add_bitbucket_gitproviderkinds.py#L20>)
 
-Adds a new column to the 'git_provider_apps' table and updates the 'gitproviderkind' type with new values.
+Modifies the database schema by adding a new column and extending an existing enum type with new values.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Adds a new column named 'metadata' of type JSONB to the 'git_provider_apps' table, allowing null values.
-    - Executes SQL commands to add new values 'BITBUCKET', 'BITBUCKET_DATA_CENTER', and 'BITBUCKET_SERVER' to the 'gitproviderkind' type.
-- **Output**: No output is returned as the function's return type is None.
+    - Adds a new column named `metadata` of type `JSONB` to the `git_provider_apps` table, allowing null values.
+    - Executes SQL commands to add new values 'BITBUCKET', 'BITBUCKET_DATA_CENTER', and 'BITBUCKET_SERVER' to the `gitproviderkind` enum type.
+- **Output**: No output is returned as the function modifies the database schema in place.
 
 
 ---

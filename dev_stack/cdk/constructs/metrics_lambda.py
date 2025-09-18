@@ -87,7 +87,7 @@ class MetricsLambda(Construct):
             event_pattern=aws_events.EventPattern(source=["metrics.client"]),
         )
 
-        if params.environment in ["development", "staging", "production"]:
+        if params.environment in ["development", "staging", "production", "pms"]:
             self.metric_dlq_alarm = aws_cloudwatch.Alarm(
                 self,
                 "MetricDLQAlarm",

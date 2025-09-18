@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for writing a detailed description of a software file, including its purpose, usage, main business logic, and critical components.
+Instructions for writing a detailed description of a software file based on its source code.
 
 # Purpose
 `config.yaml` in codebase `webapp` with path `config/config.yaml`:
@@ -25,7 +25,7 @@ logging:
   file: "logs/app.log"
 ```
 
-The `config.yaml` file defines configuration settings for the `webapp` application. It specifies the server settings, including the `host` and `port` on which the application will run. The database section configures the connection to a PostgreSQL database, detailing the `host`, `port`, `username`, and `password` required for access. Additionally, the logging configuration sets the `level` of logging to `info` and specifies the file path `logs/app.log` where log entries will be stored. This file allows for easy modification of these settings without altering the application code, facilitating deployment and environment-specific configurations.
+The `config.yaml` file defines the configuration settings for the `webapp` application. It specifies the server settings, including the `host` and `port` on which the application will run. The database section configures the connection to a PostgreSQL database, detailing the `host`, `port`, `username`, and `password` required for access. Additionally, the logging configuration sets the `level` of logging and the `file` path where logs will be stored. This file allows for easy modification of these settings without altering the application code, facilitating deployment and environment-specific configurations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

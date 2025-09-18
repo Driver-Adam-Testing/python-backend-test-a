@@ -299,14 +299,20 @@ class GitProviderService:
                 ssl_verification=True,
                 triggers=["push events", "Project or group access token events"],
             )
-        elif installation.git_provider_app.provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
+        elif (
+            installation.git_provider_app.provider_kind
+            == GitProviderKind.AZURE_DEVOPS_CLOUD
+        ):
             # Azure DevOps service hooks (manually configured)
             webhook_info = WebhookInfo(
                 callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
-                custom_headers={"X-Installation-ID": installation_id},
-                secret_token=secret.get("secret_token"),
+                custom_headers={
+                    "x-driver-token": installation_id,
+                    "x-webhook-token": secret.get("secret_token"),
+                },
+                secret_token="",  # Not used in Azure DevOps
                 ssl_verification=True,
-                triggers=["git.push", "git.pullrequest.created", "git.pullrequest.updated"],
+                triggers=["git.push"],
             )
         else:
             raise ValueError(
@@ -321,7 +327,7 @@ class GitProviderService:
     ) -> str | None:
         """Extract installation ID from webhook payload/headers"""
         if provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
-            return headers.get("x-installation-id")
+            return headers.get("x-driver-token")
         elif provider_kind == GitProviderKind.BITBUCKET:
             # Try headers first
             installation_id = headers.get("x-installation-id")
@@ -336,7 +342,7 @@ class GitProviderService:
                 return None
         elif provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
             # Azure DevOps service hooks include installation ID in headers
-            return headers.get("x-installation-id")
+            return headers.get("x-driver-token")
 
         return None
 

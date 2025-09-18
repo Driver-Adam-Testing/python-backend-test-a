@@ -1,5 +1,6 @@
 import contextlib
 import pickle
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
@@ -76,6 +77,7 @@ def upload_symbol_table_to_s3(
     import os
     import tempfile
 
+    start_time = time.time()
     s3_key = _get_symbol_table_s3_key(version_id)
 
     fd, temp_path = tempfile.mkstemp(suffix=".pkl")
@@ -83,7 +85,13 @@ def upload_symbol_table_to_s3(
         with os.fdopen(fd, "wb") as temp_file:
             pickle.dump(symbol_table, temp_file)
 
+        file_size_mb = Path(temp_path).stat().st_size / (1024 * 1024)
         s3_client.upload_file(temp_path, bucket_name, s3_key)
+
+        total_time = time.time() - start_time
+        print(
+            f"Symbol table saved and uploaded ({file_size_mb:.2f}MB) in {total_time:.2f}s"
+        )
     except Exception as e:
         Path(temp_path).unlink(missing_ok=True)
         raise RuntimeError("Failed to upload symbol table to S3") from e
@@ -99,14 +107,23 @@ def download_symbol_table_from_s3_with_cache(
     version_id: str,
 ) -> dict[str, Any]:
     cache_path = _get_symbol_table_cache_path(version_id)
+
     try:
+        start_time = time.time()
         with open(cache_path, "rb") as f:
-            return pickle.load(f)
+            symbol_table = pickle.load(f)
+        file_size_mb = cache_path.stat().st_size / (1024 * 1024)
+        cache_time = time.time() - start_time
+        print(
+            f"Symbol table loaded from cache ({file_size_mb:.2f}MB) in {cache_time:.2f}s"
+        )
+        return symbol_table
     except FileNotFoundError:
         pass
     except Exception:
         cache_path.unlink(missing_ok=True)
 
+    start_time = time.time()
     s3_key = _get_symbol_table_s3_key(version_id)
     try:
         s3_client.download_file(bucket_name, s3_key, str(cache_path))
@@ -114,7 +131,14 @@ def download_symbol_table_from_s3_with_cache(
         raise RuntimeError("Failed to download symbol table from S3") from e
 
     with open(cache_path, "rb") as f:
-        return pickle.load(f)
+        symbol_table = pickle.load(f)
+
+    file_size_mb = cache_path.stat().st_size / (1024 * 1024)
+    download_time = time.time() - start_time
+    print(
+        f"Symbol table downloaded from S3 ({file_size_mb:.2f}MB) in {download_time:.2f}s"
+    )
+    return symbol_table
 
 
 def cleanup_symbol_table_cache(version_id: str) -> None:

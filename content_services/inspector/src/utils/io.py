@@ -99,10 +99,6 @@ def download_symbol_table_from_s3_with_cache(
     version_id: str,
 ) -> dict[str, Any]:
     cache_path = _get_symbol_table_cache_path(version_id)
-
-    # Try to read from cache first. We intentionally don't check if the file exists
-    # before opening to avoid TOCTOU race conditions where the file could be deleted
-    # between the existence check and the open call.
     try:
         with open(cache_path, "rb") as f:
             return pickle.load(f)
@@ -111,7 +107,6 @@ def download_symbol_table_from_s3_with_cache(
     except Exception:
         cache_path.unlink(missing_ok=True)
 
-    # Download from S3 if not in cache
     s3_key = _get_symbol_table_s3_key(version_id)
     try:
         s3_client.download_file(bucket_name, s3_key, str(cache_path))

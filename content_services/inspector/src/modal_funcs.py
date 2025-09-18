@@ -84,7 +84,6 @@ def make_tech_doc(
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
-    reified_symbols = None
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     bucket_name = os.environ["BUCKET_NAME"]
 

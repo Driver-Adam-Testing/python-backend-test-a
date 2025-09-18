@@ -149,14 +149,14 @@ class FileTechDocTask(Task):
         node: LiteNode,
         task_name: str,
         db_node_id: uuid.UUID,
-        codebase_storage_path: str,
+        version_id: str,
         symbol_table_task: Optional["CSymbolTableTask"],
         thread_pool: concurrent.futures.ThreadPoolExecutor | None = None,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.db_node_id = db_node_id
-        self.codebase_storage_path = codebase_storage_path
+        self.version_id = version_id
         self.symbol_table_task = symbol_table_task
         self.thread_pool = thread_pool
         super().__init__(
@@ -173,7 +173,7 @@ class FileTechDocTask(Task):
                 node=self.node,
                 codebase_name=self.codebase_name,
                 source_code=self.source_code,
-                version_id=self.symbol_table_task.version_id,
+                version_id=self.version_id,
             )
 
         return TaskResult(

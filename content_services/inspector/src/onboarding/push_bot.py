@@ -48,7 +48,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     from database.db import engine
     from database.models import GitProviderAppInstallation, PrimaryAssetProvider
-    from onboarding import bitbucket_ops, gh_ops, gitlab_ops
+    from onboarding import bitbucket_ops, gh_ops, gitlab_ops, azure_devops_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
@@ -117,6 +117,26 @@ async def push_docs(version_id: uuid.UUID) -> None:
             clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
                 base_url, repo_id, access_token
             )
+        elif provider == PrimaryAssetProvider.AZURE_DEVOPS_CLOUD:
+            with Session(engine) as session:
+                installation_id = version.primary_asset.installation_id
+                app_install = session.exec(
+                    select(GitProviderAppInstallation).where(
+                        GitProviderAppInstallation.id == installation_id
+                    )
+                ).one()
+                if app_install is None:
+                    raise ValueError(f"Installation ID {installation_id} not found.")
+                base_url = app_install.git_provider_app.base_url
+                # Extract project from VCS metadata
+                vcs_metadata = version.vcs_metadata or {}
+                project = vcs_metadata.get("repository", {}).get("namespace", "").split("/")[-1]
+                if not project:
+                    raise ValueError(f"Could not determine project from VCS metadata for version {version_id}")
+            access_token = azure_devops_ops.fetch_access_token(install_id)
+            clone_url, full_name = azure_devops_ops.get_repo_clone_info_from_id(
+                base_url, project, repo_id, access_token
+            )
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
@@ -165,6 +185,10 @@ async def push_docs(version_id: uuid.UUID) -> None:
         elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
             gitlab_ops.create_pull_request_with_bot_cleanup(
                 base_url, repo_id, access_token, branch, commit_slug
+            )
+        elif provider == PrimaryAssetProvider.AZURE_DEVOPS_CLOUD:
+            azure_devops_ops.create_pull_request_with_bot_cleanup(
+                base_url, project, repo_id, access_token, branch, commit_slug
             )
 
 

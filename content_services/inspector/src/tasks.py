@@ -1,11 +1,9 @@
 import asyncio
 import concurrent.futures
-import pickle
 import uuid
 from pathlib import Path
 from typing import Optional, Union
 
-from common import MODAL_VOLUME_MOUNT_POINT, volume
 from database.models import (
     ChunkAndEmbedding,
     DerivedContent,
@@ -151,14 +149,14 @@ class FileTechDocTask(Task):
         node: LiteNode,
         task_name: str,
         db_node_id: uuid.UUID,
-        codebase_storage_path: str,
+        version_id: str,
         symbol_table_task: Optional["CSymbolTableTask"],
         thread_pool: concurrent.futures.ThreadPoolExecutor | None = None,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.db_node_id = db_node_id
-        self.codebase_storage_path = codebase_storage_path
+        self.version_id = version_id
         self.symbol_table_task = symbol_table_task
         self.thread_pool = thread_pool
         super().__init__(
@@ -174,8 +172,8 @@ class FileTechDocTask(Task):
             success, docs, node = await make_tech_doc.remote.aio(
                 node=self.node,
                 codebase_name=self.codebase_name,
-                symbol_table_storage_path=self.symbol_table_task.storage_path,
-                codebase_storage_path=self.codebase_storage_path,
+                source_code=self.source_code,
+                version_id=self.version_id,
             )
 
         return TaskResult(
@@ -774,12 +772,13 @@ class CSymbolTableTask(Task):
         codebase_name: str,
         codebase_root: Path,
         nodes_relative_paths: list[Path],
-        storage_path: str,
+        version_id: str,
     ) -> None:
         self.codebase_name = codebase_name
         self.codebase_root = codebase_root
         self.files = {codebase_root / rel_path for rel_path in nodes_relative_paths}
-        self.storage_path = storage_path
+        self.version_id = version_id
+        self.storage_path = f"{version_id}_symbol_table.pkl"
         super().__init__(
             task_name=task_name,
             node=root_node,
@@ -811,8 +810,21 @@ class CSymbolTableTask(Task):
         task_result: TaskResult,
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
+        import os
+
+        import boto3
+        from utils.io import upload_symbol_table_to_s3
+
         symbol_table = task_result.data
-        with open(Path(MODAL_VOLUME_MOUNT_POINT) / self.storage_path, "wb") as f:
-            pickle.dump(symbol_table, f)
-        volume.commit()
+        s3_client = boto3.client(
+            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+        )
+        bucket_name = os.environ["BUCKET_NAME"]
+
+        upload_symbol_table_to_s3(
+            symbol_table=symbol_table,
+            s3_client=s3_client,
+            bucket_name=bucket_name,
+            version_id=self.version_id,
+        )
         return {}

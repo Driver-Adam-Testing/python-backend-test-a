@@ -10,9 +10,7 @@ from uuid import UUID
 
 import modal
 from deep_context_docs import deep_context_docs
-from onboarding.onboard import (
-    connect_unconnected_repos,
-)
+from onboarding.onboard import connect_unconnected_repos
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -55,7 +53,7 @@ inspection_image = (
     )
 )
 
-from common import MODAL_VOLUME_MOUNT_POINT, app, volume  # noqa: E402
+from common import app  # noqa: E402
 from utils.dag import (  # noqa: E402
     FileTreeDag,
     FlatTopoFileDiffDag,
@@ -155,7 +153,6 @@ async def get_result_loading_config(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
-    volumes={MODAL_VOLUME_MOUNT_POINT: volume},
     proxy=(
         modal.Proxy.from_name("my-proxy")
         if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
@@ -196,7 +193,7 @@ async def inspect_db(
         compute_and_log_code_diff_size_in_bytes,
     )
     from utils.io import (
-        copy_codebase_to_modal_volume,
+        cleanup_symbol_table_cache,
         download_all_source_files_in_parallel,
     )
     from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
@@ -302,13 +299,6 @@ async def inspect_db(
                 print("Download complete")
 
             source_code_storage_path = str(version_id)
-            copy_codebase_to_modal_volume(
-                source_code_storage_path=Path(source_code_storage_path),
-                file_paths=file_paths,
-                download_root=download_root,
-                volume=volume,
-            )
-            print("Uploaded to volume")
 
             codebase_dag: FileTreeDag = build_dag(
                 root_path=download_root, file_paths=file_paths
@@ -445,7 +435,7 @@ async def inspect_db(
                 )
             finally:
                 with contextlib.suppress(Exception):
-                    volume.remove_file(path=symbol_table_storage_path)
+                    cleanup_symbol_table_cache(str(version_id))
     except Exception as e:
         exception_type = type(e).__name__
         exc_tb = e.__traceback__
@@ -580,7 +570,7 @@ async def inspect_files(
             for node, _ in nodes_with_id
             if node.kind == NodeKind.FILE
         ],
-        storage_path=symbol_table_storage_path,
+        version_id=str(version_id),
     )
     tasks.append(c_symbol_table_task)
     for node, db_node_id in nodes_with_id:

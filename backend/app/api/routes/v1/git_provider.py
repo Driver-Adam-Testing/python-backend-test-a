@@ -669,15 +669,11 @@ def git_provider_webhook(
     body = body_data["json_body"]
     headers = body_data["headers"]
     logger.info("Received webhook event: %s", body)
-    
+
     # Get installation_id from query param OR header
     if not installation_id:
         # Try different header names for different providers
-        installation_id = (
-            headers.get("x-driver-token") or  # GitLab
-            headers.get("x-installation-id") or  # Azure DevOps
-            headers.get("X-Installation-ID")  # Azure DevOps (case variant)
-        )
+        installation_id = headers.get("x-driver-token")  # GitLab and Azure DevOps
 
     if not installation_id:
         logger.error("Installation ID not found in headers or query params")

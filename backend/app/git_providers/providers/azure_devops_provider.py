@@ -6,7 +6,6 @@ import modal
 from app.core.config import settings
 from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.core.config_loader import load_provider_config
-
 from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
     WebhookConfig,
@@ -15,15 +14,12 @@ from app.git_providers.interfaces.provider_interface import (
 from app.git_providers.resources.azure_devops_resources import AzureDevOpsAPIResources
 from app.git_providers.utils.vcs_auto_update import is_update_required
 from app.schemas.git_provider_schema import (
-    AccessTokenData,
-    GitProviderAppTokenSecret,
     GitRepository,
-    TokenType,
 )
 from app.schemas.secret_management_schema import (
     APP_INSTALL_PAT_NAME_PREFIX,
 )
-from database.models import GitProviderApp, GitProviderAppInstallation, GitProviderKind
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -41,7 +37,9 @@ class AzureDevOpsProvider(GitProviderInterface):
     ) -> None:
         self.config = config
         self.secrets_manager = secrets_manager
-        self.api_strategy = AzureDevOpsAPIResources(config.base_url, config.provider_kind)
+        self.api_strategy = AzureDevOpsAPIResources(
+            config.base_url, config.provider_kind
+        )
 
     @classmethod
     def from_config(
@@ -52,7 +50,9 @@ class AzureDevOpsProvider(GitProviderInterface):
         config = load_provider_config(app, client_secret=None)
         return cls(config, secrets_manager)
 
-    def validate_access_token(self, token_data: dict[str, Any]) -> tuple[bool, str | None]:
+    def validate_access_token(
+        self, token_data: dict[str, Any]
+    ) -> tuple[bool, str | None]:
         """Validate Personal Access Token against Azure DevOps API"""
         try:
             # Extract token from token_data
@@ -147,7 +147,7 @@ class AzureDevOpsProvider(GitProviderInterface):
                 "secret_token": webhook_secret,
             }
             self.secrets_manager.write_secret(pat_secret_name, json.dumps(pat_secret))
-            
+
             logger.info(
                 f"Updated PAT for Azure DevOps installation {installation.id}, webhook secret preserved"
             )
@@ -183,10 +183,8 @@ class AzureDevOpsProvider(GitProviderInterface):
             project_name = secrets.get("project", "")
 
             # Fetch repositories using the API strategy
-            repos_data = self.api_strategy.fetch_repositories(
-                token, project_name
-            )
-            
+            repos_data = self.api_strategy.fetch_repositories(token, project_name)
+
             repos = []
             for repo in repos_data:
                 print(repo)
@@ -236,16 +234,23 @@ class AzureDevOpsProvider(GitProviderInterface):
         """Handle Azure DevOps service hook events"""
         installation_id = webhook_event_ctx.installation_id
         event_type = payload.get("eventType")
-        
+
         logger.info(
             f"Handling Azure DevOps webhook: {event_type} for installation {installation_id}"
         )
+        secret_key = format_secret_name(APP_INSTALL_PAT_NAME_PREFIX, installation_id)
+        secret = self.secrets_manager.read_secret(secret_key)
+
+        if not secret.get("secret_token"):
+            logger.error(f"Secret not found for installation ID {installation_id}")
+            raise PermissionError("Insufficient permissions")
+
+        secret_token = secret["secret_token"]
+        if not self._verify_webhook_signature(headers, secret_token):
+            logger.error(f"Secret token mismatch for installation ID {installation_id}")
+            raise PermissionError("Insufficient permissions")
 
         try:
-            # Verify webhook signature if configured
-            if not self._verify_webhook_signature(headers, payload):
-                return {"status": "error", "message": "Invalid webhook signature"}
-
             # Extract event information
             resource = payload.get("resource", {})
 
@@ -254,7 +259,7 @@ class AzureDevOpsProvider(GitProviderInterface):
             else:
                 logger.info(f"Ignoring Azure DevOps event type: {event_type}")
                 return {"message": "Event ignored"}
-                
+
         except Exception as e:
             logger.error(f"Failed to handle Azure DevOps webhook event: {e}")
             return {"status": "error", "message": str(e)}
@@ -284,12 +289,14 @@ class AzureDevOpsProvider(GitProviderInterface):
             "url": config.callback_url,
             "active": True,
             "created_at": "manual_configuration_required",
-            "note": "Azure DevOps webhooks must be configured manually through the Azure DevOps web interface"
+            "note": "Azure DevOps webhooks must be configured manually through the Azure DevOps web interface",
         }
 
     def fetch_secrets_by_id(self, installation_id: str) -> dict[str, Any]:
         """Fetch secrets by installation ID"""
-        pat_secret_name = format_secret_name(APP_INSTALL_PAT_NAME_PREFIX, installation_id)
+        pat_secret_name = format_secret_name(
+            APP_INSTALL_PAT_NAME_PREFIX, installation_id
+        )
         secret_value = self.secrets_manager.read_secret(pat_secret_name)
 
         if not secret_value:
@@ -300,12 +307,10 @@ class AzureDevOpsProvider(GitProviderInterface):
         return secret_value
 
     def _verify_webhook_signature(
-        self, headers: dict[str, str], payload: dict[str, Any]
+        self, headers: dict[str, str], webhook_secret: str
     ) -> bool:
-        """Verify webhook signature if configured"""
-        # Azure DevOps service hooks can optionally include signature verification
-        # For now, we'll return True (signature verification can be added later)
-        return True
+        incoming_webhook_secret = headers.get("x-webhook-token")
+        return incoming_webhook_secret == webhook_secret
 
     def _handle_push_event(
         self, resource: dict[str, Any], webhook_event_ctx: WebhookEventContext
@@ -317,7 +322,7 @@ class AzureDevOpsProvider(GitProviderInterface):
         # Extract repository information from Azure DevOps push event
         repository = resource.get("repository", {})
         ref_updates = resource.get("refUpdates", [])
-        
+
         if not ref_updates:
             logger.info("No ref updates in Azure DevOps push event")
             return {"message": "No ref updates"}
@@ -331,15 +336,14 @@ class AzureDevOpsProvider(GitProviderInterface):
 
         message = {"message": ""}
 
-        # Get access token for API calls if needed
-        try:
-            secrets = self.fetch_secrets_by_id(installation_id)
-            access_token = secrets["token"]
-        except Exception as e:
-            logger.error(
-                f"Failed to fetch access token for installation {installation_id}: {e}"
-            )
-            return {"message": "Failed to process push event: missing access token"}
+        # # Get access token for API calls if needed
+        # try:
+        #     secrets = self.fetch_secrets_by_id(installation_id)
+        # except Exception as e:
+        #     logger.error(
+        #         f"Failed to fetch access token for installation {installation_id}: {e}"
+        #     )
+        #     return {"message": "Failed to process push event: missing access token"}
 
         # Get default branch from repository metadata
         default_branch = repository.get("defaultBranch", "main")
@@ -351,12 +355,12 @@ class AzureDevOpsProvider(GitProviderInterface):
         for ref_update in ref_updates:
             ref_name = ref_update.get("name", "")
             new_object_id = ref_update.get("newObjectId", "")
-            
+
             # Check if this is a branch update (not a tag)
             if not ref_name.startswith("refs/heads/"):
                 logger.info(f"Push event ignored: Not a branch update. Ref: {ref_name}")
                 continue
-            
+
             branch_name = ref_name.replace("refs/heads/", "")
 
             if branch_name != default_branch_name:

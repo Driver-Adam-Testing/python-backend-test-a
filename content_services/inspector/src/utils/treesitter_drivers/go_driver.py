@@ -12,6 +12,10 @@ from utils.lang_specialization.symbol_common import (
 from utils.treesitter_drivers.base import DriverTree
 
 
+def _is_exported(name: str) -> bool:
+    return name and name[0].isupper()
+
+
 class GoCallableKind(StrEnum):
     METHOD = "method"
     FUNCTION = "function"
@@ -19,6 +23,7 @@ class GoCallableKind(StrEnum):
 
 class GoCallableData(BespokeMarker):
     kind: GoCallableKind
+    is_exported: bool
     ty_params: str | None
     rx_ty: str | None
     model_config = ConfigDict(frozen=True)
@@ -151,6 +156,7 @@ class GoDriverTree(DriverTree):
             rx_ty = None
             bespoke_data = GoCallableData(
                 kind=callable_kind,
+                is_exported=_is_exported(callable_name),
                 ty_params=callable_ty_params,
                 rx_ty=rx_ty,
             )
@@ -204,6 +210,7 @@ class GoDriverTree(DriverTree):
             rx_ty = captures_by_name.get("rx_ty")[0].text.decode("utf-8")
             bespoke_data = GoCallableData(
                 kind=callable_kind,
+                is_exported=_is_exported(callable_name),
                 ty_params=callable_ty_params,
                 rx_ty=rx_ty,
             )

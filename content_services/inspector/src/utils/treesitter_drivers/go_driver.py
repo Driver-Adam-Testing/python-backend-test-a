@@ -38,6 +38,11 @@ class GoDriverTree(DriverTree):
         self, node: tree_sitter.Node, sep: str = "."
     ) -> str:
         path_parts = []
+        current = node.parent
+
+        # TODO: Should we do this? Or just let the association with the
+        # TODO: receiver type be made via link/soft description?
+        # Special case methods to associate their receiver as a parent
         if node.type == "method_declaration":
             # TODO, how to handle poineters?
             rx = node.child_by_field_name("receiver")
@@ -50,13 +55,6 @@ class GoDriverTree(DriverTree):
                 rx_ty = param_decl.child_by_field_name("type")
                 # Handle *Type (or arbitrary pointer indirection)
                 if rx_ty.type == "pointer_type":
-                    more_indirection = True
-                    while more_indirection:
-                        for child in rx_ty.children:
-                            if child.type == "pointer_type":
-                                rx_ty = child
-                                break
-                        more_indirection = False
                     for child in rx_ty.children:
                         if child.type == "type_identifier":
                             path_parts.append(child.text.decode("utf-8"))
@@ -69,14 +67,21 @@ class GoDriverTree(DriverTree):
             else:
                 # TODO: handle this better
                 path_parts.append("")
-        else:
-            parent = node.parent
-            if parent.type == "source_file":
-                path_parts.append(str(self.file_path.with_suffix("")))
-            else:
+
+        while current:
+            if current.type == "source_file":
+                for child in current.children:
+                    if child.type == "package_clause":
+                        for grandchild in child.children:
+                            if grandchild.type == "package_identifier":
+                                path_parts.append(grandchild.text.decode("utf-8"))
+                break
+            # TODO: Should this be qualified/constrained?
+            elif current.child_by_field_name("name"):
                 path_parts.append(
-                    parent.child_by_field_name("name").text.decode("utf-8")
+                    current.child_by_field_name("name").text.decode("utf-8")
                 )
+            current = current.parent
 
         path_parts.reverse()
         return sep.join(path_parts)
@@ -97,6 +102,7 @@ class GoDriverTree(DriverTree):
     ) -> RawTreeSitterSymbolData:
         start_line, end_line = self.get_node_line_range(node=node)
         fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(node)
+        print(f"FQPP for {name}: {fully_qualified_parent_path}")
 
         return RawTreeSitterSymbolData(
             name=name,

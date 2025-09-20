@@ -1,10 +1,8 @@
 import os
-import pickle
 import uuid
-from pathlib import Path
 
 import modal
-from common import MODAL_VOLUME_MOUNT_POINT, app, volume
+from common import app
 from inspection.files import comprehend_file_top_down
 from utils.dag import LiteNode
 
@@ -64,22 +62,20 @@ image = (
         modal.Secret.from_name("aws-inspector-s3"),
     ],
     image=image,
-    volumes={MODAL_VOLUME_MOUNT_POINT: volume},
 )
 def make_tech_doc(
     node: LiteNode,
     codebase_name: str,
-    symbol_table_storage_path: str,
-    codebase_storage_path: str,
+    source_code: str,
+    version_id: str,
 ) -> tuple[bool, dict, LiteNode]:
+    import os
+
+    import boto3
+    from utils.io import download_symbol_table_from_s3_with_cache
     from utils.models import ChatOpenAI
 
     print(f"Processing tech docs ({node})")
-
-    with open(
-        Path(MODAL_VOLUME_MOUNT_POINT) / codebase_storage_path / node.root_rel_path
-    ) as f:
-        source_code = f.read()
 
     raise_hard_errors = False
     llm = ChatOpenAI(
@@ -88,9 +84,14 @@ def make_tech_doc(
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
-    reified_symbols = None
-    with open(Path(MODAL_VOLUME_MOUNT_POINT) / symbol_table_storage_path, "rb") as f:
-        full_symbol_table = pickle.load(f)
+    s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+    bucket_name = os.environ["BUCKET_NAME"]
+
+    full_symbol_table = download_symbol_table_from_s3_with_cache(
+        s3_client=s3_client,
+        bucket_name=bucket_name,
+        version_id=version_id,
+    )
     reified_symbols = full_symbol_table.get(node.root_rel_path, None)
 
     file_docs_successful, file_doc = comprehend_file_top_down(

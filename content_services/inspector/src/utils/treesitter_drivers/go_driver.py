@@ -29,6 +29,12 @@ class GoCallableData(BespokeMarker):
     model_config = ConfigDict(frozen=True)
 
 
+class GoImportData(BespokeMarker):
+    package_alias: str | None
+    dot_import: bool
+    blank_import: bool
+
+
 @dataclass
 class GoDriverTree(DriverTree):
     language = "go"
@@ -119,6 +125,58 @@ class GoDriverTree(DriverTree):
         )
 
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
+        import_query_str = """
+(import_declaration
+  (import_spec) @import_spec) @import_decl
+
+(import_declaration
+  (import_spec_list (import_spec) @import_spec)) @import_decl
+        """.strip()
+        query_cursor = tree_sitter.QueryCursor(
+            tree_sitter.Query(self.tree_sitter_lang, import_query_str)
+        )
+        import_list = []
+
+        for _pattern_idx, captures_by_name in query_cursor.matches(self.tree.root_node):
+            import_node = captures_by_name.get("import_decl")[0]
+            spec = captures_by_name.get("import_spec")[0]
+            package_path = (spec.child_by_field_name("path").text.decode("utf-8"))[1:-1]
+            name_node = spec.child_by_field_name("name")
+            alias = None
+            dot_import = False
+            blank_import = False
+            if name_node:
+                if name_node.type == "package_identifier":
+                    alias = name_node.text.decode("utf-8")
+                elif name_node.type == "dot":
+                    dot_import = True
+                elif name_node.type == "blank_identifier":
+                    blank_import = True
+
+            symbol_kind = SymbolKind.IMPORT
+            bespoke_data = GoImportData(
+                package_alias=alias,
+                dot_import=dot_import,
+                blank_import=blank_import,
+            )
+
+            if package_path and import_node:
+                im = self._make_symbol(
+                    name=package_path,
+                    node=import_node,
+                    symbol_kind=symbol_kind,
+                    bespoke_data=bespoke_data,
+                )
+                import_list.append(im)
+            else:
+                print(
+                    f"Missing package import path ({package_path}) or node ({import_node})"
+                )
+
+                # TODO: detect `defer`s.
+        sorted_import_list = sorted(import_list, key=lambda x: x.start_byte)
+        return sorted_import_list
+
         return []
 
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
@@ -144,7 +202,7 @@ class GoDriverTree(DriverTree):
   name: (identifier) @fn_name
   type_parameters: (type_parameter_list)? @ty_params
 ) @fn_def
-        """
+        """.strip()
         query_cursor = tree_sitter.QueryCursor(
             tree_sitter.Query(self.tree_sitter_lang, fn_query_str)
         )

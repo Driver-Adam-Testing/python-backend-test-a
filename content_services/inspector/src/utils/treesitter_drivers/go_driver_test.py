@@ -6,6 +6,77 @@ from .go_driver import GoDriverTree
 
 
 @pytest.fixture(scope="module")
+def imports_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "go"
+        / "test_imports.go"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_im_path, expected_line_range, expected_alias, expected_dot, expected_blank",
+    [
+        ("fmt", (5, 5), None, False, False),
+        ("context", (8, 11), None, False, False),
+        ("encoding/json", (8, 11), None, False, False),
+        ("log", (14, 17), "stdlog", False, False),
+        ("encoding/json", (14, 17), "stdjson", False, False),
+        ("fmt", (20, 23), None, True, False),
+        ("math", (20, 23), None, True, False),
+        ("database/sql/driver", (26, 29), None, False, True),
+        ("image/png", (26, 29), None, False, True),
+        ("github.com/lib/pq", (32, 42), None, False, True),
+        ("github.com/go-sql-driver/mysql", (32, 42), None, False, True),
+        ("github.com/mattn/go-sqlite3", (32, 42), None, False, True),
+        ("github.com/gin-gonic/gin", (32, 42), None, False, False),
+        ("github.com/gorilla/mux", (32, 42), None, False, False),
+        ("github.com/labstack/echo/v4", (32, 42), None, False, False),
+        ("myproject/internal/config", (45, 48), None, False, False),
+        ("myproject/internal/database", (45, 48), None, False, False),
+        ("crypto/rand", (51, 54), "cryptorand", False, False),
+        ("math/rand", (51, 54), "mathrand", False, False),
+    ],
+)
+def test_extract_imports(
+    imports_test_code: str,
+    expected_im_path: str,
+    expected_line_range: tuple[int, int],
+    expected_alias: str | None,
+    expected_dot: bool,
+    expected_blank: bool,
+) -> None:
+    driver_tree = GoDriverTree.from_code(imports_test_code, "does_not_matter.go")
+    imports = driver_tree.extract_imports()
+    extracted = [
+        (
+            im.name,
+            (im.start_line, im.end_line),
+            str(im.bespoke_data.package_alias)
+            if im.bespoke_data.package_alias
+            else None,
+            im.bespoke_data.dot_import,
+            im.bespoke_data.blank_import,
+        )
+        for im in imports
+    ]
+
+    assert (
+        expected_im_path,
+        expected_line_range,
+        expected_alias,
+        expected_dot,
+        expected_blank,
+    ) in extracted, (
+        f"Expected import ({expected_im_path}, {expected_line_range}, {expected_alias}, {expected_dot}, {expected_blank}) "
+        f"not found in extracted imports: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
 def callables_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent

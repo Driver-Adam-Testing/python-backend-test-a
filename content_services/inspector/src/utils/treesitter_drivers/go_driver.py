@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 import tree_sitter
 from pydantic import ConfigDict
@@ -30,6 +31,7 @@ class GoCallableData(BespokeMarker):
 
 
 class GoImportData(BespokeMarker):
+    package_path: str
     package_alias: str | None
     dot_import: bool
     blank_import: bool
@@ -145,9 +147,11 @@ class GoDriverTree(DriverTree):
             alias = None
             dot_import = False
             blank_import = False
+            name = Path(package_path).name
             if name_node:
                 if name_node.type == "package_identifier":
                     alias = name_node.text.decode("utf-8")
+                    name = alias
                 elif name_node.type == "dot":
                     dot_import = True
                 elif name_node.type == "blank_identifier":
@@ -155,6 +159,7 @@ class GoDriverTree(DriverTree):
 
             symbol_kind = SymbolKind.IMPORT
             bespoke_data = GoImportData(
+                package_path=package_path,
                 package_alias=alias,
                 dot_import=dot_import,
                 blank_import=blank_import,
@@ -162,7 +167,7 @@ class GoDriverTree(DriverTree):
 
             if package_path and import_node:
                 im = self._make_symbol(
-                    name=package_path,
+                    name=name,
                     node=import_node,
                     symbol_kind=symbol_kind,
                     bespoke_data=bespoke_data,

@@ -18,31 +18,32 @@ def imports_test_code() -> str:
 
 
 @pytest.mark.parametrize(
-    "expected_im_path, expected_line_range, expected_alias, expected_dot, expected_blank",
+    "expected_name, expected_im_path, expected_line_range, expected_alias, expected_dot, expected_blank",
     [
-        ("fmt", (5, 5), None, False, False),
-        ("context", (8, 11), None, False, False),
-        ("encoding/json", (8, 11), None, False, False),
-        ("log", (14, 17), "stdlog", False, False),
-        ("encoding/json", (14, 17), "stdjson", False, False),
-        ("fmt", (20, 23), None, True, False),
-        ("math", (20, 23), None, True, False),
-        ("database/sql/driver", (26, 29), None, False, True),
-        ("image/png", (26, 29), None, False, True),
-        ("github.com/lib/pq", (32, 42), None, False, True),
-        ("github.com/go-sql-driver/mysql", (32, 42), None, False, True),
-        ("github.com/mattn/go-sqlite3", (32, 42), None, False, True),
-        ("github.com/gin-gonic/gin", (32, 42), None, False, False),
-        ("github.com/gorilla/mux", (32, 42), None, False, False),
-        ("github.com/labstack/echo/v4", (32, 42), None, False, False),
-        ("myproject/internal/config", (45, 48), None, False, False),
-        ("myproject/internal/database", (45, 48), None, False, False),
-        ("crypto/rand", (51, 54), "cryptorand", False, False),
-        ("math/rand", (51, 54), "mathrand", False, False),
+        ("fmt", "fmt", (5, 5), None, False, False),
+        ("context", "context", (8, 11), None, False, False),
+        ("json", "encoding/json", (8, 11), None, False, False),
+        ("stdlog", "log", (14, 17), "stdlog", False, False),
+        ("stdjson", "encoding/json", (14, 17), "stdjson", False, False),
+        ("fmt", "fmt", (20, 23), None, True, False),
+        ("math", "math", (20, 23), None, True, False),
+        ("driver", "database/sql/driver", (26, 29), None, False, True),
+        ("png", "image/png", (26, 29), None, False, True),
+        ("pq", "github.com/lib/pq", (32, 42), None, False, True),
+        ("mysql", "github.com/go-sql-driver/mysql", (32, 42), None, False, True),
+        ("go-sqlite3", "github.com/mattn/go-sqlite3", (32, 42), None, False, True),
+        ("gin", "github.com/gin-gonic/gin", (32, 42), None, False, False),
+        ("mux", "github.com/gorilla/mux", (32, 42), None, False, False),
+        ("v4", "github.com/labstack/echo/v4", (32, 42), None, False, False),
+        ("config", "myproject/internal/config", (45, 48), None, False, False),
+        ("database", "myproject/internal/database", (45, 48), None, False, False),
+        ("cryptorand", "crypto/rand", (51, 54), "cryptorand", False, False),
+        ("mathrand", "math/rand", (51, 54), "mathrand", False, False),
     ],
 )
 def test_extract_imports(
     imports_test_code: str,
+    expected_name: str,
     expected_im_path: str,
     expected_line_range: tuple[int, int],
     expected_alias: str | None,
@@ -54,6 +55,7 @@ def test_extract_imports(
     extracted = [
         (
             im.name,
+            im.bespoke_data.package_path,
             (im.start_line, im.end_line),
             str(im.bespoke_data.package_alias)
             if im.bespoke_data.package_alias
@@ -65,13 +67,14 @@ def test_extract_imports(
     ]
 
     assert (
+        expected_name,
         expected_im_path,
         expected_line_range,
         expected_alias,
         expected_dot,
         expected_blank,
     ) in extracted, (
-        f"Expected import ({expected_im_path}, {expected_line_range}, {expected_alias}, {expected_dot}, {expected_blank}) "
+        f"Expected import ({expected_name}, {expected_im_path}, {expected_line_range}, {expected_alias}, {expected_dot}, {expected_blank}) "
         f"not found in extracted imports: {extracted}"
     )
 

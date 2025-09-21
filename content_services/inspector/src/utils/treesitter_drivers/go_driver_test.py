@@ -80,6 +80,85 @@ def test_extract_imports(
 
 
 @pytest.fixture(scope="module")
+def data_structure_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "go"
+        / "test_data_structures.go"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_ds_name, expected_line_range, expected_kind, expected_exported, expected_ty_params",
+    [
+        ("SimpleStruct", (10, 13), "struct", True, None),
+        ("simpleStructPrivate", (15, 18), "struct", False, None),
+        ("ComplexStruct", (21, 31), "struct", True, None),
+        ("BaseStruct", (34, 37), "struct", True, None),
+        ("ExtendedStruct", (39, 42), "struct", True, None),
+        ("AnonymousFieldStruct", (45, 49), "struct", True, None),
+        ("TaggedStruct", (52, 62), "struct", True, None),
+        ("EmptyStruct", (65, 65), "empty_struct", True, None),
+        ("PointerStruct", (68, 74), "struct", True, None),
+        ("FunctionStruct", (77, 82), "struct", True, None),
+        ("ChannelStruct", (85, 89), "struct", True, None),
+        ("InterfaceStruct", (92, 98), "struct", True, None),
+        ("GenericStruct", (101, 105), "struct", True, "[T any]"),
+        ("GenericConstrainedStruct", (107, 111), "struct", True, "[T comparable]"),
+        (
+            "NumericStruct",
+            (114, 118),
+            "struct",
+            True,
+            "[T ~int | ~int64 | ~float32 | ~float64]",
+        ),
+        ("NestedStructs", (121, 139), "struct", True, None),
+        ("MultipleEmbedded", (142, 146), "struct", True, None),
+        ("BitFieldStruct", (203, 205), "struct", True, None),
+        ("UserID", (215, 215), "type_alias", True, None),
+        ("JSONData", (216, 216), "type_alias", True, None),
+        ("Temperature", (219, 219), "new_type", True, None),
+        ("Distance", (220, 220), "new_type", True, None),
+        ("Status", (221, 221), "new_type", True, None),
+    ],
+)
+def test_extract_data_structure_defs(
+    data_structure_test_code: str,
+    expected_ds_name: str,
+    expected_line_range: tuple[int, int],
+    expected_kind: str,
+    expected_exported: bool,
+    expected_ty_params: str | None,
+) -> None:
+    driver_tree = GoDriverTree.from_code(data_structure_test_code, "does_not_matter.go")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    extracted = [
+        (
+            ds.name,
+            (ds.start_line, ds.end_line),
+            str(ds.bespoke_data.kind) if ds.bespoke_data.kind else None,
+            ds.bespoke_data.is_exported,
+            str(ds.bespoke_data.ty_params) if ds.bespoke_data.ty_params else None,
+        )
+        for ds in data_structures
+    ]
+
+    assert (
+        expected_ds_name,
+        expected_line_range,
+        expected_kind,
+        expected_exported,
+        expected_ty_params,
+    ) in extracted, (
+        f"Expected data structure ({expected_ds_name}, {expected_line_range}, {expected_kind}, {expected_ty_params}) "
+        f"not found in extracted data_structures: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
 def callables_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent

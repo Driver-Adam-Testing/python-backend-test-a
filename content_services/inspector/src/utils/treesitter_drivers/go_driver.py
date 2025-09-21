@@ -37,6 +37,34 @@ class GoImportData(BespokeMarker):
     blank_import: bool
 
 
+class GoDataStructureKind(StrEnum):
+    STRUCT = "struct"
+    EMPTY_STRUCT = "empty_struct"
+    TYPE_ALIAS = "type_alias"
+    NEW_TYPE = "new_type"
+
+
+class GoDataStructureData(BespokeMarker):
+    kind: GoDataStructureKind
+    is_exported: bool
+    ty_params: str | None
+    model_config = ConfigDict(frozen=True)
+
+
+class GoGlobalKind(StrEnum):
+    GLOBAL_VAR = "global_var"
+    GLOBAL_VAR_GROUP = "global_var_group"
+    GLOBAL_CONST = "global_const"
+    GLOBAL_CONST_GROUP = "global_const_group"
+
+
+class GoGlobalData(BespokeMarker):
+    kind: GoGlobalKind
+    is_exported: bool
+    uses_iota: bool
+    model_config = ConfigDict(frozen=True)
+
+
 @dataclass
 class GoDriverTree(DriverTree):
     language = "go"
@@ -185,7 +213,78 @@ class GoDriverTree(DriverTree):
         return []
 
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        data_structure_query_str = """
+(type_declaration
+  (type_spec
+    name: (type_identifier) @ty_name
+    type_parameters: (type_parameter_list)? @ty_params
+    type: (_) @ty_def)) @ty_decl
+
+(type_declaration
+  (type_alias
+    name: (type_identifier) @ty_name
+    type: (_) @ty_def)) @ty_decl
+        """.strip()
+        query_cursor = tree_sitter.QueryCursor(
+            tree_sitter.Query(self.tree_sitter_lang, data_structure_query_str)
+        )
+        data_structure_list = []
+
+        for pattern_idx, captures_by_name in query_cursor.matches(self.tree.root_node):
+            data_structure_node = captures_by_name.get("ty_decl")[0]
+            data_structure_name = captures_by_name.get("ty_name")[0].text.decode(
+                "utf-8"
+            )
+            data_structure_definition = captures_by_name.get("ty_def")[0]
+            symbol_kind = SymbolKind.DATA_STRUCTURE
+            data_structure_ty_params = None
+            match pattern_idx:
+                case 0:  # `struct`s and new types
+                    if data_structure_ty_params := captures_by_name.get("ty_params"):
+                        data_structure_ty_params = data_structure_ty_params[
+                            0
+                        ].text.decode("utf-8")
+                    if data_structure_definition.type == "struct_type":
+                        data_structure_kind = GoDataStructureKind.EMPTY_STRUCT
+                        for child in data_structure_definition.children:
+                            if child.type == "field_declaration_list":
+                                for grandchild in child.children:
+                                    if grandchild.type == "field_declaration":
+                                        data_structure_kind = GoDataStructureKind.STRUCT
+                                        break
+                                else:
+                                    continue
+                                break
+                    else:
+                        data_structure_kind = GoDataStructureKind.NEW_TYPE
+                case 1:  # type aliases
+                    data_structure_kind = GoDataStructureKind.TYPE_ALIAS
+                case _:
+                    raise ValueError("Unreachable")
+
+            bespoke_data = GoDataStructureData(
+                kind=data_structure_kind,
+                is_exported=_is_exported(name=data_structure_name),
+                ty_params=data_structure_ty_params,
+            )
+
+            if data_structure_name and data_structure_node:
+                data_structure = self._make_symbol(
+                    name=data_structure_name,
+                    node=data_structure_node,
+                    symbol_kind=symbol_kind,
+                    bespoke_data=bespoke_data,
+                )
+                data_structure_list.append(data_structure)
+            else:
+                print(
+                    f"Missing data structure name ({data_structure_name}) or node ({data_structure_node})"
+                )
+
+        sorted_data_structure_list = sorted(
+            data_structure_list, key=lambda x: x.start_byte
+        )
+        return sorted_data_structure_list
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         return []

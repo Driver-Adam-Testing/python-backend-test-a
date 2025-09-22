@@ -71,7 +71,6 @@ class GoGlobalKind(StrEnum):
 class GoSingleGlobal(BaseModel):
     name: str
     is_exported: bool
-    # model_config = ConfigDict(frozen=True)
 
 
 class GoGlobalData(BespokeMarker):
@@ -79,6 +78,13 @@ class GoGlobalData(BespokeMarker):
     components: list[GoSingleGlobal]
     uses_iota: bool
     model_config = ConfigDict(frozen=True)
+
+
+class GoInterfaceData(BespokeMarker):
+    is_exported: bool
+    ty_params: str | None
+    methods: list[str]
+    interfaces: list[str]
 
 
 @dataclass
@@ -516,3 +522,59 @@ class GoDriverTree(DriverTree):
                 # TODO: detect `defer`s.
         sorted_method_list = sorted(method_list, key=lambda x: x.start_byte)
         return sorted_method_list
+
+    def extract_interfaces(self) -> list[RawTreeSitterSymbolData]:
+        # Note: intentially only package-level `interface`s are parsed.
+        interface_query_str = """
+(source_file
+  (type_declaration
+    (type_spec
+      name: (type_identifier) @ifc_name
+      type_parameters: (type_parameter_list)? @ty_params
+      type: (interface_type) @ifc_ty))
+  @ifc_decl)
+        """
+
+        query_cursor = tree_sitter.QueryCursor(
+            tree_sitter.Query(self.tree_sitter_lang, interface_query_str)
+        )
+        interface_list = []
+
+        for _pattern_idx, captures_by_name in query_cursor.matches(self.tree.root_node):
+            interface_node = captures_by_name.get("ifc_decl")[0]
+            interface_name = captures_by_name.get("ifc_name")[0].text.decode("utf-8")
+            is_exported = _is_exported(name=interface_name)
+            interface_ty = captures_by_name.get("ifc_ty")[0]
+            if interface_ty_params := captures_by_name.get("ty_params"):
+                interface_ty_params = interface_ty_params[0].text.decode("utf-8")
+            method_elems = []
+            interface_elems = []
+            for child in interface_ty.children:
+                if child.type == "method_elem":
+                    method_elems.append(
+                        child.child_by_field_name("name").text.decode("utf-8")
+                    )
+                elif child.type == "type_elem":
+                    interface_elems.append(child.text.decode("utf-8"))
+            bespoke_data = GoInterfaceData(
+                is_exported=is_exported,
+                ty_params=interface_ty_params,
+                methods=method_elems,
+                interfaces=interface_elems,
+            )
+            symbol_kind = SymbolKind.INTERFACE
+            if interface_name and interface_node:
+                interface = self._make_symbol(
+                    name=interface_name,
+                    node=interface_node,
+                    symbol_kind=symbol_kind,
+                    bespoke_data=bespoke_data,
+                )
+                interface_list.append(interface)
+            else:
+                print(
+                    f"Missing interface name ({interface_name}) or node ({interface_node})"
+                )
+
+        sorted_interface_list = sorted(interface_list, key=lambda x: x.start_byte)
+        return sorted_interface_list

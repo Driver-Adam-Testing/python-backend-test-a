@@ -17,6 +17,12 @@ def imports_test_code() -> str:
         return f.read()
 
 
+def test_extract_imports_no_false_positives(imports_test_code: str) -> None:
+    driver_tree = GoDriverTree.from_code(imports_test_code, "does_not_matter.go")
+    imports = driver_tree.extract_imports()
+    assert len(imports) == 19
+
+
 @pytest.mark.parametrize(
     "expected_name, expected_im_path, expected_line_range, expected_alias, expected_dot, expected_blank",
     [
@@ -89,6 +95,14 @@ def data_structure_test_code() -> str:
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
+
+
+def test_extract_data_structure_no_false_positives(
+    data_structure_test_code: str,
+) -> None:
+    driver_tree = GoDriverTree.from_code(data_structure_test_code, "does_not_matter.go")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    assert len(data_structures) == 23
 
 
 @pytest.mark.parametrize(
@@ -170,6 +184,12 @@ def callables_test_code() -> str:
         return f.read()
 
 
+def test_extract_callables_no_false_positives(callables_test_code: str) -> None:
+    driver_tree = GoDriverTree.from_code(callables_test_code, "does_not_matter.go")
+    callables = driver_tree.extract_callable_definitions()
+    assert len(callables) == 22
+
+
 @pytest.mark.parametrize(
     "expected_fn_name, expected_line_range, expected_kind, expected_exported, expected_ty_params, expected_rx_ty",
     [
@@ -204,7 +224,7 @@ def callables_test_code() -> str:
         ("main", (206, 208), "function", False, None, None),
     ],
 )
-def test_extract_function_defs(
+def test_extract_callable_defs(
     callables_test_code: str,
     expected_fn_name: str,
     expected_line_range: tuple[int, int],

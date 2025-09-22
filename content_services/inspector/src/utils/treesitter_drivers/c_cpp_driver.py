@@ -292,8 +292,7 @@ class CppCDriverTree(DriverTree):
 
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         """Extract all #include directives and their target text from the C code."""
-        query = self.tree_sitter_lang.query(
-            """
+        query_str = """
             (
               (preproc_include
                 (string_literal) @include_path)
@@ -302,9 +301,10 @@ class CppCDriverTree(DriverTree):
               (preproc_include
                 (system_lib_string) @include_path)
             ) @include_directive
-            """
-        )
-        matches = query.matches(self.tree.root_node)
+        """.strip()
+        query = tree_sitter.Query(self.tree_sitter_lang, query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         includes = []
 
         for _pattern_index, captures_by_name in matches:
@@ -343,8 +343,10 @@ class CppCDriverTree(DriverTree):
         return sorted_includes
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
-        query = self.tree_sitter_lang.query("(function_definition) @function_def")
-        matches = query.matches(self.tree.root_node)
+        query_str = "(function_definition) @function_def"
+        query = tree_sitter.Query(self.tree_sitter_lang, query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         functions = []
 
         for _pattern_index, captures_by_name in matches:
@@ -477,8 +479,9 @@ class CppCDriverTree(DriverTree):
             )
             """
 
-        query = self.tree_sitter_lang.query(query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         results = []
 
         def has_ancestor(node: tree_sitter.Node, types: set) -> bool:
@@ -671,12 +674,12 @@ class CppCDriverTree(DriverTree):
         return "::".join(path_parts) if path_parts else ""
 
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
-        query = self.tree_sitter_lang.query(
-            """
+        query_str = """
             (declaration) @global_var
-            """
-        )
-        matches = query.matches(self.tree.root_node)
+        """
+        query = tree_sitter.Query(self.tree_sitter_lang, query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
 
         def is_top_level_or_preprocessor_wrapped(node: tree_sitter.Node) -> bool:
             """
@@ -744,11 +747,13 @@ class CppCDriverTree(DriverTree):
     # multiple calls per line to disambiguate
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
-        query = self.tree_sitter_lang.query("""
-                                                (call_expression
-                                                function: (identifier) @call.name) @call
-                                                """)
-        matches = query.matches(self.tree.root_node)
+        query_str = """
+            (call_expression
+            function: (identifier) @call.name) @call
+        """
+        query = tree_sitter.Query(self.tree_sitter_lang, query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         function_calls = []
 
         for _pattern_index, captures_by_name in matches:
@@ -799,9 +804,9 @@ class CppCDriverTree(DriverTree):
                 ]
             )
             """
-        query = self.tree_sitter_lang.query(query_str)
-        # query = self.tree_sitter_lang.query("(declaration) @declaration")
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         declarations = []
 
         for _pattern_index, captures_by_name in matches:

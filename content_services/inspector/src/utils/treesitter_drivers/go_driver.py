@@ -3,7 +3,7 @@ from enum import StrEnum
 from pathlib import Path
 
 import tree_sitter
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 from utils.lang_specialization.symbol_common import (
     BespokeMarker,
@@ -15,6 +15,16 @@ from utils.treesitter_drivers.base import DriverTree
 
 def _is_exported(name: str) -> bool:
     return name and name[0].isupper()
+
+
+def _has_node_ty(const_decl_node: tree_sitter.Node, ty: str) -> bool:
+    def find_ty_recursive(node: tree_sitter.Node, ty: str) -> bool:
+        if node.type == ty:
+            return True
+
+        return any(find_ty_recursive(node=child, ty=ty) for child in node.children)
+
+    return find_ty_recursive(node=const_decl_node, ty=ty)
 
 
 class GoCallableKind(StrEnum):
@@ -58,9 +68,15 @@ class GoGlobalKind(StrEnum):
     GLOBAL_CONST_GROUP = "global_const_group"
 
 
+class GoSingleGlobal(BaseModel):
+    name: str
+    is_exported: bool
+    # model_config = ConfigDict(frozen=True)
+
+
 class GoGlobalData(BespokeMarker):
     kind: GoGlobalKind
-    is_exported: bool
+    components: list[GoSingleGlobal]
     uses_iota: bool
     model_config = ConfigDict(frozen=True)
 
@@ -292,8 +308,109 @@ class GoDriverTree(DriverTree):
     def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
         return []
 
+    def extract_package_globals(self) -> list[RawTreeSitterSymbolData]:
+        globals_query_str = """
+(source_file
+  (var_declaration) @package_var_decl)
+
+(source_file
+  (const_declaration) @package_const_decl)
+        """.strip()
+        query_cursor = tree_sitter.QueryCursor(
+            tree_sitter.Query(self.tree_sitter_lang, globals_query_str)
+        )
+        globals_list = []
+
+        for pattern_idx, captures_by_name in query_cursor.matches(self.tree.root_node):
+            match pattern_idx:
+                case 0:  # global vars
+                    global_node = captures_by_name.get("package_var_decl")[0]
+                    uses_iota = False
+                    var_decl_data = []
+                    for child in global_node.children:
+                        if child.type == "var_spec":  # single var declaration
+                            name = child.child_by_field_name("name").text.decode(
+                                "utf-8"
+                            )
+                            is_exported = _is_exported(name=name)
+                            var_decl_data.append(
+                                GoSingleGlobal(name=name, is_exported=is_exported)
+                            )
+                            break
+                        if child.type == "var_spec_list":  # var group
+                            for var in child.children:
+                                if var.type == "var_spec":
+                                    name = var.child_by_field_name("name").text.decode(
+                                        "utf-8"
+                                    )
+                                    is_exported = _is_exported(name=name)
+                                    var_decl_data.append(
+                                        GoSingleGlobal(
+                                            name=name, is_exported=is_exported
+                                        )
+                                    )
+                            break
+                    kind = (
+                        GoGlobalKind.GLOBAL_VAR_GROUP
+                        if len(var_decl_data) > 1
+                        else GoGlobalKind.GLOBAL_VAR
+                    )
+                    if global_node:
+                        globals_list.append(
+                            self._make_symbol(
+                                name="package_variable_declaration",
+                                node=global_node,
+                                symbol_kind=SymbolKind.VARIABLE,
+                                bespoke_data=GoGlobalData(
+                                    kind=kind,
+                                    components=var_decl_data,
+                                    uses_iota=uses_iota,
+                                ),
+                            )
+                        )
+                    else:
+                        print(f"Missing node ({global_node})")
+                case 1:  # global constants
+                    global_node = captures_by_name.get("package_const_decl")[0]
+                    uses_iota = _has_node_ty(const_decl_node=global_node, ty="iota")
+                    const_decl_data = []
+                    for child in global_node.children:
+                        if child.type == "const_spec":
+                            name = child.child_by_field_name("name").text.decode(
+                                "utf-8"
+                            )
+                            is_exported = _is_exported(name=name)
+                            const_decl_data.append(
+                                GoSingleGlobal(name=name, is_exported=is_exported)
+                            )
+                    kind = (
+                        GoGlobalKind.GLOBAL_CONST_GROUP
+                        if len(const_decl_data) > 1
+                        else GoGlobalKind.GLOBAL_CONST
+                    )
+                    if global_node:
+                        globals_list.append(
+                            self._make_symbol(
+                                name="package_constant_declaration",
+                                node=global_node,
+                                symbol_kind=SymbolKind.VARIABLE,
+                                bespoke_data=GoGlobalData(
+                                    kind=kind,
+                                    components=const_decl_data,
+                                    uses_iota=uses_iota,
+                                ),
+                            )
+                        )
+                    else:
+                        print(f"Missing node ({global_node})")
+                case _:
+                    raise ValueError("Unreachable")
+
+        sorted_globals_list = sorted(globals_list, key=lambda x: x.start_byte)
+        return sorted_globals_list
+
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        return self.extract_package_globals()
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         free_fns = self.extract_function_definitions()

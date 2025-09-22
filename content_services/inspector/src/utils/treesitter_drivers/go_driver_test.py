@@ -153,7 +153,7 @@ def test_extract_data_structure_defs(
         (
             ds.name,
             (ds.start_line, ds.end_line),
-            str(ds.bespoke_data.kind) if ds.bespoke_data.kind else None,
+            str(ds.bespoke_data.kind),
             ds.bespoke_data.is_exported,
             str(ds.bespoke_data.ty_params) if ds.bespoke_data.ty_params else None,
         )
@@ -239,7 +239,7 @@ def test_extract_callable_defs(
         (
             f.name,
             (f.start_line, f.end_line),
-            str(f.bespoke_data.kind) if f.bespoke_data.kind else None,
+            str(f.bespoke_data.kind),
             f.bespoke_data.is_exported,
             str(f.bespoke_data.ty_params) if f.bespoke_data.ty_params else None,
             str(f.bespoke_data.rx_ty) if f.bespoke_data.rx_ty else None,
@@ -256,5 +256,240 @@ def test_extract_callable_defs(
         expected_rx_ty,
     ) in extracted, (
         f"Expected function ({expected_fn_name}, {expected_line_range}, {expected_kind}, {expected_ty_params}, {expected_rx_ty}) "
+        f"not found in extracted functions: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def globals_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "go"
+        / "test_globals.go"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
+    driver_tree = GoDriverTree.from_code(globals_test_code, "does_not_matter.go")
+    globals_list = driver_tree.extract_package_globals()
+    assert len(globals_list) == 22
+
+
+@pytest.mark.parametrize(
+    "expected_gbl_name, expected_line_range, expected_kind, expected_uses_iota, expected_components, expected_exported",
+    [
+        (
+            "package_variable_declaration",
+            (10, 10),
+            "global_var",
+            False,
+            ["GlobalInt"],
+            [True],
+        ),
+        (
+            "package_variable_declaration",
+            (11, 11),
+            "global_var",
+            False,
+            ["GlobalString"],
+            [True],
+        ),
+        (
+            "package_variable_declaration",
+            (14, 14),
+            "global_var",
+            False,
+            ["packageInt"],
+            [False],
+        ),
+        (
+            "package_variable_declaration",
+            (15, 15),
+            "global_var",
+            False,
+            ["packageBool"],
+            [False],
+        ),
+        (
+            "package_variable_declaration",
+            (18, 23),
+            "global_var_group",
+            False,
+            ["InferredInt", "InferredString", "InferredSlice", "InferredMap"],
+            [True, True, True, True],
+        ),
+        (
+            "package_variable_declaration",
+            (26, 29),
+            "global_var_group",
+            False,
+            ["packageInt", "packageString"],
+            [False, False],
+        ),
+        (
+            "package_variable_declaration",
+            (32, 35),
+            "global_var_group",
+            False,
+            ["GlobalNumber", "packageNumber"],
+            [True, False],
+        ),
+        (
+            "package_variable_declaration",
+            (38, 43),
+            "global_var_group",
+            False,
+            ["StringPtr", "PersonPtr", "IntChan", "BufferedChan"],
+            [True, True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (46, 46),
+            "global_const",
+            False,
+            ["SimpleString"],
+            [True],
+        ),
+        (
+            "package_constant_declaration",
+            (47, 47),
+            "global_const",
+            False,
+            ["SimpleBool"],
+            [True],
+        ),
+        (
+            "package_constant_declaration",
+            (50, 50),
+            "global_const",
+            False,
+            ["packageConstString"],
+            [False],
+        ),
+        (
+            "package_constant_declaration",
+            (51, 51),
+            "global_const",
+            False,
+            ["packageConstInt"],
+            [False],
+        ),
+        (
+            "package_constant_declaration",
+            (54, 59),
+            "global_const_group",
+            False,
+            ["MaxUsers", "DefaultPort", "AppName", "Version"],
+            [True, True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (62, 65),
+            "global_const_group",
+            False,
+            ["packageMaxUsers", "packageAppName"],
+            [False, False],
+        ),
+        (
+            "package_constant_declaration",
+            (68, 71),
+            "global_const_group",
+            False,
+            ["GlobalConstNumber", "packageConstNumber"],
+            [True, False],
+        ),
+        (
+            "package_constant_declaration",
+            (74, 79),
+            "global_const_group",
+            True,
+            ["Sunday", "Monday", "Tuesday", "Wednesday"],
+            [True, True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (82, 86),
+            "global_const_group",
+            True,
+            ["FlagRead", "FlagWrite", "FlagExecute"],
+            [True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (89, 93),
+            "global_const_group",
+            False,
+            ["TypedInt", "TypedFloat", "TypedString"],
+            [True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (98, 102),
+            "global_const_group",
+            False,
+            ["StatusPending", "StatusActive", "StatusCompleted"],
+            [True, True, True],
+        ),
+        (
+            "package_variable_declaration",
+            (110, 116),
+            "global_var_group",
+            False,
+            ["DefaultPerson", "PersonList"],
+            [True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (119, 123),
+            "global_const_group",
+            False,
+            ["DefaultTimeout", "MaxRetries", "BufferSize"],
+            [True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (126, 130),
+            "global_const_group",
+            False,
+            ["Greeting", "Target", "message"],
+            [True, True, False],
+        ),
+    ],
+)
+def test_extract_globals(
+    globals_test_code: str,
+    expected_gbl_name: str,
+    expected_line_range: tuple[int, int],
+    expected_kind: str,
+    expected_uses_iota: bool,
+    expected_components: list[str],
+    expected_exported: list[bool],
+) -> None:
+    driver_tree = GoDriverTree.from_code(globals_test_code, "does_not_matter.go")
+    globals_list = driver_tree.extract_package_globals()
+    extracted = [
+        (
+            g.name,
+            (g.start_line, g.end_line),
+            str(g.bespoke_data.kind),
+            g.bespoke_data.uses_iota,
+            [c.name for c in g.bespoke_data.components],
+            [c.is_exported for c in g.bespoke_data.components],
+        )
+        for g in globals_list
+    ]
+
+    assert (
+        expected_gbl_name,
+        expected_line_range,
+        expected_kind,
+        expected_uses_iota,
+        expected_components,
+        expected_exported,
+    ) in extracted, (
+        f"Expected global ({expected_gbl_name}, {expected_line_range}, {expected_kind}, {expected_uses_iota}, {expected_components}, {expected_exported}) "
         f"not found in extracted functions: {extracted}"
     )

@@ -35,6 +35,7 @@ class GoImportData(BespokeMarker):
     package_alias: str | None
     dot_import: bool
     blank_import: bool
+    model_config = ConfigDict(frozen=True)
 
 
 class GoDataStructureKind(StrEnum):

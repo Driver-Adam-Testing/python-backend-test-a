@@ -63,9 +63,7 @@ def test_extract_imports(
             im.name,
             im.bespoke_data.package_path,
             (im.start_line, im.end_line),
-            str(im.bespoke_data.package_alias)
-            if im.bespoke_data.package_alias
-            else None,
+            im.bespoke_data.package_alias,
             im.bespoke_data.dot_import,
             im.bespoke_data.blank_import,
         )
@@ -153,9 +151,9 @@ def test_extract_data_structure_defs(
         (
             ds.name,
             (ds.start_line, ds.end_line),
-            str(ds.bespoke_data.kind) if ds.bespoke_data.kind else None,
+            str(ds.bespoke_data.kind),
             ds.bespoke_data.is_exported,
-            str(ds.bespoke_data.ty_params) if ds.bespoke_data.ty_params else None,
+            ds.bespoke_data.ty_params,
         )
         for ds in data_structures
     ]
@@ -239,10 +237,10 @@ def test_extract_callable_defs(
         (
             f.name,
             (f.start_line, f.end_line),
-            str(f.bespoke_data.kind) if f.bespoke_data.kind else None,
+            str(f.bespoke_data.kind),
             f.bespoke_data.is_exported,
-            str(f.bespoke_data.ty_params) if f.bespoke_data.ty_params else None,
-            str(f.bespoke_data.rx_ty) if f.bespoke_data.rx_ty else None,
+            f.bespoke_data.ty_params,
+            f.bespoke_data.rx_ty,
         )
         for f in functions
     ]
@@ -257,4 +255,380 @@ def test_extract_callable_defs(
     ) in extracted, (
         f"Expected function ({expected_fn_name}, {expected_line_range}, {expected_kind}, {expected_ty_params}, {expected_rx_ty}) "
         f"not found in extracted functions: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def globals_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "go"
+        / "test_globals.go"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
+    driver_tree = GoDriverTree.from_code(globals_test_code, "does_not_matter.go")
+    globals_list = driver_tree.extract_package_globals()
+    assert len(globals_list) == 22
+
+
+@pytest.mark.parametrize(
+    "expected_gbl_name, expected_line_range, expected_kind, expected_uses_iota, expected_components, expected_exported",
+    [
+        (
+            "package_variable_declaration",
+            (10, 10),
+            "global_var",
+            False,
+            ["GlobalInt"],
+            [True],
+        ),
+        (
+            "package_variable_declaration",
+            (11, 11),
+            "global_var",
+            False,
+            ["GlobalString"],
+            [True],
+        ),
+        (
+            "package_variable_declaration",
+            (14, 14),
+            "global_var",
+            False,
+            ["packageInt"],
+            [False],
+        ),
+        (
+            "package_variable_declaration",
+            (15, 15),
+            "global_var",
+            False,
+            ["packageBool"],
+            [False],
+        ),
+        (
+            "package_variable_declaration",
+            (18, 23),
+            "global_var_group",
+            False,
+            ["InferredInt", "InferredString", "InferredSlice", "InferredMap"],
+            [True, True, True, True],
+        ),
+        (
+            "package_variable_declaration",
+            (26, 29),
+            "global_var_group",
+            False,
+            ["packageInt", "packageString"],
+            [False, False],
+        ),
+        (
+            "package_variable_declaration",
+            (32, 35),
+            "global_var_group",
+            False,
+            ["GlobalNumber", "packageNumber"],
+            [True, False],
+        ),
+        (
+            "package_variable_declaration",
+            (38, 43),
+            "global_var_group",
+            False,
+            ["StringPtr", "PersonPtr", "IntChan", "BufferedChan"],
+            [True, True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (46, 46),
+            "global_const",
+            False,
+            ["SimpleString"],
+            [True],
+        ),
+        (
+            "package_constant_declaration",
+            (47, 47),
+            "global_const",
+            False,
+            ["SimpleBool"],
+            [True],
+        ),
+        (
+            "package_constant_declaration",
+            (50, 50),
+            "global_const",
+            False,
+            ["packageConstString"],
+            [False],
+        ),
+        (
+            "package_constant_declaration",
+            (51, 51),
+            "global_const",
+            False,
+            ["packageConstInt"],
+            [False],
+        ),
+        (
+            "package_constant_declaration",
+            (54, 59),
+            "global_const_group",
+            False,
+            ["MaxUsers", "DefaultPort", "AppName", "Version"],
+            [True, True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (62, 65),
+            "global_const_group",
+            False,
+            ["packageMaxUsers", "packageAppName"],
+            [False, False],
+        ),
+        (
+            "package_constant_declaration",
+            (68, 71),
+            "global_const_group",
+            False,
+            ["GlobalConstNumber", "packageConstNumber"],
+            [True, False],
+        ),
+        (
+            "package_constant_declaration",
+            (74, 79),
+            "global_const_group",
+            True,
+            ["Sunday", "Monday", "Tuesday", "Wednesday"],
+            [True, True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (82, 86),
+            "global_const_group",
+            True,
+            ["FlagRead", "FlagWrite", "FlagExecute"],
+            [True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (89, 93),
+            "global_const_group",
+            False,
+            ["TypedInt", "TypedFloat", "TypedString"],
+            [True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (98, 102),
+            "global_const_group",
+            False,
+            ["StatusPending", "StatusActive", "StatusCompleted"],
+            [True, True, True],
+        ),
+        (
+            "package_variable_declaration",
+            (110, 116),
+            "global_var_group",
+            False,
+            ["DefaultPerson", "PersonList"],
+            [True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (119, 123),
+            "global_const_group",
+            False,
+            ["DefaultTimeout", "MaxRetries", "BufferSize"],
+            [True, True, True],
+        ),
+        (
+            "package_constant_declaration",
+            (126, 130),
+            "global_const_group",
+            False,
+            ["Greeting", "Target", "message"],
+            [True, True, False],
+        ),
+    ],
+)
+def test_extract_globals(
+    globals_test_code: str,
+    expected_gbl_name: str,
+    expected_line_range: tuple[int, int],
+    expected_kind: str,
+    expected_uses_iota: bool,
+    expected_components: list[str],
+    expected_exported: list[bool],
+) -> None:
+    driver_tree = GoDriverTree.from_code(globals_test_code, "does_not_matter.go")
+    globals_list = driver_tree.extract_package_globals()
+    extracted = [
+        (
+            g.name,
+            (g.start_line, g.end_line),
+            str(g.bespoke_data.kind),
+            g.bespoke_data.uses_iota,
+            [c.name for c in g.bespoke_data.components],
+            [c.is_exported for c in g.bespoke_data.components],
+        )
+        for g in globals_list
+    ]
+
+    assert (
+        expected_gbl_name,
+        expected_line_range,
+        expected_kind,
+        expected_uses_iota,
+        expected_components,
+        expected_exported,
+    ) in extracted, (
+        f"Expected global ({expected_gbl_name}, {expected_line_range}, {expected_kind}, {expected_uses_iota}, {expected_components}, {expected_exported}) "
+        f"not found in extracted functions: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def interfaces_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "go"
+        / "test_interfaces.go"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_interfaces_no_false_positives(interfaces_test_code: str) -> None:
+    driver_tree = GoDriverTree.from_code(interfaces_test_code, "does_not_matter.go")
+    interfaces = driver_tree.extract_interfaces()
+    assert len(interfaces) == 19
+
+
+@pytest.mark.parametrize(
+    "expected_ifc_name, expected_line_range, expected_exported, expected_ty_params, expected_method_elems, expected_interface_elems",
+    [
+        ("SimpleInterface", (11, 13), True, None, ["DoSomething"], []),
+        (
+            "complexPrivateInterface",
+            (16, 20),
+            False,
+            None,
+            ["Read", "Write", "Close"],
+            [],
+        ),
+        (
+            "ProcessorInterface",
+            (23, 27),
+            True,
+            None,
+            ["Process", "Validate", "Configure"],
+            [],
+        ),
+        ("anyInterface", (30, 30), False, None, [], []),
+        ("AnyInterface", (31, 31), True, None, [], []),
+        ("ReadWriter", (34, 37), True, None, [], ["io.Reader", "io.Writer"]),
+        (
+            "ReadWriteCloser",
+            (39, 43),
+            True,
+            None,
+            [],
+            ["io.Reader", "io.Writer", "io.Closer"],
+        ),
+        (
+            "ExtendedInterface",
+            (46, 50),
+            True,
+            None,
+            ["Flush", "Sync"],
+            ["ReadWriteCloser"],
+        ),
+        ("GenericInterface", (53, 56), True, "[T any]", ["Process", "Compare"], []),
+        (
+            "ComparableInterface",
+            (59, 62),
+            True,
+            "[T comparable]",
+            ["Equal", "Less"],
+            [],
+        ),
+        (
+            "NumericInterface",
+            (65, 70),
+            True,
+            "[T ~int | ~int64 | ~float32 | ~float64]",
+            ["Add", "Subtract", "Multiply", "Divide"],
+            [],
+        ),
+        ("Stringer", (73, 75), True, None, ["String"], []),
+        ("GoStringer", (77, 79), True, None, ["GoString"], []),
+        (
+            "FormatterInterface",
+            (81, 85),
+            True,
+            None,
+            ["Format"],
+            ["Stringer", "GoStringer"],
+        ),
+        ("VariadicInterface", (88, 91), True, None, ["Process", "Combine"], []),
+        ("ChannelInterface", (94, 98), True, None, ["Send", "Receive", "Close"], []),
+        (
+            "ContextLikeInterface",
+            (101, 106),
+            True,
+            None,
+            ["Deadline", "Done", "Err", "Value"],
+            [],
+        ),
+        ("EventHandler", (109, 113), True, None, ["OnStart", "OnStop", "OnEvent"], []),
+        (
+            "Repository",
+            (116, 122),
+            True,
+            "[T any]",
+            ["Create", "GetByID", "Update", "Delete", "List"],
+            [],
+        ),
+    ],
+)
+def test_extract_interfaces(
+    interfaces_test_code: str,
+    expected_ifc_name: str,
+    expected_line_range: tuple[int, int],
+    expected_exported: bool,
+    expected_ty_params: str | None,
+    expected_method_elems: list[str],
+    expected_interface_elems: list[str],
+) -> None:
+    driver_tree = GoDriverTree.from_code(interfaces_test_code, "does_not_matter.go")
+    interfaces_list = driver_tree.extract_interfaces()
+    extracted = [
+        (
+            ifc.name,
+            (ifc.start_line, ifc.end_line),
+            ifc.bespoke_data.is_exported,
+            ifc.bespoke_data.ty_params,
+            ifc.bespoke_data.methods,
+            ifc.bespoke_data.interfaces,
+        )
+        for ifc in interfaces_list
+    ]
+
+    assert (
+        expected_ifc_name,
+        expected_line_range,
+        expected_exported,
+        expected_ty_params,
+        expected_method_elems,
+        expected_interface_elems,
+    ) in extracted, (
+        f"Expected interface ({expected_ifc_name}, {expected_line_range}, {expected_exported}, {expected_ty_params}, {expected_method_elems}, {expected_interface_elems}) "
+        f"not found in extracted interface: {extracted}"
     )

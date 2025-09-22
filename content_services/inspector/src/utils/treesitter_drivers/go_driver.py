@@ -72,11 +72,12 @@ class GoGlobalKind(StrEnum):
 class GoSingleGlobal(BaseModel):
     name: str
     is_exported: bool
+    model_config = ConfigDict(frozen=True)
 
 
 class GoGlobalData(BespokeMarker):
     kind: GoGlobalKind
-    components: list[GoSingleGlobal]
+    components: tuple[GoSingleGlobal, ...]
     uses_iota: bool
     model_config = ConfigDict(frozen=True)
 
@@ -84,8 +85,9 @@ class GoGlobalData(BespokeMarker):
 class GoInterfaceData(BespokeMarker):
     is_exported: bool
     ty_params: str | None
-    methods: list[str]
-    interfaces: list[str]
+    methods: tuple[str, ...]
+    interfaces: tuple[str, ...]
+    model_config = ConfigDict(frozen=True)
 
 
 @dataclass
@@ -370,7 +372,7 @@ class GoDriverTree(DriverTree):
                                 symbol_kind=SymbolKind.VARIABLE,
                                 bespoke_data=GoGlobalData(
                                     kind=kind,
-                                    components=var_decl_data,
+                                    components=tuple(var_decl_data),
                                     uses_iota=uses_iota,
                                 ),
                             )
@@ -403,7 +405,7 @@ class GoDriverTree(DriverTree):
                                 symbol_kind=SymbolKind.VARIABLE,
                                 bespoke_data=GoGlobalData(
                                     kind=kind,
-                                    components=const_decl_data,
+                                    components=tuple(const_decl_data),
                                     uses_iota=uses_iota,
                                 ),
                             )
@@ -560,8 +562,8 @@ class GoDriverTree(DriverTree):
             bespoke_data = GoInterfaceData(
                 is_exported=is_exported,
                 ty_params=interface_ty_params,
-                methods=method_elems,
-                interfaces=interface_elems,
+                methods=tuple(method_elems),
+                interfaces=tuple(interface_elems),
             )
             symbol_kind = SymbolKind.INTERFACE
             if interface_name and interface_node:

@@ -90,6 +90,11 @@ class GoInterfaceData(BespokeMarker):
     model_config = ConfigDict(frozen=True)
 
 
+class GoCallData(BespokeMarker):
+    complete_call_site_name: str
+    is_goroutine_invocation: bool
+
+
 @dataclass
 class GoDriverTree(DriverTree):
     language = "go"
@@ -312,7 +317,70 @@ class GoDriverTree(DriverTree):
         return sorted_data_structure_list
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        calls_query_str = """
+(call_expression
+  function: (identifier) @call_name) @call
+
+(call_expression
+  function: (selector_expression) @selector_call_name) @call
+
+(call_expression
+  function: (index_expression
+    operand: (identifier) @call_name
+    index: (_) @ty_params
+  ) @complete_call_site_name) @call
+        """.strip()
+        query_cursor = tree_sitter.QueryCursor(
+            tree_sitter.Query(self.tree_sitter_lang, calls_query_str)
+        )
+        calls_list = []
+        # TODO: consider detecting built-in (only 13 of them).
+        # TODO: This is almost assuredly an incomplete list/case handling for the nodes
+        # TODO: that can populate a `call_expression->function` set of nodes.
+        for pattern_idx, captures_by_name in query_cursor.matches(self.tree.root_node):
+            call_node = captures_by_name.get("call")[0]
+            is_goroutine_invocation = call_node.parent.type == "go_statement"
+            match pattern_idx:
+                case 0:  # plane function call
+                    call_name = captures_by_name.get("call_name")[0].text.decode(
+                        "utf-8"
+                    )
+                    complete_call_site_name = call_name
+                case 1:  # dot selector call
+                    complete_call_site_name = captures_by_name.get(
+                        "selector_call_name"
+                    )[0].text.decode("utf-8")
+                    call_name = complete_call_site_name.split(".")[-1]
+                case 2:  # explicit type parameter
+                    complete_call_site_name = captures_by_name.get(
+                        "complete_call_site_name"
+                    )[0].text.decode("utf-8")
+                    call_name = captures_by_name.get("call_name")[0].text.decode(
+                        "utf-8"
+                    )
+                case _:
+                    raise ValueError("Unreachable")
+
+            symbol_kind = SymbolKind.CALL
+            bespoke_data = GoCallData(
+                complete_call_site_name=complete_call_site_name,
+                is_goroutine_invocation=is_goroutine_invocation,
+            )
+
+            if call_node and call_name:
+                calls_list.append(
+                    self._make_symbol(
+                        name=call_name,
+                        node=call_node,
+                        symbol_kind=symbol_kind,
+                        bespoke_data=bespoke_data,
+                    )
+                )
+            else:
+                print(f"Missing call name ({call_name}) or node ({call_node})")
+
+        sorted_calls_list = sorted(calls_list, key=lambda x: x.start_byte)
+        return sorted_calls_list
 
     def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
         return []
@@ -484,7 +552,7 @@ class GoDriverTree(DriverTree):
   name: (field_identifier) @method_name
   type_parameters: (type_parameter_list)? @ty_params
 ) @method_def
-        """
+        """.strip()
 
         query_cursor = tree_sitter.QueryCursor(
             tree_sitter.Query(self.tree_sitter_lang, method_query_str)
@@ -536,7 +604,7 @@ class GoDriverTree(DriverTree):
       type_parameters: (type_parameter_list)? @ty_params
       type: (interface_type) @ifc_ty))
   @ifc_decl)
-        """
+        """.strip()
 
         query_cursor = tree_sitter.QueryCursor(
             tree_sitter.Query(self.tree_sitter_lang, interface_query_str)

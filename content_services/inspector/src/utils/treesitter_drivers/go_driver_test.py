@@ -259,6 +259,116 @@ def test_extract_callable_defs(
 
 
 @pytest.fixture(scope="module")
+def calls_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent / "treesitter_testcases" / "go" / "test_calls.go"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_calls_no_false_positives(calls_test_code: str) -> None:
+    driver_tree = GoDriverTree.from_code(calls_test_code, "does_not_matter.go")
+    calls = driver_tree.extract_function_calls()
+    for call in calls:
+        print(call.name)
+    assert len(calls) == 58
+
+
+@pytest.mark.parametrize(
+    "expected_call_name, expected_line_range, expected_complete_call_site_name, expected_goroutine",
+    [
+        ("len", (40, 40), "len", False),
+        ("make", (41, 41), "make", False),
+        ("Printf", (42, 42), "fmt.Printf", False),
+        ("Abs", (45, 45), "math.Abs", False),
+        ("ToUpper", (46, 46), "strings.ToUpper", False),
+        ("Printf", (47, 47), "fmt.Printf", False),
+        ("Add", (54, 54), "calc.Add", False),
+        ("Printf", (55, 55), "fmt.Printf", False),
+        ("GetValue", (55, 55), "calc.GetValue", False),
+        ("Increment", (59, 59), "counter.Increment", False),
+        ("Increment", (60, 60), "counter.Increment", False),
+        ("Printf", (61, 61), "fmt.Printf", False),
+        ("Value", (61, 61), "counter.Value", False),
+        ("Printf", (67, 67), "fmt.Printf", False),
+        ("Join", (68, 68), "strings.Join", False),
+        ("Printf", (69, 69), "fmt.Printf", False),
+        ("divide", (72, 72), "divide", False),
+        ("Printf", (73, 73), "fmt.Printf", False),
+        ("sum", (82, 82), "sum", False),
+        ("sum", (83, 83), "sum", False),
+        ("sum", (85, 85), "sum", False),
+        ("Printf", (86, 86), "fmt.Printf", False),
+        ("Printf", (103, 103), "fmt.Printf", False),
+        ("Printf", (110, 110), "fmt.Printf", False),
+        ("scale", (110, 110), "scale", False),
+        ("Max", (115, 115), "Max", False),
+        ("Max", (116, 116), "Max", False),
+        ("Printf", (117, 117), "fmt.Printf", False),
+        ("Max", (120, 120), "Max[float64]", False),
+        ("Printf", (121, 121), "fmt.Printf", False),
+        ("Sprintf", (125, 125), "fmt.Sprintf", False),
+        ("Sprintf", (125, 125), "fmt.Sprintf", False),
+        ("close", (134, 134), "close", False),
+        ("make", (139, 139), "make", False),
+        ("sendValues", (142, 142), "sendValues", True),
+        ("Printf", (146, 146), "fmt.Printf", False),
+        ("make", (150, 150), "make", False),
+        ("Sleep", (152, 152), "time.Sleep", False),
+        ("Printf", (158, 158), "fmt.Printf", False),
+        ("After", (159, 159), "time.After", False),
+        ("Println", (160, 160), "fmt.Println", False),
+        ("Sprintf", (167, 167), "fmt.Sprintf", False),
+        ("len", (167, 167), "len", False),
+        ("ToUpper", (167, 167), "strings.ToUpper", False),
+        ("Println", (168, 168), "fmt.Println", False),
+        ("Format", (171, 171), "time.Now().Add(1 * time.Hour).Format", False),
+        ("Add", (171, 171), "time.Now().Add", False),
+        ("Now", (171, 171), "time.Now", False),
+        ("Printf", (172, 172), "fmt.Printf", False),
+        ("basicCalls", (176, 176), "basicCalls", False),
+        ("methodCalls", (178, 178), "methodCalls", False),
+        ("multipleArgsReturns", (180, 180), "multipleArgsReturns", False),
+        ("variadicCalls", (182, 182), "variadicCalls", False),
+        ("anonymousCalls", (184, 184), "anonymousCalls", False),
+        ("genericCalls", (186, 186), "genericCalls", False),
+        ("goroutineCalls", (188, 188), "goroutineCalls", False),
+        ("errorCalls", (190, 190), "errorCalls", False),
+        ("nestedCalls", (192, 192), "nestedCalls", False),
+    ],
+)
+def test_extract_calls(
+    calls_test_code: str,
+    expected_call_name: str,
+    expected_line_range: tuple[int, int],
+    expected_complete_call_site_name: str,
+    expected_goroutine: bool,
+) -> None:
+    driver_tree = GoDriverTree.from_code(calls_test_code, "does_not_matter.go")
+    calls = driver_tree.extract_function_calls()
+    extracted = [
+        (
+            c.name,
+            (c.start_line, c.end_line),
+            c.bespoke_data.complete_call_site_name,
+            c.bespoke_data.is_goroutine_invocation,
+        )
+        for c in calls
+    ]
+
+    assert (
+        expected_call_name,
+        expected_line_range,
+        expected_complete_call_site_name,
+        expected_goroutine,
+    ) in extracted, (
+        f"Expected call ({expected_call_name}, {expected_line_range}, {expected_complete_call_site_name}, {expected_goroutine}) "
+        f"not found in extracted calls: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
 def globals_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent
@@ -615,8 +725,8 @@ def test_extract_interfaces(
             (ifc.start_line, ifc.end_line),
             ifc.bespoke_data.is_exported,
             ifc.bespoke_data.ty_params,
-            ifc.bespoke_data.methods,
-            ifc.bespoke_data.interfaces,
+            list(ifc.bespoke_data.methods),
+            list(ifc.bespoke_data.interfaces),
         )
         for ifc in interfaces_list
     ]

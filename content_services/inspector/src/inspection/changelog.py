@@ -240,6 +240,7 @@ async def create_changelog(
     repo_id = version.primary_asset.repository_id
     repo_name = version.primary_asset.display_name
     provider = version.primary_asset.provider
+    tracked_branch = version.primary_asset.vcs_tracked_branch
 
     if provider == PrimaryAssetProvider.GITHUB:
         access_token = gh_ops.fetch_app_access_token(install_id)
@@ -288,6 +289,19 @@ async def create_changelog(
             raise subprocess.CalledProcessError(
                 result.returncode, f"git clone {clone_url} {repo_dir}"
             )
+        # TODO: would it be better to just explicitly checkout out the commit hash?
+        if tracked_branch is not None:
+            result = subprocess.run(
+                f"git checkout {tracked_branch}",
+                shell=True,
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    result.returncode, f"git checkout {tracked_branch}"
+                )
 
         repo = GitFetcher(repo_path=repo_dir)
         all_commits = list(repo.fetch_commits(limit=MAX_COMMITS_TO_PROCESS))

@@ -1,5 +1,5 @@
 import asyncio
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Self
 
 from aiolimiter import AsyncLimiter
@@ -54,7 +54,7 @@ async def bounded_llm_generate(
         )
 
 
-class EntryPointRelevance(Enum):
+class EntryPointRelevance(StrEnum):
     VeryRelevant = "very_relevant"
     PossiblyRelevant = "possibly_relevant"
     NotLikelyRelevant = "not_likely_relevant"
@@ -69,7 +69,7 @@ class RelevanceFlag(BaseModel):
 You are an expert software engineer and technical writer that specializes in identifying entry points in software engineering codebases.
 """
         task_description = """
-Your job is to review the technical documentation about a source code file and decide there if it contains an entry point for the codebase. Specifically, you are to decide which of the following categories it belongs to:
+Your job is to review the technical documentation about a source code file and decide if it contains an entry point for the codebase. Specifically, you are to decide which of the following categories it belongs to:
 
 **very_relevant**: This means the file or a specific symbol inside of it, such as a function, is highly likely to be an important entry point for the codebase.
 

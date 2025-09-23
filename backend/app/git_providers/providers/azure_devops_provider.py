@@ -187,13 +187,6 @@ class AzureDevOpsProvider(GitProviderInterface):
 
             repos = []
             for repo in repos_data:
-                print(repo)
-                # Fetch latest commit for each repo if needed
-                commit_hash = repo.get("latest_commit").get("id", "")
-                latest_commit = {"id": str(commit_hash)} if commit_hash else None
-                # TODO: Consider implementing latest commit fetching similar to Bitbucket
-                # if needed for consistency
-
                 repos.append(
                     GitRepository(
                         provider_name=str(installation.git_provider_app.provider_kind),
@@ -203,7 +196,7 @@ class AzureDevOpsProvider(GitProviderInterface):
                         repo_name=repo["name"],
                         last_updated=repo["project"].get("lastUpdateTime"),
                         default_branch=repo.get("default_branch"),
-                        latest_commit=latest_commit,
+                        latest_commit=None,
                         metadata={
                             "id": repo["id"],  # Store repo ID in metadata
                             "organization": organization,

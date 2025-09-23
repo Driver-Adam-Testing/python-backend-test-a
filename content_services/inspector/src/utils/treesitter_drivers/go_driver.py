@@ -93,6 +93,7 @@ class GoInterfaceData(BespokeMarker):
 class GoCallData(BespokeMarker):
     complete_call_site_name: str
     is_goroutine_invocation: bool
+    model_config = ConfigDict(frozen=True)
 
 
 @dataclass

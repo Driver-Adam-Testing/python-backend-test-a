@@ -175,23 +175,6 @@ class AzureDevOpsAPIResources:
                 else:
                     repo["default_branch"] = "main"
 
-            # Get latest commit information
-            commits_url = f"{self.base_url}/{project}/_apis/git/repositories/{repo_id}/commits?api-version={self.api_version}&$top=1"
-
-            with httpx.Client() as client:
-                response = client.get(commits_url, headers=headers, timeout=30.0)
-                if response.status_code == 200:
-                    commits_data = response.json()
-                    commits = commits_data.get("value", [])
-                    if commits:
-                        latest_commit = commits[0]
-                        repo["latest_commit"] = {
-                            "id": latest_commit.get("commitId"),
-                            "message": latest_commit.get("comment"),
-                            "author": latest_commit.get("author", {}).get("name"),
-                            "date": latest_commit.get("author", {}).get("date"),
-                        }
-
             return repo
         except Exception as e:
             logger.error(

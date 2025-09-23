@@ -143,9 +143,10 @@ class AutoToml:
         generated_toml_sections = await self.llm_toml.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
-        output = (
-            f'[document]\ngoal = """{document_goal}"""\n\n' + generated_toml_sections
-        )
+
+        document_section = {"document": {"goal": document_goal}}
+        sanitized_document_section = toml.dumps(document_section)
+        output = sanitized_document_section + "\n" + generated_toml_sections
 
         logger.debug(f"{output}")
 

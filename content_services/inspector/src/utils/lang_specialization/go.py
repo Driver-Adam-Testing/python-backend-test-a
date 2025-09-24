@@ -19,9 +19,11 @@ from .ir_common import (
     IrCollection,
     IrData,
     ListedBacktickNameRawContentNoNone,
-    ListedBacktickNameRawContentWithNone,
+    ListedBacktickNameTypeRawContentNoNone,
+    ListedBacktickNameTypeRawContentWithNone,
     ListedRawContentWithNone,
     RawContent,
+    RawContentNoNone,
     VariableData,
 )
 from .symbol_common import (
@@ -94,9 +96,9 @@ IMPORTANT: For Go structs, members should include all fields. For type aliases a
 Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
     "type": <"struct", "type_alias", "new_type", or "empty_struct">,
-    "members": [
-        {"name": <field_name1>, "content": <Terse 1 sentence description of the first struct field>},
-        {"name": <field_name2>, "content": <Terse 1 sentence description of the second struct field>},
+    "fields": [
+        {"name": <field_name1>, "type": <type>, "content": <Terse 1 sentence description of the first struct field>},
+        {"name": <field_name2>, "type": <type>, "content": <Terse 1 sentence description of the second struct field>},
         ...
     ],
     "description": <one paragraph description of the data structure>,
@@ -129,8 +131,8 @@ Your job is to describe the function or method. **Always respond using exactly t
 {
     "single_sentence": <terse single sentence description of the function>,
     "inputs": [
-        {"name": <input_arg1>, "content": <description of input argument 1>},
-        {"name": <input_arg2>, "content": <description of input argument 2>},
+        {"name": <input_arg1>, "type": <type of the input>, "content": <description of input argument 1, do not restate the type>},
+        {"name": <input_arg2>, "type": <type of the input>, "content": <description of input argument 2, do not restate the type>},
         ...
     ],
     "logic_and_control_flow": [
@@ -140,6 +142,7 @@ Your job is to describe the function or method. **Always respond using exactly t
     ],
     "output": <description of output, including error returns>,
 }
+For method inputs, do not include the receiver type (if a method) as an input argument (what's contained in the parentheses after the func keyword). Only describe the explicit input parameters in the parentheses after the method name.
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -287,7 +290,7 @@ class GoImportRawSymbolCollection(RawSymbolCollection):
 
 class GoDataStructureData(IrData):
     type: FieldNameWithBackTickContent
-    members: ListedBacktickNameRawContentNoNone
+    fields: ListedBacktickNameTypeRawContentNoNone
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(default=[ScopeRelation.METHOD])
 
@@ -295,7 +298,7 @@ class GoDataStructureData(IrData):
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(field_name="Type", content=""),
-            members=ListedBacktickNameRawContentNoNone(content=[]),
+            fields=ListedBacktickNameTypeRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(field_name="Description", content=""),
         )
 
@@ -343,15 +346,23 @@ class GoDataStructureData(IrData):
 
 class GoCallableData(IrData):
     single_sentence: RawContent
-    inputs: ListedBacktickNameRawContentWithNone
+    _type_parameters: RawContentNoNone = PrivateAttr(
+        default=RawContentNoNone(content="")
+    )
+    inputs: ListedBacktickNameTypeRawContentWithNone
     logic_and_control_flow: ListedRawContentWithNone
     output: FieldNameWithRawContent
+
+    def _apply_bespoke_data(self) -> None:
+        self._type_parameters = RawContentNoNone(
+            content=self._reified_symbol.raw.bespoke_data.ty_params
+        )
 
     @classmethod
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
-            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            inputs=ListedBacktickNameTypeRawContentNoNone(content=[]),
             logic_and_control_flow=ListedRawContentWithNone(content=[]),
             output=FieldNameWithRawContent(field_name="Output", content=""),
         )

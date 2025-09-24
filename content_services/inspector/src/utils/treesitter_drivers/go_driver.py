@@ -12,6 +12,29 @@ from utils.lang_specialization.symbol_common import (
 )
 from utils.treesitter_drivers.base import DriverTree
 
+GO_BUILT_IN_FN_SET = frozenset(
+    [
+        "append",
+        "cap",
+        "clear",
+        "close",
+        "complex",
+        "copy",
+        "delete",
+        "imag",
+        "len",
+        "make",
+        "max",
+        "min",
+        "new",
+        "panic",
+        "print",
+        "println",
+        "real",
+        "recover",
+    ]
+)
+
 
 def _is_exported(name: str) -> bool:
     return name and name[0].isupper()
@@ -92,6 +115,7 @@ class GoInterfaceData(BespokeMarker):
 
 class GoCallData(BespokeMarker):
     complete_call_site_name: str
+    is_built_in: bool
     is_goroutine_invocation: bool
     model_config = ConfigDict(frozen=True)
 
@@ -341,12 +365,15 @@ class GoDriverTree(DriverTree):
         for pattern_idx, captures_by_name in query_cursor.matches(self.tree.root_node):
             call_node = captures_by_name.get("call")[0]
             is_goroutine_invocation = call_node.parent.type == "go_statement"
+            is_built_in = False
             match pattern_idx:
                 case 0:  # plane function call
                     call_name = captures_by_name.get("call_name")[0].text.decode(
                         "utf-8"
                     )
                     complete_call_site_name = call_name
+                    if call_name and call_name in GO_BUILT_IN_FN_SET:
+                        is_built_in = True
                 case 1:  # dot selector call
                     complete_call_site_name = captures_by_name.get(
                         "selector_call_name"
@@ -366,6 +393,7 @@ class GoDriverTree(DriverTree):
             bespoke_data = GoCallData(
                 complete_call_site_name=complete_call_site_name,
                 is_goroutine_invocation=is_goroutine_invocation,
+                is_built_in=is_built_in,
             )
 
             if call_node and call_name:

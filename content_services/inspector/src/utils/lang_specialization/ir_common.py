@@ -140,6 +140,17 @@ class ListedBacktickNameRawContentNoNone(MdRenderable):
         return output_str
 
 
+class FourHeaderNamedContentNoNone(MdRenderable):
+    content: list[NamedContent]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = "\n**Group Elements**\n"
+        if len(self.content) > 0:
+            for item in self.content:
+                output_str += f"#### {item.name}\n{item.content}\n"
+        return output_str
+
+
 class ListedBacktickNameRawContentWithNone(MdRenderable):
     content: list[NamedContent]
 

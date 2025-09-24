@@ -390,7 +390,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
     "expected_gbl_name, expected_line_range, expected_kind, expected_uses_iota, expected_components, expected_exported",
     [
         (
-            "package_variable_declaration",
+            "GlobalInt",
             (10, 10),
             "global_var",
             False,
@@ -398,7 +398,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
             [True],
         ),
         (
-            "package_variable_declaration",
+            "GlobalString",
             (11, 11),
             "global_var",
             False,
@@ -406,7 +406,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
             [True],
         ),
         (
-            "package_variable_declaration",
+            "packageInt",
             (14, 14),
             "global_var",
             False,
@@ -414,7 +414,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
             [False],
         ),
         (
-            "package_variable_declaration",
+            "packageBool",
             (15, 15),
             "global_var",
             False,
@@ -454,7 +454,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
             [True, True, True, True],
         ),
         (
-            "package_constant_declaration",
+            "SimpleString",
             (46, 46),
             "global_const",
             False,
@@ -462,7 +462,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
             [True],
         ),
         (
-            "package_constant_declaration",
+            "SimpleBool",
             (47, 47),
             "global_const",
             False,
@@ -470,7 +470,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
             [True],
         ),
         (
-            "package_constant_declaration",
+            "packageConstString",
             (50, 50),
             "global_const",
             False,
@@ -478,7 +478,7 @@ def test_extract_globals_no_false_positives(globals_test_code: str) -> None:
             [False],
         ),
         (
-            "package_constant_declaration",
+            "packageConstInt",
             (51, 51),
             "global_const",
             False,

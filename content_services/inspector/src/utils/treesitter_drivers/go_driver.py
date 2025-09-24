@@ -34,8 +34,8 @@ class GoCallableKind(StrEnum):
 
 class GoCallableData(BespokeMarker):
     kind: GoCallableKind
-    is_exported: bool
-    ty_params: str | None
+    is_exported: bool  # statically apply
+    ty_params: str | None  # if present, tell
     rx_ty: str | None
     model_config = ConfigDict(frozen=True)
 
@@ -434,18 +434,32 @@ class GoDriverTree(DriverTree):
                         else GoGlobalKind.GLOBAL_VAR
                     )
                     if global_node:
-                        globals_list.append(
-                            self._make_symbol(
-                                name="package_variable_declaration",
-                                node=global_node,
-                                symbol_kind=SymbolKind.VARIABLE,
-                                bespoke_data=GoGlobalData(
-                                    kind=kind,
-                                    components=tuple(var_decl_data),
-                                    uses_iota=uses_iota,
-                                ),
+                        if kind == GoGlobalKind.GLOBAL_VAR_GROUP:
+                            globals_list.append(
+                                self._make_symbol(
+                                    name="package_variable_declaration",
+                                    node=global_node,
+                                    symbol_kind=SymbolKind.VARIABLE,
+                                    bespoke_data=GoGlobalData(
+                                        kind=kind,
+                                        components=tuple(var_decl_data),
+                                        uses_iota=uses_iota,
+                                    ),
+                                )
                             )
-                        )
+                        elif kind == GoGlobalKind.GLOBAL_VAR:
+                            globals_list.append(
+                                self._make_symbol(
+                                    name=var_decl_data[0].name,
+                                    node=global_node,
+                                    symbol_kind=SymbolKind.VARIABLE,
+                                    bespoke_data=GoGlobalData(
+                                        kind=kind,
+                                        components=tuple(var_decl_data),
+                                        uses_iota=uses_iota,
+                                    ),
+                                )
+                            )
                     else:
                         print(f"Missing node ({global_node})")
                 case 1:  # global constants
@@ -467,18 +481,32 @@ class GoDriverTree(DriverTree):
                         else GoGlobalKind.GLOBAL_CONST
                     )
                     if global_node:
-                        globals_list.append(
-                            self._make_symbol(
-                                name="package_constant_declaration",
-                                node=global_node,
-                                symbol_kind=SymbolKind.VARIABLE,
-                                bespoke_data=GoGlobalData(
-                                    kind=kind,
-                                    components=tuple(const_decl_data),
-                                    uses_iota=uses_iota,
-                                ),
+                        if kind == GoGlobalKind.GLOBAL_CONST_GROUP:
+                            globals_list.append(
+                                self._make_symbol(
+                                    name="package_constant_declaration",
+                                    node=global_node,
+                                    symbol_kind=SymbolKind.VARIABLE,
+                                    bespoke_data=GoGlobalData(
+                                        kind=kind,
+                                        components=tuple(const_decl_data),
+                                        uses_iota=uses_iota,
+                                    ),
+                                )
                             )
-                        )
+                        elif kind == GoGlobalKind.GLOBAL_CONST:
+                            globals_list.append(
+                                self._make_symbol(
+                                    name=const_decl_data[0].name,
+                                    node=global_node,
+                                    symbol_kind=SymbolKind.VARIABLE,
+                                    bespoke_data=GoGlobalData(
+                                        kind=kind,
+                                        components=tuple(const_decl_data),
+                                        uses_iota=uses_iota,
+                                    ),
+                                )
+                            )
                     else:
                         print(f"Missing node ({global_node})")
                 case _:

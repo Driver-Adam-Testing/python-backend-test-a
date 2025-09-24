@@ -112,6 +112,7 @@ class CCppResolver(SymbolResolver):
         all_files_imports: dict[Path, list[RawTreeSitterSymbolData]],
         all_files_symbols: dict[Path, list[RawTreeSitterSymbolData]],
         num_workers: int | None,
+        project_root: Path,
     ) -> dict[Path, set[RawTreeSitterSymbolData]]:
         visible_symbols = defaultdict(set)
         file_visibility_map = _compute_visibility_scc(

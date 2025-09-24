@@ -31,10 +31,13 @@ class Lang(IntEnum):
     DEFAULT = 10
     TYPESCRIPT = 11
     JAVASCRIPT = 12
+    GO = 13
 
     @classmethod
     def from_ext(cls, ext: str) -> Self:
         match ext:
+            case ".go" | ".mod":
+                return cls.GO
             case ".c":
                 return cls.C
             case ".cpp" | ".cc" | ".cxx" | ".c++":

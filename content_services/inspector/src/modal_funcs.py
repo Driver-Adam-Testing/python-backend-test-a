@@ -29,13 +29,14 @@ image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
-            "tree-sitter==0.24.0",
+            "tree-sitter==0.25.1",
             "tree-sitter-c==0.23.4",
             "tree-sitter-cpp==0.23.2",
             "tree-sitter-java==0.23.5",
-            "tree-sitter-python==0.23.6",
+            "tree-sitter-python==0.25.0",
             "tree-sitter-c-sharp==0.23.1",
             "tree-sitter-typescript==0.23.2",
+            "tree-sitter-go==0.25.0",
             "aiolimiter==1.2.1",
         ]
     )  # TODO lock versions down

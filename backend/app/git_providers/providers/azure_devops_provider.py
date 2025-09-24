@@ -179,7 +179,7 @@ class AzureDevOpsProvider(GitProviderInterface):
             # Get token and metadata from secrets
             secrets = self.fetch_secrets(installation)
             token = secrets["token"]
-            organization = secrets.get("organization", "")
+            organization = installation.git_provider_app.name
             project_name = secrets.get("project", "")
 
             # Fetch repositories using the API strategy

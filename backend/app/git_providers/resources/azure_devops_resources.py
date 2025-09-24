@@ -101,11 +101,11 @@ class AzureDevOpsAPIResources:
             logger.error(f"Failed to fetch organizations: {e}")
             return []
 
-    def fetch_projects(self, token: str, organization: str) -> list[dict[str, Any]]:
+    def fetch_projects(self, token: str) -> list[dict[str, Any]]:
         """Fetch projects in an organization"""
         try:
             headers = self._get_headers(token)
-            url = f"{self.base_url}/{organization}/_apis/projects?api-version={self.api_version}"
+            url = f"{self.base_url}/_apis/projects?api-version={self.api_version}"
 
             with httpx.Client() as client:
                 response = client.get(url, headers=headers, timeout=30.0)
@@ -115,7 +115,7 @@ class AzureDevOpsAPIResources:
                 return data.get("value", [])
         except Exception as e:
             logger.error(
-                f"Failed to fetch projects for organization {organization}: {e}"
+                f"Failed to fetch projects for organization {self.base_url}: {e}"
             )
             return []
 

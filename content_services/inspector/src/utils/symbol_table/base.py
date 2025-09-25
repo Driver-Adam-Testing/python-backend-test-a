@@ -65,6 +65,7 @@ class SymbolResolver(ABC):
         all_file_imports: dict[Path, list[RawTreeSitterSymbolData]],
         all_files_symbols: dict[Path, list[RawTreeSitterSymbolData]],
         num_workers: int | None,
+        project_root: Path,
     ) -> dict[Path, set[RawTreeSitterSymbolData]]:
         """
         Given a file's imports, return all symbols visible through those imports.

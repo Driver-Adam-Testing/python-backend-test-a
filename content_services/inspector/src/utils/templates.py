@@ -110,6 +110,7 @@ class Template(BaseModel):
                                     or language == Lang.C_SHARP
                                     or language == Lang.TYPESCRIPT
                                     or language == Lang.JAVASCRIPT
+                                    or language == Lang.GO
                                 ):
                                     linkable_symbol_kinds = {
                                         SymbolKind.CALLABLE,

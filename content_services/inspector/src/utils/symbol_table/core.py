@@ -48,6 +48,7 @@ class ParsedProject:
     file_to_containment_map: dict[
         Path, dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]
     ]  # Path here is `myproject/my_path/file.c`
+    project_root: Path
 
     @classmethod
     def from_files(
@@ -95,6 +96,7 @@ class ParsedProject:
             file_to_symbols=file_to_syms,
             includes_map=raw_includes,
             file_to_containment_map=file_to_containment_map,
+            project_root=project_root,
         )
 
 
@@ -133,6 +135,7 @@ class ParsedProjectWithVisibility:
                 all_files_imports=includes_map,
                 all_files_symbols=file_to_symbols,
                 num_workers=num_workers,
+                project_root=parsed.project_root,
             )
         timing.visibility_time = visibility_timer["elapsed"]
 

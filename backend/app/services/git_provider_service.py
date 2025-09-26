@@ -182,7 +182,6 @@ class GitProviderService:
             ):
                 raise ValueError("Installation not found or doesn't match app")
 
-            # app = git_provider_app_by_id(session, organization_id, app_id)
             provider = self.get_provider(installation.git_provider_app)
 
             # Validate new token
@@ -306,10 +305,10 @@ class GitProviderService:
             # Azure DevOps service hooks (manually configured)
             webhook_info = WebhookInfo(
                 callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
-                custom_headers={
-                    "x-driver-token": installation_id,
-                    "x-webhook-token": secret.get("secret_token"),
-                },
+                custom_headers=[
+                    f"x-driver-token: {installation_id}",
+                    f"x-webhook-token: {secret.get("secret_token")}",
+                ],
                 secret_token="",  # Not used in Azure DevOps
                 ssl_verification=True,
                 triggers=["git.push"],

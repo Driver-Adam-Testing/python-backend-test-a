@@ -99,6 +99,16 @@ class FieldNameWithBulletedContent(MdRenderable):
         )
 
 
+class FieldNameTypedWithRawContent(MdRenderable):
+    type: str
+    content: str
+
+    def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
+        return f"- **{snake_case_to_spaced_string(doc_label)}**: `{self.type}`: {self.content}\n"
+
+
 class FieldNameWithRawContent(MdRenderable):
     content: str
 

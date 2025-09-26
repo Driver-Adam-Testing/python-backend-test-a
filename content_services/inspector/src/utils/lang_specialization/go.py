@@ -13,6 +13,7 @@ from utils.models import ChatOpenAI
 from utils.treesitter_drivers.go_driver import GoDriverTree
 
 from .ir_common import (
+    FieldNameTypedWithRawContent,
     FieldNameWithBackTickContent,
     FieldNameWithRawContent,
     FourHeaderNamedContentNoNone,
@@ -121,11 +122,44 @@ Data structure to document:
 CALLABLES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Go programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Go.
 
-You focus on writing technical documentation for functions and methods. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+You focus on writing technical documentation for free functions. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
 
-You will be given the name of a function or method to document and the source code where it is defined.
+You will be given the name of a function to document and the source code where it is defined.
 
-For methods, identify the receiver type and whether it's a value or pointer receiver. Always include the receiver as the first input parameter for methods.
+Your job is to describe the function. **Always respond using exactly the following JSON schema**:
+{
+    "single_sentence": <terse single sentence description of the function>,
+    "inputs": [
+        {"name": <input_arg1>, "type": <type of the input>, "content": <description of input argument 1, do not restate the type>},
+        {"name": <input_arg2>, "type": <type of the input>, "content": <description of input argument 2, do not restate the type>},
+        ...
+    ],
+    "logic_and_control_flow": [
+        <bullet point 1 for description of control flow>,
+        <bullet point 2 for description of control flow>,
+        ...
+    ],
+    "output": <description of output, including error returns>,
+}
+
+Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
+"""
+
+CALLABLES_FOUND_USER_PROMPT = """
+Summarize the function in the code provided below. Describe the inputs, control flow and logic, and outputs.
+
+- When describing a function, provide detail that matches the complexity of the implementation. Large and complex functions should get longer explanations.
+- Pay attention to Go idioms like error handling, defer statements, and goroutine usage.
+
+Function to document:
+"""
+
+METHODS_FOUND_SYSTEM_PROMPT_JSON = """
+You are an expert Go programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Go.
+
+You focus on writing technical documentation for methods. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+
+You will be given the name of a method to document and the source code where it is defined.
 
 Your job is to describe the function or method. **Always respond using exactly the following JSON schema**:
 {
@@ -142,17 +176,17 @@ Your job is to describe the function or method. **Always respond using exactly t
     ],
     "output": <description of output, including error returns>,
 }
-For method inputs, do not include the receiver type (if a method) as an input argument (what's contained in the parentheses after the func keyword). Only describe the explicit input parameters in the parentheses after the method name.
+For method inputs, do not include the receiver type as an input argument (what's contained in the first set of parentheses in the method signature). Only describe the explicit input parameters in the second set of parentheses in the function signature.
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
 
-CALLABLES_FOUND_USER_PROMPT = """
-Summarize the function or method in the code provided below. Describe the inputs, control flow and logic, and outputs.
+METHODS_FOUND_USER_PROMPT = """
+Summarize the method in the code provided below. Describe the inputs, control flow and logic, and outputs.
 
-- When describing a function/method, provide detail that matches the complexity of the implementation. Large and complex functions should get longer explanations.
+- When describing a method, provide detail that matches the complexity of the implementation. Large and complex functions should get longer explanations.
 - Pay attention to Go idioms like error handling, defer statements, and goroutine usage.
-- For methods, clearly indicate the receiver type and explain how the method modifies or uses the receiver.
+- For methods, explain how the method modifies or uses the receiver.
 
 Function/Method to document:
 """
@@ -288,16 +322,81 @@ class GoImportRawSymbolCollection(RawSymbolCollection):
 # IrData Classes for LLM-based symbol analysis
 
 
-class GoDataStructureData(IrData):
-    type: FieldNameWithBackTickContent
-    fields: ListedBacktickNameTypeRawContentNoNone
-    description: FieldNameWithRawContent
-    _supported_child_ordering: list[str] = PrivateAttr(default=[ScopeRelation.METHOD])
+class GoMethodData(IrData):
+    single_sentence: RawContent
+    _type_parameters: RawContentNoNone = PrivateAttr(
+        default=RawContentNoNone(content="")
+    )
+    inputs: ListedBacktickNameTypeRawContentWithNone
+    logic_and_control_flow: ListedRawContentWithNone
+    output: FieldNameTypedWithRawContent
+
+    def _apply_bespoke_data(self) -> None:
+        self._type_parameters = RawContentNoNone(
+            content=self._reified_symbol.raw.bespoke_data.ty_params
+        )
 
     @classmethod
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
-            type=FieldNameWithBackTickContent(field_name="Type", content=""),
+            single_sentence=RawContent(content=""),
+            inputs=ListedBacktickNameTypeRawContentNoNone(content=[]),
+            logic_and_control_flow=ListedRawContentWithNone(content=[]),
+            output=FieldNameTypedWithRawContent(type="", content=""),
+        )
+
+    @classmethod
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=METHODS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction/Method Code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
+        if symbol.file_code:
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        return None  # Go callables don't have children in our model
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Callables should not have children")
+
+
+class GoDataStructureData(IrData):
+    _type: FieldNameWithBackTickContent = PrivateAttr(
+        default=FieldNameWithBackTickContent(content="")
+    )
+    fields: ListedBacktickNameTypeRawContentNoNone
+    description: FieldNameWithRawContent
+    _supported_child_ordering: list[str] = PrivateAttr(default=[ScopeRelation.METHOD])
+
+    def _apply_bespoke_data(self) -> None:
+        self._type = FieldNameWithBackTickContent(
+            content=self._reified_symbol.raw.bespoke_data.kind
+        )
+
+    @classmethod
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
+        return cls(
             fields=ListedBacktickNameTypeRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(field_name="Description", content=""),
         )
@@ -332,7 +431,7 @@ class GoDataStructureData(IrData):
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
         mapping = {
-            SymbolKind.CALLABLE: GoCallableData,
+            SymbolKind.CALLABLE: GoMethodData,
         }
         return mapping.get(symbol.symbol_kind)
 
@@ -346,12 +445,9 @@ class GoDataStructureData(IrData):
 
 class GoCallableData(IrData):
     single_sentence: RawContent
-    _type_parameters: RawContentNoNone = PrivateAttr(
-        default=RawContentNoNone(content="")
-    )
     inputs: ListedBacktickNameTypeRawContentWithNone
     logic_and_control_flow: ListedRawContentWithNone
-    output: FieldNameWithRawContent
+    output: FieldNameTypedWithRawContent
 
     def _apply_bespoke_data(self) -> None:
         self._type_parameters = RawContentNoNone(
@@ -364,7 +460,7 @@ class GoCallableData(IrData):
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameTypeRawContentNoNone(content=[]),
             logic_and_control_flow=ListedRawContentWithNone(content=[]),
-            output=FieldNameWithRawContent(field_name="Output", content=""),
+            output=FieldNameTypedWithRawContent(type="", content=""),
         )
 
     @classmethod

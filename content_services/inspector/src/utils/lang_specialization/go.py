@@ -96,6 +96,7 @@ There are 3 data structure types we are documenting:
 - `struct`: A type composed of collection of orthogonal fields.
 - `new_type`: A new, distinct type with distinct semantics accordingly. Used to provide type safety in usage for a new type.
 - `type_alias`: A simple alias for an existing type with no distinct semantics.
+`new_type` and `type_alias`es are superficially similar but have importantly different semantics that are important. Do not confuse them or terms related to them in your descriptions. For example, do not describe a new_type as "an alias" -- reserve that kind of description for `type_alias`
 
 Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {

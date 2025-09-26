@@ -88,7 +88,7 @@ class GitProviderAppTokenSecret(BaseModel):
 
 class WebhookInfo(BaseModel):
     callback_url: str
-    custom_headers: dict
+    custom_headers: dict | list[str]
     secret_token: str
     ssl_verification: bool
     triggers: list[str]

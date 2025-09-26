@@ -38,29 +38,6 @@ class AzureDevOpsAPIResources:
 
                 if response.status_code in [200, 203]:
                     return {"status": "success", "data": response.json()}
-                elif response.status_code == 302:
-                    # Handle redirect - try to follow it or use alternative endpoint
-                    redirect_url = response.headers.get("location")
-                    if redirect_url:
-                        logger.info(f"Following redirect to: {redirect_url}")
-                        redirect_response = client.get(
-                            redirect_url, headers=headers, timeout=30.0
-                        )
-                        if redirect_response.status_code == 200:
-                            return {
-                                "status": "success",
-                                "data": redirect_response.json(),
-                            }
-                        else:
-                            return {
-                                "status": "error",
-                                "error": f"Redirect validation failed with status {redirect_response.status_code}",
-                            }
-                    else:
-                        return {
-                            "status": "error",
-                            "error": "Received redirect but no location header",
-                        }
                 elif response.status_code == 401:
                     return {"status": "error", "error": "Invalid Personal Access Token"}
                 elif response.status_code == 403:

@@ -1,5 +1,6 @@
 import json
 import logging
+import secrets
 from typing import Any
 
 import modal
@@ -45,7 +46,6 @@ class AzureDevOpsProvider(GitProviderInterface):
     def from_config(
         cls, app: GitProviderApp, aws_config: AWSClientConfig
     ) -> "AzureDevOpsProvider":
-        """Create provider instance from app configuration"""
         secrets_manager = AWSSecretManagementStrategy(aws_config)
         config = load_provider_config(app, client_secret=None)
         return cls(config, secrets_manager)
@@ -55,12 +55,10 @@ class AzureDevOpsProvider(GitProviderInterface):
     ) -> tuple[bool, str | None]:
         """Validate Personal Access Token against Azure DevOps API"""
         try:
-            # Extract token from token_data
             token = token_data.get("token")
             if not token:
                 return False, "No token provided"
 
-            # Validate token by making a request to Azure DevOps profile API
             response = self.api_strategy.validate_token(token)
             if response.get("status") == "success":
                 return True, None
@@ -73,14 +71,10 @@ class AzureDevOpsProvider(GitProviderInterface):
     def create_installation(
         self, organization_id: str, app_id: str, token_data: dict[str, Any]
     ) -> GitProviderAppInstallation:
-        """Create installation record for Azure DevOps PAT"""
-        # Extract organization and project from token_data
-        # organization = token_data["metadata"].get("organization"]
         project = token_data["metadata"]["project"]
         metadata = {
             "kind": token_data["token_type"],
             "name": project,
-            # "organization": organization,
         }
         return GitProviderAppInstallation(
             git_provider_app_id=app_id,
@@ -91,23 +85,15 @@ class AzureDevOpsProvider(GitProviderInterface):
     def store_secrets(
         self, installation: GitProviderAppInstallation, token_data: dict[str, Any]
     ) -> None:
-        """Store Personal Access Token and related secrets"""
         try:
-            # Generate webhook secret
-            import secrets
-
             webhook_secret = secrets.token_urlsafe(32)
-
-            # Store the PAT with webhook secret
             pat_secret_name = format_secret_name(
                 APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
             )
             token = token_data["token"]
-            # organization = token_data["metadata"]["organization"]
             project = token_data["metadata"]["project"]
             pat_secret = {
                 "token": token,
-                # "organization": organization,
                 "project": project,
                 "secret_token": webhook_secret,
             }
@@ -136,13 +122,10 @@ class AzureDevOpsProvider(GitProviderInterface):
 
             webhook_secret = existing_secrets["secret_token"]
 
-            # Update only the token, preserve webhook secret
             token = token_data["token"]
-            # organization = token_data["metadata"]["organization"]
             project = token_data["metadata"]["project"]
             pat_secret = {
                 "token": token,
-                # "organization": organization,
                 "project": project,
                 "secret_token": webhook_secret,
             }
@@ -156,7 +139,6 @@ class AzureDevOpsProvider(GitProviderInterface):
             raise
 
     def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict[str, Any]:
-        """Fetch stored secrets for the installation"""
         pat_secret_name = format_secret_name(
             APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
         )
@@ -172,17 +154,14 @@ class AzureDevOpsProvider(GitProviderInterface):
     def fetch_repositories(
         self, installation: GitProviderAppInstallation
     ) -> list[GitRepository]:
-        """Fetch repositories accessible by the installation"""
         logger.info(f"Fetching repositories for installation: {installation.id}")
 
         try:
-            # Get token and metadata from secrets
-            secrets = self.fetch_secrets(installation)
-            token = secrets["token"]
+            _secrets = self.fetch_secrets(installation)
+            token = _secrets["token"]
             organization = installation.git_provider_app.name
-            project_name = secrets.get("project", "")
+            project_name = _secrets.get("project", "")
 
-            # Fetch repositories using the API strategy
             repos_data = self.api_strategy.fetch_repositories(token, project_name)
 
             repos = []
@@ -244,7 +223,6 @@ class AzureDevOpsProvider(GitProviderInterface):
             raise PermissionError("Insufficient permissions")
 
         try:
-            # Extract event information
             resource = payload.get("resource", {})
 
             if event_type == "git.push":
@@ -258,10 +236,8 @@ class AzureDevOpsProvider(GitProviderInterface):
             return {"status": "error", "message": str(e)}
 
     def revoke_access(self, installation: GitProviderAppInstallation) -> None:
-        """Revoke access for an Azure DevOps installation"""
         logger.info(f"Revoking access for Azure DevOps installation {installation.id}")
 
-        # Delete access token secret
         pat_secret_name = format_secret_name(
             APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
         )
@@ -329,16 +305,6 @@ class AzureDevOpsProvider(GitProviderInterface):
 
         message = {"message": ""}
 
-        # # Get access token for API calls if needed
-        # try:
-        #     secrets = self.fetch_secrets_by_id(installation_id)
-        # except Exception as e:
-        #     logger.error(
-        #         f"Failed to fetch access token for installation {installation_id}: {e}"
-        #     )
-        #     return {"message": "Failed to process push event: missing access token"}
-
-        # Get default branch from repository metadata
         default_branch = repository.get("defaultBranch", "main")
         if not default_branch.startswith("refs/heads/"):
             default_branch = f"refs/heads/{default_branch}"
@@ -427,36 +393,34 @@ class AzureDevOpsProvider(GitProviderInterface):
 
     # Private helper methods
 
-    def _get_default_branch(
-        self,
-        organization: str,
-        project: str,
-        repo_name: str,
-        access_token: str,
-        repository_data: dict[str, Any] | None = None,
-    ) -> str:
-        """Get default branch name for a repository, fetching from API if needed"""
-        # First check if it's in the provided repository data
-        if repository_data:
-            default_branch = repository_data.get("defaultBranch")
-            if default_branch:
-                # Azure DevOps returns refs/heads/branch_name format
-                if default_branch.startswith("refs/heads/"):
-                    return default_branch.replace("refs/heads/", "")
-                return default_branch
-
-        # If not, fetch from API
-        try:
-            repo_data = self.api_strategy.get_repository(
-                organization, project, repo_name, access_token
-            )
-            if repo_data:
-                default_branch = repo_data.get("defaultBranch", "main")
-                if default_branch.startswith("refs/heads/"):
-                    return default_branch.replace("refs/heads/", "")
-                return default_branch
-        except Exception as e:
-            logger.warning(f"Failed to fetch default branch for {repo_name}: {e}")
-
-        # Fallback to 'main'
-        return "main"
+    # def _get_default_branch(
+    #     self,
+    #     organization: str,
+    #     project: str,
+    #     repo_name: str,
+    #     access_token: str,
+    #     repository_data: dict[str, Any] | None = None,
+    # ) -> str:
+    #     if repository_data:
+    #         default_branch = repository_data.get("defaultBranch")
+    #         if default_branch:
+    #             # Azure DevOps returns refs/heads/branch_name format
+    #             if default_branch.startswith("refs/heads/"):
+    #                 return default_branch.replace("refs/heads/", "")
+    #             return default_branch
+    #
+    #     # If not, fetch from API
+    #     try:
+    #         repo_data = self.api_strategy.get_repository(
+    #             organization, project, repo_name, access_token
+    #         )
+    #         if repo_data:
+    #             default_branch = repo_data.get("defaultBranch", "main")
+    #             if default_branch.startswith("refs/heads/"):
+    #                 return default_branch.replace("refs/heads/", "")
+    #             return default_branch
+    #     except Exception as e:
+    #         logger.warning(f"Failed to fetch default branch for {repo_name}: {e}")
+    #
+    #     # Fallback to 'main'
+    #     return "main"

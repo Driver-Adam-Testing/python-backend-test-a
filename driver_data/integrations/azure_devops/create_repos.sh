@@ -4,7 +4,7 @@
 # This script wraps the Python bulk_create_repos.py script with convenient defaults
 
 # Configuration - Replace these with your actual values
-PAT="4VR7Dn2KiDprxZQQsYsFGiRO6V7P5k7j5V1vGGowrdki032y9K89JQQJ99BIACAAAAAuAcKbAAASAZDO2RS9"  # Your Azure DevOps Personal Access Token
+PAT=""  # Your Azure DevOps Personal Access Token
 ORGANIZATION="driverai"  # Your Azure DevOps organization (e.g., "myorg")
 PROJECT="backend"  # Your Azure DevOps project name (e.g., "MyProject")
 

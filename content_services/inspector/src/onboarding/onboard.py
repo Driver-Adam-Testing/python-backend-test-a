@@ -559,11 +559,12 @@ def handle_azure_devops_events(
         print(repo)
         if "installation_id" not in repo:
             repo["installation_id"] = installation_id
-    # Using 5 workers to stay within Azure DevOps rate limits
-    # Azure DevOps has stricter rate limits than other providers
-    with ThreadPoolExecutor(max_workers=5) as executor:
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
-            executor.submit(azure_devops_ops.download_and_upload_repo, org_id, repo, token)
+            executor.submit(
+                azure_devops_ops.download_and_upload_repo, org_id, repo, token
+            )
             for repo in repos_added
         ]
         wait(futures)

@@ -672,7 +672,6 @@ def git_provider_webhook(
 
     # Get installation_id from query param OR header
     if not installation_id:
-        # Try different header names for different providers
         installation_id = headers.get("x-driver-token")  # GitLab and Azure DevOps
 
     if not installation_id:

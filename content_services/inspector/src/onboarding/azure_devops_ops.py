@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_access_token(installation_id: str) -> str:
-    """Fetch Personal Access Token for Azure DevOps installation"""
     print(f"INFO: Fetching Personal Access Token for installation ID {installation_id}")
     install_key = format_secret_name("GIT_PROVIDER_PAT_INSTALL_SECRET", installation_id)
     secrets_manager = AWSSecretManagementStrategy(
@@ -50,17 +49,16 @@ def fetch_access_token(installation_id: str) -> str:
 def download_repo(
     base_url: str, project: str, repo_id: str, commit: str, access_token: str
 ) -> bytes:
-    """Download repository archive from Azure DevOps using REST API"""
     # Azure DevOps uses Basic auth with PAT as username and empty password
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
-    
+
     # Extract organization from base_url for logging
     if base_url.startswith("https://dev.azure.com/"):
         organization = base_url.replace("https://dev.azure.com/", "").rstrip("/")
     else:
         organization = "unknown"
-    
+
     # Azure DevOps archive download endpoint
     url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/items"
     params = {
@@ -69,11 +67,13 @@ def download_repo(
         "versionDescriptor.versionType": "commit",
         "$format": "zip",
         "api-version": "7.2-preview",
-        "download": "true"
+        "download": "true",
     }
-    
-    print(f"INFO: Downloading Azure DevOps repository {organization}/{project}/{repo_id} at commit {commit}")
-    
+
+    print(
+        f"INFO: Downloading Azure DevOps repository {organization}/{project}/{repo_id} at commit {commit}"
+    )
+
     response = requests.get(
         url,
         headers=headers,
@@ -85,37 +85,37 @@ def download_repo(
     return response.content
 
 
-def get_default_branch(base_url: str, project: str, repo_id: str, access_token: str) -> str:
-    """Get the default branch name for an Azure DevOps repository"""
+def get_default_branch(
+    base_url: str, project: str, repo_id: str, access_token: str
+) -> str:
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
-    
+
     repo_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}"
     params = {"api-version": "7.2-preview"}
-    
+
     response = requests.get(repo_url, headers=headers, params=params, timeout=120)
     response.raise_for_status()
     repo_data = response.json()
-    
+
     return repo_data["defaultBranch"].replace("refs/heads/", "")
 
 
 def get_latest_commit(
     base_url: str, project: str, repo_id: str, access_token: str, default_branch: str
 ) -> str:
-    """Get the latest commit SHA for the default branch"""
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
-    
+
     # Fetch commits from the default branch
     commits_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/commits"
     params = {
         "searchCriteria.itemVersion.version": default_branch,
         "searchCriteria.itemVersion.versionType": "branch",
         "$top": 1,
-        "api-version": "7.2-preview"
+        "api-version": "7.2-preview",
     }
-    
+
     response = requests.get(
         commits_url,
         headers=headers,
@@ -124,7 +124,7 @@ def get_latest_commit(
     )
     response.raise_for_status()
     commits_data = response.json()
-    
+
     commits = commits_data.get("value", [])
     if commits:
         return commits[0]["commitId"]
@@ -132,22 +132,27 @@ def get_latest_commit(
 
 
 def fetch_vcs_info(
-    base_url: str, project: str, repo_id: str, access_token: str, commit_sha: str | None = None
+    base_url: str,
+    project: str,
+    repo_id: str,
+    access_token: str,
+    commit_sha: str | None = None,
 ) -> VersionControlInfo:
-    """Fetch version control information from Azure DevOps"""
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
-    
+
     # Extract organization from base_url
     if base_url.startswith("https://dev.azure.com/"):
         organization = base_url.replace("https://dev.azure.com/", "").rstrip("/")
     else:
-        raise ValueError(f"Invalid base_url format: {base_url} organization could not be determined")
-    
+        raise ValueError(
+            f"Invalid base_url format: {base_url} organization could not be determined"
+        )
+
     # Fetch repository information
     repo_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}"
     repo_params = {"api-version": "7.2-preview"}
-    
+
     repo_response = requests.get(
         repo_url,
         headers=headers,
@@ -162,10 +167,11 @@ def fetch_vcs_info(
 
     default_branch = repo_data["defaultBranch"].replace("refs/heads/", "")
 
-    # Fetch detailed commit information
-    commit_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/commits/{commit_sha}"
+    commit_url = (
+        f"{base_url}/{project}/_apis/git/repositories/{repo_id}/commits/{commit_sha}"
+    )
     commit_params = {"api-version": "7.2-preview"}
-    
+
     commit_response = requests.get(
         commit_url,
         headers=headers,
@@ -179,7 +185,6 @@ def fetch_vcs_info(
         f"INFO: Commit data retrieved from Azure DevOps API (status code {commit_response.status_code})"
     )
 
-    # Build VersionControlInfo
     author_info = AuthorInfo(
         email=commit_data["author"]["email"],
         name=commit_data["author"]["name"],
@@ -202,7 +207,7 @@ def fetch_vcs_info(
         namespace=f"{organization}/{project}",
         full_name=f"{organization}/{project}/{repo_data['name']}",
         url=repo_data.get("webUrl", ""),
-      )
+    )
 
     return VersionControlInfo(
         repository=repo_info,
@@ -222,7 +227,6 @@ def generate_codebase_metadata(
     asset_name: str,
     install_id: str,
 ) -> dict:
-    """Generate codebase metadata for Azure DevOps following org/project structure"""
     from database.models_enums import PrimaryAssetKind
 
     return {
@@ -242,7 +246,6 @@ def generate_codebase_metadata(
 def download_and_upload_repo(
     org_id: str, repo: dict, access_token: str, is_push: bool = False
 ) -> str | None:
-    """Download and upload Azure DevOps repository to S3"""
     from database.db import engine
     from database.models import (
         GitProviderAppInstallation,
@@ -256,13 +259,11 @@ def download_and_upload_repo(
     )
     from sqlalchemy.exc import IntegrityError
 
-    # Extract Azure DevOps specific metadata
     metadata = repo.get("metadata", {})
     repo_id = repo.get("repo_id") or metadata.get("id")
     repo_name = repo.get("repo_name") or repo.get("name")
     installation_id = repo.get("installation_id")
 
-    # Handle missing fields
     if not repo_id:
         print(f"Missing repo_id in repo data: {repo}")
         return repo_name or "unknown"
@@ -276,53 +277,60 @@ def download_and_upload_repo(
     try:
         with Session(engine) as session, session.begin():
             app_install = session.exec(
-                select(GitProviderAppInstallation).where(
-                    GitProviderAppInstallation.id == installation_id
-                )
+                select(GitProviderAppInstallation)
+                .where(GitProviderAppInstallation.id == installation_id)
                 .options(selectinload(GitProviderAppInstallation.git_provider_app))
             ).one()
-            
+
             # Get the base_url - should be https://dev.azure.com/{organization}
             base_url = app_install.git_provider_app.base_url
             if not base_url:
-                print(f"ERROR: No base_url found in GitProviderApp for installation {installation_id}")
+                print(
+                    f"ERROR: No base_url found in GitProviderApp for installation {installation_id}"
+                )
                 return repo_name
-            
+
             # Extract organization from base_url
             if base_url.startswith("https://dev.azure.com/"):
-                organization = base_url.replace("https://dev.azure.com/", "").rstrip("/")
+                organization = base_url.replace("https://dev.azure.com/", "").rstrip(
+                    "/"
+                )
             else:
                 print(f"ERROR: Invalid base_url format: {base_url}")
                 return repo_name
-            
+
             # Extract project from repo metadata
             project_metadata = metadata.get("project", {})
             if isinstance(project_metadata, dict):
                 project = project_metadata.get("name", "")
             else:
                 project = str(project_metadata) if project_metadata else ""
-            
+
             if not project:
                 print(f"ERROR: Could not determine project from metadata: {metadata}")
                 return repo_name
 
-            # Get commit SHA, handling different data structures
             commit = None
             if repo.get("latest_commit"):
                 if isinstance(repo["latest_commit"], dict):
-                    # Try different possible structures for Azure DevOps
                     commit = (
-                        repo["latest_commit"].get("commitId") or 
-                        repo["latest_commit"].get("commit", {}).get("commitId") or
-                        repo["latest_commit"].get("id")  # fallback for other providers
+                        repo["latest_commit"].get("commitId")
+                        or repo["latest_commit"].get("commit", {}).get("commitId")
+                        or repo["latest_commit"].get(
+                            "id"
+                        )  # fallback for other providers
                     )
                 else:
                     commit = repo["latest_commit"]
-            
+
             # If no commit found in repo data, fetch the latest commit from the API
             if not commit:
-                default_branch = get_default_branch(base_url, project, repo_id, access_token)
-                commit = get_latest_commit(base_url, project, repo_id, access_token, default_branch)
+                default_branch = get_default_branch(
+                    base_url, project, repo_id, access_token
+                )
+                commit = get_latest_commit(
+                    base_url, project, repo_id, access_token, default_branch
+                )
 
             # Fetch version control information
             vcs_info = fetch_vcs_info(
@@ -338,7 +346,8 @@ def download_and_upload_repo(
                     select(PrimaryAsset)
                     .where(
                         PrimaryAsset.organization_id == org_id,
-                        PrimaryAsset.repository_id == str(repo_id),  # Ensure it's a string
+                        PrimaryAsset.repository_id
+                        == str(repo_id),  # Ensure it's a string
                     )
                     .options(selectinload(PrimaryAsset.versions))
                 ).first()
@@ -471,7 +480,6 @@ def download_and_upload_repo(
         logger.exception(f"Error downloading Azure DevOps repo {repo_name}")
         return repo_name
 
-    # Upload to S3
     try:
         org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
         upload_key = (
@@ -491,143 +499,129 @@ def download_and_upload_repo(
 def get_repo_clone_info_from_id(
     base_url: str, project: str, repo_id: str, access_token: str
 ) -> tuple[str, str]:
-    """Get repository clone URL and full name for Azure DevOps"""
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
-    
+
     repo_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}"
     params = {"api-version": "7.2-preview"}
-    
+
     response = requests.get(repo_url, headers=headers, params=params, timeout=120)
     response.raise_for_status()
-    
+
     data = response.json()
-    
+
     # Extract organization from base_url
     if base_url.startswith("https://dev.azure.com/"):
         organization = base_url.replace("https://dev.azure.com/", "").rstrip("/")
     else:
         raise ValueError(f"Invalid base_url format: {base_url}")
-    
+
     full_name = f"{organization}/{project}/{data['name']}"
-    
+
     # Azure DevOps clone URL format
     clone_url = f"https://{access_token}@dev.azure.com/{organization}/{project}/_git/{data['name']}"
-    
+
     return clone_url, full_name
-
-
-def fetch_azure_devops_default_branch_name(
-    base_url: str, project: str, repo_id: str, access_token: str
-) -> str:
-    """Fetch default branch name for Azure DevOps repository"""
-    return get_default_branch(base_url, project, repo_id, access_token)
 
 
 def list_pull_requests(
     base_url: str, project: str, repo_id: str, access_token: str, state: str = "active"
 ) -> list:
-    """List pull requests for Azure DevOps repository"""
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
-    
+
     url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullrequests"
     params = {
         "searchCriteria.status": state,
         "api-version": "7.2-preview",
-        "$top": 100  # Azure DevOps default pagination
+        "$top": 100,  # Azure DevOps default pagination
     }
-    
+
     all_prs = []
-    
+
     # Handle pagination
     while url:
         response = requests.get(url, headers=headers, params=params, timeout=120)
         response.raise_for_status()
-        
+
         data = response.json()
         all_prs.extend(data.get("value", []))
-        
+
         # Check for continuation token for next page
         if data.get("count", 0) == 100:  # If we got max results, there might be more
             params["$skip"] = len(all_prs)
         else:
             break
-    
+
     return all_prs
 
 
 def get_pull_request_commits(
     base_url: str, project: str, repo_id: str, pr_id: int, access_token: str
 ) -> list:
-    """Get commits from a specific pull request in Azure DevOps"""
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
-    
+
     url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullRequests/{pr_id}/commits"
     params = {"api-version": "7.2-preview"}
-    
+
     all_commits = []
-    
+
     # Handle pagination
     while url:
         response = requests.get(url, headers=headers, params=params, timeout=120)
         response.raise_for_status()
-        
+
         data = response.json()
         all_commits.extend(data.get("value", []))
-        
+
         # Azure DevOps uses continuation token for pagination
         continuation_token = response.headers.get("x-ms-continuationtoken")
         if continuation_token:
             params["continuationToken"] = continuation_token
         else:
             break
-    
+
     return all_commits
 
 
 def close_pull_request(
     base_url: str, project: str, repo_id: str, pr_id: int, access_token: str
 ) -> None:
-    """Close/abandon a pull request in Azure DevOps"""
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {
         "Authorization": f"Basic {auth_header}",
         "Content-Type": "application/json",
     }
-    
+
     # First, check the PR status
-    pr_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullrequests/{pr_id}"
-    pr_response = requests.get(
-        pr_url, 
-        headers=headers, 
-        params={"api-version": "7.2-preview"}, 
-        timeout=120
+    pr_url = (
+        f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullrequests/{pr_id}"
     )
-    
+    pr_response = requests.get(
+        pr_url, headers=headers, params={"api-version": "7.2-preview"}, timeout=120
+    )
+
     if pr_response.status_code == 200:
         pr_data = pr_response.json()
         status = pr_data.get("status", "").lower()
-        
+
         # Check if PR is already closed
         if status in ["completed", "abandoned"]:
             print(f"INFO: Pull request #{pr_id} is already {status}")
             return
-    
+
     # Update PR to abandon it
-    update_data = {
-        "status": "abandoned"
-    }
-    
+    update_data = {"status": "abandoned"}
+
     response = requests.patch(
-        pr_url, 
-        headers=headers, 
-        params={"api-version": "7.2-preview"}, 
+        pr_url,
+        headers=headers,
+        params={"api-version": "7.2-preview"},
         data=json.dumps(update_data),
-        timeout=120
+        timeout=120,
     )
-    
+
     try:
         response.raise_for_status()
         print(f"Closed pull request #{pr_id}")
@@ -640,7 +634,7 @@ def close_pull_request(
             error_detail = f" - {error_json}"
         except (ValueError, AttributeError):
             error_detail = f" - {e.response.text}"
-        
+
         print(f"Failed to close pull request #{pr_id}: {e}{error_detail}")
         raise
 
@@ -653,15 +647,14 @@ def create_pull_request(
     source_branch: str,
     commit_slug: str,
 ) -> None:
-    """Create a pull request in Azure DevOps"""
     default_branch = get_default_branch(base_url, project, repo_id, access_token)
-    
+
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {
         "Authorization": f"Basic {auth_header}",
         "Content-Type": "application/json",
     }
-    
+
     pr_data = {
         "sourceRefName": f"refs/heads/{source_branch}",
         "targetRefName": f"refs/heads/{default_branch}",
@@ -669,18 +662,14 @@ def create_pull_request(
         "description": f"Automated update of driver documentation for commit {commit_slug}",
         "isDraft": False,
     }
-    
+
     url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullrequests"
     params = {"api-version": "7.2-preview"}
-    
+
     response = requests.post(
-        url, 
-        headers=headers, 
-        params=params, 
-        data=json.dumps(pr_data),
-        timeout=120
+        url, headers=headers, params=params, data=json.dumps(pr_data), timeout=120
     )
-    
+
     try:
         response.raise_for_status()
         pr_response = response.json()
@@ -705,44 +694,58 @@ def create_pull_request_with_bot_cleanup(
     source_branch: str,
     commit_slug: str,
 ) -> None:
-    """Create a pull request and close any existing bot PRs from docs_* branches in Azure DevOps"""
     BOT_NAME = "docs-bot"
     BOT_EMAIL = "bot@driverai.com"
-    
+
     print("Checking for existing bot pull requests...")
-    
+
     try:
         existing_prs = list_pull_requests(base_url, project, repo_id, access_token)
-        
+
         for pr in existing_prs:
             source_ref = pr.get("sourceRefName", "")
-            source_branch_name = source_ref.replace("refs/heads/", "") if source_ref.startswith("refs/heads/") else source_ref
-            
+            source_branch_name = (
+                source_ref.replace("refs/heads/", "")
+                if source_ref.startswith("refs/heads/")
+                else source_ref
+            )
+
             if source_branch_name.startswith("docs_"):
                 try:
                     pr_id = pr["pullRequestId"]
-                    commits = get_pull_request_commits(base_url, project, repo_id, pr_id, access_token)
-                    
+                    commits = get_pull_request_commits(
+                        base_url, project, repo_id, pr_id, access_token
+                    )
+
                     # Check if any commit is authored by the bot
                     is_bot_pr = any(
                         BOT_EMAIL in commit.get("author", {}).get("email", "")
                         or BOT_NAME in commit.get("author", {}).get("name", "")
                         for commit in commits
                     )
-                    
+
                     if is_bot_pr:
                         try:
-                            close_pull_request(base_url, project, repo_id, pr_id, access_token)
-                            print(f"Closed existing bot PR #{pr_id} from branch {source_branch_name}")
+                            close_pull_request(
+                                base_url, project, repo_id, pr_id, access_token
+                            )
+                            print(
+                                f"Closed existing bot PR #{pr_id} from branch {source_branch_name}"
+                            )
                         except Exception as close_error:
                             # Log but don't fail if we can't close the PR
-                            print(f"Warning: Could not close PR #{pr_id}: {close_error}")
-                
+                            print(
+                                f"Warning: Could not close PR #{pr_id}: {close_error}"
+                            )
+
                 except Exception as e:
-                    print(f"Error checking PR #{pr.get('pullRequestId', 'unknown')}: {e}")
-    
+                    print(
+                        f"Error checking PR #{pr.get('pullRequestId', 'unknown')}: {e}"
+                    )
+
     except Exception as e:
         print(f"Error listing pull requests: {e}")
-    
-    # Create new pull request
-    create_pull_request(base_url, project, repo_id, access_token, source_branch, commit_slug)
+
+    create_pull_request(
+        base_url, project, repo_id, access_token, source_branch, commit_slug
+    )

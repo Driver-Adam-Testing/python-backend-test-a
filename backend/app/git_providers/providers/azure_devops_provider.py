@@ -388,39 +388,4 @@ class AzureDevOpsProvider(GitProviderInterface):
                     f"Push event processed for repo: {repo_name}. Processing in background job."
                 )
 
-        # NOTE: This message will pertain only to the last ref_update processed
         return message
-
-    # Private helper methods
-
-    # def _get_default_branch(
-    #     self,
-    #     organization: str,
-    #     project: str,
-    #     repo_name: str,
-    #     access_token: str,
-    #     repository_data: dict[str, Any] | None = None,
-    # ) -> str:
-    #     if repository_data:
-    #         default_branch = repository_data.get("defaultBranch")
-    #         if default_branch:
-    #             # Azure DevOps returns refs/heads/branch_name format
-    #             if default_branch.startswith("refs/heads/"):
-    #                 return default_branch.replace("refs/heads/", "")
-    #             return default_branch
-    #
-    #     # If not, fetch from API
-    #     try:
-    #         repo_data = self.api_strategy.get_repository(
-    #             organization, project, repo_name, access_token
-    #         )
-    #         if repo_data:
-    #             default_branch = repo_data.get("defaultBranch", "main")
-    #             if default_branch.startswith("refs/heads/"):
-    #                 return default_branch.replace("refs/heads/", "")
-    #             return default_branch
-    #     except Exception as e:
-    #         logger.warning(f"Failed to fetch default branch for {repo_name}: {e}")
-    #
-    #     # Fallback to 'main'
-    #     return "main"

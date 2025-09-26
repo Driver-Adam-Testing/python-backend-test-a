@@ -92,11 +92,13 @@ You focus on writing technical documentation for data structures in Go. You are 
 
 You will be given the name of a data structure to document and the source code where the data structure is defined.
 
-IMPORTANT: For Go structs, members should include all fields. For type aliases and new types, describe what the underlying type is.
+There are 3 data structure types we are documenting:
+- `struct`: A type composed of collection of orthogonal fields.
+- `new_type`: A new, distinct type with distinct semantics accordingly. Used to provide type safety in usage for a new type.
+- `type_alias`: A simple alias for an existing type with no distinct semantics.
 
 Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
-    "type": <"struct", "type_alias", "new_type", or "empty_struct">,
     "fields": [
         {"name": <field_name1>, "type": <type>, "content": <Terse 1 sentence description of the first struct field>},
         {"name": <field_name2>, "type": <type>, "content": <Terse 1 sentence description of the second struct field>},
@@ -426,6 +428,12 @@ class GoDataStructureData(IrData):
             user_prompt.append(
                 Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
             )
+        ds_type = symbol.reified_symbol.raw.bespoke_data.kind
+        user_prompt.append(
+            Component(
+                string=f"\n\nNote: This is a {ds_type}. Describe it as such in the description."
+            )
+        )
         return user_prompt.into_str()
 
     @classmethod

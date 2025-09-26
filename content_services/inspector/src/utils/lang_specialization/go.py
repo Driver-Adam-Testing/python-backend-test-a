@@ -143,7 +143,10 @@ Your job is to describe the function. **Always respond using exactly the followi
         <bullet point 2 for description of control flow>,
         ...
     ],
-    "output": <description of output, including error returns>,
+    "output": {
+        "type": <type of the output, including error returns>,
+        "content": <description of output, including error returns>
+    },
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -178,7 +181,10 @@ Your job is to describe the function or method. **Always respond using exactly t
         <bullet point 2 for description of control flow>,
         ...
     ],
-    "output": <description of output, including error returns>,
+    "output": {
+        "type": <type of the output, including error returns>,
+        "content": <description of output, including error returns>
+    },
 }
 For method inputs, do not include the receiver type as an input argument (what's contained in the first set of parentheses in the method signature). Only describe the explicit input parameters in the second set of parentheses in the function signature.
 

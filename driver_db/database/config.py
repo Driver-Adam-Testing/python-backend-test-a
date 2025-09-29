@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str | None = None
     POSTGRES_PASSWORD: str | None = None
     POSTGRES_DB: str = ""
+
     ENVIRONMENT: str = "local"
 
     # NOTE: if DATABASE_URL is set, it overrides the other postgres params

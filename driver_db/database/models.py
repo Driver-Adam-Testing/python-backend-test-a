@@ -587,6 +587,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "uselist": False,
             "order_by": "desc(Version.updated_at)",
             "cascade": "all, delete-orphan",
+            "overlaps": "most_recent_version, versions",
         },
     )
     versions: list["Version"] = Relationship(
@@ -597,7 +598,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "foreign_keys": "[Version.primary_asset_id]",
             "order_by": "desc(Version.updated_at)",
             "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
-            "overlaps": "most_recent_version",
+            "overlaps": "most_recent_version, most_recent_completed_version",
         },
     )
     tags: list["Tag"] = Relationship(
@@ -607,6 +608,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     vcs_auto_update_policy: VcsAutoUpdatePolicy | None = Field(
         sa_column=Column(String, nullable=True)
     )
+    vcs_tracked_branch: str | None = Field(nullable=True, default=None)
 
 
 class Version(SQLModel, table=True):  # type: ignore
@@ -663,7 +665,7 @@ class Version(SQLModel, table=True):  # type: ignore
         back_populates="versions",
         sa_relationship_kwargs={
             "foreign_keys": "[Version.primary_asset_id]",
-            "overlaps": "most_recent_version",
+            "overlaps": "most_recent_version, most_recent_completed_version",
         },
     )
     nodes: list["Node"] = Relationship(

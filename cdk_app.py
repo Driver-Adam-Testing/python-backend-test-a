@@ -14,7 +14,4 @@ BackendStack(
     "DriverApiStack",
     env=cdk.Environment(account=settings.AWS_ACCOUNT, region=settings.AWS_REGION),
 )
-
 app.synth()
-
-

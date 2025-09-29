@@ -10,7 +10,6 @@ from .core import (
     ParsedProject,
     ParsedProjectWithVisibility,
     ReifiedProjectIndex,
-    VisibilityAlgorithm,
 )
 from .language_utils import get_language_providers
 from .utils import get_fully_qualified_name
@@ -20,7 +19,6 @@ def build_symbol_table(
     file_paths: list[Path],
     project_root: Path,
     num_workers: int | None = 8,
-    algorithm: VisibilityAlgorithm = VisibilityAlgorithm.SCC,
     return_timing: bool = False,
 ) -> (
     dict[Path, list[ReifiedSymbol]] | tuple[dict[Path, list[ReifiedSymbol]], TimingInfo]
@@ -50,6 +48,8 @@ def build_symbol_table(
                 language_groups["csharp"].append(file_path)
             case Lang.TYPESCRIPT | Lang.JAVASCRIPT:
                 language_groups["js_ts"].append(file_path)
+            case Lang.GO:
+                language_groups["go"].append(file_path)
             case _:
                 unsupported_files.append(file_path)
 
@@ -74,7 +74,6 @@ def build_symbol_table(
                 project_root=project_root,
                 provider=provider,
                 num_workers=num_workers,
-                algorithm=algorithm,
                 return_timing=True,
             )
             total_timing = total_timing + timing
@@ -84,7 +83,6 @@ def build_symbol_table(
                 project_root=project_root,
                 provider=provider,
                 num_workers=num_workers,
-                algorithm=algorithm,
                 return_timing=False,
             )
 
@@ -100,7 +98,6 @@ def _build_language_symbol_table(
     project_root: Path,
     provider: LanguageProvider,
     num_workers: int | None = 8,
-    algorithm: VisibilityAlgorithm = VisibilityAlgorithm.SCC,
     return_timing: bool = False,
 ) -> ReifiedProjectIndex | tuple[ReifiedProjectIndex, TimingInfo]:
     parser = provider.get_parser()
@@ -124,7 +121,6 @@ def _build_language_symbol_table(
         parsed,
         resolver=resolver,
         num_workers=num_workers,
-        algorithm=algorithm,
         return_timing=True,
     )
     timing.visibility_time = vis_timing.visibility_time

@@ -63,8 +63,10 @@ class AutoToml:
     LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
+    OPENAI_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_SUMMARIES)
     SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
     REQUESTS_PER_SECOND: ClassVar[int] = 100
+    OPENAI_LIMITER = AsyncLimiter(REQUESTS_PER_SECOND, 1)
     MAX_CODE_SCALE_FACTOR: ClassVar[int] = 10
     PDF_SCALE_FACTOR: ClassVar[int] = 10
     MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS: ClassVar[int] = 30
@@ -143,9 +145,10 @@ class AutoToml:
         generated_toml_sections = await self.llm_toml.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
-        output = (
-            f'[document]\ngoal = """{document_goal}"""\n\n' + generated_toml_sections
-        )
+
+        document_section = {"document": {"goal": document_goal}}
+        sanitized_document_section = toml.dumps(document_section)
+        output = sanitized_document_section + "\n" + generated_toml_sections
 
         logger.debug(f"{output}")
 
@@ -258,8 +261,8 @@ class AutoToml:
         self, path: str, system_prompt: str, user_prompt: str
     ) -> str:
         async with (
-            asyncio.Semaphore(self.MAX_CONCURRENT_SUMMARIES),
-            AsyncLimiter(self.REQUESTS_PER_SECOND, 1),
+            self.OPENAI_SEMAPHORE,
+            self.OPENAI_LIMITER,
         ):
             try:
                 summary = await self.llm_scatter.generate_response(

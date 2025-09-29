@@ -87,7 +87,6 @@ class MetricsLambda(Construct):
             targets=[event_target],
             event_pattern=aws_events.EventPattern(source=["metrics.client"]),
         )
-
         
         self.metric_dlq_alarm = aws_cloudwatch.Alarm(
             self,

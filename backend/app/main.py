@@ -5,7 +5,7 @@ Mount order:
 2. **studio_router**      - JWT-protected via `require_jwt`.
 3. **api_router**         - API-key-protected via `require_api_key`.
 
-The Sentry and logging setup is unchanged.
+The Sentry and logging setup is unchanged. test
 """
 
 from __future__ import annotations
@@ -56,6 +56,7 @@ class JsonFormatter(Formatter):
         return json.dumps(json_record)
 
 
+
 def _configure_logging() -> None:
     log_level = settings.LOG_LEVEL.upper()
     handler = logging.StreamHandler()
@@ -71,6 +72,7 @@ def _configure_sentry(
         return
 
     sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1}.get(env, 0.1)
+
     sentry_sdk.init(
         dsn=dsn,
         environment=env,

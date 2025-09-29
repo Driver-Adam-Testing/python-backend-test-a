@@ -64,6 +64,12 @@ from inspection.prompt_templates.files.templates.source_code_large_cs_multi_prom
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
 )
+from inspection.prompt_templates.files.templates.source_code_large_go import (
+    SOURCE_CODE_LARGE_TEMPLATE_GO,
+)
+from inspection.prompt_templates.files.templates.source_code_large_go_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_GO,
+)
 from inspection.prompt_templates.files.templates.source_code_large_header import (
     SOURCE_CODE_LARGE_TEMPLATE_HEADER,
 )
@@ -123,6 +129,9 @@ from inspection.prompt_templates.files.templates.source_code_small_cs import (
 )
 from inspection.prompt_templates.files.templates.source_code_small_default import (
     SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_small_go import (
+    SOURCE_CODE_SMALL_TEMPLATE_GO,
 )
 from inspection.prompt_templates.files.templates.source_code_small_header import (
     SOURCE_CODE_SMALL_TEMPLATE_HEADER,
@@ -237,6 +246,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.C_SHARP: SOURCE_CODE_LARGE_TEMPLATE_CS,
     Lang.TYPESCRIPT: SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
     Lang.JAVASCRIPT: SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
+    Lang.GO: SOURCE_CODE_LARGE_TEMPLATE_GO,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -252,6 +262,7 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.C_SHARP: SOURCE_CODE_SMALL_TEMPLATE_CS,
     Lang.TYPESCRIPT: SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
     Lang.JAVASCRIPT: SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
+    Lang.GO: SOURCE_CODE_SMALL_TEMPLATE_GO,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -267,6 +278,7 @@ METADATA_SMALL_BY_LANG = {
     Lang.C_SHARP: METADATA_SMALL_TEMPLATE,
     Lang.TYPESCRIPT: METADATA_SMALL_TEMPLATE,
     Lang.JAVASCRIPT: METADATA_SMALL_TEMPLATE,
+    Lang.GO: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -282,6 +294,7 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.C_SHARP: METADATA_MEDIUM_TEMPLATE,
     Lang.TYPESCRIPT: METADATA_MEDIUM_TEMPLATE,
     Lang.JAVASCRIPT: METADATA_MEDIUM_TEMPLATE,
+    Lang.GO: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -297,6 +310,7 @@ METADATA_LARGE_BY_LANG = {
     Lang.C_SHARP: METADATA_LARGE_TEMPLATE,
     Lang.TYPESCRIPT: METADATA_LARGE_TEMPLATE,
     Lang.JAVASCRIPT: METADATA_LARGE_TEMPLATE,
+    Lang.GO: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
@@ -627,6 +641,8 @@ def comprehend_file_top_down(
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS
                         case Lang.TYPESCRIPT | Lang.JAVASCRIPT:
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS
+                        case Lang.GO:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_GO
                         case _:
                             template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                     long_template = Template(template=template)

@@ -57,6 +57,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
+    tracked_branch = version.primary_asset.vcs_tracked_branch
     repo_id = version.primary_asset.repository_id
     repo_name = version.primary_asset.display_name
     org_id = version.primary_asset.organization_id
@@ -124,6 +125,8 @@ async def push_docs(version_id: uuid.UUID) -> None:
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
             run(f"git clone {clone_url} {repo_dir}")
+            if tracked_branch is not None:
+                run(f"git checkout {tracked_branch}", cwd=repo_dir)
 
         run(f"git checkout -B {branch}", cwd=repo_dir)
         src_path = os.path.abspath(extracted_path)
@@ -160,7 +163,12 @@ async def push_docs(version_id: uuid.UUID) -> None:
             )
         elif provider == PrimaryAssetProvider.BITBUCKET:
             bitbucket_ops.create_pull_request_with_bot_cleanup(
-                workspace, repo_slug, access_token, branch, commit_slug
+                workspace,
+                repo_slug,
+                access_token,
+                branch,
+                commit_slug,
+                tracked_branch,
             )
         elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
             gitlab_ops.create_pull_request_with_bot_cleanup(

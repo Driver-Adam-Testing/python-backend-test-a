@@ -9,6 +9,8 @@ if [ -f "../setEnv.sh" ] ; then
     echo "Copy and run script setEnv.sh"
     cp ../setEnv.sh .
     source setEnv.sh
+elif [ -f "setEnv.sh" ] ; then
+  source setEnv.sh
 else
     echo "There is no script setEnv.sh"
 fi

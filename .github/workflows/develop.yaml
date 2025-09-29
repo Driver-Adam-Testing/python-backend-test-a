@@ -45,30 +45,8 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_CICD_ROLE }}
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Build, tag, and push python backend image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: python-backend
-          IMAGE_TAG: latest
-        run: |
-          docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      - name: CDK Deploy
-        env:
-          DEPLOYMENT_ENVIRONMENT: development
-        run: poetry run npx cdk deploy --require-approval never --outputs-file ./cdk-outputs.json
-      - name: Parse CDK Outputs
-        id: parse_outputs
-        run: |
-          ECS_CLUSTER_ARN=$(jq -r '.. | objects | to_entries[] | select(.key | startswith("ApiBackendEcsClusterArn")) | .value' cdk-outputs.json)
-          echo "cluster_arn=$ECS_CLUSTER_ARN" >> $GITHUB_OUTPUT
-          ECS_SERVICE_ARN=$(jq -r '.. | objects | to_entries[] | select(.key | startswith("ApiBackendEcsServiceArn")) | .value' cdk-outputs.json)
-          echo "service_arn=$ECS_SERVICE_ARN" >> $GITHUB_OUTPUT
-      - name: Force new ECS deployment
-        run: aws ecs update-service --cluster ${{ steps.parse_outputs.outputs.cluster_arn }} --service ${{ steps.parse_outputs.outputs.service_arn }} --force-new-deployment
+      - name: Deploy
+        run: bash ./deploy.sh
       - id: InspectorModalDeploy
         name: Deploy Inspector
         uses: ./.github/actions/modal-deploy

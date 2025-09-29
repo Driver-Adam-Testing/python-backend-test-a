@@ -66,18 +66,19 @@ def _configure_logging() -> None:
 
 
 def _configure_sentry(
-    env: Literal["local", "development", "staging", "production","pms"], dsn: str
+    env: str, dsn: str
 ) -> None:
     if env == "local":
         return
 
-    sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1, "pms": 0.1}[env]
+    sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1}.get(env, 0.1)
+
     sentry_sdk.init(
         dsn=dsn,
         environment=env,
         send_default_pii=False,
         traces_sample_rate=sample_rate,
-        _experiments={"continuous_profiling_auto_start": env != "production"},
+        # _experiments={"continuous_profiling_auto_start": env != "production"},
     )
 
 

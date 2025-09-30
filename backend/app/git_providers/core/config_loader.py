@@ -36,4 +36,20 @@ def load_provider_config(
             authorize_endpoint=None,
             scope=None,
         )
+    elif app.provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
+        return GitProviderConfig(
+            application_id=app.id,
+            name=app.name,
+            provider_kind=app.provider_kind,
+            base_url=app.base_url or "https://dev.azure.com",
+            client_id=None,
+            client_secret=None,
+            redirect_uri=None,
+            # Azure DevOps doesn't use OAuth endpoints
+            token_endpoint=None,
+            user_endpoint=None,
+            authorize_endpoint=None,
+            token_info_endpoint=None,
+            scope=app.scopes,
+        )
     raise ValueError(f"Unsupported provider: {app.provider_kind}")

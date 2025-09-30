@@ -57,17 +57,16 @@ class AzureDevOpsAPIResources:
             return {"status": "error", "error": str(e)}
 
     def fetch_repositories(self, token: str, project: str) -> list[dict[str, Any]]:
-        try:
-            headers = self._get_headers(token)
-            url = f"{self.base_url}/{project}/_apis/git/repositories?api-version={self.api_version}"
+        headers = self._get_headers(token)
+        url = f"{self.base_url}/{project}/_apis/git/repositories?api-version={self.api_version}"
 
-            with httpx.Client() as client:
-                response = client.get(url, headers=headers, timeout=30.0)
-                response.raise_for_status()
+        with httpx.Client() as client:
+            response = client.get(url, headers=headers, timeout=30.0)
+            response.raise_for_status()
 
-                data = response.json()
-                repositories = data.get("value", [])
-                return repositories
-        except Exception as e:
-            logger.error(f"Failed to fetch repositories for {project}: {e}")
-            return []
+            data = response.json()
+            repositories = data.get("value", [])
+            return repositories
+        # except Exception as e:
+        #     logger.error(f"Failed to fetch repositories for {project}: {e}")
+        #     return []

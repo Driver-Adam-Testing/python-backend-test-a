@@ -50,6 +50,7 @@ class AzureDevOpsProvider(GitProviderInterface):
         config = load_provider_config(app, client_secret=None)
         return cls(config, secrets_manager)
 
+    # TODO: change the return to NONE and raise exceptions instead
     def validate_access_token(
         self, token_data: dict[str, Any]
     ) -> tuple[bool, str | None]:
@@ -65,7 +66,7 @@ class AzureDevOpsProvider(GitProviderInterface):
             else:
                 return False, response.get("error", "Token validation failed")
         except Exception as e:
-            logger.error(f"Token validation failed: {e}")
+            e.add_note(f"Token validation failed: {e}")
             return False, str(e)
 
     def create_installation(
@@ -85,59 +86,52 @@ class AzureDevOpsProvider(GitProviderInterface):
     def store_secrets(
         self, installation: GitProviderAppInstallation, token_data: dict[str, Any]
     ) -> None:
-        try:
-            webhook_secret = secrets.token_urlsafe(32)
-            pat_secret_name = format_secret_name(
-                APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
-            )
-            token = token_data["token"]
-            project = token_data["metadata"]["project"]
-            pat_secret = {
-                "token": token,
-                "project": project,
-                "secret_token": webhook_secret,
-            }
-            self.secrets_manager.write_secret(pat_secret_name, json.dumps(pat_secret))
+        webhook_secret = secrets.token_urlsafe(32)
+        pat_secret_name = format_secret_name(
+            APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
+        )
+        token = token_data["token"]
+        project = token_data["metadata"]["project"]
+        pat_secret = {
+            "token": token,
+            "project": project,
+            "secret_token": webhook_secret,
+        }
+        self.secrets_manager.write_secret(pat_secret_name, json.dumps(pat_secret))
 
-            logger.info(f"Stored Azure DevOps PAT for installation {installation.id}")
-        except Exception as e:
-            logger.error(f"Failed to store Azure DevOps secrets: {e}")
-            raise
+        logger.info(f"Stored Azure DevOps PAT for installation {installation.id}")
 
     def update_secrets(
         self, installation: GitProviderAppInstallation, token_data: dict[str, Any]
     ) -> None:
         """Update Personal Access Token while preserving webhook secret"""
-        try:
-            pat_secret_name = format_secret_name(
-                APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
+        pat_secret_name = format_secret_name(
+            APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
+        )
+
+        # Fetch existing secrets to preserve webhook secret
+        existing_secrets = self.secrets_manager.read_secret(pat_secret_name)
+        if not existing_secrets or "secret_token" not in existing_secrets:
+            raise ValueError(
+                f"No existing webhook secret found for installation {installation.id}"
             )
 
-            # Fetch existing secrets to preserve webhook secret
-            existing_secrets = self.secrets_manager.read_secret(pat_secret_name)
-            if not existing_secrets or "secret_token" not in existing_secrets:
-                raise ValueError(
-                    f"No existing webhook secret found for installation {installation.id}"
-                )
+        webhook_secret = existing_secrets["secret_token"]
 
-            webhook_secret = existing_secrets["secret_token"]
+        token = token_data["token"]
+        project = token_data["metadata"]["project"]
+        pat_secret = {
+            "token": token,
+            "project": project,
+            "secret_token": webhook_secret,
+        }
+        self.secrets_manager.write_secret(pat_secret_name, json.dumps(pat_secret))
 
-            token = token_data["token"]
-            project = token_data["metadata"]["project"]
-            pat_secret = {
-                "token": token,
-                "project": project,
-                "secret_token": webhook_secret,
-            }
-            self.secrets_manager.write_secret(pat_secret_name, json.dumps(pat_secret))
+        logger.info(
+            f"Updated PAT for Azure DevOps installation {installation.id}, webhook secret preserved"
+        )
 
-            logger.info(
-                f"Updated PAT for Azure DevOps installation {installation.id}, webhook secret preserved"
-            )
-        except Exception as e:
-            logger.error(f"Failed to update Azure DevOps secrets: {e}")
-            raise
-
+    # TODO: Return concrete type instead of dict
     def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict[str, Any]:
         pat_secret_name = format_secret_name(
             APP_INSTALL_PAT_NAME_PREFIX, str(installation.id)
@@ -156,46 +150,43 @@ class AzureDevOpsProvider(GitProviderInterface):
     ) -> list[GitRepository]:
         logger.info(f"Fetching repositories for installation: {installation.id}")
 
-        try:
-            _secrets = self.fetch_secrets(installation)
-            token = _secrets["token"]
-            organization = installation.git_provider_app.name
-            project_name = _secrets.get("project", "")
+        _secrets = self.fetch_secrets(installation)
+        token = _secrets["token"]
+        organization = installation.git_provider_app.name
+        project_name = _secrets["project"]
 
-            repos_data = self.api_strategy.fetch_repositories(token, project_name)
+        repos_data = self.api_strategy.fetch_repositories(token, project_name)
 
-            repos = []
-            for repo in repos_data:
-                repos.append(
-                    GitRepository(
-                        provider_name=str(installation.git_provider_app.provider_kind),
-                        provider_kind=installation.git_provider_app.provider_kind,
-                        org=organization,
-                        installation_id=str(installation.id),
-                        repo_name=repo["name"],
-                        last_updated=repo["project"].get("lastUpdateTime"),
-                        default_branch=repo.get("default_branch"),
-                        latest_commit=None,
-                        metadata={
-                            "id": repo["id"],  # Store repo ID in metadata
-                            "organization": organization,
-                            "project": repo["project"],
-                            "default_branch": repo.get("defaultBranch"),
-                            "url": repo.get("url"),
-                            "created_on": repo.get("creationDate"),
-                            "updated_on": repo["project"].get("lastUpdateTime"),
-                        },
-                    )
+        repos = []
+        for repo in repos_data:
+            if not repo.get("defaultBranch"):
+                continue  # Skip repos without a default branch
+            repos.append(
+                GitRepository(
+                    provider_name=str(installation.git_provider_app.provider_kind),
+                    provider_kind=installation.git_provider_app.provider_kind,
+                    org=organization,
+                    installation_id=str(installation.id),
+                    repo_name=repo["name"],
+                    last_updated=repo["project"]["lastUpdateTime"],
+                    default_branch=repo["defaultBranch"],
+                    latest_commit=None,
+                    metadata={
+                        "id": repo["id"],  # Store repo ID in metadata
+                        "organization": organization,
+                        "project": repo["project"],
+                        "default_branch": repo["defaultBranch"],
+                        "url": repo["url"],
+                        "created_on": repo["creationDate"],
+                        "updated_on": repo["project"]["lastUpdateTime"],
+                    },
                 )
-
-            logger.info(
-                f"Fetched {len(repos)} repositories for installation {installation.id}"
             )
-            return repos
 
-        except Exception as e:
-            logger.error(f"Failed to fetch repositories: {e}")
-            raise
+        logger.info(
+            f"Fetched {len(repos)} repositories for installation {installation.id}"
+        )
+        return repos
 
     def handle_webhook_event(
         self,
@@ -205,7 +196,7 @@ class AzureDevOpsProvider(GitProviderInterface):
     ) -> dict[str, str]:
         """Handle Azure DevOps service hook events"""
         installation_id = webhook_event_ctx.installation_id
-        event_type = payload.get("eventType")
+        event_type = payload["eventType"]
 
         logger.info(
             f"Handling Azure DevOps webhook: {event_type} for installation {installation_id}"
@@ -213,27 +204,19 @@ class AzureDevOpsProvider(GitProviderInterface):
         secret_key = format_secret_name(APP_INSTALL_PAT_NAME_PREFIX, installation_id)
         secret = self.secrets_manager.read_secret(secret_key)
 
-        if not secret.get("secret_token"):
-            logger.error(f"Secret not found for installation ID {installation_id}")
-            raise PermissionError("Insufficient permissions")
-
         secret_token = secret["secret_token"]
         if not self._verify_webhook_signature(headers, secret_token):
-            logger.error(f"Secret token mismatch for installation ID {installation_id}")
-            raise PermissionError("Insufficient permissions")
+            e = PermissionError("Insufficient permissions")
+            e.add_note(f"Secret token mismatch for installation ID {installation_id}")
+            raise e
 
-        try:
-            resource = payload.get("resource", {})
+        resource = payload["resource"]
 
-            if event_type == "git.push":
-                return self._handle_push_event(resource, webhook_event_ctx)
-            else:
-                logger.info(f"Ignoring Azure DevOps event type: {event_type}")
-                return {"message": "Event ignored"}
-
-        except Exception as e:
-            logger.error(f"Failed to handle Azure DevOps webhook event: {e}")
-            return {"status": "error", "message": str(e)}
+        if event_type == "git.push":
+            return self._handle_push_event(resource, webhook_event_ctx)
+        else:
+            logger.info(f"Ignoring Azure DevOps event type: {event_type}")
+            return {"message": "Event ignored"}
 
     def revoke_access(self, installation: GitProviderAppInstallation) -> None:
         logger.info(f"Revoking access for Azure DevOps installation {installation.id}")
@@ -244,22 +227,14 @@ class AzureDevOpsProvider(GitProviderInterface):
         self.secrets_manager.delete_secret(pat_secret_name)
         logger.info(f"Deleted access token secret for installation {installation.id}")
 
+    # TODO: implement or remove
     def register_webhook(
         self,
         installation: GitProviderAppInstallation,
         config: WebhookConfig,
         scope: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Register webhook for Azure DevOps (handled manually)"""
-        # Azure DevOps webhooks are configured manually through the web interface
-        # This method provides the webhook configuration information
-        return {
-            "id": f"azure-devops-{installation.id}",
-            "url": config.callback_url,
-            "active": True,
-            "created_at": "manual_configuration_required",
-            "note": "Azure DevOps webhooks must be configured manually through the Azure DevOps web interface",
-        }
+        pass
 
     def fetch_secrets_by_id(self, installation_id: str) -> dict[str, Any]:
         """Fetch secrets by installation ID"""
@@ -289,31 +264,31 @@ class AzureDevOpsProvider(GitProviderInterface):
         organization_id = webhook_event_ctx.organization_id
 
         # Extract repository information from Azure DevOps push event
-        repository = resource.get("repository", {})
-        ref_updates = resource.get("refUpdates", [])
+        repository = resource["repository"]
+        ref_updates = resource["refUpdates"]
 
         if not ref_updates:
             logger.info("No ref updates in Azure DevOps push event")
             return {"message": "No ref updates"}
 
         # Get repository details
-        repo_name = repository.get("name", "unknown")
-        repo_id = repository.get("id", "unknown")
-        project = repository.get("project", {})
-        project_name = project.get("name", "unknown")
+        repo_name = repository["name"]
+        repo_id = repository["id"]
+        project = repository["project"]
+        project_name = project["name"]
         full_name = f"{project_name}/{repo_name}"
 
         message = {"message": ""}
 
         default_branch = repository.get("defaultBranch", "main")
-        if not default_branch.startswith("refs/heads/"):
-            default_branch = f"refs/heads/{default_branch}"
-        default_branch_name = default_branch.replace("refs/heads/", "")
+        if default_branch.startswith("refs/heads/"):
+            default_branch = default_branch.replace("refs/heads/", "")
+        default_branch_name = default_branch
 
         # Process each ref update
         for ref_update in ref_updates:
-            ref_name = ref_update.get("name", "")
-            new_object_id = ref_update.get("newObjectId", "")
+            ref_name = ref_update["name"]
+            new_object_id = ref_update["newObjectId"]
 
             # Check if this is a branch update (not a tag)
             if not ref_name.startswith("refs/heads/"):
@@ -361,7 +336,7 @@ class AzureDevOpsProvider(GitProviderInterface):
                             "project": project_name,
                             "repository_id": repo_id,
                             "default_branch": default_branch_name,
-                            "url": repository.get("url", ""),
+                            "url": repository["url"],
                         },
                         "installation_id": installation_id,
                         "latest_commit": {

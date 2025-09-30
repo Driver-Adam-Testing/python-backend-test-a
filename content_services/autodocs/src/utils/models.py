@@ -53,6 +53,7 @@ class ChatOpenAI:
             openai.InternalServerError,
             openai.APIConnectionError,
             openai.BadRequestError,
+            openai.PermissionDeniedError,
             ValidationError,
         ),
     )

@@ -307,7 +307,7 @@ class GitProviderService:
                 callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
                 custom_headers=[
                     f"x-driver-token: {installation_id}",
-                    f"x-webhook-token: {secret.get("secret_token")}",
+                    f"x-webhook-token: {secret["secret_token"]}",
                 ],
                 secret_token="",  # Not used in Azure DevOps
                 ssl_verification=True,
@@ -320,30 +320,6 @@ class GitProviderService:
         return webhook_info
 
     # Helper Methods
-
-    def _extract_installation_id(
-        self, provider_kind: GitProviderKind, payload: dict, headers: dict
-    ) -> str | None:
-        """Extract installation ID from webhook payload/headers"""
-        if provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
-            return headers.get("x-driver-token")
-        elif provider_kind == GitProviderKind.BITBUCKET:
-            # Try headers first
-            installation_id = headers.get("x-installation-id")
-            if installation_id:
-                return installation_id
-
-            # Try to infer from workspace
-            workspace = payload.get("workspace", {}).get("slug")
-            if workspace:
-                # Would need to query DB to find installation by workspace
-                # This is a simplified version
-                return None
-        elif provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
-            # Azure DevOps service hooks include installation ID in headers
-            return headers.get("x-driver-token")
-
-        return None
 
     def handle_access_revoked(
         self, session: Session, organization_id: str, app_id: str, installation_id: str

@@ -25,6 +25,8 @@ from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 
+API_VERSION = "7.2-preview"
+
 
 def fetch_access_token(installation_id: str) -> str:
     print(f"INFO: Fetching Personal Access Token for installation ID {installation_id}")
@@ -66,7 +68,7 @@ def download_repo(
         "versionDescriptor.version": commit,
         "versionDescriptor.versionType": "commit",
         "$format": "zip",
-        "api-version": "7.2-preview",
+        "api-version": API_VERSION,
         "download": "true",
     }
 
@@ -92,7 +94,7 @@ def get_default_branch(
     headers = {"Authorization": f"Basic {auth_header}"}
 
     repo_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}"
-    params = {"api-version": "7.2-preview"}
+    params = {"api-version": API_VERSION}
 
     response = requests.get(repo_url, headers=headers, params=params, timeout=120)
     response.raise_for_status()
@@ -113,7 +115,7 @@ def get_latest_commit(
         "searchCriteria.itemVersion.version": default_branch,
         "searchCriteria.itemVersion.versionType": "branch",
         "$top": 1,
-        "api-version": "7.2-preview",
+        "api-version": API_VERSION,
     }
 
     response = requests.get(
@@ -151,7 +153,7 @@ def fetch_vcs_info(
 
     # Fetch repository information
     repo_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}"
-    repo_params = {"api-version": "7.2-preview"}
+    repo_params = {"api-version": API_VERSION}
 
     repo_response = requests.get(
         repo_url,
@@ -170,7 +172,7 @@ def fetch_vcs_info(
     commit_url = (
         f"{base_url}/{project}/_apis/git/repositories/{repo_id}/commits/{commit_sha}"
     )
-    commit_params = {"api-version": "7.2-preview"}
+    commit_params = {"api-version": API_VERSION}
 
     commit_response = requests.get(
         commit_url,
@@ -503,7 +505,7 @@ def get_repo_clone_info_from_id(
     headers = {"Authorization": f"Basic {auth_header}"}
 
     repo_url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}"
-    params = {"api-version": "7.2-preview"}
+    params = {"api-version": API_VERSION}
 
     response = requests.get(repo_url, headers=headers, params=params, timeout=120)
     response.raise_for_status()
@@ -533,7 +535,7 @@ def list_pull_requests(
     url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullrequests"
     params = {
         "searchCriteria.status": state,
-        "api-version": "7.2-preview",
+        "api-version": API_VERSION,
         "$top": 100,  # Azure DevOps default pagination
     }
 
@@ -563,7 +565,7 @@ def get_pull_request_commits(
     headers = {"Authorization": f"Basic {auth_header}"}
 
     url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullRequests/{pr_id}/commits"
-    params = {"api-version": "7.2-preview"}
+    params = {"api-version": API_VERSION}
 
     all_commits = []
 
@@ -599,7 +601,7 @@ def close_pull_request(
         f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullrequests/{pr_id}"
     )
     pr_response = requests.get(
-        pr_url, headers=headers, params={"api-version": "7.2-preview"}, timeout=120
+        pr_url, headers=headers, params={"api-version": API_VERSION}, timeout=120
     )
 
     if pr_response.status_code == 200:
@@ -617,7 +619,7 @@ def close_pull_request(
     response = requests.patch(
         pr_url,
         headers=headers,
-        params={"api-version": "7.2-preview"},
+        params={"api-version": API_VERSION},
         data=json.dumps(update_data),
         timeout=120,
     )
@@ -664,7 +666,7 @@ def create_pull_request(
     }
 
     url = f"{base_url}/{project}/_apis/git/repositories/{repo_id}/pullrequests"
-    params = {"api-version": "7.2-preview"}
+    params = {"api-version": API_VERSION}
 
     response = requests.post(
         url, headers=headers, params=params, data=json.dumps(pr_data), timeout=120
@@ -699,52 +701,34 @@ def create_pull_request_with_bot_cleanup(
 
     print("Checking for existing bot pull requests...")
 
-    try:
-        existing_prs = list_pull_requests(base_url, project, repo_id, access_token)
+    existing_prs = list_pull_requests(base_url, project, repo_id, access_token)
 
-        for pr in existing_prs:
-            source_ref = pr.get("sourceRefName", "")
-            source_branch_name = (
-                source_ref.replace("refs/heads/", "")
-                if source_ref.startswith("refs/heads/")
-                else source_ref
+    for pr in existing_prs:
+        source_ref = pr.get("sourceRefName", "")
+        source_branch_name = (
+            source_ref.replace("refs/heads/", "")
+            if source_ref.startswith("refs/heads/")
+            else source_ref
+        )
+
+        if source_branch_name.startswith("docs_"):
+            pr_id = pr["pullRequestId"]
+            commits = get_pull_request_commits(
+                base_url, project, repo_id, pr_id, access_token
             )
 
-            if source_branch_name.startswith("docs_"):
-                try:
-                    pr_id = pr["pullRequestId"]
-                    commits = get_pull_request_commits(
-                        base_url, project, repo_id, pr_id, access_token
-                    )
+            # Check if any commit is authored by the bot
+            is_bot_pr = any(
+                BOT_EMAIL in commit.get("author", {}).get("email", "")
+                or BOT_NAME in commit.get("author", {}).get("name", "")
+                for commit in commits
+            )
 
-                    # Check if any commit is authored by the bot
-                    is_bot_pr = any(
-                        BOT_EMAIL in commit.get("author", {}).get("email", "")
-                        or BOT_NAME in commit.get("author", {}).get("name", "")
-                        for commit in commits
-                    )
-
-                    if is_bot_pr:
-                        try:
-                            close_pull_request(
-                                base_url, project, repo_id, pr_id, access_token
-                            )
-                            print(
-                                f"Closed existing bot PR #{pr_id} from branch {source_branch_name}"
-                            )
-                        except Exception as close_error:
-                            # Log but don't fail if we can't close the PR
-                            print(
-                                f"Warning: Could not close PR #{pr_id}: {close_error}"
-                            )
-
-                except Exception as e:
-                    print(
-                        f"Error checking PR #{pr.get('pullRequestId', 'unknown')}: {e}"
-                    )
-
-    except Exception as e:
-        print(f"Error listing pull requests: {e}")
+            if is_bot_pr:
+                close_pull_request(base_url, project, repo_id, pr_id, access_token)
+                print(
+                    f"Closed existing bot PR #{pr_id} from branch {source_branch_name}"
+                )
 
     create_pull_request(
         base_url, project, repo_id, access_token, source_branch, commit_slug

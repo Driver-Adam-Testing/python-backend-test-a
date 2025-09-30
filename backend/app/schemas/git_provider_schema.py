@@ -92,3 +92,45 @@ class WebhookInfo(BaseModel):
     secret_token: str
     ssl_verification: bool
     triggers: list[str]
+
+
+# Azure DevOps specific models
+class AzureDevOpsProject(BaseModel):
+    """Azure DevOps project information"""
+
+    id: str
+    name: str
+    lastUpdateTime: str | None = None
+
+
+class AzureDevOpsRepository(BaseModel):
+    """Azure DevOps repository information"""
+
+    id: str
+    name: str
+    url: str | None = None
+    defaultBranch: str | None = None
+    creationDate: str | None = None
+    project: AzureDevOpsProject
+
+
+class AzureDevOpsTokenData(BaseModel):
+    """Azure DevOps Personal Access Token data structure"""
+
+    token: str
+    project: str
+    secret_token: str | None = None
+
+
+class AzureDevOpsWebhookResource(BaseModel):
+    """Azure DevOps webhook resource structure"""
+
+    repository: dict[str, str] | None = None
+    refUpdates: list[dict[str, str]] | None = None
+
+
+class AzureDevOpsWebhookPayload(BaseModel):
+    """Azure DevOps webhook payload structure"""
+
+    eventType: str
+    resource: AzureDevOpsWebhookResource | None = None

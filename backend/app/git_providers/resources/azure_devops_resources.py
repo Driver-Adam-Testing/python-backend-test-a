@@ -50,10 +50,8 @@ class AzureDevOpsAPIResources:
                         "status": "error",
                         "error": f"Token validation failed with status {response.status_code}",
                     }
-        except httpx.TimeoutException:
-            return {"status": "error", "error": "Request timeout"}
         except Exception as e:
-            logger.error(f"Token validation error: {e}")
+            e.add_note(f"Token validation error: {e}")
             return {"status": "error", "error": str(e)}
 
     def fetch_repositories(self, token: str, project: str) -> list[dict[str, Any]]:

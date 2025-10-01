@@ -14,6 +14,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 from cdk.settings import settings
+from cdk.constructs.guard_duty_S3_malware_protection import GuardDutyS3MalwareProtection
 
 
 @dataclass
@@ -85,3 +86,6 @@ class AssetOnboardingLambda(Construct):
             aws_s3.NotificationKeyFilter(prefix="assets/"),
         )
         legacy_dropzone_bucket.grant_read(lambda_function)
+
+        guard_duty_mlp = GuardDutyS3MalwareProtection(self,"GuardDutyMP")
+        guard_duty_mlp.add_bucket(legacy_dropzone_bucket)

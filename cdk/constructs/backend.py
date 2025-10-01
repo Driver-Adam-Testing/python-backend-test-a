@@ -78,7 +78,7 @@ class Backend(Construct):
         self.dropzone_bucket = aws_s3.Bucket(
             self,
             "DropzoneBucket",
-            bucket_name=f"{params.environment}-codebase-dropzone"
+            bucket_name=f"{settings.DEPLOYMENT_ENVIRONMENT}-codebase-dropzone",
             cors=[
                 {
                     "allowedMethods": [

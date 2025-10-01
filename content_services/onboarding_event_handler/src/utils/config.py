@@ -12,9 +12,7 @@ class Settings(BaseSettings):
     AUTH0_AUDIENCE: str
     CLIENT_ID_SECRET: str
     CLIENT_SECRET_SECRET: str
-    ENVIRONMENT: Literal[
-        "local", "ops", "development", "staging", "production", "cloud-local", "pms"
-    ]
+    ENVIRONMENT:str
     AWS_S3_ENDPOINT_URL: str | None = None
     AWS_S3_CODE_BUCKET_SUFFIX: str = "codebase-dropzone"
     USE_LEGACY_DROPZONE: bool = True

@@ -19,7 +19,7 @@ class CodeMapNode(BaseModel):
     description: str | None
 
 
-class CodeMapResponse(BaseModel):
+class CodeMap(BaseModel):
     payload: list[CodeMapNode]
 
 
@@ -28,7 +28,7 @@ def get_code_map_simple(
     codebase_name: str,
     path: str = "",
     max_depth: int = 5,
-) -> CodeMapResponse:
+) -> CodeMap:
     path = str(Path(codebase_name) / path)
     logger.info(
         f"Getting code map for codebase '{codebase_name}', path '{path}', max_depth {max_depth}"
@@ -57,7 +57,7 @@ def get_code_map_simple(
                 f"Try a different directory path or increase max_depth (currently {max_depth})."
             )
 
-        return CodeMapResponse(payload=nodes)
+        return CodeMap(payload=nodes)
 
 
 def _fetch_nodes_with_descriptions(

@@ -1,9 +1,9 @@
 import os
 from inspect import cleandoc
-from typing import Annotated, Any
+from typing import Annotated
 
 from database.models_enums import PrimaryAssetKind
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
 FASTMCP_STATELESS_HTTP = True
@@ -26,7 +26,7 @@ from shared.prompts.structured_prompting import Component, Prompt
 from sqlmodel import select
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id
-from .code_map_v2 import get_code_map_simple
+from .code_map_v2 import get_code_map_simple, CodeMap
 from .mcp_helpers import get_latest_version_for_codebase
 
 logger = logging.getLogger(__name__)
@@ -310,6 +310,51 @@ def get_file_documentation(
         return content.content
 
 
+class CodeMapResponse(BaseModel):
+    code_map: CodeMap
+    nodes_returned: int
+    next_node: int | None
+    nodes_remaining: int
+
+
+def _apply_code_map_pagination(
+    code_map: CodeMap, start_node: int, max_nodes: int
+) -> CodeMapResponse:
+    total_nodes = len(code_map.payload)
+
+    if start_node < 0:
+        raise ToolError("Start node must be greater than or equal to 0.")
+
+    if max_nodes < 0:
+        raise ToolError("Max nodes must be greater than or equal to 0.")
+
+    if start_node >= total_nodes:
+        raise ToolError(
+            f"Start node {start_node} is greater than or equal to the total number of nodes ({total_nodes})"
+        )
+
+    if max_nodes == 0 or start_node + max_nodes >= total_nodes:
+        paginated_nodes = code_map.payload[start_node:]
+
+        return CodeMapResponse(
+            code_map=CodeMap(payload=paginated_nodes),
+            nodes_returned=len(paginated_nodes),
+            next_node=None,
+            nodes_remaining=0,
+        )
+
+    paginated_nodes = code_map.payload[start_node : start_node + max_nodes]
+    next_node = start_node + max_nodes
+    nodes_remaining = total_nodes - next_node
+
+    return CodeMapResponse(
+        code_map=CodeMap(payload=paginated_nodes),
+        nodes_returned=len(paginated_nodes),
+        next_node=next_node,
+        nodes_remaining=nodes_remaining,
+    )
+
+
 @my_mcp.tool(
     name="get_code_map",
     description=cleandoc(
@@ -321,11 +366,27 @@ def get_file_documentation(
         Use in tandem with `get_file_documentation` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
 
         Returns an object with:
-        - payload: List of nodes, each containing:
-          - path: The file/directory path
-          - type: "file" or "directory"
-          - description: A short sentence describing what the file/directory contains
-        - errors: List of helpful error messages if no results found
+        - code_map: Object containing:
+          - payload: List of nodes, each containing:
+            - path: The file/directory path
+            - type: "file" or "directory"
+            - description: A short sentence describing what the file/directory contains
+        - nodes_returned: Number of nodes in this response
+        - next_node: Node index for your next call (null when done)
+        - nodes_remaining: How many nodes are left to read
+
+        Usage Patterns:
+        1. Full result: Set start_node=0, max_nodes=0 (reads all nodes). ALWAYS use this pattern for the first call.
+        2. Large results (when you hit token limits):
+            - First call: start_node=0, max_nodes=50
+            - Next calls: Use next_node from previous response, max_nodes=50
+            - Continue until nodes_remaining=0
+
+        Example pagination workflow:
+        1. Call with start_node=0, max_nodes=50
+        2. Check response.nodes_remaining > 0
+        3. Call with start_node=response.next_node, max_nodes=50
+        4. Repeat until nodes_remaining=0
 
         USAGE:
         - Use max_depth=0 to see only the directory itself
@@ -368,11 +429,30 @@ def get_code_map(
             le=20,
         ),
     ] = 2,
-) -> dict[str, Any]:
-    response = get_code_map_simple(
+    start_node: Annotated[
+        int,
+        Field(
+            description="The node index to start from. ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ] = 0,
+    max_nodes: Annotated[
+        int,
+        Field(
+            description="The maximum number of nodes to return. 0 means no limit. ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ] = 0,
+) -> CodeMapResponse:
+    code_map = get_code_map_simple(
         org_id=get_organization_id(ctx),
         codebase_name=codebase_name,
         path=path,
         max_depth=max_depth,
     )
-    return response.model_dump()
+
+    return _apply_code_map_pagination(
+        code_map=code_map,
+        start_node=start_node,
+        max_nodes=max_nodes,
+    )

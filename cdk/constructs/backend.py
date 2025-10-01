@@ -18,6 +18,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 from cdk.settings import settings
+from cdk.constructs.guard_duty_S3_malware_protection import GuardDutyS3MalwareProtection
 
 
 # TODO: parameterize task count and container size
@@ -92,6 +93,10 @@ class Backend(Construct):
             ],
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
+
+        guard_duty_mlp = GuardDutyS3MalwareProtection(self,"GuardDutyMP")
+        guard_duty_mlp.add_bucket(self.dropzone_bucket)
+
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",

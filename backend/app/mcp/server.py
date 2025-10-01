@@ -255,28 +255,11 @@ def get_llm_onboarding_guide(
     return dc.content
 
 
-@my_mcp.tool(
-    name="get_file_documentation",
-    description=cleandoc(
-        """
-        Get detailed symbol-level documentation for a specific file in a codebase.
-
-        Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
-    """
-    ),
-)
-def get_file_documentation(
-    ctx: Context,
-    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-    path: Annotated[
-        str,
-        Field(
-            description="The file path to get documentation. This should NOT include the codebase name (e.g., 'src/my_file.py' NOT 'codebase-name/src/utils/open.c').')."
-        ),
-    ],
+def _get_long_description(
+    org_id: str,
+    codebase_name: str,
+    path: str,
 ) -> str:
-    org_id = get_organization_id(ctx)
-
     with get_session() as db:
         version = get_latest_version_for_codebase(db, org_id, codebase_name)
         if not version:
@@ -308,6 +291,143 @@ def get_file_documentation(
                 f"No documentation available for '{path}' in codebase '{codebase_name}'. "
             )
         return content.content
+
+
+class FileDocumentationResponse(BaseModel):
+    content: str
+    lines_returned: int
+    next_line: int | None
+    lines_remaining: int
+    next_section: str | None
+
+
+def _apply_file_doc_pagination(
+    markdown_text: str, start_line: int, max_lines: int
+) -> FileDocumentationResponse:
+    if not markdown_text:
+        raise ToolError("No documentation available for the file.")
+
+    if start_line < 1:
+        raise ToolError("Start line must be greater than or equal to 1.")
+
+    if max_lines < 0:
+        raise ToolError("Max lines must be greater than or equal to 0.")
+
+    full_text = markdown_text.split("\n")
+
+    if start_line > len(full_text):
+        raise ToolError(
+            f"Start line {start_line} is greater than the number of lines in the file ({len(full_text)})"
+        )
+
+    start_idx = start_line - 1
+
+    # return what's left of the file
+    if (start_idx + max_lines >= len(full_text)) or max_lines == 0:
+        content_lines = full_text[start_idx:]
+
+        return FileDocumentationResponse(
+            content="\n".join(content_lines),
+            lines_returned=len(content_lines),
+            next_line=None,
+            lines_remaining=0,
+            next_section=None,
+        )
+
+    end_idx = start_idx + max_lines - 1
+    partial_text = full_text[start_idx : end_idx + 1]
+
+    # we just happened to stop at the end of a section
+    if full_text[end_idx + 1].lstrip().startswith("#"):
+        return FileDocumentationResponse(
+            content="\n".join(partial_text),
+            lines_returned=len(partial_text),
+            next_line=end_idx + 2,
+            lines_remaining=len(full_text) - end_idx - 1,
+            next_section=full_text[end_idx + 1].lstrip().lstrip("#").strip(),
+        )
+
+    # we landed in the middle or start of a section
+    for idx in reversed(range(len(partial_text))):
+        if partial_text[idx].lstrip().startswith("#") and idx != 0:
+            return FileDocumentationResponse(
+                content="\n".join(partial_text[:idx]),
+                lines_returned=len(partial_text[:idx]),
+                next_line=idx + start_idx + 1,
+                lines_remaining=len(full_text) - idx - start_idx,
+                next_section=partial_text[idx].lstrip().lstrip("#").strip(),
+            )
+
+    # we started in the middle of a section that was too long
+    return FileDocumentationResponse(
+        content="\n".join(partial_text),
+        lines_returned=len(partial_text),
+        next_line=end_idx + 2,
+        lines_remaining=len(full_text) - end_idx - 1,
+        next_section=None,
+    )
+
+
+@my_mcp.tool(
+    name="get_file_documentation",
+    description=cleandoc(
+        """
+    Get detailed symbol-level documentation for a specific file in a codebase.
+
+    Usage Patterns:
+    1. Full file: Set start_line=1, max_lines=0 (reads entire file).  ALWAYS use this pattern for the first call.
+    2. Large files (when you hit token limits):
+        - First call: start_line=1, max_lines=500
+        - Next calls: Use next_line from previous response, max_lines=500
+        - Continue until lines_remaining=0
+
+    Response includes pagination fields:
+    - lines_returned: Number of lines in this response
+    - next_line: Line number for your next call (null when done)
+    - lines_remaining: How many lines are left to read
+    - next_section: Preview of what content comes next (null at EOF)
+
+    Example pagination workflow:
+    1. Call with start_line=1, max_lines=500
+    2. Check response.lines_remaining > 0
+    3. Call with start_line=response.next_line, max_lines=500
+    4. Repeat until lines_remaining=0
+
+    Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
+    """
+    ),
+)
+def get_file_documentation(
+    ctx: Context,
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
+    path: Annotated[
+        str,
+        Field(
+            description="The file path to get documentation. This should NOT include the codebase name (e.g., 'src/my_file.py' NOT 'codebase-name/src/utils/open.c').')."
+        ),
+    ],
+    start_line: Annotated[
+        int,
+        Field(
+            description="The line number to start from.  ALWAYS use 1 for the first call.",
+            ge=1,
+        ),
+    ],
+    max_lines: Annotated[
+        int,
+        Field(
+            description="The maximum number of lines to return. 0 means no limit.  ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ],
+) -> FileDocumentationResponse:
+    org_id = get_organization_id(ctx=ctx)
+    markdown_text = _get_long_description(
+        org_id=org_id, codebase_name=codebase_name, path=path
+    )
+    return _apply_file_doc_pagination(
+        markdown_text=markdown_text, start_line=start_line, max_lines=max_lines
+    )
 
 
 class CodeMapResponse(BaseModel):

@@ -117,6 +117,7 @@ def _provider_to_source_type(
             PrimaryAssetProvider.GITHUB: "Github Codebase",
             PrimaryAssetProvider.GITLAB_SELF_MANAGED: "Gitlab Codebase",
             PrimaryAssetProvider.BITBUCKET: "Bitbucket Codebase",
+            PrimaryAssetProvider.AZURE_DEVOPS_CLOUD: "Azure DevOps Codebase",
         }.get(provider, "Unknown")
 
 

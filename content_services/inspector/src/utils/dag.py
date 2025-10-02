@@ -4,7 +4,9 @@ from collections.abc import Generator
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Self
+
+from pydantic import BaseModel
 
 
 class NodeStatus(Enum):
@@ -93,6 +95,19 @@ class Node(LiteNode):
     # Revisit this. Maybe we need a lite node that keeps its children?
     def __hash__(self) -> int:
         return super().__hash__()
+
+
+class FlatTopoFileDiffDag(BaseModel):
+    root: LiteNode
+    tsort_dag: list[
+        tuple[LiteNode, str]
+    ]  # tuple of LiteNode and corresponding `git diff` output associated with it
+
+    @classmethod
+    def from_dag_pair(
+        old: "FileTreeDag", new: "FileTreeDag", delete_file_nodes: bool
+    ) -> Self:
+        return new.into_flat_diff_dag(old=old, delete_file_nodes=delete_file_nodes)
 
 
 @dataclass
@@ -371,6 +386,120 @@ class FileTreeDag:
                     diff_dag.mark_file_removal(diff_dag.root_abs_path / path)
 
         return diff_dag
+
+    def into_flat_diff_dag(self, old: Self) -> FlatTopoFileDiffDag:
+        """
+        Computes a diff between old and new FileTreeDag and returns a flattened representation
+        with git diff strings for each changed file.
+        """
+        import subprocess
+        import tempfile
+        from pathlib import Path
+
+        # Compute the diff DAG to identify changes
+        diff_dag = self.compute_diff(old=old, delete_file_nodes=False)
+
+        # Get topologically sorted file nodes from the diff DAG
+        sorted_nodes = diff_dag.topological_sort(
+            changed_nodes_only=True, files_only=True
+        )
+
+        # Convert to flat representation with diff strings
+        tsort_dag = []
+
+        for node in sorted_nodes:
+            lite_node = node.into_lite_node()
+            diff_string = ""
+
+            old_file_path = old.root_abs_path / node.root_rel_path
+            new_file_path = self.root_abs_path / node.root_rel_path
+
+            match node.status:
+                case NodeStatus.ADDED:
+                    # For added files, show diff from empty to new content
+                    if new_file_path.exists():
+                        with tempfile.NamedTemporaryFile(
+                            mode="w", suffix=".txt", delete=False
+                        ) as empty_file:
+                            empty_path = Path(empty_file.name)
+
+                        try:
+                            result = subprocess.run(
+                                [
+                                    "git",
+                                    "diff",
+                                    "--no-index",
+                                    "--ignore-all-space",
+                                    "--minimal",
+                                    str(empty_path),
+                                    str(new_file_path),
+                                ],
+                                capture_output=True,
+                                text=True,
+                            )
+                            diff_string = result.stdout
+                        finally:
+                            empty_path.unlink(missing_ok=True)
+
+                case NodeStatus.REMOVED:
+                    # For removed files, show diff from old content to empty
+                    if old_file_path.exists():
+                        with tempfile.NamedTemporaryFile(
+                            mode="w", suffix=".txt", delete=False
+                        ) as empty_file:
+                            empty_path = Path(empty_file.name)
+
+                        try:
+                            result = subprocess.run(
+                                [
+                                    "git",
+                                    "diff",
+                                    "--no-index",
+                                    "--ignore-all-space",
+                                    "--minimal",
+                                    str(old_file_path),
+                                    str(empty_path),
+                                ],
+                                capture_output=True,
+                                text=True,
+                            )
+                            diff_string = result.stdout
+                        finally:
+                            empty_path.unlink(missing_ok=True)
+
+                case NodeStatus.MODIFIED:
+                    # For modified files, show diff between old and new content directly
+                    if old_file_path.exists() and new_file_path.exists():
+                        result = subprocess.run(
+                            [
+                                "git",
+                                "diff",
+                                "--no-index",
+                                "--ignore-all-space",
+                                "--minimal",
+                                str(old_file_path),
+                                str(new_file_path),
+                            ],
+                            capture_output=True,
+                            text=True,
+                        )
+                        diff_string = result.stdout
+
+                case NodeStatus.UNMODIFIED:
+                    # This should not be encountered in a diff DAG
+                    raise ValueError(
+                        f"Unexpected UNMODIFIED status in diff DAG for node: {node.root_rel_path}"
+                    )
+
+                case _:
+                    raise ValueError("Unreachable")
+
+            tsort_dag.append((lite_node, diff_string))
+
+        # Convert root to LiteNode
+        root_lite = diff_dag.root.into_lite_node()
+
+        return FlatTopoFileDiffDag(root=root_lite, tsort_dag=tsort_dag)
 
     # def render_graph(self, path=Path("out.pdf")) -> None:
     #     from graphviz import Digraph

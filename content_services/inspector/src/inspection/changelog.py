@@ -5,7 +5,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from aiolimiter import AsyncLimiter
-from onboarding import bitbucket_ops, gh_ops, gitlab_ops
+from onboarding import azure_devops_ops, bitbucket_ops, gh_ops, gitlab_ops
 from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.prompts.structured_prompting import (
@@ -240,6 +240,7 @@ async def create_changelog(
     repo_id = version.primary_asset.repository_id
     repo_name = version.primary_asset.display_name
     provider = version.primary_asset.provider
+    tracked_branch = version.primary_asset.vcs_tracked_branch
 
     if provider == PrimaryAssetProvider.GITHUB:
         access_token = gh_ops.fetch_app_access_token(install_id)
@@ -272,6 +273,30 @@ async def create_changelog(
         clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
             base_url, repo_id, access_token
         )
+    elif provider == PrimaryAssetProvider.AZURE_DEVOPS_CLOUD:
+        with Session(engine) as session:
+            installation_id = version.primary_asset.installation_id
+            app_install = session.exec(
+                select(GitProviderAppInstallation).where(
+                    GitProviderAppInstallation.id == installation_id
+                )
+            ).one()
+            if app_install is None:
+                raise ValueError(f"Installation ID {installation_id} not found.")
+            base_url = app_install.git_provider_app.base_url
+            # Extract project from VCS metadata
+            vcs_metadata = version.vcs_metadata or {}
+            project = (
+                vcs_metadata.get("repository", {}).get("namespace", "").split("/")[-1]
+            )
+            if not project:
+                raise ValueError(
+                    f"Could not determine project from VCS metadata for version {version_id}"
+                )
+        access_token = azure_devops_ops.fetch_access_token(install_id)
+        clone_url, full_name = azure_devops_ops.get_repo_clone_info_from_id(
+            base_url, project, repo_id, access_token
+        )
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -288,6 +313,19 @@ async def create_changelog(
             raise subprocess.CalledProcessError(
                 result.returncode, f"git clone {clone_url} {repo_dir}"
             )
+        # TODO: would it be better to just explicitly checkout out the commit hash?
+        if tracked_branch is not None:
+            result = subprocess.run(
+                f"git checkout {tracked_branch}",
+                shell=True,
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    result.returncode, f"git checkout {tracked_branch}"
+                )
 
         repo = GitFetcher(repo_path=repo_dir)
         all_commits = list(repo.fetch_commits(limit=MAX_COMMITS_TO_PROCESS))

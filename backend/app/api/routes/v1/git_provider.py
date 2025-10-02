@@ -62,8 +62,8 @@ router = APIRouter()
 
 aws_config = AWSClientConfig(
     region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
 )
 
 provider_service = get_git_provider_service(aws_config)
@@ -287,6 +287,12 @@ def connect_git_provider_repo(
         handle_events = modal.Function.lookup(
             "inspector-v2",
             "handle_bitbucket_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
+        )
+    elif app.provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
+        handle_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_azure_devops_events",
             environment_name=settings.MODAL_ENVIRONMENT,
         )
     else:
@@ -657,15 +663,16 @@ def webhook(
 def git_provider_webhook(
     session: CurrentSession,
     body_data: dict = Depends(_extract_body_and_headers),
-    installation_id: str | None = Query(None),  # NEW: For Bitbucket query param
+    installation_id: str | None = Query(None),  # For Bitbucket query param
 ) -> JSONResponse:
-    """Generic webhook handler for GitLab and Bitbucket"""
+    """Generic webhook handler for GitLab, Bitbucket, and Azure DevOps"""
     body = body_data["json_body"]
     headers = body_data["headers"]
     logger.info("Received webhook event: %s", body)
+
     # Get installation_id from query param OR header
     if not installation_id:
-        installation_id = headers.get("x-driver-token")
+        installation_id = headers.get("x-driver-token")  # GitLab and Azure DevOps
 
     if not installation_id:
         logger.error("Installation ID not found in headers or query params")

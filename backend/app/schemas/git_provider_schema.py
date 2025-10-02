@@ -10,6 +10,7 @@ class TokenType(str, Enum):
     WORKSPACE_ACCESS_TOKEN = "workspace_access_token"  # Bitbucket
     PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket
     REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket
+    PERSONAL_ACCESS_TOKEN = "personal_access_token"  # Azure DevOps
 
     def __str__(self) -> str:
         return self.name
@@ -28,6 +29,7 @@ class AccessTokenData(BaseModel):
         return self.token_type in [
             TokenType.GROUP_ACCESS_TOKEN,
             TokenType.WORKSPACE_ACCESS_TOKEN,
+            TokenType.PERSONAL_ACCESS_TOKEN,
         ]
 
 
@@ -86,7 +88,49 @@ class GitProviderAppTokenSecret(BaseModel):
 
 class WebhookInfo(BaseModel):
     callback_url: str
-    custom_headers: dict
+    custom_headers: dict | list[str]
     secret_token: str
     ssl_verification: bool
     triggers: list[str]
+
+
+# Azure DevOps specific models
+class AzureDevOpsProject(BaseModel):
+    """Azure DevOps project information"""
+
+    id: str
+    name: str
+    lastUpdateTime: str | None = None
+
+
+class AzureDevOpsRepository(BaseModel):
+    """Azure DevOps repository information"""
+
+    id: str
+    name: str
+    url: str | None = None
+    defaultBranch: str | None = None
+    creationDate: str | None = None
+    project: AzureDevOpsProject
+
+
+class AzureDevOpsTokenData(BaseModel):
+    """Azure DevOps Personal Access Token data structure"""
+
+    token: str
+    project: str
+    secret_token: str | None = None
+
+
+class AzureDevOpsWebhookResource(BaseModel):
+    """Azure DevOps webhook resource structure"""
+
+    repository: dict[str, str] | None = None
+    refUpdates: list[dict[str, str]] | None = None
+
+
+class AzureDevOpsWebhookPayload(BaseModel):
+    """Azure DevOps webhook payload structure"""
+
+    eventType: str
+    resource: AzureDevOpsWebhookResource | None = None

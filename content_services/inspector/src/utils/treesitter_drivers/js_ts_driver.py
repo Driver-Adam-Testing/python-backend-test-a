@@ -5,7 +5,7 @@ TypeScript tree-sitter driver implementation
 from dataclasses import dataclass
 from typing import ClassVar
 
-from tree_sitter import Node
+from tree_sitter import Node, Query, QueryCursor
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
@@ -29,13 +29,15 @@ class JsTsDriverTree(DriverTree):
         imports = []
 
         # Query for different import types with source extraction
-        import_query = self.tree_sitter_lang.query("""
+        import_query_str = """
             (import_statement
               source: (string) @source
             ) @import
-        """)
+        """
 
-        captures_dict = import_query.captures(self.tree.root_node)
+        import_query = Query(self.tree_sitter_lang, import_query_str)
+        import_cursor = QueryCursor(query=import_query)
+        captures_dict = import_cursor.captures(self.tree.root_node)
 
         # Process import statements
         if "import" in captures_dict:
@@ -55,15 +57,17 @@ class JsTsDriverTree(DriverTree):
                     )
 
         # Handle TypeScript import assignment (import x = require('...'))
-        import_assign_query = self.tree_sitter_lang.query("""
+        import_assign_query_str = """
             (import_statement
               (import_require_clause
                 (string) @module
               )
             ) @import_require
-        """)
+        """
 
-        import_assign_captures = import_assign_query.captures(self.tree.root_node)
+        import_assign_query = Query(self.tree_sitter_lang, import_assign_query_str)
+        import_assign_cursor = QueryCursor(query=import_assign_query)
+        import_assign_captures = import_assign_cursor.captures(self.tree.root_node)
         if "module" in import_assign_captures:
             for node in import_assign_captures["module"]:
                 # Remove quotes from the module string
@@ -83,7 +87,7 @@ class JsTsDriverTree(DriverTree):
                     )
 
         # Also handle require() style imports
-        require_query = self.tree_sitter_lang.query("""
+        require_query_str = """
             (variable_declarator
               name: (identifier) @name
               value: (call_expression
@@ -91,9 +95,11 @@ class JsTsDriverTree(DriverTree):
                 arguments: (arguments (string) @module)
               )
             ) @declarator
-        """)
+        """
 
-        require_captures = require_query.captures(self.tree.root_node)
+        require_query = Query(self.tree_sitter_lang, require_query_str)
+        require_cursor = QueryCursor(query=require_query)
+        require_captures = require_cursor.captures(self.tree.root_node)
         if "module" in require_captures:
             for node in require_captures["module"]:
                 # Remove quotes from the module string
@@ -113,14 +119,16 @@ class JsTsDriverTree(DriverTree):
                     )
 
         # Handle dynamic imports (import() expressions)
-        dynamic_import_query = self.tree_sitter_lang.query("""
+        dynamic_import_query_str = """
             (call_expression
               function: (import) @import_keyword
               arguments: (arguments (string) @source)
             ) @dynamic_import
-        """)
+        """
 
-        dynamic_captures = dynamic_import_query.captures(self.tree.root_node)
+        dynamic_import_query = Query(self.tree_sitter_lang, dynamic_import_query_str)
+        dynamic_cursor = QueryCursor(query=dynamic_import_query)
+        dynamic_captures = dynamic_cursor.captures(self.tree.root_node)
         if "source" in dynamic_captures:
             for node in dynamic_captures["source"]:
                 # Remove quotes from the source string
@@ -140,13 +148,15 @@ class JsTsDriverTree(DriverTree):
                     )
 
         # Handle import.meta access
-        import_meta_query = self.tree_sitter_lang.query("""
+        import_meta_query_str = """
             (member_expression
               object: (meta_property) @meta
             ) @import_meta
-        """)
+        """
 
-        meta_captures = import_meta_query.captures(self.tree.root_node)
+        import_meta_query = Query(self.tree_sitter_lang, import_meta_query_str)
+        meta_cursor = QueryCursor(query=import_meta_query)
+        meta_captures = meta_cursor.captures(self.tree.root_node)
         if "import_meta" in meta_captures:
             for node in meta_captures["import_meta"]:
                 # Get the full import.meta expression
@@ -167,7 +177,7 @@ class JsTsDriverTree(DriverTree):
         callables = []
 
         # Query for functions
-        function_query = self.tree_sitter_lang.query("""
+        function_query_str = """
             (function_declaration
               name: (identifier) @name
             ) @function
@@ -184,11 +194,13 @@ class JsTsDriverTree(DriverTree):
               name: (identifier) @var_name
               value: [(arrow_function) (function_expression) (generator_function)] @func_value
             ) @var_func
-        """)
+        """
 
         processed_nodes = set()
 
-        function_captures = function_query.captures(self.tree.root_node)
+        function_query = Query(self.tree_sitter_lang, function_query_str)
+        function_cursor = QueryCursor(query=function_query)
+        function_captures = function_cursor.captures(self.tree.root_node)
 
         # Process function declarations
         if "function" in function_captures:
@@ -208,7 +220,7 @@ class JsTsDriverTree(DriverTree):
                     )
 
         # Process methods
-        method_query = self.tree_sitter_lang.query("""
+        method_query_str = """
             (method_definition
               name: [(property_identifier) @method_name
                      (private_property_identifier) @private_method_name
@@ -222,9 +234,11 @@ class JsTsDriverTree(DriverTree):
                  (binary_expression) @binary_computed]
               )
             ) @computed_method
-        """)
+        """
 
-        method_captures = method_query.captures(self.tree.root_node)
+        method_query = Query(self.tree_sitter_lang, method_query_str)
+        method_cursor = QueryCursor(query=method_query)
+        method_captures = method_cursor.captures(self.tree.root_node)
 
         if "method" in method_captures:
             for node in method_captures["method"]:
@@ -314,7 +328,7 @@ class JsTsDriverTree(DriverTree):
         structures = []
 
         # Query for different structure types
-        structure_query = self.tree_sitter_lang.query("""
+        structure_query_str = """
             (class_declaration
               name: (type_identifier) @name
             ) @class
@@ -340,11 +354,13 @@ class JsTsDriverTree(DriverTree):
               name: (identifier) @var_name
               value: (class) @class_expr
             ) @class_var
-        """)
+        """
 
         processed_nodes = set()
 
-        structure_captures = structure_query.captures(self.tree.root_node)
+        structure_query = Query(self.tree_sitter_lang, structure_query_str)
+        structure_cursor = QueryCursor(query=structure_query)
+        structure_captures = structure_cursor.captures(self.tree.root_node)
 
         # Process each type of structure
         for capture_type, nodes in structure_captures.items():
@@ -463,16 +479,18 @@ class JsTsDriverTree(DriverTree):
         """Extract function and method calls"""
         calls = []
 
-        call_query = self.tree_sitter_lang.query("""
+        call_query_str = """
             (call_expression
               function: [(identifier) @func_name
                         (non_null_expression) @nonnull]
             ) @call
-        """)
+        """
 
         processed_nodes = set()
 
-        call_captures = call_query.captures(self.tree.root_node)
+        call_query = Query(self.tree_sitter_lang, call_query_str)
+        call_cursor = QueryCursor(query=call_query)
+        call_captures = call_cursor.captures(self.tree.root_node)
 
         # Process call expressions
         if "call" in call_captures:
@@ -531,7 +549,7 @@ class JsTsDriverTree(DriverTree):
         """Extract variable declarations"""
         variables = []
 
-        variable_query = self.tree_sitter_lang.query("""
+        variable_query_str = """
             (program
                 (_
                 (variable_declarator
@@ -546,11 +564,13 @@ class JsTsDriverTree(DriverTree):
                 name: (identifier) @var_name
                 value: (_) @var_value
                 ) @declarator)))
-        """)
+        """
 
         processed_nodes = set()
 
-        variable_captures = variable_query.captures(self.tree.root_node)
+        variable_query = Query(self.tree_sitter_lang, variable_query_str)
+        variable_cursor = QueryCursor(query=variable_query)
+        variable_captures = variable_cursor.captures(self.tree.root_node)
 
         # Process variable declarators
         if "declarator" in variable_captures:

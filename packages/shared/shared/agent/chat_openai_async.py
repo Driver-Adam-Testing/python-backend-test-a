@@ -54,6 +54,7 @@ class ChatOpenAI:
             openai.InternalServerError,
             openai.APIConnectionError,
             openai.BadRequestError,
+            openai.PermissionDeniedError,
             ValidationError,
         ),
     )
@@ -114,7 +115,7 @@ class ChatOpenAI:
                         },
                     ],
                 )
-        elif "o3" in self.model:
+        elif "o3" in self.model or "gpt-5" in self.model:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 response_format=output_cfg.into_openai_response_format(),

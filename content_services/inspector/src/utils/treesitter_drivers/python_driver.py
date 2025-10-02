@@ -179,8 +179,9 @@ class PyDriverTree(DriverTree):
           ;; Imports from `future`
           (future_import_statement) @future_module
           """.strip()
-        query = self.tree_sitter_lang.query(import_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, import_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         imports = []
 
         for pat_idx, captures_by_name in matches:
@@ -330,8 +331,9 @@ class PyDriverTree(DriverTree):
           (function_definition
             name: (identifier) @callable_name) @callable_def
           """.strip()
-        query = self.tree_sitter_lang.query(callable_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, callable_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         callables = []
 
         for _pattern_index, captures_by_name in matches:
@@ -392,8 +394,9 @@ class PyDriverTree(DriverTree):
           (class_definition
             name: (identifier) @class_name) @class_def
           """.strip()
-        query = self.tree_sitter_lang.query(klass_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, klass_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         klasses = []
 
         for _pat_idx, captures_by_name in matches:
@@ -460,8 +463,9 @@ class PyDriverTree(DriverTree):
                         object: (_) @object
                         attribute: (identifier) @method_ident)) @method_call
           """.strip()
-        query = self.tree_sitter_lang.query(calls_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, calls_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         calls_symbol, calls_kind = [], []
         for pat_idx, captures_by_name in matches:
             if pat_idx == 0:  # Free functions
@@ -552,8 +556,9 @@ class PyDriverTree(DriverTree):
                 left: (pattern_list
                   (identifier) @global_name)) @global_expression))
           """.strip()
-        query = self.tree_sitter_lang.query(global_var_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, global_var_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         gbl_vars = []
 
         for pat_idx, captures_by_name in matches:

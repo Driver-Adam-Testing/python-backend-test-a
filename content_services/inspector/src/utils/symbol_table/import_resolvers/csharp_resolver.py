@@ -4,7 +4,7 @@ from pathlib import Path
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 from utils.treesitter_drivers.csharp_driver import CSharpImportScopeKind
 
-from ..base import ImportResolver
+from ..base import SymbolResolver
 
 
 def _is_namespace(sym: RawTreeSitterSymbolData) -> bool:
@@ -16,12 +16,32 @@ def _is_namespace(sym: RawTreeSitterSymbolData) -> bool:
     )
 
 
-class CSharpResolver(ImportResolver):
+class CSharpResolver(SymbolResolver):
     language = "csharp"
     _cached_namespace_data: (
         tuple[set[str], defaultdict[str, list[RawTreeSitterSymbolData]]] | None
     ) = None
     _cached_global_using_data: list[Path] | None = None
+
+    def resolve_imports_to_symbols(
+        self,
+        all_files_imports: dict[Path, list[RawTreeSitterSymbolData]],
+        all_files_symbols: dict[Path, list[RawTreeSitterSymbolData]],
+        num_workers: int | None,
+        project_root: Path,
+    ) -> dict[Path, set[RawTreeSitterSymbolData]]:
+        visible_symbols = defaultdict(set)
+        for file_path in all_files_imports:
+            for import_sym in all_files_imports[file_path]:
+                resolved_paths = self.resolve_import(
+                    current_file=file_path,
+                    import_sym=import_sym,
+                    project_files_to_symbols_map=all_files_symbols,
+                )
+                for path in resolved_paths:
+                    visible_symbols[file_path].update(all_files_symbols.get(path, []))
+        # TODO: handle aliases here?
+        return visible_symbols
 
     def _namespace_resolver(
         self, project_files_to_symbols_map: dict[Path, list[RawTreeSitterSymbolData]]

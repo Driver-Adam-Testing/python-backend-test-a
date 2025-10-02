@@ -36,6 +36,7 @@ ignore = [
     "ANN102", # Ignore missing type annotation for cls
     "ANN401", # Allow use of typing.Any
     "C408", # Ignore Unnecessary `tuple` call (rewrite as a literal)
+    "TID252", # Prefer absolute imports over relative imports from parent modules
 ]
 
 unfixable = [

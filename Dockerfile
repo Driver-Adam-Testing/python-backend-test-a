@@ -29,6 +29,10 @@ ENV PYTHONPATH=/app
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
 
+RUN apt-get purge -y --auto-remove build-essential curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install start scripts
 COPY backend/scripts/start-reload.sh /start-reload.sh
 COPY backend/scripts/start.sh /start.sh
@@ -42,9 +46,8 @@ COPY backend/prestart.sh /app/
 COPY backend/tests-start.sh /app/
 COPY backend/app /app/app
 
-RUN apt-get purge -y --auto-remove build-essential curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the setEnv.sh if using the deployment repo
+COPY setEnv.sh* / 
 
 # Capture Git info at build time
 ARG GIT_COMMIT

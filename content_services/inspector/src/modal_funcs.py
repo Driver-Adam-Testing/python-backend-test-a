@@ -29,13 +29,14 @@ image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
-            "tree-sitter==0.24.0",
+            "tree-sitter==0.25.1",
             "tree-sitter-c==0.23.4",
             "tree-sitter-cpp==0.23.2",
             "tree-sitter-java==0.23.5",
-            "tree-sitter-python==0.23.6",
+            "tree-sitter-python==0.25.0",
             "tree-sitter-c-sharp==0.23.1",
             "tree-sitter-typescript==0.23.2",
+            "tree-sitter-go==0.25.0",
             "aiolimiter==1.2.1",
         ]
     )  # TODO lock versions down
@@ -65,13 +66,18 @@ image = (
 )
 def make_tech_doc(
     node: LiteNode,
-    source_code: str,
     codebase_name: str,
-    sym_table_s3_key: str | None,
+    source_code: str,
+    version_id: str,
 ) -> tuple[bool, dict, LiteNode]:
+    import os
+
+    import boto3
+    from utils.io import download_symbol_table_from_s3_with_cache
     from utils.models import ChatOpenAI
 
     print(f"Processing tech docs ({node})")
+
     raise_hard_errors = False
     llm = ChatOpenAI(
         model="gpt-4o-2024-08-06",
@@ -79,17 +85,15 @@ def make_tech_doc(
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
-    reified_symbols = None
-    if sym_table_s3_key is not None:
-        import pickle
+    s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+    bucket_name = os.environ["BUCKET_NAME"]
 
-        import boto3
-
-        if sym_table_s3_key is not None:
-            s3 = boto3.client("s3")
-            bucket_name = os.environ["BUCKET_NAME"]
-            obj = s3.get_object(Bucket=bucket_name, Key=sym_table_s3_key)
-            reified_symbols = pickle.loads(obj["Body"].read())
+    full_symbol_table = download_symbol_table_from_s3_with_cache(
+        s3_client=s3_client,
+        bucket_name=bucket_name,
+        version_id=version_id,
+    )
+    reified_symbols = full_symbol_table.get(node.root_rel_path, None)
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,

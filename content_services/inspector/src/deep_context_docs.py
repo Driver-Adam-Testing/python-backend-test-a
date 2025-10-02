@@ -66,11 +66,12 @@ deep_context_image = (
 async def make_changelog(
     version_id: str,
     install_id: str,
+    previous_version_id: str | None = None,
 ) -> None:
     from database.db import async_engine
     from database.models import DerivedContent
-    from inspection.changelog import create_changelog
-    from sqlmodel import delete
+    from inspection.changelog import create_changelog, update_changelog
+    from sqlmodel import delete, select
     from sqlmodel.ext.asyncio.session import AsyncSession
     from utils.db import get_version_by_id
 
@@ -83,9 +84,40 @@ async def make_changelog(
     if repo_id is None:
         print("No repo_id found, skipping changelog generation.")
         return content_kind, "", "", [], "", ""
-    print(f"Creating changelog for version {version_id}")
-    changelog = await create_changelog(version_id=version_id, install_id=install_id)
-    print("Changelog content:", changelog["overall_changelog"])
+
+    async with AsyncSession(async_engine) as session:
+        previous_changelog_full = None
+        previous_changelog_monthly = None
+        previous_sha = None
+        if previous_version_id:
+            # Fetch previous changelog content
+            previous_version = await get_version_by_id(previous_version_id)
+            previous_root_node_id = previous_version.root_node.id
+            previous_changelog_res = await session.exec(
+                select(DerivedContent).where(
+                    DerivedContent.node_id == previous_root_node_id,
+                    DerivedContent.content_kind == content_kind,
+                )
+            )
+            previous_changelog = previous_changelog_res.first()
+            if previous_changelog:
+                previous_changelog_full = previous_changelog.content
+                previous_changelog_monthly = previous_changelog.misc_metadata
+                previous_sha = previous_version.vcs_hash
+
+    if previous_sha is None:
+        print(f"Creating changelog for version {version_id}")
+        changelog = await create_changelog(version_id=version_id, install_id=install_id)
+        print("Changelog content:", changelog["overall_changelog"])
+    else:
+        print("Updating changelog from previous version:", previous_version_id)
+        changelog = await update_changelog(
+            version_id=version_id,
+            install_id=install_id,
+            previous_sha=previous_sha,
+            previous_monthly_changelogs=previous_changelog_monthly,
+            previous_overall_changelog=previous_changelog_full,
+        )
 
     # TODO: IO okay here?
     # TODO: delete old changelog for the node before saving
@@ -233,6 +265,7 @@ async def deep_context_docs(
                 make_changelog.remote.aio(
                     version_id=new_version_id,
                     install_id=install_id,
+                    previous_version_id=old_version_id,
                 )
             )
         completed_docs = []

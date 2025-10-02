@@ -160,6 +160,8 @@ class GitFetcher:
         skip_merge_commits: bool = True,
         include_stats: bool = True,
         include_diff: bool = True,
+        stop_commit: str | None = None,
+        unravel_merges: bool = False,
     ) -> Iterator[CommitData]:
         """
         Fetch commits from the repository
@@ -197,6 +199,9 @@ class GitFetcher:
         for walker_item in walker:
             # Use helper to handle different pygit2 versions
             commit = get_commit_from_walker_item(self.repo, walker_item)
+            if stop_commit and str(commit.id) == stop_commit:
+                logger.info(f"Reached stop commit {stop_commit}, stopping fetch")
+                break
 
             # Apply filters
             commit_time = datetime.fromtimestamp(commit.commit_time, tz=UTC)
@@ -214,8 +219,34 @@ class GitFetcher:
             ):
                 continue
 
-            # Skip merge commits if requested
-            if skip_merge_commits and len(commit.parents) > 1:
+            # Handle merge commits
+            is_merge = len(commit.parents) > 1
+
+            # Unravel merge commits by yielding child commits
+            if unravel_merges and is_merge:
+                for parent in commit.parents[1:]:  # Skip first parent (mainline)
+                    child_commits = self._get_merge_child_commits(
+                        parent.id, commit.parents[0].id
+                    )
+                    for child_commit in child_commits:
+                        if (
+                            len(child_commit.parents) > 1
+                        ):  # Skip merges in child commits
+                            print("skipping child merge commit", child_commit.id)
+                            continue
+                        commit_data = self._process_commit(
+                            child_commit,
+                            branch=branch,
+                            include_stats=include_stats,
+                            include_diff=include_diff,
+                        )
+                        yield commit_data
+
+                        commit_count += 1
+                        if limit and commit_count >= limit:
+                            return
+                continue
+            elif skip_merge_commits and is_merge:
                 continue
 
             # Convert to CommitData
@@ -315,6 +346,56 @@ class GitFetcher:
                     break
 
         return commits
+
+    def _get_merge_child_commits(
+        self, merge_parent: pygit2.Oid, mainline_parent: pygit2.Oid
+    ) -> list[pygit2.Commit]:
+        """
+        Get commits from a merged branch (child commits of a merge).
+
+        Args:
+            merge_parent: The parent from the merged branch
+            mainline_parent: The parent from the mainline branch
+
+        Returns:
+            List of commits that were merged in
+        """
+        child_commits = []
+        visited = set()
+
+        # Walk from merge_parent back to where it diverged from mainline
+        walker = self.repo.walk(merge_parent, pygit2.enums.SortMode.TIME)
+
+        print(f"Unraveling merge from {merge_parent} to {mainline_parent}")
+        for walker_item in walker:
+            print(walker_item)
+            commit = get_commit_from_walker_item(self.repo, walker_item)
+            commit_id = str(commit.id)
+
+            if commit_id in visited:
+                continue
+
+            visited.add(commit_id)
+
+            # Stop if we've reached the mainline
+            if commit.id == mainline_parent:
+                break
+
+            # Check if this commit is reachable from mainline_parent
+            try:
+                is_ancestor = self.repo.descendant_of(mainline_parent, commit.id)
+                if is_ancestor:
+                    break
+            except Exception:
+                # If we can't determine ancestry, continue collecting commits
+                pass
+
+            child_commits.append(commit)
+
+        print(f"Found {len(child_commits)} child commits in merge")
+        for commit in child_commits:
+            print(f"  {commit.id} - {commit.message.splitlines()[0]}")
+        return child_commits
 
     def _commit_touches_file(self, commit: pygit2.Commit, file_path: str) -> bool:
         """Check if a commit modifies a specific file"""

@@ -16,7 +16,7 @@ from shared.prompts.structured_prompting import (
 from tqdm.asyncio import tqdm_asyncio
 from utils.git_fetcher_pygit2 import CommitData, GitFetcher
 
-MAX_COMMITS_TO_PROCESS = 2500
+MAX_COMMITS_TO_PROCESS = 15000
 
 
 class CommitType(StrEnum):
@@ -103,7 +103,7 @@ You will read detailed changelogs or release notes and extract high-signal, chro
 Your output must:
 
 - Be in valid **YAML**. With a top-level key `changelog` that contains a list of entries.
-- Each entry should describe a month and may contain up to 5 tightly written bullet points.
+- Each entry should describe a month and should contain as many bullet points as needed to capture the most important changes that month.
 - Each bullet should:
   - Begin with a **strong action verb** (e.g., Introduced, Refactored, Migrated)
   - Reference the **feature, subsystem, or outcome**
@@ -123,6 +123,54 @@ changelog:
       - Added a new feature for real-time notifications
       - Fixed critical bugs in the user profile management system
       - Improved test coverage across the codebase
+```
+"""
+
+merge_changelog_system_prompt = """
+You are a changelog merge assistant. You will receive two changelog entries for the same month - an existing/older changelog and a new changelog with recent updates.
+
+Your task is to intelligently merge these two changelogs by:
+1. **Combining unique entries** from both changelogs
+2. **Deduplicating similar entries** (e.g., if the same feature or bug fix appears in both)
+3. **Preserving the most complete description** when similar entries exist
+4. **Maintaining the standardized format** with Features and Bug Fixes sections
+5. **Prioritizing recent changes** if there are conflicts
+
+Output merged changelog in Markdown format that represents a comprehensive view of all changes for that month.
+
+IMPORTANT:
+- DO NOT include commit hashes or file paths
+- DO NOT duplicate information
+- DO maintain professional, clear language
+- DO preserve all unique features and important bug fixes from both changelogs
+"""
+
+update_overall_changelog_system_prompt = """
+You are a changelog update assistant. You will receive an existing overall changelog (in YAML format) and new monthly changelog entries (in Markdown format).
+
+Your task is to update the overall changelog by:
+1. **Adding new month entries** that don't exist in the overall changelog
+2. **Updating existing month entries** where new changes have been added
+3. **Preserving the YAML format** with strong action verbs and atomic bullet points
+4. **Maintaining chronological order** (most recent months first)
+5. **Limiting each month to 5 bullet points** maximum - prioritize the most important changes
+6. **Deduplicating** similar entries between old and new content
+
+Each bullet point must:
+- Begin with a strong action verb (e.g., Introduced, Refactored, Migrated)
+- Reference the feature, subsystem, or outcome
+- Be atomic and clear, avoiding pronouns and vague references
+
+Output only valid YAML with a top-level `changelog` key. No explanation or markdown.
+
+Example format:
+```yaml
+changelog:
+  - 2024-02:
+      - Introduced real-time notification system
+      - Fixed critical authentication bugs
+  - 2024-01:
+      - Migrated database to PostgreSQL
 ```
 """
 
@@ -226,6 +274,73 @@ async def generate_overall_changelog(
     return overall_changelog_result
 
 
+async def merge_monthly_changelogs(
+    old_changelog: str,
+    new_changelog: str,
+    month_key: str,
+) -> str:
+    merge_model = ChatOpenAI(
+        model="gpt-4.1",
+        temperature=0.0,
+        request_timeout=120,
+    )
+
+    user_prompt = f"""
+### Month: {month_key}
+
+### Existing Changelog:
+{old_changelog}
+
+### New Changelog Updates:
+{new_changelog}
+
+Please merge these two changelogs intelligently, preserving all unique content and deduplicating similar entries.
+"""
+
+    config = OutputConfig(kind=OutputConfigKind.TEXT)
+    merged_result = await llm_generate(
+        merge_model,
+        merge_changelog_system_prompt,
+        user_prompt,
+        config,
+    )
+    return merged_result
+
+
+async def update_overall_changelog(
+    old_overall_changelog: str,
+    new_monthly_changes: dict[str, str],
+) -> str:
+    update_model = ChatOpenAI(
+        model="o3-mini",
+        temperature=0.0,
+        request_timeout=600,
+    )
+
+    new_changes_prompt = ""
+    for month_key, changelog in new_monthly_changes.items():
+        new_changes_prompt += f"### {month_key}\n{changelog}\n\n"
+
+    user_prompt = f"""
+### Existing Overall Changelog (YAML):
+{old_overall_changelog}
+
+### New Monthly Changes (Markdown):
+{new_changes_prompt}
+
+Please update the overall changelog by intelligently merging these new changes with the existing changelog.
+"""
+
+    config = OutputConfig(kind=OutputConfigKind.TEXT)
+    updated_changelog = await llm_generate(
+        update_model,
+        update_overall_changelog_system_prompt,
+        user_prompt,
+        config,
+    )
+    return updated_changelog
+
+
 async def create_changelog(
     version_id: str,
     install_id: str,
@@ -289,10 +404,9 @@ async def create_changelog(
             raise subprocess.CalledProcessError(
                 result.returncode, f"git clone {clone_url} {repo_dir}"
             )
-        # TODO: would it be better to just explicitly checkout out the commit hash?
         if tracked_branch is not None:
             result = subprocess.run(
-                f"git checkout {tracked_branch}",
+                f"git checkout {version.vcs_hash}",  # checkout sha not the tracked_branch
                 shell=True,
                 cwd=repo_dir,
                 capture_output=True,
@@ -300,11 +414,12 @@ async def create_changelog(
             )
             if result.returncode != 0:
                 raise subprocess.CalledProcessError(
-                    result.returncode, f"git checkout {tracked_branch}"
+                    result.returncode, f"git checkout {version.vcs_hash}"
                 )
 
         repo = GitFetcher(repo_path=repo_dir)
         all_commits = list(repo.fetch_commits(limit=MAX_COMMITS_TO_PROCESS))
+
         print(f"Fetched {len(all_commits)} commits from {full_name}")
         if not all_commits:
             print("No commits found, skipping changelog generation.")
@@ -319,4 +434,127 @@ async def create_changelog(
         return {
             "monthly_changelogs": monthly_changelogs,
             "overall_changelog": overall_changelog,
+        }
+
+
+async def update_changelog(
+    version_id: str,
+    install_id: str,
+    previous_sha: str,
+    previous_monthly_changelogs: dict[str, str],
+    previous_overall_changelog: str,
+) -> dict:
+    from database.db import engine
+    from database.models import GitProviderAppInstallation
+    from database.models_enums import PrimaryAssetProvider
+    from sqlmodel import Session, select
+    from utils.db import get_version_by_id, git_provider_app_installation_by_id
+
+    version = await get_version_by_id(version_id)
+    repo_id = version.primary_asset.repository_id
+    repo_name = version.primary_asset.display_name
+    provider = version.primary_asset.provider
+    tracked_branch = version.primary_asset.vcs_tracked_branch
+
+    if provider == PrimaryAssetProvider.GITHUB:
+        access_token = gh_ops.fetch_app_access_token(install_id)
+        clone_url, full_name = gh_ops.get_repo_clone_info_from_id(repo_id, access_token)
+    elif provider == PrimaryAssetProvider.BITBUCKET:
+        access_token = bitbucket_ops.fetch_access_token(install_id)
+        gp_install = git_provider_app_installation_by_id(installation_id=install_id)
+        workspace = gp_install.git_provider_app.provider_metadata["workspace"]
+        repo_slug = version.primary_asset.display_name
+        # Bitbucket allows spaces in repo names, but does not URL encode them
+        # and instead replaces them with hyphens.
+        # We need to replace spaces with hyphens in the repo name.
+        repo_slug = "-".join(repo_name.split())  # multiple spaces go to single hyphen
+
+        clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
+            workspace, repo_slug, access_token
+        )
+    elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
+        with Session(engine) as session:
+            installation_id = version.primary_asset.installation_id
+            app_install = session.exec(
+                select(GitProviderAppInstallation).where(
+                    GitProviderAppInstallation.id == installation_id
+                )
+            ).one()
+            if app_install is None:
+                raise ValueError(f"Installation ID {installation_id} not found.")
+            base_url = app_install.git_provider_app.base_url
+        access_token = gitlab_ops.fetch_access_token(install_id)
+        clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
+            base_url, repo_id, access_token
+        )
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        repo_dir = Path(temp_dir) / full_name
+        result = subprocess.run(
+            f"git clone {clone_url} {repo_dir}",
+            shell=True,
+            cwd=None,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(
+                result.returncode, f"git clone {clone_url} {repo_dir}"
+            )
+        if tracked_branch is not None:
+            result = subprocess.run(
+                f"git checkout {version.vcs_hash}",
+                shell=True,
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    result.returncode, f"git checkout {version.vcs_hash}"
+                )
+
+        repo = GitFetcher(repo_path=repo_dir)
+        new_commits = list(
+            repo.fetch_commits(
+                limit=MAX_COMMITS_TO_PROCESS,
+                stop_commit=previous_sha,
+                unravel_merges=True,
+            )
+        )
+
+        print(f"Fetched {len(new_commits)} commits from {full_name}")
+        if not new_commits:
+            print("No commits found, skipping changelog generation.")
+            return {}
+
+        summarized_commits = await summarize_commits(new_commits)
+        new_monthly_changelogs = await make_monthly_changelog(
+            new_commits, summarized_commits
+        )
+
+        # Merge new monthly changelogs with existing ones
+        merged_monthly_changelogs = dict(previous_monthly_changelogs)
+
+        for month_key, new_changelog in new_monthly_changelogs.items():
+            if month_key in previous_monthly_changelogs:
+                # Month exists in both old and new - merge them
+                merged_changelog = await merge_monthly_changelogs(
+                    previous_monthly_changelogs[month_key], new_changelog, month_key
+                )
+                merged_monthly_changelogs[month_key] = merged_changelog
+            else:
+                # New month not in old changelog - just add it
+                merged_monthly_changelogs[month_key] = new_changelog
+
+        # Update overall changelog using LLM to intelligently merge only what's needed
+        updated_overall_changelog = await update_overall_changelog(
+            previous_overall_changelog, new_monthly_changelogs
+        )
+
+        return {
+            "monthly_changelogs": merged_monthly_changelogs,
+            "overall_changelog": updated_overall_changelog,
         }

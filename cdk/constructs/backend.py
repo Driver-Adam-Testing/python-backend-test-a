@@ -89,6 +89,11 @@ class Backend(Construct):
                     ],
                     "allowedOrigins": params.cors_origins.split(","),
                     "allowedHeaders": ["*"],
+                    "exposedHeaders":[
+                        "x-amz-server-side-encryption",
+                        "x-amz-request-id",
+                        "x-amz-id-2"    
+                    ]
                 }
             ],
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],

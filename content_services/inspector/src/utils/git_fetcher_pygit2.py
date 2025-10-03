@@ -386,13 +386,9 @@ class GitFetcher:
                 break
 
             # Check if this commit is reachable from mainline_parent
-            try:
-                is_ancestor = self.repo.descendant_of(mainline_parent, commit.id)
-                if is_ancestor:
-                    break
-            except Exception:
-                # If we can't determine ancestry, continue collecting commits
-                pass
+            is_ancestor = self.repo.descendant_of(mainline_parent, commit.id)
+            if is_ancestor:
+                break
 
             child_commits.append(commit)
 

@@ -93,13 +93,14 @@ async def make_changelog(
             # Fetch previous changelog content
             previous_version = await get_version_by_id(previous_version_id)
             previous_root_node_id = previous_version.root_node.id
-            previous_changelog_res = await session.exec(
-                select(DerivedContent).where(
-                    DerivedContent.node_id == previous_root_node_id,
-                    DerivedContent.content_kind == content_kind,
+            previous_changelog = (
+                await session.exec(
+                    select(DerivedContent).where(
+                        DerivedContent.node_id == previous_root_node_id,
+                        DerivedContent.content_kind == content_kind,
+                    )
                 )
-            )
-            previous_changelog = previous_changelog_res.first()
+            ).first()
             if previous_changelog:
                 previous_changelog_full = previous_changelog.content
                 previous_changelog_monthly = previous_changelog.misc_metadata

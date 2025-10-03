@@ -10,13 +10,8 @@ Usage:
 """
 
 import logging
-import os
-import sys
 from datetime import UTC, datetime
 from typing import Any
-
-# Add backend directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.auth0_service import Auth0Service
 from database.db import engine
@@ -180,16 +175,23 @@ def sync_user_with_organizations(user_id: str, session: Session | None = None) -
 
             # Remove memberships that don't exist in Auth0
             current_org_ids = {org.get("id") for org in organizations if org.get("id")}
-            existing_memberships = working_session.exec(
-                select(OrgMembership).where(OrgMembership.user_id == user_id)
-            ).all()
 
-            for membership in existing_memberships:
-                if membership.org_id not in current_org_ids:
-                    logger.info(
-                        f"Removing outdated membership: {user_id} from {membership.org_id}"
-                    )
-                    working_session.delete(membership)
+            # Look up user to get UUID for querying memberships
+            db_user = working_session.exec(
+                select(User).where(User.auth0_user_id == user_id)
+            ).first()
+
+            if db_user:
+                existing_memberships = working_session.exec(
+                    select(OrgMembership).where(OrgMembership.user_id == db_user.id)
+                ).all()
+
+                for membership in existing_memberships:
+                    if membership.org_id not in current_org_ids:
+                        logger.info(
+                            f"Removing outdated membership: {user_id} from {membership.org_id}"
+                        )
+                        working_session.delete(membership)
 
             if should_commit:
                 working_session.commit()
@@ -224,7 +226,7 @@ def _sync_org_to_db(session: Session, org_data: dict[str, Any]) -> bool:
         existing_org.name = org_name
         existing_org.display_name = org_data.get("display_name")
         existing_org.org_metadata = org_data.get("metadata", {})
-        existing_org.synced_at = datetime.utcnow()
+        existing_org.synced_at = datetime.now(UTC)
         logger.info(f"Updated organization: {org_name} ({org_id})")
     else:
         # Create new organization
@@ -243,64 +245,82 @@ def _sync_org_to_db(session: Session, org_data: dict[str, Any]) -> bool:
 
 def _sync_user_to_db(session: Session, user_data: dict[str, Any]) -> bool:
     """Internal function to sync user data to database."""
-    user_id = user_data.get("user_id")
+    auth0_user_id = user_data.get("user_id")
     email = user_data.get("email", "").lower()
     name = user_data.get("name", email)
 
-    if not user_id:
+    if not auth0_user_id:
         logger.warning(f"Skipping user with missing id: {user_data}")
         return False
 
-    existing_user = session.get(User, user_id)
+    existing_user = session.exec(
+        select(User).where(User.auth0_user_id == auth0_user_id)
+    ).first()
 
     if existing_user:
         # Update existing user
         existing_user.email = email
         existing_user.name = name
-        existing_user.synced_at = datetime.utcnow()
-        logger.info(f"Updated user: {email} ({user_id})")
+        existing_user.synced_at = datetime.now(UTC)
+        logger.info(f"Updated user: {email} ({auth0_user_id})")
     else:
         # Create new user
-        new_user = User(id=user_id, email=email, name=name, synced_at=datetime.now(UTC))
+        new_user = User(
+            auth0_user_id=auth0_user_id,
+            email=email,
+            name=name,
+            synced_at=datetime.now(UTC),
+        )
         session.add(new_user)
-        logger.info(f"Created user: {email} ({user_id})")
+        logger.info(f"Created user: {email} ({auth0_user_id})")
 
     return True
 
 
 def _sync_membership_to_db(
-    session: Session, user_id: str, org_id: str, action: str
+    session: Session, auth0_user_id: str, org_id: str, action: str
 ) -> bool:
     """Internal function to sync membership data to database."""
+    # Look up user by auth0_user_id to get the UUID
+    user = session.exec(select(User).where(User.auth0_user_id == auth0_user_id)).first()
+
+    if not user:
+        logger.warning(
+            f"User {auth0_user_id} not found in database for membership in {org_id}"
+        )
+        return False
+
     if action == "add":
         # Check if membership already exists
         existing_membership = session.exec(
             select(OrgMembership).where(
-                OrgMembership.org_id == org_id, OrgMembership.user_id == user_id
+                OrgMembership.org_id == org_id, OrgMembership.user_id == user.id
             )
         ).first()
 
         if not existing_membership:
             # Create new membership
-            new_membership = OrgMembership(org_id=org_id, user_id=user_id)
+            new_membership = OrgMembership(org_id=org_id, user_id=user.id)
             session.add(new_membership)
-            logger.info(f"Created membership: {user_id} in {org_id}")
+            logger.info(f"Created membership: {auth0_user_id} in {org_id}")
         else:
-            logger.debug(f"Membership already exists: {user_id} in {org_id}")
+            logger.debug(f"Membership already exists: {auth0_user_id} in {org_id}")
 
     elif action == "remove":
         # Remove membership
         membership = session.exec(
             select(OrgMembership).where(
-                OrgMembership.org_id == org_id, OrgMembership.user_id == user_id
+                OrgMembership.org_id == org_id, OrgMembership.user_id == user.id
             )
         ).first()
 
         if membership:
             session.delete(membership)
-            logger.info(f"Removed membership: {user_id} from {org_id}")
+            logger.info(f"Removed membership: {auth0_user_id} from {org_id}")
         else:
-            logger.debug(f"Membership not found to remove: {user_id} from {org_id}")
+            logger.debug(
+                f"Membership not found to remove: {auth0_user_id} from {org_id}"
+            )
 
     return True
 

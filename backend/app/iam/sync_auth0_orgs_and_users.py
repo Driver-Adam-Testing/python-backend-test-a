@@ -11,13 +11,9 @@ Usage:
 
 import argparse
 import logging
-import os
 import sys
 from datetime import UTC, datetime
 from typing import Any
-
-# Add backend directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.auth0_service import Auth0Service
 from auth0.management import Auth0
@@ -165,7 +161,7 @@ class Auth0Sync:
                 existing_org.name = org_name
                 existing_org.display_name = org_data.get("display_name")
                 existing_org.org_metadata = org_data.get("metadata", {})
-                existing_org.synced_at = datetime.utcnow()
+                existing_org.synced_at = datetime.now(UTC)
 
                 if self.verbose:
                     logger.debug(f"Updated organization: {org_name} ({org_id})")
@@ -194,75 +190,96 @@ class Auth0Sync:
 
     def sync_user(self, session: Session, user_data: dict[str, Any]) -> bool:
         """Sync a single user to the database."""
-        user_id = user_data.get("user_id")
+        auth0_user_id = user_data.get("user_id")
         email = user_data.get("email", "").lower()
         name = user_data.get("name", email)
 
-        if not user_id:
+        if not auth0_user_id:
             logger.warning(f"Skipping user with missing id: {user_data}")
             self.stats["users_skipped"] += 1
             return False
 
         try:
-            # Check if user exists
-            existing_user = session.get(User, user_id)
+            # Check if user exists by auth0_user_id
+            existing_user = session.exec(
+                select(User).where(User.auth0_user_id == auth0_user_id)
+            ).first()
 
             if existing_user:
                 # Update existing user
                 existing_user.email = email
                 existing_user.name = name
-                existing_user.synced_at = datetime.utcnow()
+                existing_user.synced_at = datetime.now(UTC)
 
                 if self.verbose:
-                    logger.debug(f"Updated user: {email} ({user_id})")
+                    logger.debug(f"Updated user: {email} ({auth0_user_id})")
                 self.stats["users_updated"] += 1
             else:
                 # Create new user
                 new_user = User(
-                    id=user_id, email=email, name=name, synced_at=datetime.now(UTC)
+                    auth0_user_id=auth0_user_id,
+                    email=email,
+                    name=name,
+                    synced_at=datetime.now(UTC),
                 )
                 session.add(new_user)
 
                 if self.verbose:
-                    logger.debug(f"Created user: {email} ({user_id})")
+                    logger.debug(f"Created user: {email} ({auth0_user_id})")
                 self.stats["users_created"] += 1
 
             return True
 
         except Exception as e:
-            logger.error(f"Error syncing user {user_id}: {e}")
-            self.stats["errors"].append(f"Failed to sync user {user_id}: {e!s}")
+            logger.error(f"Error syncing user {auth0_user_id}: {e}")
+            self.stats["errors"].append(f"Failed to sync user {auth0_user_id}: {e!s}")
             return False
 
-    def sync_membership(self, session: Session, org_id: str, user_id: str) -> bool:
+    def sync_membership(
+        self, session: Session, org_id: str, auth0_user_id: str
+    ) -> bool:
         """Create or update organization membership."""
         try:
+            # Look up user by auth0_user_id to get the UUID
+            user = session.exec(
+                select(User).where(User.auth0_user_id == auth0_user_id)
+            ).first()
+
+            if not user:
+                logger.warning(
+                    f"User {auth0_user_id} not found in database for membership in {org_id}"
+                )
+                self.stats["memberships_skipped"] += 1
+                return False
+
             # Check if membership already exists
             existing_membership = session.exec(
                 select(OrgMembership).where(
-                    OrgMembership.org_id == org_id, OrgMembership.user_id == user_id
+                    OrgMembership.org_id == org_id, OrgMembership.user_id == user.id
                 )
             ).first()
 
             if existing_membership:
                 if self.verbose:
-                    logger.debug(f"Membership already exists: {user_id} in {org_id}")
+                    logger.debug(
+                        f"Membership already exists: {auth0_user_id} in {org_id}"
+                    )
                 self.stats["memberships_skipped"] += 1
             else:
                 # Create new membership
-                new_membership = OrgMembership(org_id=org_id, user_id=user_id)
+                new_membership = OrgMembership(org_id=org_id, user_id=user.id)
                 session.add(new_membership)
 
                 if self.verbose:
-                    logger.debug(f"Created membership: {user_id} in {org_id}")
+                    logger.debug(f"Created membership: {auth0_user_id} in {org_id}")
                 self.stats["memberships_created"] += 1
 
             return True
 
         except Exception as e:
-            logger.error(f"Error syncing membership {user_id} in {org_id}: {e}")
+            logger.error(f"Error syncing membership {auth0_user_id} in {org_id}: {e}")
             self.stats["errors"].append(
-                f"Failed to sync membership {user_id} in {org_id}: {e!s}"
+                f"Failed to sync membership {auth0_user_id} in {org_id}: {e!s}"
             )
             return False
 

@@ -26,14 +26,15 @@ This script performs a complete sync of all Auth0 organizations and users to the
 #### Usage:
 
 ```bash
-# Option 1: From the python-backend/backend directory:
+# From the python-backend/backend directory:
 cd backend
-poetry run python scripts/sync_auth0_orgs_and_users.py --dry-run
-poetry run python scripts/sync_auth0_orgs_and_users.py --verbose
-poetry run python scripts/sync_auth0_orgs_and_users.py
+poetry run python -m app.iam.sync_auth0_orgs_and_users --dry-run
+poetry run python -m app.iam.sync_auth0_orgs_and_users --verbose
+poetry run python -m app.iam.sync_auth0_orgs_and_users
 
-# Option 2: From the python-backend directory (also works):
-poetry run python backend/scripts/sync_auth0_orgs_and_users.py --dry-run --verbose
+# Or from the python-backend directory:
+cd python-backend
+poetry run python -m app.iam.sync_auth0_orgs_and_users --dry-run --verbose
 ```
 
 #### What it does:
@@ -105,7 +106,8 @@ The sync scripts work with three tables:
 - `synced_at`: Last sync timestamp
 
 ### `users`
-- `id` (PK): Auth0 user ID (e.g., "auth0|xxxxx")
+- `id` (PK): UUID (auto-generated)
+- `auth0_user_id`: Auth0 user ID (e.g., "auth0|xxxxx") - unique, indexed
 - `email`: User email
 - `name`: User name
 - `created_at`, `updated_at`: Timestamps
@@ -113,8 +115,8 @@ The sync scripts work with three tables:
 
 ### `org_memberships`
 - `id` (PK): UUID
-- `org_id` (FK): Organization ID
-- `user_id` (FK): User ID
+- `org_id` (FK): Organization ID (string, references organizations.id)
+- `user_id` (FK): User UUID (references users.id)
 - Unique constraint on (org_id, user_id)
 
 ## Scheduling
@@ -127,8 +129,8 @@ For production use, consider:
 
 Example cron job for daily sync:
 ```bash
-# Run from backend directory
-0 2 * * * cd /path/to/python-backend/backend && poetry run python scripts/sync_auth0_orgs_and_users.py >> /var/log/auth0_sync.log 2>&1
+# Run from python-backend/backend directory
+0 2 * * * cd /path/to/python-backend/backend && poetry run python -m app.iam.sync_auth0_orgs_and_users >> /var/log/auth0_sync.log 2>&1
 ```
 
 ## Error Handling

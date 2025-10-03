@@ -504,6 +504,9 @@ async def update_changelog(
         )
 
         repo = GitFetcher(repo_path=repo_dir)
+        # This list of commits includes new commits that occurred chronologically since previous_sha up to and including vcs_hash,
+        # PLUS any commits that are unique ancestors of merge commits contained in the set of new commits
+        # that may have occurred chronologically before previous_sha.
         new_commits = list(
             repo.fetch_commits(
                 start_commit=vcs_hash,

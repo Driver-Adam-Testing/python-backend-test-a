@@ -153,6 +153,7 @@ class GitFetcher:
     def fetch_commits(
         self,
         branch: str | None = None,
+        start_commit: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
         author: str | None = None,
@@ -168,6 +169,7 @@ class GitFetcher:
 
         Args:
             branch: Branch name (defaults to HEAD)
+            start_commit: detach HEAD to this commit SHA before walking
             since: Fetch commits after this date
             until: Fetch commits before this date
             author: Filter by author email or name
@@ -175,6 +177,8 @@ class GitFetcher:
             skip_merge_commits: Skip merge commits
             include_stats: Include file statistics
             include_diff: Include full diff
+            stop_commit: Stop fetching when this commit SHA is reached
+            unravel_merges: For merge commits, yield child commits instead of the merge commit itself
 
         Yields:
             CommitData objects
@@ -190,6 +194,14 @@ class GitFetcher:
             except KeyError:
                 logger.warning(f"Branch {branch} not found, using HEAD")
                 start_oid = self.repo.head.target
+        elif start_commit:
+            try:
+                commit = self.repo.revparse_single(start_commit)
+                if not isinstance(commit, pygit2.Commit):
+                    raise ValueError(f"Object {start_commit} is not a commit")
+                start_oid = commit.id
+            except Exception as e:
+                raise ValueError(f"Invalid start commit {start_commit}: {e}")
         else:
             start_oid = self.repo.head.target
 

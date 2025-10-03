@@ -40,18 +40,28 @@ class CommitSummary(BaseModel):
 OPENAI_SEM = asyncio.Semaphore(75)
 OPENAI_LIMITER = AsyncLimiter(25, 1)  # 25 requests per second
 
-system_prompt = """
-You are a meticulous software development assistant. Your task is to summarize code changes in a clear and concise way, based on both the commit message and the actual code diff.
+commit_summary_system_prompt = (
+    Prompt.empty()
+    .append(
+        Component(
+            string="""
+    You are a meticulous software development assistant. Your task is to summarize code changes in a clear and concise way, based on both the commit message and the actual code diff.
 
-Your summary should:
-- Reflect what the commit **actually does**, not just what the message claims.
-- Include the **type of change** (e.g., feature, bugfix, refactor, test addition, performance improvement).
-- Highlight **key files or functions** modified if they are relevant to understanding the change.
-- Be written in natural language that could be used in a changelog, code review, or documentation.
+    Your summary should:
+    - Reflect what the commit **actually does**, not just what the message claims.
+    - Include the **type of change** (e.g., feature, bugfix, refactor, test addition, performance improvement).
+    - Highlight **key files or functions** modified if they are relevant to understanding the change.
+    - Be written in natural language that could be used in a changelog, code review, or documentation.
 
-Provide the summary in 1 paragraph. Be sure to highlight any major features added, bugs fixed, or significant refactors. If the commit is a minor change or typo fix, note that as well.
-"""
-user_prompt_template = """
+    Provide the summary in 1 paragraph. Be sure to highlight any major features added, bugs fixed, or significant refactors. If the commit is a minor change or typo fix, note that as well.
+    """
+        )
+    )
+    .append(GENERAL_STE_STYLE_INSTRUCTION)
+    .into_str()
+)
+
+commit_summary_user_prompt_template = """
 Summarize the following commit. Use both the commit message and the diff to produce a meaningful description of what changed and why.
 
 ### Commit Message
@@ -95,84 +105,111 @@ changelog_system_prompt = (
     .into_str()
 )
 
-overall_changelog_system_prompt = """
-You are a structured summarization agent tasked with generating a one-page historical timeline of a software codebase. Your output will be consumed by other LLM-based agents via an MCP server to reason about feature history, architectural shifts, and capability evolution.
+overall_changelog_system_prompt = (
+    Prompt.empty()
+    .append(
+        Component(
+            string="""
+    You are a structured summarization agent tasked with generating a one-page historical timeline of a software codebase. Your output will be consumed by other LLM-based agents via an MCP server to reason about feature history, architectural shifts, and capability evolution.
 
-You will read detailed changelogs or release notes and extract high-signal, chronologically ordered entries.
+    You will read detailed changelogs or release notes and extract high-signal, chronologically ordered entries.
 
-Your output must:
+    Your output must:
 
-- Be in valid **YAML**. With a top-level key `changelog` that contains a list of entries.
-- Each entry should describe a month and should contain as many bullet points as needed to capture the most important changes that month.
-- Each bullet should:
-  - Begin with a **strong action verb** (e.g., Introduced, Refactored, Migrated)
-  - Reference the **feature, subsystem, or outcome**
-  - Be **atomic**, avoiding pronouns and vague references
-- Avoid opinion, commentary, or duplication
+    - Be in valid **YAML**. With a top-level key `changelog` that contains a list of entries.
+    - Each entry should describe a month and should contain as many bullet points as needed to capture the most important changes that month.
+    - Each bullet should:
+    - Begin with a **strong action verb** (e.g., Introduced, Refactored, Migrated)
+    - Reference the **feature, subsystem, or outcome**
+    - Be **atomic**, avoiding pronouns and vague references
+    - Avoid opinion, commentary, or duplication
 
-Do not include explanation, comments, or any markdown — output only the YAML block.
+    Do not include explanation, comments, or any markdown — output only the YAML block.
 
-An example output format is:
-```yaml
-changelog:
-  - 2024-01:
-      - Introduced a new user authentication system with OAuth2 support
-      - Refactored the payment processing module to improve performance
-      - Migrated the database to PostgreSQL for better scalability
-  - 2024-02:
-      - Added a new feature for real-time notifications
-      - Fixed critical bugs in the user profile management system
-      - Improved test coverage across the codebase
-```
-"""
+    An example output format is:
+    ```yaml
+    changelog:
+    - 2024-01:
+        - Introduced a new user authentication system with OAuth2 support
+        - Refactored the payment processing module to improve performance
+        - Migrated the database to PostgreSQL for better scalability
+    - 2024-02:
+        - Added a new feature for real-time notifications
+        - Fixed critical bugs in the user profile management system
+        - Improved test coverage across the codebase
+    ```
+    """
+        )
+    )
+    .append(GENERAL_STE_STYLE_INSTRUCTION)
+    .into_str()
+)
 
-merge_changelog_system_prompt = """
-You are a changelog merge assistant. You will receive two changelog entries for the same month - an existing/older changelog and a new changelog with recent updates.
+merge_changelog_system_prompt = (
+    Prompt.empty()
+    .append(
+        Component(
+            string="""
+    You are a changelog merge assistant. You will receive two changelog entries for the same month - an existing/older changelog and a new changelog with recent updates.
 
-Your task is to intelligently merge these two changelogs by:
-1. **Combining unique entries** from both changelogs
-2. **Deduplicating similar entries** (e.g., if the same feature or bug fix appears in both)
-3. **Preserving the most complete description** when similar entries exist
-4. **Maintaining the standardized format** with Features and Bug Fixes sections
-5. **Prioritizing recent changes** if there are conflicts
+    Your task is to intelligently merge these two changelogs by:
+    1. **Combining unique entries** from both changelogs
+    2. **Deduplicating similar entries** (e.g., if the same feature or bug fix appears in both)
+    3. **Preserving the most complete description** when similar entries exist
+    4. **Maintaining the standardized format** with Features and Bug Fixes sections
+    5. **Prioritizing recent changes** if there are conflicts
 
-Output merged changelog in Markdown format that represents a comprehensive view of all changes for that month.
+    Output merged changelog in Markdown format that represents a comprehensive view of all changes for that month.
 
-IMPORTANT:
-- DO NOT include commit hashes or file paths
-- DO NOT duplicate information
-- DO maintain professional, clear language
-- DO preserve all unique features and important bug fixes from both changelogs
-"""
+    IMPORTANT:
+    - DO NOT include commit hashes or file paths
+    - DO NOT duplicate information
+    - DO maintain professional, clear language
+    - DO preserve all unique features and important bug fixes from both changelogs
+    """
+        )
+    )
+    .append(GENERAL_STE_STYLE_INSTRUCTION)
+    .into_str()
+)
 
-update_overall_changelog_system_prompt = """
-You are a changelog update assistant. You will receive an existing overall changelog (in YAML format) and new monthly changelog entries (in Markdown format).
+update_overall_changelog_system_prompt = (
+    Prompt.empty()
+    .append(
+        Component(
+            string="""
+    You are a changelog update assistant. You will receive an existing overall changelog (in YAML format) and new monthly changelog entries (in Markdown format).
 
-Your task is to update the overall changelog by:
-1. **Adding new month entries** that don't exist in the overall changelog
-2. **Updating existing month entries** where new changes have been added
-3. **Preserving the YAML format** with strong action verbs and atomic bullet points
-4. **Maintaining chronological order** (most recent months first)
-5. **Limiting each month to 5 bullet points** maximum - prioritize the most important changes
-6. **Deduplicating** similar entries between old and new content
+    Your task is to update the overall changelog by:
+    1. **Adding new month entries** that don't exist in the overall changelog
+    2. **Updating existing month entries** where new changes have been added
+    3. **Preserving the YAML format** with strong action verbs and atomic bullet points
+    4. **Maintaining chronological order** (most recent months first)
+    5. **Limiting each month to 5 bullet points** maximum - prioritize the most important changes
+    6. **Deduplicating** similar entries between old and new content
 
-Each bullet point must:
-- Begin with a strong action verb (e.g., Introduced, Refactored, Migrated)
-- Reference the feature, subsystem, or outcome
-- Be atomic and clear, avoiding pronouns and vague references
+    Each bullet point must:
+    - Begin with a strong action verb (e.g., Introduced, Refactored, Migrated)
+    - Reference the feature, subsystem, or outcome
+    - Be atomic and clear, avoiding pronouns and vague references
 
-Output only valid YAML with a top-level `changelog` key. No explanation or markdown.
+    Output only valid YAML with a top-level `changelog` key. No explanation or markdown.
 
-Example format:
-```yaml
-changelog:
-  - 2024-02:
-      - Introduced real-time notification system
-      - Fixed critical authentication bugs
-  - 2024-01:
-      - Migrated database to PostgreSQL
-```
-"""
+    Example format:
+    ```yaml
+    changelog:
+    - 2024-02:
+        - Introduced real-time notification system
+        - Fixed critical authentication bugs
+    - 2024-01:
+        - Migrated database to PostgreSQL
+    ```
+    """
+        )
+    )
+    .append(GENERAL_STE_STYLE_INSTRUCTION)
+    .into_str()
+)
 
 
 async def llm_generate(
@@ -196,11 +233,13 @@ async def summarize_commits(
     task_coroutines = []
     for commit in commits:
         sha_list.append(commit.sha)
-        user_prompt = user_prompt_template.format(
+        user_prompt = commit_summary_user_prompt_template.format(
             commit_message=commit.message, commit_diff=commit.diff
         )
         config = OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=CommitSummary)
-        task_coroutines.append(llm_generate(llm, system_prompt, user_prompt, config))
+        task_coroutines.append(
+            llm_generate(llm, commit_summary_system_prompt, user_prompt, config)
+        )
     task_results = await tqdm_asyncio.gather(*task_coroutines)
 
     for sha, result in zip(sha_list, task_results):
@@ -345,7 +384,7 @@ async def _prepare_repo_for_changelog(
     version_id: str,
     install_id: str,
     temp_dir: str,
-) -> tuple[Path, str]:
+) -> tuple[Path, str, str]:
     from database.db import engine
     from database.models import GitProviderAppInstallation
     from database.models_enums import PrimaryAssetProvider
@@ -418,7 +457,7 @@ async def _prepare_repo_for_changelog(
                 result.returncode, f"git checkout {version.vcs_hash}"
             )
 
-    return repo_dir, full_name
+    return repo_dir, full_name, version.vcs_hash
 
 
 async def create_changelog(
@@ -426,12 +465,14 @@ async def create_changelog(
     install_id: str,
 ) -> dict:
     with tempfile.TemporaryDirectory() as temp_dir:
-        repo_dir, full_name = await _prepare_repo_for_changelog(
+        repo_dir, full_name, vcs_hash = await _prepare_repo_for_changelog(
             version_id, install_id, temp_dir
         )
 
         repo = GitFetcher(repo_path=repo_dir)
-        all_commits = list(repo.fetch_commits(limit=MAX_COMMITS_TO_PROCESS))
+        all_commits = list(
+            repo.fetch_commits(start_commit=vcs_hash, limit=MAX_COMMITS_TO_PROCESS)
+        )
 
         print(f"Fetched {len(all_commits)} commits from {full_name}")
         if not all_commits:
@@ -458,13 +499,14 @@ async def update_changelog(
     previous_overall_changelog: str,
 ) -> dict:
     with tempfile.TemporaryDirectory() as temp_dir:
-        repo_dir, full_name = await _prepare_repo_for_changelog(
+        repo_dir, full_name, vcs_hash = await _prepare_repo_for_changelog(
             version_id, install_id, temp_dir
         )
 
         repo = GitFetcher(repo_path=repo_dir)
         new_commits = list(
             repo.fetch_commits(
+                start_commit=vcs_hash,
                 limit=MAX_COMMITS_TO_PROCESS,
                 stop_commit=previous_sha,
                 unravel_merges=True,

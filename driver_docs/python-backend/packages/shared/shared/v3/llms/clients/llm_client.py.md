@@ -6,9 +6,9 @@
 Abstract base class for LLM clients with methods for single and multi-shot message processing.
 
 # Purpose
-The `LlmClient` class is an abstract base class designed to facilitate interactions with various language model APIs. It provides a framework for configuring and executing requests to language models, supporting both synchronous and asynchronous operations. The class includes a set of predefined configurations, known as presets, which are initialized through the [`initialize_presets`](<#llmclientinitialize_presets>) class method. These presets allow users to quickly set up clients for different language model configurations, such as `gpt_4o`, `claude_sonnet_3_5`, and others.
+The code defines an abstract base class `LlmClient` that serves as a framework for interacting with different language model (LLM) clients. The class provides methods for initializing configurations, managing message histories, and executing tool requests asynchronously. It includes a set of predefined configuration presets stored in the `_PRESETS` class variable, which map string keys to callable functions that return `LlmConfig` objects. The [`initialize_presets`](<#llmclientinitialize_presets>) class method dynamically adds these presets as class methods to `LlmClient`.
 
-The class defines several methods for generating responses from language models, including [`single_shot`](<#llmclientsingle_shot>), [`single_shot_stream`](<#llmclientsingle_shot_stream>), [`multi_shot`](<#llmclientmulti_shot>), and [`multi_shot_stream`](<#llmclientmulti_shot_stream>). These methods handle both single and multiple iterations of message exchanges with the language model, supporting the use of tools and managing message history. The [`_execute_tools_async`](<#llmclient_execute_tools_async>) method is responsible for executing tool requests asynchronously, while the [`_generate`](<#llmclient_generate>) and [`_generate_stream`](<#llmclient_generate_stream>) methods are abstract and intended to be implemented by subclasses to provide specific response generation logic. The class also includes error handling mechanisms to manage exceptions during tool execution and response generation. Overall, `LlmClient` serves as a foundational component for building clients that interact with language models in a structured and configurable manner.
+The `LlmClient` class includes several methods for generating responses from LLMs, both synchronously and asynchronously. The [`single_shot`](<#llmclientsingle_shot>) and [`multi_shot`](<#llmclientmulti_shot>) methods handle single and multiple iterations of message generation, respectively, while their asynchronous counterparts, [`single_shot_stream`](<#llmclientsingle_shot_stream>) and [`multi_shot_stream`](<#llmclientmulti_shot_stream>), yield responses in a streaming fashion. The class also defines an abstract method [`_generate`](<#llmclient_generate>), which must be implemented by subclasses to add provider-specific responses to the message history. The [`from_config`](<#llmclientfrom_config>) class method selects and returns a concrete client implementation based on the `api_kind` specified in the `LlmConfig`. This design allows for flexible integration with various LLM providers by extending the `LlmClient` class.
 # Imports and Dependencies
 
 ---
@@ -47,9 +47,9 @@ The class defines several methods for generating responses from language models,
 
 ---
 ### \_\_all\_\_
-- **Type**: ``list``
-- **Description**: Specifies the public API of the module by listing the names of objects that should be accessible when the module is imported using `from module import *`. In this case, it includes only the `LlmClient` class.
-- **Use**: Controls which components are exported when the module is imported with a wildcard.
+- **Type**: `list`
+- **Description**: Defines the public API of the module by listing the names of objects that should be accessible when the module is imported using a wildcard import statement.
+- **Use**: Controls which components are exported when the module is imported with `from module_name import *`.
 
 
 # Classes
@@ -62,7 +62,7 @@ The class defines several methods for generating responses from language models,
 - **Members**:
     - `_PRESETS`: Stores a dictionary of preset configurations for LLM clients.
     - `config`: Holds the configuration for the LLM client instance.
-- **Description**: Defines an abstract base class for LLM clients, providing methods to initialize and manage configurations, execute tools asynchronously, and handle single or multi-shot message processing. It supports different API kinds and can generate responses synchronously or asynchronously.
+- **Description**: Defines an abstract base class for LLM clients, providing methods to initialize presets, create clients from configurations, and handle message history and tool execution. It supports both synchronous and asynchronous operations, including single-shot and multi-shot interactions with LLMs, and manages tool execution and response streaming.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.__init__`](<#llmclient__init__>)
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.initialize_presets`](<#llmclientinitialize_presets>)
@@ -86,7 +86,7 @@ The class defines several methods for generating responses from language models,
 
 Initializes an instance of the `LlmClient` class with a given configuration.
 - **Inputs**:
-    - `config`: An instance of `LlmConfig` that specifies the configuration for the `LlmClient`. If not provided, it defaults to `LlmConfig.default()`.
+    - `config`: An instance of `LlmConfig` that specifies the configuration for the `LlmClient`. Defaults to `LlmConfig.default()` if not provided.
 - **Logic and Control Flow**:
     - Assigns the provided `config` to the instance variable `self.config`.
 - **Output**: None
@@ -103,10 +103,10 @@ Adds class methods to the `LlmClient` class for each preset configuration define
 - **Decorators**: `@classmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Defines a nested function `_make` that takes a `name` and a `factory` callable, which returns a class method `_preset` that creates an `LlmClient` instance from a configuration.
-    - Iterates over each key-value pair in the `_PRESETS` dictionary of the class.
-    - For each preset, calls `_make` with the preset name and factory, and uses `setattr` to add the resulting class method to the class.
-- **Output**: No output is returned as the method modifies the class by adding new class methods.
+    - Defines a nested function `_make` that takes a `name` and a `factory` callable, returning a class method `_preset` that creates an `LlmClient` from a configuration.
+    - Iterates over each item in the `_PRESETS` dictionary of the class, which contains preset names and their corresponding factory callables.
+    - For each preset, uses `setattr` to add a class method to the class with the name of the preset, using the `_make` function to create the method.
+- **Output**: No output is returned as the method modifies the class by adding methods dynamically.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.from_config`](<#llmclientfrom_config>)
 - **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<#llmclient>)  (Base Class)
@@ -124,7 +124,7 @@ Returns a concrete LLM client instance based on the provided configuration.
     - Checks the `api_kind` attribute of the `config` object to determine which client class to instantiate.
     - Imports the appropriate client class based on the `api_kind` value.
     - Returns an instance of the selected client class, initialized with the provided `config`.
-    - Raises a `ValueError` if the `api_kind` is not supported.
+    - Raises a `ValueError` if the `api_kind` is not supported, including the unsupported `api_kind` and `provider` in the error message.
 - **Output**: An instance of a subclass of `LlmClient` that corresponds to the specified `api_kind` in the `config`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient`](<llm_client_openai_strict.py.md#openaistrictwithsystemclient>)
@@ -138,16 +138,16 @@ Returns a concrete LLM client instance based on the provided configuration.
 #### LlmClient\.\_init\_history<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._init_history}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client.py#L96>)
 
-Initializes a message history object and optionally adds a user message if a prompt is provided.
+Initializes a message history object and optionally adds a user message to it.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
     - `message_history`: An optional [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object to initialize or continue from.
     - `prompt`: An optional string representing a user prompt to add to the message history.
 - **Logic and Control Flow**:
     - Check if `message_history` is provided; if not, create a new [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object.
-    - If `prompt` is provided, add a user message with the prompt to the `history`.
+    - If `prompt` is provided, create a [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) with `MessageKind.USER` and add it to the `history`.
     - Return the `history` object.
-- **Output**: Returns an [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object, possibly with an added user message if a prompt was provided.
+- **Output**: Returns an [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object, possibly with a new user message added.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryadd_message>)
@@ -160,24 +160,25 @@ Initializes a message history object and optionally adds a user message if a pro
 [View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client.py#L106>)
 
 Executes a list of tools asynchronously and yields status updates or error responses.
+- **Decorators**: `@asyncio`
 - **Inputs**:
     - `tool_requests`: A list of [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) objects representing tool requests to execute.
     - `history`: An `LlmMessageHistory` object to record the execution history of the tools.
-    - `called_tools`: A list of `LlmTool` objects that have been called during the execution.
+    - `called_tools`: A list to store `LlmTool` objects that have been called.
     - `datasource`: An optional `DataSource` object to provide data for tool execution.
 - **Logic and Control Flow**:
     - Initialize an empty list `tasks` to store asynchronous tasks.
-    - Iterate over each request in `tool_requests`.
-    - For each request, extract the `LlmTool` from `req.parsed_tool` and append it to `called_tools`.
+    - Iterate over each `req` in `tool_requests`.
+    - For each `req`, extract the `parsed_tool` and append it to `called_tools`.
     - Yield a [`ToolStatusUpdateStreamResponse`](<../../interfaces/llm_stream_response.py.md#toolstatusupdatestreamresponse>) with the current tool's status.
     - Create an asynchronous task for each tool's [`aexecute`](<../../interfaces/llm_tool.py.md#llmtoolaexecute>) method and append it to `tasks`.
     - Use `asyncio.as_completed` to iterate over completed tasks.
-    - For each completed task, await its result to get a [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>).
-    - Add the [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) to `history`.
-    - Find the corresponding tool in `called_tools` using the `tool_call_id` from the `tool_msg` and yield a [`ToolStatusUpdateStreamResponse`](<../../interfaces/llm_stream_response.py.md#toolstatusupdatestreamresponse>) with the tool's status.
-    - If an exception occurs during task execution, create an error message and add it to `history`.
+    - For each completed task, await its result and add the resulting [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) to `history`.
+    - Find the corresponding tool in `called_tools` using the `tool_response.id` from the message.
+    - Yield a [`ToolStatusUpdateStreamResponse`](<../../interfaces/llm_stream_response.py.md#toolstatusupdatestreamresponse>) with the updated tool's status.
+    - If an exception occurs, create an error message and add it to `history`.
     - Yield an [`ErrorStreamResponse`](<../../interfaces/llm_stream_response.py.md#errorstreamresponse>) with the error message.
-- **Output**: An `AsyncGenerator` that yields `LlmStreamResponse` objects, which can be either [`ToolStatusUpdateStreamResponse`](<../../interfaces/llm_stream_response.py.md#toolstatusupdatestreamresponse>) or [`ErrorStreamResponse`](<../../interfaces/llm_stream_response.py.md#errorstreamresponse>).
+- **Output**: An `AsyncGenerator` that yields `LlmStreamResponse` objects, which can be status updates or error responses.
 - **Functions Called**:
     - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../content_services/auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ToolStatusUpdateStreamResponse`](<../../interfaces/llm_stream_response.py.md#toolstatusupdatestreamresponse>)
@@ -193,7 +194,7 @@ Executes a list of tools asynchronously and yields status updates or error respo
 #### LlmClient\.\_generate<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._generate}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client.py#L157>)
 
-Adds the provider's response to the given message history synchronously.
+Adds the provider's response to the given message history in a synchronous manner.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
     - `message_history`: An instance of `LlmMessageHistory` that stores the conversation history.
@@ -202,7 +203,7 @@ Adds the provider's response to the given message history synchronously.
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses.
     - The method is intended to modify the `message_history` by adding the provider's response.
-- **Output**: The method does not return a value; it modifies the `message_history` in place.
+- **Output**: The method does not return any value.
 - **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<#llmclient>)  (Base Class)
 
 
@@ -210,16 +211,16 @@ Adds the provider's response to the given message history synchronously.
 #### LlmClient\.\_generate\_stream<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._generate_stream}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client.py#L166>)
 
-Streams the last message from the message history after generating a response using the synchronous [`_generate`](<#llmclient_generate>) method.
-- **Decorators**: `@async`
+Streams the last message from the message history after generating a response using the synchronous variant.
+- **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
     - `message_history`: An instance of `LlmMessageHistory` that contains the history of messages.
     - `response_type`: An optional type of `LlmResponseType` that specifies the type of response expected.
-    - `tool_types`: An optional list of `LlmTool` types that may be used during the generation process.
+    - `tool_types`: An optional list of `LlmTool` types that may be used in the generation process.
 - **Logic and Control Flow**:
-    - Calls the synchronous [`_generate`](<#llmclient_generate>) method with `message_history`, `response_type`, and `tool_types` as arguments to generate a response.
-    - Yields the last message from the `message_history` after the response generation.
-- **Output**: An asynchronous generator that yields either an `LlmMessage` or a string, representing the last message in the message history.
+    - Calls the synchronous [`_generate`](<#llmclient_generate>) method with `message_history`, `response_type`, and `tool_types` as arguments.
+    - Yields the last message from `message_history`.
+- **Output**: An asynchronous generator that yields either an `LlmMessage` or a `str`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._generate`](<#llmclient_generate>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.last`](<../../interfaces/llm_message_history.py.md#llmmessagehistorylast>)
@@ -236,10 +237,10 @@ Executes a single interaction with a language model and returns the last message
     - `response_type`: An optional type that specifies the expected response type from the language model.
     - `message_history`: An optional `LlmMessageHistory` object that contains the history of messages exchanged with the language model.
 - **Logic and Control Flow**:
-    - Initializes the message history using [`_init_history`](<#llmclient_init_history>), which adds the prompt to the history if provided.
-    - Calls the [`_generate`](<#llmclient_generate>) method to process the message history and generate a response from the language model.
-    - Returns the last message from the message history.
-- **Output**: Returns an `LlmMessage` object, which is the last message in the message history after processing.
+    - Initialize the message history using [`_init_history`](<#llmclient_init_history>) with the provided `message_history` and `prompt`.
+    - Call the [`_generate`](<#llmclient_generate>) method to process the message history and generate a response from the language model.
+    - Return the last message from the message history using `history.last()`.
+- **Output**: Returns an `LlmMessage` object representing the last message in the message history after processing.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._init_history`](<#llmclient_init_history>)
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._generate`](<#llmclient_generate>)
@@ -254,19 +255,19 @@ Executes a single interaction with a language model and returns the last message
 Streams responses from a language model based on a given prompt and message history.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
-    - `prompt`: An optional string that represents the initial user input to the language model.
-    - `response_type`: An optional type that specifies the expected response type from the language model.
-    - `message_history`: An optional `LlmMessageHistory` object that contains the history of messages exchanged with the language model.
+    - `prompt`: A string representing the initial user input or question to the language model.
+    - `response_type`: The type of response expected from the language model, which is optional.
+    - `message_history`: An optional history of previous messages exchanged with the language model.
 - **Logic and Control Flow**:
-    - Initializes the message history using [`_init_history`](<#llmclient_init_history>) with the provided `message_history` and `prompt`.
-    - Calls [`_generate_stream`](<#llmclient_generate_stream>) asynchronously to generate a stream of responses from the language model.
-    - Iterates over each `chunk` in the generated stream.
-    - Checks if `chunk` is an instance of `LlmMessage`.
-    - If `chunk` is an `LlmMessage`, yields a [`ResponseFullStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse>) with the content of the `chunk`.
-    - If `chunk` is not an `LlmMessage`, yields the `chunk` as is.
-- **Output**: An asynchronous generator that yields `LlmStreamResponse` objects, which can be either [`ResponseFullStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse>) or other types of stream responses.
+    - Initialize the message history using [`_init_history`](<#llmclient_init_history>) with the provided `message_history` and `prompt`.
+    - Call [`_generate_stream`](<llm_client_openai_strict.py.md#openaistrictwithsystemclient_generate_stream>) with the initialized message history, `response_type`, and `None` for `tool_types`.
+    - Iterate over the chunks yielded by [`_generate_stream`](<llm_client_openai_strict.py.md#openaistrictwithsystemclient_generate_stream>).
+    - Check if each chunk is an instance of `LlmMessage`.
+    - If the chunk is an `LlmMessage`, yield a [`ResponseFullStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse>) with the content of the chunk.
+    - If the chunk is not an `LlmMessage`, yield the chunk as is.
+- **Output**: An asynchronous generator that yields `LlmStreamResponse` objects, which can be either full responses or other types of stream responses.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._generate_stream`](<#llmclient_generate_stream>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate_stream`](<llm_client_openai_strict.py.md#openaistrictwithsystemclient_generate_stream>)
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._init_history`](<#llmclient_init_history>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse>)
 - **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<#llmclient>)  (Base Class)
@@ -281,20 +282,19 @@ Executes multiple iterations of message generation and tool execution, returning
     - `prompt`: An optional string to initialize the message history.
     - `iterations`: An integer specifying the number of iterations to perform, default is 2.
     - `response_type`: An optional type of `LlmResponseType` to specify the response type.
-    - `tool_types`: An optional list of `LlmTool` types to specify which tools to use, applicable for all but the last iteration.
+    - `tool_types`: An optional list of `LlmTool` types to specify which tools to use.
     - `message_history`: An optional `LlmMessageHistory` object to maintain the history of messages.
     - `datasource`: An optional `DataSource` object to provide data for tool execution.
 - **Logic and Control Flow**:
     - Initialize an empty list `called_tools` to store tools that are called during execution.
-    - Initialize `history` using [`_init_history`](<#llmclient_init_history>) with `message_history` and `prompt`.
-    - Add a [`MultiShotIterationContextMessage`](<../../globals/iteration_messages.py.md#multishotiterationcontextmessage>) to `history`.
-    - Iterate over the range of `iterations`.
-    - For each iteration, add an `IterationMessage` to `history` with the current index and total iterations.
-    - Call [`_generate`](<#llmclient_generate>) to add a provider's response to `history`, using `tool_types` for all but the last iteration.
-    - Retrieve the last message from `history`.
-    - If the last message is a `TOOL_CALL_REQUEST`, execute each tool request, append the tool to `called_tools`, and add the tool's response to `history`.
-    - If the last message is not a `TOOL_CALL_REQUEST`, exit the loop early.
-- **Output**: Returns a tuple containing the last message in `history` and the list of `called_tools`.
+    - Initialize the message history using [`_init_history`](<#llmclient_init_history>) with the given `message_history` and `prompt`.
+    - Add a [`MultiShotIterationContextMessage`](<../../globals/iteration_messages.py.md#multishotiterationcontextmessage>) to the message history to indicate the start of multi-shot iterations.
+    - Iterate over the range of `iterations`, adding an `IterationMessage` for each iteration to the message history.
+    - Call the [`_generate`](<#llmclient_generate>) method to generate a response, passing the current message history, response type, and tool types (excluding tool types in the last iteration).
+    - Retrieve the last message from the message history.
+    - If the last message is a `TOOL_CALL_REQUEST`, iterate over the tool requests, execute each tool, and add the execution result to the message history.
+    - If the last message is not a `TOOL_CALL_REQUEST`, break the loop.
+- **Output**: Returns a tuple containing the last message in the message history and a list of tools that were called.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._init_history`](<#llmclient_init_history>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryadd_message>)
@@ -316,27 +316,28 @@ Streams multiple iterations of responses from a language model, handling tool re
 - **Inputs**:
     - `prompt`: An optional string to initialize the conversation or context.
     - `iterations`: The number of iterations to perform, default is 2.
-    - `response_type`: An optional type for the response, specifying the expected response format.
-    - `tool_types`: An optional list of tool types that can be used during the iterations.
-    - `message_history`: An optional history of messages to maintain context across iterations.
+    - `response_type`: An optional type of response expected from the language model.
+    - `tool_types`: An optional list of tool types to use during the iterations.
+    - `message_history`: An optional history of messages to continue the conversation from.
     - `datasource`: An optional data source for tool execution.
 - **Logic and Control Flow**:
-    - Initialize an empty list `called_tools` to track tools used during execution.
-    - Initialize `history` with the given `message_history` and `prompt`, adding a [`MultiShotIterationContextMessage`](<../../globals/iteration_messages.py.md#multishotiterationcontextmessage>).
-    - Set `should_continue` to True to control the iteration loop.
-    - For each iteration, add an `IterationMessage` to `history` and check if `should_continue` is False to break the loop.
-    - Call [`_generate_stream`](<#llmclient_generate_stream>) to get chunks of responses for the current iteration.
-    - If a chunk is a string, yield a [`ResponseChunkStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsechunkstreamresponse>) with the chunk content.
-    - If a chunk is an `LlmMessage` with `TOOL_CALL_REQUEST`, add it to `history`, execute tools asynchronously, and yield their status.
-    - If a chunk is an `LlmMessage` with `ASSISTANT`, add it to `history`, yield a [`ReferenceStreamResponse`](<../../interfaces/llm_stream_response.py.md#referencestreamresponse>) with references, yield a [`ResponseFullStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse>) with the content, pause for 50ms, and set `should_continue` to False.
+    - Initialize an empty list `called_tools` to keep track of tools used.
+    - Initialize `history` with the given `message_history` and `prompt`, and add a [`MultiShotIterationContextMessage`](<../../globals/iteration_messages.py.md#multishotiterationcontextmessage>).
+    - Set `should_continue` to True to control the loop execution.
+    - Iterate over the range of `iterations`, breaking if `should_continue` is False.
+    - Add an `IterationMessage` to `history` for each iteration.
+    - Call [`_generate_stream`](<llm_client_openai_strict.py.md#openaistrictwithsystemclient_generate_stream>) to get chunks of responses from the language model.
+    - If a chunk is a string, yield it as a [`ResponseChunkStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsechunkstreamresponse>).
+    - If a chunk is a `LlmMessage` with `TOOL_CALL_REQUEST`, add it to `history` and execute tools asynchronously, yielding their status.
+    - If a chunk is a `LlmMessage` with `ASSISTANT`, add it to `history`, yield references and a full response, then pause briefly and set `should_continue` to False.
     - If a chunk is of an unexpected type, yield an [`ErrorStreamResponse`](<../../interfaces/llm_stream_response.py.md#errorstreamresponse>) and raise a `ValueError`.
-- **Output**: An asynchronous generator yielding `LlmStreamResponse` objects, which can be response chunks, full responses, tool status updates, references, or errors.
+- **Output**: An asynchronous generator yielding `LlmStreamResponse` objects, which can be response chunks, full responses, references, tool status updates, or errors.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._init_history`](<#llmclient_init_history>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryadd_message>)
     - [`python-backend/packages/shared/shared/v3/globals/iteration_messages.MultiShotIterationContextMessage`](<../../globals/iteration_messages.py.md#multishotiterationcontextmessage>)
     - [`python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage.from_context`](<../../globals/iteration_messages.py.md#iterationmessagefrom_context>)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._generate_stream`](<#llmclient_generate_stream>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate_stream`](<llm_client_openai_strict.py.md#openaistrictwithsystemclient_generate_stream>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseChunkStreamResponse`](<../../interfaces/llm_stream_response.py.md#responsechunkstreamresponse>)
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient._execute_tools_async`](<#llmclient_execute_tools_async>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ReferenceStreamResponse`](<../../interfaces/llm_stream_response.py.md#referencestreamresponse>)

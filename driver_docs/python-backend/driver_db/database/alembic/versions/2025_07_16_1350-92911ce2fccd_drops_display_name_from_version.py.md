@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to drop the `display_name` column from the `v2_version` table.
+Alembic migration script to drop the "display_name" column from the "v2_version" table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade function that modifies the database schema by dropping an index named `ix_v2_version_primary_asset_id_display_name` from the `v2_version` table and creating a new unique index `ix_v2_version_primary_asset_id_vcs_hash` on the same table using the columns `primary_asset_id` and `vcs_hash`. Additionally, it removes the `display_name` column from the `v2_version` table. The [`downgrade`](<#downgrade>) function is defined but does not contain any operations, indicating that the migration is not reversible through this script. The script includes metadata such as `revision`, `down_revision`, and other identifiers used by Alembic to track the migration history.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade operation that modifies the `v2_version` table by dropping the `display_name` column and removing an existing index `ix_v2_version_primary_asset_id_display_name`. It then creates a new unique index `ix_v2_version_primary_asset_id_vcs_hash` on the `primary_asset_id` and `vcs_hash` columns of the same table. The [`downgrade`](<#downgrade>) function is defined but does not contain any operations, indicating that the migration is not reversible through this script. The script includes metadata such as `revision`, `down_revision`, and `Create Date` for version control.
 # Imports and Dependencies
 
 ---
@@ -25,15 +25,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to determine the order of database schema migrations.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration script.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
 - **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no specific branch labels associated with this migration script.
+- **Use**: Used to define branch labels for the migration script, but currently not utilized as it is set to `None`.
 
 
 ---
@@ -65,8 +65,8 @@ Modifies the database schema by dropping an index and a column, and creating a n
 Does not perform any operations.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Contains no logic or control flow as it is an empty function.
-- **Output**: Returns `None` as it is an empty function.
+    - The function body contains only the `pass` statement, indicating no operations are performed.
+- **Output**: Returns `None` as it does not perform any operations.
 
 
 

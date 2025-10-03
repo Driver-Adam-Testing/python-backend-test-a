@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Command-line interface for setting up, generating configs, tearing down, and running ngrok tunnels for developer environments.
+CLI tool for setting up, configuring, and managing developer environments and ngrok tunnels.
 
 # Purpose
-The code is a command-line interface (CLI) tool designed to manage developer environments. It uses the `click` library to define a group of commands that facilitate the setup, configuration, and teardown of developer resources. The primary commands include [`setup`](<#setup>), [`generate_configs`](<#generate_configs>), [`teardown`](<#teardown>), and [`run_tunnels`](<#run_tunnels>). The [`setup`](<#setup>) command initializes a developer environment, optionally configuring GitHub resources and generating necessary configuration files. The [`generate_configs`](<#generate_configs>) command regenerates configuration files for a specified developer. The [`teardown`](<#teardown>) command removes resources associated with a developer environment. The [`run_tunnels`](<#run_tunnels>) command establishes ngrok tunnels for specified HTTP and TCP ports, allowing external access to local services.
+The code is a command-line interface (CLI) tool for managing developer environments. It uses the `click` library to define a group of commands that facilitate the setup, configuration, and teardown of developer resources. The primary commands include [`setup`](<#setup>), [`generate_configs`](<#generate_configs>), [`teardown`](<#teardown>), and [`run_tunnels`](<#run_tunnels>). The [`setup`](<#setup>) command initializes a developer environment, optionally configuring GitHub resources and generating necessary configuration files. The [`generate_configs`](<#generate_configs>) command regenerates configuration files for a specified developer. The [`teardown`](<#teardown>) command removes resources associated with a developer environment. The [`run_tunnels`](<#run_tunnels>) command establishes ngrok tunnels for specified HTTP and TCP ports, allowing external access to local services.
 
-The code imports several modules and functions to perform its tasks, such as `generate_developer_configs`, `load_developer_state`, and `run_ngrok_tunnels`. It also handles user input and validation, particularly for GitHub credentials and port specifications. The [`wait_for_socket_server`](<#wait_for_socket_server>) function checks if a socket server is ready to accept connections, which is used in the [`run_tunnels`](<#run_tunnels>) command to ensure the ngrok server is operational. The CLI tool is intended to be executed as a standalone script, as indicated by the `if __name__ == "__main__": cli()` block, and it provides feedback to the user through console messages, including error handling and success confirmations.
+The code imports several modules and functions to perform its tasks, such as `generate_developer_configs`, `load_developer_state`, and `run_ngrok_tunnels`. It also handles user input and validation, particularly for GitHub credentials and port specifications. The [`wait_for_socket_server`](<#wait_for_socket_server>) function checks if a socket server is ready to accept connections, which is used in the [`run_tunnels`](<#run_tunnels>) command to ensure the ngrok server is operational before establishing tunnels. The CLI tool is designed to be executed as a standalone script, as indicated by the `if __name__ == "__main__": cli()` block, which invokes the CLI when the script is run directly.
 # Imports and Dependencies
 
 ---
@@ -38,32 +38,30 @@ Defines a Click command-line interface (CLI) group for organizing related comman
 - **Decorators**: `@click.group`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The function is decorated with `@click.group`, which indicates that it is a Click command group.
-    - The function body contains only the `pass` statement, meaning it does not perform any operations itself.
-    - The function serves as a container for other commands defined in the same module.
-- **Output**: No output is produced as the function body is empty.
+    - Uses the Click library to define a CLI group, which serves as a container for related commands.
+    - The function body is empty, indicating that the CLI group does not perform any actions by itself but serves as a namespace for subcommands.
+- **Output**: None
 
 
 ---
 ### setup<!-- {{#callable:python-backend/dev_stack/src/cli.setup}} -->
 [View Source →](<../../../../dev_stack/src/cli.py#L25>)
 
-Sets up a developer environment with optional GitHub resources.
-- **Decorators**: `@cli.command`
+Sets up a developer environment with optional GitHub resources configuration.
+- **Decorators**: `@cli.command`, `@click.option`, `@click.option`, `@click.option`, `@click.option`
 - **Inputs**:
     - `name`: The developer's name as a string.
     - `email`: The developer's email as a string.
-    - `region`: The ngrok region as a string, defaulting to 'us'.
+    - `region`: The Ngrok region as a string, defaulting to 'us'.
     - `setup_github`: A boolean flag indicating whether to set up GitHub resources.
 - **Logic and Control Flow**:
     - Attempts to set up developer resources using the provided name, email, region, and GitHub setup flag.
     - Generates developer configuration files in the 'state/out' directory.
     - If 'setup_github' is true, generates a GitHub app setup guide and prompts the user to follow it.
-    - Prompts the user for GitHub App Client ID, Client Secret, and PEM file path if GitHub setup is enabled.
-    - Validates and converts the PEM file path to an absolute path.
-    - Reads and base64 encodes the PEM file content, updating the developer's GitHub app state.
-    - Writes the updated developer state and regenerates developer configuration files.
-    - Outputs success or error messages based on the operation's outcome.
+    - Prompts the user for GitHub App Client ID, Client Secret, and private key PEM file path if GitHub setup is enabled.
+    - Validates and converts the PEM file path to an absolute path, then reads and base64 encodes the PEM file content.
+    - Updates the developer state with GitHub credentials and writes the updated state.
+    - Handles exceptions by displaying an error message if any step fails.
 - **Output**: No return value; outputs success or error messages to the console.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/developer_setup.setup_developer_resources`](<developer_setup.py.md#setup_developer_resources>)
@@ -80,13 +78,13 @@ Generates configuration files for a specified developer.
 - **Decorators**: `@cli.command`, `@click.option`, `@click.option`
 - **Inputs**:
     - `name`: The name of the developer for whom to generate configuration files.
-    - `output_dir`: The directory path where the configuration files will be written; defaults to 'state/out'.
+    - `output_dir`: The directory where the configuration files will be written, with a default value of 'state/out'.
 - **Logic and Control Flow**:
-    - Loads the developer state using the provided developer name.
-    - Checks if the developer state exists; if not, outputs an error message and exits the function.
-    - Attempts to generate developer configuration files using the provided name and output directory.
-    - If successful, outputs a success message indicating the configurations were regenerated.
-    - If an exception occurs during configuration generation, outputs an error message with the exception details.
+    - Load the developer state using the provided name.
+    - If the developer state does not exist, print an error message and return.
+    - Attempt to generate developer configuration files using the provided name and output directory.
+    - If successful, print a success message.
+    - If an exception occurs during configuration generation, print an error message with the exception details.
 - **Output**: No return value; outputs success or error messages to the console.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/developer_setup.load_developer_state`](<developer_setup.py.md#load_developer_state>)
@@ -97,15 +95,16 @@ Generates configuration files for a specified developer.
 ### teardown<!-- {{#callable:python-backend/dev_stack/src/cli.teardown}} -->
 [View Source →](<../../../../dev_stack/src/cli.py#L123>)
 
-Tears down the developer environment by removing resources associated with a given developer name.
+Tears down the developer environment by removing resources associated with a specified developer.
 - **Decorators**: `@cli.command`, `@click.option`
 - **Inputs**:
-    - `name`: The name of the developer whose environment is to be torn down.
+    - `name`: A string representing the developer's name, which is required to identify the developer environment to tear down.
 - **Logic and Control Flow**:
     - Loads the developer state using the provided name.
     - Checks if the developer state exists; if not, it outputs an error message and returns.
     - Attempts to tear down the developer resources using the loaded developer state.
-    - Outputs a success message if resources are successfully torn down, otherwise outputs an error message.
+    - Outputs a success message if the resources are successfully torn down.
+    - Outputs an error message if some resources fail to tear down.
 - **Output**: No return value; outputs messages to the console indicating success or failure of the teardown process.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/developer_setup.load_developer_state`](<developer_setup.py.md#load_developer_state>)
@@ -128,6 +127,7 @@ Waits for a socket server to be ready to accept connections within a specified t
     - Set a timeout of 1 second for the socket connection attempt.
     - If the connection is successful (indicated by a result of 0 from `connect_ex`), return `True`.
     - If an `OSError` occurs during the connection attempt, ignore the error and continue the loop.
+    - If the connection is not successful, wait for 1 second before the next attempt.
     - If the loop completes without a successful connection, return `False`.
 - **Output**: Returns `True` if the socket server is ready within the timeout period, otherwise returns `False`.
 
@@ -139,20 +139,24 @@ Waits for a socket server to be ready to accept connections within a specified t
 Runs ngrok tunnels for specified domains and TCP addresses based on developer state and port specifications.
 - **Decorators**: `@cli.command`, `@click.option`, `@click.option`
 - **Inputs**:
-    - `name`: The name of the developer, used to load the developer state.
-    - `ports`: A comma-separated list of ports to forward, formatted as 'http:8000,tcp:9000'.
+    - `name`: A string representing the developer's name, required to load the developer's state.
+    - `ports`: A string representing a comma-separated list of ports to forward, formatted as 'http:8000,tcp:9000', required to specify which ports to use for HTTP and TCP.
 - **Logic and Control Flow**:
-    - Loads the developer state using the provided name.
-    - Checks if the developer state exists; if not, outputs an error message and returns.
-    - Parses the 'ports' input to separate HTTP and TCP ports, validating the format and types.
-    - Retrieves domains and TCP addresses from the developer state.
-    - Validates the number of domains against HTTP ports and checks TCP port constraints.
-    - Starts an ngrok server in the background using a subprocess.
-    - Waits for the socket server to start, terminating the process if it fails to start within a timeout.
-    - Outputs the status of the ngrok server and provides instructions for stopping tunnels.
-    - Runs the ngrok tunnels using 'asyncio.run', handling exceptions such as 'KeyboardInterrupt' and 'ConnectionRefusedError'.
-    - Cleans up by terminating the server process in the 'finally' block.
-- **Output**: No return value; outputs status messages and errors to the console.
+    - Load the developer state using the provided name.
+    - If the developer state is not found, output an error message and return.
+    - Parse the 'ports' input to separate HTTP and TCP ports, validating the format and types.
+    - If the port specification is invalid, output an error message and return.
+    - Retrieve domains and TCP addresses from the developer state.
+    - If no domains or TCP addresses are found, output an error message and return.
+    - Check if the number of domains matches the number of HTTP ports; if not, output an error message and return.
+    - Ensure only one TCP port is specified; if more are specified, output an error message and return.
+    - If a TCP port is specified but no TCP address is found, output an error message and return.
+    - Start the ngrok server in the background using a subprocess.
+    - Wait for the socket server to start; if it fails, terminate the server process and return.
+    - Output the ngrok server and GitHub app setup guide URLs.
+    - Run the ngrok tunnels using 'asyncio.run', handling exceptions for keyboard interrupts, connection errors, and other exceptions.
+    - On exceptions, output appropriate error messages and ensure the server process is terminated and cleaned up.
+- **Output**: No output is returned as the function is designed to run ngrok tunnels and handle errors through console messages.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/developer_setup.load_developer_state`](<developer_setup.py.md#load_developer_state>)
     - [`python-backend/dev_stack/src/cli.wait_for_socket_server`](<#wait_for_socket_server>)

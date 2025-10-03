@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Dockerfile for setting up a Python 3.12 environment with Poetry and running database migrations.
+Dockerfile for setting up a Python 3.12 environment with Poetry and Alembic in a Linux container.
 
 # Purpose
-The Dockerfile defines the environment and steps to build a Docker image for a Python application. It starts by using the `python:3.12-slim` base image for the `linux/amd64` platform and sets the working directory to `/driver_db`. The file installs necessary system packages, including `curl` and `build-essential`, and then removes unnecessary files to reduce image size. It installs Poetry, a dependency management tool, and configures it to not create virtual environments. The application code is copied into the image, and dependencies are installed using Poetry. After installation, the file removes build tools to further reduce the image size. Finally, it sets the working directory to `/driver_db/database` and specifies the command to run database migrations using Alembic when the container starts.
+The Dockerfile defines the environment and steps to build a Docker image for a Python application. It starts by specifying the base image as `python:3.12-slim` for the `linux/amd64` platform. The working directory is set to `/driver_db`, and necessary system packages are installed using `apt-get`. Poetry, a dependency management tool for Python, is installed and configured to not create virtual environments. The application source code is copied into the image, and dependencies are installed using Poetry. After installation, unnecessary build tools are removed to reduce the image size. The final working directory is set to `/driver_db/database`, and the default command is to run database migrations using Alembic with the command `poetry run alembic upgrade head`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

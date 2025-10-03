@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     DOMAIN: str = "localhost"
-    ENVIRONMENT: Literal["local", "development", "staging", "production"] = "local"
+    ENVIRONMENT: str = "local"
     AUTH0_DOMAIN: str = DEFAULT_SECRET
     AUTH0_CLIENT_ID: str = DEFAULT_SECRET
     AUTH0_AUDIENCE: str = DEFAULT_SECRET
@@ -39,8 +39,8 @@ class Settings(BaseSettings):
     AUTH0_MGMT_API_CLIENT_SECRET: str = DEFAULT_SECRET
     AUTH0_MGMT_API_AUDIENCE: str = DEFAULT_SECRET
 
-    AWS_ACCESS_KEY_ID: str = DEFAULT_SECRET
-    AWS_SECRET_ACCESS_KEY: str = DEFAULT_SECRET
+    S3ADMIN_AWS_ACCESS_KEY_ID: str = DEFAULT_SECRET
+    S3ADMIN_AWS_SECRET_ACCESS_KEY: str = DEFAULT_SECRET
     AWS_REGION: str = DEFAULT_SECRET
     AWS_S3_ENDPOINT_URL: str | None = None
     AWS_S3_CODE_BUCKET_SUFFIX: str = DEFAULT_SECRET

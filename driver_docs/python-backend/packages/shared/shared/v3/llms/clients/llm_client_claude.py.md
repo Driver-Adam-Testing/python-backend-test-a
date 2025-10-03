@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A client for Anthropic's Claude models, converting shared message formats to Anthropic's API format.
+A client for Anthropic's Claude models, converting shared LlmMessage formats to Anthropic's format.
 
 # Purpose
-The code defines a class `ClaudeClient`, which is a client for interacting with Anthropic's Claude models. This client is part of a larger system that uses a messages-based API format to communicate with the models. The `ClaudeClient` class inherits from `LlmClient` and is initialized with a configuration object of type `LlmConfig`. The primary function of this client is to convert messages from a shared format (`LlmMessage`) to the format expected by Anthropic's API, facilitating communication with the Claude models.
+The code defines a class `ClaudeClient`, which is a specialized client for interacting with Anthropic's Claude models. This client is part of a larger system that uses a messages-based API format to communicate with language models. The `ClaudeClient` class inherits from `LlmClient` and is designed to convert messages from a shared format (`LlmMessage`) to the format expected by Anthropic's API. The class includes a method [`_generate`](<#claudeclient_generate>) that processes message history, response types, and tool types to prepare and send requests to the Claude model, and then processes the responses.
 
-The `ClaudeClient` class includes a method [`_generate`](<#claudeclient_generate>), which processes a message history (`LlmMessageHistory`) and prepares it for submission to the Claude model. This method can handle different response types and tool types, adding specific system messages to guide the model's output format. The method constructs the necessary parameters for the API call, including model ID and token limits, and sends a request to the Anthropic API. The response is then converted back into the shared message format and added to the message history. This code is intended to be part of a larger library or application that integrates with Anthropic's language models, providing a structured way to generate and handle model responses.
+The `ClaudeClient` class is initialized with a configuration object of type `LlmConfig`, which contains settings such as the model ID and maximum output tokens. The [`_generate`](<#claudeclient_generate>) method modifies the message history by adding system prompts and descriptions based on the response type and tool types provided. It then converts the message history to the format required by Anthropic's API and sends a request using the `anthropic` library. The response is converted back into the shared message format and added to the message history. This code is intended to be part of a larger library or application that interfaces with language models, providing a specific implementation for Anthropic's Claude models.
 # Imports and Dependencies
 
 ---
@@ -31,8 +31,8 @@ The `ClaudeClient` class includes a method [`_generate`](<#claudeclient_generate
 [View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_claude.py#L15>)
 
 - **Members**:
-    - `client`: An instance of the `anthropic.Anthropic` class used to interact with Anthropic's Claude models.
-- **Description**: Facilitates interaction with Anthropic's Claude models by converting messages from the shared `LlmMessage` format to the format expected by Anthropic. It supports system prompts and a messages-based API format, allowing for the generation of responses based on message history, response types, and tool types.
+    - `client`: An instance of the `anthropic.Anthropic` class used to interact with Anthropic's API.
+- **Description**: Facilitates interaction with Anthropic's Claude models by converting messages from the shared `LlmMessage` format to the format expected by Anthropic's API. Supports system prompts and a messages-based API format, allowing for the generation of responses in JSON format.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_claude.ClaudeClient.__init__`](<#claudeclient__init__>)
     - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_claude.ClaudeClient._generate`](<#claudeclient_generate>)
@@ -47,13 +47,13 @@ The `ClaudeClient` class includes a method [`_generate`](<#claudeclient_generate
 
 Initializes a `ClaudeClient` instance with a given configuration and sets up an Anthropic client.
 - **Inputs**:
-    - `config`: An instance of `LlmConfig` that provides configuration settings for the client.
+    - `config`: An instance of `LlmConfig` that provides configuration settings for the `ClaudeClient`.
 - **Logic and Control Flow**:
-    - Calls the parent class [`__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>) method with the `config` parameter to initialize the base class.
+    - Calls the parent class `LlmClient`'s [`__init__`](<../../utils/parse_response_string.py.md#parseoutputerror__init__>) method with the provided `config` to initialize the base class.
     - Creates an instance of `anthropic.Anthropic` and assigns it to the `client` attribute of the `ClaudeClient` instance.
-- **Output**: None, as it is a constructor method.
+- **Output**: No output is returned as this is a constructor method.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse.__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>)
+    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.ParseOutputError.__init__`](<../../utils/parse_response_string.py.md#parseoutputerror__init__>)
 - **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_claude.ClaudeClient`](<#claudeclient>)  (Base Class)
 
 
@@ -68,7 +68,7 @@ Generates a response using Anthropic's Claude models based on the provided messa
     - `tool_types`: An optional list of `LlmTool` types that may influence the response generation.
 - **Logic and Control Flow**:
     - Copy the `message_history` to `claude_message_history`.
-    - If `response_type` is provided, add a system message to `claude_message_history` instructing the response format and add a parsing description message from `response_type`.
+    - If `response_type` is provided, add a system message to `claude_message_history` to enforce JSON response format and add a parsing description message from `response_type`.
     - If `tool_types` is provided, iterate over each tool and add its parsing description message to `claude_message_history`.
     - Convert `claude_message_history` to Anthropic's message format, obtaining `messages` and `system_message`.
     - Prepare `completion_kwargs` with model ID and max tokens from the configuration.
@@ -76,7 +76,7 @@ Generates a response using Anthropic's Claude models based on the provided messa
     - Add `messages` to `completion_kwargs`.
     - Create a response using the Anthropic client with `completion_kwargs`.
     - Convert the response to an [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) and add it to the original `message_history`.
-- **Output**: None; the function modifies `message_history` in place by adding the generated response.
+- **Output**: None; the function modifies `message_history` by adding the generated response.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy`](<../../interfaces/llm_message_history.py.md#llmmessagehistorycopy>)
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryadd_message>)

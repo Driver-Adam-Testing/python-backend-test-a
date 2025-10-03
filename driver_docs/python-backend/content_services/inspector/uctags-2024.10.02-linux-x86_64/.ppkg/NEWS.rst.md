@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Documenting changes in version 6.?.0, including new options, parser updates, and merged pull requests.
+Release notes detailing changes, new options, parsers, and merged pull requests for version 6.?.0.
 
 # Purpose
-The document outlines changes and updates in version 6.?.0 of a software project. It includes sections on new and extended options, incompatible changes, and parser-related changes. The document notes the integration of `pegof` into the build process, and introduces new parsers such as TOML and a Cargo TOML-based subparser. It also details changes related to parser-specific kinds, roles, fields, and extras. Additionally, the document lists merged pull requests and notes that some pull requests were cleaned up before merging, with a suggestion to refer to the git log for more details.
+This document outlines changes and updates in version 6.?.0 of the software. It includes sections on new and extended options, incompatible changes, and parser-related changes. The document notes the integration of `pegof` into the build process and introduces new parsers such as TOML and Cargo. It also details changes related to parser-specific kinds, roles, fields, and extras. Additionally, the document lists merged pull requests and notes that some pull requests were cleaned up before merging, advising users to refer to the git log for more details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

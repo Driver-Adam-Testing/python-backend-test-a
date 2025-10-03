@@ -6,9 +6,9 @@
 Alembic migration script to change organization and user ID columns from UUID to string types.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's purpose is to modify the data types of certain columns in the database schema. Specifically, it changes the `creator_id` column in the `codebases` table and the `organization_id` columns in the `users` and `workspaces` tables from `UUID` to `AutoString`. This change involves dropping existing foreign key constraints, altering the column types, and then re-establishing the foreign key constraints if necessary.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's primary purpose is to modify the data types of certain columns in the database schema. Specifically, it changes the `creator_id` column in the `codebases` table and the `organization_id` columns in the `users` and `workspaces` tables from `UUID` type to `AutoString` type. This change involves dropping existing foreign key constraints on these columns, altering the column types, and then re-establishing the foreign key constraints with the new data types.
 
-The script defines two main functions: [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>). The [`upgrade`](<#upgrade>) function executes the changes to convert the column types to `AutoString`, while the [`downgrade`](<#downgrade>) function reverses these changes, converting the columns back to `UUID` and restoring the original foreign key constraints. The script uses Alembic's operations API to perform these schema alterations, ensuring that the database can be migrated forward and backward between these states. The revision identifiers at the top of the script, such as `revision` and `down_revision`, help Alembic track the migration history.
+The script defines two main functions: [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>). The [`upgrade`](<#upgrade>) function executes the changes to the database schema, while the [`downgrade`](<#downgrade>) function reverses these changes, restoring the original `UUID` data types and reapplying the foreign key constraints. The script uses Alembic's `op` object to perform operations such as dropping constraints, altering column types, and creating foreign keys. The revision identifiers `revision` and `down_revision` are used by Alembic to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -24,29 +24,29 @@ The script defines two main functions: [`upgrade`](<#upgrade>) and [`downgrade`]
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script. This identifier is used to track the specific version of the database schema that the migration script applies to.
-- **Use**: Used by Alembic to identify the current schema revision in the migration process.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
+- **Use**: Used to identify the current schema version in Alembic migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``Union[str, None]``
-- **Description**: The `down_revision` variable is a global variable that holds the identifier of the previous database schema revision in a migration script. It is used by Alembic, a database migration tool, to track the sequence of migrations.
-- **Use**: Indicates the immediate predecessor revision in the migration history.
+- **Description**: Specifies the identifier of the previous database schema revision in a migration script. It is used by Alembic to determine the order of migrations.
+- **Use**: Used to track the migration history by indicating the predecessor revision ID.
 
 
 ---
 ### branch\_labels
 - **Type**: `Union[str, Sequence[str], None]`
 - **Description**: `branch_labels` is a global variable that can hold a string, a sequence of strings, or a `None` value. It is used in the context of Alembic, a database migration tool, to potentially label branches of database schema revisions.
-- **Use**: Used to label branches in database schema revisions for Alembic migrations.
+- **Use**: Used to label branches in database schema revisions when using Alembic.
 
 
 ---
 ### depends\_on
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or a None value. It is used in the context of Alembic migrations to specify dependencies between different database schema revisions.
-- **Use**: Indicates dependencies for a database schema revision in Alembic migrations.
+- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or a `None` value. It is used in the context of Alembic migrations to specify dependencies between different database revisions.
+- **Use**: Indicates dependencies for a database revision in Alembic migrations.
 
 
 # Functions
@@ -61,10 +61,10 @@ Modifies database schema by dropping foreign key constraints and altering column
     - Drop the foreign key constraint 'codebases_creator_id_fkey' from the 'codebases' table.
     - Drop the foreign key constraint 'users_organization_id_fkey' from the 'users' table.
     - Drop the foreign key constraint 'workspaces_organization_id_fkey' from the 'workspaces' table.
-    - Alter the 'creator_id' column in the 'codebases' table from type UUID to AutoString and set it to nullable.
-    - Alter the 'organization_id' column in the 'users' table from type UUID to AutoString and keep it non-nullable.
-    - Alter the 'organization_id' column in the 'workspaces' table from type UUID to AutoString and keep it non-nullable.
-- **Output**: No output is returned as the function modifies the database schema in place.
+    - Alter the 'creator_id' column in the 'codebases' table from type 'UUID' to 'AutoString' and make it nullable.
+    - Alter the 'organization_id' column in the 'users' table from type 'UUID' to 'AutoString' and keep it non-nullable.
+    - Alter the 'organization_id' column in the 'workspaces' table from type 'UUID' to 'AutoString' and keep it non-nullable.
+- **Output**: None
 
 
 ---
@@ -74,12 +74,11 @@ Modifies database schema by dropping foreign key constraints and altering column
 Reverts database schema changes by altering column types and recreating foreign key constraints.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Execute SQL command to alter the `organization_id` column type in the `workspaces` table to `uuid`.
-    - Execute SQL command to alter the `organization_id` column type in the `users` table to `uuid`.
-    - Execute SQL command to alter the `creator_id` column type in the `codebases` table to `uuid`.
-    - Create a foreign key constraint `workspaces_organization_id_fkey` between `workspaces.organization_id` and `organizations.id`.
-    - Create a foreign key constraint `users_organization_id_fkey` between `users.organization_id` and `organizations.id`.
-    - Create a foreign key constraint `codebases_creator_id_fkey` between `codebases.creator_id` and `users.id`.
+    - Executes SQL commands to alter the column type of `organization_id` in the `workspaces` and `users` tables to `uuid`.
+    - Executes SQL command to alter the column type of `creator_id` in the `codebases` table to `uuid`.
+    - Creates a foreign key constraint `workspaces_organization_id_fkey` between `workspaces.organization_id` and `organizations.id`.
+    - Creates a foreign key constraint `users_organization_id_fkey` between `users.organization_id` and `organizations.id`.
+    - Creates a foreign key constraint `codebases_creator_id_fkey` between `codebases.creator_id` and `users.id`.
 - **Output**: None
 
 

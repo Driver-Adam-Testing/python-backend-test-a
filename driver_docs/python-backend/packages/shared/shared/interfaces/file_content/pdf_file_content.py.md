@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines enums and a class for processing PDF file content with various extraction types.
+Defines types and structure for processed PDF file content, including extracted and summarized data.
 
 # Purpose
-The code defines an enumeration and a class to handle processed PDF file content. The `ProcessedPdfFileContentType` enumeration specifies different types of content that can be extracted from a PDF, such as tables, text, image summaries, visual summaries, and text summaries. The `ProcessedPdfFileContent` class inherits from `ProcessedFileContent` and includes attributes for an optional OpenAI file ID, an optional page number, and a content type defined by the `ProcessedPdfFileContentType` enumeration. This code provides a narrow functionality focused on categorizing and managing different types of processed content from PDF files.
+This code defines an enumeration and a class to handle processed PDF file content. The `ProcessedPdfFileContentType` enumeration specifies different types of content that can be extracted from a PDF, such as tables, text, image summaries, visual summaries, and text summaries. The `ProcessedPdfFileContent` class inherits from `ProcessedFileContent` and includes attributes for an optional OpenAI file ID, an optional page number, and a content type defined by the `ProcessedPdfFileContentType` enumeration. This code provides a narrow functionality focused on representing and categorizing processed content from PDF files.
 # Imports and Dependencies
 
 ---
@@ -38,8 +38,8 @@ The code defines an enumeration and a class to handle processed PDF file content
 - **Members**:
     - `open_ai_file_id`: Stores the OpenAI file identifier as a string or None.
     - `page`: Indicates the page number as an integer or None.
-    - `content_type`: Specifies the type of processed PDF content using the `ProcessedPdfFileContentType` enum.
-- **Description**: Extends `ProcessedFileContent` to represent content extracted from a PDF file, including its type, associated page number, and an optional OpenAI file identifier.
+    - `content_type`: Specifies the type of processed PDF content using the ProcessedPdfFileContentType enum.
+- **Description**: Extends the ProcessedFileContent class to represent content extracted from a PDF file, including metadata such as the OpenAI file ID, page number, and content type.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/interfaces/file_content/file_content.ProcessedFileContent`](<file_content.py.md#processedfilecontent>)
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines an agent configuration model with attributes and methods for tool retrieval and prompt creation.
+Defines an agent configuration model with attributes for model, prompts, iterations, tools, and scope.
 
 # Purpose
-The code defines an `AgentConfiguration` class, which is a configuration model for an agent using the Pydantic library. This class specifies various attributes that configure the agent's behavior, such as `model`, `system_prompts`, `user_prompt`, `iterations`, `tool_names`, and `scope`. The `AgentConfiguration` class is designed to be flexible, allowing for optional attributes and default values. It also includes methods to retrieve tool functions and create system prompts in a specific format.
+The code defines an `AgentConfiguration` class, which is a configuration model for an agent using the `pydantic` library. This class is responsible for managing various configuration parameters that an agent might require, such as the model to use, system prompts, user prompts, the number of iterations, and tool configurations. The class includes attributes like `model`, `system_prompts`, `iterations`, `tool_names`, `scope`, and `response_format`, which are used to configure the agent's behavior.
 
-The [`tools`](<#agentconfigurationtools>) property method retrieves tool instances based on the `tool_names` attribute by accessing a `TOOL_REGISTRY`. If a tool name is not found in the registry, it raises an `AttributeError`. The [`create_system_prompts`](<#agentconfigurationcreate_system_prompts>) method formats system prompts into a list of dictionaries, using attributes from a `prompts` module. This class is likely intended to be part of a larger system where agents are configured and managed, providing a structured way to define and retrieve necessary components for agent operation.
+The `AgentConfiguration` class provides methods to retrieve and format these configurations. The [`tools`](<#agentconfigurationtools>) property method retrieves tool instances based on the tool names specified in `tool_names`, using a `TOOL_REGISTRY` to map names to tool classes. If a tool name is not found in the registry, an `AttributeError` is raised. The [`create_system_prompts`](<#agentconfigurationcreate_system_prompts>) method formats system prompts into a list of dictionaries, which are used by the agent. This method attempts to retrieve prompt messages from a shared `prompts` module, and if a prompt is not found, it defaults to a basic dictionary format. This code is likely intended to be part of a larger system where agents are configured and managed programmatically.
 # Imports and Dependencies
 
 ---
@@ -26,12 +26,12 @@ The [`tools`](<#agentconfigurationtools>) property method retrieves tool instanc
 
 - **Members**:
     - `model`: Specifies the model to be used by the agent.
-    - `system_prompts`: Contains a list of system prompts.
+    - `system_prompts`: Holds a list of system prompts.
     - `iterations`: Indicates the number of iterations the agent should perform.
-    - `tool_names`: Holds a list of tool names for configuration.
+    - `tool_names`: Contains a list of tool names for configuration.
     - `scope`: Defines the data scope for the agent.
     - `response_format`: Specifies the response format type.
-- **Description**: Defines the configuration for an agent, including model selection, system prompts, iteration count, tool configurations, data scope, and response format. It provides methods to retrieve tool functions and create formatted system prompts.
+- **Description**: Represents the configuration settings for an agent, including model selection, system prompts, iteration count, tool configurations, data scope, and response format. It provides methods to retrieve tool functions and create formatted system prompts.
 - **Methods**:
     - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration.tools`](<#agentconfigurationtools>)
     - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration.create_system_prompts`](<#agentconfigurationcreate_system_prompts>)
@@ -48,12 +48,13 @@ Retrieves tool functions based on the tool configurations in the `tool_names` at
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initialize an empty list `tools` to store tool instances.
+    - Initialize an empty list `tools`.
     - Iterate over each `tool_name` in `self.tool_names`.
     - Check if `tool_name` exists in `TOOL_REGISTRY`.
-    - If `tool_name` exists, retrieve the corresponding tool class and append it to `tools`.
-    - If `tool_name` does not exist, raise an `AttributeError` indicating the tool could not be found.
-- **Output**: A list of tool instances corresponding to the tool names in `self.tool_names`.
+    - If it exists, append the corresponding tool class to `tools`.
+    - If it does not exist, raise an `AttributeError` indicating the tool could not be found.
+    - Return the list `tools`.
+- **Output**: A list of tool instances corresponding to the tool names in `tool_names`.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration`](<#agentconfiguration>)  (Base Class)
 
 
@@ -61,7 +62,7 @@ Retrieves tool functions based on the tool configurations in the `tool_names` at
 #### AgentConfiguration\.create\_system\_prompts<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration.create_system_prompts}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/agent_configuration.py#L49>)
 
-Formats a list of system prompts into a specific dictionary format.
+Creates a list of system prompts formatted as dictionaries from a list of string identifiers.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Imports the `prompts` module from `shared`.
@@ -71,9 +72,9 @@ Formats a list of system prompts into a specific dictionary format.
     - Splits each `system_prompt` into `module_name` and `attribute_name` using `rsplit` with a maximum of one split from the right.
     - Attempts to retrieve the module using `getattr` on `prompts` with `module_name`.
     - Appends the `MESSAGE` attribute of the retrieved module's attribute to `formatted_prompts`.
-    - If an `AttributeError` occurs, appends a dictionary with `role` set to "system" and `content` set to `system_prompt` to `formatted_prompts`.
+    - If an `AttributeError` occurs, appends a dictionary with `role` as "system" and `content` as `system_prompt` to `formatted_prompts`.
     - Returns the `formatted_prompts` list.
-- **Output**: A list of system prompts formatted as dictionaries, where each dictionary contains a `role` and `content` key.
+- **Output**: A list of system prompts formatted as dictionaries.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration`](<#agentconfiguration>)  (Base Class)
 
 

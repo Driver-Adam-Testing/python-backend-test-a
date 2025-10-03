@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines metadata templates for large prompts with specific style instructions and components.
+Defines a template for large metadata prompts with specific style instructions and components.
 
 # Purpose
-This code defines a configuration for metadata templates used in a larger system. It imports several components and prompts from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.metadata`, which are used to construct metadata templates. The `METADATA_LARGE_TEMPLATE` is a list of tuples, each containing a template type, a section header, and a series of prompts that are combined into strings. These templates are designed to generate structured metadata, with specific instructions for style and content, such as using Simplified Technical English and backticks for code references. The code provides narrow functionality focused on creating and managing metadata templates for large systems.
+This code defines a configuration for metadata templates using a list of tuples named `METADATA_LARGE_TEMPLATE`. Each tuple contains a structure for generating prompts related to metadata, specifically for large systems. The code imports several components and instructions from other modules, such as `Component`, `Prompt`, and various style instructions, to build these templates. The templates are designed to generate text for sections like "Purpose" and "Content Summary" by appending specific components and instructions to create structured prompt strings. This setup is part of a larger system that likely deals with generating or managing structured metadata content.
 # Imports and Dependencies
 
 ---
@@ -26,8 +26,8 @@ This code defines a configuration for metadata templates used in a larger system
 ---
 ### METADATA\_LARGE\_TEMPLATE
 - **Type**: ``list``
-- **Description**: A list of tuples where each tuple contains structured prompt data for metadata processing. Each tuple includes a prompt type, a section header, and two prompt strings generated using the `Prompt` and `Component` classes.
-- **Use**: Used to define structured prompts for metadata processing in a large template format.
+- **Description**: A list of tuples where each tuple contains structured prompt text and corresponding instructions for metadata processing. Each tuple includes a prompt type, a section header, and two prompt strings created using the `Prompt` class and various components and instructions.
+- **Use**: Used to define structured templates for generating metadata prompts with specific instructions and formatting.
 
 
 

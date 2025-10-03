@@ -6,7 +6,9 @@
 Defines a class for converting lists into markdown format, supporting ordered and unordered lists.
 
 # Purpose
-The code defines a class `BlockKindCopyEditorList` that extends `BlockResponse` and is used to manage and format lists for a copy editor agent. It encapsulates a list of strings and provides functionality to convert this list into a markdown format, supporting both ordered and unordered lists. The class includes an inner enumeration `ListKind` with two values, `ORDERED` and `UNORDERED`, to specify the type of list. The [`to_markdown`](<#blockkindcopyeditorlistto_markdown>) method generates a markdown representation of the list based on the `list_kind` attribute, prefixing items with numbers for ordered lists or bullet points for unordered lists. This code provides narrow functionality focused on list formatting within a specific agentic system context.
+The code defines a class `BlockKindCopyEditorList` that extends `BlockResponse` and is intended for use in systems involving copy editing tasks related to lists. The primary function of this class is to manage a list of strings and convert it into a markdown format. It supports two types of lists: ordered and unordered, which are specified using an internal enumeration `ListKind`. The `ListKind` enumeration has two values: `ORDERED` and `UNORDERED`, which determine the formatting of the list items in the markdown output.
+
+The class includes a method [`to_markdown`](<#blockkindcopyeditorlistto_markdown>) that generates a markdown representation of the list based on the `list_kind` attribute. If the list is ordered, each item is prefixed with a number; if unordered, each item is prefixed with a bullet point. The class is designed to be used in agentic systems where the `response` attribute is populated with list items, and the `list_kind` attribute is set to define the desired output format. This code is part of a broader system, as indicated by the import statement from `shared.interfaces.agents.block_response`, suggesting it is a component within a larger framework.
 # Imports and Dependencies
 
 ---
@@ -18,16 +20,16 @@ The code defines a class `BlockKindCopyEditorList` that extends `BlockResponse` 
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: `PROMPT` is a string variable that is initialized with a multi-line string containing three double quotes on each side. It is defined at the top level of the code and is intended to be used as a template or placeholder for some content.
-- **Use**: Used as a template or placeholder for content in the code.
+- **Type**: ``str``
+- **Description**: A string variable that contains a multi-line string with no content. It is defined as an empty triple-quoted string.
+- **Use**: Used to initialize the `content` field of the `MESSAGE` dictionary with an empty string.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
-- **Use**: Used to define a message structure with a role and content, where the content is dynamically set by the `PROMPT` variable.
+- **Description**: A dictionary with two keys: `role` and `content`. The `role` key has a fixed string value `system`, and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to define a message structure with a role and content for system communication.
 
 
 # Classes
@@ -39,7 +41,7 @@ The code defines a class `BlockKindCopyEditorList` that extends `BlockResponse` 
 - **Members**:
     - `list_output`: A list of strings that represents the items in the list.
     - `list_kind`: An enumeration indicating whether the list is ordered or unordered.
-    - `rationale`: A string that provides the reasoning or explanation for the list.
+    - `rationale`: A string that provides the rationale for the list.
 - **Description**: Encapsulates a list of strings and provides a method to convert this list into a markdown format, supporting both ordered and unordered lists.
 - **Methods**:
     - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList.to_markdown`](<#blockkindcopyeditorlistto_markdown>)
@@ -52,13 +54,13 @@ The code defines a class `BlockKindCopyEditorList` that extends `BlockResponse` 
 #### BlockKindCopyEditorList\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList.to_markdown}} -->
 [View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_list.py#L39>)
 
-Converts a list of strings into a markdown formatted string, either as an ordered or unordered list.
+Converts a list of strings into a markdown formatted list, either ordered or unordered, based on the list kind.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Checks if `self.list_output` is equal to `self.ListKind.ORDERED`.
-    - If true, iterates over `self.list_output` and formats each item as an ordered list with numbers.
-    - If false, iterates over `self.list_output` and formats each item as an unordered list with bullet points.
-- **Output**: A string formatted in markdown representing the list as either ordered or unordered.
+    - If true, iterates over `self.list_output` with enumeration, formats each item with a number prefix, and joins them with newline characters.
+    - If false, formats each item in `self.list_output` with a bullet point prefix and joins them with newline characters.
+- **Output**: A string representing the list in markdown format, either ordered or unordered.
 - **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList`](<#blockkindcopyeditorlist>)  (Base Class)
 
 
@@ -68,9 +70,9 @@ Converts a list of strings into a markdown formatted string, either as an ordere
 [View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_list.py#L31>)
 
 - **Members**:
-    - `ORDERED`: Defines the string value 'ORDERED' for ordered lists.
-    - `UNORDERED`: Defines the string value 'UNORDERED' for unordered lists.
-- **Description**: Defines an enumeration for list types, specifying whether a list is ordered or unordered.
+    - `ORDERED`: Represents an ordered list type.
+    - `UNORDERED`: Represents an unordered list type.
+- **Description**: Represents an enumeration for list types, defining two possible values: 'ORDERED' for ordered lists and 'UNORDERED' for unordered lists.
 - **Inherits From**:
     - `str`
     - `enum.Enum`

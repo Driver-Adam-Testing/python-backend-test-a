@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Performance testing pipeline for smart instructions using various LLM clients, measuring execution times.
+Performance testing pipeline for smart instructions using multiple LLM clients.
 
 
 ## Files
-- **[smart_instruction.py](smart_instruction.py.md)**: Implements a performance testing pipeline for smart instructions using various LLM clients and measures execution times.
+- **[smart_instruction.py](smart_instruction.py.md)**: Implements a performance testing pipeline for smart instructions using multiple LLM clients.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

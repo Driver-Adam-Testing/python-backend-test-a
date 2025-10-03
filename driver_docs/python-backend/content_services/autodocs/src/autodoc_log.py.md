@@ -6,9 +6,9 @@
 Defines a data structure for logging AutoDoc usage to a Notion database and a function to write logs.
 
 # Purpose
-The code defines a data structure and a function to log usage data to a Notion database. The `AutoDocLog` class is a data class that represents the schema for logging information related to AutoDoc usage. It includes fields such as `title`, `user_email`, `organization_id`, and others, which are mapped to the corresponding properties in a Notion database. The class provides a method [`to_dict`](<#autodoclogto_dict>) that converts the instance data into a dictionary format suitable for the Notion API, including handling text content that exceeds Notion's block size limits.
+The code defines a logging mechanism for usage data related to an AutoDoc system, which interfaces with a Notion database. The primary component is the `AutoDocLog` data class, which encapsulates various fields such as `title`, `user_email`, `organization_id`, and others. These fields correspond to the schema of a specific Notion database, identified by the `_NOTION_DATABASE_ID`. The class includes methods to convert its data into a dictionary format suitable for Notion's API, specifically using the [`to_dict`](<#autodoclogto_dict>) method. This method structures the data into properties and children blocks, which include rich text arrays and code blocks for `toml_content` and `autodoc_content`.
 
-The [`write_autodoc_log`](<#write_autodoc_log>) function is an application function that uses the `modal` library to execute within a specific environment. It is configured to run with a Docker image and install the `notion-client` package. The function takes an `AutoDocLog` object as input, converts it to a dictionary using the [`to_dict`](<#autodoclogto_dict>) method, and then uses the Notion API to create a new page in the specified Notion database. The function also prints the payload to the console for verification. This code is intended to be part of a larger application where logging AutoDoc usage to Notion is required.
+The code also defines a function [`write_autodoc_log`](<#write_autodoc_log>), which is decorated with `@app.function` to be executed in a specific environment using the Modal framework. This function takes an `AutoDocLog` instance as input and writes its data to a Notion database using the Notion API. The function retrieves the Notion API key from environment variables and uses it to authenticate a `Client` instance from the `notion_client` library. The function then creates a new page in the Notion database with the structured payload from the `AutoDocLog` instance. This setup allows for automated logging of AutoDoc usage data into a Notion database, facilitating data tracking and analysis.
 # Imports and Dependencies
 
 ---
@@ -30,7 +30,7 @@ The [`write_autodoc_log`](<#write_autodoc_log>) function is an application funct
 - **Members**:
     - `title`: Stores the title of the log entry.
     - `user_email`: Stores the email of the user associated with the log entry.
-    - `organization_id`: Stores the ID of the organization associated with the log entry.
+    - `organization_id`: Stores the ID of the organization related to the log entry.
     - `sources`: Stores the sources related to the log entry.
     - `toml_content`: Stores the TOML content for the log entry.
     - `autodoc_content`: Stores the autodoc content in markdown format.
@@ -39,7 +39,7 @@ The [`write_autodoc_log`](<#write_autodoc_log>) function is an application funct
     - `page_id`: Stores the page ID related to the log entry.
     - `config_kind`: Stores the kind of configuration for the log entry.
     - `_NOTION_DATABASE_ID`: Holds the ID of the Notion database used for logging.
-- **Description**: Represents a log entry for AutoDoc usage, linking to a specific Notion database schema. It includes various fields such as title, user email, organization ID, and content in TOML and markdown formats. The class provides a method to convert its data into a dictionary format suitable for creating a page in the Notion database.
+- **Description**: Represents a log entry for AutoDoc usage, linking to a specific Notion database schema. It includes various fields such as title, user email, organization ID, and content in TOML and markdown formats. The class provides a method to convert its data into a dictionary format suitable for creating a page in a Notion database.
 - **Methods**:
     - [`python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog._split_into_rich_text_array`](<#autodoclog_split_into_rich_text_array>)
     - [`python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog.to_dict`](<#autodoclogto_dict>)
@@ -50,30 +50,31 @@ The [`write_autodoc_log`](<#write_autodoc_log>) function is an application funct
 #### AutoDocLog\.\_split\_into\_rich\_text\_array<!-- {{#callable:python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog._split_into_rich_text_array}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodoc_log.py#L30>)
 
-Splits a given string into a list of dictionaries, each containing a substring of a specified maximum length.
+Splits a given string into a list of dictionaries with text content, ensuring each entry does not exceed a specified length and truncates if necessary.
 - **Inputs**:
-    - `content`: A string to split into smaller substrings.
+    - `content`: A string that needs to be split into smaller text blocks.
 - **Logic and Control Flow**:
-    - Define a constant `MAX_NOTION_BLOCK_UPDATE_LENGTH` with a value of 2000.
-    - Check if `content` is not empty.
-    - If `content` is not empty, create a list of dictionaries where each dictionary contains a substring of `content` with a maximum length of `MAX_NOTION_BLOCK_UPDATE_LENGTH`.
-    - If `content` is empty, return a list containing a single dictionary with the text 'N/A'.
-- **Output**: A list of dictionaries, each with a 'text' key containing a substring of the input `content` or 'N/A' if the input is empty.
+    - Define constants `MAX_NOTION_BLOCK_UPDATE_LENGTH` and `MAX_NOTION_ARRAY_LENGTH` to set limits for text block size and array length, respectively.
+    - Check if `content` is not empty; if true, proceed to split the content.
+    - Use a list comprehension to create `text_array`, splitting `content` into chunks of `MAX_NOTION_BLOCK_UPDATE_LENGTH` characters.
+    - Check if the length of `text_array` exceeds `MAX_NOTION_ARRAY_LENGTH`; if true, truncate `text_array` to `MAX_NOTION_ARRAY_LENGTH - 1` and append a 'TRUNCATED' message.
+    - If `content` is empty, set `text_array` to contain a single dictionary with 'N/A' as the content.
+- **Output**: A list of dictionaries, each containing a portion of the original content as text, with a maximum length defined by `MAX_NOTION_BLOCK_UPDATE_LENGTH`.
 - **See also**: [`python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog`](<#autodoclog>)  (Base Class)
 
 
 ---
 #### AutoDocLog\.to\_dict<!-- {{#callable:python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog.to_dict}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodoc_log.py#L40>)
+[View Source →](<../../../../../content_services/autodocs/src/autodoc_log.py#L46>)
 
 Converts the `AutoDocLog` instance data into a dictionary format suitable for Notion API.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Creates a dictionary with a `parent` key containing the Notion database ID.
-    - Populates the `properties` key with sub-dictionaries for each attribute of the `AutoDocLog` class, such as `Title`, `User Email`, and `Organization ID`.
-    - Uses the [`_split_into_rich_text_array`](<#autodoclog_split_into_rich_text_array>) method to convert string attributes like `sources`, `user_context`, `toml_content`, and `autodoc_content` into rich text arrays.
-    - Adds `children` key with blocks of code in `toml` and `markdown` formats, using the [`_split_into_rich_text_array`](<#autodoclog_split_into_rich_text_array>) method for content conversion.
-- **Output**: A dictionary representing the `AutoDocLog` instance data, formatted for use with the Notion API.
+    - Populates the `properties` key with sub-dictionaries for each attribute of the `AutoDocLog` class, converting them into the required Notion format.
+    - Uses the [`_split_into_rich_text_array`](<#autodoclog_split_into_rich_text_array>) method to handle string attributes that need to be split into rich text arrays.
+    - Adds `children` key with blocks of code in `toml` and `markdown` formats, using the [`_split_into_rich_text_array`](<#autodoclog_split_into_rich_text_array>) method to format the content.
+- **Output**: A dictionary representing the `AutoDocLog` instance in a format compatible with the Notion API.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog._split_into_rich_text_array`](<#autodoclog_split_into_rich_text_array>)
 - **See also**: [`python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog`](<#autodoclog>)  (Base Class)
@@ -84,20 +85,20 @@ Converts the `AutoDocLog` instance data into a dictionary format suitable for No
 
 ---
 ### write\_autodoc\_log<!-- {{#callable:python-backend/content_services/autodocs/src/autodoc_log.write_autodoc_log}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodoc_log.py#L112>)
+[View Source →](<../../../../../content_services/autodocs/src/autodoc_log.py#L118>)
 
-Writes an AutoDoc log entry to a Notion database using the provided log data.
+Writes an AutoDoc log entry to a Notion database using the provided `AutoDocLog` object.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `log`: An instance of the `AutoDocLog` class containing the log data to write to the Notion database.
+    - `log`: An instance of `AutoDocLog` containing the log data to write to the Notion database.
 - **Logic and Control Flow**:
     - Imports the `Client` class from the `notion_client` module.
     - Retrieves the Notion API key from the environment variable `NOTION_WRITE_ONLY_API_KEY`.
-    - Creates a `Client` instance using the retrieved API key for authentication.
-    - Converts the `log` object to a dictionary format using its [`to_dict`](<#autodoclogto_dict>) method.
-    - Calls the `create` method on the `pages` attribute of the `Client` instance to create a new page in the Notion database with the converted log data.
-    - Prints a message to the console with the payload data in JSON format, formatted with an indentation of 2 spaces.
-- **Output**: Does not return any value (returns `None`).
+    - Initializes a `Client` object with the retrieved API key for authentication.
+    - Converts the `log` object to a dictionary using its [`to_dict`](<#autodoclogto_dict>) method.
+    - Creates a new page in the Notion database using the `create` method of the `Client` object with the dictionary as the payload.
+    - Prints a message to the console with the payload data in JSON format.
+- **Output**: Does not return any value.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodoc_log.AutoDocLog.to_dict`](<#autodoclogto_dict>)
 

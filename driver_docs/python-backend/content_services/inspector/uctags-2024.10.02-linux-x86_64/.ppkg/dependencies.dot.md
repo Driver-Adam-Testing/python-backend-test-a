@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A graph representation of dependencies for the `uctags` component.
+A graph representation of dependencies between uctags and various libraries.
 
 # Purpose
-The `digraph G` configuration defines a directed graph using the DOT language. It specifies dependencies between software components. The node `uctags` depends on `libjansson`, `libyaml`, `libxml2`, and `libiconv`. Additionally, `libxml2` has dependencies on `libiconv` and `libz`. This structure helps visualize and manage the relationships between these components.
+The `digraph G` structure defines a directed graph using the DOT language. It specifies dependencies between software components. The node `uctags` depends on `libjansson`, `libyaml`, `libxml2`, and `libiconv`. Additionally, `libxml2` has dependencies on `libiconv` and `libz`. This graph helps visualize and manage the relationships between these components.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,9 +6,9 @@
 Functions to check and poll S3 objects for specific GuardDuty malware scan status tags.
 
 # Purpose
-The code defines functionality to interact with Amazon S3 objects, specifically focusing on checking and polling for specific tags related to GuardDuty malware scan statuses. It uses the `boto3` library to connect to AWS S3 and retrieve object tags. The function [`has_guard_duty_tag`](<#has_guard_duty_tag>) checks if an S3 object has the tag `GuardDutyMalwareScanStatus` with values `NO_THREATS_FOUND` or `UNSUPPORTED`. The `UNSUPPORTED` tag is noted to be used when files are too large or numerous, but they can still be processed.
+The code provides functionality to interact with Amazon S3 objects, specifically focusing on checking and polling for specific tags related to GuardDuty malware scan statuses. It defines two main functions: [`has_guard_duty_tag`](<#has_guard_duty_tag>) and [`wait_for_guard_duty_tag`](<#wait_for_guard_duty_tag>). The [`has_guard_duty_tag`](<#has_guard_duty_tag>) function checks if an S3 object has a tag named `GuardDutyMalwareScanStatus` with a value of either `NO_THREATS_FOUND` or `UNSUPPORTED`. This function uses the `boto3` library to interact with the AWS S3 service, retrieving the tags of a specified object.
 
-Additionally, the code includes a polling mechanism through the function [`wait_for_guard_duty_tag`](<#wait_for_guard_duty_tag>), which repeatedly checks for the presence of the specified tags within a given timeout period. This function uses a loop to poll the S3 object at regular intervals, specified by the `interval` parameter, until the tag is found or the timeout is reached. The code is structured to be part of a larger application, as indicated by the use of `modal.App`, suggesting it is intended to be integrated into a broader system for automated documentation or monitoring tasks.
+The [`wait_for_guard_duty_tag`](<#wait_for_guard_duty_tag>) function repeatedly checks for the presence of the same tag and values on an S3 object until it is found or a specified timeout is reached. It uses a polling mechanism, checking at regular intervals defined by the `interval` parameter. This function is useful for scenarios where the tag might not be immediately available, and continuous checking is required until the desired tag status is confirmed. The code is structured to be part of a larger application, as indicated by the use of `modal.App`, suggesting it is intended to be integrated into a broader system rather than used as a standalone script.
 # Imports and Dependencies
 
 ---
@@ -23,8 +23,8 @@ Additionally, the code includes a polling mechanism through the function [`wait_
 ---
 ### app
 - **Type**: ``modal.App``
-- **Description**: Represents an instance of a `modal.App` with the name 'autodocs'. This instance is created using the `modal` library, which is likely used for application deployment or management.
-- **Use**: Used to define and manage the application context within the `modal` framework.
+- **Description**: Represents an instance of a `modal.App` with the name 'autodocs'. This instance is likely used to configure or manage an application within the Modal framework.
+- **Use**: Used to create and manage a Modal application named 'autodocs'.
 
 
 # Functions
@@ -43,8 +43,8 @@ Checks if an S3 object has the 'GuardDutyMalwareScanStatus' tag with a specific 
     - Retrieve the tags of the specified S3 object using 'get_object_tagging'.
     - Define a list of supported tag values: 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
     - Check if the 'GuardDutyMalwareScanStatus' tag exists with a value in the supported list.
-    - Return 'True' if the tag exists with a supported value, otherwise return 'False'.
-- **Output**: Returns 'True' if the S3 object has the 'GuardDutyMalwareScanStatus' tag with a value of 'NO_THREATS_FOUND' or 'UNSUPPORTED'; otherwise, returns 'False'.
+    - Return 'True' if exactly one matching tag is found, otherwise return 'False'.
+- **Output**: A boolean value indicating if the S3 object has the specified tag with a supported value.
 
 
 ---
@@ -58,13 +58,12 @@ Polls an S3 object for a specific tag until it is found or a timeout occurs.
     - `timeout`: The maximum time in seconds to wait for the tag to be found, default is 60 seconds.
     - `interval`: The time in seconds to wait between each check, default is 5 seconds.
 - **Logic and Control Flow**:
-    - Import the `time` module to track elapsed time.
-    - Record the start time using `time.time()`.
+    - Record the current time as the start time.
     - Print a message indicating the start of polling with the specified timeout and interval.
-    - Enter a loop that continues until the elapsed time exceeds the `timeout`.
+    - Enter a loop that continues until the elapsed time exceeds the timeout.
     - In each iteration, call [`has_guard_duty_tag`](<#has_guard_duty_tag>) to check if the tag is present on the S3 object.
     - If the tag is found, print a success message and return `True`.
-    - If the tag is not found, print a message indicating a retry after the `interval` and pause execution using `time.sleep(interval)`.
+    - If the tag is not found, print a message indicating the wait and sleep for the specified interval.
     - If the loop exits due to timeout, print a timeout message and return `False`.
 - **Output**: Returns `True` if the tag is found within the timeout period, otherwise returns `False`.
 - **Functions Called**:

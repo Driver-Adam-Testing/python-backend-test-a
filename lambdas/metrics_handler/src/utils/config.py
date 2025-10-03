@@ -8,7 +8,7 @@ class Settings(BaseSettings):
         env_file=".env", env_ignore_empty=True, extra="ignore"
     )
     ENVIRONMENT: Literal[
-        "local", "ops", "development", "staging", "production", "cloud-local"
+        "local", "ops", "development", "staging", "production", "cloud-local", "pms"
     ] = "local"
     DATABASE_URL: str | None = None
     DATABASE_URL_SECRET_NAME: str

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements a semantic comparison tool using text embeddings and cosine similarity.
+Implements a class for adding entries and comparing text embeddings using cosine similarity.
 
 # Purpose
-The `SemanticComparator` class provides functionality to compare text descriptions based on their semantic similarity. It uses text embeddings to represent the semantic content of text entries. The class allows users to add entries with a name and description, where each description is converted into an embedding using the `batch_embed_text` function from the `shared.embedding.text_embedder` module. These embeddings are stored alongside their corresponding names and descriptions.
+The code defines a class `SemanticComparator` that provides functionality for comparing text descriptions based on their semantic similarity. The class uses text embeddings to represent the semantic content of text entries. It includes methods to add new entries with a name and description, generate embeddings for these descriptions, and store them in a list. The [`add_entry`](<#semanticcomparatoradd_entry>) method uses the `batch_embed_text` function from an external module to create embeddings for the descriptions.
 
-The class includes methods to calculate the cosine similarity between embeddings and to find the most semantically similar entry for a given set of text embeddings. The [`cosine_score`](<#semanticcomparatorcosine_score>) method computes the cosine similarity between two embedding vectors, which is a measure of their semantic similarity. The [`compare_embeddings`](<#semanticcomparatorcompare_embeddings>) method takes a list of text embeddings and returns the names of the entries that are most similar to each input embedding based on the cosine similarity score. This code is suitable for applications that require semantic comparison of text data, such as information retrieval or recommendation systems.
+The class also includes methods for calculating and comparing the cosine similarity between embeddings. The [`cosine_score`](<#semanticcomparatorcosine_score>) method computes the cosine similarity between two embedding vectors, which is a measure of their semantic similarity. The [`compare_embeddings`](<#semanticcomparatorcompare_embeddings>) method takes a list of text embeddings and finds the entry with the closest semantic match for each embedding by comparing cosine similarity scores. This class is intended to be used in applications where semantic comparison of text data is required, and it provides a simple interface for adding entries and finding semantically similar text descriptions.
 # Imports and Dependencies
 
 ---
@@ -25,7 +25,7 @@ The class includes methods to calculate the cosine similarity between embeddings
 
 - **Members**:
     - `entries`: A list that stores entries with their names, descriptions, and embeddings.
-- **Description**: Facilitates the addition of entries with names and descriptions, generates embeddings for these entries, and compares input text embeddings to find the closest matching entry based on cosine similarity.
+- **Description**: Manages a collection of entries, each with a name, description, and embedding, and provides functionality to add new entries and compare text embeddings to find the closest matching entry based on cosine similarity.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/utils/semantic_comparator.SemanticComparator.__init__`](<#semanticcomparator__init__>)
     - [`python-backend/packages/shared/shared/v3/utils/semantic_comparator.SemanticComparator.add_entry`](<#semanticcomparatoradd_entry>)
@@ -42,7 +42,7 @@ Initializes an instance of the `SemanticComparator` class with an empty list of 
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Assigns an empty list to the `entries` attribute of the instance.
-- **Output**: None
+- **Output**: An instance of the `SemanticComparator` class with an initialized `entries` attribute.
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/semantic_comparator.SemanticComparator`](<#semanticcomparator>)  (Base Class)
 
 
@@ -55,9 +55,9 @@ Adds a new entry with a name, description, and generated embedding to the entrie
     - `name`: The name of the entry.
     - `description`: A brief description of the entry.
 - **Logic and Control Flow**:
-    - Generates an embedding for the given description using the [`batch_embed_text`](<../../embedding/text_embedder.py.md#batch_embed_text>) function.
-    - Appends a dictionary containing the name, description, and generated embedding to the `entries` list.
-- **Output**: No output is returned.
+    - Generate an embedding for the given description using the [`batch_embed_text`](<../../embedding/text_embedder.py.md#batch_embed_text>) function.
+    - Append a dictionary containing the name, description, and generated embedding to the `entries` list.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/embedding/text_embedder.batch_embed_text`](<../../embedding/text_embedder.py.md#batch_embed_text>)
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/semantic_comparator.SemanticComparator`](<#semanticcomparator>)  (Base Class)
@@ -76,7 +76,7 @@ Calculates the cosine similarity score between two embedding vectors.
     - Calculate the dot product of `embedding1` and `embedding2`.
     - Calculate the norm (magnitude) of `embedding1`.
     - Calculate the norm (magnitude) of `embedding2`.
-    - Divide the dot product by the product of the two norms to get the cosine similarity score.
+    - Divide the dot product by the product of the norms of `embedding1` and `embedding2` to get the cosine similarity score.
 - **Output**: A float representing the cosine similarity score between the two embeddings.
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/semantic_comparator.SemanticComparator`](<#semanticcomparator>)  (Base Class)
 
@@ -96,6 +96,7 @@ Finds the name of the entry with the closest cosine similarity for each input te
     - Calculate the cosine similarity score between `text_embedding` and `entry['embedding']` using the [`cosine_score`](<#semanticcomparatorcosine_score>) method.
     - If the calculated score is greater than `highest_score`, update `highest_score` with the new score and set `closest_name` to `entry['name']`.
     - Append `closest_name` to the `closest_names` list after evaluating all entries for the current `text_embedding`.
+    - Return the `closest_names` list after processing all text embeddings.
 - **Output**: A list of strings, where each string is the name of the entry with the closest cosine similarity to the corresponding input text embedding.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/utils/semantic_comparator.SemanticComparator.cosine_score`](<#semanticcomparatorcosine_score>)

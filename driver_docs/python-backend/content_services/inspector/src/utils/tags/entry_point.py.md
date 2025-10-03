@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Identifies and describes entry points in a codebase using AI models and structured prompts.
+Implements classes and functions to identify and describe entry points in a codebase using AI.
 
 # Purpose
-The code defines a system for identifying and evaluating entry points in a software codebase. It uses asynchronous operations to manage tasks and rate limits, leveraging the `asyncio` and `aiolimiter` libraries. The code imports several components from shared modules, such as `ChatOpenAI` for generating responses and `split_text` for text processing. The primary functionality revolves around the `RelevanceFlag`, `EntryPointCandidate`, and `EntryPoints` classes, which are used to categorize, describe, and finalize potential entry points in the codebase.
+The code is a Python module that provides functionality for identifying and describing entry points in a software codebase. It uses asynchronous programming with `asyncio` and rate limiting with `AsyncLimiter` to manage requests to a language model, `ChatOpenAI`. The module defines several classes, such as `RelevanceFlag`, `EntryPointCandidate`, `FinalizedEntryPoint`, and `EntryPoints`, which are used to categorize, describe, and finalize entry points within a codebase. These classes use the `pydantic` library for data validation and management.
 
-The `RelevanceFlag` class uses an enumeration `EntryPointRelevance` to classify files as very relevant, possibly relevant, or not likely relevant as entry points. The `EntryPointCandidate` class provides a detailed description and rationale for files flagged as potential entry points. The `EntryPoints` class aggregates these candidates and determines the top entry points based on their relevance and descriptions. The code uses the [`bounded_llm_generate`](<#bounded_llm_generate>) function to interact with a language model for generating responses, and it employs Pydantic models for data validation and serialization. The system is designed to be integrated into a larger framework, as indicated by the use of shared components and utilities.
+The module includes functions and methods for generating prompts and interacting with the language model to assess the relevance of files as entry points. It uses a semaphore and rate limiter to control the flow of requests, ensuring that the system does not exceed specified limits. The module is designed to be part of a larger system that analyzes codebases, providing a structured approach to identifying key entry points that are important for understanding and interacting with the code.
 # Imports and Dependencies
 
 ---
@@ -35,29 +35,29 @@ The `RelevanceFlag` class uses an enumeration `EntryPointRelevance` to classify 
 ---
 ### OPENAI\_SEM
 - **Type**: ``asyncio.Semaphore``
-- **Description**: Limits the number of concurrent tasks that can access a shared resource to 300. It is part of the `asyncio` module, which provides infrastructure for writing single-threaded concurrent code using coroutines.
-- **Use**: Controls the concurrency level for tasks that require access to shared resources.
+- **Description**: Limits the number of concurrent tasks that can access a shared resource to 300. This is useful in asynchronous programming to control the number of tasks that can run simultaneously.
+- **Use**: Used to control the concurrency level of tasks accessing shared resources in asynchronous operations.
 
 
 ---
 ### OPENAI\_RATE\_LIMITER
 - **Type**: ``AsyncLimiter``
-- **Description**: Limits the rate of requests to the OpenAI API to 100 requests per second. It uses the `AsyncLimiter` class to enforce this rate limit.
-- **Use**: Controls the rate of API requests to prevent exceeding the allowed limit.
+- **Description**: Limits the rate of requests to the OpenAI API to 100 requests per second. This helps to prevent exceeding the API's rate limits and ensures compliance with usage policies.
+- **Use**: Used to control the rate of API requests in the `bounded_llm_generate` function.
 
 
 ---
 ### CHUNK\_SIZE\_LIMIT
-- **Type**: `int`
-- **Description**: Defines the maximum size limit for a chunk of data, set to 96,000.
-- **Use**: Used to determine the maximum allowable size for text chunks in the `_clip_prompt` function.
+- **Type**: ``int``
+- **Description**: Defines the maximum size for a text chunk, set to 96,000 characters. This limit is used to control the size of text segments processed by the system.
+- **Use**: Used to specify the maximum allowable size for text chunks in the `_clip_prompt` function.
 
 
 ---
 ### ENTRY\_POINT\_PREAMBLE
 - **Type**: ``Component``
-- **Description**: Represents a `Component` instance that contains a detailed string description of what an entry point in a codebase is. The string provides guidance on identifying entry points in different contexts, such as executables, libraries, and scripts.
-- **Use**: Used to provide a detailed explanation of entry points to help orient developers in understanding and navigating a codebase.
+- **Description**: Defines a `Component` instance with a detailed string description about entry points in a codebase. The string provides guidance on identifying entry points in different contexts, such as executables, libraries, and scripts.
+- **Use**: Used to provide a detailed explanation of what constitutes an entry point in a codebase for documentation or analysis purposes.
 
 
 # Classes
@@ -67,9 +67,9 @@ The `RelevanceFlag` class uses an enumeration `EntryPointRelevance` to classify 
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L57>)
 
 - **Members**:
-    - `VeryRelevant`: Represents a very relevant entry point.
-    - `PossiblyRelevant`: Represents a possibly relevant entry point.
-    - `NotLikelyRelevant`: Represents an entry point that is not likely relevant.
+    - `VeryRelevant`: Represents a highly important entry point for the codebase.
+    - `PossiblyRelevant`: Represents a potentially important entry point for the codebase.
+    - `NotLikelyRelevant`: Represents a file or symbol that is not a core entry point to the codebase.
 - **Description**: Defines different levels of relevance for entry points in a codebase, categorizing them as very relevant, possibly relevant, or not likely relevant.
 - **Inherits From**:
     - `Enum`
@@ -81,7 +81,7 @@ The `RelevanceFlag` class uses an enumeration `EntryPointRelevance` to classify 
 
 - **Members**:
     - `flag`: Holds the relevance status of an entry point as an `EntryPointRelevance` enum.
-- **Description**: Represents a model for determining the relevance of a file or symbol as an entry point in a codebase. It uses the `EntryPointRelevance` enum to categorize the relevance and provides methods to generate prompts for evaluating entry points using a language model.
+- **Description**: Represents a model for determining the relevance of a file or symbol as an entry point in a codebase, using the `EntryPointRelevance` enum to categorize the relevance.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.RelevanceFlag.system_prompt`](<#relevanceflagsystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.RelevanceFlag.from_llm`](<#relevanceflagfrom_llm>)
@@ -94,16 +94,16 @@ The `RelevanceFlag` class uses an enumeration `EntryPointRelevance` to classify 
 #### RelevanceFlag\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/entry_point.RelevanceFlag.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L66>)
 
-Generates a structured prompt string for identifying entry points in a codebase.
+Generates a system prompt string for identifying entry points in a codebase.
 - **Decorators**: `@staticmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Defines a string `identity_preamble` that describes the role of the user as an expert software engineer and technical writer.
-    - Defines a string `task_description` that outlines the task of reviewing technical documentation to categorize files as entry points.
-    - Creates a `Prompt` object using `Prompt.empty()` and appends components to it using the [`append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>) method.
-    - Appends `identity_preamble`, `ENTRY_POINT_PREAMBLE`, and `task_description` to the `Prompt` object.
-    - Converts the `Prompt` object into a string using the [`into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>) method and returns it.
-- **Output**: A string that represents a structured prompt for identifying entry points in a codebase.
+    - Defines a string `task_description` that outlines the task of reviewing technical documentation to identify entry points in a codebase.
+    - Creates a `Prompt` object and appends the `identity_preamble`, `ENTRY_POINT_PREAMBLE`, and `task_description` to it.
+    - Converts the `Prompt` object into a string using the `into_str()` method.
+    - Returns the resulting string.
+- **Output**: A string that serves as a system prompt for identifying entry points in a codebase.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -119,16 +119,16 @@ Generates a structured prompt string for identifying entry points in a codebase.
 Creates an instance of the class by generating content from a language model based on technical documentation.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to create an instance.
+    - `cls`: The class itself, used to call class methods.
     - `llm`: An instance of `ChatOpenAI` used to generate responses.
     - `root_rel_path`: A string representing the root relative path of the file for which technical documentation is provided.
     - `long_description`: A string containing the long form technical documentation of the file.
 - **Logic and Control Flow**:
     - Calls `cls.system_prompt()` to get the system prompt string.
-    - Uses [`_clip_prompt`](<#_clip_prompt>) to create a user prompt by clipping the long description to fit within a specified chunk size limit.
+    - Uses [`_clip_prompt`](<#_clip_prompt>) to create a user prompt from the `root_rel_path` and `long_description`, ensuring it fits within the `CHUNK_SIZE_LIMIT`.
     - Calls [`bounded_llm_generate`](<#bounded_llm_generate>) asynchronously to generate content using the language model with the system and user prompts.
     - Parses the raw content returned by [`bounded_llm_generate`](<#bounded_llm_generate>) into an instance of the class using `cls.parse_raw`.
-- **Output**: Returns an instance of the class created from the parsed raw content.
+- **Output**: Returns an instance of the class populated with data parsed from the generated content.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.RelevanceFlag.system_prompt`](<#relevanceflagsystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point._clip_prompt`](<#_clip_prompt>)
@@ -147,7 +147,7 @@ Creates an instance of the class by generating content from a language model bas
     - `_relevance`: Holds the relevance of the entry point as a private attribute.
     - `description`: Contains a description of the entry point.
     - `rationale`: Provides a rationale for the entry point's relevance.
-- **Description**: Represents a candidate for an entry point in a codebase, including its description and rationale for relevance. It uses private attributes to store the root relative path and relevance, and provides methods to generate prompts for evaluating entry point candidates.
+- **Description**: Represents a candidate for an entry point in a codebase, including its description and rationale for relevance.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPointCandidate.system_prompt`](<#entrypointcandidatesystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPointCandidate.from_llm`](<#entrypointcandidatefrom_llm>)
@@ -165,9 +165,10 @@ Generates a structured prompt string for identifying and describing entry points
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Defines a string `identity_preamble` that introduces the role of an expert software engineer and technical writer.
-    - Defines a string `task_description` that outlines the task of analyzing technical documentation to identify entry points in a codebase.
-    - Creates a `Prompt` object using `Prompt.empty()` and appends components including `identity_preamble`, `ENTRY_POINT_PREAMBLE`, `task_description`, and `GENERAL_STE_STYLE_INSTRUCTION`.
-    - Converts the `Prompt` object into a string using `into_str()` and returns it.
+    - Defines a string `task_description` that outlines the task of evaluating entry points in a codebase.
+    - Creates an empty `Prompt` object and appends the `identity_preamble`, `ENTRY_POINT_PREAMBLE`, `task_description`, and `GENERAL_STE_STYLE_INSTRUCTION` components to it.
+    - Converts the `Prompt` object into a string using the `into_str()` method.
+    - Returns the resulting string.
 - **Output**: A string that represents a structured prompt for identifying and describing entry points in a codebase.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -181,7 +182,7 @@ Generates a structured prompt string for identifying and describing entry points
 #### EntryPointCandidate\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPointCandidate.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L139>)
 
-Creates an `EntryPointCandidate` instance from a language model (LLM) response based on provided technical documentation and relevance flag.
+Creates an instance of `EntryPointCandidate` from a language model (LLM) response, using provided technical documentation and relevance flag.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `EntryPointCandidate` itself, used to call class methods.
@@ -194,9 +195,9 @@ Creates an `EntryPointCandidate` instance from a language model (LLM) response b
     - Uses [`_clip_prompt`](<#_clip_prompt>) to create a user prompt by combining the file path, relevance flag, and long description, ensuring it fits within a chunk size limit.
     - Calls [`bounded_llm_generate`](<#bounded_llm_generate>) asynchronously to generate a response from the LLM using the system and user prompts.
     - Parses the raw content returned by the LLM into an `EntryPointCandidate` instance using `cls.parse_raw`.
-    - Sets the `_root_rel_path` and `_relevance` attributes of the candidate instance.
+    - Sets the `_root_rel_path` and `_relevance` attributes of the candidate with the provided `root_rel_path` and `relevance.flag`.
     - Returns the `EntryPointCandidate` instance.
-- **Output**: An instance of `EntryPointCandidate` with attributes set based on the LLM's response and input parameters.
+- **Output**: An instance of `EntryPointCandidate` with attributes populated based on the LLM's response and input parameters.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.RelevanceFlag.system_prompt`](<#relevanceflagsystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point._clip_prompt`](<#_clip_prompt>)
@@ -214,8 +215,8 @@ Creates an `EntryPointCandidate` instance from a language model (LLM) response b
 - **Members**:
     - `path`: Stores the file path of the entry point.
     - `single_sentence_description`: Holds a brief description of the entry point.
-    - `rationale`: Contains the rationale for the entry point's significance.
-- **Description**: Represents a finalized entry point in a codebase, including its path, a brief description, and the rationale for its importance.
+    - `rationale`: Contains the rationale for why this is an entry point.
+- **Description**: Represents a finalized entry point in a codebase, including its path, a brief description, and the rationale for its selection as an entry point.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.FinalizedEntryPoint.__str__`](<#finalizedentrypoint__str__>)
 - **Inherits From**:
@@ -227,13 +228,13 @@ Creates an `EntryPointCandidate` instance from a language model (LLM) response b
 #### FinalizedEntryPoint\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/entry_point.FinalizedEntryPoint.__str__}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L172>)
 
-Formats and returns a string representation of the `FinalizedEntryPoint` object.
+Formats the string representation of a `FinalizedEntryPoint` object.
 - **Inputs**:
     - `self`: The instance of the `FinalizedEntryPoint` class.
 - **Logic and Control Flow**:
-    - Uses an f-string to format the `path`, `single_sentence_description`, and `rationale` attributes of the `FinalizedEntryPoint` instance.
-    - Returns the formatted string.
-- **Output**: A string that includes the `path`, `single_sentence_description`, and `rationale` of the `FinalizedEntryPoint` instance, formatted in a specific way.
+    - Uses an f-string to concatenate the `path`, `single_sentence_description`, and `rationale` attributes of the `FinalizedEntryPoint` object.
+    - Returns the formatted string with the `path` and `single_sentence_description` on the first line, followed by the `rationale` on the second line prefixed by 'Rationale: '.
+- **Output**: A string that represents the `FinalizedEntryPoint` object, including its path, description, and rationale.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/entry_point.FinalizedEntryPoint`](<#finalizedentrypoint>)  (Base Class)
 
 
@@ -243,8 +244,8 @@ Formats and returns a string representation of the `FinalizedEntryPoint` object.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L176>)
 
 - **Members**:
-    - `entry_points`: A list of `FinalizedEntryPoint` objects.
-- **Description**: Manages a collection of entry points, providing methods to represent them as strings and to retrieve their paths. It includes a static method to generate a system prompt for identifying top entry points from a list of candidates.
+    - `entry_points`: A list of `FinalizedEntryPoint` objects representing the entry points.
+- **Description**: Represents a collection of entry points in a codebase, providing methods to convert the entry points to string representations and to retrieve their paths.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPoints.__str__`](<#entrypoints__str__>)
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPoints.entry_point_paths`](<#entrypointsentry_point_paths>)
@@ -259,13 +260,14 @@ Formats and returns a string representation of the `FinalizedEntryPoint` object.
 #### EntryPoints\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPoints.__str__}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L179>)
 
-Converts the list of `entry_points` into a string with each entry point on a new line.
-- **Inputs**: None
+Converts the list of entry points into a string representation with each entry point on a new line.
+- **Inputs**:
+    - `self`: An instance of the `EntryPoints` class.
 - **Logic and Control Flow**:
-    - Uses a list comprehension to iterate over each element `e` in `self.entry_points`.
-    - Converts each element `e` to a string using `str(e)`.
-    - Joins the resulting list of strings with newline characters `\n` to form a single string.
-- **Output**: A string representation of the `entry_points` list, with each entry point on a new line.
+    - Iterates over each entry point in the `entry_points` list.
+    - Converts each entry point to a string using the `str()` function.
+    - Joins all string representations of entry points with newline characters.
+- **Output**: A string where each entry point is on a new line.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPoints`](<#entrypoints>)  (Base Class)
 
 
@@ -288,16 +290,16 @@ Generates a comma-separated string of paths from the entry points.
 #### EntryPoints\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPoints.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L185>)
 
-Generates a structured prompt for selecting top entry points from a list of candidates.
+Generates a structured prompt for identifying top entry points in a codebase.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `n`: The maximum number of top entry points to select from the list of candidates.
+    - `n`: The number of top entry points to identify.
 - **Logic and Control Flow**:
     - Defines an identity preamble and a task description template for the prompt.
-    - Formats the task description template with the given number of top entry points, `n`.
+    - Formats the task description template with the given number of entry points `n`.
     - Creates a `Prompt` object and appends the identity preamble, entry point preamble, formatted task description, and general style instruction to it.
     - Converts the `Prompt` object into a string and returns it.
-- **Output**: A string representing the structured prompt for selecting top entry points.
+- **Output**: A string representing the structured prompt for identifying entry points.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
@@ -310,7 +312,7 @@ Generates a structured prompt for selecting top entry points from a list of cand
 #### EntryPoints\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/entry_point.EntryPoints.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/entry_point.py#L211>)
 
-Identifies and processes potential entry points in a codebase using a language model.
+Identifies and processes entry point candidates from a set of documents using a language model.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class itself, used to call class methods.
@@ -318,19 +320,16 @@ Identifies and processes potential entry points in a codebase using a language m
     - `docs`: A dictionary mapping `LiteNode` objects to dictionaries containing document data.
     - `n`: An integer specifying the number of top entry points to finalize, defaulting to 3.
 - **Logic and Control Flow**:
-    - Creates an asynchronous task group to process documents for relevance to entry points.
-    - Iterates over `docs` to check the kind of each `LiteNode` and skips folders, processing only files.
-    - For each file, creates a task to determine its relevance as an entry point using `RelevanceFlag.from_llm`.
-    - Collects results of relevance tasks into `relevance_list`.
-    - Creates another asynchronous task group to process relevant files for entry point candidates.
-    - Iterates over `relevance_list` and skips files marked as not likely relevant.
-    - For relevant files, creates tasks to generate entry point candidates using `EntryPointCandidate.from_llm`.
-    - Collects results of candidate tasks into `candidate_list`.
-    - Generates a system prompt and a structured user prompt with candidate information.
-    - Clips the user prompt to fit within a chunk size limit using [`_clip_prompt`](<#_clip_prompt>).
-    - Calls [`bounded_llm_generate`](<#bounded_llm_generate>) to generate a response from the language model with the prompts.
-    - Parses the raw content returned by the language model into a class instance and returns it.
-- **Output**: An instance of the class, populated with parsed data from the language model's response.
+    - Uses an asynchronous task group to tag files for relevance to the concept of an entry point.
+    - Iterates over the documents, creating tasks to determine the relevance of each file using `RelevanceFlag.from_llm`.
+    - Collects results from the relevance tasks and filters out files not likely relevant as entry points.
+    - Creates tasks to generate deeper descriptions and rationales for files marked as very relevant or possibly relevant using `EntryPointCandidate.from_llm`.
+    - Aggregates the results from candidate tasks to finalize the top N entry points.
+    - Constructs a system prompt and a structured user prompt with candidate information.
+    - Clips the user prompt if it exceeds the chunk size limit.
+    - Generates a response from the language model using [`bounded_llm_generate`](<#bounded_llm_generate>) with the constructed prompts.
+    - Parses the raw content returned by the language model to finalize the entry points.
+- **Output**: Returns an instance of the class with the finalized entry points parsed from the language model's response.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/content_services/inspector/src/utils/tags/entry_point.RelevanceFlag.from_llm`](<#relevanceflagfrom_llm>)
@@ -353,14 +352,14 @@ Identifies and processes potential entry points in a codebase using a language m
 
 Clips a given prompt string to fit within a specified chunk size.
 - **Inputs**:
-    - `p`: The prompt string to be clipped.
+    - `p`: The prompt string to clip.
     - `chunk_size`: The maximum size of each chunk.
 - **Logic and Control Flow**:
-    - Calls the [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) function to divide the prompt `p` into chunks with the specified `chunk_size` and no overlap.
+    - Calls the [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) function to divide the prompt `p` into chunks of the specified `chunk_size` with no overlap.
     - Checks if the number of chunks is greater than one.
     - If there is more than one chunk, returns the text of the first chunk.
     - If there is only one chunk, returns the original prompt `p`.
-- **Output**: A string that is either the first chunk of the split prompt or the original prompt if it fits within the chunk size.
+- **Output**: A string that is either the first chunk of the prompt or the original prompt if it fits within the chunk size.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
 

@@ -6,9 +6,9 @@
 Implements a Bitbucket provider for managing access tokens, handling webhooks, and interacting with repositories.
 
 # Purpose
-The code defines a class `BitbucketProvider` that implements the `GitProviderInterface` to interact with Bitbucket, a Git-based source code repository hosting service. The primary purpose of this code is to manage Bitbucket access tokens, handle webhook events, and perform operations related to Bitbucket repositories. The `BitbucketProvider` class supports multiple access token types, such as workspace, project, and repository tokens, and provides methods to validate these tokens, create and update installations, store and update secrets, and fetch repositories.
+The code defines a class `BitbucketProvider` that implements the `GitProviderInterface` to interact with Bitbucket, a version control system. This class provides functionality to manage Bitbucket access tokens, handle webhook events, and interact with Bitbucket repositories. It supports multiple access token types, such as workspace, project, and repository tokens, which are defined in the `BitbucketTokenType` enumeration. The class includes methods to validate access tokens, create and update installations, store and update secrets, fetch repositories, handle webhook events, and register webhooks. It also provides methods to revoke access and fetch secrets by installation ID.
 
-The class also includes methods to handle Bitbucket webhook events, such as push and pull request events, and to register and manage webhooks. The `BitbucketProvider` uses an `AWSSecretManagementStrategy` to securely store and manage secrets related to Bitbucket installations. The code is structured to be part of a larger application, as indicated by the imports from other modules within the application, and it is intended to be used as a library file that can be imported and utilized by other components of the application.
+The `BitbucketProvider` class is designed to be used as part of a larger application that manages Git provider integrations. It uses the `AWSSecretManagementStrategy` to handle secret storage and retrieval, and it interacts with Bitbucket's API through the `BitbucketAPIResources` class. The class also includes private helper methods to handle specific tasks, such as mapping triggers to Bitbucket events and storing webhook metadata. The code is structured to be part of a library that can be imported and used in other parts of the application, providing a clear interface for managing Bitbucket-related operations.
 # Imports and Dependencies
 
 ---
@@ -23,12 +23,13 @@ The class also includes methods to handle Bitbucket webhook events, such as push
 - `app.git_providers.interfaces.provider_interface.WebhookConfig`
 - `app.git_providers.interfaces.provider_interface.WebhookEventContext`
 - `app.git_providers.resources.bitbucket_api_resources.BitbucketAPIResources`
+- `app.git_providers.utils.vcs_auto_update.is_update_required`
 - `app.schemas.git_provider_schema.AccessTokenData`
 - `app.schemas.git_provider_schema.GitProviderAppTokenSecret`
 - `app.schemas.git_provider_schema.GitRepository`
 - `app.schemas.secret_management_schema.APP_INSTALL_WAT_NAME_PREFIX`
-- `database.models_v1.GitProviderApp`
-- `database.models_v1.GitProviderAppInstallation`
+- `database.models.GitProviderApp`
+- `database.models.GitProviderAppInstallation`
 - `shared.interfaces.aws_client_config.AWSClientConfig`
 - `shared.secret_management.aws_secret_management.AWSSecretManagementStrategy`
 - `shared.secret_management.aws_secret_management.format_secret_name`
@@ -43,19 +44,19 @@ The class also includes methods to handle Bitbucket webhook events, such as push
 ### logger
 - **Type**: ``Logger``
 - **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows for logging messages that are specific to the module where the logger is used.
-- **Use**: Used to log messages, errors, and other information throughout the module, aiding in debugging and monitoring.
+- **Use**: Used to log messages, errors, and warnings throughout the module, providing a consistent logging interface.
 
 
 # Classes
 
 ---
 ### BitbucketTokenType<!-- {{#class:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketTokenType}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L31>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L32>)
 
 - **Members**:
-    - `WORKSPACE`: Defines the token type for workspace access.
-    - `PROJECT`: Defines the token type for project access.
-    - `REPOSITORY`: Defines the token type for repository access.
+    - `WORKSPACE`: Represents a workspace access token type.
+    - `PROJECT`: Represents a project access token type.
+    - `REPOSITORY`: Represents a repository access token type.
 - **Description**: Defines specific token types for Bitbucket, inheriting from `str` and `Enum`, to categorize access tokens as workspace, project, or repository level.
 - **Inherits From**:
     - `str`
@@ -64,13 +65,13 @@ The class also includes methods to handle Bitbucket webhook events, such as push
 
 ---
 ### BitbucketProvider<!-- {{#class:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L39>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L40>)
 
 - **Members**:
     - `config`: Stores the configuration for the Bitbucket provider.
     - `secrets_manager`: Manages secrets using AWS Secret Management Strategy.
     - `api_strategy`: Handles API interactions with Bitbucket resources.
-- **Description**: Implements a Bitbucket provider that supports multiple access token types and integrates with AWS for secret management. It provides methods to validate access tokens, create installations, store and update secrets, fetch repositories, handle webhook events, and register webhooks. The class interacts with Bitbucket's API to manage repositories and webhooks, and it uses AWS Secret Management to securely store and manage access tokens.
+- **Description**: Implements a Bitbucket provider that supports multiple access token types and integrates with AWS for secret management. It provides methods to validate access tokens, manage installations, store and update secrets, fetch repositories, handle webhook events, and register webhooks. The class interacts with Bitbucket's API to perform these operations and logs relevant information for each action.
 - **Methods**:
     - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.__init__`](<#bitbucketprovider__init__>)
     - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.from_config`](<#bitbucketproviderfrom_config>)
@@ -96,16 +97,16 @@ The class also includes methods to handle Bitbucket webhook events, such as push
 
 ---
 #### BitbucketProvider\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.__init__}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L42>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L43>)
 
 Initializes a `BitbucketProvider` instance with configuration and secret management strategy.
 - **Inputs**:
     - `config`: An instance of `GitProviderConfig` that contains configuration details for the Bitbucket provider.
-    - `secrets_manager`: An instance of `AWSSecretManagementStrategy` used for managing secrets.
+    - `secrets_manager`: An instance of `AWSSecretManagementStrategy` used for managing secrets related to the Bitbucket provider.
 - **Logic and Control Flow**:
     - Assigns the `config` parameter to the `self.config` attribute.
     - Assigns the `secrets_manager` parameter to the `self.secrets_manager` attribute.
-    - Initializes `self.api_strategy` with a [`BitbucketAPIResources`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresources>) instance using the `base_url` from the `config`.
+    - Initializes the `self.api_strategy` attribute with an instance of [`BitbucketAPIResources`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresources>).
 - **Output**: No output, as this is a constructor method for initializing an object.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/resources/bitbucket_api_resources.BitbucketAPIResources`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresources>)
@@ -114,16 +115,16 @@ Initializes a `BitbucketProvider` instance with configuration and secret managem
 
 ---
 #### BitbucketProvider\.from\_config<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.from_config}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L49>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L52>)
 
 Creates a `BitbucketProvider` instance using the provided application and AWS configuration.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `app`: An instance of `GitProviderApp` representing the application configuration.
-    - `aws_config`: An instance of `AWSClientConfig` containing AWS client configuration details.
+    - `aws_config`: An instance of `AWSClientConfig` representing the AWS client configuration.
 - **Logic and Control Flow**:
     - Imports the [`load_provider_config`](<../core/config_loader.py.md#load_provider_config>) function from `app.git_providers.core.config_loader`.
-    - Creates an [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) instance using the provided `aws_config`.
+    - Creates an instance of [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) using the provided `aws_config`.
     - Loads the provider configuration using [`load_provider_config`](<../core/config_loader.py.md#load_provider_config>) with the `app` and `client_secret` set to `None`.
     - Returns a new instance of `BitbucketProvider` initialized with the loaded configuration and the `secrets_manager`.
 - **Output**: Returns an instance of `BitbucketProvider`.
@@ -135,18 +136,18 @@ Creates a `BitbucketProvider` instance using the provided application and AWS co
 
 ---
 #### BitbucketProvider\.validate\_access\_token<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.validate_access_token}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L61>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L64>)
 
 Validates a Bitbucket access token for a workspace, project, or repository.
 - **Inputs**:
     - `token_data`: A dictionary containing the access token data to validate.
 - **Logic and Control Flow**:
-    - Create an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using the provided `token_data`.
-    - Attempt to validate the access token against the workspace name using the `api_strategy`'s [`validate_workspace_access`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcesvalidate_workspace_access>) method.
+    - Create an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using the `token_data` dictionary.
+    - Attempt to validate the access token by calling [`validate_workspace_access`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcesvalidate_workspace_access>) on the `api_strategy` with the workspace name and token.
     - If the token is valid, return a tuple with `True` and `None`.
     - If the token is not valid, return a tuple with `False` and the error message.
-    - If an exception occurs during validation, log the error and return `False` with the exception message as a string.
-- **Output**: A tuple containing a boolean indicating the validity of the token and an optional error message string.
+    - If an exception occurs, log the error and return a tuple with `False` and the exception message.
+- **Output**: A tuple containing a boolean indicating the validity of the token and an optional error message.
 - **Functions Called**:
     - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
     - [`python-backend/backend/app/git_providers/resources/bitbucket_api_resources.BitbucketAPIResources.validate_workspace_access`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcesvalidate_workspace_access>)
@@ -155,27 +156,27 @@ Validates a Bitbucket access token for a workspace, project, or repository.
 
 ---
 #### BitbucketProvider\.create\_installation<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.create_installation}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L76>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L79>)
 
-Creates a [`GitProviderAppInstallation`](<../../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object using the provided organization ID, app ID, and token data.
+Creates a [`GitProviderAppInstallation`](<../../../../driver_db/database/models.py.md#gitproviderappinstallation>) object using the provided organization ID, app ID, and token data.
 - **Inputs**:
-    - `organization_id`: A string representing the ID of the organization.
-    - `app_id`: A string representing the ID of the application.
+    - `organization_id`: A string representing the ID of the organization for which the installation is being created.
+    - `app_id`: A string representing the ID of the application to associate with the installation.
     - `token_data`: A dictionary containing token data, including the token type and other relevant information.
 - **Logic and Control Flow**:
     - Creates an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using the `token_data` dictionary.
-    - Constructs a metadata dictionary with the token type and access token name.
-    - Returns a [`GitProviderAppInstallation`](<../../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object initialized with the app ID, organization ID, and metadata.
-- **Output**: A [`GitProviderAppInstallation`](<../../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object initialized with the provided IDs and metadata.
+    - Constructs a `metadata` dictionary with `kind` and `name` keys, using values from `token_data` and `access_token`.
+    - Returns a [`GitProviderAppInstallation`](<../../../../driver_db/database/models.py.md#gitproviderappinstallation>) object initialized with `git_provider_app_id`, `organization_id`, and `misc_metadata`.
+- **Output**: A [`GitProviderAppInstallation`](<../../../../driver_db/database/models.py.md#gitproviderappinstallation>) object initialized with the provided organization ID, app ID, and metadata.
 - **Functions Called**:
     - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
-    - [`python-backend/driver_db/database/models_v1.GitProviderAppInstallation`](<../../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>)
+    - [`python-backend/driver_db/database/models.GitProviderAppInstallation`](<../../../../driver_db/database/models.py.md#gitproviderappinstallation>)
 - **See also**: [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider`](<#bitbucketprovider>)  (Base Class)
 
 
 ---
 #### BitbucketProvider\.store\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.store_secrets}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L92>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L95>)
 
 Stores access token and webhook secret for a Bitbucket installation in a secret management system.
 - **Inputs**:
@@ -185,10 +186,10 @@ Stores access token and webhook secret for a Bitbucket installation in a secret 
     - Create an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using `token_data`.
     - Generate a webhook secret using `secrets.token_urlsafe(32)`.
     - Format the secret key using [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with `APP_INSTALL_WAT_NAME_PREFIX` and the installation ID.
-    - Create a [`GitProviderAppTokenSecret`](<../../schemas/git_provider_schema.py.md#gitproviderapptokensecret>) object with the access token and webhook secret, then serialize it to JSON.
-    - Write the serialized secret to the secret management system using `self.secrets_manager.write_secret`.
+    - Create a [`GitProviderAppTokenSecret`](<../../schemas/git_provider_schema.py.md#gitproviderapptokensecret>) object with the access token and webhook secret, then convert it to a JSON string.
+    - Write the secret key and secret value to the secret management system using `self.secrets_manager.write_secret`.
     - Log an informational message indicating the storage of the webhook and access token (WAT) for the Bitbucket installation.
-- **Output**: Does not return a value; performs actions to store secrets and logs the operation.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
@@ -199,21 +200,21 @@ Stores access token and webhook secret for a Bitbucket installation in a secret 
 
 ---
 #### BitbucketProvider\.update\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.update_secrets}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L114>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L117>)
 
 Updates the access token for a Bitbucket installation while preserving the existing webhook secret.
 - **Inputs**:
     - `installation`: An instance of `GitProviderAppInstallation` representing the Bitbucket installation for which secrets are updated.
-    - `token_data`: A dictionary containing the new access token data to update.
+    - `token_data`: A dictionary containing the new access token data.
 - **Logic and Control Flow**:
     - Create an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using `token_data`.
-    - Generate a secret key using [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with the installation ID.
+    - Generate a secret key using [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with `APP_INSTALL_WAT_NAME_PREFIX` and the installation ID.
     - Read existing secrets using `self.secrets_manager.read_secret` with the generated secret key.
-    - If no existing secrets are found or the `secret_token` is missing, raise a `ValueError`.
-    - Extract the `secret_token` from the existing secrets.
-    - Create a new secret value by updating the token and preserving the `secret_token`.
-    - Write the updated secret value back using `self.secrets_manager.write_secret`.
-    - Log an informational message indicating the update of the access token.
+    - Check if `existing_secrets` is empty or does not contain `secret_token`; if so, raise a `ValueError`.
+    - Extract `webhook_secret` from `existing_secrets`.
+    - Create a new secret value by serializing a [`GitProviderAppTokenSecret`](<../../schemas/git_provider_schema.py.md#gitproviderapptokensecret>) object containing the new token and the existing `webhook_secret`.
+    - Write the new secret value back to the secret manager using `self.secrets_manager.write_secret`.
+    - Log an informational message indicating the update of the access token and preservation of the webhook secret.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
@@ -226,9 +227,9 @@ Updates the access token for a Bitbucket installation while preserving the exist
 
 ---
 #### BitbucketProvider\.fetch\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.fetch_secrets}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L143>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L146>)
 
-Fetches the secret value for a given Bitbucket installation.
+Fetches and returns the secret value for a given Bitbucket installation.
 - **Inputs**:
     - `installation`: An instance of `GitProviderAppInstallation` representing the Bitbucket installation for which to fetch secrets.
 - **Logic and Control Flow**:
@@ -245,33 +246,33 @@ Fetches the secret value for a given Bitbucket installation.
 
 ---
 #### BitbucketProvider\.fetch\_repositories<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.fetch_repositories}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L156>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L159>)
 
-Fetches Bitbucket repositories for a given installation using access tokens.
+Fetches Bitbucket repositories using the provided installation's access token.
 - **Inputs**:
     - `installation`: An instance of `GitProviderAppInstallation` representing the Bitbucket installation for which to fetch repositories.
 - **Logic and Control Flow**:
     - Logs the start of the repository fetching process for the given installation ID.
-    - Attempts to fetch secrets for the installation to retrieve the access token.
+    - Attempts to fetch secrets for the given installation to retrieve the access token.
     - Uses the access token to list repositories from the Bitbucket API for the specified workspace.
-    - Iterates over each repository in the fetched data to collect details and optionally fetch the latest commit.
-    - For each repository, creates a [`GitRepository`](<../../schemas/git_provider_schema.py.md#gitrepository>) object with metadata and adds it to the list of repositories.
-    - Logs the number of repositories fetched and returns the list.
+    - Iterates over each repository in the fetched data to construct [`GitRepository`](<../../schemas/git_provider_schema.py.md#gitrepository>) objects.
+    - Appends each constructed [`GitRepository`](<../../schemas/git_provider_schema.py.md#gitrepository>) object to a list, including metadata such as repository name, default branch, and other details.
+    - Logs the number of repositories fetched for the installation.
+    - Returns the list of [`GitRepository`](<../../schemas/git_provider_schema.py.md#gitrepository>) objects.
     - Catches and logs any exceptions that occur during the process, then raises the exception.
-- **Output**: A list of [`GitRepository`](<../../schemas/git_provider_schema.py.md#gitrepository>) objects containing details about each fetched repository.
+- **Output**: A list of [`GitRepository`](<../../schemas/git_provider_schema.py.md#gitrepository>) objects representing the fetched repositories.
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.fetch_secrets`](<../interfaces/provider_interface.py.md#gitproviderinterfacefetch_secrets>)
+    - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.fetch_secrets`](<#bitbucketproviderfetch_secrets>)
     - [`python-backend/backend/app/git_providers/resources/bitbucket_api_resources.BitbucketAPIResources.list_repositories`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourceslist_repositories>)
-    - [`python-backend/backend/app/git_providers/resources/bitbucket_api_resources.BitbucketAPIResources.get_latest_commit`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcesget_latest_commit>)
     - [`python-backend/backend/app/schemas/git_provider_schema.GitRepository`](<../../schemas/git_provider_schema.py.md#gitrepository>)
 - **See also**: [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider`](<#bitbucketprovider>)  (Base Class)
 
 
 ---
 #### BitbucketProvider\.handle\_webhook\_event<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.handle_webhook_event}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L218>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L223>)
 
-Handles Bitbucket webhook events by processing specific event types or ignoring unhandled ones.
+Handles Bitbucket webhook events by processing different event types and returning appropriate responses.
 - **Inputs**:
     - `headers`: A dictionary containing the headers of the webhook request, which includes the event type.
     - `payload`: A dictionary containing the payload of the webhook request, which includes event-specific data.
@@ -279,11 +280,11 @@ Handles Bitbucket webhook events by processing specific event types or ignoring 
 - **Logic and Control Flow**:
     - Extracts the `installation_id` from `webhook_event_ctx`.
     - Retrieves the event type from the `headers` dictionary using the key `x-event-key`.
-    - Logs the event type and installation ID for informational purposes.
-    - Checks if the event type is `repo:push` and calls [`_handle_push_event`](<#bitbucketprovider_handle_push_event>) if true.
+    - Logs the event type and installation ID for debugging purposes.
+    - Checks if the event type is `repo:push` and calls [`_handle_push_event`](<#bitbucketprovider_handle_push_event>) if true, passing `payload` and `webhook_event_ctx`.
     - Checks if the event type is `pullrequest:created` or `pullrequest:updated` and calls [`_handle_pull_request_event`](<#bitbucketprovider_handle_pull_request_event>) if true.
-    - Logs and returns a message indicating the event is ignored if the event type is not handled.
-- **Output**: A dictionary with a message indicating the result of the event handling, such as "Event ignored" or the result from handling specific events.
+    - Logs a message and returns `{"message": "Event ignored"}` if the event type is not recognized.
+- **Output**: A dictionary containing a message indicating the result of the event handling, such as `{"message": "Event ignored"}`.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._handle_push_event`](<#bitbucketprovider_handle_push_event>)
     - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._handle_pull_request_event`](<#bitbucketprovider_handle_pull_request_event>)
@@ -292,7 +293,7 @@ Handles Bitbucket webhook events by processing specific event types or ignoring 
 
 ---
 #### BitbucketProvider\.revoke\_access<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.revoke_access}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L239>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L247>)
 
 Revokes access for a Bitbucket installation by deleting the associated access token secret.
 - **Inputs**:
@@ -311,29 +312,27 @@ Revokes access for a Bitbucket installation by deleting the associated access to
 
 ---
 #### BitbucketProvider\.register\_webhook<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.register_webhook}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L250>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L258>)
 
 Registers a Bitbucket webhook for a given installation with optional scope.
 - **Inputs**:
-    - `installation`: An instance of `GitProviderAppInstallation` representing the Bitbucket installation for which the webhook is being registered.
-    - `config`: An instance of `WebhookConfig` containing the configuration details for the webhook, such as callback URL, secret token, and triggers.
-    - `scope`: An optional dictionary specifying the scope of the webhook, such as repository details, or `None` for workspace-level scope.
+    - `installation`: An instance of `GitProviderAppInstallation` representing the Bitbucket installation.
+    - `config`: An instance of `WebhookConfig` containing the webhook configuration details.
+    - `scope`: An optional dictionary specifying the scope of the webhook, such as repository details.
 - **Logic and Control Flow**:
     - Logs the start of the webhook registration process for the given installation ID.
     - Constructs the callback URL by appending the installation ID as a query parameter.
     - Fetches secrets for the installation to retrieve or use a secret token.
-    - Maps the provided triggers to Bitbucket-specific events using [`_map_triggers_to_events`](<#bitbucketprovider_map_triggers_to_events>).
+    - Maps the provided triggers to Bitbucket-specific events.
     - Retrieves the access token from the fetched secrets.
     - Creates a webhook configuration dictionary with the callback URL, events, secret token, and other details.
-    - Checks if the `scope` is provided and if it specifies a repository type; if so, calls [`create_repository_webhook`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcescreate_repository_webhook>) with the repository details.
-    - If no specific repository scope is provided, calls [`create_workspace_webhook`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcescreate_workspace_webhook>) for a workspace-level webhook.
-    - Stores the webhook metadata using [`_store_webhook_metadata`](<#bitbucketprovider_store_webhook_metadata>).
+    - Checks if the scope is provided and if it is of type 'repository', then creates a repository-level webhook; otherwise, creates a workspace-level webhook.
+    - Stores the webhook metadata, including the webhook ID and callback URL, in the installation's metadata.
     - Logs the successful registration of the webhook with its UUID.
     - Returns a dictionary containing the webhook ID, callback URL, triggers, active status, creation time, and provider-specific data.
-    - Catches and logs any exceptions that occur during the process, then raises the exception.
 - **Output**: A dictionary containing the webhook ID, callback URL, triggers, active status, creation time, and provider-specific data.
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.fetch_secrets`](<#bitbucketproviderfetch_secrets>)
+    - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface.fetch_secrets`](<../interfaces/provider_interface.py.md#gitproviderinterfacefetch_secrets>)
     - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._map_triggers_to_events`](<#bitbucketprovider_map_triggers_to_events>)
     - [`python-backend/backend/app/git_providers/resources/bitbucket_api_resources.BitbucketAPIResources.create_repository_webhook`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcescreate_repository_webhook>)
     - [`python-backend/backend/app/git_providers/resources/bitbucket_api_resources.BitbucketAPIResources.create_workspace_webhook`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcescreate_workspace_webhook>)
@@ -343,18 +342,18 @@ Registers a Bitbucket webhook for a given installation with optional scope.
 
 ---
 #### BitbucketProvider\.fetch\_secrets\_by\_id<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.fetch_secrets_by_id}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L329>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L337>)
 
-Fetches secrets associated with a given installation ID.
+Fetches secrets associated with a given installation ID, handling both legacy and new secret formats.
 - **Inputs**:
-    - `installation_id`: A string representing the installation ID for which to fetch secrets.
+    - `installation_id`: A string representing the unique identifier for the installation whose secrets are to be fetched.
 - **Logic and Control Flow**:
-    - Format the secret key using the installation ID and a predefined prefix.
-    - Read the secret value from the secrets manager using the formatted secret key.
-    - If the secret value is not found, raise a ValueError indicating the access token is missing for the given installation ID.
-    - Check if the secret value is a string, indicating a legacy format, and return a dictionary with the token and token type as 'workspace'.
-    - If the secret value is not a string, return it as is, assuming it is in the new format.
-- **Output**: A dictionary containing the secret information, either in legacy format with a token and token type or in the new format.
+    - Format the secret key using the [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) function with `APP_INSTALL_WAT_NAME_PREFIX` and `installation_id`.
+    - Read the secret value from the `secrets_manager` using the formatted secret key.
+    - If the secret value is not found, raise a `ValueError` indicating the access token is not found for the given installation ID.
+    - Check if the secret value is a string, indicating a legacy format, and return a dictionary with the token and token type as `BitbucketTokenType.WORKSPACE`.
+    - If the secret value is not a string, assume it is in the new format and return it directly.
+- **Output**: A dictionary containing the secrets for the specified installation ID, either in legacy format with a token and token type or in the new format as a dictionary.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
     - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>)
@@ -363,7 +362,7 @@ Fetches secrets associated with a given installation ID.
 
 ---
 #### BitbucketProvider\.\_get\_default\_branch<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._get_default_branch}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L351>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L359>)
 
 Fetches the default branch name for a repository, using provided data or an API call if necessary.
 - **Inputs**:
@@ -376,8 +375,8 @@ Fetches the default branch name for a repository, using provided data or an API 
     - If the default branch name is found in `repository_data`, return it.
     - If not, attempt to fetch the repository data from the API using `self.api_strategy.get_repository`.
     - If the API call is successful and returns data, extract and return the default branch name from the API response.
-    - If an exception occurs during the API call, log a warning message.
-    - If no default branch name is found, return 'main' as a fallback.
+    - If the API call fails or no default branch is found, log a warning message.
+    - Return 'main' as a fallback default branch name.
 - **Output**: Returns the name of the default branch as a string.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/resources/bitbucket_api_resources.BitbucketAPIResources.get_repository`](<../resources/bitbucket_api_resources.py.md#bitbucketapiresourcesget_repository>)
@@ -386,39 +385,38 @@ Fetches the default branch name for a repository, using provided data or an API 
 
 ---
 #### BitbucketProvider\.\_handle\_push\_event<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._handle_push_event}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L378>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L386>)
 
-Handles Bitbucket push events by processing branch changes and triggering further actions if the changes occur on the default branch.
+Handles Bitbucket push events by processing branch changes and triggering updates if necessary.
 - **Inputs**:
-    - `body`: A dictionary containing the payload of the push event, including details about the push and repository.
-    - `webhook_event_ctx`: An instance of `WebhookEventContext` containing context information such as installation and organization IDs.
+    - `body`: A dictionary containing the payload of the push event.
+    - `webhook_event_ctx`: An instance of `WebhookEventContext` containing context information about the webhook event.
 - **Logic and Control Flow**:
     - Extracts `installation_id` and `organization_id` from `webhook_event_ctx`.
-    - Retrieves the `push` and `repository` data from the `body` dictionary.
+    - Retrieves `push` and `repository` data from the `body` dictionary.
     - Extracts repository information such as `repo_name`, `repo_id`, `workspace`, `full_name`, and `repo_slug`.
-    - Attempts to fetch the access token using [`fetch_secrets_by_id`](<#bitbucketproviderfetch_secrets_by_id>) with `installation_id`. If unsuccessful, logs an error and returns a failure message.
-    - Determines the default branch using [`_get_default_branch`](<#bitbucketprovider_get_default_branch>) with the extracted repository information and access token.
-    - Iterates over each change in the `changes` list from the `push` data.
-    - For each change, checks if the change is a branch and if the branch name matches the default branch.
-    - If the branch is not the default branch, logs an informational message and continues to the next change.
-    - If the branch is the default branch, logs an informational message and prepares a list of repositories pushed.
-    - Looks up the `handle_bitbucket_events` function using `modal.Function.lookup` and spawns it with the relevant data.
-    - Returns a success message indicating the push event was processed.
-- **Output**: A dictionary with a message indicating whether the push event was processed successfully or if there was an error due to a missing access token.
+    - Attempts to fetch the access token using `installation_id`; logs an error and returns a failure message if unsuccessful.
+    - Determines the default branch using [`_get_default_branch`](<#bitbucketprovider_get_default_branch>).
+    - Iterates over each change in `changes` to process branch changes.
+    - Checks if the change is a branch and if the branch is not the default branch, logs an info message and continues to the next change.
+    - If the branch is the default branch, logs an info message and checks if an update is required using [`is_update_required`](<../utils/vcs_auto_update.py.md#is_update_required>).
+    - If an update is required, prepares a list of repositories pushed and triggers the `handle_bitbucket_events` function using `modal.Function.lookup`.
+- **Output**: A dictionary containing a message about the processing status of the push event.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider.fetch_secrets_by_id`](<#bitbucketproviderfetch_secrets_by_id>)
     - [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._get_default_branch`](<#bitbucketprovider_get_default_branch>)
+    - [`python-backend/backend/app/git_providers/utils/vcs_auto_update.is_update_required`](<../utils/vcs_auto_update.py.md#is_update_required>)
 - **See also**: [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider`](<#bitbucketprovider>)  (Base Class)
 
 
 ---
 #### BitbucketProvider\.\_handle\_pull\_request\_event<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._handle_pull_request_event}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L470>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L489>)
 
 Handles pull request webhook events but currently returns a message indicating that pull request events are not implemented.
 - **Inputs**:
     - `payload`: A dictionary containing the payload data of the webhook event.
-    - `webhook_event_ctx`: An instance of `WebhookEventContext` that provides context for the webhook event.
+    - `webhook_event_ctx`: An instance of `WebhookEventContext` that provides context for the webhook event, such as installation ID.
 - **Logic and Control Flow**:
     - Logs a TODO comment indicating the need to implement pull request event handling.
     - Logs a TODO comment to cancel open pull requests before creating new ones in push tech docs.
@@ -429,14 +427,14 @@ Handles pull request webhook events but currently returns a message indicating t
 
 ---
 #### BitbucketProvider\.\_map\_triggers\_to\_events<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._map_triggers_to_events}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L478>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L497>)
 
 Maps generic triggers to Bitbucket-specific events.
 - **Inputs**:
     - `triggers`: A list of strings representing generic triggers.
 - **Logic and Control Flow**:
-    - Define a dictionary `TRIGGER_MAP` that maps generic trigger names to Bitbucket-specific event names.
-    - Initialize an empty list `events` to store the mapped events.
+    - Initialize a dictionary `TRIGGER_MAP` that maps generic trigger names to Bitbucket-specific event names.
+    - Create an empty list `events` to store the mapped events.
     - Iterate over each `trigger` in the `triggers` list.
     - Check if the `trigger` is already a Bitbucket event by comparing it to a predefined list of Bitbucket events.
     - If the `trigger` is a Bitbucket event, append it directly to the `events` list.
@@ -449,20 +447,20 @@ Maps generic triggers to Bitbucket-specific events.
 
 ---
 #### BitbucketProvider\.\_store\_webhook\_metadata<!-- {{#callable:python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider._store_webhook_metadata}} -->
-[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L508>)
+[View Source →](<../../../../../../backend/app/git_providers/providers/bitbucket_provider.py#L527>)
 
-Stores webhook metadata in the given installation's metadata.
+Stores webhook metadata in the given installation.
 - **Inputs**:
     - `installation`: An instance of `GitProviderAppInstallation` where the webhook metadata will be stored.
-    - `webhook_info`: A dictionary containing information about the webhook to store.
+    - `webhook_info`: A dictionary containing information about the webhook, such as its ID and other relevant details.
 - **Logic and Control Flow**:
     - Import the `datetime` module to get the current UTC time.
     - Retrieve the existing `misc_metadata` from the `installation` or initialize it as an empty dictionary if it does not exist.
-    - Get the list of existing webhooks from the `metadata` dictionary or initialize it as an empty list if it does not exist.
+    - Get the list of existing webhooks from the `metadata` dictionary, defaulting to an empty list if not present.
     - Append the `webhook_info` dictionary to the `webhooks` list, adding a `created_at` timestamp with the current UTC time in ISO format.
-    - Update the `metadata` dictionary with the new `webhooks` list.
+    - Update the `metadata` dictionary with the modified `webhooks` list.
     - Log an informational message indicating that the webhook metadata has been stored for the given installation.
-- **Output**: None
+- **Output**: No output is returned as the function modifies the `installation` object in place.
 - **See also**: [`python-backend/backend/app/git_providers/providers/bitbucket_provider.BitbucketProvider`](<#bitbucketprovider>)  (Base Class)
 
 

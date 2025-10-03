@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to create the "chunkandembedding" table and drop the "setup_completed" table.
+Alembic migration script to create and drop tables related to a new embedding model.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates a new table named `chunkandembedding` with several columns, including `id`, `content_id`, `text`, `text_embedding_3_small`, `chunk_number`, `created_at`, and `updated_at`. The `text_embedding_3_small` column uses the `pgvector` extension to store vector data, which is useful for machine learning applications. The table also includes a foreign key constraint linking `content_id` to the `id` column of the `derived_contents` table. Additionally, the [`upgrade`](<#upgrade>) function removes an existing table named `setup_completed`.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates a new table named `chunkandembedding` with several columns, including `id`, `content_id`, `text`, `text_embedding_3_small`, `chunk_number`, `created_at`, and `updated_at`. The `text_embedding_3_small` column uses the `pgvector` extension to store vector data, which is useful for embedding models. The table also includes a foreign key constraint linking `content_id` to the `id` column of the `derived_contents` table. Additionally, the [`upgrade`](<#upgrade>) function removes an existing table named `setup_completed`.
 
-The [`downgrade`](<#downgrade>) function reverses these changes. It recreates the `setup_completed` table with a single `id` column, which uses a UUID as its default value. The function also removes the `chunkandembedding` table. This script is part of a version-controlled database schema, allowing developers to apply or revert schema changes as needed. The revision identifiers `revision` and `down_revision` help track the order of migrations.
+The [`downgrade`](<#downgrade>) function reverses these changes. It recreates the `setup_completed` table with a single `id` column, which uses a UUID as its primary key. The function also drops the `chunkandembedding` table, effectively undoing the changes made by the [`upgrade`](<#upgrade>) function. This script is part of a version control system for database schemas, allowing developers to apply and revert changes to the database structure in a controlled manner.
 # Imports and Dependencies
 
 ---
@@ -23,14 +23,14 @@ The [`downgrade`](<#downgrade>) function reverses these changes. It recreates th
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
-- **Use**: Used as a revision identifier in Alembic migrations to apply or rollback database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
+- **Use**: Used to identify the current state of the database schema in Alembic migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
 - **Use**: Used by Alembic to track the previous revision in the migration history.
 
 
@@ -54,15 +54,14 @@ The [`downgrade`](<#downgrade>) function reverses these changes. It recreates th
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_13_0955-2f79ea9294a7_new_embedding_model.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_13_0955-2f79ea9294a7_new_embedding_model.py#L20>)
 
-Creates a new table `chunkandembedding` and removes the `setup_completed` table in the database schema.
+Creates a new table named `chunkandembedding` and removes the `setup_completed` table in the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Uses `op.create_table` to define a new table named `chunkandembedding` with several columns including `id`, `content_id`, `text`, `text_embedding_3_small`, `chunk_number`, `created_at`, and `updated_at`.
-    - Defines `id` and `content_id` as UUID types, `text` as an `AutoString`, `text_embedding_3_small` as a vector with dimension 1536, `chunk_number` as an integer, and `created_at` and `updated_at` as datetime with timezone support and default values set to the current time.
-    - Adds a foreign key constraint on `content_id` referencing `derived_contents.id`.
+    - Uses `op.create_table` to define a new table `chunkandembedding` with several columns including `id`, `content_id`, `text`, `text_embedding_3_small`, `chunk_number`, `created_at`, and `updated_at`.
+    - Defines a foreign key constraint on `content_id` referencing `derived_contents.id`.
     - Sets `id` as the primary key for the `chunkandembedding` table.
-    - Uses `op.drop_table` to remove the `setup_completed` table from the database schema.
-- **Output**: No return value; modifies the database schema by creating and dropping tables.
+    - Uses `op.drop_table` to remove the `setup_completed` table from the database.
+- **Output**: No return value; modifies the database schema.
 
 
 ---
@@ -72,10 +71,10 @@ Creates a new table `chunkandembedding` and removes the `setup_completed` table 
 Reverts database schema changes by recreating the `setup_completed` table and dropping the `chunkandembedding` table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates a table named `setup_completed` with a single column `id` of type `UUID`, which is not nullable and has a server default value generated by `uuid_generate_v4()`.
-    - Sets the `id` column as the primary key for the `setup_completed` table with the constraint name `setup_completed_pkey`.
-    - Drops the table named `chunkandembedding`.
-- **Output**: No return value; modifies the database schema as part of a migration downgrade process.
+    - Create the `setup_completed` table with a UUID column `id` that has a server default value generated by `uuid_generate_v4()` and is not nullable.
+    - Add a primary key constraint to the `id` column of the `setup_completed` table.
+    - Drop the `chunkandembedding` table from the database.
+- **Output**: No output is returned.
 
 
 

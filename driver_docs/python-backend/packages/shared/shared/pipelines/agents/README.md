@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agents for code extraction, editing, prompt augmentation, and execution using OpenAI models and pipelines.
+Agents for code extraction, verification, editing, prompt augmentation, and pipeline execution.
 
 
 ## Files
 - **[agent_code_critic.py](agent_code_critic.py.md)**: Implements agents for extracting, verifying, and correcting code snippets using OpenAI models.
-- **[agent_copy_editor.py](agent_copy_editor.py.md)**: Runs a copy editor agent using pipeline configuration and LLM session inputs.
+- **[agent_copy_editor.py](agent_copy_editor.py.md)**: Runs a copy editing agent using pipeline configuration and LLM session inputs.
 - **[agent_default.py](agent_default.py.md)**: Defines a function to run a default agent using pipeline configuration and LLM usage session.
-- **[agent_edit_document.py](agent_edit_document.py.md)**: Implements a document editing agent with smart instruction generation using various pipeline steps.
+- **[agent_edit_document.py](agent_edit_document.py.md)**: Executes a document editing pipeline using smart instruction generation and agent configurations.
 - **[agent_prompt_augmentation.py](agent_prompt_augmentation.py.md)**: Implements a function to augment prompts using an agent and a response model for the augmented prompt.
 - **[execute.py](execute.py.md)**: Executes a sequence of pipeline steps with validation and context management for agent operations.
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Executes a pipeline to generate and validate mermaid diagrams using agent-based prompt augmentation.
+Executes a diagram block agent to generate and validate mermaid diagrams using prompt augmentation and agent tools.
 
 # Purpose
-The code defines a function [`execute_diagram_block_agent`](<#execute_diagram_block_agent>) that processes a `PipelineInput` to generate a mermaid diagram. It uses a series of tools and configurations to augment prompts and create agents that facilitate the generation and validation of the diagram. The function integrates with a large language model (LLM) session to enhance the prompt with additional context and iteratively refines the output to ensure it is a valid mermaid diagram. The process involves checking the syntax of the generated diagram and attempting corrections if necessary.
+The code defines a function [`execute_diagram_block_agent`](<#execute_diagram_block_agent>) that processes a `PipelineInput` to generate a mermaid diagram. It uses a series of tools and configurations to augment prompts and create agents that facilitate the generation and validation of the diagram. The function integrates with a large language model (LLM) session to enhance the prompt with additional context and iteratively refines the output to ensure it is a valid mermaid diagram. The function also includes error handling to attempt corrections if the initial diagram is not renderable.
 
-The function imports several components from shared modules, such as `create_agent`, `run_agent_prompt_augmentation`, and various tools and interfaces, indicating that it is part of a larger system. The code is structured to handle prompt augmentation, agent creation, and diagram validation, making it suitable for use in a pipeline that requires automated diagram generation and validation. The function returns a `PipelineResponse` containing the final mermaid diagram, ensuring that the output is correctly formatted and renderable.
+The code imports various components from shared modules, indicating that it is part of a larger system. It uses tools such as `SearchTool`, `OpenFileTool`, and `CodebaseFolderSummaryTool` to assist in the agent's operations. The function also checks the syntax of the generated mermaid diagram using an external function `check_mermaid_syntax`. If the diagram is not renderable, the function attempts to correct it up to a specified number of attempts. The final output is a `PipelineResponse` containing the mermaid diagram in a code-fenced format. This code is likely intended to be part of a pipeline that automates the creation and validation of visual representations in mermaid syntax.
 # Imports and Dependencies
 
 ---
@@ -36,15 +36,15 @@ The function imports several components from shared modules, such as `create_age
 ---
 ### PROMPT\_AUG\_PROMPT\_SUFFIX
 - **Type**: ``str``
-- **Description**: Contains a string that instructs the generation of a comprehensive mermaid diagram as the desired output.
-- **Use**: Appends to prompts to specify the output format for mermaid diagrams.
+- **Description**: A string that specifies the desired output format for a mermaid diagram. It instructs the system to generate a comprehensive mermaid diagram.
+- **Use**: Used to append a specific instruction to prompts for generating mermaid diagrams.
 
 
 ---
 ### DEFAULT\_PROMPT\_SUFFIX
 - **Type**: ``str``
-- **Description**: A formatted string that includes a directive to ensure that `diagram_mermaid` is a single, code-fenced, mermaid block. It incorporates the `CODEBLOCK_SYNTAX_MERMAID_PROMPT` variable.
-- **Use**: Used to append specific instructions to prompts for generating mermaid diagrams.
+- **Description**: A formatted string that includes a warning message and a prompt for a mermaid code block. It uses the `CODEBLOCK_SYNTAX_MERMAID_PROMPT` variable to insert specific syntax instructions for mermaid diagrams.
+- **Use**: Used to append a specific instruction set to prompts, ensuring that mermaid diagrams are correctly formatted as single, code-fenced blocks.
 
 
 # Functions
@@ -55,12 +55,12 @@ The function imports several components from shared modules, such as `create_age
 
 Executes a diagram block agent to generate and validate a mermaid diagram from a given input.
 - **Inputs**:
-    - `input`: An instance of `PipelineInput` containing the prompt, context, and scope for the diagram generation.
+    - `input`: An instance of `PipelineInput` containing the prompt, context, and scope information for the pipeline execution.
 - **Logic and Control Flow**:
     - Initialize [`UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#usagesessionmetadata>) with content type and ID.
     - Create an [`LLMUsageSession`](<../../usage/llm_session.py.md#llmusagesession>) using organization and user IDs from the input scope.
     - Configure [`PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepconfiguration>) for prompt augmentation with the input prompt and context.
-    - Run [`run_agent_prompt_augmentation`](<../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>) with the configured step and session.
+    - Run [`run_agent_prompt_augmentation`](<../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>) with the configured prompt augmentation input and session.
     - Create an agent with specified tools and response type, and add system prompts to it.
     - Invoke the agent with the augmented prompt to get a default response.
     - Convert the default response to a mermaid string and check its syntax using a remote function.

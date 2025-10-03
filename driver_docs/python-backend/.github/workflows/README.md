@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GitHub Actions workflows for package updates, environment deployments, and unit testing.
+GitHub Actions workflows for package updates, deployments, and unit tests in various environments.
 
 
 ## Files
 - **[dependabot.yml](dependabot.yml.md)**: GitHub Actions workflow for automatically updating interdependent packages with Dependabot.
 - **[develop.yaml](develop.yaml.md)**: GitHub Actions workflow for deploying the Python backend to the development environment after successful tests.
-- **[main.yaml](main.yaml.md)**: GitHub Actions workflow for deploying the backend to the production environment.
-- **[ops.yaml](ops.yaml.md)**: GitHub Actions workflow for deploying backend operations with Node.js, Python, and AWS configuration.
-- **[staging.yaml](staging.yaml.md)**: GitHub Actions workflow for deploying the backend to a staging environment on specific branch events.
-- **[unittest.yml](unittest.yml.md)**: GitHub Actions workflow for running Python backend unit tests on specific branches with code coverage reporting.
+- **[main.yaml](main.yaml.md)**: GitHub Actions workflow for deploying the Python backend to production, including AWS and Modal deployments.
+- **[ops.yaml](ops.yaml.md)**: GitHub Actions workflow for deploying backend operations on the "ops" branch using Node.js, Python, and AWS.
+- **[staging.yaml](staging.yaml.md)**: GitHub Actions workflow for deploying the Python backend to the staging environment on specific branch events.
+- **[unittest.yml](unittest.yml.md)**: GitHub Actions workflow for running Python unit tests on specific branches using Poetry and Pytest.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

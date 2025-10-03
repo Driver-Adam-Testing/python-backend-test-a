@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines data structures and functions for OpenAI chat model configuration and response generation.
+Defines data structures and functions for configuring and generating OpenAI chat responses.
 
 
 ## Files
-- **[models.py](models.py.md)**: Defines data structures and functions for OpenAI chat model configuration and response generation.
+- **[models.py](models.py.md)**: Defines data structures and functions for configuring and generating OpenAI chat responses.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

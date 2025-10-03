@@ -3,18 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Database connection setup and session management with support for synchronous and asynchronous engines.
+Database connection setup and session management for synchronous and asynchronous SQLAlchemy engines.
 
 # Purpose
-This code is responsible for setting up database connections for an application, both synchronous and asynchronous, using SQLAlchemy and SQLModel. It imports necessary modules and configurations, including `ssl`, `uuid`, and `urllib.request`, and retrieves the external IP address of the host. The code constructs a synchronous database engine using the `create_engine` function with a connection string derived from the application's settings. It also defines a context manager [`get_session`](<#get_session>) to manage database sessions, ensuring that each session is properly closed after use.
+This code is responsible for setting up database connections and managing database sessions for an application. It imports necessary modules and configurations, including `sqlalchemy` and `sqlmodel`, to create both synchronous and asynchronous database engines. The code retrieves the external IP address of the host and uses it to form an application name, which is then used in the database connection settings. The [`get_session`](<#get_session>) function is a context manager that provides a session for database operations, ensuring that the session is properly closed after use.
 
-For asynchronous database connections, the code checks if an asynchronous database URL is provided in the settings. It defines a function `parse_db_url` to parse the database URL, extracting the base connection string and connection arguments. The code handles SSL configurations manually due to limitations in the `asyncpg` library, creating an SSL context if necessary. It then creates an asynchronous engine using `create_async_engine`, configuring connection arguments and settings for compatibility with PgBouncer. The code also includes a placeholder function [`init_db`](<#init_db>) for initializing the database, which is intended to be implemented with specific initialization logic.
+The code also includes functionality for parsing database URLs to extract connection strings and arguments, specifically for asynchronous database connections. It addresses a known issue with `asyncpg` by manually configuring SSL settings when necessary. The asynchronous engine is configured with specific connection arguments, including SSL context and application name, to ensure compatibility with connection pooling tools like PgBouncer. The [`init_db`](<#init_db>) function is defined but not implemented, indicating a placeholder for database initialization logic.
 # Imports and Dependencies
 
 ---
+- `logging`
 - `ssl`
-- `uuid`
 - `urllib.request`
+- `uuid`
+- `collections.abc.Generator`
 - `contextlib.contextmanager`
 - `urllib.parse.parse_qs`
 - `urllib.parse.urlparse`
@@ -22,7 +24,6 @@ For asynchronous database connections, the code checks if an asynchronous databa
 - `sqlalchemy.ext.asyncio.create_async_engine`
 - `sqlmodel.Session`
 - `sqlmodel.create_engine`
-- `logging`
 
 
 # Global Variables
@@ -30,58 +31,57 @@ For asynchronous database connections, the code checks if an asynchronous databa
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the current module's name as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
-- **Use**: Used to log informational messages and exceptions within the module.
+- **Description**: The `logger` variable is an instance of Python's `Logger` class, obtained using the `logging.getLogger(__name__)` function. This function retrieves a logger object with the name of the current module, allowing for module-specific logging.
+- **Use**: Used to log informational messages and errors within the module.
 
 
 ---
 ### external\_ip
 - **Type**: ``str``
-- **Description**: A string variable that initially holds the value 'nopublic'. It attempts to update its value by fetching the public IP address from 'https://ident.me'. If the fetch is successful, it stores the public IP address as a string.
-- **Use**: Stores the public IP address of the machine or 'nopublic' if the IP cannot be resolved.
+- **Description**: Contains the external IP address of the machine running the code. Initially set to "nopublic", it attempts to update by fetching the public IP from the URL `https://ident.me`. If the fetch fails, it remains "nopublic".
+- **Use**: Used to construct the `app_name` variable, which is part of the connection arguments for the database engine.
 
 
 ---
 ### app\_name
 - **Type**: ``str``
-- **Description**: Concatenates the string 'pback-' with the value of `external_ip`, which is determined by attempting to fetch the public IP address from an external service. If the public IP cannot be resolved, `external_ip` defaults to 'nopublic'.
-- **Use**: Used as the `application_name` in the connection arguments for the SQLAlchemy engine.
+- **Description**: A string variable that concatenates the prefix 'pback-' with the external IP address of the machine. The external IP is obtained from an online service or defaults to 'nopublic' if the service is unavailable.
+- **Use**: Used as the application name in the database connection arguments.
 
 
 ---
 ### engine
 - **Type**: ``Engine``
-- **Description**: Represents a SQLAlchemy engine instance created using the `create_engine` function. It connects to the database specified by `settings.SQLALCHEMY_DATABASE_URI` with a connection pool size of 20 and pre-ping enabled.
-- **Use**: Used to manage database connections and execute SQL statements through the `Session` class.
+- **Description**: Represents a synchronous SQLAlchemy engine instance configured to connect to a database using the URI specified in `settings.SQLALCHEMY_DATABASE_URI`. It is set up with a connection pool of size 20, pre-ping enabled, and includes an application name derived from the external IP address.
+- **Use**: Used to manage database connections and execute SQL statements in a synchronous context.
 
 
 # Functions
 
 ---
 ### get\_session<!-- {{#callable:python-backend/driver_db/database/db.get_session}} -->
-[View Source →](<../../../../driver_db/database/db.py#L26>)
+[View Source →](<../../../../driver_db/database/db.py#L31>)
 
-Manages a database session lifecycle using a context manager.
+Provides a context manager for creating and closing a database session.
 - **Decorators**: `@contextmanager`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Create a new `Session` object using the `engine`.
-    - Enter a `try` block and yield the `session` object to the caller.
-    - In the `finally` block, close the `session` to ensure resources are released.
-- **Output**: A `Session` object that is used to interact with the database within a context manager.
+    - Enter a `try` block to yield the `session` object to the caller.
+    - In the `finally` block, ensure the `session` is closed after use.
+- **Output**: A `Session` object that is used within a context manager.
 
 
 ---
 ### init\_db<!-- {{#callable:python-backend/driver_db/database/db.init_db}} -->
-[View Source →](<../../../../driver_db/database/db.py#L91>)
+[View Source →](<../../../../driver_db/database/db.py#L96>)
 
-Initializes the database using the provided SQLAlchemy session.
+Initializes the database session.
 - **Inputs**:
-    - `session`: An instance of `Session` from SQLAlchemy, used to interact with the database.
+    - `session`: A `Session` object that represents the database session to initialize.
 - **Logic and Control Flow**:
-    - The function is defined to take a `Session` object as an input parameter.
-    - The function body is not implemented, indicated by the ellipsis (`...`).
-- **Output**: No output is returned as the function is defined to return `None`.
+    - The function does not contain any logic or control flow as it is defined with an ellipsis (`...`).
+- **Output**: The function does not return any value.
 
 
 

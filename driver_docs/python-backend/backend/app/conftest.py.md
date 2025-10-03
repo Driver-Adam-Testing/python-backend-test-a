@@ -3,43 +3,25 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines pytest fixtures for database session management and mock user authentication.
+Defines pytest fixtures for mocking user tokens with different organization details.
 
 # Purpose
-This code is a collection of `pytest` fixtures used for testing purposes. It provides narrow functionality by setting up a database session and creating mock user tokens for test cases. The [`db`](<#db>) fixture manages a `Session` object from the `sqlmodel` library, which interacts with a database engine, while avoiding table creation and deletion in deployed environments. The [`current_user_with_org`](<#current_user_with_org>) and [`current_user_with_other_org`](<#current_user_with_other_org>) fixtures create mock instances of the `UserToken` class, simulating users with different organization affiliations for testing authentication and authorization logic.
+This code is a test configuration file using the `pytest` framework, which provides fixtures for testing user authentication scenarios. It defines two `pytest` fixtures, [`current_user_with_org`](<#current_user_with_org>) and [`current_user_with_other_org`](<#current_user_with_other_org>), which create mock instances of the `UserToken` class. These fixtures simulate users with different organization affiliations by setting attributes such as `user_id`, `organization_id`, and `organization_name`. The code also includes a commented-out fixture intended for database session management, which is currently disabled to prevent interaction with a real database during tests. This setup allows for isolated testing of authentication logic without relying on actual database connections.
 # Imports and Dependencies
 
 ---
-- `collections.abc.Generator`
 - `unittest.mock.Mock`
 - `pytest`
-- `database.db.engine`
-- `sqlmodel.Session`
 - `app.api.auth.UserToken`
 
 
 # Functions
 
 ---
-### db<!-- {{#callable:python-backend/backend/app/conftest.db}} -->
-[View Source →](<../../../../backend/app/conftest.py#L11>)
-
-Provides a database session for each test function using a SQLModel session.
-- **Decorators**: `@pytest.fixture`
-- **Inputs**: None
-- **Logic and Control Flow**:
-    - The function is decorated with `@pytest.fixture` to indicate it is a fixture for pytest, with a scope of 'function' and `autouse=True`, meaning it is automatically used by each test function.
-    - A `Session` object is created using the `engine` and is used as a context manager.
-    - The `Session` object is yielded to the test function, allowing the test to interact with the database session.
-    - After the test function completes, the session is automatically closed.
-- **Output**: Yields a `Session` object for database interaction during tests.
-
-
----
 ### current\_user\_with\_org<!-- {{#callable:python-backend/backend/app/conftest.current_user_with_org}} -->
-[View Source →](<../../../../backend/app/conftest.py#L20>)
+[View Source →](<../../../../backend/app/conftest.py#L19>)
 
-Creates a mock `UserToken` object with predefined user and organization details for testing purposes.
+Creates a mock `UserToken` object with predefined user and organization attributes for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Logic and Control Flow**:
@@ -54,7 +36,7 @@ Creates a mock `UserToken` object with predefined user and organization details 
 
 ---
 ### current\_user\_with\_other\_org<!-- {{#callable:python-backend/backend/app/conftest.current_user_with_other_org}} -->
-[View Source →](<../../../../backend/app/conftest.py#L30>)
+[View Source →](<../../../../backend/app/conftest.py#L29>)
 
 Creates a mock `UserToken` object with predefined attributes for testing purposes.
 - **Decorators**: `@pytest.fixture`

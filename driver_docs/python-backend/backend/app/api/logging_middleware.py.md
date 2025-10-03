@@ -6,9 +6,9 @@
 Middleware for logging HTTP requests and responses with unique IDs and response times.
 
 # Purpose
-The code defines a middleware component for a FastAPI application, specifically for logging HTTP request and response details. The `LoggingMiddleware` class extends `BaseHTTPMiddleware` from the Starlette framework, which FastAPI is built upon. The primary function of this middleware is to intercept HTTP requests, generate a unique request identifier using the `uuid` module, and log various details about the request and response. These details include the HTTP method, URL path, client IP address, response status code, and the time taken to process the request.
+The code defines a middleware component for a FastAPI application, named `LoggingMiddleware`. This middleware is responsible for logging HTTP request and response details. It extends `BaseHTTPMiddleware` from the Starlette framework, which FastAPI is built upon. The [`dispatch`](<#loggingmiddlewaredispatch>) method is overridden to intercept each HTTP request. It generates a unique `request_id` using the `uuid` module and records the current time. After processing the request by calling the `call_next` function, it calculates the response time. The middleware logs the request method, URL path, client IP address, response status code, and response time in milliseconds. The client IP address is extracted from the `X-Forwarded-For` header if available, otherwise, it defaults to the request's client host.
 
-The [`dispatch`](<#loggingmiddlewaredispatch>) method is the core of the middleware, where it asynchronously processes each request. It records the start time, calls the next middleware or endpoint handler using the `call_next` function, and calculates the response time. The logging is performed using Python's built-in `logging` module, and the log message includes the request ID, method, URL path, client IP (extracted from the `X-Forwarded-For` header if available, otherwise from the request client), status code, and response time in milliseconds. This middleware is intended to be used in a FastAPI application to provide detailed logging for monitoring and debugging purposes.
+This middleware provides a narrow functionality focused on logging, which is useful for monitoring and debugging HTTP requests in a FastAPI application. It does not define public APIs or external interfaces but serves as an internal component to enhance the observability of the application by logging essential request and response data. The use of the `logging` module allows for flexible configuration of log output, which can be directed to various destinations as needed.
 # Imports and Dependencies
 
 ---
@@ -36,7 +36,7 @@ The [`dispatch`](<#loggingmiddlewaredispatch>) method is the core of the middlew
 ### LoggingMiddleware<!-- {{#class:python-backend/backend/app/api/logging_middleware.LoggingMiddleware}} -->
 [View Source →](<../../../../../backend/app/api/logging_middleware.py#L12>)
 
-- **Description**: Implements middleware for logging HTTP requests and responses in a FastAPI application. Generates a unique request ID, logs the request method, URL path, client IP address, response status code, and response time in milliseconds. Uses the `BaseHTTPMiddleware` from Starlette to integrate with the FastAPI request handling process.
+- **Description**: Implements middleware for logging HTTP requests and responses in a FastAPI application. Generates a unique request ID, logs the request method, URL path, client IP address, response status code, and response time in milliseconds. Utilizes the `BaseHTTPMiddleware` from Starlette to intercept and process HTTP requests and responses.
 - **Methods**:
     - [`python-backend/backend/app/api/logging_middleware.LoggingMiddleware.dispatch`](<#loggingmiddlewaredispatch>)
 - **Inherits From**:
@@ -51,12 +51,12 @@ The [`dispatch`](<#loggingmiddlewaredispatch>) method is the core of the middlew
 Logs request and response details including request ID, method, URL path, client IP, status code, and response time.
 - **Inputs**:
     - `request`: An instance of `Request` representing the incoming HTTP request.
-    - `call_next`: A callable that takes a `Request` and returns a `Response`, representing the next middleware or endpoint in the request chain.
+    - `call_next`: A callable that takes a `Request` and returns a `Response`, representing the next middleware or endpoint to process the request.
 - **Logic and Control Flow**:
     - Generate a unique `request_id` using `uuid.uuid4()`.
-    - Record the current time in `now` using `datetime.now()`.
-    - Await the execution of `call_next(request)` to get the `response`.
-    - Calculate `response_time` as the difference between the current time and `now`.
+    - Record the current time in `now` to measure response time later.
+    - Call the `call_next` function with the `request` to get the `response`.
+    - Calculate the `response_time` by subtracting `now` from the current time after receiving the `response`.
     - Log the request and response details including `request_id`, HTTP method, URL path, client IP (from `X-Forwarded-For` header or `request.client.host`), status code, and response time in milliseconds.
     - Return the `response`.
 - **Output**: A `Response` object that is the result of the `call_next` function.

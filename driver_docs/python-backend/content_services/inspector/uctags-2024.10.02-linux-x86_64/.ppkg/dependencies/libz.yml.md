@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for the zlib data compression library, including source details and build tweaks.
+Configuration for the zlib data compression library with patch and tweak instructions.
 
 # Purpose
-The metadata file provides essential information about the zlib data compression library. It includes URLs for the Git repository, the official website, and the source archive, along with the SHA-256 checksum for verifying the source file's integrity. The library uses the Zlib license and employs CMake as its build system. The `dopatch` section contains commands to modify the `CMakeLists.txt` file, changing the pkgconfig directory path and adjusting the library name. The `dotweak` section creates a symbolic link for the pkgconfig file. The file also lists the developers, Jean-loup Gailly and Mark Adler, with their contact information.
+This metadata file provides essential information for managing and building the zlib library. It includes URLs for the source code repository (`git-url`), the official website (`web-url`), and a direct link to download the source archive (`src-url`) along with its SHA-256 checksum (`src-sha`) for verification. The file specifies the license type as Zlib and indicates that the build system used is CMake (`bsystem`). It contains patch instructions (`dopatch`) to modify the `CMakeLists.txt` file, ensuring compatibility with specific directory structures and naming conventions. Additionally, it includes a tweak (`dotweak`) to create a symbolic link for the `zlib.pc` file in the `lib/pkgconfig` directory. The file also lists the developers of the library, Jean-loup Gailly and Mark Adler, along with their contact information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

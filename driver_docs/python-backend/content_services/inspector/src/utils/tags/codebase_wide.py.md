@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements scoring classes for codebase kinds, domains, and audiences with tag descriptions and prompts.
+Implements scoring classes for codebase kinds, domains, and audiences with tagging and scoring logic.
 
 # Purpose
-The code defines a system for scoring and categorizing codebases based on their kind, domain, and intended audience. It uses three main classes: `CodebaseKindScores`, `CodebaseDomainScores`, and `CodebaseAudienceScores`, each inheriting from the `Scorable` class. These classes provide a structured way to assign scores to different tags that describe the nature of a codebase. The `KIND_MAP`, `DOMAIN_MAP`, and `AUDIENCE_MAP` dictionaries define the possible categories for each dimension, such as "sdk", "web", or "internal_dev". Each class includes methods to generate a system prompt for scoring, convert scores to tag-score pairs, and create instances from a language model's output.
+The code defines a system for scoring and categorizing codebases based on their kind, domain, and intended audience. It uses three main classes: `CodebaseKindScores`, `CodebaseDomainScores`, and `CodebaseAudienceScores`, each inheriting from the `Scorable` class. These classes provide methods to generate descriptions and scoring prompts for different categories, such as software development kits (SDKs), libraries, applications, and various domains like web, finance, and healthcare. The scoring system is designed to differentiate between multiple relevant tags by assigning higher scores to the most contextually significant tags. The classes use a language model (`ChatOpenAI`) to generate responses based on structured prompts, which are then parsed to produce scores.
 
-The scoring system is designed to handle multiple relevant tags by assigning high scores to all applicable tags while differentiating their relevance. The [`system_prompt`](<#codebasekindscoressystem_prompt>) method in each class constructs a prompt that includes specific context and structured tag descriptions, which are used by a language model to generate scores. The [`from_llm`](<#codebasekindscoresfrom_llm>) method facilitates the creation of score objects from language model responses, using the `build_scoring_user_prompt_from_docs` function to generate user prompts based on provided documentation. This code is intended to be part of a larger system that evaluates and categorizes codebases, likely for internal use or integration into a broader software analysis tool.
+The code also includes mappings (`KIND_MAP`, `DOMAIN_MAP`, `AUDIENCE_MAP`) that define descriptions for each category, which are used to create structured prompts for scoring. The [`from_llm`](<#codebasekindscoresfrom_llm>) method in each class facilitates the generation of scores by interacting with a language model, using the provided documentation and prompts. This code is intended to be part of a larger system that evaluates and categorizes codebases, making it suitable for integration into tools that require automated codebase analysis and classification.
 # Imports and Dependencies
 
 ---
@@ -31,21 +31,21 @@ The scoring system is designed to handle multiple relevant tags by assigning hig
 ### KIND\_MAP
 - **Type**: ``dict``
 - **Description**: Maps different types of codebases to their descriptions. Each key in the dictionary represents a type of codebase, such as 'sdk', 'lib', or 'application', and the corresponding value provides a description of that type.
-- **Use**: Used to provide descriptions for different codebase types in the context of scoring or categorizing software projects.
+- **Use**: Used to provide descriptions for different codebase types in the `CodebaseKindScores` class.
 
 
 ---
 ### DOMAIN\_MAP
 - **Type**: ``dict``
 - **Description**: Maps various software domains to their descriptions. Each key in the dictionary represents a domain, such as 'embedded', 'web', or 'enterprise', and the corresponding value provides a brief description of that domain.
-- **Use**: Used to categorize and describe different software domains.
+- **Use**: Used to categorize and describe different software domains in a codebase.
 
 
 ---
 ### AUDIENCE\_MAP
 - **Type**: ``dict``
-- **Description**: Maps different audience categories to their respective descriptions. Each key in the dictionary represents a specific audience type, such as 'internal_user' or 'end_user', and the corresponding value provides a description of the tools or applications intended for that audience.
-- **Use**: Used to categorize and describe the intended audience for different tools or codebases.
+- **Description**: Maps audience categories to their descriptions, indicating the intended users or consumers of different tools or codebases. Each key in the dictionary represents a specific audience type, such as 'internal_user' or 'end_user', and the corresponding value provides a description of the tools or applications relevant to that audience.
+- **Use**: Used to categorize and describe the intended audience for various tools or codebases.
 
 
 # Classes
@@ -64,7 +64,7 @@ The scoring system is designed to handle multiple relevant tags by assigning hig
     - `devops`: Represents the score for the DevOps aspect of a codebase.
     - `algorithm`: Represents the score for the algorithm aspect of a codebase.
     - `cli`: Represents the score for the command line interface (CLI) aspect of a codebase.
-- **Description**: Represents a scoring system for different aspects of a codebase, such as SDK, library, application, and more. It provides methods to generate tag descriptions and system prompts, and to convert scores into tag-score pairs. The class also includes a method to create an instance from a language model response, using a structured prompt and user input.
+- **Description**: Represents a scoring system for different aspects of a codebase, such as SDK, library, application, and others. Each aspect is assigned a float score to indicate its relevance or presence in the codebase. The class provides methods to generate tag descriptions, create system prompts for scoring, and convert scores to tag-score pairs. It also includes a method to instantiate the class from a language model response.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.tag_descriptions`](<#codebasekindscorestag_descriptions>)
     - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.system_prompt`](<#codebasekindscoressystem_prompt>)
@@ -81,10 +81,9 @@ The scoring system is designed to handle multiple relevant tags by assigning hig
 
 Returns a dictionary mapping tag names to their descriptions, ensuring the class's model fields match the keys in `KIND_MAP`.
 - **Decorators**: `@classmethod`
-- **Inputs**:
-    - `cls`: The class itself, used to access class variables and methods.
+- **Inputs**: None
 - **Logic and Control Flow**:
-    - Asserts that the keys of `cls.model_fields` match the keys of `KIND_MAP`.
+    - Asserts that the keys of `cls.model_fields` are the same as the keys in `KIND_MAP`.
     - Returns the `KIND_MAP` dictionary.
 - **Output**: A dictionary where keys are tag names and values are their descriptions.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores`](<#codebasekindscores>)  (Base Class)
@@ -94,20 +93,19 @@ Returns a dictionary mapping tag names to their descriptions, ensuring the class
 #### CodebaseKindScores\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/codebase_wide.py#L73>)
 
-Generates a formatted prompt string for scoring codebase tags based on their relevance.
+Generates a formatted prompt string for scoring codebase tags based on their relevance and context.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: Reference to the class `CodebaseKindScores`.
+    - `cls`: Reference to the class `CodebaseKindScores` itself.
 - **Logic and Control Flow**:
-    - Defines a specific context string that explains how to score multiple relevant tags by their importance.
-    - Calls the [`tag_descriptions`](<scoring.py.md#scorabletag_descriptions>) method to get a dictionary of tag descriptions.
+    - Defines a specific context string that explains how to score multiple relevant tags by differentiating their importance.
+    - Calls the [`tag_descriptions`](<#codebasekindscorestag_descriptions>) class method to get a dictionary of tag descriptions.
     - Initializes an empty `Prompt` object to structure the tag descriptions.
-    - Iterates over the tag descriptions map, appending each tag and its description to the `Prompt` object.
-    - Formats the `CODEBASE_SCORING_PROMPT_TEMPLATE` with the specific context and structured tag descriptions, separated by new lines.
-    - Returns the formatted prompt string.
-- **Output**: A formatted string that includes specific context and structured tag descriptions for scoring codebase tags.
+    - Iterates over the tag descriptions map, appending each tag and its description to the `Prompt` object as a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>).
+    - Formats the `CODEBASE_SCORING_PROMPT_TEMPLATE` with the specific context and the structured tag descriptions, converting them into a string separated by newlines.
+- **Output**: A formatted string that includes the specific context and structured tag descriptions for scoring codebase tags.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.tag_descriptions`](<scoring.py.md#scorabletag_descriptions>)
+    - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.tag_descriptions`](<#codebasekindscorestag_descriptions>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
@@ -122,10 +120,10 @@ Generates a formatted prompt string for scoring codebase tags based on their rel
 Returns a list of tuples containing tag names and their corresponding scores from the model's data.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `model_dump` method on the instance to retrieve its data as a dictionary.
+    - Calls the `model_dump` method to retrieve the model's data as a dictionary.
     - Uses the `items` method on the dictionary to get a view of its items, which are key-value pairs.
-    - Returns the items as a list of tuples, where each tuple contains a tag name and its score.
-- **Output**: A list of tuples, where each tuple consists of a string (tag name) and a float (score).
+    - Returns the items as a list of tuples, where each tuple contains a tag name and its corresponding score.
+- **Output**: A list of tuples, where each tuple contains a string (tag name) and a float (score).
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores`](<#codebasekindscores>)  (Base Class)
 
 
@@ -136,17 +134,19 @@ Returns a list of tuples containing tag names and their corresponding scores fro
 Generates a `CodebaseKindScores` instance from a language model response based on provided documentation.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to generate a response.
-    - `docs`: A dictionary mapping `LiteNode` objects to dictionaries containing additional data.
+    - `cls`: The class `CodebaseKindScores` itself, used to call class methods and access class variables.
+    - `llm`: An instance of `ChatOpenAI`, used to generate responses from a language model.
+    - `docs`: A dictionary mapping `LiteNode` objects to another dictionary with string keys and any type of values, representing the documentation to be used for scoring.
 - **Logic and Control Flow**:
-    - Builds a user prompt using the [`build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>) function with the provided `docs`.
-    - Calls the [`generate_response`](<../models.py.md#chatopenaigenerate_response>) method on the `llm` object with a system prompt from `cls.system_prompt()`, the built user prompt, and an output configuration specifying JSON strict output with the class as payload.
-    - Parses the raw content returned from the language model into a `CodebaseKindScores` instance using `cls.parse_raw`.
-- **Output**: A `CodebaseKindScores` instance parsed from the language model's response.
+    - Calls [`build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>) with `docs` to create a user prompt for scoring.
+    - Calls `cls.system_prompt()` to get the system prompt specific to the class.
+    - Calls `llm.generate_response` with the system prompt, user prompt, and an output configuration to generate a raw content response.
+    - Parses the raw content response using `cls.parse_raw` to create an instance of `CodebaseKindScores`.
+- **Output**: An instance of `CodebaseKindScores` parsed from the raw content generated by the language model.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/tags/scoring.build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>)
     - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../models.py.md#chatopenaigenerate_response>)
-    - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.system_prompt`](<scoring.py.md#scorablesystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.system_prompt`](<#codebasekindscoressystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/models.OutputConfig`](<../models.py.md#outputconfig>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores`](<#codebasekindscores>)  (Base Class)
 
@@ -164,14 +164,14 @@ Generates a `CodebaseKindScores` instance from a language model response based o
     - `finance`: Represents the score for finance-related applications.
     - `industrial`: Represents the score for industrial applications like manufacturing and robotics.
     - `healthcare`: Represents the score for healthcare and medical technologies.
-    - `scientific`: Represents the score for computational science or numerical simulations.
+    - `scientific`: Represents the score for scientific and computational science applications.
     - `cloud`: Represents the score for cloud platforms or cloud-native systems.
     - `security`: Represents the score for security tools and infosec systems.
     - `desktop`: Represents the score for standalone desktop applications.
     - `mobile`: Represents the score for mobile applications.
-    - `academic`: Represents the score for experimental or academic code.
-    - `educational`: Represents the score for educational purposes or examples.
-    - `systems`: Represents the score for systems software like operating systems.
+    - `academic`: Represents the score for academic or research code.
+    - `educational`: Represents the score for educational purposes or example code.
+    - `systems`: Represents the score for systems software like operating systems and compilers.
 - **Description**: Represents scores for different software domains, allowing for the evaluation and differentiation of codebases based on their relevance to specific domains such as embedded, web, enterprise, and more. The class provides methods to generate tag descriptions and system prompts to assist in scoring and categorizing codebases accurately.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseDomainScores.tag_descriptions`](<#codebasedomainscorestag_descriptions>)
@@ -189,10 +189,9 @@ Generates a `CodebaseKindScores` instance from a language model response based o
 
 Returns a dictionary mapping domain tags to their descriptions.
 - **Decorators**: `@classmethod`
-- **Inputs**:
-    - `cls`: The class itself, used to access class variables and methods.
+- **Inputs**: None
 - **Logic and Control Flow**:
-    - Asserts that the keys of `cls.model_fields` match the keys of `DOMAIN_MAP` to ensure consistency between the class fields and the domain map.
+    - Asserts that the keys of `cls.model_fields` match the keys of `DOMAIN_MAP`.
     - Returns the `DOMAIN_MAP` dictionary.
 - **Output**: A dictionary where keys are domain tags and values are their descriptions.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseDomainScores`](<#codebasedomainscores>)  (Base Class)
@@ -208,12 +207,12 @@ Generates a formatted prompt string for scoring codebase tags based on their rel
     - `cls`: Reference to the class `CodebaseDomainScores` itself.
 - **Logic and Control Flow**:
     - Defines a specific context string that explains how to score tags based on relevance and context.
-    - Calls the [`tag_descriptions`](<scoring.py.md#scorabletag_descriptions>) method to get a map of tag descriptions.
-    - Initializes an empty `Prompt` object to structure tag descriptions.
+    - Calls the [`tag_descriptions`](<scoring.py.md#scorabletag_descriptions>) method to get a dictionary of tag descriptions.
+    - Initializes an empty `Prompt` object to structure the tag descriptions.
     - Iterates over the tag descriptions map, appending each tag and its description to the `Prompt` object as a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>).
-    - Formats the `CODEBASE_SCORING_PROMPT_TEMPLATE` with the specific context and structured tag descriptions, separated by new lines.
+    - Formats the `CODEBASE_SCORING_PROMPT_TEMPLATE` with the specific context and the structured tag descriptions, separated by new lines.
     - Returns the formatted prompt string.
-- **Output**: A string that represents the formatted prompt for scoring codebase tags.
+- **Output**: A formatted string that serves as a prompt for scoring codebase tags.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.tag_descriptions`](<scoring.py.md#scorabletag_descriptions>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
@@ -241,21 +240,21 @@ Returns a list of tuples containing tag names and their corresponding scores fro
 #### CodebaseDomainScores\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseDomainScores.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/codebase_wide.py#L146>)
 
-Generates a class instance from a language model response based on provided documents.
+Generates a `CodebaseDomainScores` instance from a language model response based on provided documentation.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to create an instance.
-    - `llm`: An instance of `ChatOpenAI` used to generate a response.
-    - `docs`: A dictionary mapping `LiteNode` objects to another dictionary with string keys and any type of values, representing documents to be processed.
+    - `cls`: The class `CodebaseDomainScores` itself, used to call class methods.
+    - `llm`: An instance of `ChatOpenAI`, used to generate responses from a language model.
+    - `docs`: A dictionary mapping `LiteNode` objects to dictionaries containing additional data, used to build the user prompt.
 - **Logic and Control Flow**:
-    - Builds a user prompt using the [`build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>) function with the provided `docs`.
-    - Calls the [`generate_response`](<../models.py.md#chatopenaigenerate_response>) method on the `llm` object with a system prompt from `cls.system_prompt()`, the built user prompt, and an output configuration specifying JSON strict output with the class as payload.
-    - Parses the raw content returned from the `llm.generate_response` method using `cls.parse_raw` to create and return an instance of the class.
-- **Output**: An instance of the class (`Self`) created by parsing the raw content generated by the language model.
+    - Builds a user prompt by calling [`build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>) with the `docs` argument.
+    - Calls `llm.generate_response` with the system prompt from `cls.system_prompt()`, the built user prompt, and an output configuration specifying JSON strict output and the class payload.
+    - Parses the raw content returned from `llm.generate_response` using `cls.parse_raw` to create an instance of `CodebaseDomainScores`.
+- **Output**: Returns an instance of `CodebaseDomainScores` parsed from the raw content generated by the language model.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/tags/scoring.build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>)
     - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../models.py.md#chatopenaigenerate_response>)
-    - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.system_prompt`](<scoring.py.md#scorablesystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.system_prompt`](<#codebasekindscoressystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/models.OutputConfig`](<../models.py.md#outputconfig>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseDomainScores`](<#codebasedomainscores>)  (Base Class)
 
@@ -270,9 +269,9 @@ Generates a class instance from a language model response based on provided docu
     - `internal_dev`: Represents the score for internal developers.
     - `end_user`: Represents the score for end users.
     - `end_dev`: Represents the score for external developers.
-    - `system`: Represents the score for systems that consume or execute the codebase.
+    - `system`: Represents the score for system-level interactions.
     - `researcher`: Represents the score for researchers or data scientists.
-- **Description**: Represents scores for different audience categories related to a codebase, indicating the relevance or benefit of the codebase to each audience type. The class provides methods to describe audience tags and generate prompts for scoring these tags based on their relevance. It also includes functionality to convert scores to tag-score pairs and to create instances from language model responses.
+- **Description**: Represents scores for different audience categories related to a codebase, indicating the relevance or benefit of the codebase to each audience type. The class provides methods to describe audience tags and generate prompts for scoring these tags based on their relevance.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseAudienceScores.tag_descriptions`](<#codebaseaudiencescorestag_descriptions>)
     - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseAudienceScores.system_prompt`](<#codebaseaudiencescoressystem_prompt>)
@@ -287,12 +286,12 @@ Generates a class instance from a language model response based on provided docu
 #### CodebaseAudienceScores\.tag\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseAudienceScores.tag_descriptions}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/codebase_wide.py#L169>)
 
-Returns a dictionary mapping audience tags to their descriptions, ensuring the class's model fields match the keys in `AUDIENCE_MAP`.
+Returns a dictionary mapping audience tags to their descriptions, ensuring the class's model fields match the keys in the audience map.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class on which this method is called, typically `CodebaseAudienceScores`.
+    - `cls`: The class object on which this method is called.
 - **Logic and Control Flow**:
-    - Asserts that the keys of `cls.model_fields` are the same as the keys in `AUDIENCE_MAP`.
+    - Asserts that the keys of `cls.model_fields` are the same as the keys of `AUDIENCE_MAP`.
     - Returns the `AUDIENCE_MAP` dictionary.
 - **Output**: A dictionary where keys are audience tags and values are their descriptions.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseAudienceScores`](<#codebaseaudiencescores>)  (Base Class)
@@ -302,20 +301,20 @@ Returns a dictionary mapping audience tags to their descriptions, ensuring the c
 #### CodebaseAudienceScores\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseAudienceScores.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/codebase_wide.py#L174>)
 
-Generates a formatted prompt string for scoring audience tags based on their relevance to the codebase.
+Generates a formatted prompt string for scoring audience tags based on their relevance to a codebase.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: Reference to the class `CodebaseAudienceScores` itself.
 - **Logic and Control Flow**:
     - Defines a specific context string that explains how to score audience tags based on their relevance to the codebase.
-    - Calls the [`tag_descriptions`](<scoring.py.md#scorabletag_descriptions>) method to get a dictionary of tag descriptions.
+    - Calls the [`tag_descriptions`](<#codebasekindscorestag_descriptions>) method to get a dictionary of tag descriptions.
     - Initializes an empty `Prompt` object to structure the tag descriptions.
     - Iterates over the tag descriptions map, appending each tag and its description to the `Prompt` object as a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>).
     - Formats the `CODEBASE_SCORING_PROMPT_TEMPLATE` with the specific context and the structured tag descriptions, separated by new lines.
     - Returns the formatted prompt string.
-- **Output**: A string that is a formatted prompt for scoring audience tags.
+- **Output**: A formatted string that serves as a prompt for scoring audience tags.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.tag_descriptions`](<scoring.py.md#scorabletag_descriptions>)
+    - [`python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseKindScores.tag_descriptions`](<#codebasekindscorestag_descriptions>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
@@ -341,18 +340,17 @@ Returns a list of tuples containing tag names and their corresponding scores fro
 #### CodebaseAudienceScores\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/codebase_wide.CodebaseAudienceScores.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/codebase_wide.py#L192>)
 
-Generates an instance of the class by using a language model to score audience tags based on provided documentation.
+Creates an instance of the class by generating a response from a language model based on provided documents.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class itself, used to call class methods and access class variables.
-    - `llm`: An instance of `ChatOpenAI`, used to generate responses based on prompts.
-    - `docs`: A dictionary mapping `LiteNode` objects to dictionaries containing additional data, used to build the user prompt.
+    - `llm`: An instance of `ChatOpenAI`, used to generate responses from a language model.
+    - `docs`: A dictionary mapping `LiteNode` objects to another dictionary with string keys and any type of values, representing documents to be used in generating the user prompt.
 - **Logic and Control Flow**:
-    - Calls [`build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>) with `docs` to create a user prompt for scoring.
-    - Calls `cls.system_prompt()` to get the system prompt specific to the class.
-    - Calls `llm.generate_response` with the system prompt, user prompt, and output configuration to generate a raw content response.
-    - Parses the raw content response using `cls.parse_raw` to create an instance of the class.
-- **Output**: An instance of the class, created by parsing the raw content generated by the language model.
+    - Builds a user prompt using the [`build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>) function with the provided `docs`.
+    - Calls the [`generate_response`](<../models.py.md#chatopenaigenerate_response>) method on the `llm` object, passing the system prompt from `cls.system_prompt()`, the built user prompt, and an [`OutputConfig`](<../models.py.md#outputconfig>) object configured for JSON strict output with the class as payload.
+    - Parses the raw content returned from the language model response using `cls.parse_raw` and returns the resulting class instance.
+- **Output**: An instance of the class (`Self`) created by parsing the raw content generated by the language model.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/tags/scoring.build_scoring_user_prompt_from_docs`](<scoring.py.md#build_scoring_user_prompt_from_docs>)
     - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../models.py.md#chatopenaigenerate_response>)

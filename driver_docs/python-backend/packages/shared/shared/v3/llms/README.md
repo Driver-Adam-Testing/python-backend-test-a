@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-LLM client implementations for Anthropic and OpenAI models, and configuration management with Pydantic and TOML.
+LLM clients for Anthropic and OpenAI models, and configuration management with TOML and Pydantic.
 
 ## Folders
-- **[clients](clients/README.md)**: LLM client implementations for Anthropic's Claude and OpenAI's Chat and O-Series models.
-- **[config](config/README.md)**: Configuration management and settings for large language models using Pydantic and TOML.
+- **[clients](clients/README.md)**: LLM clients for Anthropic's Claude and OpenAI's Chat and O-Series models with message processing and tool integration.
+- **[config](config/README.md)**: Configuration management and settings for large language models using TOML and Pydantic.
 
 
 ---

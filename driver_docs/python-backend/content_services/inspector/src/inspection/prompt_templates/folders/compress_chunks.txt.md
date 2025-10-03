@@ -3,26 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Instructions for summarizing folder contents based on child file and folder descriptions.
+Templates for summarizing and compressing text chunks in the inspection process.
 
 # Purpose
 Chunk of child subset descriptions for folder `config` in codebase `projectX`:
 
 Folder content subset 1 description for folder `config`:
 
-The `database.yml` file contains configuration settings for database connections. It specifies the database adapter, host, username, password, and database name for different environments such as development, test, and production. This file ensures that the application can connect to the correct database based on the environment it is running in.
+The `database.yml` file contains configuration settings for database connections. It specifies the database adapter, host, username, password, and database name for different environments such as development, testing, and production.
 
 Folder content subset 2 description for folder `config`:
 
-The `application.yml` file holds general application settings. It includes configurations for application name, version, and logging levels. This file allows the application to load these settings at runtime, ensuring consistent behavior across different deployments.
-
-Folder content subset 3 description for folder `config`:
-
-The `secrets.yml` file stores sensitive information such as API keys and encryption secrets. It is crucial for maintaining security by keeping these details separate from the main codebase. This file should be protected and not exposed in version control systems.
+The `application.yml` file holds general application settings. It includes configurations for application name, version, and environment-specific settings like logging levels and API keys.
 
 ---
 
-The `config` folder in the `projectX` codebase contains essential configuration files that manage various aspects of the application. The `database.yml` file is responsible for defining database connection settings, including the adapter, host, username, password, and database name for different environments like development, test, and production. This ensures that the application connects to the appropriate database based on its environment. The `application.yml` file contains general application settings, such as the application name, version, and logging levels, which are loaded at runtime to maintain consistent application behavior. Additionally, the `secrets.yml` file stores sensitive information like API keys and encryption secrets, which are critical for security. This file must be protected to prevent exposure in version control systems, ensuring that sensitive data remains secure.
+The `config` folder in the `projectX` codebase contains essential configuration files that manage the application's settings. The `database.yml` file is responsible for defining the database connection parameters, including the adapter type, host, username, password, and database name. These settings are specified for various environments such as development, testing, and production, ensuring that the application connects to the correct database instance in each context. Additionally, the `application.yml` file contains general application settings, including the application name, version, and environment-specific configurations like logging levels and API keys. These files collectively ensure that the application operates correctly across different environments by providing necessary configuration details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

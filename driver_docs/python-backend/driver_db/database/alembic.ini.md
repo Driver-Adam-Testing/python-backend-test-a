@@ -6,7 +6,7 @@
 Configuration for Alembic database migrations and logging settings.
 
 # Purpose
-The configuration file defines settings for Alembic, a database migration tool for SQLAlchemy. It specifies the location of migration scripts with `script_location` and the template for generating migration file names using `file_template`. The file also includes optional settings for timezone, slug length, and revision environment behavior. Logging configurations are defined under sections `[loggers]`, `[handlers]`, and `[formatters]`, specifying log levels and output formats for different components like `root`, `sqlalchemy`, and `alembic`. The `handler_console` section configures a stream handler to output logs to standard error with a specified format.
+The configuration file defines settings for Alembic, a database migration tool for SQLAlchemy. It specifies the location of migration scripts with `script_location` and the template for generating migration filenames using `file_template`. The file also includes optional settings for timezone, slug length, and revision environment behavior. Additionally, it configures logging for Alembic, SQLAlchemy, and the root logger, specifying log levels, handlers, and formatters. The `formatter_generic` section defines the log message format and date format for console output.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

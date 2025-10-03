@@ -72,6 +72,15 @@ class RawContent(MdRenderable):
         return f"{self.content}\n"
 
 
+class RawContentNoNone(MdRenderable):
+    content: str | None
+
+    def render_markdown(self, doc_label: str) -> str:
+        if self.content is None or len(self.content) == 0:
+            return ""
+        return f"- **{snake_case_to_spaced_string(doc_label)}**: {self.content}\n"
+
+
 class FieldNameWithBackTickContent(MdRenderable):
     content: str
 
@@ -88,6 +97,16 @@ class FieldNameWithBulletedContent(MdRenderable):
         return (
             f"- **{snake_case_to_spaced_string(doc_label)}**:\n    - {self.content}\n"
         )
+
+
+class FieldNameTypedWithRawContent(MdRenderable):
+    type: str
+    content: str
+
+    def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
+        return f"- **{snake_case_to_spaced_string(doc_label)}**: `{self.type}`: {self.content}\n"
 
 
 class FieldNameWithRawContent(MdRenderable):
@@ -128,6 +147,20 @@ class ListedBacktickNameTypeRawContentNoNone(MdRenderable):
         return output_str
 
 
+class ListedBacktickNameTypeRawContentWithNone(MdRenderable):
+    content: list[NamedTypedContent]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+        if len(self.content) > 0:
+            for item in self.content:
+                output_str += item.render_markdown(doc_label)
+        else:
+            output_str += " None\n"
+        return output_str
+
+
 class ListedBacktickNameRawContentNoNone(MdRenderable):
     content: list[NamedContent]
 
@@ -137,6 +170,17 @@ class ListedBacktickNameRawContentNoNone(MdRenderable):
             output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
             for item in self.content:
                 output_str += item.render_markdown(doc_label)
+        return output_str
+
+
+class FourHeaderNamedContentNoNone(MdRenderable):
+    content: list[NamedContent]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = "\n**Group Elements**\n"
+        if len(self.content) > 0:
+            for item in self.content:
+                output_str += f"#### {item.name}\n{item.content}\n"
         return output_str
 
 
@@ -483,11 +527,15 @@ class IrData(BaseModel, abc.ABC):
                     else "Data Structure"
                 )
 
-                output += f"- **See also**: [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)  ({parent_label})\n"
+                if sym.raw.file_path.suffix == ".go":
+                    output += f"- **See also**: [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)  (Receiver Type)\n"
+                else:
+                    output += f"- **See also**: [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)  ({parent_label})\n"
             if is_data_structure(sym.raw):
                 member_label = (
                     "Methods"
                     if sym.raw.symbol_kind == SymbolKind.CLASS
+                    or sym.raw.file_path.suffix == ".go"
                     else "Member Functions"
                 )
                 inherit_label = (

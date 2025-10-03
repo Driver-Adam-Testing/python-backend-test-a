@@ -6,14 +6,14 @@
 Defines a system message prompt template for generating smart instructions in a document.
 
 # Purpose
-This code defines two global variables, `PROMPT` and `MESSAGE`, which are used to store a string and a dictionary, respectively. The `PROMPT` variable contains a multi-line string that provides instructions and context for a document, emphasizing the importance of focusing on a specific section called the "prompt." The `MESSAGE` variable is a dictionary with two keys: `role`, which is set to the string `"system"`, and `content`, which is set to the value of the `PROMPT` variable. This code is likely part of a configuration or setup for a system that processes or generates documents based on specific instructions.
+This code defines a constant `PROMPT` and a dictionary `MESSAGE`. The `PROMPT` is a multi-line string that provides instructions and context for a document, emphasizing the importance of executing a specific prompt within the document. The `MESSAGE` dictionary contains two key-value pairs: `role` with the value `"system"` and `content` with the value of the `PROMPT` string. This code is likely used in a context where a system message needs to be constructed with specific instructions for processing or generating text.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions and context for a document. It includes details about the document's scope, the role of the prompt, and how the selected text should be used.
-- **Use**: Used as the content for the `MESSAGE` dictionary to provide system-level instructions.
+- **Description**: A multi-line string that provides instructions and context for a document generation process. It includes details about the purpose of the prompt and how it should be executed within the document.
+- **Use**: Used as the content for the `MESSAGE` dictionary to define the system's role in the document generation process.
 
 
 ---

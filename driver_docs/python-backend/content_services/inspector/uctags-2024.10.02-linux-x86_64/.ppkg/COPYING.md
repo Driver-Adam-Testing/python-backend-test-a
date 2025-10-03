@@ -3,32 +3,32 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GNU General Public License Version 2 text for software distribution and modification terms.
+GNU General Public License Version 2 text, detailing terms for copying, distribution, and modification.
 
 # Purpose
-The GNU General Public License (GPL) Version 2 is a legal document that outlines the terms and conditions for copying, distributing, and modifying software. It is designed to ensure that software remains free for all users, emphasizing the freedom to share and change software rather than its price. The license applies to any program that includes a notice from the copyright holder stating it may be distributed under the GPL terms. It allows users to copy and distribute verbatim copies of the program's source code, modify the program, and distribute modified versions, provided certain conditions are met, such as including the same license terms and ensuring recipients can access the source code. The GPL also addresses issues related to software patents and provides no warranty for the software, placing the risk of use on the user. This license is crucial for maintaining the free software distribution system and ensuring that software remains open and accessible to all users.
+The GNU General Public License (GPL) Version 2 is a legal document that outlines the terms and conditions for copying, distributing, and modifying software. It is designed to ensure that software remains free for all users, emphasizing the freedom to share and change software rather than its price. The license allows users to distribute copies of the software, access the source code, and modify it, provided that they adhere to specific conditions such as maintaining the same license terms for derivative works and including a disclaimer of warranty. The GPL also addresses issues related to software patents and provides guidelines for incorporating the license into new programs. It is important for developers to understand these terms to ensure compliance and to protect the rights of both the original authors and users of the software.
 # Content Summary
-The document is the GNU General Public License (GPL) Version 2, a legal framework for the distribution and modification of free software. It is designed to ensure that software remains free for all users, allowing them to copy, distribute, and modify the software while maintaining the same freedoms for others. The license emphasizes the concept of "free" as in freedom, not price, and outlines the rights and responsibilities of users and distributors.
+The document is the GNU General Public License (GPL) Version 2, a legal framework for the distribution and modification of free software. It is designed to ensure that software remains free for all users, allowing them to copy, distribute, and modify the software while maintaining the same freedoms for others.
 
 Key points include:
 
-1. **Copying and Distribution**: Users can copy and distribute verbatim copies of the software's source code, provided they include the appropriate copyright notice, disclaimers, and a copy of the GPL. They may charge a fee for the physical act of transferring a copy.
+1. **Freedom and Rights**: The GPL ensures users can freely share and change software. It emphasizes freedom over price, allowing users to distribute copies, access source code, and modify the software.
 
-2. **Modification**: Users can modify the software and distribute the modified version under the same GPL terms. Modifications must be clearly marked, and the modified work must also be licensed as a whole under the GPL.
+2. **Distribution Conditions**: When distributing the software, users must provide the same rights they received, including access to the source code and a copy of the GPL. They may charge for distribution but must not impose further restrictions on recipients.
 
-3. **Source Code Availability**: When distributing the software in object code or executable form, users must provide access to the complete corresponding source code or offer to provide it for a nominal fee.
+3. **Modification and Derivative Works**: Users can modify the software and distribute derivative works under the same GPL terms. Modifications must be clearly marked, and derivative works must be licensed as a whole under the GPL.
 
-4. **No Warranty**: The software is provided "as is" without any warranty. Users assume the risk of using the software, and the license disclaims liability for any damages arising from its use.
+4. **Source Code Availability**: Distribution of executable or object code must be accompanied by the corresponding source code or a written offer to provide it. This ensures transparency and the ability to modify the software.
 
-5. **License Acceptance**: Users are not required to sign the license, but by modifying or distributing the software, they accept the terms and conditions of the GPL.
+5. **No Warranty**: The GPL disclaims any warranty, stating that the software is provided "as is." Users assume the risk of using the software, and the authors are not liable for any damages.
 
-6. **Patent Issues**: The license addresses potential conflicts with patent laws, stating that if patent restrictions prevent compliance with the GPL, users may not distribute the software.
+6. **Patent and Legal Issues**: The GPL addresses potential conflicts with patent laws, stating that if legal conditions prevent compliance with the GPL, distribution must cease. It also allows for geographical restrictions if necessary.
 
-7. **Versioning**: The Free Software Foundation may release new versions of the GPL. Users can choose to follow the terms of the version specified in the software or any later version.
+7. **Versioning and Updates**: The Free Software Foundation may release new versions of the GPL. Users can choose to follow the terms of the version specified in the software or any later version.
 
-8. **Incorporation into Other Programs**: If users wish to incorporate parts of the GPL-covered program into other free programs with different distribution conditions, they must seek permission from the original author.
+8. **Incorporation into Other Programs**: To incorporate GPL-covered software into other free programs with different distribution conditions, permission from the author is required. The GPL does not allow incorporation into proprietary software.
 
-The document concludes with instructions on how to apply the GPL to new programs, emphasizing the importance of attaching the license notice to each source file and providing contact information for the author. It also notes that the GPL does not allow incorporating the program into proprietary software, suggesting the use of the GNU Library General Public License for libraries intended to link with proprietary applications.
+The document concludes with instructions on how to apply the GPL to new programs, emphasizing the importance of including copyright notices and disclaimers. It also suggests obtaining a copyright disclaimer from employers or educational institutions if applicable.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

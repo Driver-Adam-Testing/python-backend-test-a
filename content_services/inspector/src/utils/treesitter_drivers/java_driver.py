@@ -121,8 +121,9 @@ class JavaDriverTree(DriverTree):
         (package_declaration) @package_stmt
         """.strip()
 
-        query = self.tree_sitter_lang.query(import_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, import_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         imports = []
 
         for _, captures_by_name in matches:
@@ -220,8 +221,9 @@ class JavaDriverTree(DriverTree):
         ({node_type}) @callable_def
         """.strip()
 
-        query = self.tree_sitter_lang.query(callable_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, callable_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         callables = []
 
         for _pattern_index, captures_by_name in matches:
@@ -270,8 +272,9 @@ class JavaDriverTree(DriverTree):
           name: (identifier) @class_name) @class_def
         """.strip()
 
-        query = self.tree_sitter_lang.query(class_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, class_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         classes = []
 
         for _pattern_idx, captures_by_name in matches:
@@ -339,8 +342,9 @@ class JavaDriverTree(DriverTree):
           name: (identifier) @interface_name) @interface_def
         """.strip()
 
-        query = self.tree_sitter_lang.query(interface_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, interface_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         interfaces = []
 
         for _pattern_idx, captures_by_name in matches:
@@ -396,8 +400,9 @@ class JavaDriverTree(DriverTree):
           name: (identifier) @enum_name) @enum_def
         """.strip()
 
-        query = self.tree_sitter_lang.query(enum_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, enum_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         enums = []
 
         for _pattern_idx, captures_by_name in matches:
@@ -443,8 +448,9 @@ class JavaDriverTree(DriverTree):
             name: (identifier) @field_name)) @field_def
         """.strip()
 
-        query = self.tree_sitter_lang.query(field_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, field_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         fields = []
 
         for _pattern_idx, captures_by_name in matches:
@@ -484,8 +490,9 @@ class JavaDriverTree(DriverTree):
           name: (identifier) @call_name) @call_expr
         """.strip()
 
-        query = self.tree_sitter_lang.query(call_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, call_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         function_calls = []
 
         for _pattern_idx, captures_by_name in matches:

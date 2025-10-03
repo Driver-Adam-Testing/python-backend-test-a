@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Imports and system message prompts for copy editor and software engineer roles, and pipeline configuration.
+Imports and defines prompts and pipelines for technical copy editing and content creation roles.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: Imports the `copy_editor` and `software_engineer` modules.
-- **[copy_editor.py](copy_editor.py.md)**: A system message prompt for a technical copy editor to refine technical documents by removing unnecessary content.
-- **[operator.py](operator.py.md)**: Defines questions and options to configure a content creation pipeline with roles like operator, content creator, critic, and copy editor.
-- **[software_engineer.py](software_engineer.py.md)**: Defines a system message for a software engineer voice prompt with specific guidelines.
+- **[__init__.py](__init__.py.md)**: Imports `copy_editor` and `software_engineer` modules.
+- **[copy_editor.py](copy_editor.py.md)**: A prompt for a technical copy editor to refine technical documents by removing unnecessary content.
+- **[operator.py](operator.py.md)**: Defines a pipeline for content creation with roles like operator, content creator, critic, and copy editor.
+- **[software_engineer.py](software_engineer.py.md)**: Defines a system message for a software engineer voice prompt.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

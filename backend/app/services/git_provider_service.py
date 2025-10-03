@@ -18,6 +18,7 @@ from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
     WebhookEventContext,
 )
+from app.git_providers.providers.azure_devops_provider import AzureDevOpsProvider
 from app.git_providers.providers.bitbucket_provider import BitbucketProvider
 from app.git_providers.providers.gitlab_provider import GitLabProvider
 from app.git_providers.utils.errors import (
@@ -45,6 +46,7 @@ class GitProviderService:
     PROVIDERS: ClassVar[dict[GitProviderKind, type[GitProviderInterface]]] = {
         GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED: GitLabProvider,
         GitProviderKind.BITBUCKET: BitbucketProvider,
+        GitProviderKind.AZURE_DEVOPS_CLOUD: AzureDevOpsProvider,
     }
 
     def __init__(self, aws_config: AWSClientConfig) -> None:
@@ -180,7 +182,6 @@ class GitProviderService:
             ):
                 raise ValueError("Installation not found or doesn't match app")
 
-            # app = git_provider_app_by_id(session, organization_id, app_id)
             provider = self.get_provider(installation.git_provider_app)
 
             # Validate new token
@@ -297,6 +298,21 @@ class GitProviderService:
                 ssl_verification=True,
                 triggers=["push events", "Project or group access token events"],
             )
+        elif (
+            installation.git_provider_app.provider_kind
+            == GitProviderKind.AZURE_DEVOPS_CLOUD
+        ):
+            # Azure DevOps service hooks (manually configured)
+            webhook_info = WebhookInfo(
+                callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
+                custom_headers=[
+                    f"x-driver-token: {installation_id}",
+                    f"x-webhook-token: {secret["secret_token"]}",
+                ],
+                secret_token="",  # Not used in Azure DevOps
+                ssl_verification=True,
+                triggers=["git.push"],
+            )
         else:
             raise ValueError(
                 f"Unsupported provider kind: {installation.git_provider_app.provider_kind}"
@@ -304,27 +320,6 @@ class GitProviderService:
         return webhook_info
 
     # Helper Methods
-
-    def _extract_installation_id(
-        self, provider_kind: GitProviderKind, payload: dict, headers: dict
-    ) -> str | None:
-        """Extract installation ID from webhook payload/headers"""
-        if provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
-            return headers.get("x-installation-id")
-        elif provider_kind == GitProviderKind.BITBUCKET:
-            # Try headers first
-            installation_id = headers.get("x-installation-id")
-            if installation_id:
-                return installation_id
-
-            # Try to infer from workspace
-            workspace = payload.get("workspace", {}).get("slug")
-            if workspace:
-                # Would need to query DB to find installation by workspace
-                # This is a simplified version
-                return None
-
-        return None
 
     def handle_access_revoked(
         self, session: Session, organization_id: str, app_id: str, installation_id: str

@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Classes and methods for extracting and documenting assembly code symbols using LLMs.
+Classes and methods for extracting and documenting assembly code symbols using language models.
 
 # Purpose
-The code defines a set of classes and methods for extracting and processing symbols from assembly code using a language model (LLM). It includes classes for handling different types of symbols such as data structures, subroutines, macros, and variables, each represented by a `RawSymbolCollection` subclass. These classes provide methods to extract symbols from code using LLM-based analysis, as indicated by the [`from_llm`](<#assemblydatastructurerawsymbolcollectionfrom_llm>) class methods, and convert them into dictionary representations. The code also defines intermediate representation (IR) classes like `AssemblyDataStructureData` and `AssemblySubroutineData`, which provide prompts for LLMs to generate detailed documentation for each symbol type. The functionality is narrow, focusing on symbol extraction and documentation generation for assembly code.
+The code defines a set of classes and methods for extracting and processing symbols from assembly code using a language model (LLM). It focuses on four main types of symbols: data structures, subroutines, macros, and variables. Each type has a corresponding raw symbol collection class, such as `AssemblyDataStructureRawSymbolCollection`, which is responsible for extracting symbols from the code using LLM-based analysis. These classes implement methods like [`from_llm`](<#assemblydatastructurerawsymbolcollectionfrom_llm>) to perform the extraction and [`to_dict`](<#assemblydatastructurerawsymbolcollectionto_dict>) to convert the extracted data into a dictionary format.
+
+Additionally, the code includes intermediate representation (IR) classes for each symbol type, such as `AssemblyDataStructureData` and `AssemblySubroutineData`. These classes define methods to generate system and user prompts for the LLM, facilitating the conversion of raw symbols into a structured IR format. The IR classes are used within collection classes like `AssemblyDataStructureCollection` to manage and process the extracted symbols. The code is structured to support the documentation and analysis of assembly code by leveraging LLMs to identify and describe key components, such as data structures, functions, macros, and variables.
 # Imports and Dependencies
 
 ---
@@ -29,43 +31,43 @@ The code defines a set of classes and methods for extracting and processing symb
 ---
 ### SOURCE\_CODE\_SYSTEM\_PROMPT\_GENERAL\_DEFAULT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a system prompt for a software engineering documentation expert. The prompt instructs the expert to write detailed documentation explaining software, focusing on technical details and key conceptual components.
-- **Use**: Used as a system prompt for guiding documentation experts in writing software documentation.
+- **Description**: This variable is a multi-line string that serves as a system prompt for a software engineering documentation expert. It provides instructions for writing detailed documentation to explain software, focusing on technical details and key conceptual components.
+- **Use**: Used as a default prompt for generating system-level documentation guidance.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: A string variable that contains a user prompt for explaining the purpose of an assembly source code file. The prompt guides the user to write a detailed explanation in 1 to 3 paragraphs, focusing on the functionality and technical components of the code.
-- **Use**: Used to provide a structured prompt for users to document the purpose of assembly source code files.
+- **Description**: A string variable that contains a prompt for users to explain the purpose of an assembly source code file. The prompt guides users to provide a detailed explanation in 1 to 3 paragraphs, focusing on the functionality and technical components of the code.
+- **Use**: Used to prompt users to provide a detailed explanation of an assembly source code file's purpose.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` variable is a string that contains a prompt for users to explain the purpose of a source code file. It guides users to provide a single paragraph explanation, focusing on the functionality and important technical components of the code.
-- **Use**: Used to prompt users to describe the purpose of a source code file in a concise manner.
+- **Description**: This variable is a string that contains a prompt for users to explain the purpose of a source code file. It guides users to consider specific questions about the functionality and components of the code.
+- **Use**: Used to prompt users to provide a detailed explanation of a source code file's purpose.
 
 
 ---
 ### IMPORTS\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a JSON schema for identifying and listing imports and dependencies in a given code snippet. The schema specifies that the response should be a JSON object with a single key `data`, which contains an array of import names.
-- **Use**: Used to define the expected format for responses that list imports and dependencies in code.
+- **Description**: A string variable that contains a JSON schema for identifying and listing imports and dependencies in a given code snippet. The schema specifies that the response should be a JSON object with a single key `data`, which is an array of import names.
+- **Use**: Used to define the expected JSON response format for listing imports and dependencies in code.
 
 
 ---
 ### DATA\_STRUCTURES\_CHECKER\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for listing important data structures in assembly code. It specifies that only custom or compound types, specifically structs, should be considered as data structures.
-- **Use**: Used as a system prompt for guiding the extraction of data structures from assembly code.
+- **Description**: This variable is a multi-line string that provides instructions for listing important data structures in assembly code. It specifies that only custom or compound types, specifically structs, should be considered as data structures, and not functions, macros, or variables.
+- **Use**: Used to guide the extraction of data structures from assembly code by providing a JSON schema for the expected output.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: ``str``
-- **Description**: Contains a JSON-formatted string that serves as a system prompt for documenting data structures in assembly code. The prompt instructs the user to describe a data structure using a specific JSON schema, including the type, members, and a description of the data structure.
-- **Use**: Used as a system prompt to guide the documentation of data structures in assembly code.
+- **Type**: `str`
+- **Description**: This variable is a multi-line string that contains a system prompt for a language model. It instructs the model to focus on writing technical documentation for data structures in assembly code. The prompt specifies the format and schema that the model should use when responding.
+- **Use**: Used as a system prompt for generating documentation for data structures in assembly code.
 
 
 ---
@@ -78,15 +80,15 @@ The code defines a set of classes and methods for extracting and processing symb
 ---
 ### FUNCTIONS\_CHECKER\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: This variable is a string that contains a JSON schema formatted prompt. It instructs a system to list functions, subroutines, or procedures defined in a given assembly code. The prompt specifies that only fully defined and implemented functions should be considered, excluding macros and duplicate function names with a leading underscore.
-- **Use**: Used to guide a system in identifying and listing functions in assembly code using a specific JSON schema.
+- **Description**: This variable is a string that contains a JSON-formatted prompt. It instructs a system to list functions, subroutines, or procedures defined in a given assembly code. The prompt specifies that only fully defined and implemented functions should be considered, excluding macros and functions with similar names but different prefixes.
+- **Use**: Used to provide a structured prompt for identifying functions in assembly code.
 
 
 ---
 ### FUNCTIONS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: This variable is a multi-line string that contains a detailed prompt for documenting functions, subroutines, and procedures in assembly code. It instructs the user to provide a JSON response with specific fields such as a single sentence description, inputs, control flow, and output.
-- **Use**: Used as a system prompt for generating documentation of functions in assembly code.
+- **Description**: A multi-line string that provides a template for documenting functions, subroutines, or procedures in assembly code. It includes a JSON schema that specifies how to describe the function, its inputs, control flow, and output.
+- **Use**: Used as a template for generating documentation for functions in assembly code.
 
 
 ---
@@ -99,36 +101,36 @@ The code defines a set of classes and methods for extracting and processing symb
 ---
 ### MACRO\_CHECKER\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: This variable is a multi-line string that provides instructions for listing macros defined in a given assembly code. It specifies the format for the response, which should be a JSON object containing a list of macro names.
-- **Use**: Used to guide the extraction and listing of macros from assembly code in a structured JSON format.
+- **Description**: A multi-line string that provides instructions for listing macros defined in assembly code. It specifies the expected JSON schema for the response, which includes a list of macro names.
+- **Use**: Used to guide the extraction of macro definitions from assembly code and format the response in a specific JSON schema.
 
 
 ---
 ### MACRO\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a template for documenting macros in assembly code. It includes a JSON schema that specifies how to describe a macro, including its single sentence description, inputs, control flow, and output.
-- **Use**: Used as a template for generating documentation for macros in assembly code.
+- **Description**: This variable is a multi-line string that contains a system prompt for documenting assembly macros. It provides instructions for generating JSON documentation for macros, including a single sentence description, inputs, control flow, and output.
+- **Use**: Used as a template for generating JSON documentation for assembly macros.
 
 
 ---
 ### MACRO\_FOUND\_USER\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that serves as a template for summarizing macros in code. It provides instructions on how to describe the inputs, control flow, logic, and output of a macro.
+- **Description**: A multi-line string that provides a template for summarizing a macro in the code. It includes instructions on how to describe the inputs, control flow, logic, and output of a macro.
 - **Use**: Used as a prompt template for documenting macros in code.
 
 
 ---
 ### VARIABLES\_CHECKER\_SYSTEM\_PROMPT\_JSON
 - **Type**: ``str``
-- **Description**: This variable is a string that contains a JSON schema template. The template is used to instruct a system to list global variables defined in assembly code.
-- **Use**: Used to provide a JSON schema for listing global variables in assembly code.
+- **Description**: A multi-line string that provides a system prompt for checking global variables in assembly code. It instructs the user to list global variables defined in the assembly code, specifically those declared in the data or bss sections, and to exclude local variables.
+- **Use**: Used as a system prompt to guide the extraction of global variables from assembly code.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: A string variable that contains a JSON schema for documenting variables in assembly code. The schema specifies the format for describing a variable's type, description, and use.
-- **Use**: Used to provide a structured format for documenting variables in assembly code.
+- **Type**: ``str``
+- **Description**: A string variable that contains a JSON schema for documenting global variables in assembly code. The schema specifies the format for describing the type, description, and use of a variable.
+- **Use**: Used to define the expected JSON format for documenting global variables.
 
 
 ---
@@ -145,8 +147,8 @@ The code defines a set of classes and methods for extracting and processing symb
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L259>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` values.
-- **Description**: Inherits from `RawSymbolCollection` and manages a collection of raw symbol data specific to assembly data structures. It provides methods to create instances from static analysis or LLM (Language Model) analysis, although static analysis is not implemented. The `to_dict` method returns the stored data as a dictionary.
+    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` objects.
+- **Description**: Manages a collection of raw symbol data specific to assembly data structures. It inherits from `RawSymbolCollection` and provides methods to create instances from static analysis or LLM-based analysis. The `to_dict` method returns the stored data as a dictionary.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureRawSymbolCollection.from_static_analysis`](<#assemblydatastructurerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureRawSymbolCollection.from_llm`](<#assemblydatastructurerawsymbolcollectionfrom_llm>)
@@ -164,7 +166,7 @@ Raises a NotImplementedError indicating that assembly parsing uses LLM extractio
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the code to analyze.
-    - `root_rel_path`: A Path object representing the root relative path.
+    - `root_rel_path`: A Path object representing the root relative path of the code.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with the message 'Assembly parsing uses llm extraction'.
 - **Output**: None, as the method raises an exception.
@@ -182,9 +184,10 @@ Uses a language model to analyze code and extract data structure symbols.
     - `code`: A string containing the source code to analyze.
     - `root_rel_path`: A string representing the root relative path of the source code.
 - **Logic and Control Flow**:
-    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the class itself (`cls`), the provided language model (`llm`), the source code (`code`), and the root relative path (`root_rel_path`).
-    - Passes a predefined system prompt (`DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON`) and an empty user prompt to the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function.
-    - Specifies the symbol kind as `SymbolKind.DATA_STRUCTURE` for the analysis.
+    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the class itself (`cls`) as the `collection_cls` parameter.
+    - Passes the `llm`, `code`, and `root_rel_path` parameters to [`default_llm_analysis`](<default.py.md#default_llm_analysis>).
+    - Uses a predefined system prompt `DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON` and an empty user prompt.
+    - Specifies `SymbolKind.DATA_STRUCTURE` as the symbol kind for extraction.
 - **Output**: Returns an instance of the class or `None` based on the analysis results.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](<default.py.md#default_llm_analysis>)
@@ -195,7 +198,7 @@ Uses a language model to analyze code and extract data structure symbols.
 #### AssemblyDataStructureRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L278>)
 
-Returns the `data` attribute of the instance.
+Returns the `data` attribute of the instance as a dictionary.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
@@ -210,8 +213,8 @@ Returns the `data` attribute of the instance.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L282>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` values.
-- **Description**: Manages a collection of raw symbol data for assembly subroutines. It provides methods to create instances from static analysis or using a language model (`llm`). The class can convert its data to a dictionary format, facilitating the extraction and representation of callable symbols in assembly code.
+    - `data`: Stores a dictionary mapping strings to `RawSymbolData` instances.
+- **Description**: Manages a collection of raw symbol data related to assembly subroutines. It provides methods to create instances from static analysis or language model analysis, although static analysis is not implemented. The class can convert its data to a dictionary format for further processing or analysis.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineRawSymbolCollection.from_static_analysis`](<#assemblysubroutinerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineRawSymbolCollection.from_llm`](<#assemblysubroutinerawsymbolcollectionfrom_llm>)
@@ -232,7 +235,7 @@ Raises a NotImplementedError indicating that assembly parsing uses LLM extractio
     - `root_rel_path`: A Path object representing the root relative path.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with the message 'Assembly parsing uses llm extraction'.
-- **Output**: None, as the method raises an exception.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineRawSymbolCollection`](<#assemblysubroutinerawsymbolcollection>)  (Base Class)
 
 
@@ -240,16 +243,15 @@ Raises a NotImplementedError indicating that assembly parsing uses LLM extractio
 #### AssemblySubroutineRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L289>)
 
-Uses a language model to analyze code and return a symbol collection.
+Creates an instance of the class using a language model to analyze code and extract callable symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for language model analysis.
-    - `code`: A string representing the code to analyze.
-    - `root_rel_path`: A string representing the root relative path of the code.
+    - `code`: A string containing the source code to analyze.
+    - `root_rel_path`: A string representing the root relative path of the source code.
 - **Logic and Control Flow**:
-    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the provided class, language model, code, root relative path, and predefined prompts.
-    - Specifies the symbol kind as `SymbolKind.CALLABLE` for the analysis.
-- **Output**: Returns an instance of the class or `None` based on the analysis result.
+    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the class as `collection_cls`, the provided `llm`, `code`, and `root_rel_path`, and specific prompts and symbol kind for callable symbols.
+- **Output**: Returns an instance of the class or `None` if the analysis does not produce a valid result.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](<default.py.md#default_llm_analysis>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineRawSymbolCollection`](<#assemblysubroutinerawsymbolcollection>)  (Base Class)
@@ -259,7 +261,7 @@ Uses a language model to analyze code and return a symbol collection.
 #### AssemblySubroutineRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L301>)
 
-Returns the `data` attribute of the instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
@@ -274,8 +276,8 @@ Returns the `data` attribute of the instance as a dictionary.
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L305>)
 
 - **Members**:
-    - `data`: Stores a dictionary mapping strings to `RawSymbolData` instances.
-- **Description**: Manages a collection of raw symbol data specific to assembly macros. It inherits from `RawSymbolCollection` and provides methods to create instances from static analysis or language model (LLM) analysis. The class can convert its data to a dictionary format, facilitating the handling and processing of assembly macro symbols.
+    - `data`: Stores a dictionary mapping strings to `RawSymbolData` objects.
+- **Description**: Manages a collection of raw symbol data specific to assembly macros. Inherits from `RawSymbolCollection` and provides methods to create instances from static analysis or language model (LLM) analysis. The `from_llm` method uses a default LLM analysis function to extract macro symbols from code, while `from_static_analysis` is not implemented. The `to_dict` method returns the stored symbol data as a dictionary.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroRawSymbolCollection.from_static_analysis`](<#assemblymacrorawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroRawSymbolCollection.from_llm`](<#assemblymacrorawsymbolcollectionfrom_llm>)
@@ -304,16 +306,17 @@ Raises a NotImplementedError indicating that assembly parsing uses LLM extractio
 #### AssemblyMacroRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L312>)
 
-Uses a language model to analyze code and return a symbol collection.
+Creates an instance of the class using a language model to analyze code and extract callable symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for language model analysis.
-    - `code`: A string representing the code to analyze.
-    - `root_rel_path`: A string representing the root relative path of the code.
+    - `code`: A string containing the source code to analyze.
+    - `root_rel_path`: A string representing the root relative path of the source code.
 - **Logic and Control Flow**:
-    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the provided class, language model, code, root relative path, and predefined prompts.
-    - Specifies the symbol kind as `SymbolKind.CALLABLE`.
-- **Output**: Returns an instance of the class or `None` based on the analysis result.
+    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the class as `collection_cls`, the provided `llm`, `code`, and `root_rel_path`, and specific prompts and symbol kind.
+    - Passes `MACRO_CHECKER_SYSTEM_PROMPT_JSON` as the `system_prompt` and an empty string as the `user_prompt`.
+    - Specifies `SymbolKind.CALLABLE` to indicate the type of symbols to extract.
+- **Output**: Returns an instance of the class or `None` if the analysis does not produce a valid result.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](<default.py.md#default_llm_analysis>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroRawSymbolCollection`](<#assemblymacrorawsymbolcollection>)  (Base Class)
@@ -323,10 +326,10 @@ Uses a language model to analyze code and return a symbol collection.
 #### AssemblyMacroRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L324>)
 
-Returns the `data` attribute of the instance.
+Returns the `data` attribute of the class instance.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the `data` attribute of the instance.
+    - Accesses the `data` attribute of the class instance.
     - Returns the `data` attribute.
 - **Output**: A dictionary with keys of type `str` and values of type `RawSymbolData`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroRawSymbolCollection`](<#assemblymacrorawsymbolcollection>)  (Base Class)
@@ -339,7 +342,7 @@ Returns the `data` attribute of the instance.
 
 - **Members**:
     - `data`: Stores a dictionary mapping string keys to `RawSymbolData` values.
-- **Description**: Manages a collection of raw symbol data specifically for assembly variables. It provides methods to create instances from static analysis or from a language model (LLM) analysis. The class can convert its data into a dictionary format, facilitating the handling and processing of assembly variable symbols.
+- **Description**: Manages a collection of raw symbol data specifically for assembly variables. It inherits from `RawSymbolCollection` and provides methods to create instances from static analysis or LLM (Language Model) analysis. The `data` attribute holds the symbol data, and the class includes methods to convert this data to a dictionary format.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableRawSymbolCollection.from_static_analysis`](<#assemblyvariablerawsymbolcollectionfrom_static_analysis>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableRawSymbolCollection.from_llm`](<#assemblyvariablerawsymbolcollectionfrom_llm>)
@@ -368,15 +371,15 @@ Raises a NotImplementedError indicating that assembly parsing uses LLM extractio
 #### AssemblyVariableRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L335>)
 
-Initiates a default LLM analysis for variable symbols using the provided LLM, code, and path.
+Creates an instance of the class using a language model to analyze code and extract variable symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used for language model analysis.
+    - `llm`: An instance of `ChatOpenAI` used for language model-based analysis.
     - `code`: A string containing the source code to analyze.
     - `root_rel_path`: A string representing the root relative path of the source code.
 - **Logic and Control Flow**:
-    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the class itself, LLM instance, code, root relative path, a predefined system prompt for variable checking, an empty user prompt, and specifies the symbol kind as `SymbolKind.VARIABLE`.
-- **Output**: Returns the result of the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function, which is either an instance of the class or `None`.
+    - Calls the [`default_llm_analysis`](<default.py.md#default_llm_analysis>) function with the class itself, the language model, code, root relative path, a predefined system prompt for variable checking, an empty user prompt, and specifies the symbol kind as `SymbolKind.VARIABLE`.
+- **Output**: Returns an instance of the class or `None` if the analysis does not produce a valid result.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](<default.py.md#default_llm_analysis>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableRawSymbolCollection`](<#assemblyvariablerawsymbolcollection>)  (Base Class)
@@ -386,12 +389,12 @@ Initiates a default LLM analysis for variable symbols using the provided LLM, co
 #### AssemblyVariableRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L347>)
 
-Returns the `data` attribute of the instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `data` attribute of the instance.
     - Returns the `data` attribute.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
+- **Output**: A dictionary with keys of type `str` and values of type `RawSymbolData`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableRawSymbolCollection`](<#assemblyvariablerawsymbolcollection>)  (Base Class)
 
 
@@ -400,7 +403,7 @@ Returns the `data` attribute of the instance as a dictionary.
 ### AssemblyDataStructureData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L352>)
 
-- **Description**: Represents a specialized data structure for handling assembly data structures within an intermediate representation framework. It provides class methods for generating system and user prompts related to assembly data structures and raises exceptions for operations that are not applicable to assembly data structures, such as having children.
+- **Description**: Represents a specialized data structure for handling assembly data structures within the context of intermediate representation (IR) processing. It provides class methods for generating system and user prompts related to assembly data structures and raises `NotImplementedError` for methods that are not applicable to assembly data structures, such as handling children.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureData.system_prompt`](<#assemblydatastructuredatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureData.user_prompt`](<#assemblydatastructuredatauser_prompt>)
@@ -432,12 +435,10 @@ Returns a predefined JSON string for system prompts related to data structures.
 Generates a user prompt string by combining a predefined prompt with the symbol's name and code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: Represents the class `AssemblyDataStructureData` itself, not an instance of the class.
     - `symbol`: An instance of `RawSymbolData` containing the name and file code of the symbol.
 - **Logic and Control Flow**:
     - Concatenates the constant `DATA_STRUCTURES_FOUND_USER_PROMPT` with the `name` attribute of the `symbol` object.
-    - Appends a newline followed by the string 'Code:' and another newline.
-    - Appends the `file_code` attribute of the `symbol` object to the string.
+    - Appends the string '\n\nCode:\n\n' followed by the `file_code` attribute of the `symbol` object.
 - **Output**: A string that includes a predefined user prompt, the symbol's name, and its code.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureData`](<#assemblydatastructuredata>)  (Base Class)
 
@@ -452,7 +453,7 @@ Raises a NotImplementedError indicating that assembly data structures should not
     - `symbol`: An instance of `RawSymbolData` representing a symbol.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'Assembly data structures should not have children'.
-- **Output**: None, as the method raises an exception and does not return a value.
+- **Output**: The method does not return any value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureData`](<#assemblydatastructuredata>)  (Base Class)
 
 
@@ -463,10 +464,10 @@ Raises a NotImplementedError indicating that assembly data structures should not
 Raises a NotImplementedError indicating that assembly data structures should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of RawSymbolData representing a child symbol.
+    - `child`: An instance of `RawSymbolData` representing a child symbol.
 - **Logic and Control Flow**:
-    - Raises a NotImplementedError with the message 'Assembly data structures should not have children'.
-- **Output**: Does not return a value as it raises an exception.
+    - Raises a `NotImplementedError` with the message 'Assembly data structures should not have children'.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureData`](<#assemblydatastructuredata>)  (Base Class)
 
 
@@ -477,7 +478,7 @@ Raises a NotImplementedError indicating that assembly data structures should not
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `AssemblyDataStructureData` or lists of `AssemblyDataStructureData`.
-- **Description**: Manages a collection of assembly data structures, allowing for the organization and retrieval of `AssemblyDataStructureData` instances. Provides a class method `from_llm` to create an instance from a language model and a list of raw symbols, facilitating the integration of language model analysis into the collection process.
+- **Description**: Manages a collection of assembly data structures, allowing for the storage and retrieval of `AssemblyDataStructureData` objects. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureCollection.from_llm`](<#assemblydatastructurecollectionfrom_llm>)
 - **Inherits From**:
@@ -489,15 +490,14 @@ Raises a NotImplementedError indicating that assembly data structures should not
 #### AssemblyDataStructureCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L373>)
 
-Creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to provide language model data.
-    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be used in the instance creation.
+    - `llm`: An instance of `ChatOpenAI` used for language model processing.
+    - `symbols_list`: A `RawSymbolCollection` containing symbols to be used in the instance creation.
 - **Logic and Control Flow**:
-    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `AssemblyDataStructureData`, `llm`, and `symbols_list` as arguments.
-    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class created using the provided language model and symbols list.
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method of the class with `AssemblyDataStructureData`, `llm`, and `symbols_list` as arguments.
+- **Output**: An instance of the class (`Self`) initialized with the provided language model and symbols.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyDataStructureCollection`](<#assemblydatastructurecollection>)  (Base Class)
@@ -508,7 +508,7 @@ Creates an instance of the class using data from a language model and a collecti
 ### AssemblySubroutineData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L378>)
 
-- **Description**: Represents data related to assembly subroutines, inheriting from `FnData`. It provides class methods to generate system and user prompts for assembly subroutines and raises `NotImplementedError` for methods related to child elements, indicating that assembly functions should not have children.
+- **Description**: Represents a specialized data structure for handling assembly subroutine data, inheriting from `FnData`. It provides class methods to generate system and user prompts for assembly subroutines and raises `NotImplementedError` for methods related to child elements, indicating that assembly functions should not have children.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineData.system_prompt`](<#assemblysubroutinedatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineData.user_prompt`](<#assemblysubroutinedatauser_prompt>)
@@ -529,7 +529,7 @@ Returns a predefined JSON string for system prompts related to functions.
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is requested.
 - **Logic and Control Flow**:
     - Returns the constant `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON system prompt for functions.
+- **Output**: A string containing the predefined JSON for system prompts related to functions.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineData`](<#assemblysubroutinedata>)  (Base Class)
 
 
@@ -555,7 +555,7 @@ Formats a user prompt string using a symbol's name and file code.
 Raises a NotImplementedError indicating that assembly functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol to be processed.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to process.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'Assembly functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
@@ -572,7 +572,7 @@ Raises a NotImplementedError indicating that assembly functions should not have 
     - `child`: An instance of RawSymbolData representing a child symbol.
 - **Logic and Control Flow**:
     - Raises a NotImplementedError with the message 'Assembly functions should not have children'.
-- **Output**: Does not return a value; instead, it raises an exception.
+- **Output**: This method does not return a value as it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineData`](<#assemblysubroutinedata>)  (Base Class)
 
 
@@ -583,7 +583,7 @@ Raises a NotImplementedError indicating that assembly functions should not have 
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `AssemblySubroutineData` or lists of `AssemblySubroutineData`.
-- **Description**: Manages a collection of assembly subroutine data, allowing for the organization and retrieval of subroutine information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a collection of raw symbols.
+- **Description**: Manages a collection of assembly subroutine data, allowing for the organization and retrieval of subroutine information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance using a language model and a list of symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineCollection.from_llm`](<#assemblysubroutinecollectionfrom_llm>)
 - **Inherits From**:
@@ -603,7 +603,7 @@ Creates an instance of the class using LLM and a list of symbols.
 - **Logic and Control Flow**:
     - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `AssemblySubroutineData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class created using the provided LLM and symbols list.
+- **Output**: An instance of the class (`Self`) created using the provided LLM and symbols list.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblySubroutineCollection`](<#assemblysubroutinecollection>)  (Base Class)
@@ -614,7 +614,7 @@ Creates an instance of the class using LLM and a list of symbols.
 ### AssemblyMacroData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L406>)
 
-- **Description**: Inherits from `FnData` and provides class methods to handle assembly macro data. It includes methods to generate system and user prompts for macros and raises `NotImplementedError` for methods related to child elements, indicating that assembly macros should not have children.
+- **Description**: Represents a specialized data structure for handling assembly macro data, inheriting from `FnData`. It provides class methods to generate system and user prompts for macros and raises `NotImplementedError` for methods related to child elements, indicating that assembly macros should not have children.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData.system_prompt`](<#assemblymacrodatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData.user_prompt`](<#assemblymacrodatauser_prompt>)
@@ -629,13 +629,13 @@ Creates an instance of the class using LLM and a list of symbols.
 #### AssemblyMacroData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L407>)
 
-Returns a predefined JSON string for system prompts related to macros.
+Returns a predefined JSON string for a system prompt related to macros.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is requested.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol.
 - **Logic and Control Flow**:
     - Returns the constant `MACRO_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the predefined JSON for system prompts related to macros.
+- **Output**: A string containing the JSON for a system prompt.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData`](<#assemblymacrodata>)  (Base Class)
 
 
@@ -643,15 +643,15 @@ Returns a predefined JSON string for system prompts related to macros.
 #### AssemblyMacroData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L411>)
 
-Generates a user prompt string by combining a predefined message with the symbol's name and code.
+Generates a user prompt string using the symbol's name and file code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing the name and file code of the symbol.
+    - `symbol`: An instance of `RawSymbolData` containing the symbol's name and file code.
 - **Logic and Control Flow**:
-    - Concatenates the `MACRO_FOUND_USER_PROMPT` constant with the `symbol.name`.
-    - Appends a newline followed by the string 'Code:' and another newline.
-    - Appends the `symbol.file_code` to the string.
-- **Output**: A string that includes a predefined user prompt message, the symbol's name, and its code.
+    - Concatenates the constant `MACRO_FOUND_USER_PROMPT` with the `name` attribute of the `symbol` object.
+    - Appends two newline characters followed by the string 'Code:' and two more newline characters.
+    - Appends the `file_code` attribute of the `symbol` object to the string.
+- **Output**: A string formatted with the symbol's name and file code, prefixed by a user prompt message.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData`](<#assemblymacrodata>)  (Base Class)
 
 
@@ -659,13 +659,13 @@ Generates a user prompt string by combining a predefined message with the symbol
 #### AssemblyMacroData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L415>)
 
-Raises a NotImplementedError indicating that assembly macros should not have children.
+Raises a NotImplementedError to indicate that assembly macros should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing the symbol to process.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'Assembly macros should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
+- **Output**: The method does not return a value; it raises an exception instead.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData`](<#assemblymacrodata>)  (Base Class)
 
 
@@ -679,7 +679,7 @@ Raises a NotImplementedError indicating that assembly macros should not have chi
     - `child`: An instance of `RawSymbolData` representing a child symbol.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'Assembly macros should not have children'.
-- **Output**: Does not return a value as it raises an exception.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroData`](<#assemblymacrodata>)  (Base Class)
 
 
@@ -690,7 +690,7 @@ Raises a NotImplementedError indicating that assembly macros should not have chi
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `AssemblyMacroData` or lists of `AssemblyMacroData`.
-- **Description**: Manages a collection of assembly macro data, allowing for the organization and retrieval of macro-related information. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a list of raw symbols. This class is part of a system that processes and documents assembly code using language model analysis.
+- **Description**: Manages a collection of assembly macro data, allowing for the organization and retrieval of macro-related information. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a list of symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroCollection.from_llm`](<#assemblymacrocollectionfrom_llm>)
 - **Inherits From**:
@@ -706,11 +706,11 @@ Creates an instance of the class using LLM and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for language model operations.
-    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to process.
+    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be used in the method.
 - **Logic and Control Flow**:
     - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `AssemblyMacroData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class (`Self`) created using the provided LLM and symbols list.
+- **Output**: An instance of the class that called the method.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyMacroCollection`](<#assemblymacrocollection>)  (Base Class)
@@ -721,7 +721,7 @@ Creates an instance of the class using LLM and a list of symbols.
 ### AssemblyVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L432>)
 
-- **Description**: Represents a specialized data structure for handling assembly variable data, extending the `VariableData` class. It provides class methods to generate system and user prompts for assembly variables and raises `NotImplementedError` for methods related to child elements, as assembly variables do not have children.
+- **Description**: Inherits from `VariableData` and provides class methods for generating system and user prompts related to assembly variables. It raises `NotImplementedError` for methods related to child elements, indicating that assembly variables should not have children.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData.system_prompt`](<#assemblyvariabledatasystem_prompt>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData.user_prompt`](<#assemblyvariabledatauser_prompt>)
@@ -736,13 +736,13 @@ Creates an instance of the class using LLM and a list of symbols.
 #### AssemblyVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L433>)
 
-Returns a predefined system prompt string for variables found.
+Returns a predefined JSON string for system prompts related to variables.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is requested.
 - **Logic and Control Flow**:
     - Returns the constant `VARIABLES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the system prompt for variables found.
+- **Output**: A string containing the JSON for system prompts related to variables.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData`](<#assemblyvariabledata>)  (Base Class)
 
 
@@ -750,15 +750,15 @@ Returns a predefined system prompt string for variables found.
 #### AssemblyVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/assembly.py#L437>)
 
-Formats a user prompt string using the name and file code of a given symbol.
+Generates a user prompt string using the provided symbol's name and file code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing the name and file code of the symbol.
+    - `symbol`: An instance of `RawSymbolData` containing the symbol's name and file code.
 - **Logic and Control Flow**:
-    - Concatenates the constant `VARIABLES_FOUND_USER_PROMPT` with the `name` attribute of the `symbol`.
+    - Concatenates the constant `VARIABLES_FOUND_USER_PROMPT` with the `name` attribute of the `symbol` object.
     - Appends a newline followed by the string 'Code:' and another newline.
-    - Appends the `file_code` attribute of the `symbol` to the string.
-- **Output**: A formatted string that includes the user prompt, symbol name, and symbol file code.
+    - Appends the `file_code` attribute of the `symbol` object to the string.
+- **Output**: A string that includes the user prompt, the symbol's name, and its file code.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData`](<#assemblyvariabledata>)  (Base Class)
 
 
@@ -769,10 +769,10 @@ Formats a user prompt string using the name and file code of a given symbol.
 Raises a NotImplementedError indicating that assembly variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol to be processed.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to process.
 - **Logic and Control Flow**:
     - Raises a `NotImplementedError` with the message 'Assembly variables should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
+- **Output**: Does not return a value; instead, it raises an exception.
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableData`](<#assemblyvariabledata>)  (Base Class)
 
 
@@ -797,7 +797,7 @@ Raises a NotImplementedError indicating that assembly variables should not have 
 
 - **Members**:
     - `data`: Stores a dictionary mapping strings to `AssemblyVariableData` or lists of `AssemblyVariableData`.
-- **Description**: Manages a collection of assembly variable data, allowing for the organization and retrieval of `AssemblyVariableData` instances. It provides a class method `from_llm` to create an instance from a language model and a list of raw symbols, utilizing the `from_llm_with_ir_data` method to process the data.
+- **Description**: Manages a collection of assembly variable data, allowing for the storage and retrieval of `AssemblyVariableData` objects or lists of such objects. Provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableCollection.from_llm`](<#assemblyvariablecollectionfrom_llm>)
 - **Inherits From**:
@@ -813,11 +813,11 @@ Creates an instance of the class using LLM and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for language model operations.
-    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be processed.
+    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to process.
 - **Logic and Control Flow**:
     - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `AssemblyVariableData`, `llm`, and `symbols_list` as arguments.
     - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
-- **Output**: An instance of the class created using the provided LLM and symbols list.
+- **Output**: An instance of the class that is created using the provided LLM and symbols list.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/assembly.AssemblyVariableCollection`](<#assemblyvariablecollection>)  (Base Class)

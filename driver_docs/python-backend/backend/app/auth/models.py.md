@@ -6,7 +6,7 @@
 Defines Pydantic models for user and machine-to-machine authentication data.
 
 # Purpose
-The code defines two data models, `User` and `M2M`, using the Pydantic library's `BaseModel` class. These models are used to validate and manage structured data, likely related to user and machine-to-machine authentication contexts. Each model includes fields with type annotations and optional default values, and many fields use the `Field` function to specify aliases, which map the model's attributes to alternative names. The `User` model includes fields for user-specific information such as `organization_id`, `user_id`, and `email`, while the `M2M` model focuses on machine-to-machine authentication details. The use of Pydantic ensures that the data adheres to the specified types and constraints, facilitating data integrity and validation.
+The code defines two data models, `User` and `M2M`, using the Pydantic library, which is used for data validation and settings management in Python. The `User` class models user-related data with fields such as `organization_id`, `user_id`, `issuer`, and `email`, each associated with an alias for JSON serialization and deserialization. The `M2M` class models machine-to-machine communication data with fields like `issuer`, `subject`, and `audience`. Both classes use Pydantic's `Field` to specify field attributes, including default values and aliases, which facilitate the mapping of JSON data to Python objects. The code includes a comment indicating a need to address redundancy in field aliases within the `User` class.
 # Imports and Dependencies
 
 ---
@@ -21,21 +21,21 @@ The code defines two data models, `User` and `M2M`, using the Pydantic library's
 [View Source →](<../../../../../backend/app/auth/models.py#L4>)
 
 - **Members**:
-    - `organization_id`: Stores the organization ID with an alias 'org_id'.
-    - `organization_display_name`: Stores the organization display name with an alias 'org_name'.
-    - `organization_name`: Stores the organization name with an alias 'org_name'.
-    - `user_id`: Stores the user ID with an alias 'sub'.
-    - `issuer`: Stores the issuer with an alias 'iss'.
-    - `subject`: Stores the subject with an alias 'sub'.
-    - `audience`: Stores the audience as a list or string with an alias 'aud'.
-    - `issued_at`: Stores the issued at timestamp with an alias 'iat'.
-    - `expiration`: Stores the expiration timestamp with an alias 'exp'.
-    - `scope`: Stores the scope with an alias 'scope'.
-    - `authorized_party`: Stores the authorized party with an alias 'azp'.
-    - `permissions`: Stores a list of permissions with a default empty list.
-    - `email`: Stores the user's email with an alias 'user_email'.
-    - `full_name`: Stores the user's full name with an alias 'user_full_name'.
-- **Description**: Represents a user with various attributes such as organization details, user identification, and authorization information. Uses aliases for field names to map to different identifiers.
+    - `organization_id`: Stores the organization ID with alias 'org_id'.
+    - `organization_display_name`: Stores the organization display name with alias 'org_name'.
+    - `organization_name`: Stores the organization name with alias 'org_name'.
+    - `user_id`: Stores the user ID with alias 'sub'.
+    - `issuer`: Stores the issuer with alias 'iss'.
+    - `subject`: Stores the subject with alias 'sub'.
+    - `audience`: Stores the audience with alias 'aud'.
+    - `issued_at`: Stores the issued at timestamp with alias 'iat'.
+    - `expiration`: Stores the expiration timestamp with alias 'exp'.
+    - `scope`: Stores the scope with alias 'scope'.
+    - `authorized_party`: Stores the authorized party with alias 'azp'.
+    - `permissions`: Stores a list of permissions.
+    - `email`: Stores the user's email with alias 'user_email'.
+    - `full_name`: Stores the user's full name with alias 'user_full_name'.
+- **Description**: Represents a user with various attributes such as organization details, user identification, and authorization information, using aliases for field names.
 - **Inherits From**:
     - `BaseModel`
 
@@ -45,13 +45,13 @@ The code defines two data models, `User` and `M2M`, using the Pydantic library's
 [View Source →](<../../../../../backend/app/auth/models.py#L22>)
 
 - **Members**:
-    - `issuer`: Specifies the entity that issued the token.
-    - `subject`: Identifies the principal that is the subject of the token.
-    - `audience`: Defines the recipients that the token is intended for.
-    - `issued_at`: Indicates the time at which the token was issued.
-    - `expiration`: Specifies the expiration time on or after which the token must not be accepted.
-    - `authorized_party`: Identifies the party authorized to use the token.
-- **Description**: Represents a machine-to-machine (M2M) token model with fields for issuer, subject, audience, issued time, expiration time, and authorized party, using Pydantic for data validation and aliasing.
+    - `issuer`: Stores the issuer of the token with an alias 'iss'.
+    - `subject`: Stores the subject of the token with an alias 'sub'.
+    - `audience`: Stores the audience of the token with an alias 'aud'.
+    - `issued_at`: Stores the issued at timestamp of the token with an alias 'iat'.
+    - `expiration`: Stores the expiration timestamp of the token with an alias 'exp'.
+    - `authorized_party`: Stores the authorized party of the token with an alias 'azp'.
+- **Description**: Represents a machine-to-machine (M2M) token model with fields for issuer, subject, audience, issued at time, expiration time, and authorized party, using Pydantic's BaseModel for data validation and aliasing.
 - **Inherits From**:
     - `BaseModel`
 

@@ -6,7 +6,7 @@
 Registers tools for codebase folder summary, file opening, and searching in a tool registry.
 
 # Purpose
-This code defines a registry for tools by importing several classes and storing them in a dictionary named `TOOL_REGISTRY`. The classes `CodebaseFolderSummaryTool`, `OpenFileTool`, and `SearchTool` are imported from their respective modules, and each class is registered in the `TOOL_REGISTRY` dictionary using its class name as the key. The dictionary maps the class names to their corresponding class types, which are all expected to be subclasses of `ToolStrict`. This setup allows for dynamic access and management of tool classes within the application.
+This code defines a registry for tools by importing several classes from local modules and storing them in a dictionary named `TOOL_REGISTRY`. The dictionary maps the class names of the tools, such as `SearchTool`, `OpenFileTool`, and `CodebaseFolderSummaryTool`, to their respective class types. Each tool class is expected to be a subclass of `ToolStrict`, ensuring a consistent interface or behavior. This setup allows for easy access and management of the tools within the application, facilitating dynamic tool usage based on their names.
 # Imports and Dependencies
 
 ---
@@ -21,8 +21,8 @@ This code defines a registry for tools by importing several classes and storing 
 ---
 ### TOOL\_REGISTRY
 - **Type**: ``dict[str, type[ToolStrict]]``
-- **Description**: A dictionary that maps the names of tool classes to their respective class types. The keys are strings representing the class names, and the values are the class types that inherit from `ToolStrict`. This allows for dynamic access to tool classes by their names.
-- **Use**: Stores and provides access to tool classes by their names for dynamic tool management.
+- **Description**: A dictionary that maps the names of tool classes to their respective class types. The keys are strings representing the class names, and the values are the class types that inherit from `ToolStrict`. This allows for dynamic access and instantiation of tool classes by their names.
+- **Use**: Used to register and retrieve tool classes by their names for dynamic tool management.
 
 
 

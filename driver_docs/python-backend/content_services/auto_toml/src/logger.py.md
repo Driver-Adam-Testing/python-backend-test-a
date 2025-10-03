@@ -6,7 +6,7 @@
 Sets up a color-coded logger with customizable name and logging level.
 
 # Purpose
-This code defines a function [`_setup_logger`](<#_setup_logger>) that configures a logger with color-coded output for different logging levels. It uses a custom `LogFormatter` class to apply ANSI color codes to log messages based on their severity, such as DEBUG, INFO, WARNING, ERROR, and CRITICAL. The logger is set up to output to the standard output stream (`sys.stdout`) and removes any existing handlers before adding a new `StreamHandler` with the specified logging level. The `logger` variable is initialized using this function, with the logging level set to DEBUG, and is intended for use in logging messages with enhanced readability in a console environment.
+This code defines a function [`_setup_logger`](<#_setup_logger>) that configures a logger with a custom log message format and color-coded output based on the log level. The function accepts an optional `name` and a `level` parameter, defaulting to `logging.INFO`, to set up a logger using Python's `logging` module. Inside [`_setup_logger`](<#_setup_logger>), a nested class `LogFormatter` extends `logging.Formatter` to apply ANSI color codes to log messages, enhancing readability by differentiating log levels with distinct colors. The function removes any existing handlers from the logger, adds a new `StreamHandler` to output logs to standard output, and applies the custom formatter. The logger is then instantiated at the module level with the file name as its name and a log level of `DEBUG`.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ This code defines a function [`_setup_logger`](<#_setup_logger>) that configures
 ---
 ### logger
 - **Type**: ``logging.Logger``
-- **Description**: Initializes a logger instance using the `_setup_logger` function with the current file name and a logging level of `DEBUG`. The logger is configured to output log messages to the standard output stream with color-coded formatting based on the log level.
-- **Use**: Used to log messages with different severity levels during the execution of the program.
+- **Description**: A `logging.Logger` instance configured with a custom log formatter that applies color coding to log messages based on their severity level. The logger is set to output messages to the standard output stream with a minimum log level of `DEBUG`. The formatter uses ANSI escape codes to color the log messages for better readability.
+- **Use**: Used to log messages with color-coded formatting to the console for debugging and informational purposes.
 
 
 # Classes
@@ -29,7 +29,7 @@ This code defines a function [`_setup_logger`](<#_setup_logger>) that configures
 ### LogFormatter<!-- {{#class:python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter}} -->
 [View Source →](<../../../../../content_services/auto_toml/src/logger.py#L6>)
 
-- **Description**: Extends the `logging.Formatter` class to add color formatting to log messages based on their severity level. Uses ANSI escape codes to apply different colors for each log level, such as cyan for DEBUG, green for INFO, yellow for WARNING, red for ERROR, and magenta for CRITICAL. Resets the color after each message to ensure that subsequent text is not affected.
+- **Description**: Formats log messages with color codes based on the log level, enhancing readability by using different colors for different log levels such as DEBUG, INFO, WARNING, ERROR, and CRITICAL.
 - **Methods**:
     - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<#logformatterformat>)
 - **Inherits From**:
@@ -47,7 +47,7 @@ Formats a log record with color coding based on the log level.
 - **Logic and Control Flow**:
     - Defines a dictionary `COLORS` that maps log level names to their corresponding ANSI color codes.
     - Retrieves the log level name from the `record` using `record.levelname`.
-    - Gets the color code for the log level from the `COLORS` dictionary, defaulting to the reset color if the level name is not found.
+    - Gets the color code for the log level from the `COLORS` dictionary, defaulting to the reset color if the level is not found.
     - Calls the parent class's `format` method to format the log message.
     - Returns the formatted message with the appropriate color code prepended and the reset color code appended.
 - **Output**: A string that represents the formatted log message with color coding.

@@ -103,7 +103,7 @@ def _process_handler(
             logger.info("bucket = " + bucket_name)
             should_process = (
                 has_allowed_guard_duty_tag(bucket=bucket_name, key=real_object_key)
-                or settings.ENVIRONMENT == "cloud-local"
+                or settings.ENVIRONMENT in ["cloud-local","pms"]
             )
             try:
                 if should_process:

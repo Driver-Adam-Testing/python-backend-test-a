@@ -6,21 +6,24 @@
 Defines asynchronous tasks for generating technical documentation, symbol tables, and embeddings for codebases, with database integration for storing derived content.
 
 # Purpose
-The code defines a set of asynchronous tasks for generating and managing technical documentation and metadata for a codebase. It uses a task-based architecture to handle different aspects of documentation, such as generating folder-level and file-level technical documents, creating symbol documentation, and tagging the codebase with relevant metadata. The tasks are implemented as subclasses of a `Task` class, and they use semaphores to manage concurrency and rate limits when interacting with external APIs or databases.
+The code defines a set of asynchronous tasks for processing and documenting codebases. These tasks are part of a system that generates technical documentation and metadata for codebases, likely for use in a larger application or service. The tasks include `FolderTechDocTask`, `FileTechDocTask`, `SymbolsTask`, `TopLevelDocsTask`, `CodebaseTaggingTask`, `EmbeddingTask`, and `CSymbolTableTask`. Each task is a subclass of a base `Task` class and is designed to perform specific operations such as generating documentation, tagging codebases, embedding content, and building symbol tables.
 
-The main components include `FolderTechDocTask`, `FileTechDocTask`, `SymbolsTask`, `TopLevelDocsTask`, `CodebaseTaggingTask`, `EmbeddingTask`, and `CSymbolTableTask`. Each task is responsible for a specific part of the documentation process, such as generating documentation for a folder or file, creating symbol tables, or embedding content for search and retrieval. The tasks interact with a database to store and retrieve derived content, and they use external functions to generate documentation and symbols. The code is structured to handle asynchronous execution and database operations efficiently, ensuring that documentation tasks can be performed concurrently and results can be stored and retrieved as needed.
+The tasks use semaphores to manage concurrency and prevent rate limit errors when interacting with external services like the OpenAI API. They also interact with a database to store and retrieve derived content and metadata. The tasks are designed to be run asynchronously, leveraging Python's `asyncio` library, and they use a combination of local processing and remote function calls to perform their operations. The tasks are modular and can be combined to form a pipeline that processes a codebase from raw source code to a fully documented and tagged state.
 # Imports and Dependencies
 
 ---
 - `asyncio`
 - `concurrent.futures`
+- `os`
+- `pickle`
 - `uuid`
 - `pathlib.Path`
 - `typing.Optional`
 - `typing.Union`
-- `database.models_v1.ChunkAndEmbedding`
-- `database.models_v1.DerivedContent`
-- `database.models_v2_enums.ContentKind`
+- `boto3`
+- `database.models.ChunkAndEmbedding`
+- `database.models.DerivedContent`
+- `database.models_enums.ContentKind`
 - `modal_funcs.make_codebase_tags`
 - `modal_funcs.make_folder_tech_doc`
 - `modal_funcs.make_symbol_docs`
@@ -45,37 +48,37 @@ The main components include `FolderTechDocTask`, `FileTechDocTask`, `SymbolsTask
 
 ---
 ### TechDocsTask
-- **Type**: ``Union``
-- **Description**: Represents a type alias that can be one of three possible task types: `FileTechDocTask`, `FolderTechDocTask`, or `TopLevelDocsTask`. This allows for flexibility in handling different types of technical documentation tasks within the codebase.
-- **Use**: Used to define a variable that can hold any of the specified task types, facilitating type checking and ensuring compatibility with functions or methods that operate on these tasks.
+- **Type**: `Union`
+- **Description**: Represents a type union of three different task classes: `FileTechDocTask`, `FolderTechDocTask`, and `TopLevelDocsTask`. This union allows the `TechDocsTask` variable to be any one of these three types, providing flexibility in handling different types of technical documentation tasks.
+- **Use**: Used to define a variable that can hold an instance of any of the specified task classes, facilitating polymorphic behavior in task management.
 
 
 ---
 ### symbols\_sem
 - **Type**: ``asyncio.Semaphore``
-- **Description**: Limits the number of concurrent tasks that can access a shared resource, specifically for symbol processing tasks. The semaphore is initialized with a value of 76, which allows up to 76 concurrent accesses.
-- **Use**: Used to control the concurrency level of tasks that process symbols, preventing rate limit errors with the OpenAI API.
+- **Description**: Limits the number of concurrent tasks that can access a shared resource to 76. This helps to manage rate limits when interacting with external services.
+- **Use**: Used to control the concurrency level of tasks that require access to shared resources, preventing rate limit errors.
 
 
 ---
 ### tech\_docs\_sem
 - **Type**: ``asyncio.Semaphore``
-- **Description**: Limits the number of concurrent tasks that can access a shared resource. The semaphore is initialized with a value of 76, which means it allows up to 76 concurrent accesses.
-- **Use**: Used to control the concurrency level of tasks that generate technical documentation, preventing rate limit errors with the OpenAI API.
+- **Description**: Limits the number of concurrent tasks that can access a shared resource to 76. This helps manage rate limits when interacting with external services, such as the OpenAI API.
+- **Use**: Used to control the concurrency of tasks that generate technical documentation.
 
 
 ---
 ### folder\_tech\_docs\_sem
 - **Type**: ``asyncio.Semaphore``
-- **Description**: Limits the number of concurrent operations to 64 for tasks related to folder technical documentation. This helps manage the rate of task execution to avoid overwhelming resources or hitting rate limits.
-- **Use**: Used to control the concurrency level of folder technical documentation tasks.
+- **Description**: Limits the number of concurrent operations to 64. This helps to manage the rate of tasks that can run simultaneously, preventing overload or rate limit errors.
+- **Use**: Used to control the concurrency level for folder technical documentation tasks.
 
 
 ---
 ### embed\_sem
 - **Type**: ``asyncio.Semaphore``
-- **Description**: Limits the number of concurrent tasks that can access a shared resource to 10. This helps to control the rate of operations that require embedding, preventing overload.
-- **Use**: Used to manage concurrency for tasks that require embedding operations.
+- **Description**: Controls access to a shared resource by allowing up to 10 concurrent operations. It is used to manage concurrency and prevent overloading of resources.
+- **Use**: Limits the number of concurrent operations to 10 when embedding tasks are performed.
 
 
 ---
@@ -89,14 +92,14 @@ The main components include `FolderTechDocTask`, `FileTechDocTask`, `SymbolsTask
 
 ---
 ### FolderTechDocTask<!-- {{#class:python-backend/content_services/inspector/src/tasks.FolderTechDocTask}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L41>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L44>)
 
 - **Members**:
     - `child_docs_tasks`: Stores a tuple of child documentation tasks.
     - `codebase_name`: Holds the name of the codebase.
     - `db_node_id`: Contains the UUID of the database node.
     - `previous_content`: Stores previous content as a dictionary or None.
-- **Description**: Manages the task of generating technical documentation for a folder by aggregating results from child documentation tasks. It uses the results of these tasks to create a comprehensive folder-level documentation, ensuring only successful results are included. The class also handles the post-run input/output operations to update the database with derived content, such as short and long descriptions.
+- **Description**: Manages the task of generating technical documentation for a folder by processing results from child documentation tasks and updating the database with derived content.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/tasks.FolderTechDocTask.__init__`](<#foldertechdoctask__init__>)
     - [`python-backend/content_services/inspector/src/tasks.FolderTechDocTask.run_implementation`](<#foldertechdoctaskrun_implementation>)
@@ -109,9 +112,9 @@ The main components include `FolderTechDocTask`, `FileTechDocTask`, `SymbolsTask
 
 ---
 #### FolderTechDocTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FolderTechDocTask.__init__}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L42>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L45>)
 
-Initializes an instance of the `FolderTechDocTask` class with specified parameters and calls the parent class constructor.
+Initializes an instance of the `FolderTechDocTask` class with specified parameters and sets up its dependencies.
 - **Inputs**:
     - `node`: A `LiteNode` object representing the node associated with the task.
     - `task_name`: A string representing the name of the task.
@@ -124,27 +127,28 @@ Initializes an instance of the `FolderTechDocTask` class with specified paramete
     - Assigns the `codebase_name` parameter to the instance variable `self.codebase_name`.
     - Assigns the `db_node_id` parameter to the instance variable `self.db_node_id`.
     - Assigns the `previous_content` parameter to the instance variable `self.previous_content`.
-    - Calls the parent class `Task` constructor using `super().__init__` with `task_name`, `node`, and `dependencies` set to `child_docs_tasks`.
-- **Output**: No output is returned as this is a constructor method.
+    - Calls the [`__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>) method of the superclass `Task` with `task_name`, `node`, and `dependencies` set to `child_docs_tasks`.
+- **Output**: Does not return a value; it initializes the object.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.FolderTechDocTask`](<#foldertechdoctask>)  (Base Class)
 
 
 ---
 #### FolderTechDocTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FolderTechDocTask.run_implementation}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L61>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L64>)
 
-Executes the task to generate technical documentation for a folder node using results from dependent tasks.
+Executes the task to generate technical documentation for a folder by processing results from dependent tasks.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `self`: Represents the instance of the class `FolderTechDocTask`.
+    - `self`: Refers to the instance of the `FolderTechDocTask` class.
     - `dependent_results`: A dictionary mapping `TechDocsTask` instances to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects, containing results from dependent tasks.
 - **Logic and Control Flow**:
-    - Creates a dictionary `child_nodes_to_docs` that maps each child node to its corresponding documentation data from `dependent_results`.
-    - Uses an asynchronous context manager with `folder_tech_docs_sem` to limit concurrent access to the folder tech documentation process.
+    - Creates a dictionary `child_nodes_to_docs` that maps each task's node to the 'docs' data from the task's result, filtering only successful results.
+    - Acquires a semaphore `folder_tech_docs_sem` to limit concurrent access to the folder documentation process.
     - Calls the asynchronous function `make_folder_tech_doc.remote.aio` with parameters including `codebase_name`, `node`, `child_nodes_to_docs`, and `previous_content` to generate the folder documentation.
     - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated documentation in JSON format.
-- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated folder documentation in JSON format.
+- **Output**: Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated folder documentation in JSON format.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<utils/task.py.md#taskresult>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.FolderTechDocTask`](<#foldertechdoctask>)  (Base Class)
@@ -152,7 +156,7 @@ Executes the task to generate technical documentation for a folder node using re
 
 ---
 #### FolderTechDocTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FolderTechDocTask.work_units}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L78>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L81>)
 
 Returns the number of work units for a folder technical documentation task.
 - **Decorators**: `@property`
@@ -160,33 +164,34 @@ Returns the number of work units for a folder technical documentation task.
 - **Logic and Control Flow**:
     - Accesses the `TaskWorkUnits.FOLDER_TECH_DOC` constant.
     - Returns the value of `TaskWorkUnits.FOLDER_TECH_DOC`.
-- **Output**: An integer representing the number of work units for the task.
+- **Output**: An integer representing the number of work units for a folder technical documentation task.
 - **See also**: [`python-backend/content_services/inspector/src/tasks.FolderTechDocTask`](<#foldertechdoctask>)  (Base Class)
 
 
 ---
 #### FolderTechDocTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FolderTechDocTask.post_run_io}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L82>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L85>)
 
-Performs post-processing of task results by storing derived content in the database and returning their IDs.
+Handles post-run input/output operations by deleting old content and saving new content to the database.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
-    - `task_result`: An instance of `TaskResult` containing the results of a task, specifically the documentation data.
-    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, which is not used in this method.
+    - `task_result`: An instance of `TaskResult` containing the result data of the task, specifically the documentation content.
+    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective input/output results, though not directly used in this method.
 - **Logic and Control Flow**:
-    - Imports necessary modules and classes for database operations.
-    - Extracts documentation data from `task_result`.
-    - Acquires a semaphore to limit database connection concurrency.
-    - Creates [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) instances for short sentence, short paragraph, and long description from the documentation data.
-    - Opens an asynchronous session with the database using `AsyncSession`.
-    - Deletes existing [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records for the current node ID and specific content kinds.
-    - Commits the deletion transaction to the database.
-    - Adds new [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records to the session and commits them to the database.
-    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) record to obtain their IDs.
-    - Converts the list of content IDs to strings.
-- **Output**: A dictionary containing the list of content IDs as strings under the key `content_ids`.
+    - Imports necessary modules and classes for database operations and asynchronous sessions.
+    - Extracts documentation content from `task_result` using the key `docs`.
+    - Acquires a semaphore lock to limit database connection concurrency.
+    - Creates instances of [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) for short sentence, short paragraph, and long description using the extracted documentation content.
+    - Opens an asynchronous session with the database engine.
+    - Constructs a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records of specific content kinds for the current node ID.
+    - Executes the delete query and commits the transaction to remove old content.
+    - Adds the new [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records to the session and commits the transaction to save them to the database.
+    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) record to obtain their database-assigned IDs.
+    - Collects the IDs of the newly added content records into a list and converts them to strings.
+    - Releases the semaphore lock and returns a dictionary containing the list of content IDs.
+- **Output**: A dictionary with a single key `content_ids`, which maps to a list of string IDs representing the newly added content records in the database.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>)
+    - [`python-backend/driver_db/database/models.DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>)
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositorydelete>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.FolderTechDocTask`](<#foldertechdoctask>)  (Base Class)
@@ -195,14 +200,15 @@ Performs post-processing of task results by storing derived content in the datab
 
 ---
 ### FileTechDocTask<!-- {{#class:python-backend/content_services/inspector/src/tasks.FileTechDocTask}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L144>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L147>)
 
 - **Members**:
     - `codebase_name`: Stores the name of the codebase.
     - `source_code`: Holds the source code as a string.
     - `db_node_id`: Contains the UUID of the database node.
     - `symbol_table_task`: References an optional `CSymbolTableTask` for symbol table processing.
-- **Description**: Handles the creation of technical documentation for a specific file within a codebase. It manages dependencies on symbol table tasks and processes the source code to generate documentation. The class also interacts with a database to store derived content and manages asynchronous operations to ensure efficient processing.
+    - `thread_pool`: Holds an optional thread pool executor for asynchronous operations.
+- **Description**: Represents a task for generating technical documentation for a file, utilizing optional symbol table data and asynchronous execution capabilities.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/tasks.FileTechDocTask.__init__`](<#filetechdoctask__init__>)
     - [`python-backend/content_services/inspector/src/tasks.FileTechDocTask.run_implementation`](<#filetechdoctaskrun_implementation>)
@@ -215,7 +221,7 @@ Performs post-processing of task results by storing derived content in the datab
 
 ---
 #### FileTechDocTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FileTechDocTask.__init__}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L145>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L148>)
 
 Initializes an instance of the `FileTechDocTask` class with specified parameters and sets up dependencies.
 - **Inputs**:
@@ -225,36 +231,33 @@ Initializes an instance of the `FileTechDocTask` class with specified parameters
     - `task_name`: A string representing the name of the task.
     - `db_node_id`: A UUID representing the database node identifier.
     - `symbol_table_task`: An optional instance of `CSymbolTableTask` representing a task related to the symbol table.
+    - `thread_pool`: An optional `ThreadPoolExecutor` instance for managing threads.
 - **Logic and Control Flow**:
-    - Assigns the `codebase_name`, `source_code`, `db_node_id`, and `symbol_table_task` to instance variables.
-    - Calls the [`__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>) method of the superclass `Task` with `task_name`, `node`, and a list of dependencies.
-    - The list of dependencies includes `symbol_table_task` if it is not `None`, otherwise it is an empty list.
-- **Output**: None, as it is a constructor method.
+    - Assigns the `codebase_name`, `source_code`, `db_node_id`, `symbol_table_task`, and `thread_pool` to instance variables.
+    - Calls the [`__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>) method of the superclass `Task` with `task_name`, `node`, and a list of dependencies, which includes `symbol_table_task` if it is not `None`.
+- **Output**: None, as this is an initializer method.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.FileTechDocTask`](<#filetechdoctask>)  (Base Class)
 
 
 ---
 #### FileTechDocTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FileTechDocTask.run_implementation}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L164>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L169>)
 
-Executes a task to generate technical documentation for a file, using dependent task results and returning the documentation as a [`TaskResult`](<utils/task.py.md#taskresult>).
-- **Decorators**: `@async`
+Executes a task to generate technical documentation for a file, optionally uploading a symbol table to S3, and returns the result.
 - **Inputs**:
     - `self`: The instance of the `FileTechDocTask` class.
-    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects, representing the results of tasks that this task depends on.
+    - `dependent_results`: A dictionary mapping `Task` objects to their [`TaskResult`](<utils/task.py.md#taskresult>) outputs, representing the results of tasks that this task depends on.
 - **Logic and Control Flow**:
-    - Checks if `self.symbol_table_task` is not `None` to determine if there is a symbol table task associated with this task.
-    - Retrieves `task_result_data` from `dependent_results` using `self.symbol_table_task` as the key.
-    - If `task_result_data` is not `None`, attempts to get `reified_symbols` from `task_result_data` using `self.node.root_rel_path` as the key.
-    - If `task_result_data` is `None`, sets `reified_symbols` to `None`.
-    - If `self.symbol_table_task` is `None`, sets `reified_symbols` to `None`.
-    - Acquires a semaphore `tech_docs_sem` to limit concurrent execution of the `make_tech_doc` function.
-    - Calls `make_tech_doc.remote.aio` asynchronously with parameters including `node`, `source_code`, `codebase_name`, and `reified_symbols`.
-    - Receives `success`, `docs`, and `node` from the `make_tech_doc` call.
-    - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the `success` status and `docs` data, with serialization set to `SerializationMethod.JSON`.
-- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing a dictionary with `success` and `docs` keys, serialized using `SerializationMethod.JSON`.
+    - Checks if `self.symbol_table_task` is not None to determine if a symbol table task is present.
+    - Retrieves `task_result_data` from `dependent_results` using `self.symbol_table_task` and checks if it is not None to extract `reified_symbols`.
+    - If `reified_symbols` is not None, constructs an S3 key for the symbol table and defines an `_upload` function to upload the symbol table to S3.
+    - Checks if `self.thread_pool` is available; if so, uses `asyncio` to run `_upload` in an executor, otherwise calls `_upload` directly.
+    - If `reified_symbols` is None, sets `sym_table_s3_key` to None.
+    - Uses the `tech_docs_sem` semaphore to limit concurrency and calls `make_tech_doc.remote.aio` to generate technical documentation.
+    - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the success status and documentation data, serialized as JSON.
+- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing the success status and generated documentation, serialized using the `SerializationMethod.JSON`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<utils/task.py.md#taskresult>)
@@ -263,41 +266,42 @@ Executes a task to generate technical documentation for a file, using dependent 
 
 ---
 #### FileTechDocTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FileTechDocTask.work_units}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L194>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L223>)
 
-Provides the number of work units for a `FileTechDocTask`.
+Returns the number of work units for a `FileTechDocTask`.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Returns the constant `TaskWorkUnits.FILE_TECH_DOC`.
-- **Output**: An integer representing the number of work units, specifically `TaskWorkUnits.FILE_TECH_DOC`.
+    - Accesses the `TaskWorkUnits.FILE_TECH_DOC` constant.
+    - Returns the value of `TaskWorkUnits.FILE_TECH_DOC`.
+- **Output**: An integer representing the number of work units for a `FileTechDocTask`.
 - **See also**: [`python-backend/content_services/inspector/src/tasks.FileTechDocTask`](<#filetechdoctask>)  (Base Class)
 
 
 ---
 #### FileTechDocTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/tasks.FileTechDocTask.post_run_io}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L198>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L227>)
 
 Processes and stores derived content from task results into a database asynchronously.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
     - `task_result`: An instance of `TaskResult` containing the data from the task execution, specifically the documentation content.
-    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, which are dictionaries with string keys and any type of values.
+    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, which are dictionaries containing various data.
 - **Logic and Control Flow**:
     - Imports `async_engine` and `AsyncSession` for database operations.
     - Extracts documentation content from `task_result.data['docs']`.
-    - Acquires a semaphore lock to limit database connections.
-    - Creates [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) instances for short sentence, short paragraph, and long description from the documentation content.
-    - Checks if there are multiple chunk descriptions and creates [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) instances for each chunk.
+    - Acquires a semaphore lock `database_sem` to limit database connection concurrency.
+    - Creates [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instances for short sentence, short paragraph, long description, and chunk descriptions from the documentation content.
     - Opens an asynchronous session with the database using `AsyncSession`.
-    - Executes a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records for the current node and content kinds.
+    - Executes a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records for the current node and content kinds.
     - Commits the delete operation to the database.
-    - Adds the new [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records to the session and commits them to the database.
-    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) record to obtain their IDs and stores them in a list.
-    - Converts the list of content IDs to strings and returns them in a dictionary.
-- **Output**: A dictionary containing a single key 'content_ids' with a list of string IDs of the stored [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records.
+    - Adds new [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records to the session and commits them to the database.
+    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) record to obtain their IDs after insertion.
+    - Collects the IDs of the inserted content records into a list of strings.
+    - Releases the semaphore lock and returns a dictionary containing the list of content IDs.
+- **Output**: A dictionary with a single key `content_ids`, which maps to a list of string IDs of the inserted content records.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>)
+    - [`python-backend/driver_db/database/models.DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositorydelete>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptextend>)
@@ -307,13 +311,13 @@ Processes and stores derived content from task results into a database asynchron
 
 ---
 ### SymbolsTask<!-- {{#class:python-backend/content_services/inspector/src/tasks.SymbolsTask}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L274>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L303>)
 
 - **Members**:
     - `source_code`: Holds the source code to process for symbols.
-    - `tech_docs_task`: References the `FileTechDocTask` that provides technical documentation data.
-    - `db_node_id`: Stores the unique identifier for the database node associated with this task.
-- **Description**: Processes source code to generate symbol documentation, using results from a dependent `FileTechDocTask`. It manages the creation of symbol documentation and updates the database with the derived content.
+    - `tech_docs_task`: References the `FileTechDocTask` that provides technical documentation.
+    - `db_node_id`: Stores the unique identifier for the database node.
+- **Description**: Processes source code to extract symbols and stores the results in a database. It depends on a `FileTechDocTask` to provide necessary documentation data and uses semaphores to manage concurrency during symbol extraction and database operations.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/tasks.SymbolsTask.__init__`](<#symbolstask__init__>)
     - [`python-backend/content_services/inspector/src/tasks.SymbolsTask.run_implementation`](<#symbolstaskrun_implementation>)
@@ -326,43 +330,43 @@ Processes and stores derived content from task results into a database asynchron
 
 ---
 #### SymbolsTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/tasks.SymbolsTask.__init__}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L275>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L304>)
 
 Initializes an instance of the `SymbolsTask` class with specified parameters and sets up dependencies.
 - **Inputs**:
     - `task_name`: A string representing the name of the task.
     - `node`: An instance of `LiteNode` representing the node associated with the task.
-    - `source_code`: A string containing the source code to be processed.
-    - `tech_docs_task`: An instance of `FileTechDocTask` representing the technical documentation task that this task depends on.
+    - `source_code`: A string containing the source code to be processed by the task.
+    - `tech_docs_task`: An instance of `FileTechDocTask` that this task depends on.
     - `db_node_id`: A UUID representing the database node identifier.
 - **Logic and Control Flow**:
     - Assigns the `source_code` parameter to the instance variable `self.source_code`.
     - Assigns the `tech_docs_task` parameter to the instance variable `self.tech_docs_task`.
     - Assigns the `db_node_id` parameter to the instance variable `self.db_node_id`.
-    - Calls the [`__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>) method of the superclass `Task` with `task_name`, `node`, and a tuple containing `tech_docs_task` as dependencies.
-- **Output**: None, as this is a constructor method.
+    - Calls the [`__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>) method of the parent class `Task` with `task_name`, `node`, and a tuple containing `tech_docs_task` as dependencies.
+- **Output**: None, as it is a constructor method.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.SymbolsTask`](<#symbolstask>)  (Base Class)
 
 
 ---
 #### SymbolsTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/tasks.SymbolsTask.run_implementation}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L292>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L321>)
 
 Executes the task to generate symbol documentation based on dependent task results.
-- **Decorators**: `@async`
+- **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
-    - `self`: Refers to the instance of the `SymbolsTask` class.
-    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects, representing the results of tasks that this task depends on.
+    - `self`: Represents the instance of the class `SymbolsTask`.
+    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects, representing the results of dependent tasks.
 - **Logic and Control Flow**:
-    - Retrieve the result of the `tech_docs_task` from `dependent_results` using `self.tech_docs_task` as the key.
-    - Extract the `file_summary` from the `tech_docs_result` data under the key `docs` and `short` with `single_paragraph`.
-    - Set a `symbol_count_limit` to 500.
-    - Check if `tech_docs_result.data['success']` is `False`. If so, set `symbols` to an empty list.
-    - If `tech_docs_result.data['success']` is `True`, acquire the `symbols_sem` semaphore asynchronously and call `make_symbol_docs.remote.aio` to generate symbol documentation, passing `node`, `source_code`, `file_description_paragraph`, and `symbol_count_limit` as arguments.
-    - Return a [`TaskResult`](<utils/task.py.md#taskresult>) object with the `symbols` data and specify `SerializationMethod.JSON` for serialization.
-- **Output**: Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing a dictionary with the key `symbols` and its corresponding list of symbol documentation, serialized using `SerializationMethod.JSON`.
+    - Retrieves the result of the `tech_docs_task` from `dependent_results` using `self.tech_docs_task` as the key.
+    - Extracts the file summary from the `tech_docs_result` data under the key `docs` -> `short` -> `single_paragraph`.
+    - Sets a symbol count limit to 500.
+    - Checks if the `success` field in `tech_docs_result.data` is `False`. If so, initializes `symbols` as an empty list.
+    - If `success` is `True`, acquires a semaphore lock using `symbols_sem` and calls `make_symbol_docs.remote.aio` to generate symbol documentation asynchronously.
+    - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated symbols and specifies the serialization method as `SerializationMethod.JSON`.
+- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing a dictionary with the key `symbols` and the generated symbol documentation as the value, serialized using `SerializationMethod.JSON`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<utils/task.py.md#taskresult>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.SymbolsTask`](<#symbolstask>)  (Base Class)
@@ -370,43 +374,44 @@ Executes the task to generate symbol documentation based on dependent task resul
 
 ---
 #### SymbolsTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/tasks.SymbolsTask.work_units}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L314>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L343>)
 
-Provides the number of work units for the `SymbolsTask` class.
+Returns the number of work units for the `SymbolsTask` class.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
+    - Accesses the `SYMBOLS` attribute from the `TaskWorkUnits` class.
     - Returns the value of `TaskWorkUnits.SYMBOLS`.
-- **Output**: An integer representing the number of work units, specifically `TaskWorkUnits.SYMBOLS`.
+- **Output**: An integer representing the number of work units for the `SymbolsTask` class.
 - **See also**: [`python-backend/content_services/inspector/src/tasks.SymbolsTask`](<#symbolstask>)  (Base Class)
 
 
 ---
 #### SymbolsTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/tasks.SymbolsTask.post_run_io}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L318>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L347>)
 
 Handles post-processing of task results by updating the database with derived content related to symbols.
-- **Decorators**: `@asyncio`
+- **Decorators**: `@async`
 - **Inputs**:
-    - `task_result`: An instance of `TaskResult` containing the data from the task execution, specifically a list of symbols.
-    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, though not used in this method.
+    - `task_result`: An instance of `TaskResult` containing the results of the task execution, specifically a dictionary with a key `symbols` that holds a list of symbol metadata.
+    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, though it is not used in this method.
 - **Logic and Control Flow**:
     - Imports necessary modules and classes for database operations.
     - Defines a session chunk size of 25 for batch processing of database operations.
     - Extracts the list of symbols from the `task_result` data.
     - Acquires a semaphore to limit database connection concurrency.
-    - Initializes an empty list `symbol_dcs` to store [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) instances for each symbol.
-    - Iterates over the symbols, creating a [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) instance for each and appending it to `symbol_dcs`.
+    - Initializes an empty list `symbol_dcs` to store [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instances for each symbol.
+    - Iterates over the symbols, creating a [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instance for each symbol and appending it to `symbol_dcs`.
     - Opens an asynchronous session with the database using `AsyncSession`.
-    - Executes a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) entries for the current node and content kind `SYMBOL`.
+    - Executes a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) entries for the current node and content kind `SYMBOL`.
     - Commits the delete operation to the database.
-    - Iterates over `symbol_dcs` in chunks defined by `session_chunk_size`, adding them to the session and committing them to the database.
-    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) record to obtain its database ID and appends these IDs to `content_ids`.
-    - Converts the list of content IDs to strings.
-    - Returns a dictionary containing the list of content IDs.
-- **Output**: A dictionary with a single key `content_ids`, which maps to a list of string representations of the database IDs for the newly inserted [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records.
+    - Iterates over `symbol_dcs` in chunks defined by `session_chunk_size`, adding each chunk to the session and committing the changes to the database.
+    - Initializes an empty list `content_ids` to store the IDs of the newly added [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records.
+    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) record to obtain its ID and appends the ID to `content_ids`.
+    - Converts each ID in `content_ids` to a string.
+- **Output**: A dictionary with a single key `content_ids`, which maps to a list of string IDs representing the newly added [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>)
+    - [`python-backend/driver_db/database/models.DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositorydelete>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.SymbolsTask`](<#symbolstask>)  (Base Class)
@@ -415,12 +420,12 @@ Handles post-processing of task results by updating the database with derived co
 
 ---
 ### TopLevelDocsTask<!-- {{#class:python-backend/content_services/inspector/src/tasks.TopLevelDocsTask}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L363>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L392>)
 
 - **Members**:
     - `codebase_name`: Stores the name of the codebase.
     - `db_node_id`: Holds the UUID of the database node.
-- **Description**: Manages the creation of top-level technical documentation for a codebase by aggregating results from dependent technical documentation tasks.
+- **Description**: Manages the execution of top-level technical documentation tasks for a given codebase. It initializes with a node, codebase name, a tuple of ordered technical documentation tasks, and a database node ID. It inherits from the `Task` class and overrides the `run_implementation` and `post_run_io` methods to handle the processing and storage of documentation data.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/tasks.TopLevelDocsTask.__init__`](<#topleveldocstask__init__>)
     - [`python-backend/content_services/inspector/src/tasks.TopLevelDocsTask.run_implementation`](<#topleveldocstaskrun_implementation>)
@@ -433,38 +438,38 @@ Handles post-processing of task results by updating the database with derived co
 
 ---
 #### TopLevelDocsTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/tasks.TopLevelDocsTask.__init__}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L364>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L393>)
 
 Initializes an instance of the `TopLevelDocsTask` class with specified parameters and sets up its dependencies.
 - **Inputs**:
     - `node`: A `LiteNode` object representing the node associated with this task.
     - `codebase_name`: A string representing the name of the codebase.
     - `ordered_tech_docs_tasks`: A tuple of `TechDocsTask` objects that are dependencies for this task.
-    - `db_node_id`: A `UUID` representing the database node ID associated with this task.
+    - `db_node_id`: A `uuid.UUID` object representing the database node ID.
 - **Logic and Control Flow**:
-    - Assigns the `codebase_name` to the instance variable `self.codebase_name`.
-    - Assigns the `db_node_id` to the instance variable `self.db_node_id`.
-    - Calls the parent class [`__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>) method with a task name formatted as `TopLevelTechDocsTask of {codebase_name}`, the `node`, and the `ordered_tech_docs_tasks` as dependencies.
+    - Assigns the `codebase_name` parameter to the instance variable `self.codebase_name`.
+    - Assigns the `db_node_id` parameter to the instance variable `self.db_node_id`.
+    - Calls the [`__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>) method of the superclass `Task` with a task name, node, and dependencies.
 - **Output**: None, as this is an initializer method.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.TopLevelDocsTask`](<#topleveldocstask>)  (Base Class)
 
 
 ---
 #### TopLevelDocsTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/tasks.TopLevelDocsTask.run_implementation}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L379>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L408>)
 
-Processes dependent task results to generate top-level technical documentation.
+Executes the top-level task by processing dependent task results and generating technical documentation.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
-    - `self`: The instance of the class to which this method belongs.
-    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects.
+    - `self`: Represents the instance of the class `TopLevelDocsTask`.
+    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects, representing the results of dependent tasks.
 - **Logic and Control Flow**:
-    - Transforms the `dependent_results` dictionary into a `children_nodes_to_docs` dictionary, mapping each task's node to its documentation data.
-    - Calls the asynchronous function `make_toplevel_tech_docs.remote.aio` with `codebase_name` and `children_nodes_to_docs` to generate the top-level documentation.
-    - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated documentation and specifies JSON as the serialization method.
-- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated top-level documentation in JSON format.
+    - Transforms the `dependent_results` dictionary into a new dictionary `children_nodes_to_docs` where each key is a task's node and each value is the 'docs' data from the task's result.
+    - Calls the asynchronous function `make_toplevel_tech_docs.remote.aio` with `codebase_name` and `children_nodes_to_docs` to generate the top-level technical documentation.
+    - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated documentation in JSON format.
+- **Output**: Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the generated technical documentation in JSON format.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<utils/task.py.md#taskresult>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.TopLevelDocsTask`](<#topleveldocstask>)  (Base Class)
@@ -472,39 +477,41 @@ Processes dependent task results to generate top-level technical documentation.
 
 ---
 #### TopLevelDocsTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/tasks.TopLevelDocsTask.work_units}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L394>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L423>)
 
 Provides the number of work units for a top-level documentation task.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Returns the constant `TaskWorkUnits.TOP_LEVEL_DOCS`.
-- **Output**: An integer representing the number of work units for the task.
+- **Output**: An integer representing the number of work units for a top-level documentation task.
 - **See also**: [`python-backend/content_services/inspector/src/tasks.TopLevelDocsTask`](<#topleveldocstask>)  (Base Class)
 
 
 ---
 #### TopLevelDocsTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/tasks.TopLevelDocsTask.post_run_io}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L398>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L427>)
 
-Processes task results to update the database with derived content and returns content IDs.
+Processes and stores derived content from task results into a database asynchronously.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
-    - `task_result`: A `TaskResult` object containing the task's output data, specifically the documentation content.
-    - `dependent_io_results`: A dictionary mapping `Task` objects to their respective I/O results, which are dictionaries containing various data.
+    - `task_result`: An instance of `TaskResult` containing the data from the task execution, specifically a dictionary with a key `docs` that holds the documentation content.
+    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, which are dictionaries containing various data.
 - **Logic and Control Flow**:
-    - Extracts documentation data from `task_result`.
-    - Creates a list of tuples (`top_level_tups`) mapping content kinds to their respective documentation content.
-    - Initializes an empty list `dc_contents` to store [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) objects.
-    - Iterates over `top_level_tups` to create [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) objects for each content kind and appends them to `dc_contents`.
+    - Extracts the `docs` dictionary from `task_result.data`.
+    - Defines a list of tuples `top_level_tups` that pairs content kinds with their respective documentation content from `docs`.
+    - Initializes an empty list `dc_contents` to store [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instances.
+    - Iterates over `top_level_tups` to create [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instances for each content kind and appends them to `dc_contents`.
+    - Imports `async_engine` and `AsyncSession` for database operations.
     - Opens an asynchronous session with the database using `AsyncSession`.
-    - Executes a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) entries for the current node and content kinds.
+    - Executes a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) entries for the current node and content kinds.
     - Commits the delete operation to the database.
-    - Adds all [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) objects in `dc_contents` to the session and commits them to the database.
-    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) record to obtain their IDs and appends these IDs to `content_ids`.
-- **Output**: A dictionary containing a single key `content_ids`, which maps to a list of string representations of the IDs of the newly created [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records.
+    - Adds all [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instances in `dc_contents` to the session and commits them to the database.
+    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) record to obtain their IDs and appends these IDs to `content_ids`.
+    - Converts `content_ids` to strings and returns them in a dictionary.
+- **Output**: A dictionary with a single key `content_ids`, which is a list of string IDs of the stored [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>)
+    - [`python-backend/driver_db/database/models.DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositorydelete>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.TopLevelDocsTask`](<#topleveldocstask>)  (Base Class)
@@ -513,13 +520,13 @@ Processes task results to update the database with derived content and returns c
 
 ---
 ### CodebaseTaggingTask<!-- {{#class:python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L472>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L501>)
 
 - **Members**:
     - `codebase_name`: Stores the name of the codebase.
     - `db_root_node_id`: Holds the UUID of the root node in the database.
     - `previous_root_node_metadata`: Contains metadata of the previous root node, if available.
-- **Description**: Facilitates the tagging of a codebase by managing dependencies and executing tasks to compute or retrieve tags for different content kinds. It uses a root node and a set of ordered technical documentation tasks to perform its operations, and it can handle existing metadata to optimize the tagging process.
+- **Description**: Facilitates the tagging of a codebase by managing dependencies and computing necessary tags. It uses a root node and a set of ordered technical documentation tasks to determine which content kinds need computation and which already exist. The class handles the execution of tasks to generate or retrieve tags for different content kinds, ensuring that the codebase is appropriately tagged and updated in the database.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask.__init__`](<#codebasetaggingtask__init__>)
     - [`python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask.run_implementation`](<#codebasetaggingtaskrun_implementation>)
@@ -532,41 +539,41 @@ Processes task results to update the database with derived content and returns c
 
 ---
 #### CodebaseTaggingTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask.__init__}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L473>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L502>)
 
 Initializes a `CodebaseTaggingTask` instance with the given parameters and sets up its dependencies.
 - **Inputs**:
     - `root_node`: A `LiteNode` object representing the root node of the codebase.
     - `codebase_name`: A string representing the name of the codebase.
-    - `ordered_tech_docs_tasks`: A tuple of `TechDocsTask` objects that are dependencies for this task.
-    - `db_root_node_id`: A `UUID` representing the database ID of the root node.
+    - `ordered_tech_docs_tasks`: A tuple of `TechDocsTask` objects representing the ordered technical documentation tasks.
+    - `db_root_node_id`: A `uuid.UUID` representing the database ID of the root node.
     - `previous_root_node_metadata`: An optional dictionary mapping `ContentKind` to a list of dictionaries, representing metadata of the previous root node.
 - **Logic and Control Flow**:
     - Assigns the `codebase_name`, `db_root_node_id`, and `previous_root_node_metadata` to instance variables.
-    - Calls the parent class [`__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>) method with a task name, the root node, and dependencies.
-- **Output**: None, as this is an initializer method.
+    - Calls the parent class [`__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>) method with a task name, the root node, and dependencies.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask`](<#codebasetaggingtask>)  (Base Class)
 
 
 ---
 #### CodebaseTaggingTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask.run_implementation}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L492>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L521>)
 
 Processes dependent task results to compute or retrieve codebase tags and returns them as a [`TaskResult`](<utils/task.py.md#taskresult>).
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
-    - `self`: The instance of the `CodebaseTaggingTask` class.
+    - `self`: Represents the instance of the class `CodebaseTaggingTask`.
     - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects.
 - **Logic and Control Flow**:
-    - Define a set of required content kinds for codebase tagging.
-    - Check if `previous_root_node_metadata` is not `None`. If it is not `None`, determine which content kinds need computation and which already exist.
-    - If `previous_root_node_metadata` is `None`, set all required content kinds to be computed and initialize `existing_tags` as an empty dictionary.
-    - If no content kinds need computation, return a [`TaskResult`](<utils/task.py.md#taskresult>) with existing tags and JSON serialization.
-    - If content kinds need computation, extract document data from `dependent_results` and call `make_codebase_tags` asynchronously to compute the tags.
-    - Return a [`TaskResult`](<utils/task.py.md#taskresult>) containing both newly computed tags and existing tags, with JSON serialization.
-- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing the computed and/or existing codebase tags, serialized as JSON.
+    - Defines a set of required content kinds for codebase tagging.
+    - Checks if `previous_root_node_metadata` is not `None` to determine which content kinds need computation and which already exist.
+    - If `previous_root_node_metadata` is `None`, all required content kinds need computation.
+    - If no content kinds need computation, returns a [`TaskResult`](<utils/task.py.md#taskresult>) with existing tags and JSON serialization.
+    - If content kinds need computation, extracts document data from `dependent_results` and calls `make_codebase_tags` asynchronously to compute new tags.
+    - Combines new tags with existing tags and returns them in a [`TaskResult`](<utils/task.py.md#taskresult>) with JSON serialization.
+- **Output**: Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the combined tags and using JSON serialization.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<utils/task.py.md#taskresult>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask`](<#codebasetaggingtask>)  (Base Class)
@@ -574,38 +581,40 @@ Processes dependent task results to compute or retrieve codebase tags and return
 
 ---
 #### CodebaseTaggingTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask.work_units}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L538>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L567>)
 
-Provides the number of work units for the task.
+Returns the number of work units for the task.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
+    - Accesses the `TAGS` attribute from the `TaskWorkUnits` class.
     - Returns the value of `TaskWorkUnits.TAGS`.
-- **Output**: An integer representing the number of work units, specifically `TaskWorkUnits.TAGS`.
+- **Output**: An integer representing the number of work units, specifically the value of `TaskWorkUnits.TAGS`.
 - **See also**: [`python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask`](<#codebasetaggingtask>)  (Base Class)
 
 
 ---
 #### CodebaseTaggingTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask.post_run_io}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L542>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L571>)
 
-Handles post-processing of task results by updating the database with derived content based on codebase tags.
-- **Decorators**: `@asyncio.coroutine`
+Performs post-processing of task results by updating the database with derived content based on codebase tags.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `task_result`: An instance of `TaskResult` containing the data from the task execution, specifically the tags to process.
-    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, which is not used in this method.
+    - `task_result`: An instance of `TaskResult` containing the data from the task execution.
+    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, represented as dictionaries.
 - **Logic and Control Flow**:
     - Extracts tags from `task_result.data` and organizes them into tuples with their corresponding `ContentKind`.
     - Acquires a semaphore lock to limit database access concurrency.
-    - Iterates over the tag tuples to create [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) instances for each tag, associating them with the appropriate content kind and node ID.
+    - Iterates over the tag tuples to create [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instances for each tag, associating them with the appropriate content kind and metadata.
     - Imports necessary modules for database operations and establishes an asynchronous session with the database.
-    - Constructs a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) entries for the current node ID and content kinds, then executes and commits the deletion.
-    - Adds all newly created [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) instances to the session and commits them to the database.
-    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) record to obtain their IDs and collects these IDs into a list.
+    - Executes a delete query to remove existing [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) records for the current node and content kinds.
+    - Commits the deletion transaction to the database.
+    - Adds the newly created [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) instances to the session and commits them to the database.
+    - Refreshes each [`DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>) record to obtain their database-assigned IDs.
     - Converts the list of content IDs to strings and returns them in a dictionary.
-- **Output**: A dictionary containing a single key `"content_ids"` with a list of stringified IDs of the newly created [`DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>) records.
+- **Output**: A dictionary containing the list of content IDs as strings, under the key 'content_ids'.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>)
+    - [`python-backend/driver_db/database/models.DerivedContent`](<../../../driver_db/database/models.py.md#derivedcontent>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositorydelete>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.CodebaseTaggingTask`](<#codebasetaggingtask>)  (Base Class)
@@ -614,7 +623,7 @@ Handles post-processing of task results by updating the database with derived co
 
 ---
 ### EmbeddingTask<!-- {{#class:python-backend/content_services/inspector/src/tasks.EmbeddingTask}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L602>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L631>)
 
 - **Members**:
     - `source_code`: Stores the source code related to the task.
@@ -633,7 +642,7 @@ Handles post-processing of task results by updating the database with derived co
 
 ---
 #### EmbeddingTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/tasks.EmbeddingTask.__init__}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L603>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L632>)
 
 Initializes an instance of the `EmbeddingTask` class with specified parameters and validates input conditions.
 - **Inputs**:
@@ -644,25 +653,24 @@ Initializes an instance of the `EmbeddingTask` class with specified parameters a
     - `dependent_tasks`: An optional list of `Task` objects representing tasks that this task depends on, default is `None`.
 - **Logic and Control Flow**:
     - Checks if `source_code` is provided without `db_node_id` and raises a `ValueError` if true.
-    - Assigns `source_code` and `db_node_id` to instance variables `self.source_code` and `self.db_node_id`.
+    - Assigns `source_code` and `db_node_id` to instance variables `self.source_code` and `self.db_node_id`, respectively.
     - Initializes `dependent_tasks` to an empty list if it is `None`.
     - Removes duplicate tasks from `dependent_tasks` and converts it to a tuple `deduped_tasks`.
-    - Calls the superclass [`__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>) method with `task_name`, `node`, and `dependencies` set to `deduped_tasks`.
+    - Calls the superclass [`__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>) method with `task_name`, `node`, and `dependencies` set to `deduped_tasks`.
 - **Output**: None, as this is a constructor method for initializing an object.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.EmbeddingTask`](<#embeddingtask>)  (Base Class)
 
 
 ---
 #### EmbeddingTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/tasks.EmbeddingTask.run_implementation}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L628>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L657>)
 
-Executes an asynchronous task and returns a default [`TaskResult`](<utils/task.py.md#taskresult>) with empty data and JSON serialization.
+Executes the implementation logic for the task and returns a default [`TaskResult`](<utils/task.py.md#taskresult>) with empty data and JSON serialization.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `self`: Represents the instance of the class.
-    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects.
+    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects, representing the results of dependent tasks.
 - **Logic and Control Flow**:
     - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object with an empty dictionary for `data` and `SerializationMethod.JSON` for `serialization`.
 - **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object with empty data and JSON serialization.
@@ -673,35 +681,34 @@ Executes an asynchronous task and returns a default [`TaskResult`](<utils/task.p
 
 ---
 #### EmbeddingTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/tasks.EmbeddingTask.work_units}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L633>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L662>)
 
-Returns the number of work units for the task, specifically for embedding tasks.
+Provides the number of work units for an embedding task.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Accesses the `TaskWorkUnits` enumeration to retrieve the `EMBEDDING` value.
-    - Returns the `EMBEDDING` value as the number of work units.
-- **Output**: An integer representing the number of work units for embedding tasks.
+    - Returns the value of `TaskWorkUnits.EMBEDDING`.
+- **Output**: An integer representing the number of work units for the embedding task.
 - **See also**: [`python-backend/content_services/inspector/src/tasks.EmbeddingTask`](<#embeddingtask>)  (Base Class)
 
 
 ---
 #### EmbeddingTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/tasks.EmbeddingTask.post_run_io}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L637>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L666>)
 
-Processes task results and dependent I/O results to chunk, embed, and store content in the database.
+Handles post-run input/output operations for embedding tasks, including chunking, embedding, and database operations.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `task_result`: An instance of `TaskResult` containing the results of the task execution.
-    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective I/O results, which are dictionaries with string keys and any type of values.
+    - `task_result`: An instance of `TaskResult` containing the result of the task execution.
+    - `dependent_io_results`: A dictionary mapping `Task` instances to their respective input/output results, represented as dictionaries with string keys and any type values.
 - **Logic and Control Flow**:
     - Check if `self.db_node_id` is set; if so, retrieve the source code derived content ID.
     - Iterate over `dependent_io_results` to process each task's results, skipping tasks of type `CSymbolTableTask`.
     - For each task, retrieve content IDs to embed and query the database for content rows matching these IDs and specific content kinds.
-    - Chunk, embed, and prepare the content for database storage using [`chunk_embed_and_prep_for_db`](<#embeddingtaskchunk_embed_and_prep_for_db>).
-    - Delete existing chunks in the database for the content IDs and insert the new chunks.
-    - If `self.source_code` is provided, chunk, embed, and store the source code in the database similarly.
-- **Output**: An empty dictionary, indicating the completion of the I/O operations.
+    - Chunk, embed, and prepare the content for database insertion using [`chunk_embed_and_prep_for_db`](<#embeddingtaskchunk_embed_and_prep_for_db>).
+    - Delete existing `ChunkAndEmbedding` entries for the content IDs and insert the new chunks into the database.
+    - If `self.source_code` is provided, chunk, embed, and prepare the source code for database insertion, then delete existing entries and insert the new chunks.
+- **Output**: An empty dictionary, indicating the completion of the post-run I/O operations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/db.get_source_code_derived_content`](<utils/db.py.md#get_source_code_derived_content>)
     - [`python-backend/content_services/inspector/src/tasks.EmbeddingTask.chunk_embed_and_prep_for_db`](<#embeddingtaskchunk_embed_and_prep_for_db>)
@@ -711,7 +718,7 @@ Processes task results and dependent I/O results to chunk, embed, and store cont
 
 ---
 #### EmbeddingTask\.chunk\_embed\_and\_prep\_for\_db<!-- {{#callable:python-backend/content_services/inspector/src/tasks.EmbeddingTask.chunk_embed_and_prep_for_db}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L734>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L763>)
 
 Chunks, embeds, and prepares content for database storage.
 - **Decorators**: `@staticmethod`
@@ -724,31 +731,31 @@ Chunks, embeds, and prepares content for database storage.
     - Imports necessary modules and classes for chunking and embedding.
     - Initializes an empty list `chunks` to store the processed data.
     - Iterates over the zipped `contents`, `content_ids`, `content_types`, and `metadatas`.
-    - Checks if the `content_type` is 'symbol' and retrieves the description from `metadata`; skips processing if no description is found.
+    - Checks if `content_type` is 'symbol' and retrieves the description from `metadata`; skips if not available.
     - Splits the `content` into smaller documents using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>).
-    - Acquires a semaphore lock to control concurrency and embeds the text of each split document using [`async_batch_embed_text`](<../../../packages/shared/shared/embedding/text_embedder.py.md#async_batch_embed_text>).
-    - Extends the `chunks` list with [`ChunkAndEmbedding`](<../../../driver_db/database/models_v1.py.md#chunkandembedding>) objects created from the embedded data and split documents.
-    - Returns the list of [`ChunkAndEmbedding`](<../../../driver_db/database/models_v1.py.md#chunkandembedding>) objects.
-- **Output**: A list of [`ChunkAndEmbedding`](<../../../driver_db/database/models_v1.py.md#chunkandembedding>) objects, each containing embedded text and associated metadata.
+    - Uses a semaphore `embed_sem` to control concurrency and calls [`async_batch_embed_text`](<../../../packages/shared/shared/embedding/text_embedder.py.md#async_batch_embed_text>) to embed the text of each split document.
+    - Extends the `chunks` list with [`ChunkAndEmbedding`](<../../../driver_db/database/models.py.md#chunkandembedding>) objects created from the embedded data and split documents.
+    - Returns the list of [`ChunkAndEmbedding`](<../../../driver_db/database/models.py.md#chunkandembedding>) objects.
+- **Output**: A list of [`ChunkAndEmbedding`](<../../../driver_db/database/models.py.md#chunkandembedding>) objects, each containing embedded text and associated metadata.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
     - [`python-backend/packages/shared/shared/embedding/text_embedder.async_batch_embed_text`](<../../../packages/shared/shared/embedding/text_embedder.py.md#async_batch_embed_text>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptextend>)
-    - [`python-backend/driver_db/database/models_v1.ChunkAndEmbedding`](<../../../driver_db/database/models_v1.py.md#chunkandembedding>)
+    - [`python-backend/driver_db/database/models.ChunkAndEmbedding`](<../../../driver_db/database/models.py.md#chunkandembedding>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.EmbeddingTask`](<#embeddingtask>)  (Base Class)
 
 
 
 ---
 ### CSymbolTableTask<!-- {{#class:python-backend/content_services/inspector/src/tasks.CSymbolTableTask}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L774>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L803>)
 
 - **Members**:
     - `codebase_name`: Stores the name of the codebase.
     - `codebase_root`: Stores the root path of the codebase.
     - `files`: Contains a set of file paths derived from the codebase root and relative paths.
-- **Description**: Handles the task of building a symbol table for a given codebase. It initializes with a root node, task name, codebase name, codebase root, and a list of nodes' relative paths. The class processes these files to build a symbol table, which is then returned as a task result.
+- **Description**: Represents a task that builds a symbol table for a given codebase. It initializes with a root node, task name, codebase name, codebase root, and a list of nodes' relative paths. The task processes these files to generate a symbol table, which is then returned as a task result.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/tasks.CSymbolTableTask.__init__`](<#csymboltabletask__init__>)
     - [`python-backend/content_services/inspector/src/tasks.CSymbolTableTask.run_implementation`](<#csymboltabletaskrun_implementation>)
@@ -761,43 +768,42 @@ Chunks, embeds, and prepares content for database storage.
 
 ---
 #### CSymbolTableTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CSymbolTableTask.__init__}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L775>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L804>)
 
 Initializes an instance of the `CSymbolTableTask` class with specified parameters and sets up its attributes.
 - **Inputs**:
-    - `root_node`: The root node of type `LiteNode` for the task.
+    - `root_node`: A `LiteNode` object representing the root node of the task.
     - `task_name`: A string representing the name of the task.
     - `codebase_name`: A string representing the name of the codebase.
     - `codebase_root`: A `Path` object representing the root directory of the codebase.
     - `nodes_relative_paths`: A list of `Path` objects representing the relative paths of nodes within the codebase.
 - **Logic and Control Flow**:
-    - Assigns the `codebase_name` to the instance variable `self.codebase_name`.
-    - Assigns the `codebase_root` to the instance variable `self.codebase_root`.
-    - Creates a set of file paths by combining `codebase_root` with each path in `nodes_relative_paths` and assigns it to `self.files`.
-    - Calls the [`__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>) method of the superclass `Task` with `task_name` and `root_node` as arguments.
-- **Output**: Does not return any value.
+    - Assigns the `codebase_name` parameter to the `self.codebase_name` attribute.
+    - Assigns the `codebase_root` parameter to the `self.codebase_root` attribute.
+    - Creates a set of file paths by combining `codebase_root` with each path in `nodes_relative_paths` and assigns it to the `self.files` attribute.
+    - Calls the [`__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>) method of the superclass `Task` with `task_name` and `root_node` as arguments.
+- **Output**: None, as it is a constructor method.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.__init__`](<../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<utils/task.py.md#localdisktaskresultpersistence__init__>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.CSymbolTableTask`](<#csymboltabletask>)  (Base Class)
 
 
 ---
 #### CSymbolTableTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CSymbolTableTask.run_implementation}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L791>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L820>)
 
 Executes the symbol table building process for a set of files and returns the result as a [`TaskResult`](<utils/task.py.md#taskresult>).
-- **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
-    - `self`: The instance of the `CSymbolTableTask` class.
-    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects.
+    - `self`: Represents the instance of the `CSymbolTableTask` class.
+    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<utils/task.py.md#taskresult>) objects, representing the results of tasks that this task depends on.
 - **Logic and Control Flow**:
-    - Prints a message indicating the start of the `CSymbolTableTask` execution.
-    - Gets the current running event loop using `asyncio.get_running_loop()`.
+    - Prints a message indicating the start of the `CSymbolTableTask`.
+    - Retrieves the current event loop using `asyncio.get_running_loop()`.
     - Creates a `ThreadPoolExecutor` with a maximum of one worker thread.
-    - Uses `loop.run_in_executor` to run the `build_symbol_table` function in the executor, passing `self.files` and the path to the codebase as arguments.
+    - Uses `loop.run_in_executor` to run the `build_symbol_table` function in the executor, passing the files and the codebase path as arguments.
     - Awaits the completion of the `build_symbol_table` function and stores the result in `file_to_symbols`.
     - Returns a [`TaskResult`](<utils/task.py.md#taskresult>) object containing the `file_to_symbols` data and specifies `SerializationMethod.PICKLE` for serialization.
-- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing the symbol table data and using `SerializationMethod.PICKLE` for serialization.
+- **Output**: A [`TaskResult`](<utils/task.py.md#taskresult>) object containing the symbol table data and specifying `SerializationMethod.PICKLE` for serialization.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<utils/task.py.md#taskresult>)
 - **See also**: [`python-backend/content_services/inspector/src/tasks.CSymbolTableTask`](<#csymboltabletask>)  (Base Class)
@@ -805,7 +811,7 @@ Executes the symbol table building process for a set of files and returns the re
 
 ---
 #### CSymbolTableTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CSymbolTableTask.work_units}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L808>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L837>)
 
 Returns the number of work units for the task.
 - **Decorators**: `@property`
@@ -818,13 +824,13 @@ Returns the number of work units for the task.
 
 ---
 #### CSymbolTableTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/tasks.CSymbolTableTask.post_run_io}} -->
-[View Source →](<../../../../../content_services/inspector/src/tasks.py#L812>)
+[View Source →](<../../../../../content_services/inspector/src/tasks.py#L841>)
 
 Performs post-run input/output operations after a task execution.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
     - `task_result`: The result of the task execution, encapsulated in a `TaskResult` object.
-    - `dependent_io_results`: A dictionary mapping `Task` objects to their respective input/output results, represented as dictionaries with string keys and any type values.
+    - `dependent_io_results`: A dictionary mapping `Task` objects to their respective input/output results, represented as dictionaries with string keys and any type of values.
 - **Logic and Control Flow**:
     - Returns an empty dictionary immediately without performing any operations.
 - **Output**: An empty dictionary.

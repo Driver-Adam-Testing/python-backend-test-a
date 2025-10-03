@@ -6,7 +6,7 @@
 Defines an API router using FastAPI's APIRouter.
 
 # Purpose
-The code defines an `APIRouter` instance using the FastAPI framework. This instance, named `router`, is used to create and manage a group of related API endpoints. The `APIRouter` allows for modular organization of routes, which can be included in a larger FastAPI application. This setup is typically used to separate different parts of an API into distinct modules, improving maintainability and clarity.
+The code defines an instance of `APIRouter` from the FastAPI framework. This instance, named `router`, is used to create a modular and organized structure for defining API endpoints. By using `APIRouter`, developers can group related routes and manage them separately, which helps in maintaining a clean and scalable codebase. This code provides narrow functionality as it focuses on setting up a routing mechanism for a FastAPI application.
 # Imports and Dependencies
 
 ---
@@ -18,7 +18,7 @@ The code defines an `APIRouter` instance using the FastAPI framework. This insta
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: Creates an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage routes in a FastAPI application.
+- **Description**: Creates an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage routes for a FastAPI application.
 - **Use**: Used to register and organize route handlers for the application.
 
 

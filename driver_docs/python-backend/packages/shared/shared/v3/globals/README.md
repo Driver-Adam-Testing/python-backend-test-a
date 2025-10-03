@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Constants, classes, and messages for JSON parsing, DataSource, LLM, glossary, and iteration contexts.
+Constants, classes for DataSource messages, global system messages, glossary terms, and iteration messages.
 
 
 ## Files
 - **[constants.py](constants.py.md)**: Defines constants and template strings for JSON formatting and parsing in a Python backend.
-- **[datasource_messages.py](datasource_messages.py.md)**: Classes for creating and managing messages related to the DataSource structure for tool usage.
+- **[datasource_messages.py](datasource_messages.py.md)**: Defines classes for creating and managing messages related to the DataSource structure for tool usage.
 - **[global_messages.py](global_messages.py.md)**: Defines a global system message for the LLM Framework, detailing universal behaviors for LLM calls.
 - **[glossary.py](glossary.py.md)**: Defines the `GlossaryDefinition` class and various glossary terms with XML wrapping functionality.
 - **[iteration_messages.py](iteration_messages.py.md)**: Defines classes for managing multi-iteration context and iteration messages in a task resolution process.

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements Bitbucket and GitLab provider functionality for token management and repository operations.
+Bitbucket and GitLab providers for managing access tokens, webhooks, and repository interactions.
 
 
 ## Files
 - **[bitbucket_provider.py](bitbucket_provider.py.md)**: Implements a Bitbucket provider for managing access tokens, handling webhooks, and interacting with repositories.
-- **[gitlab_provider.py](gitlab_provider.py.md)**: Implements a GitLab provider for managing Group Access Tokens, installations, and webhook events.
+- **[gitlab_provider.py](gitlab_provider.py.md)**: Implements a GitLab provider for managing Group Access Tokens, handling webhooks, and storing secrets.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

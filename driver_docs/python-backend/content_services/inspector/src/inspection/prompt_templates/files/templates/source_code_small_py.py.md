@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for generating structured prompts and analyzing Python source code components.
+Templates for generating structured prompts and extracting Python code components like imports, variables, classes, and functions.
 
 # Purpose
-The code defines a template for generating documentation for small Python source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.python`, to facilitate the creation of structured prompts and collections. The `SOURCE_CODE_SMALL_TEMPLATE_PY` variable is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", and "Functions". Each section uses specific components and functions to extract and format relevant information from the source code, enabling the generation of concise and structured documentation.
+The code defines a template for generating documentation for small Python source code files. It imports several components and utilities from different modules, which are used to structure and format the documentation. The `SOURCE_CODE_SMALL_TEMPLATE_PY` variable is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", and "Functions". Each section uses specific components and functions to extract and format relevant information from the source code. This template is designed to ensure that the documentation adheres to Simplified Technical English (STE) and uses backticks for code references.
 # Imports and Dependencies
 
 ---

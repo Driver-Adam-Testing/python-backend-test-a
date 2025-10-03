@@ -6,9 +6,9 @@
 Test cases for various C# method invocation types, including constructors, static, instance, and async methods.
 
 # Purpose
-The code is a comprehensive test suite for various C# method invocation scenarios. It is organized within the `Com.Example.Invocations` namespace and primarily focuses on demonstrating different types of method calls, including constructor, static, instance, generic, and asynchronous method invocations. The `InvocationExamples` class contains the [`TestAllInvocations`](<#invocationexamplestestallinvocations>) method, which systematically tests these invocations, along with property access, operator overloading, and event handling. The code also includes examples of using delegates, lambda expressions, and LINQ method chaining. Additionally, it demonstrates the use of null-conditional operators and method group conversions.
+The code is a comprehensive test suite for various C# method invocation scenarios. It is organized within the `Com.Example.Invocations` namespace and primarily focuses on demonstrating different types of method calls, including constructor, static, instance, generic, and asynchronous method invocations. The `InvocationExamples` class contains the [`TestAllInvocations`](<#invocationexamplestestallinvocations>) method, which serves as the central point for executing these test cases. This method covers a wide range of invocation types, such as property access, operator overloading, LINQ method chaining, delegate and event handling, and interface method calls. Additionally, it includes examples of using null-conditional operators, method group conversions, anonymous methods, and lambda expressions.
 
-Supporting classes and interfaces, such as [`DerivedClass`](<#derivedclassderivedclass>), `IExampleInterface`, `ImplementationClass`, [`StaticConstructorExample`](<#staticconstructorexamplestaticconstructorexample>), `GenericInvocations`, and `ConstrainedGeneric`, are included to provide a broader context for testing. These classes illustrate inheritance, interface implementation, static constructors, and generic method invocations with constraints. The code is structured to cover a wide range of C# features, making it a useful reference for understanding method invocation patterns and their applications in C#.
+The code also defines several supporting classes and interfaces to facilitate the testing of specific invocation patterns. For instance, the [`DerivedClass`](<#derivedclassderivedclass>) demonstrates method overriding and base method calls, while the `ImplementationClass` provides an example of interface implementation. The [`StaticConstructorExample`](<#staticconstructorexamplestaticconstructorexample>) class illustrates the use of static constructors and methods. Furthermore, the code includes generic method invocations through the `GenericInvocations` and `ConstrainedGeneric` classes, showcasing the use of generic constraints and method calls on constrained types. Overall, this file serves as a detailed reference for understanding and testing various method invocation techniques in C#.
 # Imports and Dependencies
 
 ---
@@ -27,7 +27,7 @@ Supporting classes and interfaces, such as [`DerivedClass`](<#derivedclassderive
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Demonstrates various method invocation techniques in C#. It includes examples of constructor, static, instance, generic, override, virtual, async, and interface method invocations. It also covers property access, operator overloading, conversion operators, system method calls, LINQ queries, delegate and event handling, indexer usage, and lambda expressions. The class serves as a comprehensive test case for different method call scenarios in C#.
+- **Description**: Demonstrates various method invocation techniques in C#. It includes examples of constructor, static, instance, generic, override, virtual, async, and interface method invocations. It also covers property access, operator overloading, conversion operators, LINQ, delegates, events, indexers, and method group conversions. The class uses a private instance of `MethodExamples` and a dictionary to store data. It provides a comprehensive set of examples for testing different C# method invocation scenarios.
 - **Methods**:
     - [`Com.Example.Invocations.InvocationExamples.TestAllInvocations`](<#invocationexamplestestallinvocations>)
     - [`Com.Example.Invocations.InvocationExamples.OnValueChanged`](<#invocationexamplesonvaluechanged>)
@@ -42,37 +42,34 @@ Supporting classes and interfaces, such as [`DerivedClass`](<#derivedclassderive
 #### InvocationExamples\.TestAllInvocations<!-- {{#callable:Com.Example.Invocations.InvocationExamples.TestAllInvocations}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L13>)
 
-Executes a series of method invocations and operations to test various C# language features.
+Executes a series of method invocation examples to demonstrate various C# method call types and patterns.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
     - Create instances of `MethodExamples` using different constructors.
-    - Invoke a static method `StaticMethod` on `MethodExamples`.
+    - Invoke a static method `StaticMethod` from `MethodExamples`.
     - Create an instance of `MethodExamples` and call the `ProcessData` method.
-    - Access and modify properties of the `_instance` object.
-    - Invoke a generic method `CreateList` with different type parameters.
-    - Call the overridden `ToString` method on `_instance`.
-    - Invoke the virtual method [`VirtualMethod`](<#derivedclassvirtualmethod>) on `_instance`.
-    - Execute an asynchronous method `AsyncMethod` and retrieve its result.
-    - Invoke a method `TryGetValue` with an out parameter and handle the result.
-    - Call a method `ModifyValue` with a ref parameter.
-    - Invoke a method `ProcessReadOnly` with an in parameter.
-    - Perform operator overloading with `+` on `MethodExamples` instances.
+    - Access and modify properties of `_instance` such as `Name`, `Value`, `CreatedAt`, and `Description`.
+    - Invoke generic methods `CreateList` with different type parameters.
+    - Call overridden method `ToString` and virtual method [`VirtualMethod`](<#derivedclassvirtualmethod>).
+    - Invoke an asynchronous method `AsyncMethod` and retrieve its result.
+    - Call a method `TryGetValue` with an out parameter and handle its result.
+    - Invoke a method `ModifyValue` with a ref parameter.
+    - Call a method `ProcessReadOnly` with an in parameter.
+    - Perform operator overloading with `+` operator on `MethodExamples` instances.
     - Use conversion operators to convert `_instance` to `string` and `int`.
-    - Utilize `StringBuilder` to append text and convert to string.
-    - Apply LINQ methods to filter and convert a list of numbers.
-    - Invoke delegate methods using `Action` and `Func`.
+    - Invoke system methods on `StringBuilder` and use LINQ methods for filtering and converting collections.
+    - Invoke delegate methods using `Action` and `Func` delegates.
     - Subscribe and unsubscribe to events `ValueChanged` on `_instance`.
     - Use indexers on `IndexerAndEventExamples` to set and get values.
     - Subscribe to event handlers `DataChanged` and `StatusChanged`.
-    - Invoke nested methods using `Math` functions.
-    - Call an interface method [`InterfaceMethod`](<#iexampleinterfaceinterfacemethod>) on an `IExampleInterface` instance.
-    - Invoke a static constructor implicitly by calling [`DoSomething`](<#staticconstructorexampledosomething>).
-    - Use null-conditional operators to safely access methods on a nullable string.
+    - Invoke nested methods using `Math` class methods.
+    - Call interface method [`InterfaceMethod`](<#iexampleinterfaceinterfacemethod>) on an `IExampleInterface` instance.
+    - Invoke a static constructor implicitly by calling [`DoSomething`](<#staticconstructorexampledosomething>) on `StaticConstructorExample`.
+    - Use null-conditional operators to safely access members of a nullable string.
     - Create a delegate using method group conversion and invoke it.
-    - Invoke an anonymous method to convert a string to uppercase.
-    - Use a lambda expression to check if a number is even.
-- **Output**: No output is returned from this method as it is a `void` method.
+    - Invoke an anonymous method and a lambda expression.
+- **Output**: No output is returned as the method is void and primarily demonstrates method invocation patterns.
 - **Methods Called**:
     - [`Com.Example.Invocations.DerivedClass.VirtualMethod`](<#derivedclassvirtualmethod>)
     - [`Com.Example.Invocations.ImplementationClass`](<#implementationclass>)
@@ -88,10 +85,10 @@ Executes a series of method invocations and operations to test various C# langua
 Logs a message to the console indicating that a value has changed.
 - **Modifiers**: `private`
 - **Inputs**:
-    - ``value``: A `string` representing the new value that has changed.
+    - `value`: The new value that has triggered the change event.
 - **Control Flow**:
-    - Logs the message 'Value changed: {value}' to the console, where `{value}` is the input string.
-- **Output**: No output is returned as the method's return type is `void`.
+    - Logs the message 'Value changed: {value}' to the console, where '{value}' is replaced with the actual value passed to the method.
+- **Output**: No output is returned.
 - **See also**: [`Com.Example.Invocations.InvocationExamples`](<#invocationexamples>)  (Base Class)
 
 
@@ -103,10 +100,10 @@ Logs a message to the console when data changes.
 - **Modifiers**: `private`
 - **Inputs**:
     - `sender`: The source of the event.
-    - `e`: An `EventArgs` object that contains no event data.
+    - `e`: An instance of `EventArgs` that contains the event data.
 - **Control Flow**:
-    - Writes the message 'Data changed' to the console.
-- **Output**: No output is returned.
+    - Calls `Console.WriteLine` to output the message 'Data changed' to the console.
+- **Output**: No return value (void method).
 - **See also**: [`Com.Example.Invocations.InvocationExamples`](<#invocationexamples>)  (Base Class)
 
 
@@ -134,10 +131,10 @@ Calculates the length of a given string, returning 0 if the string is null.
 - **Inputs**:
     - `input`: A string whose length is to be calculated.
 - **Control Flow**:
-    - Check if `input` is null using the null-conditional operator `?.`.
-    - If `input` is not null, return the length of `input`.
-    - If `input` is null, return 0.
-- **Output**: An integer representing the length of the input string, or 0 if the input is null.
+    - Check if the `input` string is null using the null-conditional operator `?.`.
+    - If `input` is not null, return the length of the string using `input.Length`.
+    - If `input` is null, return 0 using the null-coalescing operator `??`.
+- **Output**: An integer representing the length of the `input` string, or 0 if `input` is null.
 - **See also**: [`Com.Example.Invocations.InvocationExamples`](<#invocationexamples>)  (Base Class)
 
 
@@ -145,7 +142,7 @@ Calculates the length of a given string, returning 0 if the string is null.
 #### InvocationExamples\.TestAsyncInvocations<!-- {{#callable:Com.Example.Invocations.InvocationExamples.TestAsyncInvocations}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L150>)
 
-Executes a series of asynchronous operations using async/await, Task.Run, Task.Delay, and ConfigureAwait.
+Executes several asynchronous operations using async/await, Task.Run, Task.Delay, and ConfigureAwait.
 - **Modifiers**: `private`, `async`
 - **Inputs**: None
 - **Control Flow**:
@@ -179,10 +176,10 @@ Executes a series of asynchronous operations using async/await, Task.Run, Task.D
 #### DerivedClass\.DerivedClass<!-- {{#callable:Com.Example.Invocations.DerivedClass.DerivedClass}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L169>)
 
-Initializes a new instance of the `DerivedClass` class by calling the base class constructor with a specified name and a default value of 0.
+Initializes a new instance of the `DerivedClass` with a specified name, calling the base class constructor with the name and a default value of 0; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `name`: A string that represents the name to pass to the base class constructor.
+    - `name`: A string that represents the name to initialize the `DerivedClass` instance with.
 - **Control Flow**:
     - Calls the base class constructor `base(name, 0)` with the provided `name` and a default integer value of 0.
 - **Output**: There is no output as this is a constructor.
@@ -193,11 +190,11 @@ Initializes a new instance of the `DerivedClass` class by calling the base class
 #### DerivedClass\.BaseMethod<!-- {{#callable:Com.Example.Invocations.DerivedClass.BaseMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L173>)
 
-Invokes the [`VirtualMethod`](<#derivedclassvirtualmethod>) from the base class.
+Calls the [`VirtualMethod`](<#derivedclassvirtualmethod>) from the base class.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `base.VirtualMethod()` to execute the [`VirtualMethod`](<#derivedclassvirtualmethod>) defined in the base class.
+    - Invoke the [`VirtualMethod`](<#derivedclassvirtualmethod>) from the base class using `base.VirtualMethod()`.
 - **Output**: No output is returned as the method has a `void` return type.
 - **Methods Called**:
     - [`Com.Example.Invocations.DerivedClass.VirtualMethod`](<#derivedclassvirtualmethod>)
@@ -208,13 +205,13 @@ Invokes the [`VirtualMethod`](<#derivedclassvirtualmethod>) from the base class.
 #### DerivedClass\.VirtualMethod<!-- {{#callable:Com.Example.Invocations.DerivedClass.VirtualMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L179>)
 
-Overrides the `VirtualMethod` to provide additional functionality in a derived class.
+Overrides a virtual method to provide additional functionality in a derived class.
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
     - Calls the base class implementation of `VirtualMethod` using `base.VirtualMethod()`.
-    - Writes the string "Derived implementation" to the console using `Console.WriteLine()`.
-- **Output**: No return value (void method).
+    - Outputs the string "Derived implementation" to the console using `Console.WriteLine()`.
+- **Output**: No return value; the method outputs a string to the console.
 - **See also**: [`Com.Example.Invocations.DerivedClass`](<#derivedclass>)  (Base Class)
 
 
@@ -222,13 +219,12 @@ Overrides the `VirtualMethod` to provide additional functionality in a derived c
 #### DerivedClass\.AbstractMethod<!-- {{#callable:Com.Example.Invocations.DerivedClass.AbstractMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L185>)
 
-Implements an abstract method by writing a message to the console.
+Implements the abstract method by writing a message to the console.
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - Overrides the abstract method from the base class.
-    - Writes the message 'Abstract method implementation' to the console.
-- **Output**: No output is returned as the method is of type `void`.
+    - Call `Console.WriteLine` to output the string 'Abstract method implementation' to the console.
+- **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`Com.Example.Invocations.DerivedClass`](<#derivedclass>)  (Base Class)
 
 
@@ -239,7 +235,7 @@ Implements an abstract method by writing a message to the console.
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Implements the `IExampleInterface` interface by providing a concrete implementation of the `InterfaceMethod`. The method outputs a message to the console, indicating that the interface method has been implemented.
+- **Description**: Implements the `IExampleInterface` interface by providing a concrete implementation of the `InterfaceMethod`. The method writes a message to the console, indicating that the interface method has been implemented.
 - **Methods**:
     - [`Com.Example.Invocations.ImplementationClass.InterfaceMethod`](<#implementationclassinterfacemethod>)
 - **Inherits From**:
@@ -282,7 +278,7 @@ Initializes the `StaticConstructorExample` class and writes a message to the con
 - **Modifiers**: `static`
 - **Inputs**: None
 - **Control Flow**:
-    - The static constructor is automatically called before any static members are accessed or any instances are created.
+    - The static constructor is called automatically before any static members are accessed or any static methods are invoked.
     - Writes the message 'Static constructor invoked' to the console.
 - **Output**: There is no output returned from this constructor.
 - **See also**: [`Com.Example.Invocations.StaticConstructorExample`](<#staticconstructorexample>)  (Base Class)
@@ -292,12 +288,12 @@ Initializes the `StaticConstructorExample` class and writes a message to the con
 #### StaticConstructorExample\.DoSomething<!-- {{#callable:Com.Example.Invocations.StaticConstructorExample.DoSomething}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L211>)
 
-Outputs a message to the console indicating that a static method was called.
+Writes a static message to the console.
 - **Modifiers**: `public`, `static`
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `Console.WriteLine` with the string "Static method" to output a message to the console.
-- **Output**: No return value; the method outputs a message to the console.
+    - Calls `Console.WriteLine` with the string "Static method".
+- **Output**: No output is returned as the method is `void`.
 - **See also**: [`Com.Example.Invocations.StaticConstructorExample`](<#staticconstructorexample>)  (Base Class)
 
 
@@ -308,7 +304,7 @@ Outputs a message to the console indicating that a static method was called.
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Represents a generic class that demonstrates the use of generic methods and constraint-based generic invocations. It includes a method `TestGenericCalls` that creates instances of `GenericInvocations` and `ConstrainedGeneric` classes, and a method `GenericMethod` that takes a parameter of type `T` and writes it to the console.
+- **Description**: Represents a generic class that demonstrates the use of generic methods and constraint-based generic invocations. It includes a method `TestGenericCalls` that creates instances of the class with specific type parameters and calls a generic method `GenericMethod` with a parameter of type `T`. The class is designed to work with two generic type parameters, `T` and `U`, and showcases how to invoke methods on generic instances.
 - **Methods**:
     - [`Com.Example.Invocations.GenericInvocations.TestGenericCalls`](<#genericinvocationstestgenericcalls>)
     - [`Com.Example.Invocations.GenericInvocations.GenericMethod`](<#genericinvocationsgenericmethod>)
@@ -340,11 +336,10 @@ Invokes generic and constraint-based generic methods using specific type paramet
 Writes a message to the console that includes the provided generic item.
 - **Modifiers**: `public`
 - **Inputs**:
-    - ``item``: A generic parameter of type `T` that the method will include in the console output.
+    - `T item`: A generic item of type `T` to include in the console message.
 - **Control Flow**:
-    - The method takes a single parameter `item` of generic type `T`.
-    - It uses `Console.WriteLine` to output a formatted string that includes the `item`.
-- **Output**: No return value, as the method is `void`.
+    - Uses `Console.WriteLine` to output a formatted string that includes the `item` parameter.
+- **Output**: No return value (void method).
 - **See also**: [`Com.Example.Invocations.GenericInvocations`](<#genericinvocations>)  (Base Class)
 
 
@@ -355,7 +350,7 @@ Writes a message to the console that includes the provided generic item.
 
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: Represents a generic class that operates on a collection constrained to implement the `ICollection<int>` interface. The class provides a method `ProcessCollection` that performs operations on the collection, such as adding an integer, checking the count, and verifying if a specific integer is present.
+- **Description**: Defines a generic class with a type parameter `T` that must implement the `ICollection<int>` interface. The class includes a method `ProcessCollection` that operates on the collection by adding an integer, checking the count, and verifying if a specific integer is present.
 - **Methods**:
     - [`Com.Example.Invocations.ConstrainedGeneric.ProcessCollection`](<#constrainedgenericprocesscollection>)
 
@@ -365,15 +360,15 @@ Writes a message to the console that includes the provided generic item.
 #### ConstrainedGeneric\.ProcessCollection<!-- {{#callable:Com.Example.Invocations.ConstrainedGeneric.ProcessCollection}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L238>)
 
-Performs operations on a generic collection constrained to implement `ICollection<int>`, including adding an element, counting elements, and checking for an element's presence.
+Performs operations on a generic collection constrained to `ICollection<int>`, including adding an element, counting elements, and checking for an element's presence.
 - **Modifiers**: `public`
 - **Inputs**:
-    - ``collection``: A generic collection of type `T` that must implement `ICollection<int>`.
+    - `collection`: A generic collection of type `T` constrained to `ICollection<int>`.
 - **Control Flow**:
     - Add the integer `42` to the `collection`.
     - Retrieve the count of elements in the `collection` and store it in the variable `count`.
     - Check if the `collection` contains the integer `42` and store the result in the variable `contains`.
-- **Output**: No output is returned as the method has a `void` return type.
+- **Output**: No output is returned as the method is `void`.
 - **See also**: [`Com.Example.Invocations.ConstrainedGeneric`](<#constrainedgeneric>)  (Base Class)
 
 
@@ -385,7 +380,7 @@ Performs operations on a generic collection constrained to implement `ICollectio
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_invocations.cs#L191>)
 
 - **Modifiers**: `public`
-- **Description**: Defines a contract with a single method `InterfaceMethod`. Classes that implement this interface must provide an implementation for `InterfaceMethod`. This interface does not inherit from any other interfaces and does not define any properties or events.
+- **Description**: Defines a contract with a single method `InterfaceMethod`. This method must be implemented by any class that implements the `IExampleInterface`. The interface does not specify any parameters or return type for the method, indicating that the method performs an action without returning a value.
 
 **Methods**
 - `InterfaceMethod`<!-- {{#callable:Com.Example.Invocations.IExampleInterface.InterfaceMethod}} -->

@@ -7,6 +7,7 @@ import tree_sitter
 import tree_sitter_c
 import tree_sitter_c_sharp
 import tree_sitter_cpp
+import tree_sitter_go
 import tree_sitter_java
 import tree_sitter_python
 import tree_sitter_typescript
@@ -20,6 +21,7 @@ LANGUAGES = {
     "java": tree_sitter.Language(tree_sitter_java.language()),
     "csharp": tree_sitter.Language(tree_sitter_c_sharp.language()),
     "js_ts": tree_sitter.Language(tree_sitter_typescript.language_typescript()),
+    "go": tree_sitter.Language(tree_sitter_go.language()),
 }
 
 

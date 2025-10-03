@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates, file and code analysis tools, GitHub utilities, uctags configuration, and project setup files.
+Templates, utilities, scripts, configuration files, dependency management, and documentation for Inspector.
 
 ## Folders
-- **[src](src/README.md)**: Templates, file analysis, GitHub utilities, code analysis tools, and functions for symbol tables and documentation.
-- **[uctags-2024.10.02-linux-x86_64](uctags-2024.10.02-linux-x86_64/README.md)**: Configuration files for library installation, dependency graphs, license, manifest, and documentation for uctags.
+- **[src](src/README.md)**: Templates, utilities, and scripts for code inspection, version control, symbol management, and documentation.
+- **[uctags-2024.10.02-linux-x86_64](uctags-2024.10.02-linux-x86_64/README.md)**: Configuration files for library installation, dependency graphs, license text, release notes, and package metadata.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry tool specifying project metadata, dependencies, and build system settings.
+- **[poetry.lock](poetry.lock.md)**: Locks specific dependency versions for consistent Python project environments using Poetry.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry package manager, specifying project metadata and dependencies.
 - **[README.md](README.md.md)**: Instructions for installing, running, and deploying the cloud-first version of Inspector.
 
 ---

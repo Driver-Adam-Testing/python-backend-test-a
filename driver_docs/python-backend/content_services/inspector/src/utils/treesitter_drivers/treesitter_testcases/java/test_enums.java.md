@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines enums for Color, Status with a constructor, and Priority with multiple methods.
+Defines enums for Color, Status, and Priority with constructors and methods.
 
 # Purpose
-The code defines three enumerations: `Color`, [`Status`](<#statusstatus>), and [`Priority`](<#prioritypriority>), each serving a distinct purpose. The `Color` enum provides a simple enumeration of basic colors: `RED`, `GREEN`, and `BLUE`. This enum does not include additional fields or methods, making it suitable for straightforward use cases where only the color names are needed.
+The code defines three enumerations: `Color`, [`Status`](<#statusstatus>), and [`Priority`](<#prioritypriority>). Each enumeration serves a distinct purpose within the application. The `Color` enum provides a simple representation of three basic colors: `RED`, `GREEN`, and `BLUE`. This enum does not include any additional fields or methods, making it suitable for straightforward use cases where only the color names are needed.
 
-The [`Status`](<#statusstatus>) enum includes two constants, `ACTIVE` and `INACTIVE`, each associated with an integer value. This enum has a private field `value` and a constructor to initialize this field. The method `getValue()` allows retrieval of the integer value associated with each status, providing a way to map the status to a numerical representation.
+The [`Status`](<#statusstatus>) enum includes two constants, `ACTIVE` and `INACTIVE`, each associated with an integer value. This enum has a private field `value` and a constructor to initialize this field. The method `getValue()` allows retrieval of the integer value associated with each status, which can be useful for operations that require a numeric representation of the status.
 
-The [`Priority`](<#prioritypriority>) enum is more complex, with three constants: `LOW`, `MEDIUM`, and `HIGH`. Each constant is associated with an integer `level` and a `description`. The enum includes a constructor to initialize these fields and provides two methods, `getLevel()` and `getDescription()`, to access the level and description of each priority. This design allows for a detailed representation of priority levels, making it useful in contexts where both a numerical and descriptive representation of priority is required.
+The [`Priority`](<#prioritypriority>) enum is more complex, with three constants: `LOW`, `MEDIUM`, and `HIGH`. Each constant is associated with an integer `level` and a `description`. The enum includes a constructor to initialize these fields and provides two methods, `getLevel()` and `getDescription()`, to access the level and description of each priority. This design allows for detailed handling of priority levels, which can be useful in scenarios where both a numeric and descriptive representation of priority is required.
 # Imports and Dependencies
 
 ---
@@ -24,15 +24,14 @@ The [`Priority`](<#prioritypriority>) enum is more complex, with three constants
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_enums.java#L6>)
 
 - **Modifiers**: `public`
-- **Description**: Represents a simple enumeration of colors with three possible values: `RED`, `GREEN`, and `BLUE`. This enum is used to define a set of named constants for colors.
+- **Description**: Represents a simple enumeration of colors with three possible values: `RED`, `GREEN`, and `BLUE`. This enum does not include any additional fields or methods.
 
 
 ---
 ### Status<!-- {{#class:com.example.Status}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_enums.java#L13>)
 
-- **Modifiers**: `enum`
-- **Description**: Represents the status of an entity with two possible values, `ACTIVE` and `INACTIVE`, each associated with an integer value.
+- **Description**: Represents the status of an entity with two possible values: `ACTIVE` and `INACTIVE`, each associated with an integer value.
 - **Fields**:
     - `value`: `int` Stores the integer value associated with the status.
 - **Methods**:
@@ -47,7 +46,7 @@ The [`Priority`](<#prioritypriority>) enum is more complex, with three constants
 
 Initializes a `Status` enum instance with a specified integer value.
 - **Inputs**:
-    - `value`: An integer that represents the status value to assign to the enum instance.
+    - `value`: An integer that represents the status value to assign to the `Status` enum instance.
 - **Control Flow**:
     - Assigns the input `value` to the `value` field of the `Status` enum instance.
 - **Output**:
@@ -66,7 +65,7 @@ Returns the integer value associated with the `Status` enum instance.
     - Accesses the `value` field of the `Status` enum instance.
     - Returns the `value` field.
 - **Output**:
-    - The integer value associated with the `Status` enum instance.
+    - An integer representing the value of the `Status` enum instance.
 - **See also**: [`com.example.Status`](<#status>)  (Base Class)
 
 
@@ -79,7 +78,7 @@ Returns the integer value associated with the `Status` enum instance.
 - **Description**: Represents different levels of priority with associated integer levels and descriptive strings.
 - **Fields**:
     - `level`: `int` Stores the integer level of the priority.
-    - `description`: `String` Stores the string description of the priority.
+    - `description`: `String` Stores the descriptive string of the priority.
 - **Methods**:
     - [`com.example.Priority.Priority`](<#prioritypriority>)
     - [`com.example.Priority.getLevel`](<#prioritygetlevel>)
@@ -114,7 +113,7 @@ Returns the `level` field of the `Priority` enum instance.
     - Accesses the `level` field of the `Priority` enum instance.
     - Returns the value of the `level` field.
 - **Output**:
-    - The method returns an integer representing the level of the `Priority` enum instance.
+    - An integer representing the level of the `Priority` enum instance.
 - **See also**: [`com.example.Priority`](<#priority>)  (Base Class)
 
 
@@ -122,14 +121,14 @@ Returns the `level` field of the `Priority` enum instance.
 #### Priority\.getDescription<!-- {{#callable:com.example.Priority.getDescription}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_enums.java#L48>)
 
-Returns the `description` field of the `Priority` enum.
+Returns the description of the `Priority` enum instance.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
     - Accesses the `description` field of the `Priority` enum instance.
     - Returns the value of the `description` field.
 - **Output**:
-    - The method returns a `String` that represents the description of the `Priority` enum instance.
+    - A `String` that represents the description of the `Priority` enum instance.
 - **See also**: [`com.example.Priority`](<#priority>)  (Base Class)
 
 

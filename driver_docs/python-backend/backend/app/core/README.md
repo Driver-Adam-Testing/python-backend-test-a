@@ -8,7 +8,7 @@ Configuration settings, logger setup, and an empty initializer file for a Python
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[config.py](config.py.md)**: Configuration settings for a Python backend application using Pydantic for environment variables and validation.
+- **[config.py](config.py.md)**: Configuration settings for a Python backend application using Pydantic for environment variables.
 - **[logger.py](logger.py.md)**: Configures a logger with a stream handler for outputting warning-level messages to stdout.
 
 ---

@@ -3,16 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Loads configuration for Git provider applications based on their kind and optional client secret.
+Loads and returns Git provider configuration based on the application and provider kind.
 
 # Purpose
-The code defines a function [`load_provider_config`](<#load_provider_config>) that creates and returns a `GitProviderConfig` object based on the type of `GitProviderApp` provided. It supports specific configurations for `GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED` and `GitProviderKind.BITBUCKET`. For `GITLAB_ENTERPRISE_SELF_MANAGED`, it sets various OAuth-related endpoints and parameters, while for `BITBUCKET`, it provides a minimal configuration with some fields set to `None`. If the `provider_kind` of the `GitProviderApp` is not supported, the function raises a `ValueError`. This code provides narrow functionality focused on configuring Git provider applications.
+The code defines a function [`load_provider_config`](<#load_provider_config>) that configures and returns a `GitProviderConfig` object based on the type of Git provider specified by the `GitProviderApp` instance. The function supports different Git provider kinds, such as `GITLAB_ENTERPRISE_SELF_MANAGED` and `BITBUCKET`, and sets up the configuration parameters accordingly. For `GITLAB_ENTERPRISE_SELF_MANAGED`, it populates the configuration with specific OAuth endpoints and user information endpoints. For `BITBUCKET`, it sets a default base URL and leaves other parameters as `None`. If the `provider_kind` is not supported, the function raises a `ValueError`.
+
+The function is part of a broader system that interacts with different Git providers, and it is likely used to facilitate OAuth authentication and API interactions with these providers. The function takes an optional `client_secret` parameter, which can be used to provide additional security credentials when necessary. The code is structured to be part of a library or module that can be imported and used in other parts of an application, particularly where integration with Git providers is required.
 # Imports and Dependencies
 
 ---
 - `app.git_providers.core.config.GitProviderConfig`
-- `database.models_v1.GitProviderApp`
-- `database.models_v1.GitProviderKind`
+- `database.models.GitProviderApp`
+- `database.models.GitProviderKind`
 
 
 # Functions
@@ -21,15 +23,15 @@ The code defines a function [`load_provider_config`](<#load_provider_config>) th
 ### load\_provider\_config<!-- {{#callable:python-backend/backend/app/git_providers/core/config_loader.load_provider_config}} -->
 [View Source →](<../../../../../../backend/app/git_providers/core/config_loader.py#L5>)
 
-Loads and returns a [`GitProviderConfig`](<config.py.md#gitproviderconfig>) object based on the `GitProviderApp` instance and optional client secret.
+Loads and returns a [`GitProviderConfig`](<config.py.md#gitproviderconfig>) object based on the `GitProviderApp` instance and its provider kind.
 - **Inputs**:
     - `app`: An instance of `GitProviderApp` that contains information about the Git provider application.
     - `client_secret`: An optional string representing the client secret for the Git provider application.
 - **Logic and Control Flow**:
-    - Checks if `app.provider_kind` is `GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED` and returns a [`GitProviderConfig`](<config.py.md#gitproviderconfig>) with specific attributes for GitLab Enterprise Self-Managed.
-    - Checks if `app.provider_kind` is `GitProviderKind.BITBUCKET` and returns a [`GitProviderConfig`](<config.py.md#gitproviderconfig>) with specific attributes for Bitbucket.
+    - Checks if `app.provider_kind` is `GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED` and returns a [`GitProviderConfig`](<config.py.md#gitproviderconfig>) with specific endpoints and parameters for GitLab Enterprise Self-Managed.
+    - Checks if `app.provider_kind` is `GitProviderKind.BITBUCKET` and returns a [`GitProviderConfig`](<config.py.md#gitproviderconfig>) with default values and a base URL for Bitbucket.
     - Raises a `ValueError` if `app.provider_kind` is not supported.
-- **Output**: A [`GitProviderConfig`](<config.py.md#gitproviderconfig>) object configured according to the specified `GitProviderApp` and `client_secret`.
+- **Output**: A [`GitProviderConfig`](<config.py.md#gitproviderconfig>) object configured according to the specified `GitProviderApp` and its provider kind.
 - **Functions Called**:
     - [`python-backend/backend/app/git_providers/core/config.GitProviderConfig`](<config.py.md#gitproviderconfig>)
 

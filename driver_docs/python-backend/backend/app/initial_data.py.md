@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Initializes database with initial data based on environment settings.
+Initializes database with initial data in a local environment using SQLModel.
 
 # Purpose
-This script initializes a database session and optionally creates initial data based on the environment configuration. It imports necessary components such as the `engine` and `init_db` function from a database module, and `settings` from a configuration module. The [`init`](<#init>) function takes a `Session` object and calls `init_db` to set up the database. The [`main`](<#main>) function checks if the environment is set to "local" using the `settings.ENVIRONMENT` variable; if so, it logs the creation of initial data and executes the [`init`](<#init>) function within a database session. If the environment is not "local", it logs that the initial data creation is skipped. The script configures logging to display informational messages and executes the [`main`](<#main>) function when run as a standalone program.
+This script initializes a database session and optionally creates initial data based on the environment configuration. It imports necessary components such as `engine` and `init_db` from a database module, and `settings` from a configuration module. The [`init`](<#init>) function takes a `Session` object and calls `init_db` to set up the database. The [`main`](<#main>) function checks the environment setting; if it is "local", it logs the creation of initial data and calls [`init`](<#init>) within a session context. If the environment is not "local", it logs that the initial data creation is skipped. The script executes the [`main`](<#main>) function when run as the main program.
 # Imports and Dependencies
 
 ---
@@ -22,7 +22,7 @@ This script initializes a database session and optionally creates initial data b
 ---
 ### logger
 - **Type**: ``Logger``
-- **Description**: The `logger` is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its identifier.
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
 - **Use**: Used to log informational messages about the application's initialization process.
 
 
@@ -51,11 +51,12 @@ Executes initial data creation based on the environment setting.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Checks if the `ENVIRONMENT` setting is 'local'.
-    - Logs a message indicating the start of initial data creation if the environment is 'local'.
-    - Opens a session with the database engine and calls the [`init`](<#init>) function to initialize the database.
-    - Logs a message indicating the completion of initial data creation.
-    - Logs a message indicating that initial data creation is skipped if the environment is not 'local'.
-- **Output**: No output is returned as the function returns `None`.
+    - Logs the message 'Creating initial data' if the environment is 'local'.
+    - Opens a session with the database engine using a context manager.
+    - Calls the [`init`](<#init>) function with the session to initialize the database.
+    - Logs the message 'Initial data created' after initialization.
+    - Logs the message 'Skipping initial data.' if the environment is not 'local'.
+- **Output**: Does not return any value.
 - **Functions Called**:
     - [`python-backend/backend/app/initial_data.init`](<#init>)
 

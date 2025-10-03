@@ -31,10 +31,13 @@ class Lang(IntEnum):
     DEFAULT = 10
     TYPESCRIPT = 11
     JAVASCRIPT = 12
+    GO = 13
 
     @classmethod
     def from_ext(cls, ext: str) -> Self:
         match ext:
+            case ".go" | ".mod":
+                return cls.GO
             case ".c":
                 return cls.C
             case ".cpp" | ".cc" | ".cxx" | ".c++":
@@ -218,6 +221,7 @@ class RawSymbolData(BaseModel):
                 symbol_code = s_code
                 file_code = code
         else:
+            # TODO: fix this
             symbol_code = ts_symbol.symbol_code
 
         raw_symbol = cls(

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a template for multi-prompt headers in C or C++ source code inspection.
+Defines a template for generating multi-prompt headers for large source code files in C or C++.
 
 # Purpose
-The code defines a template for generating documentation headers for C or C++ source code files. It imports several components from the `utils.lang_specialization` and `utils.templates` modules, which are used to create structured prompts for different sections of a documentation header. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER`, is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions".
+The code defines a template for generating documentation headers for C or C++ source code files. It imports several components from the `utils.lang_specialization` and `utils.templates` modules, which are used to create structured documentation sections. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER`, is a list of tuples, each representing a section of the documentation. These sections include "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions."
 
-Each tuple in the template contains a type identifier from the `S` class, a section title, and a series of functions or prompts that are used to generate content for that section. For example, the "Purpose" section uses prompts related to the general purpose of C or C++ headers, while the "Imports and Dependencies" section uses a function to check for necessary imports. The template is designed to facilitate the automated generation of comprehensive documentation for C or C++ header files by leveraging both static analysis and language model outputs.
+Each tuple in the template specifies a type of content, a section title, and functions or prompts to generate the content for that section. For example, the "Purpose" section uses prompts to generate a description of the file's purpose, while the "Imports and Dependencies" section uses a function to check and list the file's imports. The template uses both static analysis and language model (LLM) outputs to gather information about global variables, data structures, and functions. This code is intended to be part of a larger system that automates the creation of documentation for C or C++ code files.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ Each tuple in the template contains a type identifier from the `S` class, a sect
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_HEADER
 - **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a string and several function references. Each tuple represents a section of a multi-prompt template for large source code files.
-- **Use**: Used to define the structure and components of a multi-prompt template for processing large source code files.
+- **Description**: A list of tuples, where each tuple contains a string identifier and several function references. These tuples define different sections of a multi-prompt template, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: Used to organize and define the structure of a multi-prompt template for code generation or analysis.
 
 
 

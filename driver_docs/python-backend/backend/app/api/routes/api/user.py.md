@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines API routes for retrieving user profile and organization information using Auth0.
+Defines API routes for retrieving user and organization information using Auth0 authentication.
 
 # Purpose
-This code defines a FastAPI router that provides two endpoints related to user information. It imports `ApiKeyToken` for authentication and `Auth0Service` to interact with user data. The `/me` endpoint retrieves the user profile based on the `user_id` from the `ApiKeyToken`, while the `/me/organization` endpoint retrieves the user's organization information using the `organization_id`. The `Auth0Service` is used to fetch the necessary data for both endpoints.
+This code defines a FastAPI router that provides two endpoints related to user information. It imports `ApiKeyToken` for authentication and `Auth0Service` for interacting with user data. The first endpoint, `/me`, retrieves the user profile based on the `user_id` from the `ApiKeyToken`. The second endpoint, `/me/organization`, retrieves the organization information using the `organization_id` from the same token. The `Auth0Service` is used to handle the logic for fetching user and organization data.
 # Imports and Dependencies
 
 ---
@@ -20,15 +20,15 @@ This code defines a FastAPI router that provides two endpoints related to user i
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API endpoints.
-- **Use**: Used to register and handle HTTP GET requests for user information and organization details.
+- **Description**: An instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API.
+- **Use**: Used to register and handle HTTP GET requests for user information and organization endpoints.
 
 
 ---
 ### auth0\_service
 - **Type**: ``Auth0Service``
-- **Description**: The `auth0_service` variable is an instance of the `Auth0Service` class. This class is likely responsible for handling authentication-related operations, such as retrieving user profiles and organization information.
-- **Use**: Used to call methods that retrieve user and organization data based on identifiers provided by the `ApiKeyToken`.
+- **Description**: An instance of the `Auth0Service` class, which is likely responsible for handling authentication-related operations using the Auth0 platform. This instance is used to interact with user profiles and organizations.
+- **Use**: Used to call methods that retrieve user profile and organization information based on the provided `ApiKeyToken`.
 
 
 # Functions
@@ -37,10 +37,10 @@ This code defines a FastAPI router that provides two endpoints related to user i
 ### user\_info<!-- {{#callable:python-backend/backend/app/api/routes/api/user.user_info}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/api/user.py#L9>)
 
-Retrieves the user profile for the given API key token.
+Retrieves the user profile for the authenticated user using their API key token.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `caller`: An instance of `ApiKeyToken` that contains the user's API key information.
+    - `caller`: An instance of `ApiKeyToken` representing the authenticated user.
 - **Logic and Control Flow**:
     - Calls the [`get_user_profile`](<../../../services/auth0_service.py.md#auth0serviceget_user_profile>) method of `auth0_service` with the `user_id` from the `caller` object.
     - Returns the result of the [`get_user_profile`](<../../../services/auth0_service.py.md#auth0serviceget_user_profile>) method call.
@@ -56,9 +56,9 @@ Retrieves the user profile for the given API key token.
 Retrieves the organization details for the authenticated user.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `caller`: An instance of `ApiKeyToken` that contains the authentication details of the user, including the `organization_id`.
+    - `caller`: An instance of `ApiKeyToken` representing the authenticated user, which contains the user's organization ID.
 - **Logic and Control Flow**:
-    - Calls the [`get_organization`](<../../../services/auth0_service.py.md#auth0serviceget_organization>) method of the `auth0_service` object with the `organization_id` from the `caller` argument.
+    - Calls the [`get_organization`](<../../../services/auth0_service.py.md#auth0serviceget_organization>) method of the `auth0_service` with the `organization_id` from the `caller`.
     - Returns the result of the [`get_organization`](<../../../services/auth0_service.py.md#auth0serviceget_organization>) method call.
 - **Output**: A dictionary containing the organization details.
 - **Functions Called**:

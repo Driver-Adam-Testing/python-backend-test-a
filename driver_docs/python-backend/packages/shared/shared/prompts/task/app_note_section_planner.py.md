@@ -6,21 +6,21 @@
 A prompt for creating sections of a detailed technical document called an app note.
 
 # Purpose
-This code defines a constant `PROMPT` and a dictionary `MESSAGE` that are likely used for generating or managing content related to technical documentation. The `PROMPT` is a multi-line string that outlines a task for creating sections of a technical document called an app note, emphasizing the need for in-depth insights and understanding of a codebase. The `MESSAGE` dictionary contains a key-value pair where the key is `role` with the value `system`, and the key `content` holds the `PROMPT` string. This setup suggests that the code is part of a system that automates or assists in the creation of technical documentation by providing structured guidance on how to approach the task.
+The code defines two constants, `PROMPT` and `MESSAGE`, which are used for generating sections of a technical document called an app note. The `PROMPT` variable contains a multi-line string that instructs the user to create detailed sections for the document by understanding the codebase and using specific tools for context retrieval. The `MESSAGE` variable is a dictionary with a key `role` set to "system" and a key `content` that holds the `PROMPT` string. This code provides a narrow functionality focused on guiding the creation of technical documentation sections.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: ``PROMPT``
+- **Type**: ``str``
 - **Description**: A multi-line string that provides instructions for creating sections of a technical document called an app note. It emphasizes the need for in-depth insights and understanding of the codebase before writing each section.
-- **Use**: Used as a template or guideline for generating sections of a technical document.
+- **Use**: Used as a template or guideline for users to follow when creating sections of a technical document.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
 - **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
-- **Use**: Used to store system-level message data with a specific role and content for further processing or communication.
+- **Use**: Used to store system role information and a detailed prompt for creating technical document sections.
 
 
 

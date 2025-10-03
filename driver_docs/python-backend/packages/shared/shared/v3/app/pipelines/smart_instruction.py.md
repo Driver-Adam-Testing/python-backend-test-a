@@ -6,9 +6,9 @@
 Implements a pipeline for processing smart instructions using LLM clients and various tools.
 
 # Purpose
-The code defines a specialized pipeline for processing user instructions using a language model client. It includes two main classes: `SmartInstructionPipelineRequest` and `SmartInstructionPipelineResponse`. The `SmartInstructionPipelineRequest` class extends `PipelineRequest` and is responsible for handling user prompts and page content. It processes the input by abbreviating the page content and constructing a message history with various system and context-specific messages. The class then interacts with a language model client to generate responses through a multi-shot process, which involves multiple iterations and the use of tools like `HybridSearchTool`, `OpenFileTool`, and `FolderSummaryTool`.
+The code defines a pipeline for processing smart instructions using a language model client. It includes two main classes: `SmartInstructionPipelineRequest` and `SmartInstructionPipelineResponse`. The `SmartInstructionPipelineRequest` class extends `PipelineRequest` and is responsible for handling user prompts and page content. It processes the input by abbreviating the page content and creating a message history with various system and context messages. The class uses the `LlmClient` to perform multiple iterations of message processing, utilizing tools such as `HybridSearchTool`, `OpenFileTool`, and `FolderSummaryTool`. The results are then compiled into a `SmartInstructionPipelineResponse`.
 
-The `SmartInstructionPipelineResponse` class, which extends `PipelineResponse`, encapsulates the final response and any references generated during the process. The code also includes asynchronous streaming capabilities through the [`_stream`](<#smartinstructionpipelinerequest_stream>) method, which yields responses as they are generated. This setup allows for both synchronous and asynchronous processing of instructions, making it suitable for applications that require real-time interaction with a language model. The code is structured to be part of a larger system, as indicated by the imports from shared modules and the use of a client configured for a specific language model version.
+The code also supports asynchronous streaming of responses through the [`_stream`](<#smartinstructionpipelinerequest_stream>) method in the `SmartInstructionPipelineRequest` class. This method follows a similar process to [`_run`](<#smartinstructionpipelinerequest_run>), but it yields responses asynchronously using an `AsyncGenerator`. The code imports several components from shared modules, such as message types and tools, to facilitate the construction and processing of the message history. The primary purpose of this code is to provide a structured way to interact with a language model for generating and refining smart instructions based on user input and context.
 # Imports and Dependencies
 
 ---
@@ -39,7 +39,7 @@ The `SmartInstructionPipelineResponse` class, which extends `PipelineResponse`, 
 ### SmartInstructionPipelineResponse<!-- {{#class:python-backend/packages/shared/shared/v3/app/pipelines/smart_instruction.SmartInstructionPipelineResponse}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/smart_instruction.py#L24>)
 
-- **Description**: Inherits from `PipelineResponse` and serves as a placeholder for responses in the smart instruction pipeline, but does not add any additional functionality or properties.
+- **Description**: Inherits from `PipelineResponse` and does not add any additional functionality or members.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_response.PipelineResponse`](<pipeline_response.py.md#pipelineresponse>)
 
@@ -53,7 +53,7 @@ The `SmartInstructionPipelineResponse` class, which extends `PipelineResponse`, 
     - `page_content_before_cursor`: Holds the content of the page before the cursor position.
     - `page_content_after_cursor`: Holds the content of the page after the cursor position.
     - `format_kind`: Specifies the format type for the instruction.
-- **Description**: Handles the processing of a smart instruction request by managing user prompts and page content, and interacting with an LLM client to generate responses. It uses message history and various tools to refine and format the output.
+- **Description**: Handles the processing of user prompts and page content to generate a response using a language model client. It manages message history and interactions with various tools to produce a final response and references.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/smart_instruction.SmartInstructionPipelineRequest._run`](<#smartinstructionpipelinerequest_run>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/smart_instruction.SmartInstructionPipelineRequest._stream`](<#smartinstructionpipelinerequest_stream>)
@@ -66,15 +66,15 @@ The `SmartInstructionPipelineResponse` class, which extends `PipelineResponse`, 
 #### SmartInstructionPipelineRequest\.\_run<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/smart_instruction.SmartInstructionPipelineRequest._run}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/smart_instruction.py#L34>)
 
-Executes a sequence of operations to process a user prompt and page content, interacting with an LLM client to generate a response and references.
+Executes a sequence of operations to process a user prompt and page content, generating a response with references using a language model client.
 - **Inputs**:
-    - `client`: An instance of `LlmClient`, defaulting to `LlmClient.gpt_4_1()`, used to interact with the language model.
+    - `client`: An instance of `LlmClient` used to interact with the language model, defaulting to `LlmClient.gpt_4_1()`.
 - **Logic and Control Flow**:
     - Calls [`abbreviate_page_content`](<abbreviate_page_content.py.md#abbreviate_page_content>) to shorten the page content before and after the cursor based on the user prompt.
     - Creates a [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object with a series of predefined messages and context-specific messages derived from the datasource and format kind.
-    - Uses the `client.multi_shot` method to process the message history with specified tools (`HybridSearchTool`, `OpenFileTool`, `FolderSummaryTool`) over three iterations, obtaining a response and called tools.
+    - Invokes the [`multi_shot`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot>) method on the `client` with the message history and a set of tool types for three iterations, capturing the response and called tools.
     - Adds a [`CopyEditorSystemMessage`](<../static/messages/copy_editor_messages.py.md#copyeditorsystemmessage>) and a user message to the message history to request a copy edit of the last response.
-    - Calls `client.multi_shot` again with the updated message history and no tools for one iteration to refine the response.
+    - Calls [`multi_shot`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot>) again with the updated message history and no tool types for one iteration to refine the response.
     - Returns a [`SmartInstructionPipelineResponse`](<#smartinstructionpipelineresponse>) containing the final response content and a list of unique references extracted from the called tools.
 - **Output**: A [`SmartInstructionPipelineResponse`](<#smartinstructionpipelineresponse>) object containing the final response content and a list of unique references from the called tools.
 - **Functions Called**:
@@ -97,19 +97,17 @@ Executes a sequence of operations to process a user prompt and page content, int
 #### SmartInstructionPipelineRequest\.\_stream<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/smart_instruction.SmartInstructionPipelineRequest._stream}} -->
 [View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/smart_instruction.py#L79>)
 
-Streams responses from an LLM client using a message history and tool types.
+Streams responses from a language model client using a message history and specified tools.
 - **Decorators**: `@async`
 - **Inputs**:
-    - `client`: An instance of `LlmClient` to interact with the LLM service, defaulting to `LlmClient.gpt_4_1()`.
+    - `client`: An instance of `LlmClient` used to interact with the language model, defaulting to `LlmClient.gpt_4_1()`.
 - **Logic and Control Flow**:
-    - Abbreviates the page content using the [`abbreviate_page_content`](<abbreviate_page_content.py.md#abbreviate_page_content>) function with the user prompt and page content before and after the cursor.
-    - Creates a [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object with a series of predefined messages and context-specific messages derived from the datasource and format kind.
-    - Initiates an asynchronous loop to stream responses from the `client.multi_shot_stream` method with the message history and a set of tool types, iterating three times.
-    - Yields each response from the first [`multi_shot_stream`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot_stream>) call.
-    - Adds a [`CopyEditorSystemMessage`](<../static/messages/copy_editor_messages.py.md#copyeditorsystemmessage>) and a user message to the message history to request a copy edit of the last response.
-    - Initiates another asynchronous loop to stream responses from the `client.multi_shot_stream` method with the updated message history and no tool types, iterating once.
-    - Yields each response from the second [`multi_shot_stream`](<../../llms/clients/llm_client.py.md#llmclientmulti_shot_stream>) call.
-- **Output**: An asynchronous generator yielding `LlmStreamResponse` objects.
+    - Call [`abbreviate_page_content`](<abbreviate_page_content.py.md#abbreviate_page_content>) to get abbreviated content before and after the cursor based on the user prompt.
+    - Create a [`LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>) object with a series of predefined messages and context-specific messages.
+    - Use `client.multi_shot_stream` to stream responses from the language model with specified tools for three iterations, yielding each response.
+    - Add a [`CopyEditorSystemMessage`](<../static/messages/copy_editor_messages.py.md#copyeditorsystemmessage>) and a user message to the message history to request a copy edit of the last response.
+    - Use `client.multi_shot_stream` again to stream a single response for the copy edit, yielding the response.
+- **Output**: Yields `LlmStreamResponse` objects from the language model client.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1`](<../../llms/config/llm_config.py.md#llmconfiggpt_4_1>)
     - [`python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.abbreviate_page_content`](<abbreviate_page_content.py.md#abbreviate_page_content>)

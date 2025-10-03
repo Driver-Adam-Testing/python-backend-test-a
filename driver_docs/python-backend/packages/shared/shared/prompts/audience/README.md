@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Prompt templates for business development, product managers, fifth graders, and software engineers.
+Prompt templates and message structures for different audiences: business development, fifth grader, product manager, and software engineer.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: Imports modules `fifth_grader` and `software_engineer`.
-- **[business_development.py](business_development.py.md)**: A prompt template for business development professionals analyzing technical products.
-- **[fifth_grader.py](fifth_grader.py.md)**: Curates content to explain computers and software to fifth graders with illustrations and experiments.
-- **[product_manager.py](product_manager.py.md)**: Defines a prompt for product managers seeking a detailed technical analysis of product architecture.
+- **[__init__.py](__init__.py.md)**: Imports modules for fifth_grader and software_engineer.
+- **[business_development.py](business_development.py.md)**: Defines a prompt for curating content aimed at business development professionals.
+- **[fifth_grader.py](fifth_grader.py.md)**: Defines a prompt and message structure for explaining computers and software to a fifth grader.
+- **[product_manager.py](product_manager.py.md)**: A prompt template for curating content tailored to product managers seeking technical analysis.
 - **[software_engineer.py](software_engineer.py.md)**: Defines a prompt and response structure for a software engineer seeking detailed technical documentation.
 
 ---

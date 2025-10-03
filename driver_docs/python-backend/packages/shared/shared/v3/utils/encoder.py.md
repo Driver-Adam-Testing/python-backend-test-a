@@ -33,13 +33,13 @@ This code provides functionality for encoding and decoding UUIDs in JSON data. I
 #### UUIDEncoder\.default<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder.default}} -->
 [View Source →](<../../../../../../../packages/shared/shared/v3/utils/encoder.py#L7>)
 
-Converts a UUID object to its string representation during JSON encoding.
+Encodes a UUID object as a string when serializing JSON data.
 - **Inputs**:
     - `o`: The object to encode, which can be of any type.
 - **Logic and Control Flow**:
-    - Check if the input object `o` is an instance of `uuid.UUID`.
-    - If `o` is a `uuid.UUID`, convert it to a string and return the string.
-    - If `o` is not a `uuid.UUID`, call the `default` method of the superclass to handle the encoding.
+    - Checks if the input object `o` is an instance of `uuid.UUID`.
+    - If `o` is a `uuid.UUID`, converts it to a string and returns it.
+    - If `o` is not a `uuid.UUID`, calls the `default` method of the superclass to handle the encoding.
 - **Output**: Returns a string representation of a UUID object or delegates encoding to the superclass for other object types.
 - **See also**: [`python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder`](<#uuidencoder>)  (Base Class)
 
@@ -57,8 +57,8 @@ Converts string representations of UUIDs in a dictionary to UUID objects.
 - **Logic and Control Flow**:
     - Iterates over each key-value pair in the input dictionary `dct`.
     - Checks if the value is a string.
-    - Attempts to convert the string value to a `uuid.UUID` object, suppressing `ValueError` exceptions if conversion fails.
-    - Updates the dictionary with the converted UUID object if conversion is successful.
+    - If the value is a string, attempts to convert it to a `uuid.UUID` object, suppressing `ValueError` exceptions if the conversion fails.
+    - Updates the dictionary with the converted UUID object if the conversion is successful.
 - **Output**: The modified dictionary with string UUIDs converted to `uuid.UUID` objects.
 
 

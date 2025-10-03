@@ -6,7 +6,7 @@
 Manages token storage with functions to save, load, and clear tokens in a JSON file.
 
 # Purpose
-This code provides functionality for managing token data in a JSON file located in the user's home directory. It defines a constant `TOKEN_FILE` that specifies the path to the file `.driver_cli.json`. The [`save_tokens`](<#save_tokens>) function writes a dictionary of tokens to this file using JSON format. The [`load_tokens`](<#load_tokens>) function reads and returns the token data from the file if it exists, otherwise, it returns `None`. The [`clear_tokens`](<#clear_tokens>) function deletes the token file if it exists. This code is a utility script for handling token storage and retrieval.
+This code provides functionality for managing token data in a JSON file located in the user's home directory. It defines a constant `TOKEN_FILE` that specifies the path to the `.driver_cli.json` file. The [`save_tokens`](<#save_tokens>) function writes a dictionary of tokens to this file using JSON format. The [`load_tokens`](<#load_tokens>) function reads and returns the token data from the file if it exists, otherwise, it returns `None`. The [`clear_tokens`](<#clear_tokens>) function deletes the token file if it exists, effectively clearing the stored tokens. This code is a utility for handling token persistence in a command-line interface environment.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ This code provides functionality for managing token data in a JSON file located 
 ---
 ### TOKEN\_FILE
 - **Type**: ``Path` object`
-- **Description**: Represents the file path to a JSON file named `.driver_cli.json` located in the user's home directory. This file is used to store token data for the application.
-- **Use**: Used to read from, write to, and delete the token data file in the user's home directory.
+- **Description**: Represents the file path to a JSON file named `.driver_cli.json` located in the user's home directory. This path is constructed using the `Path.home()` method from the `pathlib` module, which ensures that the file is stored in a user-specific location.
+- **Use**: Used to store, load, and clear token data in a JSON file for the CLI application.
 
 
 # Functions
@@ -31,9 +31,9 @@ This code provides functionality for managing token data in a JSON file located 
 
 Writes the given tokens to a JSON file at a predefined location.
 - **Inputs**:
-    - `tokens`: A data structure (likely a dictionary or list) that contains the tokens to save.
+    - `tokens`: A data structure (e.g., dictionary) containing tokens to save to a file.
 - **Logic and Control Flow**:
-    - Opens the file specified by `TOKEN_FILE` in write mode.
+    - Opens the file at the path specified by `TOKEN_FILE` in write mode.
     - Uses `json.dump` to write the `tokens` data to the file.
 - **Output**: No output is returned.
 
@@ -45,11 +45,11 @@ Writes the given tokens to a JSON file at a predefined location.
 Loads tokens from a JSON file if it exists.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Check if `TOKEN_FILE` exists.
-    - If `TOKEN_FILE` exists, open the file and load its contents using `json.load()`.
+    - Check if the `TOKEN_FILE` exists.
+    - If the file exists, open the file and load its contents using `json.load()`.
     - Return the loaded JSON data.
-    - If `TOKEN_FILE` does not exist, return `None`.
-- **Output**: Returns the JSON data from `TOKEN_FILE` if it exists, otherwise returns `None`.
+    - If the file does not exist, return `None`.
+- **Output**: Returns the loaded JSON data from the file or `None` if the file does not exist.
 
 
 ---
@@ -60,7 +60,7 @@ Deletes the token file if it exists.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Checks if `TOKEN_FILE` exists.
-    - If `TOKEN_FILE` exists, deletes it using the `unlink` method.
+    - If `TOKEN_FILE` exists, deletes the file using `unlink()`.
 - **Output**: No output is returned.
 
 

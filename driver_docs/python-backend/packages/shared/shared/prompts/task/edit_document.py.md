@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A prompt for a technical document editor to execute tools for context or modify language as needed.
+A prompt for a technical document editor to expand or reduce text based on user requests.
 
 # Purpose
-This code defines two constants, `PROMPT` and `MESSAGE`, which are used for configuring a system's behavior. `PROMPT` is a string that provides instructions for a technical document editor, guiding it on how to handle user requests for information or text modification. `MESSAGE` is a dictionary with two keys: `role` and `content`. The `role` key has the value `system`, and the `content` key holds the `PROMPT` string. This setup is likely used to configure a system's response behavior in a controlled environment, such as a chatbot or automated documentation tool.
+This code defines a configuration for a system prompt and message used in a technical documentation editing context. The `PROMPT` variable contains a string that instructs a technical document editor on how to handle user requests, specifically when to execute tools for additional context or when to modify language without additional context. The `MESSAGE` variable is a dictionary with two keys: `role` and `content`. The `role` key is set to `"system"`, and the `content` key is assigned the value of the `PROMPT` string. This setup is likely used to guide interactions in a system that processes user inputs related to technical documentation.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for a technical document editor. It includes guidelines for when to execute tools for additional context and when to modify or summarize existing content without additional context.
-- **Use**: Used as a prompt to guide the behavior of a technical document editor system.
+- **Description**: A multi-line string that provides instructions for a technical document editor. It specifies actions to take based on user requests, such as executing tools for additional context or modifying language without context.
+- **Use**: Used to guide the behavior of a technical document editor system.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has the value `system`, and the `content` key holds the value of the `PROMPT` variable.
-- **Use**: Used to store system role information and a prompt message for further processing.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key holds the value of the `PROMPT` variable.
+- **Use**: Used to store system-level message data with a specific role and content for further processing or communication.
 
 
 

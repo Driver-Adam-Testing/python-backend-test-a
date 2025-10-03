@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for the Poetry tool specifying project metadata, dependencies, and build system settings.
+Configuration for the Poetry package manager, specifying project metadata and dependencies.
 
 # Purpose
-The file configures a Python project using Poetry, a dependency management tool. It specifies the project metadata, including the project name `inspector`, version `0.1.0`, and author information. The `packages` section includes directories for source code, such as `src.inspection`, `src.utils`, and `src.onboarding`. The `dependencies` section lists the required Python version and external libraries, such as `openai`, `tiktoken`, and `boto3`, with specific version constraints. Additionally, it defines development dependencies under `tool.poetry.group.dev.dependencies`, including `pytest` and `moto`, which are used for testing and development purposes. The `build-system` section specifies the build requirements and backend, indicating the use of `poetry-core` for building the project.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. It specifies the project's name as `inspector`, its version as `0.1.0`, and includes author information. The file lists the packages to include in the project, such as `src.inspection`, `src.utils`, and `src.onboarding`. It defines the Python version compatibility and lists the required dependencies, including `openai`, `tiktoken`, and `boto3`, among others. Additionally, it specifies development dependencies under the `[tool.poetry.group.dev.dependencies]` section, which includes tools like `pytest` and `moto`. The `[build-system]` section indicates that the project requires `poetry-core` and uses `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

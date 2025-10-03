@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for Mermaid diagram validation, data source management, JSON parsing, and semantic comparison.
+Functions for Mermaid code validation, data source management, JSON handling, and text embedding comparison.
 
 ## Folders
-- **[post_processing](post_processing/README.md)**: Functions to validate and repair Mermaid diagrams in text using a language model client.
+- **[post_processing](post_processing/README.md)**: Functions to validate and repair Mermaid code blocks in text using a language model client.
 
 ## Files
-- **[datasource.py](datasource.py.md)**: Defines a `DataSource` class for managing node IDs within an organization, with caching and validation features.
+- **[datasource.py](datasource.py.md)**: Defines the `DataSource` class for managing node IDs and caching Node objects within an organization.
 - **[encoder.py](encoder.py.md)**: Custom JSON encoder and decoder for handling UUID objects.
-- **[parse_response_string.py](parse_response_string.py.md)**: Parses a string to extract valid JSON objects or arrays, raising an error if none are found.
-- **[references.py](references.py.md)**: Defines a `Reference` model for graph nodes and a `ReferenceSet` class for managing collections of references.
-- **[semantic_comparator.py](semantic_comparator.py.md)**: Implements a semantic comparison tool using text embeddings and cosine similarity.
+- **[parse_response_string.py](parse_response_string.py.md)**: Parses strings to extract valid JSON objects or arrays, raising an error if none are found.
+- **[references.py](references.py.md)**: Defines `Reference` and `ReferenceSet` classes for managing and iterating over graph node references.
+- **[semantic_comparator.py](semantic_comparator.py.md)**: Implements a class for adding entries and comparing text embeddings using cosine similarity.
 - **[test_parse_response_string.py](test_parse_response_string.py.md)**: Tests for the `parse_response_string` function using various JSON-formatted test strings.
 
 ---

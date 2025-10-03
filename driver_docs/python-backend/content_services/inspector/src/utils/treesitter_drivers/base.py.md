@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Abstract base class for TreeSitter language drivers with methods for symbol extraction and parsing.
+Abstract base class for TreeSitter language drivers with methods for symbol extraction.
 
 # Purpose
-The code defines an abstract base class `DriverTree` for creating language-specific drivers using the Tree-sitter parsing library. It provides a framework for parsing and analyzing source code written in various programming languages, such as C, C++, Python, Java, C#, and TypeScript. The `DriverTree` class is designed to be subclassed, with each subclass specifying a particular programming language and its associated file extensions. The class includes abstract methods for extracting different types of symbols from the source code, such as imports, callable definitions, data structure definitions, function calls, variables, and function declarations. These methods must be implemented by subclasses to provide language-specific parsing logic.
+The code defines an abstract base class `DriverTree` for creating language-specific drivers using the Tree-sitter parsing library. The `DriverTree` class is designed to be subclassed for different programming languages, with each subclass required to specify the `language` and `extensions` class attributes. These attributes determine the language-specific Tree-sitter parser to use and the file extensions associated with the language. The `DriverTree` class provides a method [`from_code`](<#drivertreefrom_code>) to initialize an instance from a source code string and a file path, parsing the code into a Tree-sitter syntax tree.
 
-The code also includes a dictionary `LANGUAGES` that maps language identifiers to their corresponding Tree-sitter language objects. The [`from_code`](<#drivertreefrom_code>) class method allows the creation of a `DriverTree` instance from a string of source code and a file path, parsing the code into a Tree-sitter syntax tree. The [`extract_all_symbols`](<#drivertreeextract_all_symbols>) method aggregates the results of the various symbol extraction methods, providing a comprehensive list of symbols found in the source code. The [`get_node_line_range`](<#drivertreeget_node_line_range>) method calculates the line range of a given Tree-sitter node, adjusting for newline characters. The [`__init_subclass__`](<#drivertree__init_subclass__>) method ensures that subclasses define the required class attributes `language` and `extensions`.
+The `DriverTree` class includes several abstract methods that subclasses must implement to extract various types of symbols from the source code, such as imports, callable definitions, data structure definitions, function calls, variables, and function declarations. The [`extract_all_symbols`](<#drivertreeextract_all_symbols>) method aggregates the results of these extraction methods. Additionally, the class provides a utility method [`get_node_line_range`](<#drivertreeget_node_line_range>) to determine the line range of a Tree-sitter node in the source code. The code also includes a custom exception `DriverTreeError` for handling errors related to the `DriverTree` class.
 # Imports and Dependencies
 
 ---
@@ -34,7 +34,7 @@ The code also includes a dictionary `LANGUAGES` that maps language identifiers t
 ### LANGUAGES
 - **Type**: ``dict``
 - **Description**: A dictionary that maps programming language identifiers to their corresponding `tree_sitter.Language` objects. Each key in the dictionary is a string representing a programming language, and each value is a `tree_sitter.Language` object created using the respective language module from the `tree_sitter` library.
-- **Use**: Used to retrieve the `tree_sitter.Language` object for a specific programming language based on its identifier.
+- **Use**: Used to retrieve the `tree_sitter.Language` object for a specific programming language when parsing source code.
 
 
 # Classes
@@ -43,7 +43,7 @@ The code also includes a dictionary `LANGUAGES` that maps language identifiers t
 ### DriverTreeError<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTreeError}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/base.py#L26>)
 
-- **Description**: Defines a custom exception for errors related to the `DriverTree` class.
+- **Description**: Represents a custom exception class that inherits from the built-in `Exception` class, used to signal errors specific to the `DriverTree` class or its subclasses.
 - **Inherits From**:
     - `Exception`
 
@@ -57,10 +57,10 @@ The code also includes a dictionary `LANGUAGES` that maps language identifiers t
     - `tree_sitter_lang`: Holds the Tree-sitter language object.
     - `tree`: Stores the parsed Tree-sitter tree.
     - `source_bytes`: Contains the source code as bytes.
-    - `file_path`: Specifies the file path of the source code.
-    - `language`: Indicates the programming language for the driver.
-    - `extensions`: Lists the file extensions associated with the language.
-- **Description**: Represents an abstract base class for TreeSitter language drivers, providing a framework for parsing and extracting symbols from source code using Tree-sitter. Subclasses must define the `language` and `extensions` class attributes. The class includes methods to parse source code and extract various symbols such as imports, callable definitions, data structures, function calls, variables, and function declarations. It also provides a method to get the line range of a Tree-sitter node.
+    - `file_path`: Represents the file path of the source code.
+    - `language`: Specifies the language of the source code, to be defined by subclasses.
+    - `extensions`: Lists the file extensions associated with the language, to be defined by subclasses.
+- **Description**: Represents an abstract base class for TreeSitter language drivers, providing a framework for parsing and extracting symbols from source code using Tree-sitter. Subclasses must define the `language` and `extensions` class attributes. The class includes methods for parsing code and extracting various types of symbols, such as imports, function definitions, and data structures. It also ensures that subclasses implement specific methods for symbol extraction.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_imports`](<#drivertreeextract_imports>)
@@ -81,7 +81,7 @@ The code also includes a dictionary `LANGUAGES` that maps language identifiers t
 #### DriverTree\.from\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/base.py#L43>)
 
-Creates an instance of the class by parsing the given source code string using the appropriate Tree-sitter language parser.
+Creates an instance of the class by parsing the given source code string into a syntax tree using Tree-sitter.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code_str`: A string containing the source code to parse.
@@ -89,12 +89,12 @@ Creates an instance of the class by parsing the given source code string using t
 - **Logic and Control Flow**:
     - Checks if the `language` class attribute is set; raises [`DriverTreeError`](<#drivertreeerror>) if not.
     - Retrieves the Tree-sitter language object from the `LANGUAGES` dictionary using the `language` class attribute.
-    - Checks if the language is 'js_ts' and the file extension is '.jsx' or '.tsx'; if so, uses a different parser for TSX/JSX files.
+    - Checks if the language is 'js_ts' and the file extension is '.jsx' or '.tsx'; if so, uses a different parser for these files.
     - Creates a `tree_sitter.Parser` object with the determined Tree-sitter language.
     - Converts the `code_str` to bytes using UTF-8 encoding.
-    - Parses the source bytes to create a `tree_sitter.Tree` object.
-    - Returns a new instance of the class with the parsed tree, language, source bytes, and file path.
-- **Output**: An instance of the class with the parsed Tree-sitter tree and related attributes.
+    - Parses the source bytes to create a syntax tree.
+    - Returns a new instance of the class with the parsed tree, Tree-sitter language, source bytes, and file path.
+- **Output**: Returns an instance of the class with the parsed syntax tree and related data.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTreeError`](<#drivertreeerror>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<#drivertree>)  (Base Class)
@@ -104,12 +104,12 @@ Creates an instance of the class by parsing the given source code string using t
 #### DriverTree\.extract\_imports<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_imports}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/base.py#L65>)
 
-Defines an abstract method to extract import statements from source code.
+Extracts import statements from source code using Tree-sitter.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses of `DriverTree`.
-    - The method does not contain any logic in the base class and serves as a placeholder for subclasses to provide specific implementations.
+    - The method is expected to return a list of `RawTreeSitterSymbolData` objects representing import statements.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing import statements.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<#drivertree>)  (Base Class)
 
@@ -133,13 +133,13 @@ Extracts function or method definitions from the source code.
 #### DriverTree\.extract\_data\_structure\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_data_structure_definitions}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/base.py#L73>)
 
-Extracts class, struct, and enum definitions from source code.
+Extracts class, struct, and enum definitions from the source code.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - This method is abstract and must be implemented by subclasses of `DriverTree`.
-    - The method is intended to return a list of `RawTreeSitterSymbolData` objects representing class, struct, and enum definitions found in the source code.
-- **Output**: A list of `RawTreeSitterSymbolData` objects representing class, struct, and enum definitions.
+    - The method is intended to parse source code and identify definitions of data structures such as classes, structs, and enums.
+- **Output**: A list of `RawTreeSitterSymbolData` objects representing the extracted data structure definitions.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<#drivertree>)  (Base Class)
 
 
@@ -152,8 +152,8 @@ Extracts function or method calls from the source code.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - This method is abstract and must be implemented by subclasses of `DriverTree`.
-    - The method is intended to return a list of `RawTreeSitterSymbolData` objects representing function or method calls found in the source code.
-- **Output**: A list of `RawTreeSitterSymbolData` objects representing function or method calls.
+    - The method is intended to parse the source code and identify function or method call symbols.
+- **Output**: A list of `RawTreeSitterSymbolData` objects representing the function or method calls found in the source code.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<#drivertree>)  (Base Class)
 
 
@@ -165,8 +165,8 @@ Extracts variable symbols from the source code.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - This method is abstract and must be implemented by subclasses of `DriverTree`.
-    - The method is intended to return a list of `RawTreeSitterSymbolData` objects representing variables extracted from the source code.
+    - The method is abstract and must be implemented by subclasses of `DriverTree`.
+    - The method is intended to return a list of `RawTreeSitterSymbolData` objects representing variables in the source code.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing extracted variables.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<#drivertree>)  (Base Class)
 
@@ -175,12 +175,12 @@ Extracts variable symbols from the source code.
 #### DriverTree\.extract\_function\_declarations<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_function_declarations}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/base.py#L85>)
 
-Defines an abstract method to extract function declarations from source code.
+Extracts function declarations from the source code.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses of `DriverTree`.
-    - The method does not contain any logic or control flow in its current form.
+    - The method does not contain any logic in the base class and serves as a placeholder for subclasses to provide specific implementations.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing function declarations.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<#drivertree>)  (Base Class)
 
@@ -189,16 +189,16 @@ Defines an abstract method to extract function declarations from source code.
 #### DriverTree\.extract\_all\_symbols<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_all_symbols}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/base.py#L90>)
 
-Extracts all types of symbols from the source code using various extraction methods.
+Extracts all symbols from the source code by aggregating results from various symbol extraction methods.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Initialize an empty list `symbols` to store extracted symbols.
-    - Call [`extract_imports`](<#drivertreeextract_imports>) and extend the `symbols` list with its result.
-    - Call [`extract_callable_definitions`](<#drivertreeextract_callable_definitions>) and extend the `symbols` list with its result.
-    - Call [`extract_data_structure_definitions`](<#drivertreeextract_data_structure_definitions>) and extend the `symbols` list with its result.
-    - Call [`extract_function_calls`](<#drivertreeextract_function_calls>) and extend the `symbols` list with its result.
-    - Call [`extract_variables`](<#drivertreeextract_variables>) and extend the `symbols` list with its result.
-    - Call [`extract_function_declarations`](<#drivertreeextract_function_declarations>) and extend the `symbols` list with its result.
+    - Call `self.extract_imports()` and extend the `symbols` list with its result.
+    - Call `self.extract_callable_definitions()` and extend the `symbols` list with its result.
+    - Call `self.extract_data_structure_definitions()` and extend the `symbols` list with its result.
+    - Call `self.extract_function_calls()` and extend the `symbols` list with its result.
+    - Call `self.extract_variables()` and extend the `symbols` list with its result.
+    - Call `self.extract_function_declarations()` and extend the `symbols` list with its result.
     - Return the `symbols` list containing all extracted symbols.
 - **Output**: A list of `RawTreeSitterSymbolData` objects representing all extracted symbols from the source code.
 - **Functions Called**:
@@ -215,13 +215,13 @@ Extracts all types of symbols from the source code using various extraction meth
 #### DriverTree\.get\_node\_line\_range<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/base.py#L101>)
 
-Returns the 1-based line range of a given Tree-sitter node.
+Returns the 1-based line range of a Tree-sitter node.
 - **Inputs**:
     - `node`: A `tree_sitter.Node` object representing a node in the syntax tree.
 - **Logic and Control Flow**:
-    - Calculate `start_line` by converting the 0-based row of `node.start_point` to 1-based by adding 1.
-    - Calculate `end_line` by converting the 0-based row of `node.end_point` to 1-based by adding 1.
-    - Check if the last byte in the node's span is a newline character by examining `self.source_bytes` at the position `node.end_byte - 1`.
+    - Calculate `start_line` by converting the 0-based `node.start_point.row` to 1-based by adding 1.
+    - Calculate `end_line` by converting the 0-based `node.end_point.row` to 1-based by adding 1.
+    - Check if the last byte in the node's span is a newline character by examining `self.source_bytes[node.end_byte - 1 : node.end_byte]`.
     - If the last byte is a newline, decrement `end_line` by 1 to adjust the line range.
     - Return a tuple containing `start_line` and `end_line`.
 - **Output**: A tuple of two integers representing the 1-based start and end line numbers of the node.
@@ -234,13 +234,13 @@ Returns the 1-based line range of a given Tree-sitter node.
 
 Validates that subclasses of `DriverTree` define the required class attributes `language` and `extensions`.
 - **Inputs**:
-    - `cls`: The class being initialized as a subclass of `DriverTree`.
-    - `kwargs`: Additional keyword arguments passed to the superclass initializer.
+    - `cls`: The class that is being initialized as a subclass of `DriverTree`.
+    - `kwargs`: Additional keyword arguments that are passed to the superclass initializer.
 - **Logic and Control Flow**:
-    - Calls the superclass's `__init_subclass__` method with any additional keyword arguments.
+    - Calls the superclass's `__init_subclass__` method with any provided keyword arguments.
     - Checks if the `cls` has a `language` attribute and if it is not empty; raises a `TypeError` if not defined.
     - Checks if the `cls` has an `extensions` attribute and if it is not empty; raises a `TypeError` if not defined.
-- **Output**: Does not return a value; raises `TypeError` if required attributes are not defined.
+- **Output**: None
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<#drivertree>)  (Base Class)
 
 

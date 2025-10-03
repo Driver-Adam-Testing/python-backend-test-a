@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating structured prompts and analyzing C++ source code components.
+Defines templates for generating structured prompts related to small C++ source code analysis.
 
 # Purpose
-The code defines a template for generating documentation for small C++ source code files. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.cpp`, to facilitate the creation of structured prompts and data collections. The template, `SOURCE_CODE_SMALL_TEMPLATE_CPP`, consists of several tuples that specify different sections of the documentation, including "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and functions to extract and format relevant information from the C++ code, enabling the generation of detailed and organized documentation.
+The code is a configuration setup for generating structured prompts and instructions for analyzing small C++ source code files. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.cpp`, to facilitate the creation of prompts and the extraction of data from C++ code. The `SOURCE_CODE_SMALL_TEMPLATE_CPP` variable defines a list of tuples, each specifying a section of the template, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and instructions to generate structured output, which helps in analyzing and documenting the purpose and structure of small C++ source code files.
 # Imports and Dependencies
 
 ---
@@ -32,9 +32,9 @@ The code defines a template for generating documentation for small C++ source co
 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_CPP
-- **Type**: ``list``
-- **Description**: A list of tuples, where each tuple contains a section identifier, a section title, and a series of components or functions related to C++ code analysis and documentation. Each tuple is structured to facilitate the generation of structured prompts and the collection of C++ code elements such as imports, global variables, data structures, and functions.
-- **Use**: Used to define a template for generating structured prompts and collecting C++ code elements for analysis and documentation.
+- **Type**: `list`
+- **Description**: A list of tuples, where each tuple contains a constant from the `S` module, a string representing a section header, and a series of components or functions related to C++ code analysis and generation. Each tuple is structured to facilitate the creation of structured prompts and data extraction for C++ code documentation.
+- **Use**: Used to define a template for generating structured prompts and extracting information from C++ code for documentation purposes.
 
 
 

@@ -41,6 +41,35 @@ Write an LLM onboarding guide for this codebase for the purpose articulated abov
 )
 
 
+UPDATER_IDENTITY_PREAMBLE = Component(
+    string="""
+You are an expert software engineer and technical writer that specializes in updating existing documents about a software codebase when changes are made to the underlying code.
+    """
+)
+
+
+DEEP_CONTEXT_DOCS_PREAMBLE = Component(
+    string="""
+The kind of document to be updated is a "deep context document." Broadly speaking, these documents are intended to be comprehensive and exhaustive on a particular topic but necessarily high level because they are usually the size of 1 -- 3 pages to cover a large scope such as an entire codebase. Any detail will be specific to the kind of document (e.g., an onboarding guide document may require detailed accounting of file path changes).
+    """
+)
+
+
+# TODO: Re-use the actual goal to avoid de-sync/DRY
+ARCHITECTURE_DOC_DESCRIPTION = Component(
+    string="""
+The document we will update is an Architecture Overview. The Architecture Overview documents and explains the architecture of a particular codebase in a dense manner. The use case is for an LLM agent to consult this architecture overview first so that it can much more efficiently performs subsequent steps to solve a task. An architecture document will take on various forms depending on the exact context (underlying codebase kind, size, etc.), but common elements will be identification of key components and emergent structure, functionality provided by the codebase as a whole, and how key components they fit together. Accordingly there is more focus on the conceptual level than, for example, mechanical information about the directory structure.
+    """
+)
+
+
+# TODO: Re-use the actual goal to avoid de-sync/DRY
+LLM_ONBOARDING_DOC_DESCRIPTION = Component(
+    string="""
+The document we will update is an LLM Onboarding Guide. The LLM Onboarding Guide document focuses on how best to enable an LLM coding agent to immediately know what to do/where to go next in workflows to accomplish users' tasks (e.g., as input in an IDE chat experience). Content will vary according to the exact context (underlying codebase kind, size, etc.), but common elements will include identifying the major capabilities of they codebase but especially on how they interact, how to navigate the codebase to find more detailed content for specific topics, and important components to consider together/cross-reference.
+    """
+)
+
 ARCHITECTURE_OVERVIEW_INTENT = (
     Prompt.empty()
     .append(_GENERAL_DEEP_CONTEXT_PREFACE)

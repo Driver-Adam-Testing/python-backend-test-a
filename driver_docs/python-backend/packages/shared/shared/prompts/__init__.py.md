@@ -6,7 +6,7 @@
 Imports modules: audience, interface, task, and voice.
 
 # Purpose
-This code imports four modules: `audience`, `interface`, `task`, and `voice` from the current package. It serves as an entry point to make these modules accessible when the package is imported. The `# flake8: noqa` comment at the top of the file indicates that the file should not be checked for style violations by the Flake8 tool. This file provides narrow functionality by organizing and exposing specific components of a package for use in other parts of a program.
+This code is a module that imports four submodules: `audience`, `interface`, `task`, and `voice`. The `flake8: noqa` comment at the top indicates that linting checks are disabled for this file, which can be useful to prevent style warnings for specific reasons. The purpose of this module is to aggregate or expose functionality from the imported submodules, which may relate to different aspects of a larger application. The module provides narrow functionality by serving as an entry point to access or utilize the features defined in the `audience`, `interface`, `task`, and `voice` submodules.
 # Imports and Dependencies
 
 ---

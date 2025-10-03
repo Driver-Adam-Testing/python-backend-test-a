@@ -8,7 +8,7 @@ Splits text into chunks and counts tokens using a specified model and tokenizati
 # Purpose
 The code provides functionality for text processing, specifically focusing on splitting text into manageable chunks and counting tokens. It defines a `TextChunk` data class to represent a segment of text, including its content, starting line, starting token, and the list of tokens it contains. The [`split_text`](<#split_text>) function is the primary component, which divides the input text into chunks based on a specified model and token, with configurable chunk size and overlap. This function uses the `tiktoken` library to encode and decode text, ensuring that the chunks are appropriately sized and overlap as specified.
 
-Additionally, the code includes the [`get_num_tokens`](<#get_num_tokens>) function, which calculates the number of tokens in a given text using a specified model. This function also utilizes the `tiktoken` library to perform the encoding. The code is structured to be used as a library, providing specific text processing capabilities that can be imported and utilized in other applications. It does not define a public API or external interfaces beyond the functions and data class provided.
+Additionally, the code includes the [`get_num_tokens`](<#get_num_tokens>) function, which calculates the number of tokens in a given text using a specified model. This function also utilizes the `tiktoken` library to encode the text and determine the token count. The code is structured to be used as a library, providing specific text processing capabilities that can be integrated into larger applications. It does not define public APIs or external interfaces beyond the functions and data class provided.
 # Imports and Dependencies
 
 ---
@@ -21,8 +21,8 @@ Additionally, the code includes the [`get_num_tokens`](<#get_num_tokens>) functi
 ---
 ### TOKEN
 - **Type**: ``str``
-- **Description**: A string variable that holds the value 'token'. It is used as a default delimiter for splitting text in the `split_text` function.
-- **Use**: Used as the default value for the `split_on` parameter in the `split_text` function to determine how the text should be split into chunks.
+- **Description**: A string variable that holds the value 'token'. It is used as a default delimiter in the `split_text` function to determine how the input text should be split into chunks.
+- **Use**: Used as a default delimiter in the `split_text` function to split text into chunks.
 
 
 # Classes
@@ -58,13 +58,13 @@ Splits the input text into chunks using a specified model and token, returning a
     - Check if `split_on` is equal to `TOKEN`. If true, proceed with the splitting logic; otherwise, raise a `NotImplementedError`.
     - Get the encoder for the specified `model` using `tiktoken.encoding_for_model`.
     - Encode the input `text` into tokens using the encoder.
-    - Initialize `line_number` and `token_number` to zero to track the starting line and token of each chunk.
+    - Initialize `line_number` and `token_number` to zero to track the start line and token of each chunk.
     - Iterate over the tokens in steps of `chunk_size - chunk_overlap` to create chunks.
-    - For each chunk, decode the tokens back to text and create a [`TextChunk`](<#textchunk>) object with the decoded text, starting line, starting token, and the list of tokens.
+    - For each chunk, decode the tokens back to text and create a [`TextChunk`](<#textchunk>) object with the decoded text, start line, start token, and tokens.
     - Append each [`TextChunk`](<#textchunk>) object to the `chunks` list.
     - Update `line_number` and `token_number` for the next chunk based on the number of newline characters and tokens in the current chunk.
     - Return the list of [`TextChunk`](<#textchunk>) objects.
-- **Output**: A list of [`TextChunk`](<#textchunk>) objects, each containing a portion of the input text, its starting line, starting token, and the list of tokens.
+- **Output**: A list of [`TextChunk`](<#textchunk>) objects, each representing a chunk of the input text.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.TextChunk`](<#textchunk>)
 
@@ -75,13 +75,13 @@ Splits the input text into chunks using a specified model and token, returning a
 
 Calculates the number of tokens in a given text using a specified model.
 - **Inputs**:
-    - `text`: The input text for which the number of tokens is to be calculated.
-    - `model`: The model to use for encoding the text, defaulting to 'gpt-4'.
+    - `text`: The input text for which the number of tokens is calculated.
+    - `model`: The model used to encode the text, defaulting to 'gpt-4'.
 - **Logic and Control Flow**:
-    - Obtain an encoder for the specified model using `tiktoken.encoding_for_model`.
-    - Encode the input text using the obtained encoder, excluding any special tokens.
-    - Calculate the length of the encoded token list to determine the number of tokens.
-- **Output**: The function returns an integer representing the number of tokens in the input text.
+    - Get the encoder for the specified model using `tiktoken.encoding_for_model`.
+    - Encode the input text using the encoder, excluding any special tokens.
+    - Return the length of the encoded token list, which represents the number of tokens.
+- **Output**: The number of tokens in the input text as an integer.
 
 
 

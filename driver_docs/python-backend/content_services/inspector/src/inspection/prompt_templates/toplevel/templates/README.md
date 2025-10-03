@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Template for a getting started guide with prompts for codebase purpose, user information, and technical overview.
+Template prompts for creating a comprehensive getting started guide for a codebase.
 
 
 ## Files
-- **[getting_started_guide.py](getting_started_guide.py.md)**: Template for a getting started guide with prompts for codebase purpose, user information, and technical overview.
+- **[getting_started_guide.py](getting_started_guide.py.md)**: Template prompts for creating a comprehensive getting started guide for a codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

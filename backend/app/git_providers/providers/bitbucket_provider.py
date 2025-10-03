@@ -12,6 +12,7 @@ from app.git_providers.interfaces.provider_interface import (
     WebhookEventContext,
 )
 from app.git_providers.resources.bitbucket_api_resources import BitbucketAPIResources
+from app.git_providers.utils.branch_tracking import get_tracked_branch_or_none
 from app.git_providers.utils.vcs_auto_update import is_update_required
 from app.schemas.git_provider_schema import (
     AccessTokenData,
@@ -413,10 +414,15 @@ class BitbucketProvider(GitProviderInterface):
             )
             return {"message": "Failed to process push event: missing access token"}
 
-        # Get default branch using the helper function
-        default_branch = self._get_default_branch(
-            workspace, repo_slug, access_token, repository
+        tracked_branch = get_tracked_branch_or_none(
+            session=webhook_event_ctx.session,
+            org_id=organization_id,
+            repo_name=repo_name,
         )
+        if not tracked_branch:
+            tracked_branch = self._get_default_branch(
+                workspace, repo_slug, access_token, repository
+            )
 
         # Process all branch changes
         for change in changes:
@@ -424,7 +430,7 @@ class BitbucketProvider(GitProviderInterface):
                 branch_name = change["new"]["name"]
                 commit_hash = change["new"]["target"]["hash"]
 
-                if branch_name != default_branch:
+                if branch_name != tracked_branch:
                     logger.info(
                         "Push event ignored: Not the default branch. Workspace: %s, Repo: %s, Branch: %s, Install ID: %s",
                         workspace,
@@ -467,6 +473,7 @@ class BitbucketProvider(GitProviderInterface):
                                 "id": commit_hash,
                             },
                             "workspace": workspace,  # Add workspace at top level too
+                            "tracked_branch": tracked_branch,
                         }
                     ]
 

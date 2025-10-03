@@ -57,7 +57,8 @@ class BitbucketAPIResources:
 
         try:
             url = f"{self.api_base}/repositories/{workspace}"
-            params = {"pagelen": 100}
+            page = 1
+            params = {"pagelen": 100, "page": page}
 
             with httpx.Client() as client:
                 while url:
@@ -69,7 +70,8 @@ class BitbucketAPIResources:
 
                     # Handle pagination
                     url = data.get("next")
-                    params = {}  # Next URL includes params
+                    page += 1
+                    params = {"pagelen": 100, "page": page}
 
             return repos
 

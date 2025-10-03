@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a Pydantic model for creating a document source with UUIDs and an include flag.
+Defines a Pydantic model for creating a document source with document and source IDs and an include flag.
 
 # Purpose
-The code defines a Pydantic model named `DocumentSourceCreate`, which is used for data validation and serialization. This model includes three fields: `document_id`, `source_id`, and `include`. Both `document_id` and `source_id` are of type `UUID`, ensuring that these fields contain valid UUID values. The `include` field is a boolean, indicating whether a particular source should be included. This model is useful for applications that require structured data input validation, particularly when dealing with document and source identifiers.
+The code defines a Pydantic model named `DocumentSourceCreate`, which is used for data validation and serialization. This model includes three fields: `document_id`, `source_id`, and `include`. Both `document_id` and `source_id` are of type `UUID`, ensuring that these fields contain valid UUIDs. The `include` field is a boolean, indicating whether the source should be included. This code provides narrow functionality, specifically for creating and validating instances of `DocumentSourceCreate` with the specified fields.
 # Imports and Dependencies
 
 ---
@@ -25,7 +25,7 @@ The code defines a Pydantic model named `DocumentSourceCreate`, which is used fo
     - `document_id`: Stores the unique identifier for the document.
     - `source_id`: Stores the unique identifier for the source.
     - `include`: Indicates whether to include the source in the document.
-- **Description**: Defines a data structure for creating a document source with identifiers for both the document and the source, and a flag to include the source.
+- **Description**: Defines a data model for creating a document source with attributes for document and source identifiers and an inclusion flag.
 - **Inherits From**:
     - `BaseModel`
 

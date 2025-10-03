@@ -272,8 +272,9 @@ class CSharpDriverTree(DriverTree):
 
     def extract_using_imports(self) -> list[RawTreeSitterSymbolData]:
         import_query_str = "(using_directive) @using_stmt"
-        query = self.tree_sitter_lang.query(import_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, import_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         imports = []
 
         for _pat_idx, captures_by_name in matches:
@@ -376,8 +377,9 @@ class CSharpDriverTree(DriverTree):
           name: (_) @namespace_name) @file_namespace
         """.strip()
 
-        query = self.tree_sitter_lang.query(namespace_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, namespace_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         namespaces = []
 
         for pattern_idx, captures_by_name in matches:
@@ -469,8 +471,9 @@ class CSharpDriverTree(DriverTree):
 
         (event_field_declaration) @event_field_like
         """.strip()
-        query = self.tree_sitter_lang.query(method_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, method_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         method_likes = []
 
         for pattern_idx, captures_by_name in matches:
@@ -656,8 +659,9 @@ class CSharpDriverTree(DriverTree):
           (modifier)* @enum_modifier
           name: (identifier) @enum_name) @enum
         """.strip()
-        query = self.tree_sitter_lang.query(enum_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, enum_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         enums = []
 
         for _pat_idx, captures_by_name in matches:
@@ -750,8 +754,9 @@ class CSharpDriverTree(DriverTree):
             name: (identifier) @record_name)
         ] @struct_def
         """.strip()
-        query = self.tree_sitter_lang.query(struct_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, struct_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         structs = []
 
         for _pat_idx, captures_by_name in matches:
@@ -849,8 +854,9 @@ class CSharpDriverTree(DriverTree):
           (_) @invoked_constructor
           (argument_list) @args) @invocation
         """
-        query = self.tree_sitter_lang.query(invocation_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, invocation_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         delimiter = "."
         invocations = []
 
@@ -948,8 +954,9 @@ class CSharpDriverTree(DriverTree):
             name: (identifier) @record_name)
         ] @class_def
         """.strip()
-        query = self.tree_sitter_lang.query(klass_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, klass_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         klasses = []
 
         for _pat_idx, captures_by_name in matches:
@@ -1038,8 +1045,9 @@ class CSharpDriverTree(DriverTree):
           (base_list)? @constraining_interfaces
           (type_parameter_constraints_clause)? @constraints) @interface_def
         """.strip()
-        query = self.tree_sitter_lang.query(interfaces_query_str)
-        matches = query.matches(self.tree.root_node)
+        query = tree_sitter.Query(self.tree_sitter_lang, interfaces_query_str)
+        cursor = tree_sitter.QueryCursor(query=query)
+        matches = cursor.matches(self.tree.root_node)
         interfaces = []
 
         for _pat_idx, captures_by_name in matches:

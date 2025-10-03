@@ -161,7 +161,7 @@ class GitFetcher:
         include_stats: bool = True,
         include_diff: bool = True,
         stop_commit: str | None = None,
-        unravel_merges: bool = False,
+        unravel_merges: bool = False,  # Will still unravel merges, but not explicitly return the merge commit itself
     ) -> Iterator[CommitData]:
         """
         Fetch commits from the repository
@@ -195,13 +195,22 @@ class GitFetcher:
 
         # Walk commits
         commit_count = 0
+        yielded_commits = (
+            set()
+        )  # Track commits we've already yielded to avoid duplicates
         walker = self.repo.walk(start_oid, pygit2.enums.SortMode.TIME)
         for walker_item in walker:
             # Use helper to handle different pygit2 versions
             commit = get_commit_from_walker_item(self.repo, walker_item)
-            if stop_commit and str(commit.id) == stop_commit:
+            commit_sha = str(commit.id)
+
+            if stop_commit and commit_sha == stop_commit:
                 logger.info(f"Reached stop commit {stop_commit}, stopping fetch")
                 break
+
+            # Skip if we've already yielded this commit (can happen with unravel_merges)
+            if commit_sha in yielded_commits:
+                continue
 
             # Apply filters
             commit_time = datetime.fromtimestamp(commit.commit_time, tz=UTC)
@@ -229,11 +238,15 @@ class GitFetcher:
                         parent.id, commit.parents[0].id
                     )
                     for child_commit in child_commits:
-                        if (
-                            len(child_commit.parents) > 1
-                        ):  # Skip merges in child commits
-                            print("skipping child merge commit", child_commit.id)
+                        child_sha = str(child_commit.id)
+
+                        # Skip if already yielded or is a merge commit
+                        if child_sha in yielded_commits:
                             continue
+                        if len(child_commit.parents) > 1:
+                            logger.debug(f"Skipping child merge commit {child_sha}")
+                            continue
+
                         commit_data = self._process_commit(
                             child_commit,
                             branch=branch,
@@ -241,6 +254,7 @@ class GitFetcher:
                             include_diff=include_diff,
                         )
                         yield commit_data
+                        yielded_commits.add(child_sha)
 
                         commit_count += 1
                         if limit and commit_count >= limit:
@@ -258,6 +272,7 @@ class GitFetcher:
             )
 
             yield commit_data
+            yielded_commits.add(commit_sha)
 
             commit_count += 1
             if limit and commit_count >= limit:
@@ -350,16 +365,6 @@ class GitFetcher:
     def _get_merge_child_commits(
         self, merge_parent: pygit2.Oid, mainline_parent: pygit2.Oid
     ) -> list[pygit2.Commit]:
-        """
-        Get commits from a merged branch (child commits of a merge).
-
-        Args:
-            merge_parent: The parent from the merged branch
-            mainline_parent: The parent from the mainline branch
-
-        Returns:
-            List of commits that were merged in
-        """
         child_commits = []
         visited = set()
 
@@ -368,7 +373,6 @@ class GitFetcher:
 
         print(f"Unraveling merge from {merge_parent} to {mainline_parent}")
         for walker_item in walker:
-            print(walker_item)
             commit = get_commit_from_walker_item(self.repo, walker_item)
             commit_id = str(commit.id)
 
@@ -393,8 +397,6 @@ class GitFetcher:
             child_commits.append(commit)
 
         print(f"Found {len(child_commits)} child commits in merge")
-        for commit in child_commits:
-            print(f"  {commit.id} - {commit.message.splitlines()[0]}")
         return child_commits
 
     def _commit_touches_file(self, commit: pygit2.Commit, file_path: str) -> bool:

@@ -119,8 +119,6 @@ async def make_changelog(
             previous_overall_changelog=previous_changelog_full,
         )
 
-    # TODO: IO okay here?
-    # TODO: delete old changelog for the node before saving
     async with AsyncSession(async_engine) as session:
         dc_delete_query = delete(DerivedContent).where(
             DerivedContent.node_id == root_node_id,
@@ -214,10 +212,10 @@ async def deep_context_docs(
             if doc.doc_kind in update_set
         ]
         if install_id is not None:
-            # TODO: making it fresh for now, but need to do an update flow
             await make_changelog.remote.aio(
                 version_id=new_version_id,
                 install_id=install_id,
+                previous_version_id=old_version_id,
             )
         completed_docs = await asyncio.gather(*update_tasks)
 

@@ -341,10 +341,11 @@ Please update the overall changelog by intelligently merging these new changes w
     return updated_changelog
 
 
-async def create_changelog(
+async def _prepare_repo_for_changelog(
     version_id: str,
     install_id: str,
-) -> dict:
+    temp_dir: str,
+) -> tuple[Path, str]:
     from database.db import engine
     from database.models import GitProviderAppInstallation
     from database.models_enums import PrimaryAssetProvider
@@ -391,31 +392,43 @@ async def create_changelog(
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        repo_dir = Path(temp_dir) / full_name
+    repo_dir = Path(temp_dir) / full_name
+    result = subprocess.run(
+        f"git clone {clone_url} {repo_dir}",
+        shell=True,
+        cwd=None,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode, f"git clone {clone_url} {repo_dir}"
+        )
+
+    if tracked_branch is not None:
         result = subprocess.run(
-            f"git clone {clone_url} {repo_dir}",
+            f"git checkout {version.vcs_hash}",
             shell=True,
-            cwd=None,
+            cwd=repo_dir,
             capture_output=True,
             text=True,
         )
         if result.returncode != 0:
             raise subprocess.CalledProcessError(
-                result.returncode, f"git clone {clone_url} {repo_dir}"
+                result.returncode, f"git checkout {version.vcs_hash}"
             )
-        if tracked_branch is not None:
-            result = subprocess.run(
-                f"git checkout {version.vcs_hash}",  # checkout sha not the tracked_branch
-                shell=True,
-                cwd=repo_dir,
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    result.returncode, f"git checkout {version.vcs_hash}"
-                )
+
+    return repo_dir, full_name
+
+
+async def create_changelog(
+    version_id: str,
+    install_id: str,
+) -> dict:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        repo_dir, full_name = await _prepare_repo_for_changelog(
+            version_id, install_id, temp_dir
+        )
 
         repo = GitFetcher(repo_path=repo_dir)
         all_commits = list(repo.fetch_commits(limit=MAX_COMMITS_TO_PROCESS))
@@ -444,77 +457,10 @@ async def update_changelog(
     previous_monthly_changelogs: dict[str, str],
     previous_overall_changelog: str,
 ) -> dict:
-    from database.db import engine
-    from database.models import GitProviderAppInstallation
-    from database.models_enums import PrimaryAssetProvider
-    from sqlmodel import Session, select
-    from utils.db import get_version_by_id, git_provider_app_installation_by_id
-
-    version = await get_version_by_id(version_id)
-    repo_id = version.primary_asset.repository_id
-    repo_name = version.primary_asset.display_name
-    provider = version.primary_asset.provider
-    tracked_branch = version.primary_asset.vcs_tracked_branch
-
-    if provider == PrimaryAssetProvider.GITHUB:
-        access_token = gh_ops.fetch_app_access_token(install_id)
-        clone_url, full_name = gh_ops.get_repo_clone_info_from_id(repo_id, access_token)
-    elif provider == PrimaryAssetProvider.BITBUCKET:
-        access_token = bitbucket_ops.fetch_access_token(install_id)
-        gp_install = git_provider_app_installation_by_id(installation_id=install_id)
-        workspace = gp_install.git_provider_app.provider_metadata["workspace"]
-        repo_slug = version.primary_asset.display_name
-        # Bitbucket allows spaces in repo names, but does not URL encode them
-        # and instead replaces them with hyphens.
-        # We need to replace spaces with hyphens in the repo name.
-        repo_slug = "-".join(repo_name.split())  # multiple spaces go to single hyphen
-
-        clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
-            workspace, repo_slug, access_token
-        )
-    elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
-        with Session(engine) as session:
-            installation_id = version.primary_asset.installation_id
-            app_install = session.exec(
-                select(GitProviderAppInstallation).where(
-                    GitProviderAppInstallation.id == installation_id
-                )
-            ).one()
-            if app_install is None:
-                raise ValueError(f"Installation ID {installation_id} not found.")
-            base_url = app_install.git_provider_app.base_url
-        access_token = gitlab_ops.fetch_access_token(install_id)
-        clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
-            base_url, repo_id, access_token
-        )
-    else:
-        raise ValueError(f"Unsupported provider: {provider}")
-
     with tempfile.TemporaryDirectory() as temp_dir:
-        repo_dir = Path(temp_dir) / full_name
-        result = subprocess.run(
-            f"git clone {clone_url} {repo_dir}",
-            shell=True,
-            cwd=None,
-            capture_output=True,
-            text=True,
+        repo_dir, full_name = await _prepare_repo_for_changelog(
+            version_id, install_id, temp_dir
         )
-        if result.returncode != 0:
-            raise subprocess.CalledProcessError(
-                result.returncode, f"git clone {clone_url} {repo_dir}"
-            )
-        if tracked_branch is not None:
-            result = subprocess.run(
-                f"git checkout {version.vcs_hash}",
-                shell=True,
-                cwd=repo_dir,
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    result.returncode, f"git checkout {version.vcs_hash}"
-                )
 
         repo = GitFetcher(repo_path=repo_dir)
         new_commits = list(

@@ -218,9 +218,13 @@ def test_merge_commits_skip(repo_with_merge: pygit2.Repository) -> None:
     commits = list(fetcher.fetch_commits(skip_merge_commits=True))
 
     messages = [c.message for c in commits]
-    assert "Merge feature branch" not in messages
-    # Should have: Master branch work, Improve feature, Add feature work, Initial commit
-    assert len(commits) == 4
+    # Should have all commits except the merge, in chronological order (newest first)
+    assert messages == [
+        "Master branch work",
+        "Improve feature",
+        "Add feature work",
+        "Initial commit",
+    ]
 
 
 def test_merge_commits_included(repo_with_merge: pygit2.Repository) -> None:
@@ -229,11 +233,18 @@ def test_merge_commits_included(repo_with_merge: pygit2.Repository) -> None:
     commits = list(fetcher.fetch_commits(skip_merge_commits=False))
 
     messages = [c.message for c in commits]
-    assert "Merge feature branch" in messages
+    # Should have all commits including the merge, in chronological order
+    assert messages == [
+        "Merge feature branch",
+        "Master branch work",
+        "Improve feature",
+        "Add feature work",
+        "Initial commit",
+    ]
 
-    # Find the merge commit
-    merge_commit = next(c for c in commits if c.message == "Merge feature branch")
-    assert len(merge_commit.parents) == 2  # Should have two parents
+    # Verify the merge commit has two parents
+    merge_commit = commits[0]
+    assert len(merge_commit.parents) == 2
 
 
 def test_unravel_merges(repo_with_merge: pygit2.Repository) -> None:
@@ -244,13 +255,132 @@ def test_unravel_merges(repo_with_merge: pygit2.Repository) -> None:
     messages = [c.message for c in commits]
     print(f"Commits with unravel_merges=True: {messages}")
 
-    # With unravel_merges=True, we should get the feature branch commits
-    assert "Add feature work" in messages
-    assert "Improve feature" in messages
+    # When unraveling, merge commit is replaced by its children
+    # Order: unraveled children first, then continue walking
+    assert messages == [
+        "Improve feature",
+        "Add feature work",
+        "Master branch work",
+        "Initial commit",
+    ]
 
-    # The merge commit itself should not appear (it's replaced by its children)
-    assert "Merge feature branch" not in messages
 
-    # We should NOT get duplicate commits from the mainline
-    assert messages.count("Master branch work") == 1
-    assert messages.count("Initial commit") == 1
+def test_stop_commit(temp_repo: pygit2.Repository) -> None:
+    """Test stopping at a specific commit SHA"""
+    fetcher = GitFetcher(temp_repo.workdir)
+
+    # First, get all commits to find the middle one
+    all_commits = list(fetcher.fetch_commits(skip_merge_commits=False))
+    assert len(all_commits) == 3
+
+    # Use the middle commit as stop point
+    stop_at_sha = all_commits[1].sha  # "Add file2 and modify file1"
+
+    # Fetch with stop_commit - should get only commits AFTER the stop commit
+    commits = list(
+        fetcher.fetch_commits(stop_commit=stop_at_sha, skip_merge_commits=False)
+    )
+
+    # Should only get the first commit (most recent), not the stop commit or anything before it
+    assert len(commits) == 1
+    assert commits[0].message == "Add file3"
+    assert stop_at_sha not in [c.sha for c in commits]
+
+
+def test_stop_commit_with_unravel_merges(repo_with_merge: pygit2.Repository) -> None:
+    """Test that unravel_merges includes feature commits even when they're before stop_commit chronologically
+
+    Scenario: Feature branch commits were created early (1-2 hours after initial),
+    but the merge happened later (3 hours). If we stop at "Master branch work" (2.5 hours),
+    the feature commits should STILL be included because they're part of a merge
+    that happened after the stop commit.
+    """
+    fetcher = GitFetcher(repo_with_merge.workdir)
+
+    # Get all commits to understand the timeline
+    all_commits = list(fetcher.fetch_commits(skip_merge_commits=False))
+
+    # Find "Master branch work" commit to use as stop point
+    master_work_commit = next(
+        c for c in all_commits if c.message == "Master branch work"
+    )
+    stop_at_sha = master_work_commit.sha
+
+    # Fetch with stop_commit AND unravel_merges
+    commits = list(
+        fetcher.fetch_commits(
+            stop_commit=stop_at_sha, unravel_merges=True, skip_merge_commits=False
+        )
+    )
+
+    messages = [c.message for c in commits]
+    print(f"Commits with stop_commit={stop_at_sha[:8]} and unravel_merges=True:")
+    print(f"  {messages}")
+
+    # Should only get the unraveled feature commits (merge happens after stop_commit)
+    assert messages == ["Improve feature", "Add feature work"]
+
+
+def test_skip_merge_commits_with_unravel_false(
+    repo_with_merge: pygit2.Repository,
+) -> None:
+    """Test skip_merge_commits=True with unravel_merges=False
+
+    Should skip merge commits entirely without unraveling them.
+    """
+    fetcher = GitFetcher(repo_with_merge.workdir)
+    commits = list(fetcher.fetch_commits(skip_merge_commits=True, unravel_merges=False))
+
+    messages = [c.message for c in commits]
+    print(f"Commits with skip_merge_commits=True, unravel_merges=False: {messages}")
+
+    # Should skip merge but still traverse to feature commits
+    assert messages == [
+        "Master branch work",
+        "Improve feature",
+        "Add feature work",
+        "Initial commit",
+    ]
+
+
+def test_skip_and_unravel_both_true(repo_with_merge: pygit2.Repository) -> None:
+    """Test skip_merge_commits=True with unravel_merges=True
+
+    Should unravel merge commits (return child commits) but NOT return the merge commit itself.
+    This is the key test for the interaction between these two flags.
+    """
+    fetcher = GitFetcher(repo_with_merge.workdir)
+    commits = list(fetcher.fetch_commits(skip_merge_commits=True, unravel_merges=True))
+
+    messages = [c.message for c in commits]
+    print(f"Commits with skip_merge_commits=True, unravel_merges=True: {messages}")
+
+    # Should unravel merge and include all non-merge commits, no duplicates
+    assert messages == [
+        "Improve feature",
+        "Add feature work",
+        "Master branch work",
+        "Initial commit",
+    ]
+
+
+def test_skip_false_unravel_true(repo_with_merge: pygit2.Repository) -> None:
+    """Test skip_merge_commits=False with unravel_merges=True
+
+    Should unravel merge commits AND continue processing normally, which means
+    the merge commit itself gets skipped (via the 'continue' in unravel logic).
+    """
+    fetcher = GitFetcher(repo_with_merge.workdir)
+    commits = list(fetcher.fetch_commits(skip_merge_commits=False, unravel_merges=True))
+
+    messages = [c.message for c in commits]
+    print(f"Commits with skip_merge_commits=False, unravel_merges=True: {messages}")
+
+    # Unravel logic uses 'continue' so merge commit doesn't appear
+    # Same result as skip_and_unravel_both_true
+    assert messages == [
+        "Improve feature",
+        "Add feature work",
+        "Master branch work",
+        "Initial commit",
+    ]

@@ -28,7 +28,7 @@ from sqlalchemy import (
     text,
     update,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB
 from sqlalchemy.orm import Mapper
 from sqlmodel import Field, Relationship, SQLModel, select
 
@@ -78,7 +78,7 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
         default=None,
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    message: dict = Field(default={}, sa_column=Column(JSONB, nullable=False))  # type: ignore
+    message: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
     order: int = Field(default=None, sa_column=Column(Integer, autoincrement=True))
     agent_instance_id: UUID = Field(
         foreign_key="runtime_log_agent_instance.id", nullable=False
@@ -1179,26 +1179,16 @@ class Organization(SQLModel, table=True):
             nullable=False,
         ),
     )
-    synced_at: datetime | None = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-
-    # Relationships
-    memberships: list["OrgMembership"] = Relationship(
-        back_populates="organization", cascade_delete=True
-    )
-    users: list["User"] = Relationship(
-        back_populates="organizations",
-        sa_relationship_kwargs={"secondary": "org_membership", "viewonly": True},
+    auth0_updated_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
     )
 
 
 class User(SQLModel, table=True):
     __tablename__ = "user"
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    auth0_user_id: str = Field(index=True, unique=True)
-    email: str = Field(index=True)
-    name: str = Field(index=True)
+    id: str = Field(primary_key=True)  # Auth0 user ID (e.g., "auth0|xxxxx")
+    email: str | None = Field(default=None, index=True)
+    name: str | None = Field(default=None, index=True)
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -1212,17 +1202,8 @@ class User(SQLModel, table=True):
             nullable=False,
         ),
     )
-    synced_at: datetime | None = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-
-    # Relationships
-    memberships: list["OrgMembership"] = Relationship(
-        back_populates="user", cascade_delete=True
-    )
-    organizations: list["Organization"] = Relationship(
-        back_populates="users",
-        sa_relationship_kwargs={"secondary": "org_membership", "viewonly": True},
+    auth0_updated_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
     )
 
 
@@ -1234,7 +1215,18 @@ class OrgMembership(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     org_id: str = Field(foreign_key="organization.id", index=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-    # Relationships
-    organization: Organization = Relationship(back_populates="memberships")
-    user: User = Relationship(back_populates="memberships")
+    user_id: str = Field(foreign_key="user.id", index=True)  # Auth0 user ID
+    # TODO: if possible use auth0_updated_at
+    # TODO: Role
+
+
+class Auth0SyncRun(SQLModel, table=True):
+    """Track Auth0 sync runs for incremental syncing"""
+
+    __tablename__ = "auth0_sync_run"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    timestamp: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    status: str = Field(index=True)  # 'syncing' or 'synced'

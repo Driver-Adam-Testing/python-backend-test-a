@@ -15,7 +15,7 @@ from typing import Any
 
 from app.services.auth0_service import Auth0Service
 from database.db import engine
-from database.models import Organization, OrgMembership, User
+from database.models import Auth0SyncRun, Organization, OrgMembership, User
 from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
@@ -176,22 +176,17 @@ def sync_user_with_organizations(user_id: str, session: Session | None = None) -
             # Remove memberships that don't exist in Auth0
             current_org_ids = {org.get("id") for org in organizations if org.get("id")}
 
-            # Look up user to get UUID for querying memberships
-            db_user = working_session.exec(
-                select(User).where(User.auth0_user_id == user_id)
-            ).first()
+            # Query memberships by user_id directly (which is now the Auth0 user ID)
+            existing_memberships = working_session.exec(
+                select(OrgMembership).where(OrgMembership.user_id == user_id)
+            ).all()
 
-            if db_user:
-                existing_memberships = working_session.exec(
-                    select(OrgMembership).where(OrgMembership.user_id == db_user.id)
-                ).all()
-
-                for membership in existing_memberships:
-                    if membership.org_id not in current_org_ids:
-                        logger.info(
-                            f"Removing outdated membership: {user_id} from {membership.org_id}"
-                        )
-                        working_session.delete(membership)
+            for membership in existing_memberships:
+                if membership.org_id not in current_org_ids:
+                    logger.info(
+                        f"Removing outdated membership: {user_id} from {membership.org_id}"
+                    )
+                    working_session.delete(membership)
 
             if should_commit:
                 working_session.commit()
@@ -226,7 +221,7 @@ def _sync_org_to_db(session: Session, org_data: dict[str, Any]) -> bool:
         existing_org.name = org_name
         existing_org.display_name = org_data.get("display_name")
         existing_org.org_metadata = org_data.get("metadata", {})
-        existing_org.synced_at = datetime.now(UTC)
+        existing_org.auth0_updated_at = datetime.now(UTC)
         logger.info(f"Updated organization: {org_name} ({org_id})")
     else:
         # Create new organization
@@ -235,7 +230,7 @@ def _sync_org_to_db(session: Session, org_data: dict[str, Any]) -> bool:
             name=org_name,
             display_name=org_data.get("display_name"),
             org_metadata=org_data.get("metadata", {}),
-            synced_at=datetime.now(UTC),
+            auth0_updated_at=datetime.now(UTC),
         )
         session.add(new_org)
         logger.info(f"Created organization: {org_name} ({org_id})")
@@ -245,82 +240,69 @@ def _sync_org_to_db(session: Session, org_data: dict[str, Any]) -> bool:
 
 def _sync_user_to_db(session: Session, user_data: dict[str, Any]) -> bool:
     """Internal function to sync user data to database."""
-    auth0_user_id = user_data.get("user_id")
+    user_id = user_data.get("user_id")
     email = user_data.get("email", "").lower()
     name = user_data.get("name", email)
 
-    if not auth0_user_id:
+    if not user_id:
         logger.warning(f"Skipping user with missing id: {user_data}")
         return False
 
-    existing_user = session.exec(
-        select(User).where(User.auth0_user_id == auth0_user_id)
-    ).first()
+    existing_user = session.get(User, user_id)
 
     if existing_user:
         # Update existing user
         existing_user.email = email
         existing_user.name = name
-        existing_user.synced_at = datetime.now(UTC)
-        logger.info(f"Updated user: {email} ({auth0_user_id})")
+        existing_user.auth0_updated_at = datetime.now(UTC)
+        logger.info(f"Updated user: {email} ({user_id})")
     else:
         # Create new user
         new_user = User(
-            auth0_user_id=auth0_user_id,
+            id=user_id,
             email=email,
             name=name,
-            synced_at=datetime.now(UTC),
+            auth0_updated_at=datetime.now(UTC),
         )
         session.add(new_user)
-        logger.info(f"Created user: {email} ({auth0_user_id})")
+        logger.info(f"Created user: {email} ({user_id})")
 
     return True
 
 
 def _sync_membership_to_db(
-    session: Session, auth0_user_id: str, org_id: str, action: str
+    session: Session, user_id: str, org_id: str, action: str
 ) -> bool:
     """Internal function to sync membership data to database."""
-    # Look up user by auth0_user_id to get the UUID
-    user = session.exec(select(User).where(User.auth0_user_id == auth0_user_id)).first()
-
-    if not user:
-        logger.warning(
-            f"User {auth0_user_id} not found in database for membership in {org_id}"
-        )
-        return False
-
     if action == "add":
         # Check if membership already exists
         existing_membership = session.exec(
             select(OrgMembership).where(
-                OrgMembership.org_id == org_id, OrgMembership.user_id == user.id
+                OrgMembership.org_id == org_id, OrgMembership.user_id == user_id
             )
         ).first()
 
         if not existing_membership:
             # Create new membership
-            new_membership = OrgMembership(org_id=org_id, user_id=user.id)
+            new_membership = OrgMembership(org_id=org_id, user_id=user_id)
             session.add(new_membership)
-            logger.info(f"Created membership: {auth0_user_id} in {org_id}")
+            logger.info(f"Created membership: {user_id} in {org_id}")
         else:
-            logger.debug(f"Membership already exists: {auth0_user_id} in {org_id}")
+            logger.debug(f"Membership already exists: {user_id} in {org_id}")
 
     elif action == "remove":
         # Remove membership
         membership = session.exec(
             select(OrgMembership).where(
-                OrgMembership.org_id == org_id, OrgMembership.user_id == user.id
+                OrgMembership.org_id == org_id, OrgMembership.user_id == user_id
             )
         ).first()
 
         if membership:
             session.delete(membership)
-            logger.info(f"Removed membership: {auth0_user_id} from {org_id}")
+            logger.info(f"Removed membership: {user_id} from {org_id}")
         else:
-            logger.debug(
-                f"Membership not found to remove: {auth0_user_id} from {org_id}"
-            )
+            logger.debug(f"Membership not found to remove: {user_id} from {org_id}")
 
     return True
 
@@ -328,7 +310,7 @@ def _sync_membership_to_db(
 # Example webhook handler
 def handle_auth0_webhook(event_type: str, payload: dict[str, Any]) -> bool:
     """
-    Handle Auth0 webhook events.
+    Handle Auth0 webhook events and track them in Auth0SyncRun.
 
     Args:
         event_type: The type of Auth0 event
@@ -339,37 +321,61 @@ def handle_auth0_webhook(event_type: str, payload: dict[str, Any]) -> bool:
     """
     logger.info(f"Handling Auth0 webhook: {event_type}")
 
+    sync_run = None
     try:
-        if event_type == "user.created" or event_type == "user.updated":
-            user_id = payload.get("user_id")
-            if user_id:
-                return sync_single_user(user_id)
+        with Session(engine) as session:
+            # Create sync run record
+            current_timestamp = datetime.now(UTC)
+            sync_run = Auth0SyncRun(timestamp=current_timestamp, status="syncing")
+            session.add(sync_run)
+            session.commit()
 
-        elif (
-            event_type == "organization.created" or event_type == "organization.updated"
-        ):
-            org_id = payload.get("id")
-            if org_id:
-                return sync_single_organization(org_id)
+            # Process the webhook event
+            result = False
+            if event_type == "user.created" or event_type == "user.updated":
+                user_id = payload.get("user_id")
+                if user_id:
+                    result = sync_single_user(user_id, session)
 
-        elif event_type == "organization.member_added":
-            user_id = payload.get("user_id")
-            org_id = payload.get("organization_id")
-            if user_id and org_id:
-                return sync_user_membership(user_id, org_id, "add")
+            elif (
+                event_type == "organization.created"
+                or event_type == "organization.updated"
+            ):
+                org_id = payload.get("id")
+                if org_id:
+                    result = sync_single_organization(org_id, session)
 
-        elif event_type == "organization.member_removed":
-            user_id = payload.get("user_id")
-            org_id = payload.get("organization_id")
-            if user_id and org_id:
-                return sync_user_membership(user_id, org_id, "remove")
+            elif event_type == "organization.member_added":
+                user_id = payload.get("user_id")
+                org_id = payload.get("organization_id")
+                if user_id and org_id:
+                    result = sync_user_membership(user_id, org_id, "add", session)
 
-        else:
-            logger.warning(f"Unhandled Auth0 event type: {event_type}")
-            return False
+            elif event_type == "organization.member_removed":
+                user_id = payload.get("user_id")
+                org_id = payload.get("organization_id")
+                if user_id and org_id:
+                    result = sync_user_membership(user_id, org_id, "remove", session)
+
+            else:
+                logger.warning(f"Unhandled Auth0 event type: {event_type}")
+                session.rollback()
+                return False
+
+            # Mark sync as complete if successful
+            if result and sync_run:
+                sync_run_in_session = session.get(Auth0SyncRun, sync_run.id)
+                if sync_run_in_session:
+                    sync_run_in_session.status = "synced"
+
+            # Commit or rollback based on result
+            if result:
+                session.commit()
+                return True
+            else:
+                session.rollback()
+                return False
 
     except Exception as e:
         logger.error(f"Error handling Auth0 webhook {event_type}: {e}")
         return False
-
-    return True

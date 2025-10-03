@@ -18,7 +18,7 @@ from typing import Any
 from app.services.auth0_service import Auth0Service
 from auth0.management import Auth0
 from database.db import engine
-from database.models import Organization, OrgMembership, User
+from database.models import Auth0SyncRun, Organization, OrgMembership, User
 from sqlmodel import Session, select
 
 logging.basicConfig(
@@ -84,15 +84,35 @@ class Auth0Sync:
         logger.info(f"Fetched {len(organizations)} organizations from Auth0")
         return organizations
 
-    def fetch_all_users(self, auth0_client: Auth0) -> list[dict[str, Any]]:
-        """Fetch all users from Auth0 with pagination."""
+    def fetch_all_users(
+        self, auth0_client: Auth0, last_sync_timestamp: datetime | None = None
+    ) -> list[dict[str, Any]]:
+        """Fetch users from Auth0 with pagination, optionally filtering by updated_at."""
         users = []
         page = 0
         per_page = 100
 
+        # Build query for incremental sync
+        query = None
+        if last_sync_timestamp:
+            # Format timestamp for Auth0 Lucene query
+            timestamp_str = (
+                last_sync_timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+            )
+            query = f"updated_at:[{timestamp_str} TO *]"
+            logger.info(
+                f"Incremental sync: fetching users updated since {timestamp_str}"
+            )
+
         while True:
             try:
-                response = auth0_client.users.list(per_page=per_page, page=page)
+                if query:
+                    response = auth0_client.users.list(
+                        q=query, per_page=per_page, page=page
+                    )
+                else:
+                    response = auth0_client.users.list(per_page=per_page, page=page)
+
                 batch = response.get("users", [])
 
                 if not batch:
@@ -109,7 +129,8 @@ class Auth0Sync:
                 self.stats["errors"].append(f"Failed to fetch users page {page}: {e!s}")
                 break
 
-        logger.info(f"Fetched {len(users)} users from Auth0")
+        sync_type = "incremental" if last_sync_timestamp else "full"
+        logger.info(f"Fetched {len(users)} users from Auth0 ({sync_type} sync)")
         return users
 
     def fetch_user_organizations(
@@ -161,7 +182,7 @@ class Auth0Sync:
                 existing_org.name = org_name
                 existing_org.display_name = org_data.get("display_name")
                 existing_org.org_metadata = org_data.get("metadata", {})
-                existing_org.synced_at = datetime.now(UTC)
+                existing_org.auth0_updated_at = datetime.now(UTC)
 
                 if self.verbose:
                     logger.debug(f"Updated organization: {org_name} ({org_id})")
@@ -173,7 +194,7 @@ class Auth0Sync:
                     name=org_name,
                     display_name=org_data.get("display_name"),
                     org_metadata=org_data.get("metadata", {}),
-                    synced_at=datetime.now(UTC),
+                    auth0_updated_at=datetime.now(UTC),
                 )
                 session.add(new_org)
 
@@ -190,99 +211,83 @@ class Auth0Sync:
 
     def sync_user(self, session: Session, user_data: dict[str, Any]) -> bool:
         """Sync a single user to the database."""
-        auth0_user_id = user_data.get("user_id")
+        user_id = user_data.get("user_id")
         email = user_data.get("email", "").lower()
         name = user_data.get("name", email)
+        auth0_updated_at = user_data.get("updated_at", datetime.now(UTC))
 
-        if not auth0_user_id:
+        if not user_id:
             logger.warning(f"Skipping user with missing id: {user_data}")
             self.stats["users_skipped"] += 1
             return False
 
         try:
-            # Check if user exists by auth0_user_id
-            existing_user = session.exec(
-                select(User).where(User.auth0_user_id == auth0_user_id)
-            ).first()
+            # Check if user exists by id
+            existing_user = session.get(User, user_id)
 
             if existing_user:
                 # Update existing user
                 existing_user.email = email
                 existing_user.name = name
-                existing_user.synced_at = datetime.now(UTC)
+                existing_user.auth0_updated_at = auth0_updated_at
 
                 if self.verbose:
-                    logger.debug(f"Updated user: {email} ({auth0_user_id})")
+                    logger.debug(f"Updated user: {email} ({user_id})")
                 self.stats["users_updated"] += 1
             else:
                 # Create new user
                 new_user = User(
-                    auth0_user_id=auth0_user_id,
+                    id=user_id,
                     email=email,
                     name=name,
-                    synced_at=datetime.now(UTC),
+                    auth0_updated_at=auth0_updated_at,
                 )
                 session.add(new_user)
 
                 if self.verbose:
-                    logger.debug(f"Created user: {email} ({auth0_user_id})")
+                    logger.debug(f"Created user: {email} ({user_id})")
                 self.stats["users_created"] += 1
 
             return True
 
         except Exception as e:
-            logger.error(f"Error syncing user {auth0_user_id}: {e}")
-            self.stats["errors"].append(f"Failed to sync user {auth0_user_id}: {e!s}")
+            logger.error(f"Error syncing user {user_id}: {e}")
+            self.stats["errors"].append(f"Failed to sync user {user_id}: {e!s}")
             return False
 
-    def sync_membership(
-        self, session: Session, org_id: str, auth0_user_id: str
-    ) -> bool:
+    def sync_membership(self, session: Session, org_id: str, user_id: str) -> bool:
         """Create or update organization membership."""
         try:
-            # Look up user by auth0_user_id to get the UUID
-            user = session.exec(
-                select(User).where(User.auth0_user_id == auth0_user_id)
-            ).first()
-
-            if not user:
-                logger.warning(
-                    f"User {auth0_user_id} not found in database for membership in {org_id}"
-                )
-                self.stats["memberships_skipped"] += 1
-                return False
-
             # Check if membership already exists
             existing_membership = session.exec(
                 select(OrgMembership).where(
-                    OrgMembership.org_id == org_id, OrgMembership.user_id == user.id
+                    OrgMembership.org_id == org_id, OrgMembership.user_id == user_id
                 )
             ).first()
 
             if existing_membership:
                 if self.verbose:
-                    logger.debug(
-                        f"Membership already exists: {auth0_user_id} in {org_id}"
-                    )
+                    logger.debug(f"Membership already exists: {user_id} in {org_id}")
                 self.stats["memberships_skipped"] += 1
             else:
                 # Create new membership
-                new_membership = OrgMembership(org_id=org_id, user_id=user.id)
+                new_membership = OrgMembership(org_id=org_id, user_id=user_id)
                 session.add(new_membership)
 
                 if self.verbose:
-                    logger.debug(f"Created membership: {auth0_user_id} in {org_id}")
+                    logger.debug(f"Created membership: {user_id} in {org_id}")
                 self.stats["memberships_created"] += 1
 
             return True
 
         except Exception as e:
-            logger.error(f"Error syncing membership {auth0_user_id} in {org_id}: {e}")
+            logger.error(f"Error syncing membership {user_id} in {org_id}: {e}")
             self.stats["errors"].append(
-                f"Failed to sync membership {auth0_user_id} in {org_id}: {e!s}"
+                f"Failed to sync membership {user_id} in {org_id}: {e!s}"
             )
             return False
 
+    # TODO: use auth0 updated_at field to populate org,user sync timestamps
     def run(self) -> dict[str, Any]:
         """Main sync process."""
         logger.info("Starting Auth0 sync process...")
@@ -290,17 +295,49 @@ class Auth0Sync:
         if self.dry_run:
             logger.info("DRY RUN MODE - No changes will be saved to database")
 
+        sync_run_id = None
+        last_sync_timestamp = None
         try:
+            with Session(engine) as session:
+                # Get the last successful sync timestamp
+                last_sync = session.exec(
+                    select(Auth0SyncRun)
+                    .where(Auth0SyncRun.status == "synced")
+                    .order_by(Auth0SyncRun.timestamp.desc())
+                ).first()
+
+                # Store the timestamp before closing session
+                if last_sync:
+                    last_sync_timestamp = last_sync.timestamp
+
+                # Create new sync run record with current timestamp
+                current_timestamp = datetime.now(UTC)
+                sync_run = Auth0SyncRun(timestamp=current_timestamp, status="syncing")
+                session.add(sync_run)
+                session.commit()
+
+                # Store the ID for later use
+                sync_run_id = sync_run.id
+
+                sync_type = "incremental" if last_sync else "full"
+                logger.info(f"Running {sync_type} sync")
+                if last_sync:
+                    logger.info(
+                        f"Last successful sync: {last_sync.timestamp.isoformat()}"
+                    )
+
             # Get Auth0 client
             auth0_client = self.get_auth0_client()
 
-            # Fetch all data from Auth0
+            # Fetch data from Auth0
             logger.info("Fetching data from Auth0...")
             organizations = self.fetch_all_organizations(auth0_client)
-            users = self.fetch_all_users(auth0_client)
+
+            # Use last sync timestamp for incremental user fetch
+            users = self.fetch_all_users(auth0_client, last_sync_timestamp)
 
             with Session(engine) as session:
-                # Sync organizations
+                # Sync organizations (always do all orgs since we can't filter them)
                 logger.info("Syncing organizations...")
                 for org in organizations:
                     self.sync_organization(session, org)
@@ -310,7 +347,7 @@ class Auth0Sync:
                 for user in users:
                     self.sync_user(session, user)
 
-                # Sync memberships
+                # Sync memberships (only for changed users in incremental mode)
                 logger.info("Syncing organization memberships...")
                 for user in users:
                     user_id = user.get("user_id")
@@ -325,6 +362,12 @@ class Auth0Sync:
                         if org_id:
                             self.sync_membership(session, org_id, user_id)
 
+                # Mark sync as complete
+                if sync_run_id and not self.dry_run:
+                    sync_run_in_session = session.get(Auth0SyncRun, sync_run_id)
+                    if sync_run_in_session:
+                        sync_run_in_session.status = "synced"
+
                 # Commit or rollback
                 if self.dry_run:
                     logger.info("Dry run - rolling back all changes")
@@ -336,6 +379,9 @@ class Auth0Sync:
         except Exception as e:
             logger.error(f"Fatal error during sync: {e}")
             self.stats["errors"].append(f"Fatal error: {e!s}")
+
+            # Note: Failed syncs remain in "syncing" status to indicate incompletion
+            # No need to update the sync_run record since it already has status="syncing"
 
         # Print summary
         self.print_summary()

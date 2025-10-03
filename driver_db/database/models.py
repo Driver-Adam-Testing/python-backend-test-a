@@ -30,7 +30,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapper
-from sqlmodel import JSON, Field, Relationship, SQLModel, select
+from sqlmodel import Field, Relationship, SQLModel, select
 
 from .custom_types import TSVector
 from .models_enums import (
@@ -78,7 +78,7 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
         default=None,
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    message: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
+    message: dict = Field(default={}, sa_column=Column(JSONB, nullable=False))  # type: ignore
     order: int = Field(default=None, sa_column=Column(Integer, autoincrement=True))
     agent_instance_id: UUID = Field(
         foreign_key="runtime_log_agent_instance.id", nullable=False
@@ -1102,7 +1102,7 @@ class AboutYouSurvey(SQLModel, table=True):
         default=None,
     )
 
-
+      
 class OnboardingChecklist(SQLModel, table=True):
     __tablename__ = "onboarding_checklist"
     __table_args__ = (
@@ -1154,5 +1154,80 @@ class OnboardingChecklist(SQLModel, table=True):
             server_default=func.now(),
             onupdate=func.now(),
             nullable=False,
+        )
+    )
+    
+class Organization(SQLModel, table=True):
+    """Auth0 Organization synchronized to local database"""
+
+    __tablename__ = "organizations"
+
+    id: str = Field(primary_key=True)  # Auth0 org ID (e.g., "org_xxxxx")
+    name: str = Field(index=True)  # Unique organization name
+    display_name: str | None = Field(default=None)
+    org_metadata: dict = Field(default={}, sa_column=Column(JSONB, nullable=False))
+
+    created_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        )
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
         ),
     )
+    synced_at: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+
+    # Relationships
+    memberships: list["OrgMembership"] = Relationship(
+        back_populates="organization", cascade_delete=True
+    )
+    users: list["User"] = Relationship(
+        back_populates="organizations",
+        sa_relationship_kwargs={"secondary": "org_memberships", "viewonly": True},
+    )
+
+
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+    id: str = Field(primary_key=True)  # Auth0 user ID (e.g., "auth0|xxxxx")
+    email: str = Field(index=True)
+    name: str = Field(index=True)
+    created_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        )
+    )
+    synced_at: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+
+    # Relationships
+    memberships: list["OrgMembership"] = Relationship(
+        back_populates="user", cascade_delete=True
+    )
+    organizations: list["Organization"] = Relationship(
+        back_populates="users",
+        sa_relationship_kwargs={"secondary": "org_memberships", "viewonly": True},
+    )
+
+
+class OrgMembership(SQLModel, table=True):
+    """Link table for organization-user memberships"""
+
+    __tablename__ = "org_memberships"
+    __table_args__ = (UniqueConstraint("org_id", "user_id", name="uq_org_member"),)
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    org_id: str = Field(foreign_key="organizations.id", index=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+
+    # Relationships
+    organization: Organization = Relationship(back_populates="memberships")
+    user: User = Relationship(back_populates="memberships")

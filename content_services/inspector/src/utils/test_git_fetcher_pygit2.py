@@ -384,3 +384,80 @@ def test_skip_false_unravel_true(repo_with_merge: pygit2.Repository) -> None:
         "Master branch work",
         "Initial commit",
     ]
+
+
+def test_start_commit_not_at_head(temp_repo: pygit2.Repository) -> None:
+    """Test starting from a commit that's not at the head"""
+    fetcher = GitFetcher(temp_repo.workdir)
+
+    # Get all commits first
+    all_commits = list(fetcher.fetch_commits(skip_merge_commits=False))
+    assert len(all_commits) == 3
+
+    # Start from the middle commit (second in history, "Add file2 and modify file1")
+    middle_commit_sha = all_commits[1].sha
+
+    # Fetch starting from middle commit
+    commits = list(
+        fetcher.fetch_commits(start_commit=middle_commit_sha, skip_merge_commits=False)
+    )
+
+    # Should get middle commit and everything before it (not the most recent commit)
+    assert len(commits) == 2
+    assert commits[0].message == "Add file2 and modify file1"
+    assert commits[1].message == "Initial commit"
+    assert all_commits[0].sha not in [c.sha for c in commits]
+
+
+def test_start_commit_with_stop_commit(temp_repo: pygit2.Repository) -> None:
+    """Test using both start_commit and stop_commit together"""
+    fetcher = GitFetcher(temp_repo.workdir)
+
+    # Get all commits first
+    all_commits = list(fetcher.fetch_commits(skip_merge_commits=False))
+    assert len(all_commits) == 3
+
+    # Start from middle commit and stop at initial commit
+    start_sha = all_commits[1].sha  # "Add file2 and modify file1"
+    stop_sha = all_commits[2].sha  # "Initial commit"
+
+    # Fetch between start and stop
+    commits = list(
+        fetcher.fetch_commits(
+            start_commit=start_sha, stop_commit=stop_sha, skip_merge_commits=False
+        )
+    )
+
+    # Should only get the middle commit (starts at middle, stops before initial)
+    assert len(commits) == 1
+    assert commits[0].message == "Add file2 and modify file1"
+    assert commits[0].sha == start_sha
+
+
+def test_start_commit_on_merge_branch(repo_with_merge: pygit2.Repository) -> None:
+    """Test starting from a commit on a feature branch (not the main branch head)"""
+    fetcher = GitFetcher(repo_with_merge.workdir)
+
+    # Get all commits to find feature branch commits
+    all_commits = list(fetcher.fetch_commits(skip_merge_commits=False))
+
+    # Find "Improve feature" commit (second feature commit)
+    improve_feature = next(c for c in all_commits if c.message == "Improve feature")
+
+    # Start from this commit
+    commits = list(
+        fetcher.fetch_commits(
+            start_commit=improve_feature.sha, skip_merge_commits=False
+        )
+    )
+
+    messages = [c.message for c in commits]
+    print(f"Starting from 'Improve feature': {messages}")
+
+    # Should get: Improve feature -> Add feature work -> Initial commit
+    # (follows the parent chain, not the main branch)
+    assert messages == [
+        "Improve feature",
+        "Add feature work",
+        "Initial commit",
+    ]

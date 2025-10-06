@@ -105,6 +105,16 @@ changelog_system_prompt = (
     .into_str()
 )
 
+
+class MonthlyChangelog(BaseModel):
+    month: str
+    changes: list[str]
+
+
+class OverallChangelog(BaseModel):
+    changelog: list[MonthlyChangelog]
+
+
 overall_changelog_system_prompt = (
     Prompt.empty()
     .append(
@@ -116,28 +126,23 @@ overall_changelog_system_prompt = (
 
     Your output must:
 
-    - Be in valid **YAML**. With a top-level key `changelog` that contains a list of entries.
-    - Each entry should describe a month and should contain as many bullet points as needed to capture the most important changes that month.
+    - Each entry should describe a month and should contain at most 10 bullet points to capture the most important changes that month.
     - Each bullet should:
-    - Begin with a **strong action verb** (e.g., Introduced, Refactored, Migrated)
-    - Reference the **feature, subsystem, or outcome**
-    - Be **atomic**, avoiding pronouns and vague references
-    - Avoid opinion, commentary, or duplication
+        - Begin with a **strong action verb** (e.g., Introduced, Refactored, Migrated)
+        - Reference the **feature, subsystem, or outcome**
+        - Be **atomic**, avoiding pronouns and vague references
+        - Avoid opinion, commentary, or duplication
 
-    Do not include explanation, comments, or any markdown — output only the YAML block.
+    Do not include explanation, comments, or any markdown — output only the JSON output.
 
     An example output format is:
-    ```yaml
-    changelog:
-    - 2024-01:
-        - Introduced a new user authentication system with OAuth2 support
-        - Refactored the payment processing module to improve performance
-        - Migrated the database to PostgreSQL for better scalability
-    - 2024-02:
-        - Added a new feature for real-time notifications
-        - Fixed critical bugs in the user profile management system
-        - Improved test coverage across the codebase
-    ```
+    {"changelog": [
+        {"month": "2024-02", "changes": ["Introduced real-time notification system", "Fixed critical authentication bugs"]},
+        {"month": "2024-01", "changes": ["Migrated database to PostgreSQL"]}
+    ]}
+    Be sure to format the date as YYYY-MM and organize months in reverse chronological order (most recent first).
+
+    Capture the most important changes each month, prioritizing features and significant bug fixes over minor changes. Limit each month to no more than 10 bullet points.
     """
         )
     )
@@ -183,27 +188,23 @@ update_overall_changelog_system_prompt = (
     Your task is to update the overall changelog by:
     1. **Adding new month entries** that don't exist in the overall changelog
     2. **Updating existing month entries** where new changes have been added
-    3. **Preserving the YAML format** with strong action verbs and atomic bullet points
+    3. **Preserving the tone** with strong action verbs and atomic bullet points
     4. **Maintaining chronological order** (most recent months first)
-    5. **Limiting each month to 5 bullet points** maximum - prioritize the most important changes
-    6. **Deduplicating** similar entries between old and new content
+    5. **Deduplicating** similar entries between old and new content
 
     Each bullet point must:
     - Begin with a strong action verb (e.g., Introduced, Refactored, Migrated)
     - Reference the feature, subsystem, or outcome
     - Be atomic and clear, avoiding pronouns and vague references
 
-    Output only valid YAML with a top-level `changelog` key. No explanation or markdown.
+    Output only valid JSON. No explanation or markdown.
 
     Example format:
-    ```yaml
-    changelog:
-    - 2024-02:
-        - Introduced real-time notification system
-        - Fixed critical authentication bugs
-    - 2024-01:
-        - Migrated database to PostgreSQL
-    ```
+    {"changelog": [
+        {"month": "2024-02", "changes": ["Introduced real-time notification system", "Fixed critical authentication bugs"]},
+        {"month": "2024-01", "changes": ["Migrated database to PostgreSQL"]}
+    ]}
+    Be sure to format the date as YYYY-MM.
     """
         )
     )
@@ -292,7 +293,7 @@ async def generate_overall_changelog(
     monthly_changelogs: dict[str, str],
 ) -> str:
     overall_changelog_model = ChatOpenAI(
-        model="o3-mini",
+        model="gpt-5",
         temperature=0.0,
         request_timeout=600,
     )
@@ -302,7 +303,7 @@ async def generate_overall_changelog(
         overall_changelog_user_prompt += f"### Changelog for {month_key}\n{result}\n"
 
     overall_changelog_config = OutputConfig(
-        kind=OutputConfigKind.TEXT,
+        kind=OutputConfigKind.JSON_STRICT, payload=OverallChangelog
     )
     overall_changelog_result = await llm_generate(
         overall_changelog_model,
@@ -310,7 +311,15 @@ async def generate_overall_changelog(
         overall_changelog_user_prompt,
         overall_changelog_config,
     )
-    return overall_changelog_result
+    changelog_parsed = OverallChangelog.parse_raw(overall_changelog_result)
+
+    overall_changelog_yaml = "changelog:\n"
+    for entry in changelog_parsed.changelog:
+        overall_changelog_yaml += f"  - {entry.month}:\n"
+        for change in entry.changes:
+            overall_changelog_yaml += f"      - {change}\n"
+
+    return overall_changelog_yaml
 
 
 async def merge_monthly_changelogs(
@@ -319,7 +328,7 @@ async def merge_monthly_changelogs(
     month_key: str,
 ) -> str:
     merge_model = ChatOpenAI(
-        model="gpt-4.1",
+        model="gpt-5",
         temperature=0.0,
         request_timeout=120,
     )
@@ -351,7 +360,7 @@ async def update_overall_changelog(
     new_monthly_changes: dict[str, str],
 ) -> str:
     update_model = ChatOpenAI(
-        model="o3-mini",
+        model="gpt-5",
         temperature=0.0,
         request_timeout=600,
     )
@@ -370,14 +379,20 @@ async def update_overall_changelog(
 Please update the overall changelog by intelligently merging these new changes with the existing changelog.
 """
 
-    config = OutputConfig(kind=OutputConfigKind.TEXT)
+    config = OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=OverallChangelog)
     updated_changelog = await llm_generate(
         update_model,
         update_overall_changelog_system_prompt,
         user_prompt,
         config,
     )
-    return updated_changelog
+    updated_changelog_yaml = "changelog:\n"
+    changelog_parsed = OverallChangelog.parse_raw(updated_changelog)
+    for entry in changelog_parsed.changelog:
+        updated_changelog_yaml += f"  - {entry.month}:\n"
+        for change in entry.changes:
+            updated_changelog_yaml += f"      - {change}\n"
+    return updated_changelog_yaml
 
 
 async def _prepare_repo_for_changelog(

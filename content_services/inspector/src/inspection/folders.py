@@ -174,6 +174,7 @@ def folder_single_sentence_from_chunk_descriptions(
             )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
     if previous_content is not None:
         system_prompt_structured.append(

@@ -28,9 +28,9 @@ from sqlalchemy import (
     text,
     update,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB
 from sqlalchemy.orm import Mapper
-from sqlmodel import JSON, Field, Relationship, SQLModel, select
+from sqlmodel import Field, Relationship, SQLModel, select
 
 from .custom_types import TSVector
 from .models_enums import (
@@ -1156,3 +1156,77 @@ class OnboardingChecklist(SQLModel, table=True):
             nullable=False,
         ),
     )
+
+
+class Organization(SQLModel, table=True):
+    __tablename__ = "organization"
+
+    id: str = Field(primary_key=True)  # Auth0 org ID (e.g., "org_xxxxx")
+    name: str = Field(index=True)  # Unique organization name
+    display_name: str | None = Field(default=None)
+    org_metadata: dict = Field(default={}, sa_column=Column(JSONB, nullable=False))
+
+    created_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        )
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    auth0_updated_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+
+class User(SQLModel, table=True):
+    __tablename__ = "user"
+    id: str = Field(primary_key=True)  # Auth0 user ID (e.g., "auth0|xxxxx")
+    email: str | None = Field(default=None, index=True)
+    name: str | None = Field(default=None, index=True)
+    created_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        )
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    auth0_updated_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+
+class OrgMembership(SQLModel, table=True):
+    """Link table for organization-user memberships"""
+
+    __tablename__ = "org_membership"
+    __table_args__ = (UniqueConstraint("org_id", "user_id", name="uq_org_member"),)
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    org_id: str = Field(foreign_key="organization.id", index=True)
+    user_id: str = Field(foreign_key="user.id", index=True)  # Auth0 user ID
+    # TODO: if possible use auth0_updated_at
+    # TODO: Role
+
+
+class Auth0SyncRun(SQLModel, table=True):
+    """Track Auth0 sync runs for incremental syncing"""
+
+    __tablename__ = "auth0_sync_run"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    timestamp: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    status: str = Field(index=True)  # 'syncing' or 'synced'

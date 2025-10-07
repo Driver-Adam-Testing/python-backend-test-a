@@ -11,23 +11,22 @@ FASTMCP_MASK_ERROR_DETAILS = True
 os.environ["FASTMCP_STATELESS_HTTP"] = str(FASTMCP_STATELESS_HTTP)
 os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
 
-import logging
-from pathlib import Path
+import logging  # noqa: E402
+from pathlib import Path  # noqa: E402
 
-import fastmcp
-from database.db import get_session
-from database.models import DerivedContent, Node, PrimaryAsset, Version
-from database.models_enums import ContentKind, VersionStatus
-from fastmcp import Context, FastMCP
-from fastmcp.exceptions import ToolError
-from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
-from fastmcp.server.middleware.logging import LoggingMiddleware
-from shared.prompts.structured_prompting import Component, Prompt
-from sqlmodel import select
+import fastmcp  # noqa: E402
+from database.db import get_session  # noqa: E402
+from database.models import DerivedContent, Node, PrimaryAsset, Version  # noqa: E402
+from database.models_enums import ContentKind, VersionStatus  # noqa: E402
+from fastmcp import Context, FastMCP  # noqa: E402
+from fastmcp.exceptions import ToolError  # noqa: E402
+from shared.prompts.structured_prompting import Component, Prompt  # noqa: E402
+from sqlmodel import select  # noqa: E402
 
-from .auth_middleware import McpAuthMiddleware, get_organization_id
-from .code_map_v2 import get_code_map_simple, CodeMap
-from .mcp_helpers import get_latest_version_for_codebase
+from .auth_middleware import McpAuthMiddleware, get_organization_id  # noqa: E402
+from .code_map_v2 import CodeMap, get_code_map_simple  # noqa: E402
+from .logging_middleware import McpLoggingMiddleware  # noqa: E402
+from .mcp_helpers import get_latest_version_for_codebase  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -61,28 +60,11 @@ assert (
     fastmcp.settings.mask_error_details is True
 ), "FastMCP must be configured to mask error details."
 
-my_mcp.add_middleware(
-    ErrorHandlingMiddleware(
-        logger=logger,
-        include_traceback=True,
-        error_callback=None,
-        transform_errors=False,
-    )
-)
-
 auth_middleware = McpAuthMiddleware()
 my_mcp.add_middleware(auth_middleware)
 
-my_mcp.add_middleware(
-    LoggingMiddleware(
-        logger=logger,
-        log_level=logging.INFO,
-        include_payloads=True,
-        max_payload_length=1000,
-        methods=None,
-        payload_serializer=None,
-    )
-)
+logging_middleware = McpLoggingMiddleware()
+my_mcp.add_middleware(logging_middleware)
 
 
 def _get_root_node_content(

@@ -92,6 +92,7 @@ class SymbolKind(Enum):
     INTERFACE = auto()
     MODULE = auto()
     IMPORT = auto()
+    VARIABLE_DEFINITION = auto()
 
 
 class ScopeRelation(StrEnum):

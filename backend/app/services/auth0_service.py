@@ -1,10 +1,11 @@
 import logging
 import time
+from typing import Any
 
+import requests
 from auth0.authentication import Database, GetToken, Users
 from auth0.management import Auth0
 from fastapi.encoders import jsonable_encoder
-import requests
 
 from app.auth.models import User as UserToken
 from app.auth.permissions import ORG_MANAGER
@@ -334,6 +335,31 @@ class Auth0Service:
         client = self._management_client()
         return client.organizations.get_organization(org_id)
 
+    def get_user_organizations(self, user_id: str) -> list[dict[str, Any]]:
+        client = self._management_client()
+
+        organizations = []
+        page = 0
+        per_page = 100
+
+        while True:
+            response = client.users.list_organizations(
+                user_id, per_page=per_page, page=page
+            )
+            batch = response.get("organizations", [])
+
+            if not batch:
+                break
+
+            organizations.extend(batch)
+            page += 1
+
+            # Safety break to avoid infinite loops
+            if len(batch) < per_page:
+                break
+
+        return organizations
+
     # ------------------------------------------------------------------
     #  Public signup helpers (no existing user context)
     # ------------------------------------------------------------------
@@ -361,10 +387,12 @@ class Auth0Service:
                 resp.raise_for_status()
 
         except Exception as e:
-            logger.error(f"Error finding users by email '{email}': {str(e)}")
+            logger.error(f"Error finding users by email '{email}': {e!s}")
             raise
 
-    def create_organization(self, name: str, display_name: str, metadata: dict[str, any] | None = None) -> dict[str, any]:
+    def create_organization(
+        self, name: str, display_name: str, metadata: dict[str, any] | None = None
+    ) -> dict[str, any]:
         """
         Create an Auth0 Organization.
 
@@ -440,7 +468,9 @@ class Auth0Service:
                 return None
             page += 1
 
-    def enable_connection_for_organization(self, org_id: str, connection_id: str) -> None:
+    def enable_connection_for_organization(
+        self, org_id: str, connection_id: str
+    ) -> None:
         """
         Enable a connection on an organization.
 

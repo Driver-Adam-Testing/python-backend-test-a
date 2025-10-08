@@ -316,6 +316,8 @@ class CppDataStructureData(IrData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
+        from shared.chunking.text_splitter import clip_prompt
+
         from .symbol_common import CHUNK_SIZE
 
         user_prompt = (
@@ -327,28 +329,20 @@ class CppDataStructureData(IrData):
                 )
             )
         )
+        if symbol.file_code:
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
         if len(symbol.reified_symbol.children) > 0:
-            child_symbol_prompt = Prompt.empty()
-            child_symbol_prompt.append(
+            user_prompt.append(
                 Component(
                     string="\n\nCode of data structure functions defined outside the file:"
                 )
             )
             for child in symbol.reified_symbol.children:
                 if child.raw.file_path != symbol.reified_symbol.raw.file_path:
-                    child_symbol_prompt.append(
-                        Component(string=f"{child.raw.symbol_code}")
-                    )
-            if (
-                user_prompt.get_num_tokens() + child_symbol_prompt.get_num_tokens()
-                < CHUNK_SIZE
-            ):
-                user_prompt.extend(child_symbol_prompt)
-        if symbol.file_code:
-            user_prompt.append(
-                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
-            )
-        return user_prompt.into_str()
+                    user_prompt.append(Component(string=f"{child.raw.symbol_code}"))
+        return clip_prompt(user_prompt.into_str(), chunk_size=CHUNK_SIZE)
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:

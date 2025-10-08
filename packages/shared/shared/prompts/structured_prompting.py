@@ -40,11 +40,6 @@ class Prompt(BaseModel):
     def into_str(self, sep: str = "\n\n") -> str:
         return sep.join([str(c) for c in self.components])
 
-    def get_num_tokens(self, model: str = "gpt-4") -> int:
-        from shared.chunking.text_splitter import get_num_tokens
-
-        return get_num_tokens(self.into_str(), model=model)
-
     def __add__(self, other: Self) -> Self:
         return Prompt(components=self.components + other.components)
 

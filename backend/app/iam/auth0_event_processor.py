@@ -79,7 +79,7 @@ from app.schemas.auth0_event_schema import (
     Auth0EventProcessingResult,
     extract_log_id,
 )
-from app.services.auth0_service import Auth0Service
+from app.services.auth0_factory import create_auth0_service
 from app.utils.auth0_retry import retry_auth0_call
 from database.db import engine
 from database.models import Organization, OrgMembership, User
@@ -159,7 +159,7 @@ def _handle_user_event(event: Auth0EventBridgeEvent) -> list[str]:
 
 def _process_user_update(user_id: str) -> list[str]:
     """Process a user update by fetching fresh data from Auth0."""
-    auth0_service = Auth0Service()
+    auth0_service = create_auth0_service()
 
     try:
         user_data = retry_auth0_call(lambda: auth0_service.get_user_profile(user_id))
@@ -240,7 +240,7 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
     - Reconciliation catches any divergence
     - Brief inconsistency is acceptable in eventual consistency model
     """
-    auth0_service = Auth0Service()
+    auth0_service = create_auth0_service()
 
     try:
         user_orgs = retry_auth0_call(

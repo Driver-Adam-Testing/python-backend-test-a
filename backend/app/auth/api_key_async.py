@@ -3,10 +3,10 @@ from datetime import UTC, datetime
 
 from app.auth.api_key_common import create_api_key_payload
 from app.auth.async_cache import AsyncTTLCache
-from app.services.auth0_async import AsyncAuth0Service
 from database.db import async_engine
 from database.models import ApiKey
 from fastapi import HTTPException
+from shared.auth0.auth0_async import AsyncAuth0Service
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 

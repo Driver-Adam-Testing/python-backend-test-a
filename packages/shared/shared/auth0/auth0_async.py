@@ -2,7 +2,7 @@ import logging
 
 import httpx
 
-from app.services.auth0_service import Auth0Service
+from shared.auth0.auth0_service import Auth0Service
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +10,21 @@ logger = logging.getLogger(__name__)
 class AsyncAuth0Service(Auth0Service):
     """Async version of Auth0Service for non-blocking operations."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        auth0_mgmt_domain: str,
+        auth0_mgmt_client_id: str,
+        auth0_mgmt_client_secret: str,
+        auth0_domain: str,
+        auth0_client_id: str,
+    ) -> None:
+        super().__init__(
+            auth0_mgmt_domain=auth0_mgmt_domain,
+            auth0_mgmt_client_id=auth0_mgmt_client_id,
+            auth0_mgmt_client_secret=auth0_mgmt_client_secret,
+            auth0_domain=auth0_domain,
+            auth0_client_id=auth0_client_id,
+        )
 
     async def list_user_organizations_async(self, user_id: str) -> dict:
         """

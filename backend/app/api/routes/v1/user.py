@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.api.auth import UserToken
 from app.schemas.user_schema import MessageResponse
-from app.services.auth0_service import Auth0Service
+from app.services.auth0_factory import create_auth0_service
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ def change_password(
     logging.info(f"User-requested password reset from: {user.subject}")
     access_token = authorization.replace("Bearer ", "")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         return {
             "message": auth0_service.change_self_password(
                 user=user,
@@ -58,7 +58,7 @@ class OrganizationsResponse(BaseModel):
 
 @router.get("/organizations", response_model=OrganizationsResponse)
 def get_organizations(user: UserToken) -> OrganizationsResponse:
-    auth0_service = Auth0Service()
+    auth0_service = create_auth0_service()
     organizations_data = auth0_service.list_user_organizations(user)
     return OrganizationsResponse(
         results=organizations_data.get("organizations", []),

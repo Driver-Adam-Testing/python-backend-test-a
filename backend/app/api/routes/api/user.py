@@ -1,9 +1,9 @@
 from app.api.auth import ApiKeyToken
-from app.services.auth0_service import Auth0Service
+from app.services.auth0_factory import create_auth0_service
 from fastapi import APIRouter
 
 router = APIRouter()
-auth0_service = Auth0Service()
+auth0_service = create_auth0_service()
 
 
 @router.get("/me")

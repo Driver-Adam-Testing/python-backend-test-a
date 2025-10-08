@@ -15,7 +15,7 @@ import sys
 from datetime import UTC, datetime
 from typing import Any
 
-from app.services.auth0_service import Auth0Service
+from app.services.auth0_factory import create_auth0_service
 from auth0.management import Auth0
 from database.db import engine
 from database.models import Auth0SyncRun, Organization, OrgMembership, User
@@ -33,7 +33,7 @@ class Auth0Sync:
     def __init__(self, dry_run: bool = False, verbose: bool = False) -> None:
         self.dry_run = dry_run
         self.verbose = verbose
-        self.auth0_service = Auth0Service()
+        self.auth0_service = create_auth0_service()
         self.stats = {
             "orgs_created": 0,
             "orgs_updated": 0,

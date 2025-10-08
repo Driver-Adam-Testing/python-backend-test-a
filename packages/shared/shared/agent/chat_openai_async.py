@@ -54,6 +54,7 @@ class ChatOpenAI:
             openai.InternalServerError,
             openai.APIConnectionError,
             openai.BadRequestError,
+            openai.PermissionDeniedError,
             ValidationError,
         ),
     )
@@ -69,24 +70,42 @@ class ChatOpenAI:
             "gpt-4o-mini",
             "gpt-4o",
             "gpt-4.1",
+            "gpt-5",
         ]:
             raise ValueError(f"Model ({self.model}) does not support JSON strict mode")
         if output_cfg.kind == OutputConfigKind.JSON_STRICT:
-            response = await self.client.beta.chat.completions.parse(
-                model=self.model,
-                temperature=self.temperature,
-                response_format=output_cfg.into_openai_response_format(),
-                messages=[
-                    {
-                        "role": "system",
-                        "content": system_prompt,
-                    },
-                    {
-                        "role": "user",
-                        "content": user_prompt,
-                    },
-                ],
-            )
+            if "gpt-5" in self.model:
+                response = await self.client.beta.chat.completions.parse(
+                    model=self.model,
+                    response_format=output_cfg.into_openai_response_format(),
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": system_prompt,
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt,
+                        },
+                    ],
+                )
+            else:
+                response = await self.client.beta.chat.completions.parse(
+                    model=self.model,
+                    temperature=self.temperature,
+                    response_format=output_cfg.into_openai_response_format(),
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": system_prompt,
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt,
+                        },
+                    ],
+                )
+
         elif "o1" in self.model:
             if "o1-mini" in self.model:
                 response = await self.client.chat.completions.create(

@@ -13,6 +13,7 @@ from aws_cdk import (
     aws_ssm,
 )
 from constructs import Construct
+from cdk.settings import settings
 
 
 @dataclass
@@ -34,13 +35,6 @@ class AssetOnboardingLambda(Construct):
         client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
         client_secret_secret = aws_secretsmanager.Secret(scope, "ClientSecretSecret")
 
-        sentry_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/pythonBackend/sentryCredentialName",
-        )
-        sentry_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            scope, "SentrySecret", secret_name=sentry_secret_name
-        )
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "AssetOnboardingLambdaPy",
@@ -57,7 +51,7 @@ class AssetOnboardingLambda(Construct):
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
-                "SENTRY_DSN": sentry_secret.secret_value_from_json("SENTRY_DSN").unsafe_unwrap(),
+                "SENTRY_DSN": settings.SENTRY_DSN,
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]

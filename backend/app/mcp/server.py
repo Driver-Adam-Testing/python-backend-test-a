@@ -1,9 +1,9 @@
 import os
 from inspect import cleandoc
-from typing import Annotated, Any
+from typing import Annotated
 
 from database.models_enums import PrimaryAssetKind
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
 FASTMCP_STATELESS_HTTP = True
@@ -11,23 +11,22 @@ FASTMCP_MASK_ERROR_DETAILS = True
 os.environ["FASTMCP_STATELESS_HTTP"] = str(FASTMCP_STATELESS_HTTP)
 os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
 
-import logging
-from pathlib import Path
+import logging  # noqa: E402
+from pathlib import Path  # noqa: E402
 
-import fastmcp
-from database.db import get_session
-from database.models import DerivedContent, Node, PrimaryAsset, Version
-from database.models_enums import ContentKind, VersionStatus
-from fastmcp import Context, FastMCP
-from fastmcp.exceptions import ToolError
-from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
-from fastmcp.server.middleware.logging import LoggingMiddleware
-from shared.prompts.structured_prompting import Component, Prompt
-from sqlmodel import select
+import fastmcp  # noqa: E402
+from database.db import get_session  # noqa: E402
+from database.models import DerivedContent, Node, PrimaryAsset, Version  # noqa: E402
+from database.models_enums import ContentKind, VersionStatus  # noqa: E402
+from fastmcp import Context, FastMCP  # noqa: E402
+from fastmcp.exceptions import ToolError  # noqa: E402
+from shared.prompts.structured_prompting import Component, Prompt  # noqa: E402
+from sqlmodel import select  # noqa: E402
 
-from .auth_middleware import McpAuthMiddleware, get_organization_id
-from .code_map_v2 import get_code_map_simple
-from .mcp_helpers import get_latest_version_for_codebase
+from .auth_middleware import McpAuthMiddleware, get_organization_id  # noqa: E402
+from .code_map_v2 import CodeMap, get_code_map_simple  # noqa: E402
+from .logging_middleware import McpLoggingMiddleware  # noqa: E402
+from .mcp_helpers import get_latest_version_for_codebase  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -61,28 +60,11 @@ assert (
     fastmcp.settings.mask_error_details is True
 ), "FastMCP must be configured to mask error details."
 
-my_mcp.add_middleware(
-    ErrorHandlingMiddleware(
-        logger=logger,
-        include_traceback=True,
-        error_callback=None,
-        transform_errors=False,
-    )
-)
-
 auth_middleware = McpAuthMiddleware()
 my_mcp.add_middleware(auth_middleware)
 
-my_mcp.add_middleware(
-    LoggingMiddleware(
-        logger=logger,
-        log_level=logging.INFO,
-        include_payloads=True,
-        max_payload_length=1000,
-        methods=None,
-        payload_serializer=None,
-    )
-)
+logging_middleware = McpLoggingMiddleware()
+my_mcp.add_middleware(logging_middleware)
 
 
 def _get_root_node_content(
@@ -255,28 +237,11 @@ def get_llm_onboarding_guide(
     return dc.content
 
 
-@my_mcp.tool(
-    name="get_file_documentation",
-    description=cleandoc(
-        """
-        Get detailed symbol-level documentation for a specific file in a codebase.
-
-        Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
-    """
-    ),
-)
-def get_file_documentation(
-    ctx: Context,
-    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-    path: Annotated[
-        str,
-        Field(
-            description="The file path to get documentation. This should NOT include the codebase name (e.g., 'src/my_file.py' NOT 'codebase-name/src/utils/open.c').')."
-        ),
-    ],
+def _get_long_description(
+    org_id: str,
+    codebase_name: str,
+    path: str,
 ) -> str:
-    org_id = get_organization_id(ctx)
-
     with get_session() as db:
         version = get_latest_version_for_codebase(db, org_id, codebase_name)
         if not version:
@@ -310,6 +275,188 @@ def get_file_documentation(
         return content.content
 
 
+class FileDocumentationResponse(BaseModel):
+    content: str
+    lines_returned: int
+    next_line: int | None
+    lines_remaining: int
+    next_section: str | None
+
+
+def _apply_file_doc_pagination(
+    markdown_text: str, start_line: int, max_lines: int
+) -> FileDocumentationResponse:
+    if not markdown_text:
+        raise ToolError("No documentation available for the file.")
+
+    if start_line < 1:
+        raise ToolError("Start line must be greater than or equal to 1.")
+
+    if max_lines < 0:
+        raise ToolError("Max lines must be greater than or equal to 0.")
+
+    full_text = markdown_text.split("\n")
+
+    if start_line > len(full_text):
+        raise ToolError(
+            f"Start line {start_line} is greater than the number of lines in the file ({len(full_text)})"
+        )
+
+    start_idx = start_line - 1
+
+    # return what's left of the file
+    if (start_idx + max_lines >= len(full_text)) or max_lines == 0:
+        content_lines = full_text[start_idx:]
+
+        return FileDocumentationResponse(
+            content="\n".join(content_lines),
+            lines_returned=len(content_lines),
+            next_line=None,
+            lines_remaining=0,
+            next_section=None,
+        )
+
+    end_idx = start_idx + max_lines - 1
+    partial_text = full_text[start_idx : end_idx + 1]
+
+    # we just happened to stop at the end of a section
+    if full_text[end_idx + 1].lstrip().startswith("#"):
+        return FileDocumentationResponse(
+            content="\n".join(partial_text),
+            lines_returned=len(partial_text),
+            next_line=end_idx + 2,
+            lines_remaining=len(full_text) - end_idx - 1,
+            next_section=full_text[end_idx + 1].lstrip().lstrip("#").strip(),
+        )
+
+    # we landed in the middle or start of a section
+    for idx in reversed(range(len(partial_text))):
+        if partial_text[idx].lstrip().startswith("#") and idx != 0:
+            return FileDocumentationResponse(
+                content="\n".join(partial_text[:idx]),
+                lines_returned=len(partial_text[:idx]),
+                next_line=idx + start_idx + 1,
+                lines_remaining=len(full_text) - idx - start_idx,
+                next_section=partial_text[idx].lstrip().lstrip("#").strip(),
+            )
+
+    # we started in the middle of a section that was too long
+    return FileDocumentationResponse(
+        content="\n".join(partial_text),
+        lines_returned=len(partial_text),
+        next_line=end_idx + 2,
+        lines_remaining=len(full_text) - end_idx - 1,
+        next_section=None,
+    )
+
+
+@my_mcp.tool(
+    name="get_file_documentation",
+    description=cleandoc(
+        """
+    Get detailed symbol-level documentation for a specific file in a codebase.
+
+    Usage Patterns:
+    1. Full file: Set start_line=1, max_lines=0 (reads entire file).  ALWAYS use this pattern for the first call.
+    2. Large files (when you hit token limits):
+        - First call: start_line=1, max_lines=500
+        - Next calls: Use next_line from previous response, max_lines=500
+        - Continue until lines_remaining=0
+
+    Response includes pagination fields:
+    - lines_returned: Number of lines in this response
+    - next_line: Line number for your next call (null when done)
+    - lines_remaining: How many lines are left to read
+    - next_section: Preview of what content comes next (null at EOF)
+
+    Example pagination workflow:
+    1. Call with start_line=1, max_lines=500
+    2. Check response.lines_remaining > 0
+    3. Call with start_line=response.next_line, max_lines=500
+    4. Repeat until lines_remaining=0
+
+    Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
+    """
+    ),
+)
+def get_file_documentation(
+    ctx: Context,
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
+    path: Annotated[
+        str,
+        Field(
+            description="The file path to get documentation. This should NOT include the codebase name (e.g., 'src/my_file.py' NOT 'codebase-name/src/utils/open.c').')."
+        ),
+    ],
+    start_line: Annotated[
+        int,
+        Field(
+            description="The line number to start from.  ALWAYS use 1 for the first call.",
+            ge=1,
+        ),
+    ],
+    max_lines: Annotated[
+        int,
+        Field(
+            description="The maximum number of lines to return. 0 means no limit.  ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ],
+) -> FileDocumentationResponse:
+    org_id = get_organization_id(ctx=ctx)
+    markdown_text = _get_long_description(
+        org_id=org_id, codebase_name=codebase_name, path=path
+    )
+    return _apply_file_doc_pagination(
+        markdown_text=markdown_text, start_line=start_line, max_lines=max_lines
+    )
+
+
+class CodeMapResponse(BaseModel):
+    code_map: CodeMap
+    nodes_returned: int
+    next_node: int | None
+    nodes_remaining: int
+
+
+def _apply_code_map_pagination(
+    code_map: CodeMap, start_node: int, max_nodes: int
+) -> CodeMapResponse:
+    total_nodes = len(code_map.payload)
+
+    if start_node < 0:
+        raise ToolError("Start node must be greater than or equal to 0.")
+
+    if max_nodes < 0:
+        raise ToolError("Max nodes must be greater than or equal to 0.")
+
+    if start_node >= total_nodes:
+        raise ToolError(
+            f"Start node {start_node} is greater than or equal to the total number of nodes ({total_nodes})"
+        )
+
+    if max_nodes == 0 or start_node + max_nodes >= total_nodes:
+        paginated_nodes = code_map.payload[start_node:]
+
+        return CodeMapResponse(
+            code_map=CodeMap(payload=paginated_nodes),
+            nodes_returned=len(paginated_nodes),
+            next_node=None,
+            nodes_remaining=0,
+        )
+
+    paginated_nodes = code_map.payload[start_node : start_node + max_nodes]
+    next_node = start_node + max_nodes
+    nodes_remaining = total_nodes - next_node
+
+    return CodeMapResponse(
+        code_map=CodeMap(payload=paginated_nodes),
+        nodes_returned=len(paginated_nodes),
+        next_node=next_node,
+        nodes_remaining=nodes_remaining,
+    )
+
+
 @my_mcp.tool(
     name="get_code_map",
     description=cleandoc(
@@ -321,11 +468,27 @@ def get_file_documentation(
         Use in tandem with `get_file_documentation` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
 
         Returns an object with:
-        - payload: List of nodes, each containing:
-          - path: The file/directory path
-          - type: "file" or "directory"
-          - description: A short sentence describing what the file/directory contains
-        - errors: List of helpful error messages if no results found
+        - code_map: Object containing:
+          - payload: List of nodes, each containing:
+            - path: The file/directory path
+            - type: "file" or "directory"
+            - description: A short sentence describing what the file/directory contains
+        - nodes_returned: Number of nodes in this response
+        - next_node: Node index for your next call (null when done)
+        - nodes_remaining: How many nodes are left to read
+
+        Usage Patterns:
+        1. Full result: Set start_node=0, max_nodes=0 (reads all nodes). ALWAYS use this pattern for the first call.
+        2. Large results (when you hit token limits):
+            - First call: start_node=0, max_nodes=50
+            - Next calls: Use next_node from previous response, max_nodes=50
+            - Continue until nodes_remaining=0
+
+        Example pagination workflow:
+        1. Call with start_node=0, max_nodes=50
+        2. Check response.nodes_remaining > 0
+        3. Call with start_node=response.next_node, max_nodes=50
+        4. Repeat until nodes_remaining=0
 
         USAGE:
         - Use max_depth=0 to see only the directory itself
@@ -368,11 +531,30 @@ def get_code_map(
             le=20,
         ),
     ] = 2,
-) -> dict[str, Any]:
-    response = get_code_map_simple(
+    start_node: Annotated[
+        int,
+        Field(
+            description="The node index to start from. ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ] = 0,
+    max_nodes: Annotated[
+        int,
+        Field(
+            description="The maximum number of nodes to return. 0 means no limit. ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ] = 0,
+) -> CodeMapResponse:
+    code_map = get_code_map_simple(
         org_id=get_organization_id(ctx),
         codebase_name=codebase_name,
         path=path,
         max_depth=max_depth,
     )
-    return response.model_dump()
+
+    return _apply_code_map_pagination(
+        code_map=code_map,
+        start_node=start_node,
+        max_nodes=max_nodes,
+    )

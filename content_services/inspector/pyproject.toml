@@ -35,6 +35,7 @@ aiolimiter = "^1.2.1"
 tree-sitter = "^0.25.1"
 tree-sitter-go = "^0.25.0"
 tree-sitter-python = "^0.25.0"
+pygit2 = "^1.18.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"

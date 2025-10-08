@@ -501,6 +501,8 @@ def download_and_upload_repo(
 def get_repo_clone_info_from_id(
     base_url: str, project: str, repo_id: str, access_token: str
 ) -> tuple[str, str]:
+    import urllib
+
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
 
@@ -522,6 +524,7 @@ def get_repo_clone_info_from_id(
 
     # Azure DevOps clone URL format
     clone_url = f"https://{access_token}@dev.azure.com/{organization}/{project}/_git/{data['name']}"
+    clone_url = urllib.parse.quote(clone_url, safe=":/@")
 
     return clone_url, full_name
 

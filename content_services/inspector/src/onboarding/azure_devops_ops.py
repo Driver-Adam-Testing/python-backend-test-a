@@ -523,8 +523,10 @@ def get_repo_clone_info_from_id(
     full_name = f"{organization}/{project}/{data['name']}"
 
     # Azure DevOps clone URL format
-    clone_url = f"https://{access_token}@dev.azure.com/{organization}/{project}/_git/{data['name']}"
-    clone_url = urllib.parse.quote(clone_url, safe=":/@")
+    safe_org = urllib.parse.quote(organization, safe="")
+    safe_project = urllib.parse.quote(project, safe="")
+    safe_repo = urllib.parse.quote(data["name"], safe="")
+    clone_url = f"https://{access_token}@dev.azure.com/{safe_org}/{safe_project}/_git/{safe_repo}"
 
     return clone_url, full_name
 

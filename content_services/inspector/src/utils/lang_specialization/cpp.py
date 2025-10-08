@@ -316,6 +316,8 @@ class CppDataStructureData(IrData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
+        from .symbol_common import CHUNK_SIZE
+
         user_prompt = (
             Prompt.empty()
             .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
@@ -326,14 +328,22 @@ class CppDataStructureData(IrData):
             )
         )
         if len(symbol.reified_symbol.children) > 0:
-            user_prompt.append(
+            child_symbol_prompt = Prompt.empty()
+            child_symbol_prompt.append(
                 Component(
                     string="\n\nCode of data structure functions defined outside the file:"
                 )
             )
             for child in symbol.reified_symbol.children:
                 if child.raw.file_path != symbol.reified_symbol.raw.file_path:
-                    user_prompt.append(Component(string=f"{child.raw.symbol_code}"))
+                    child_symbol_prompt.append(
+                        Component(string=f"{child.raw.symbol_code}")
+                    )
+            if (
+                user_prompt.get_num_tokens() + child_symbol_prompt.get_num_tokens()
+                < CHUNK_SIZE
+            ):
+                user_prompt.extend(child_symbol_prompt)
         if symbol.file_code:
             user_prompt.append(
                 Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")

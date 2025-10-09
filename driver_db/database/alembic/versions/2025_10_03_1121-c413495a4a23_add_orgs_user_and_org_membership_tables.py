@@ -40,7 +40,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.Column("auth0_updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("auth0_updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(

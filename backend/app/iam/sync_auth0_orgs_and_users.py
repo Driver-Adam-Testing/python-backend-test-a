@@ -23,11 +23,12 @@ import sys
 from datetime import UTC, datetime
 from typing import Any
 
-from app.services.auth0_factory import create_auth0_service
 from auth0.management import Auth0
 from database.db import engine
 from database.models import Auth0SyncRun, Organization, OrgMembership, User
 from sqlmodel import Session, select
+
+from app.services.auth0_factory import create_auth0_service
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -176,16 +177,19 @@ class Auth0Sync:
                     existing_org.name = org_name
                     existing_org.display_name = org_data.get("display_name")
                     existing_org.org_metadata = org_data.get("metadata", {})
-                    existing_org.auth0_updated_at = datetime.now(UTC)
+                    existing_org.auth0_updated_at = (
+                        None  # Auth0 doesn't provide updated_at for orgs
+                    )
                     session.add(existing_org)
 
                     if self.verbose:
                         logger.debug(f"Updated organization: {org_name} ({org_id})")
                     self.stats["orgs_updated"] += 1
                 else:
-                    logger.debug(
-                        f"Skipped unchanged organization: {org_name} ({org_id})"
-                    )
+                    if self.verbose:
+                        logger.debug(
+                            f"Skipped unchanged organization: {org_name} ({org_id})"
+                        )
                     self.stats["orgs_skipped"] += 1
 
             else:
@@ -194,7 +198,7 @@ class Auth0Sync:
                     name=org_name,
                     display_name=org_data.get("display_name"),
                     org_metadata=org_data.get("metadata", {}),
-                    auth0_updated_at=datetime.now(UTC),
+                    auth0_updated_at=None,  # Auth0 doesn't provide updated_at for orgs
                 )
                 session.add(new_org)
 
@@ -226,14 +230,19 @@ class Auth0Sync:
             existing_user = session.get(User, user_id)
 
             if existing_user:
-                data_is_newer = (
+                timestamp_is_newer = (
                     existing_user.auth0_updated_at is None
-                    or auth0_updated_at >= existing_user.auth0_updated_at
-                ) and (existing_user.name != name or existing_user.email != email)
+                    or auth0_updated_at > existing_user.auth0_updated_at
+                )
 
-                if data_is_newer:
-                    existing_user.email = email
-                    existing_user.name = name
+                if timestamp_is_newer:
+                    data_changed = (
+                        existing_user.name != name or existing_user.email != email
+                    )
+                    if data_changed:
+                        existing_user.email = email
+                        existing_user.name = name
+                    # Always update timestamp if Auth0 sent newer data
                     existing_user.auth0_updated_at = auth0_updated_at
                     session.add(existing_user)
 
@@ -242,9 +251,7 @@ class Auth0Sync:
                     self.stats["users_updated"] += 1
                 else:
                     if self.verbose:
-                        logger.debug(
-                            f"Skipped unchanged user data: {email} ({user_id})"
-                        )
+                        logger.debug(f"Skipped stale user data: {email} ({user_id})")
                     self.stats["users_skipped"] += 1
             else:
                 new_user = User(

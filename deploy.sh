@@ -74,7 +74,7 @@ if [[ $status -eq 0 ]]; then
 
         sleep "$INTERVAL"
     done
-elif [[ $status -eq 255 ]]; then
+elif [[ $status -eq 124 ]]; then
   echo "⏰ Timed out waiting for service to become stable."
 else
   echo "❌ Waiter failed with exit code ${status}. Fetching logs anyway…"

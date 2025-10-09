@@ -42,9 +42,9 @@ echo "Forcing redeploy..."
 
 aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
 
-echo "Waiting up to 10 minutes for ECS service to stabilize..."
+echo "Waiting up to 5 minutes for ECS service to stabilize..."
 set +e
-aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME
+timeout 300 aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME
 status=$?
 set -e
 

@@ -9,6 +9,7 @@ from openai import (
     BadRequestError,
     InternalServerError,
     OpenAI,
+    PermissionDeniedError,
     RateLimitError,
 )
 from shared.chunking.text_splitter import TextChunk
@@ -52,6 +53,7 @@ def batch_embed_text(
         APIConnectionError,
         InternalServerError,
         JSONDecodeError,
+        PermissionDeniedError,
     ),
 )
 async def async_batch_embed_text(

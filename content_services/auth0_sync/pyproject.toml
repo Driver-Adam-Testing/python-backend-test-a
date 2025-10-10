@@ -10,10 +10,12 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "database @ ../../driver_db",
     "shared @ ../../packages/shared",
+    "modal (>=1.2.0,<2.0.0)",
 ]
 
 [tool.poetry]
 packages = [{include = "auth0_sync", from = "src"}]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

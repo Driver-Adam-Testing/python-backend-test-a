@@ -472,8 +472,7 @@ async def _prepare_repo_for_changelog(
 
     repo_dir = Path(temp_dir) / full_name
     result = subprocess.run(
-        f"git clone {clone_url} {repo_dir}",
-        shell=True,
+        ["git", "clone", clone_url, str(repo_dir)],
         cwd=None,
         capture_output=True,
         text=True,

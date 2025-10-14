@@ -31,12 +31,14 @@ class Auth0Service:
         auth0_mgmt_client_secret: str,
         auth0_domain: str,
         auth0_client_id: str,
+        timeout: float = 30.0,
     ) -> None:
         self.auth0_mgmt_domain = auth0_mgmt_domain
         self.auth0_mgmt_client_id = auth0_mgmt_client_id
         self.auth0_mgmt_client_secret = auth0_mgmt_client_secret
         self.auth0_domain = auth0_domain
         self.auth0_client_id = auth0_client_id
+        self.timeout = timeout
 
     def _refresh_management_token(self) -> None:
         get_token = GetToken(
@@ -54,7 +56,11 @@ class Auth0Service:
         if self._mgmt_token is None or self._mgmt_token_exp - time.time() < 60:
             self._refresh_management_token()
 
-        return Auth0(self.auth0_mgmt_domain, self._mgmt_token)
+        return Auth0(
+            self.auth0_mgmt_domain,
+            self._mgmt_token,
+            rest_options={"timeout": self.timeout},
+        )
 
     def get_mgmt_api_token(self: "Auth0Service") -> str:
         get_token = GetToken(

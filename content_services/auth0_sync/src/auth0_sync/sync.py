@@ -39,6 +39,7 @@ class Auth0Sync:
             os.environ["AUTH0_MGMT_API_CLIENT_SECRET"],
             os.environ["AUTH0_DOMAIN"],
             os.environ["AUTH0_CLIENT_ID"],
+            timeout=30.0,
         )
         self.stats = {
             "orgs_created": 0,

@@ -3,7 +3,7 @@ import os
 from uuid import UUID
 
 import requests
-from database.models import VcsAutoUpdatePolicy
+from database.models_enums import VcsAutoUpdatePolicy
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from onboarding.vcs_utils import (
     AuthorInfo,

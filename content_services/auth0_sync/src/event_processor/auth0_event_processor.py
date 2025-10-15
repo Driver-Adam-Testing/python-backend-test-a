@@ -74,8 +74,10 @@ from datetime import UTC, datetime
 from typing import Any
 
 import requests
+from config import settings
 from database.db import engine
-from database.models import Organization, OrgMembership, User
+from database.models import Organization, OrgMembership, OrgRole, User
+
 # from shared.auth0.auth0_retry import retry_auth0_call
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
@@ -85,7 +87,6 @@ from .auth0_event_schema import (
     Auth0EventProcessingResult,
     extract_log_id,
 )
-from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -341,7 +342,9 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
         ).first()
 
         if is_member and not existing_membership:
-            new_membership = OrgMembership(user_id=user_id, org_id=org_id)
+            new_membership = OrgMembership(
+                user_id=user_id, org_id=org_id, role=OrgRole.member
+            )
             session.add(new_membership)
             logger.info(f"Created membership: {user_id} in {org_id}")
             entities_updated.append("membership")
@@ -373,10 +376,18 @@ def _handle_api_event(event: Auth0EventBridgeEvent) -> list[str]:
     if "/organizations/" in path and "/members" in path:
         # this only works for organization_member_added
         org_id, user_id = _extract_org_user_from_path(path)
-        if request["method"] == "delete" and "/organizations/" in path and "/members" in path:
+        if (
+            request["method"] == "delete"
+            and "/organizations/" in path
+            and "/members" in path
+        ):
             logger.info("Detected organization member deletion event")
             org_id = _extract_org_from_path(path)
-            user_id = event.detail.data.details.get("request", {}).get("body", {}).get("members", [None])[0]
+            user_id = (
+                event.detail.data.details.get("request", {})
+                .get("body", {})
+                .get("members", [None])[0]
+            )
 
         logger.info(f"Processing Org {org_id} membership change for {user_id}")
         if org_id and user_id:
@@ -409,6 +420,7 @@ def _extract_org_user_from_path(path: str) -> tuple[str | None, str | None]:
     except (ValueError, IndexError):
         return None, None
 
+
 def _extract_org_from_path(path: str) -> str | None:
     """Extract organization API path."""
     parts = path.strip("/").split("/")
@@ -418,6 +430,7 @@ def _extract_org_from_path(path: str) -> str | None:
         return parts[org_index]
     except (ValueError, IndexError):
         return None
+
 
 def _extract_user_from_path(path: str) -> str | None:
     """Extract user_id from API path."""
@@ -430,7 +443,7 @@ def _extract_user_from_path(path: str) -> str | None:
 
         return requests.utils.unquote(parts[member_index])
     except (ValueError, IndexError):
-        return  None
+        return None
 
 
 def _upsert_user(session: Session, user_data: dict[str, Any]) -> None:

@@ -150,7 +150,8 @@ def log_code_diff_usage(
 def update_root_node_metadata(version_id: str, diff_size_in_bytes: int) -> None:
     # Without the line below. An error occurs because SQLAlchemy can't find the class `Tag`—ensure it's defined before referencing it in relationships.
     from database.db import engine
-    from database.models import Node, NodeKind
+    from database.models import Node
+    from database.models_enums import NodeKind
     from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.orm.attributes import flag_modified
     from sqlmodel import Session, select

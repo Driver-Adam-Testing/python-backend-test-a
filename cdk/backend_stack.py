@@ -1,5 +1,4 @@
 import json
-
 from aws_cdk import Stack
 from constructs import Construct
 
@@ -20,9 +19,7 @@ class BackendStack(Stack):
 
         self.cdkenv = kwargs.get("env")
         print(f"AWS environment set to : {self.cdkenv}")
-        print(
-            f"Rollback set to : {json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower())}"
-        )
+        print(f"Rollback set to : {json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower())}")
 
         cors_origins = settings.CORS_ORIGINS
 
@@ -53,7 +50,7 @@ class BackendStack(Stack):
                 use_legacy_dropzone=True,
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
-                aws_account=self.cdkenv.account,
+                aws_account=self.cdkenv.account
             ),
         )
         self.onboarding_lambda = AssetOnboardingLambda(
@@ -69,7 +66,5 @@ class BackendStack(Stack):
             ),
         )
         self.inspector = Inspector(
-            self,
-            "Inspector",
-            InspectorParams(environment=settings.DEPLOYMENT_ENVIRONMENT),
+            self,"Inspector", InspectorParams(environment=settings.DEPLOYMENT_ENVIRONMENT)
         )

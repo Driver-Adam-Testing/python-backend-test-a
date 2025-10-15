@@ -32,12 +32,13 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB
 from sqlalchemy.orm import Mapper
 from sqlmodel import Field, Relationship, SQLModel, select
 
-from .custom_types import TSVector
-from .models_enums import (
+from ..custom_types import TSVector
+from ..models_enums import (
     AutoDocStatusMessageKind,
     ContentKind,
     LlmPipelineKind,
     NodeKind,
+    OrgRole,
     PrimaryAssetKind,
     PrimaryAssetProvider,
     VcsAutoUpdatePolicy,
@@ -542,7 +543,9 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     display_name: str = Field(index=True)
     repository_id: str | None
-    organization_id: str = Field(index=True)
+    organization_id: str = Field(
+        index=True
+    )  # TODO: make this a foreign key to Organization
     kind: PrimaryAssetKind = Field(index=True)
     installation_id: UUID | None = Field(
         foreign_key="git_provider_app_installation.id",
@@ -1205,11 +1208,6 @@ class User(SQLModel, table=True):
     auth0_updated_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
-
-
-class OrgRole(enum.StrEnum):
-    super_admin = enum.auto()
-    member = enum.auto()
 
 
 class OrgMembership(SQLModel, table=True):

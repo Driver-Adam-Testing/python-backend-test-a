@@ -278,3 +278,25 @@ class LlmPipelineKind(str, enum.Enum):
     CHAT = "CHAT"
     PAGE_CONTEXT_ABBREVIATION = "PAGE_CONTEXT_ABBREVIATION"
     SMART_INSTRUCTION_MAIN_LOOP = "SMART_INSTRUCTION_MAIN_LOOP"
+
+
+class PrimaryAssetRole(enum.StrEnum):
+    admin = enum.auto()
+    viewer = enum.auto()
+
+
+class PrincipalKind(enum.StrEnum):
+    user = enum.auto()
+    team = enum.auto()
+    org = enum.auto()
+    public = enum.auto()
+
+
+class TeamRole(enum.StrEnum):
+    team_admin = enum.auto()
+    member = enum.auto()
+
+
+class OrgRole(enum.StrEnum):
+    super_admin = enum.auto()
+    member = enum.auto()

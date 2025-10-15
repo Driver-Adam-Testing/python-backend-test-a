@@ -1,15 +1,14 @@
 import logging
 import time
+from typing import Any
 
+import httpx
 from auth0.authentication import Database, GetToken, Users
 from auth0.management import Auth0
-from fastapi.encoders import jsonable_encoder
-import requests
 
-from app.auth.models import User as UserToken
-from app.auth.permissions import ORG_MANAGER
-from app.core.config import settings
-from app.schemas.auth0_schema import (
+from shared.auth0.models import User as UserToken
+from shared.auth0.permissions import ORG_MANAGER
+from shared.auth0.schemas import (
     CreateInvitationInput,
     ModifyUserRolesResponse,
 )
@@ -25,12 +24,21 @@ class Auth0Service:
     _cached_username_password_connection_id: str | None = None
     _cached_admin_role_id: str | None = None
 
-    def __init__(self) -> None:
-        self.auth0_mgmt_domain: str = settings.AUTH0_MGMT_API_DOMAIN
-        self.auth0_mgmt_client_id: str = settings.AUTH0_MGMT_API_CLIENT_ID
-        self.auth0_mgmt_client_secret: str = settings.AUTH0_MGMT_API_CLIENT_SECRET
-        self.auth0_domain: str = settings.AUTH0_DOMAIN
-        self.auth0_client_id: str = settings.AUTH0_CLIENT_ID
+    def __init__(
+        self,
+        auth0_mgmt_domain: str,
+        auth0_mgmt_client_id: str,
+        auth0_mgmt_client_secret: str,
+        auth0_domain: str,
+        auth0_client_id: str,
+        timeout: float = 30.0,
+    ) -> None:
+        self.auth0_mgmt_domain = auth0_mgmt_domain
+        self.auth0_mgmt_client_id = auth0_mgmt_client_id
+        self.auth0_mgmt_client_secret = auth0_mgmt_client_secret
+        self.auth0_domain = auth0_domain
+        self.auth0_client_id = auth0_client_id
+        self.timeout = timeout
 
     def _refresh_management_token(self) -> None:
         get_token = GetToken(
@@ -48,7 +56,11 @@ class Auth0Service:
         if self._mgmt_token is None or self._mgmt_token_exp - time.time() < 60:
             self._refresh_management_token()
 
-        return Auth0(self.auth0_mgmt_domain, self._mgmt_token)
+        return Auth0(
+            self.auth0_mgmt_domain,
+            self._mgmt_token,
+            rest_options={"timeout": self.timeout},
+        )
 
     def get_mgmt_api_token(self: "Auth0Service") -> str:
         get_token = GetToken(
@@ -122,7 +134,7 @@ class Auth0Service:
                 management_api.organizations.create_organization_member_roles(
                     id=user.organization_id,
                     user_id=modified_user_id,
-                    body=jsonable_encoder({"roles": new_role_ids}),
+                    body={"roles": new_role_ids},
                 )
 
             removed_role_ids = []
@@ -133,7 +145,7 @@ class Auth0Service:
                 management_api.organizations.delete_organization_member_roles(
                     id=user.organization_id,
                     user_id=modified_user_id,
-                    body=jsonable_encoder({"roles": removed_role_ids}),
+                    body={"roles": removed_role_ids},
                 )
 
             return ModifyUserRolesResponse(
@@ -263,7 +275,7 @@ class Auth0Service:
                     "inviter": {"name": userinfo.get("name")},
                     "invitee": invitation.invitee,
                     "roles": invitation.roles,
-                    "client_id": settings.AUTH0_CLIENT_ID,
+                    "client_id": self.auth0_client_id,
                 }
                 if (
                     "metadata" in organization_info
@@ -275,7 +287,7 @@ class Auth0Service:
                 invitation_results.append(
                     management_api.organizations.create_organization_invitation(
                         id=user.organization_id,
-                        body=jsonable_encoder(payload),
+                        body=payload,
                     )
                 )
             return invitation_results
@@ -294,7 +306,7 @@ class Auth0Service:
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
             return management_api.organizations.delete_organization_members(
                 id=user.organization_id,
-                body=jsonable_encoder({"members": [user_id_to_remove]}),
+                body={"members": [user_id_to_remove]},
             )
         except Exception as e:
             logger.error(
@@ -334,6 +346,31 @@ class Auth0Service:
         client = self._management_client()
         return client.organizations.get_organization(org_id)
 
+    def get_user_organizations(self, user_id: str) -> list[dict[str, Any]]:
+        client = self._management_client()
+
+        organizations = []
+        page = 0
+        per_page = 100
+
+        while True:
+            response = client.users.list_organizations(
+                user_id, per_page=per_page, page=page
+            )
+            batch = response.get("organizations", [])
+
+            if not batch:
+                break
+
+            organizations.extend(batch)
+            page += 1
+
+            # Safety break to avoid infinite loops
+            if len(batch) < per_page:
+                break
+
+        return organizations
+
     # ------------------------------------------------------------------
     #  Public signup helpers (no existing user context)
     # ------------------------------------------------------------------
@@ -352,7 +389,7 @@ class Auth0Service:
                 "Content-Type": "application/json",
             }
 
-            resp = requests.get(url, params=params, headers=headers, timeout=15)
+            resp = httpx.get(url, params=params, headers=headers, timeout=15)
 
             if resp.status_code == 200:
                 users = resp.json()
@@ -361,10 +398,12 @@ class Auth0Service:
                 resp.raise_for_status()
 
         except Exception as e:
-            logger.error(f"Error finding users by email '{email}': {str(e)}")
+            logger.error(f"Error finding users by email '{email}': {e!s}")
             raise
 
-    def create_organization(self, name: str, display_name: str, metadata: dict[str, any] | None = None) -> dict[str, any]:
+    def create_organization(
+        self, name: str, display_name: str, metadata: dict[str, any] | None = None
+    ) -> dict[str, any]:
         """
         Create an Auth0 Organization.
 
@@ -377,8 +416,7 @@ class Auth0Service:
         }
         if metadata:
             body_dict["metadata"] = metadata
-        body = jsonable_encoder(body_dict)
-        return client.organizations.create_organization(body)
+        return client.organizations.create_organization(body_dict)
 
     def delete_organization(self, org_id: str) -> None:
         """Delete an Auth0 Organization."""
@@ -404,7 +442,7 @@ class Auth0Service:
         payload: dict[str, any] = {
             "inviter": {"name": inviter_name or "System"},
             "invitee": {"email": email},
-            "client_id": settings.AUTH0_CLIENT_ID,
+            "client_id": self.auth0_client_id,
         }
         # Suppress Auth0 emailing the invite if requested
         if send_invitation_email is False:
@@ -417,7 +455,7 @@ class Auth0Service:
                 payload["connection_id"] = connection_id
 
         return client.organizations.create_organization_invitation(
-            id=org_id, body=jsonable_encoder(payload)
+            id=org_id, body=payload
         )
 
     # ------------------------------------------------------------------
@@ -440,7 +478,9 @@ class Auth0Service:
                 return None
             page += 1
 
-    def enable_connection_for_organization(self, org_id: str, connection_id: str) -> None:
+    def enable_connection_for_organization(
+        self, org_id: str, connection_id: str
+    ) -> None:
         """
         Enable a connection on an organization.
 
@@ -458,7 +498,7 @@ class Auth0Service:
                 "Authorization": f"Bearer {mgmt_token}",
                 "Content-Type": "application/json",
             }
-            resp = requests.post(url, json=body, headers=headers, timeout=15)
+            resp = httpx.post(url, json=body, headers=headers, timeout=15)
             if resp.status_code in (200, 201, 409):  # 409 = already enabled
                 return
             resp.raise_for_status()

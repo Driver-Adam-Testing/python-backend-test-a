@@ -1179,8 +1179,8 @@ class Organization(SQLModel, table=True):
             nullable=False,
         ),
     )
-    auth0_updated_at: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+    auth0_updated_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
 
 

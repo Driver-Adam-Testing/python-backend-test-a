@@ -16,7 +16,7 @@ from shared.usage.utils import sloc_to_bytes
 
 from app.api.session import CurrentSession
 from app.core.config import settings
-from app.services.auth0_service import Auth0Service
+from app.services.auth0_factory import create_auth0_service
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ def _is_disposable(email: str) -> bool:
 def signup(
     req: Request, request: SignupRequest, session: CurrentSession
 ) -> SignupResponse:
-    service = Auth0Service()
+    service = create_auth0_service()
     email_lowercase = str(request.email).lower()
 
     # 0) Disposable email check using disposable_email_domains blocklist

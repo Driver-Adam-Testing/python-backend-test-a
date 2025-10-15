@@ -2,17 +2,33 @@ import unittest
 from unittest.mock import patch
 
 import pytest
-from fastapi.encoders import jsonable_encoder
 
-from app.api.auth import UserToken
-from app.core.config import settings
-from app.schemas.auth0_schema import (
+from shared.auth0.auth0_service import Auth0Service
+from shared.auth0.models import User as UserToken
+from shared.auth0.schemas import (
     CreateInvitationInput,
     Invitation,
     Invitee,
     ModifyUserRolesResponse,
 )
-from app.services.auth0_service import Auth0Service
+
+# Test constants
+MOCK_MGMT_API_DOMAIN = "mock_mgmt_api_domain"
+MOCK_MGMT_API_CLIENT_ID = "mock_mgmt_api_client_id"
+MOCK_MGMT_API_CLIENT_SECRET = "mock_mgmt_api_client_secret"
+MOCK_AUTH0_DOMAIN = "mock_auth0_domain"
+MOCK_AUTH0_CLIENT_ID = "mock_auth0_client_id"
+
+
+def create_test_auth0_service() -> Auth0Service:
+    """Helper to create Auth0Service with test credentials."""
+    return Auth0Service(
+        auth0_mgmt_domain=MOCK_MGMT_API_DOMAIN,
+        auth0_mgmt_client_id=MOCK_MGMT_API_CLIENT_ID,
+        auth0_mgmt_client_secret=MOCK_MGMT_API_CLIENT_SECRET,
+        auth0_domain=MOCK_AUTH0_DOMAIN,
+        auth0_client_id=MOCK_AUTH0_CLIENT_ID,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -25,15 +41,6 @@ def mock_get_token() -> any:
         yield
 
 
-@pytest.fixture(autouse=True)
-def mock_settings() -> any:
-    settings.AUTH0_MGMT_API_DOMAIN = "mock_mgmt_api_domain"
-    settings.AUTH0_MGMT_API_CLIENT_ID = "mock_mgmt_api_client_id"
-    settings.AUTH0_MGMT_API_CLIENT_SECRET = "mock_mgmt_api_client_secret"
-    settings.AUTH0_DOMAIN = "mock_auth0_domain"
-    settings.AUTH0_CLIENT_ID = "mock_auth0_client_id"
-
-
 class TestAuth0Service(unittest.TestCase):
     @pytest.mark.unit
     @patch("auth0.authentication.GetToken.client_credentials")
@@ -42,7 +49,7 @@ class TestAuth0Service(unittest.TestCase):
             "access_token": "mocked_access_token",
             "id_token": "mocked_id_token",
         }
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.get_mgmt_api_token()
         self.assertTrue(mock_get_token.called)
         mock_get_token.assert_called_with("https://mock_mgmt_api_domain/api/v2/")
@@ -60,7 +67,7 @@ class TestAuth0Service(unittest.TestCase):
         }
         mock_change_password.return_value = {"mocked": "response"}
         mock_database_login.return_value = {}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.change_self_password(
             UserToken(
                 org_id="mock_org_id",
@@ -90,7 +97,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Users.list_organizations")
     def test_list_user_organizations(self, mock_list_organizations: any) -> None:
         mock_list_organizations.return_value = {"mocked": "orgs"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.list_user_organizations(
             UserToken(
                 org_id="mock_org_id",
@@ -126,7 +133,7 @@ class TestAuth0Service(unittest.TestCase):
         mock_create_member_roles.return_value = {}
         mock_delete_member_roles.return_value = {}
 
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response1 = auth0_service.modify_user_roles(
             UserToken(
                 org_id="mock_org_id",
@@ -197,7 +204,7 @@ class TestAuth0Service(unittest.TestCase):
         mock_create_member_roles.return_value = {}
         mock_delete_member_roles.return_value = {}
 
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         try:
             auth0_service.modify_user_roles(
                 UserToken(
@@ -227,7 +234,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Organizations.all_organization_members")
     def test_list_members(self, mock_list_members: any) -> None:
         mock_list_members.return_value = {"mocked": "listed org members"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.list_members(
             UserToken(
                 org_id="mock_org_id",
@@ -258,7 +265,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Organizations.all_organization_members")
     def test_list_members_perms(self, mock_list_members: any) -> None:
         mock_list_members.return_value = {"mocked": "listed org members"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         try:
             auth0_service.list_members(
                 UserToken(
@@ -288,7 +295,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Organizations.all_organization_invitations")
     def test_list_invitations(self, mock_all_org_invitations: any) -> None:
         mock_all_org_invitations.return_value = {"mocked": "org invitations"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.list_invitations(
             UserToken(
                 org_id="mock_org_id",
@@ -316,7 +323,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Organizations.all_organization_invitations")
     def test_list_invitations_perms(self, mock_all_org_invitations: any) -> None:
         mock_all_org_invitations.return_value = {"mocked": "org invitations"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         try:
             auth0_service.list_invitations(
                 UserToken(
@@ -346,7 +353,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Roles.list")
     def test_list_roles(self, mock_list_roles: any) -> None:
         mock_list_roles.return_value = {"mocked": "list of roles"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.list_roles()
         self.assertTrue(response["mocked"] == "list of roles")
         # Verify default paginations params are passed through
@@ -362,7 +369,7 @@ class TestAuth0Service(unittest.TestCase):
         mock_create_invitation.return_value = {"invitation": "created"}
         mock_get_org.return_value = {"metadata": {}}
         mock_userinfo.return_value = {"name": "Johnny Cache"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.create_invitation(
             UserToken(
                 org_id="mock_org_id",
@@ -395,14 +402,12 @@ class TestAuth0Service(unittest.TestCase):
         self.assertTrue(response[0]["invitation"] == "created")
         mock_create_invitation.assert_any_call(
             id="mock_org_id",
-            body=jsonable_encoder(
-                {
-                    "inviter": {"name": "Johnny Cache"},
-                    "invitee": {"email": "mock@invitation.com"},
-                    "roles": ["r1", "r2"],
-                    "client_id": "mock_auth0_client_id",
-                }
-            ),
+            body={
+                "inviter": {"name": "Johnny Cache"},
+                "invitee": {"email": "mock@invitation.com"},
+                "roles": ["r1", "r2"],
+                "client_id": "mock_auth0_client_id",
+            },
         )
 
     @pytest.mark.unit
@@ -413,7 +418,7 @@ class TestAuth0Service(unittest.TestCase):
     ) -> None:
         mock_create_invitation.return_value = {"invitation": "created"}
         mock_userinfo.return_value = {"name": "Johnny Cache"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         try:
             auth0_service.create_invitation(
                 UserToken(
@@ -454,7 +459,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Organizations.delete_organization_members")
     def test_delete_user_from_organization(self, mock_delete_members: any) -> None:
         mock_delete_members.return_value = {"member": "deleted"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.delete_user_from_organization(
             UserToken(
                 org_id="mock_org_id",
@@ -475,7 +480,7 @@ class TestAuth0Service(unittest.TestCase):
         self.assertTrue(response["member"] == "deleted")
         mock_delete_members.assert_called_with(
             id="mock_org_id",
-            body=jsonable_encoder({"members": ["mock_user_id_to_remove"]}),
+            body={"members": ["mock_user_id_to_remove"]},
         )
 
     @pytest.mark.unit
@@ -484,7 +489,7 @@ class TestAuth0Service(unittest.TestCase):
         self, mock_delete_members: any
     ) -> None:
         mock_delete_members.return_value = {"member": "deleted"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         try:
             auth0_service.delete_user_from_organization(
                 UserToken(
@@ -513,7 +518,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Organizations.delete_organization_invitation")
     def test_delete_invitation(self, mock_delete_invitation: any) -> None:
         mock_delete_invitation.return_value = {"invitation": "deleted"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         response = auth0_service.delete_invitation(
             UserToken(
                 org_id="mock_org_id",
@@ -541,7 +546,7 @@ class TestAuth0Service(unittest.TestCase):
     @patch("auth0.management.Organizations.delete_organization_invitation")
     def test_delete_invitation_perms(self, mock_delete_invitation: any) -> None:
         mock_delete_invitation.return_value = {"invitation": "deleted"}
-        auth0_service = Auth0Service()
+        auth0_service = create_test_auth0_service()
         try:
             auth0_service.delete_invitation(
                 UserToken(

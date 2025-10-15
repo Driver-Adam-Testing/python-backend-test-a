@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Header, HTTPException
 
@@ -10,7 +10,7 @@ from app.schemas.auth0_schema import (
     ModifyUserRolesInput,
     ModifyUserRolesResponse,
 )
-from app.services.auth0_service import Auth0Service
+from app.services.auth0_factory import create_auth0_service
 from app.services.onboarding_checklist_service import OnboardingChecklistService
 
 router = APIRouter()
@@ -26,7 +26,7 @@ def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 ):
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         return auth0_service.list_roles(page=page, per_page=per_page)
     except Exception as e:
         logger.error(f"An error occurred listing roles: {e}")
@@ -41,7 +41,7 @@ def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 ):
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         return auth0_service.list_members(user, page=page, per_page=per_page)
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")
@@ -54,7 +54,7 @@ def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 def delete_member(user: UserToken, user_id: str):  # noqa: ANN201 disable to proxy Auth0 any typed responses
     logging.info(f"DELETING {user_id} from {user.organization_id}")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         return auth0_service.delete_user_from_organization(user, user_id)
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")
@@ -73,7 +73,7 @@ def change_user_roles(
 ) -> ModifyUserRolesResponse:
     logging.info(f"Modifying roles for {modified_user_id} in {user.organization_id}")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         return auth0_service.modify_user_roles(
             user=user, modified_user_id=modified_user_id, roles=new_roles.roles
         )
@@ -92,7 +92,7 @@ def list_invitations(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 ):
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         return auth0_service.list_invitations(user, page=page, per_page=per_page)
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")
@@ -114,7 +114,7 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
     logging.info(f"Listing members of organization = {user.organization_id}")
     access_token = authorization.replace("Bearer ", "")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         result = auth0_service.create_invitation(
             user, access_token=access_token, invitations=invitations
         )
@@ -124,7 +124,7 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
             session=session,
             organization_id=user.organization_id,
             user_id=user.user_id,
-        ).mark_invite_teammate_completed(datetime.now(timezone.utc))
+        ).mark_invite_teammate_completed(datetime.now(UTC))
 
         return result
     except PermissionError:
@@ -142,7 +142,7 @@ def revoke_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
 ):
     logging.info(f"REVOKING invitation {invitation_id} from {user.organization_id}")
     try:
-        auth0_service = Auth0Service()
+        auth0_service = create_auth0_service()
         return auth0_service.delete_invitation(user, invitation_id=invitation_id)
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")

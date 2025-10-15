@@ -14,7 +14,10 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "auth0_sync", from = "src"}]
+packages = [
+    {include = "auth0_sync", from = "src"},
+    {include = "event_processor", from = "src"}
+]
 package-mode = false
 
 [build-system]

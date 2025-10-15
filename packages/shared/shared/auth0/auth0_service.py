@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 from auth0.authentication import Database, GetToken, Users
 from auth0.management import Auth0
+from auth0.rest import RestClientOptions
 
 from shared.auth0.models import User as UserToken
 from shared.auth0.permissions import ORG_MANAGER
@@ -59,8 +60,10 @@ class Auth0Service:
         return Auth0(
             self.auth0_mgmt_domain,
             self._mgmt_token,
-            rest_options={"timeout": self.timeout},
-        )
+            rest_options=RestClientOptions(
+                telemetry=False,
+                timeout=self.timeout,
+        ))
 
     def get_mgmt_api_token(self: "Auth0Service") -> str:
         get_token = GetToken(

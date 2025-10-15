@@ -26,11 +26,9 @@ class Auth0EventLambdaParams:
     def __init__(
         self,
         environment: str,
-        database_url: str | None = None,
         cloudwatch_alarm_arn: str | None = None,
     ) -> None:
         self.environment = environment
-        self.database_url = database_url
         self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
 
 

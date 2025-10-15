@@ -3,6 +3,14 @@
 
 import json
 import logging
+import sys
+from pathlib import Path
+
+# Add src/ to Python path so config module can be imported
+project_root = Path(__file__).parent.parent.parent
+src_path = project_root / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
 
 from .auth0_event_processor_test import test_event_with_logging
 

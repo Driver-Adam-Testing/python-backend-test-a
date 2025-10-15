@@ -228,9 +228,10 @@ def process_auth0_event_test(event_dict: dict[str, Any]) -> Auth0EventProcessing
         user_id = MagicMock()  # Column attribute for SQLAlchemy queries
         org_id = MagicMock()  # Column attribute for SQLAlchemy queries
 
-        def __init__(self, user_id=None, org_id=None):
+        def __init__(self, user_id=None, org_id=None, role=None):
             self.user_id = user_id
             self.org_id = org_id
+            self.role = role
 
     # Create a mock session factory that returns our MockSession
     def mock_session_factory(*args, **kwargs):

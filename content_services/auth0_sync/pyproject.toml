@@ -7,11 +7,11 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-dependencies = [
-    "database @ ../../driver_db",
-    "shared @ ../../packages/shared",
-    "modal (>=1.2.0,<2.0.0)",
-]
+
+[tool.poetry.dependencies]
+database = {path = "../../driver_db", develop = true}
+shared = {path = "../../packages/shared", develop = true}
+modal = "^1.0.4"
 
 [tool.poetry]
 packages = [
@@ -19,6 +19,9 @@ packages = [
     {include = "event_processor", from = "src"}
 ]
 package-mode = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

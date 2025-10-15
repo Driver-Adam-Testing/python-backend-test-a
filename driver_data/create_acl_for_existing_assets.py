@@ -39,6 +39,10 @@ def create_acl_for_existing_assets() -> None:
                 organization_id=asset.organization_id,
                 principal_kind=PrincipalKind.org,
                 role=PrimaryAssetRole.viewer,
-                created_by=None,  # what should this be for this script?
             )
             session.add(new_grant)
+            session.commit()
+
+
+if __name__ == "__main__":
+    create_acl_for_existing_assets()

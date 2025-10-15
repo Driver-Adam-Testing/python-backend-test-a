@@ -1207,6 +1207,11 @@ class User(SQLModel, table=True):
     )
 
 
+class OrgRole(enum.StrEnum):
+    super_admin = enum.auto()
+    member = enum.auto()
+
+
 class OrgMembership(SQLModel, table=True):
     """Link table for organization-user memberships"""
 
@@ -1216,8 +1221,7 @@ class OrgMembership(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     org_id: str = Field(foreign_key="organization.id", index=True)
     user_id: str = Field(foreign_key="user.id", index=True)  # Auth0 user ID
-    # TODO: if possible use auth0_updated_at
-    # TODO: Role
+    role: OrgRole
 
 
 class Auth0SyncRun(SQLModel, table=True):

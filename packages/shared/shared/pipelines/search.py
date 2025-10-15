@@ -5,12 +5,12 @@ from uuid import UUID
 from database.db import get_session
 from database.models import (
     ChunkAndEmbedding,
-    ContentKind,
     DerivedContent,
     Node,
     PrimaryAsset,
     Version,
 )
+from database.models_enums import ContentKind
 from rank_bm25 import BM25Okapi
 from sqlalchemy import Select
 from sqlalchemy.orm import aliased, selectinload

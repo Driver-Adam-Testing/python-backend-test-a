@@ -197,8 +197,12 @@ def _process_user_update(user_id: str) -> list[str]:
 
 
 def _handle_user_delete_event(event: Auth0EventBridgeEvent) -> list[str]:
-    # user_id = normalize_auth0_user_id(event.detail.data.user_id)
-    user_id = normalize_auth0_user_id(event.detail.data.details.get("request", {}).get("body", {}).get("members", [None])[0])
+    details = event.detail.data.details or {}
+    request = details.get("request", {})
+    path = request.get("path", "")
+    # For user delete events, extract user_id from API path
+    user_id = normalize_auth0_user_id(_extract_user_from_path(path))
+
     if not user_id:
         logger.warning("User delete event missing user_id")
         return []
@@ -382,6 +386,9 @@ def _handle_api_event(event: Auth0EventBridgeEvent) -> list[str]:
 
     elif path.startswith("/api/v2/users/") and event.detail.data.user_id:
         normalized_user_id = normalize_auth0_user_id(event.detail.data.user_id)
+        if request["method"] == "delete":
+            logger.info("Detected user deletion event")
+            return _handle_user_delete_event(event)
         print(f"normalized_user_id:{normalized_user_id}")
         if normalized_user_id:
             return _process_user_update(normalized_user_id)
@@ -411,6 +418,19 @@ def _extract_org_from_path(path: str) -> str | None:
         return parts[org_index]
     except (ValueError, IndexError):
         return None
+
+def _extract_user_from_path(path: str) -> str | None:
+    """Extract user_id from API path."""
+    parts = path.strip("/").split("/")
+    try:
+        # the path is like /api/v2/users/auth0%7C68ef4292aee8a61d14791224
+        # must be url decoded
+        # parts = [requests.utils.unquote(part) for part in parts]
+        member_index = parts.index("users") + 1
+
+        return requests.utils.unquote(parts[member_index])
+    except (ValueError, IndexError):
+        return  None
 
 
 def _upsert_user(session: Session, user_data: dict[str, Any]) -> None:

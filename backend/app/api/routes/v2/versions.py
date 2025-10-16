@@ -18,6 +18,7 @@ from app.api.routes.v2.schemas import (
     VersionUpdate,
 )
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action
 
 
 @router.get("/versions", response_model=ListWithCount[VersionDetailRead])
@@ -27,6 +28,7 @@ def list_versions(
     user: UserToken,
     pagination: Pagination,
 ) -> ListWithCount[VersionDetailRead]:
+    # TODO: authorization with list endpoint
     query = (
         select(Version)
         .join(PrimaryAsset)
@@ -63,6 +65,12 @@ def update_version(
         .where(Version.id == version_id)
         .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
+    enforce_asset_action(
+        db=session,
+        user=user,
+        asset_id=version.primary_asset_id,
+        action_key="asset.manage",
+    )
 
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")

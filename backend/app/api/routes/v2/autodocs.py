@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
-from logging import getLogger
+from datetime import UTC, datetime
 from enum import StrEnum
+from logging import getLogger
 from uuid import UUID
 
 import modal
@@ -26,6 +26,7 @@ from app.api.auth import (
     UserToken,
 )
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action, enforce_org_action
 from app.core.config import settings
 from app.services.onboarding_checklist_service import OnboardingChecklistService
 
@@ -95,6 +96,8 @@ def run_autodoc(
     session: CurrentSession,
     input: AutoDocRequest,
 ) -> AutoDocStatusHistory:
+    # TODO: compound authorization check
+    enforce_org_action(db=session, user=user, action_key="autodoc.generate")
     node = session.exec(
         select(Node)
         .join(Version)
@@ -113,6 +116,15 @@ def run_autodoc(
             .selectinload(Version.primary_asset)
         )
     ).all()
+
+    for source in document_sources:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=source.source_node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
+
     if not document_sources:
         raise HTTPException(
             status_code=404,
@@ -202,7 +214,7 @@ def run_autodoc(
         session=session,
         organization_id=user.organization_id,
         user_id=user.user_id,
-    ).mark_generate_autodoc_completed(datetime.now(timezone.utc))
+    ).mark_generate_autodoc_completed(datetime.now(UTC))
 
     return autodoc_status
 
@@ -213,6 +225,7 @@ def get_autodoc_current_status(
     session: CurrentSession,
     page_id: UUID,
 ) -> AutoDocStatusHistory:
+    enforce_org_action(db=session, user=user, action_key="autodoc.view_status")
     autodoc_status = session.exec(
         select(AutoDocStatusHistory)
         .where(AutoDocStatusHistory.page_node_id == page_id)
@@ -235,6 +248,7 @@ def cancel(
     session: CurrentSession,
     input: AutoDocCancelRequest,
 ) -> AutoDocCancelResponse:
+    enforce_org_action(db=session, user=user, action_key="autodoc.cancel")
     node = session.exec(
         select(Node)
         .join(Version)

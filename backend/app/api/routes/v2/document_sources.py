@@ -17,6 +17,7 @@ from app.api.routes.v2.schemas import (
     ListWithCount,
 )
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action, enforce_org_action
 
 
 @router.get("/document_sources", response_model=ListWithCount[DocumentSourceDetailRead])
@@ -26,6 +27,7 @@ async def list_document_sources(
     user: UserToken,
     pagination: Pagination,
 ) -> ListWithCount[DocumentSourceRead]:
+    # TODO: authorization with list endpoint
     if pagination.sort_by == "updated_at":
         pagination.sort_by = None
     query = (
@@ -62,6 +64,19 @@ async def batch_create_document_sources(
     user: UserToken,
     payload: list[DocumentSourceCreate],
 ) -> list[DocumentSourceDetailRead]:
+    node_ids = {data.source_node_id for data in payload}
+    query = (
+        select(Node).where(Node.id.in_(node_ids)).options(selectinload(Node.version))
+    )
+    nodes = session.exec(query).all()
+    for node in nodes:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
+
     created_document_sources = []
 
     for data in payload:
@@ -99,6 +114,7 @@ async def batch_delete_document_sources(
     user: UserToken,
     payload: list[DocumentSourceCreate],
 ) -> list[bool]:
+    enforce_org_action(db=session, user=user, action_key="document.remove_sources")
     deletion_results = []
 
     for data in payload:

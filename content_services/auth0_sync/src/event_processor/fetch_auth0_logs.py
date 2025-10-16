@@ -4,17 +4,57 @@ Fetch historical Auth0 logs and format them for event processor testing.
 
 This tool fetches logs from the Auth0 Management API and transforms them into
 the EventBridge event format expected by the event processor.
+
+SETUP:
+------
+You must export Auth0 credentials before running this script:
+
+    export AUTH0_MGMT_API_DOMAIN=your-tenant.us.auth0.com
+    export AUTH0_MGMT_API_CLIENT_ID=your_client_id
+    export AUTH0_MGMT_API_CLIENT_SECRET=your_client_secret
+
+Or use inline export for one-time execution:
+
+    AUTH0_MGMT_API_DOMAIN=your-tenant.us.auth0.com \
+    AUTH0_MGMT_API_CLIENT_ID=your_client_id \
+    AUTH0_MGMT_API_CLIENT_SECRET=your_client_secret \
+    python src/event_processor/fetch_auth0_logs.py
+
+USAGE:
+------
+Basic usage (fetch last 7 days, 100 events max):
+    python src/event_processor/fetch_auth0_logs.py
+
+Filter by event types:
+    python src/event_processor/fetch_auth0_logs.py -t s ss sdu
+
+Filter by organization:
+    python src/event_processor/fetch_auth0_logs.py --org-id org_abc123
+
+Filter by user:
+    python src/event_processor/fetch_auth0_logs.py --user-name user@example.com
+
+Combine filters:
+    python src/event_processor/fetch_auth0_logs.py \
+        --org-id org_abc123 \
+        --user-name user@example.com \
+        -t s ss \
+        -d 30 \
+        -n 200 \
+        -v
+
+For more options, run:
+    python src/event_processor/fetch_auth0_logs.py --help
 """
 
 import argparse
 import json
 import logging
+import os
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
-
-from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +76,12 @@ class Auth0LogFetcher:
 
     def _get_management_token(self) -> str:
         """Get a Management API access token."""
-        if self._token and self._token_expires_at:
-            if datetime.now(UTC) < self._token_expires_at:
-                return self._token
+        if (
+            self._token
+            and self._token_expires_at
+            and datetime.now(UTC) < self._token_expires_at
+        ):
+            return self._token
 
         url = f"https://{self.domain}/oauth/token"
         payload = {
@@ -63,6 +106,9 @@ class Auth0LogFetcher:
         event_types: list[str] | None = None,
         from_date: datetime | None = None,
         limit: int = 100,
+        org_id: str | None = None,
+        user_id: str | None = None,
+        user_name: str | None = None,
     ) -> list[dict[str, Any]]:
         """
         Fetch logs from Auth0 Management API.
@@ -71,6 +117,9 @@ class Auth0LogFetcher:
             event_types: List of event type codes to filter (e.g., ['s', 'ss', 'sdu'])
             from_date: Fetch logs from this date onwards
             limit: Maximum number of logs to fetch
+            org_id: Filter by organization ID
+            user_id: Filter by user ID
+            user_name: Filter by username
 
         Returns:
             List of raw Auth0 log entries
@@ -100,6 +149,15 @@ class Auth0LogFetcher:
             # Format: type:(s OR ss OR sdu)
             type_query = " OR ".join(event_types)
             query_parts.append(f"type:({type_query})")
+
+        if org_id:
+            query_parts.append(f"organization_id:{org_id}")
+
+        if user_id:
+            query_parts.append(f"user_id:{user_id}")
+
+        if user_name:
+            query_parts.append(f"user_name:{user_name}")
 
         if query_parts:
             params["q"] = " AND ".join(query_parts)
@@ -221,6 +279,18 @@ def main() -> None:
         help="Fetch logs from this date (ISO format: YYYY-MM-DD)",
     )
     parser.add_argument(
+        "--org-id",
+        help="Filter logs by organization ID",
+    )
+    parser.add_argument(
+        "--user-id",
+        help="Filter logs by user ID",
+    )
+    parser.add_argument(
+        "--user-name",
+        help="Filter logs by username",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -244,12 +314,18 @@ def main() -> None:
     logger.info(f"Fetching logs from {from_date.isoformat()}")
     if args.types:
         logger.info(f"Filtering event types: {args.types}")
+    if args.org_id:
+        logger.info(f"Filtering by organization ID: {args.org_id}")
+    if args.user_id:
+        logger.info(f"Filtering by user ID: {args.user_id}")
+    if args.user_name:
+        logger.info(f"Filtering by username: {args.user_name}")
 
     # Initialize fetcher
     fetcher = Auth0LogFetcher(
-        domain=settings.AUTH0_MGMT_API_DOMAIN,
-        client_id=settings.AUTH0_MGMT_API_CLIENT_ID,
-        client_secret=settings.AUTH0_MGMT_API_CLIENT_SECRET,
+        domain=os.getenv("AUTH0_MGMT_API_DOMAIN"),
+        client_id=os.getenv("AUTH0_MGMT_API_CLIENT_ID"),
+        client_secret=os.getenv("AUTH0_MGMT_API_CLIENT_SECRET"),
     )
 
     # Fetch logs
@@ -258,6 +334,9 @@ def main() -> None:
         event_types=args.types,
         from_date=from_date,
         limit=args.limit,
+        org_id=args.org_id,
+        user_id=args.user_id,
+        user_name=args.user_name,
     )
 
     logger.info(f"Fetched {len(logs)} logs from Auth0")
@@ -280,7 +359,7 @@ def main() -> None:
     save_events_for_testing(events, args.output)
 
     print(f"\n✅ Successfully saved {len(events)} events to {args.output}")
-    print(f"\nTo test these events, run:")
+    print("\nTo test these events, run:")
     print(f"  python -m src.event_processor.test_auth0_events {args.output}")
 
 

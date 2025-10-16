@@ -1,3 +1,31 @@
+"""Auth0 Role Synchronization Module.
+
+This module synchronizes Auth0 organization roles with the database organization memberships.
+It ensures that the roles stored in the database match the authoritative roles in Auth0.
+
+Key Features:
+    - Fetches all organization memberships from the database
+    - Queries Auth0 for each user's roles in their respective organizations
+    - Updates database roles to match Auth0 (Admin -> super_admin, Editor -> member)
+    - Removes memberships for users with no roles in Auth0
+    - Supports dry-run mode for safe preview of changes
+    - Provides detailed verbose logging option
+
+Role Mapping:
+    Auth0 "Admin" -> OrgRole.super_admin
+    Auth0 "Editor" -> OrgRole.member
+    No roles or unrecognized -> OrgRole.member (default)
+
+Usage:
+    from shared.auth0.auth0_role_sync import run_role_sync
+
+    # Preview changes without modifying database
+    stats = await run_role_sync(dry_run=True, verbose=True)
+
+    # Apply changes to database
+    stats = await run_role_sync(dry_run=False, verbose=False)
+"""
+
 import os
 from collections import defaultdict
 

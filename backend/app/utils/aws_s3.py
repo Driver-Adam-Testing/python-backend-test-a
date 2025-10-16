@@ -1,10 +1,12 @@
 import hashlib
+import logging
 from urllib.parse import unquote_plus, urlparse
 
 import boto3
 
 from app.core.config import settings
-from app.core.logger import logger
+
+logger = logging.getLogger(__name__)
 
 # Initialize S3 client
 s3_client = boto3.client(

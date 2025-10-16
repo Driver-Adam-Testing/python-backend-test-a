@@ -3,7 +3,6 @@
 Mount order:
 1. **unprotected_router** - no auth required.
 2. **studio_router**      - JWT-protected via `require_jwt`.
-3. **api_router**         - API-key-protected via `require_api_key`.
 
 The Sentry and logging setup is unchanged. test
 """
@@ -14,18 +13,16 @@ import json
 import logging
 from datetime import datetime
 from logging import Formatter, LogRecord
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import sentry_sdk
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
-from app.api.api_router import api_router
 from app.api.logging_middleware import LoggingMiddleware
 from app.api.studio_router import studio_router
 from app.api.unprotected_router import unprotected_router  # NEW
-from app.auth.api_key_middleware import require_api_key
 from app.auth.jwt_middleware import require_jwt
 from app.core.config import settings
 from app.mcp.server import my_mcp
@@ -56,7 +53,6 @@ class JsonFormatter(Formatter):
         return json.dumps(json_record)
 
 
-
 def _configure_logging() -> None:
     log_level = settings.LOG_LEVEL.upper()
     handler = logging.StreamHandler()
@@ -65,9 +61,7 @@ def _configure_logging() -> None:
     logging.info("Log Level set to %s", log_level)
 
 
-def _configure_sentry(
-    env: str, dsn: str
-) -> None:
+def _configure_sentry(env: str, dsn: str) -> None:
     if env == "local":
         return
 
@@ -133,9 +127,6 @@ app.include_router(
 )
 app.include_router(
     studio_router, prefix=settings.STUDIO_V1_STR, dependencies=[Depends(require_jwt)]
-)
-app.include_router(
-    api_router, prefix=settings.API_V1_STR, dependencies=[Depends(require_api_key)]
 )
 
 

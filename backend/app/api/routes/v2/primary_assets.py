@@ -15,9 +15,6 @@ from database.models import (
 )
 from database.models_enums import (
     ContentKind,
-    PrimaryAssetKind,
-    PrimaryAssetProvider,
-    VcsAutoUpdatePolicy,
 )
 from fastapi import Body, HTTPException, Path, Request
 from sqlalchemy.orm import selectinload, with_loader_criteria
@@ -32,7 +29,6 @@ from app.api.routes.v2.query_utils import (
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
     ListWithCount,
-    PrimaryAssetCreate,
     PrimaryAssetDetailRead,
     PrimaryAssetUpdate,
 )
@@ -161,27 +157,6 @@ def _list_primary_assets(
         primary_assets = result.all()
 
     return ListWithCount(results=primary_assets, total_count=total_count)
-
-
-@router.post("/primary_assets", response_model=PrimaryAsset)
-def create_primary_asset(
-    session: CurrentSession,
-    user: UserToken,
-    payload: PrimaryAssetCreate = Body(...),
-) -> PrimaryAsset:
-    new_asset = PrimaryAsset(
-        display_name=payload.display_name,
-        organization_id=user.organization_id,
-        kind=payload.kind,
-        provider=PrimaryAssetProvider.USER,
-        vcs_auto_update_policy=VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT
-        if payload.kind == PrimaryAssetKind.CODEBASE
-        else None,
-    )
-    session.add(new_asset)
-    session.commit()
-    session.refresh(new_asset)
-    return new_asset
 
 
 @router.put("/primary_assets/{primary_asset_id}", response_model=PrimaryAsset)

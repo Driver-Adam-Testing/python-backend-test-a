@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import re
 from urllib.parse import unquote_plus
@@ -15,7 +16,6 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
-from app.core.logger import logger
 from app.schemas.upload_schema import (
     UploadAutoDocConfigRequest,
     UploadAutoDocConfigResponse,
@@ -25,6 +25,8 @@ from app.schemas.upload_schema import (
 from app.utils.aws_s3 import (
     generate_put_presigned_url,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class UploadService:

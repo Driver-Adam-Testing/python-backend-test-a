@@ -114,7 +114,7 @@ class AccessDecision:
 def _is_org_member(db: Session, user_id: uuid.UUID, organization_id: str) -> bool:
     """Check if user is a member of the organization."""
     query = select(OrgMembership).where(
-        OrgMembership.organization_id == organization_id,
+        OrgMembership.org_id == organization_id,
         OrgMembership.user_id == user_id,
     )
     return db.exec(query).first() is not None
@@ -123,7 +123,7 @@ def _is_org_member(db: Session, user_id: uuid.UUID, organization_id: str) -> boo
 def _is_super_admin(db: Session, user_id: uuid.UUID, organization_id: str) -> bool:
     """Check if user is a super admin of the organization."""
     query = select(OrgMembership).where(
-        OrgMembership.organization_id == organization_id,
+        OrgMembership.org_id == organization_id,
         OrgMembership.user_id == user_id,
         OrgMembership.role == OrgRole.super_admin,
     )
@@ -216,7 +216,7 @@ def _role_allows_asset_action(
 def _org_role(db: Session, user_id: uuid.UUID, organization_id: str) -> OrgRole | None:
     """Get user's org role."""
     query = select(OrgMembership.role).where(
-        OrgMembership.organization_id == organization_id,
+        OrgMembership.org_id == organization_id,
         OrgMembership.user_id == user_id,
     )
     result = db.exec(query).first()

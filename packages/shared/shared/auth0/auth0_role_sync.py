@@ -1,4 +1,3 @@
-import asyncio
 import os
 from collections import defaultdict
 
@@ -219,7 +218,3 @@ async def run_role_sync(dry_run: bool = False, verbose: bool = False) -> dict:
 
     print_summary(stats, dry_run)
     return stats
-
-
-if __name__ == "__main__":
-    asyncio.run(run_role_sync())

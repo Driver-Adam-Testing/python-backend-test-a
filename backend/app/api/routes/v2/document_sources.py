@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from database.models import DocumentSource, Node, PrimaryAsset, Version
 from fastapi import Request
 from sqlalchemy.orm import selectinload
@@ -56,49 +54,6 @@ async def list_document_sources(
     document_sources = result.all()
 
     return ListWithCount(results=document_sources, total_count=total_count)
-
-
-@router.post("/document_sources", response_model=DocumentSourceDetailRead)
-async def create_document_source(
-    session: CurrentSession,
-    user: UserToken,
-    payload: DocumentSourceCreate,
-) -> DocumentSourceDetailRead:
-    # Create a new DocumentSource instance
-    new_document_source = DocumentSource(
-        source_node_id=payload.source_node_id,
-        page_node_id=payload.page_node_id,
-    )
-
-    # Add the new document source to the session
-    session.add(new_document_source)
-    session.commit()
-
-    # Refresh the session to get the updated document source
-    session.refresh(new_document_source)
-
-    return new_document_source
-
-
-@router.delete("/document_sources/{page_node_id}/{source_node_id}", response_model=bool)
-async def delete_document_source(
-    session: CurrentSession,
-    user: UserToken,
-    page_node_id: UUID,
-    source_node_id: UUID,
-) -> bool:
-    # Delete the document source with the specified source_node_id and page_node_id
-    result = session.exec(
-        delete(DocumentSource).where(
-            DocumentSource.source_node_id == source_node_id,
-            DocumentSource.page_node_id == page_node_id,
-            PrimaryAsset.organization_id == user.organization_id,
-        )
-    )
-    session.commit()
-
-    # Return True if a row was deleted, otherwise False
-    return result.rowcount > 0
 
 
 @router.post("/document_sources/batch", response_model=list[DocumentSourceDetailRead])

@@ -18,7 +18,6 @@ from database.models_enums import (
     PrimaryAssetKind,
     PrimaryAssetProvider,
     VcsAutoUpdatePolicy,
-    VersionStatus,
 )
 from fastapi import Body, HTTPException, Path, Request
 from sqlalchemy.orm import selectinload, with_loader_criteria
@@ -53,7 +52,9 @@ def list_primary_assets(
     tag_ids: str | None = None,
     document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
-    return _list_primary_assets(request, session, user, pagination, tag_ids, document_source_ids)
+    return _list_primary_assets(
+        request, session, user, pagination, tag_ids, document_source_ids
+    )
 
 
 def _list_primary_assets(
@@ -106,17 +107,46 @@ def _list_primary_assets(
             .exists()
         )
 
+    # if document_source_ids:
+    #     # Find primary assets that have DocumentSources where the source_node
+    #     # belongs to a version of any of the provided primary_asset.ids
+    #     provided_primary_asset_ids = document_source_ids.split(",")
+    #
+    #     query = query.where(
+    #         select(DocumentSource)
+    #         .join(DocumentSource.source_node)
+    #         .join(Node.version)
+    #         .join(Version.primary_asset)
+    #         .where(Version.primary_asset_id == PrimaryAsset.id)
+    #         .where(Version.primary_asset_id.in_(provided_primary_asset_ids))
+    #         .exists()
+    #     )
+
     if document_source_ids:
-        # Find primary assets that have DocumentSources where the source_node
-        # belongs to a version of any of the provided primary_asset.ids
-        provided_primary_asset_ids = document_source_ids.split(",")
+        source_primary_asset_ids = document_source_ids.split(",")
+
+        # Need to use aliases to join through both page_node and source_node
+        from sqlalchemy import alias
+
+        SourceNode = alias(Node, name="source_node")
+        SourceVersion = alias(Version, name="source_version")
+
         query = query.where(
             select(DocumentSource)
-            .join(DocumentSource.source_node)
-            .join(Node.version)
-            .join(Version.primary_asset)
-            .where(Version.primary_asset_id == PrimaryAsset.id)
-            .where(Version.primary_asset_id.in_(provided_primary_asset_ids))
+            .join(DocumentSource.page_node)  # Join to the page's node
+            .join(Node.version)  # Join to the page's version
+            .where(
+                Version.primary_asset_id == PrimaryAsset.id
+            )  # Link to outer query PrimaryAsset (the page)
+            .join(
+                SourceNode, DocumentSource.source_node_id == SourceNode.c.id
+            )  # Join to source node
+            .join(
+                SourceVersion, SourceNode.c.version_id == SourceVersion.c.id
+            )  # Join to source version
+            .where(
+                SourceVersion.c.primary_asset_id.in_(source_primary_asset_ids)
+            )  # Filter by source codebases
             .exists()
         )
 

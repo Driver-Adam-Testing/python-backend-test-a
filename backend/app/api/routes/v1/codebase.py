@@ -100,20 +100,6 @@ def get_codebase_versions(
     )
 
 
-# @router.post(
-#     "/analysis",
-#     summary="Execute codebase analysis",
-#     dependencies=[ContentEditorPermission],
-# )
-# def exec_codebase_analysis(
-#     user: UserToken,
-#     request: CodebaseAnalysisRequest,
-# ) -> CodebaseAnalysisResponse:
-#     return CodebaseService.execute_codebase_analysis(
-#         user.organization_id, request.download_url
-#     )
-
-
 @router.post(
     "/generate",
     summary="Execute codebase generation",

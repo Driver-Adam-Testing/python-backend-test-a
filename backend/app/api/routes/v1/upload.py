@@ -1,8 +1,9 @@
+import logging
+
 from fastapi import APIRouter
 
 from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
-from app.core.logger import logger
 from app.schemas.upload_schema import (
     UploadAutoDocConfigRequest,
     UploadAutoDocConfigResponse,
@@ -10,6 +11,8 @@ from app.schemas.upload_schema import (
     UploadResponse,
 )
 from app.services.upload_service import UploadService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

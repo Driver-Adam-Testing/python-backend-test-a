@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 import pypandoc
@@ -17,7 +18,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
-from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
 from app.schemas.content_schema import (
     DownloadContentResponse,
@@ -31,6 +31,7 @@ from app.utils.aws_s3 import (
 )
 
 # TODO adapt self.content_repository.get to also accept org_id as an argument to avoid the need to check the org_id in the service methods
+logger = logging.getLogger(__name__)
 
 
 class ContentService:

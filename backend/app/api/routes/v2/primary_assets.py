@@ -108,6 +108,9 @@ def _list_primary_assets(
         )
 
     if document_source_ids:
+        """
+        TODO: Complex logic with inline comments should be extracted to well-named functions
+        """
         source_primary_asset_ids = document_source_ids.split(",")
 
         # Need to use aliases to join through both page_node and source_node

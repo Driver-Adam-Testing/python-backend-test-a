@@ -1,4 +1,3 @@
-import hashlib
 from uuid import UUID
 
 import pypandoc
@@ -21,12 +20,10 @@ from sqlmodel import Session, asc, desc, func, or_, select, text
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
 from app.schemas.content_schema import (
-    ContentTagsResponse,
     DownloadContentResponse,
     ListContentInput,
     ListContentResult,
     ListContentResults,
-    TagResult,
 )
 from app.utils.aws_s3 import (
     generate_org_get_presigned_url,
@@ -225,23 +222,6 @@ class ContentService:
 
         return statement
 
-    def get_content_by_id(
-        self: "ContentService", content_id: UUID, organization_id: str
-    ) -> DerivedContent:
-        logger.info(f"Fetching content by ID {content_id}")
-
-        content: DerivedContent | None = self.content_repository.get(content_id)
-
-        if not content or content.workspace.organization_id != organization_id:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        return content
-
     def get_content_download_url(
         self, node_id: UUID, organization_id: str
     ) -> DownloadContentResponse:
@@ -286,45 +266,6 @@ class ContentService:
                 detail="Content not found or not downloadable",
             )
 
-    def get_content_tags(
-        self: "ContentService", content_id: UUID, organization_id: str
-    ) -> ContentTagsResponse:
-        logger.info(f"Fetching tags for content {content_id}")
-        primary_asset = self.session.exec(
-            select(PrimaryAsset)
-            .options(selectinload(PrimaryAsset.tags))
-            .join(PrimaryAsset)
-            .join(Version)
-            .join(Node)
-            .join(DerivedContent)
-            .where(DerivedContent.id == content_id)
-            .where(PrimaryAsset.organization_id == organization_id)
-        ).first()
-
-        if not primary_asset:
-            logger.error(
-                f"Primary asset {content_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Primary asset not found"
-            )
-
-        tag_results = [
-            TagResult(
-                id=tag.id,
-                name=tag.name,
-                color=tag.hex_color,
-                created_at=tag.created_at,
-                updated_at=tag.updated_at,
-            )
-            for tag in primary_asset.tags
-        ]
-
-        logger.info(f"Tags retrieved successfully for content {content_id}")
-        return ContentTagsResponse(
-            tags=tag_results,
-        )
-
     def convert_markdown_to_rst(self, content: str) -> str:
         logger.info("Converting markdown content to rst")
         try:
@@ -332,10 +273,3 @@ class ContentService:
             return rst_content
         except RuntimeError:
             raise HTTPException(status_code=500, detail="Conversion error")
-
-
-def organization_bucket_from_organization_id(organization_id: str) -> str:
-    """
-    Generate the organization bucket name from the organization ID
-    """
-    return hashlib.sha256(organization_id.encode()).hexdigest()[:63]

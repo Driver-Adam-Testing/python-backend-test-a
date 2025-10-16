@@ -107,21 +107,6 @@ def _list_primary_assets(
             .exists()
         )
 
-    # if document_source_ids:
-    #     # Find primary assets that have DocumentSources where the source_node
-    #     # belongs to a version of any of the provided primary_asset.ids
-    #     provided_primary_asset_ids = document_source_ids.split(",")
-    #
-    #     query = query.where(
-    #         select(DocumentSource)
-    #         .join(DocumentSource.source_node)
-    #         .join(Node.version)
-    #         .join(Version.primary_asset)
-    #         .where(Version.primary_asset_id == PrimaryAsset.id)
-    #         .where(Version.primary_asset_id.in_(provided_primary_asset_ids))
-    #         .exists()
-    #     )
-
     if document_source_ids:
         source_primary_asset_ids = document_source_ids.split(",")
 

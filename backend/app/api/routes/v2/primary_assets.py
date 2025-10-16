@@ -6,6 +6,7 @@ import boto3
 from botocore.exceptions import ClientError
 from database.models import (
     DerivedContent,
+    DocumentSource,
     InspectorRun,
     Node,
     PrimaryAsset,
@@ -45,8 +46,11 @@ def list_primary_assets(
     user: UserToken,
     pagination: Pagination,
     tag_ids: str | None = None,
+    document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
-    return _list_primary_assets(request, session, user, pagination, tag_ids)
+    return _list_primary_assets(
+        request, session, user, pagination, tag_ids, document_source_ids
+    )
 
 
 def _list_primary_assets(
@@ -55,6 +59,7 @@ def _list_primary_assets(
     user: User,
     pagination: Pagination,
     tag_ids: str | None = None,
+    document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
     query = (
         select(PrimaryAsset)
@@ -95,6 +100,37 @@ def _list_primary_assets(
             select(PrimaryAssetTag)
             .where(PrimaryAssetTag.primary_asset_id == PrimaryAsset.id)
             .where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
+            .exists()
+        )
+
+    if document_source_ids:
+        """
+        TODO: Complex logic with inline comments should be extracted to well-named functions
+        """
+        source_primary_asset_ids = document_source_ids.split(",")
+
+        # Need to use aliases to join through both page_node and source_node
+        from sqlalchemy import alias
+
+        SourceNode = alias(Node, name="source_node")
+        SourceVersion = alias(Version, name="source_version")
+
+        query = query.where(
+            select(DocumentSource)
+            .join(DocumentSource.page_node)  # Join to the page's node
+            .join(Node.version)  # Join to the page's version
+            .where(
+                Version.primary_asset_id == PrimaryAsset.id
+            )  # Link to outer query PrimaryAsset (the page)
+            .join(
+                SourceNode, DocumentSource.source_node_id == SourceNode.c.id
+            )  # Join to source node
+            .join(
+                SourceVersion, SourceNode.c.version_id == SourceVersion.c.id
+            )  # Join to source version
+            .where(
+                SourceVersion.c.primary_asset_id.in_(source_primary_asset_ids)
+            )  # Filter by source codebases
             .exists()
         )
 

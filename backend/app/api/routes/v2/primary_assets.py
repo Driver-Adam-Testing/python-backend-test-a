@@ -166,7 +166,7 @@ def delete_primary_asset(
     primary_asset_id: UUID = Path(...),
 ) -> PrimaryAsset:
     enforce_asset_action(
-        db=session, user=user, asset_id=primary_asset_id, action_key="asset.manage"
+        db=session, user=user, asset_id=primary_asset_id, action_key="asset.delete"
     )
     asset = session.exec(
         select(PrimaryAsset)

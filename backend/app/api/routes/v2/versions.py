@@ -1,7 +1,5 @@
-from uuid import UUID
-
 from database.models import PrimaryAsset, Version
-from fastapi import Body, HTTPException, Path, Request
+from fastapi import Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
@@ -15,10 +13,8 @@ from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
     ListWithCount,
     VersionDetailRead,
-    VersionUpdate,
 )
 from app.api.session import CurrentSession
-from app.authorization.fastapi import enforce_asset_action
 
 
 @router.get("/versions", response_model=ListWithCount[VersionDetailRead])
@@ -50,35 +46,3 @@ def list_versions(
     versions = result.all()
 
     return ListWithCount(results=versions, total_count=total_count)
-
-
-@router.put("/versions/{version_id}", response_model=Version)
-def update_version(
-    session: CurrentSession,
-    user: UserToken,
-    version_id: UUID = Path(...),
-    payload: VersionUpdate = Body(...),
-) -> Version:
-    version = session.exec(
-        select(Version)
-        .join(PrimaryAsset)
-        .where(Version.id == version_id)
-        .where(PrimaryAsset.organization_id == user.organization_id)
-    ).one_or_none()
-    enforce_asset_action(
-        db=session,
-        user=user,
-        asset_id=version.primary_asset_id,
-        action_key="asset.manage",
-    )
-
-    if not version:
-        raise HTTPException(status_code=404, detail="Version not found")
-
-    if payload.status:
-        version.status = payload.status
-
-    session.add(version)
-    session.commit()
-    session.refresh(version)
-    return version

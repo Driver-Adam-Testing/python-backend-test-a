@@ -2,6 +2,7 @@ from uuid import UUID
 
 from database.models import (
     DerivedContent,
+    DocumentSource,
     Node,
     PrimaryAsset,
     UserCache,
@@ -15,6 +16,7 @@ from database.models_enums import (
     VersionStatus,
 )
 from fastapi import Body, HTTPException, Path, Response
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.api.auth import UserToken
@@ -24,6 +26,7 @@ from app.api.routes.v2.schemas import (
     DerivedContentUpdate,
 )
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action
 
 
 @router.put("/edit_page/{node_id}", response_model=None)
@@ -34,6 +37,26 @@ def edit_page_CONVENIENCE_METHOD(
     payload: DerivedContentUpdate = Body(...),
 ) -> Response:
     # Fetch the derived content and ensure it belongs to the user's organization
+    query = (
+        select(DocumentSource)
+        .join(DocumentSource.source_node)
+        .join(Node.version)
+        .join(Version.primary_asset)
+        .options(
+            selectinload(DocumentSource.source_node).selectinload(Node.version),
+        )
+        .where(PrimaryAsset.organization_id == user.organization_id)
+        .where(DocumentSource.page_node_id == node_id)
+    )
+    doc_sources = session.exec(query).all()
+    for doc_source in doc_sources:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=doc_source.source_node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
+
     derived_content = session.exec(
         select(DerivedContent)
         .join(Node)
@@ -149,72 +172,5 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
 
     # Ensure the node relationship is populated
     new_derived_content.node = new_node
-
-    return ContentDetailRead.model_validate(new_derived_content)
-
-
-@router.post("/new_template", response_model=ContentDetailRead)
-def new_template(
-    session: CurrentSession,
-    user: UserToken,
-) -> ContentDetailRead:
-    # Query existing assets with similar names
-    existing_assets = session.exec(
-        select(PrimaryAsset).where(
-            PrimaryAsset.display_name.like("Untitled Template %"),
-            PrimaryAsset.organization_id == user.organization_id,
-        )
-    ).all()
-
-    # Extract numbers from the existing asset names and find the maximum
-    max_number = 0
-    for asset in existing_assets:
-        try:
-            number = int(asset.display_name.split(" ")[-1])
-            if number > max_number:
-                max_number = number
-        except ValueError:
-            continue
-
-    # Create a new PrimaryAssetRow with the incremented number
-    new_display_name = f"Untitled Template {max_number + 1}"
-    new_primary_asset = PrimaryAsset(
-        display_name=new_display_name,
-        organization_id=user.organization_id,
-        kind=PrimaryAssetKind.PAGE_TEMPLATE,
-        provider=PrimaryAssetProvider.USER,
-        vcs_auto_update_policy=None,
-    )
-    session.add(new_primary_asset)
-    session.commit()
-
-    new_version = Version(
-        vcs_hash=None,
-        status=VersionStatus.GENERATION_COMPLETE,
-        vcs_metadata=None,
-    )
-    new_version.primary_asset = new_primary_asset
-    session.add(new_version)
-    session.commit()
-
-    new_node = Node(
-        relative_path="template",
-        kind=NodeKind.OTHER,
-    )
-    new_node.version = new_version
-    session.add(new_node)
-    session.commit()
-
-    new_derived_content = DerivedContent(
-        content_kind="template",
-        relative_path="template",
-        content="",
-        content_name=new_display_name,
-        misc_metadata={},
-    )
-    new_derived_content.node = new_node
-    session.add(new_derived_content)
-    session.commit()
-    session.refresh(new_derived_content)
 
     return ContentDetailRead.model_validate(new_derived_content)

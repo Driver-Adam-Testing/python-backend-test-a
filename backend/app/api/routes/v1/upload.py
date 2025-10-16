@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter
 
-from app.api.auth import ContentEditorPermission, UserToken
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_org_action
 from app.schemas.upload_schema import (
@@ -21,7 +21,6 @@ router = APIRouter()
 @router.post(
     "/",
     summary="Create upload URL",
-    dependencies=[ContentEditorPermission],
 )
 def create_upload_url(
     session: CurrentSession,
@@ -38,7 +37,6 @@ def create_upload_url(
 @router.post(
     "/config",
     summary="Create upload URL for a custom config",
-    dependencies=[ContentEditorPermission],
 )
 def create_upload_url_for_custom_config(
     session: CurrentSession,

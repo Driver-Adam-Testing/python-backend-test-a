@@ -12,7 +12,7 @@ from sqlmodel import select
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
-from app.authorization.fastapi import enforce_asset_action, enforce_org_action
+from app.authorization.fastapi import enforce_asset_action
 
 router = APIRouter()
 
@@ -31,8 +31,6 @@ async def create_streaming_post(
     user: UserToken,
     payload: ChatHttpRequest,
 ) -> StreamingResponse:
-    enforce_org_action(db=session, user=user, action_key="chat.create")
-
     query = (
         select(Node)
         .where(Node.id.in_(payload.source_node_ids))

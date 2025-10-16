@@ -26,7 +26,7 @@ from app.api.auth import (
     UserToken,
 )
 from app.api.session import CurrentSession
-from app.authorization.fastapi import enforce_asset_action, enforce_org_action
+from app.authorization.fastapi import enforce_asset_action
 from app.core.config import settings
 from app.services.onboarding_checklist_service import OnboardingChecklistService
 
@@ -96,8 +96,6 @@ def run_autodoc(
     session: CurrentSession,
     input: AutoDocRequest,
 ) -> AutoDocStatusHistory:
-    # TODO: compound authorization check
-    enforce_org_action(db=session, user=user, action_key="autodoc.generate")
     node = session.exec(
         select(Node)
         .join(Version)
@@ -225,7 +223,21 @@ def get_autodoc_current_status(
     session: CurrentSession,
     page_id: UUID,
 ) -> AutoDocStatusHistory:
-    enforce_org_action(db=session, user=user, action_key="autodoc.view_status")
+    # TODO: enforce authorization check against the list of source assets
+    # node = session.exec(
+    #     select(Node)
+    #     .join(Version)
+    #     .join(PrimaryAsset)
+    #     .where(PrimaryAsset.organization_id == user.organization_id)
+    #     .where(Node.id == page_id)
+    #     .options(selectinload(Node.version))
+    # ).one()
+    # enforce_asset_action(
+    #     db=session,
+    #     user=user,
+    #     asset_id=node.version.primary_asset_id,
+    #     action_key="autodocs.manage"
+    # )
     autodoc_status = session.exec(
         select(AutoDocStatusHistory)
         .where(AutoDocStatusHistory.page_node_id == page_id)
@@ -248,7 +260,6 @@ def cancel(
     session: CurrentSession,
     input: AutoDocCancelRequest,
 ) -> AutoDocCancelResponse:
-    enforce_org_action(db=session, user=user, action_key="autodoc.cancel")
     node = session.exec(
         select(Node)
         .join(Version)
@@ -257,6 +268,13 @@ def cancel(
         .where(Node.id == input.page_id)
         .options(selectinload(Node.version))
     ).one()
+    # TODO: enforce authorization check against the list of source assets
+    # enforce_asset_action(
+    #     db=session,
+    #     user=user,
+    #     asset_id=node.version.primary_asset_id,
+    #     action_key="autodocs.manage"
+    # )
     if node.version.status != VersionStatus.GENERATING:
         raise HTTPException(
             status_code=400,

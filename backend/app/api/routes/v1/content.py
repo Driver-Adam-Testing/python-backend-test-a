@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
-from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
 from app.schemas.content_schema import (
@@ -21,7 +21,6 @@ router = APIRouter()
 @router.get(
     "/{node_id}/download",
     summary="Get download URL from S3 by ID",
-    dependencies=[ContentReadonlyPermission],
 )
 def get_download_content_by_id(
     session: CurrentSession,
@@ -52,7 +51,6 @@ def get_download_content_by_id(
 @router.post(
     "/export-rst",
     summary="Export Markdown content to RST and return the file",
-    dependencies=[ContentEditorPermission],
 )
 def export_markdown_content_to_rst(
     session: CurrentSession,

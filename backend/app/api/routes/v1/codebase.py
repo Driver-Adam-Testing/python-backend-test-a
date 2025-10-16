@@ -17,7 +17,7 @@ from shared.usage.utils import bytes_to_sloc
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
-from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
 from app.core.config import settings
@@ -45,7 +45,6 @@ class CodebaseVersionsResponse(BaseModel):
 @router.get(
     "/{codebase_id}/versions",
     summary="Get available codebase versions",
-    dependencies=[ContentReadonlyPermission],
 )
 def get_codebase_versions(
     session: CurrentSession,
@@ -106,7 +105,6 @@ def get_codebase_versions(
 @router.post(
     "/generate",
     summary="Execute codebase generation",
-    dependencies=[ContentEditorPermission],
 )
 def exec_codebase_generation(
     session: CurrentSession,

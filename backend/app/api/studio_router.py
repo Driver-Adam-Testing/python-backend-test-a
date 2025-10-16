@@ -18,13 +18,22 @@ from app.api.routes.v2 import (
     autodocs,
     chat,
     codebase_card,
+    contents,
+    convenience_endpoints,
+    document_sources,
     onboarding_checklist,
+    primary_asset_tags,
+    primary_assets,
+    versions,
 )
 from app.api.routes.v2 import (
     api_key as v2_api_key,
 )
 from app.api.routes.v2 import (
     router as v2_router,
+)
+from app.api.routes.v2 import (
+    tags as v2_tags,
 )
 from app.core.config import settings
 

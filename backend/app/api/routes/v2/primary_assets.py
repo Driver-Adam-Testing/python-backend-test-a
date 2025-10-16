@@ -6,6 +6,7 @@ import boto3
 from botocore.exceptions import ClientError
 from database.models import (
     DerivedContent,
+    DocumentSource,
     InspectorRun,
     Node,
     PrimaryAsset,
@@ -50,8 +51,9 @@ def list_primary_assets(
     user: UserToken,
     pagination: Pagination,
     tag_ids: str | None = None,
+    document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
-    return _list_primary_assets(request, session, user, pagination, tag_ids)
+    return _list_primary_assets(request, session, user, pagination, tag_ids, document_source_ids)
 
 
 def _list_primary_assets(
@@ -60,6 +62,7 @@ def _list_primary_assets(
     user: User,
     pagination: Pagination,
     tag_ids: str | None = None,
+    document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
     query = (
         select(PrimaryAsset)
@@ -100,6 +103,20 @@ def _list_primary_assets(
             select(PrimaryAssetTag)
             .where(PrimaryAssetTag.primary_asset_id == PrimaryAsset.id)
             .where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
+            .exists()
+        )
+
+    if document_source_ids:
+        # Find primary assets that have DocumentSources where the source_node
+        # belongs to a version of any of the provided primary_asset.ids
+        provided_primary_asset_ids = document_source_ids.split(",")
+        query = query.where(
+            select(DocumentSource)
+            .join(DocumentSource.source_node)
+            .join(Node.version)
+            .join(Version.primary_asset)
+            .where(Version.primary_asset_id == PrimaryAsset.id)
+            .where(Version.primary_asset_id.in_(provided_primary_asset_ids))
             .exists()
         )
 

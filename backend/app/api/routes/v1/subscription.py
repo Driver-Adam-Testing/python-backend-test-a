@@ -7,11 +7,11 @@ from shared.interfaces.billing.subscription_schema import (
 
 from app.api.auth import (
     M2MToken,
-    OrgManagerPermission,
     SubscriptionManagerPermission,
     UserToken,
 )
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_action
 
 router = APIRouter()
 
@@ -19,11 +19,12 @@ router = APIRouter()
 @router.get(
     "",
     summary="Get orgs active subscription details",
-    dependencies=[OrgManagerPermission],
 )
 def get_active_subscription(
-    session: CurrentSession, user: UserToken
+    session: CurrentSession,
+    user: UserToken,
 ) -> SubscriptionRecord:
+    enforce_org_action(session, user, "subscription.read")
     subscription = BillingService(session).get_active_subscription_by_org(
         user.organization_id
     )

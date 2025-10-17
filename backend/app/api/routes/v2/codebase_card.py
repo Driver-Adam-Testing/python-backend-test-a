@@ -32,6 +32,7 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.schemas import ListWithCount, TagRead
 from app.api.session import CurrentSession  # noqa: TCH001
+from app.authorization.query_filters import primary_asset_grant_filter
 
 
 class CommitAuthor(BaseModel):
@@ -176,6 +177,14 @@ def codebase_card(
 
     Identical output to the original implementation, but with **far fewer
     database round-trips** thanks to batched loading of `DerivedContent`.
+
+    This endpoint filters assets based on the user's grants to the PrimaryAsset.
+    Users will only see assets they have access to via:
+    - Super admin role (see all assets in org)
+    - Direct user grants
+    - Team membership grants
+    - Organization-wide grants
+    - Public grants
     """
 
     pa = aliased(PrimaryAsset)
@@ -195,6 +204,7 @@ def codebase_card(
     base_subq = (
         select(pa.id)
         .where(pa.organization_id == user.organization_id)
+        .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
         .outerjoin(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
     )
 

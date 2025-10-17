@@ -79,7 +79,7 @@ def sync_auth0(dry_run: bool = False, verbose: bool = False) -> dict:
     return stats
 
 
-@app.function(**function_config)
+@app.function(min_containers=1, **function_config)
 def process_auth0_events(event: dict) -> dict:
     import logging
 
@@ -98,7 +98,7 @@ def main(dry_run: bool = False, verbose: bool = False) -> None:
     """CLI entrypoint for manual Auth0 sync.
 
     Usage:
-        modal run src/auth0_sync_modal.py --dry-run --verbose
+        modal run src/modal_main.py --dry-run --verbose
     """
     result = sync_auth0.remote(dry_run=dry_run, verbose=verbose)
     print(f"\nSync completed. Stats: {result}")

@@ -34,6 +34,7 @@ class Auth0Sync:
         self.dry_run = dry_run
         self.verbose = verbose
         self.auth0_service = Auth0Service(
+            # TODO could use settings module as in other modal func in the app
             os.environ["AUTH0_MGMT_API_DOMAIN"],
             os.environ["AUTH0_MGMT_API_CLIENT_ID"],
             os.environ["AUTH0_MGMT_API_CLIENT_SECRET"],

@@ -20,8 +20,6 @@ packages = [
 ]
 package-mode = false
 
-[tool.pytest.ini_options]
-pythonpath = ["src"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

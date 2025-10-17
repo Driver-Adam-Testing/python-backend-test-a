@@ -128,8 +128,7 @@ def normalize_auth0_user_id(user_id: str | None) -> str | None:
 def process_auth0_event(event_dict: dict[str, Any]) -> Auth0EventProcessingResult:
     """Process a single Auth0 event. Events are signals - always fetch fresh data from Auth0.
 
-    Raises:
-        Any exception will bubble to Lambda runtime, causing retry or DLQ.
+    Exceptions intenionally raised for observation of failure. Reconciliation job required to fix failures.
     """
     event = Auth0EventBridgeEvent.model_validate(event_dict)
     log_id = extract_log_id(event)

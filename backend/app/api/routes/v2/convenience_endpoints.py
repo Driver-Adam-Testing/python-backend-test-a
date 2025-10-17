@@ -3,14 +3,14 @@ from uuid import UUID
 from database.models import (
     DerivedContent,
     Node,
-    NodeKind,
     PrimaryAsset,
-    PrimaryAssetKind,
     UserCache,
     Version,
     VersionCreator,
 )
 from database.models_enums import (
+    NodeKind,
+    PrimaryAssetKind,
     PrimaryAssetProvider,
     VersionStatus,
 )

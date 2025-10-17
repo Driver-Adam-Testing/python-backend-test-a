@@ -6,6 +6,7 @@ import boto3
 from botocore.exceptions import ClientError
 from database.models import (
     DerivedContent,
+    DocumentSource,
     InspectorRun,
     Node,
     PrimaryAsset,
@@ -14,10 +15,6 @@ from database.models import (
 )
 from database.models_enums import (
     ContentKind,
-    PrimaryAssetKind,
-    PrimaryAssetProvider,
-    VcsAutoUpdatePolicy,
-    VersionStatus,
 )
 from fastapi import Body, HTTPException, Path, Request
 from sqlalchemy.orm import selectinload, with_loader_criteria
@@ -32,7 +29,6 @@ from app.api.routes.v2.query_utils import (
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
     ListWithCount,
-    PrimaryAssetCreate,
     PrimaryAssetDetailRead,
     PrimaryAssetUpdate,
 )
@@ -50,8 +46,11 @@ def list_primary_assets(
     user: UserToken,
     pagination: Pagination,
     tag_ids: str | None = None,
+    document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
-    return _list_primary_assets(request, session, user, pagination, tag_ids)
+    return _list_primary_assets(
+        request, session, user, pagination, tag_ids, document_source_ids
+    )
 
 
 def _list_primary_assets(
@@ -60,6 +59,7 @@ def _list_primary_assets(
     user: User,
     pagination: Pagination,
     tag_ids: str | None = None,
+    document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
     query = (
         select(PrimaryAsset)
@@ -103,6 +103,37 @@ def _list_primary_assets(
             .exists()
         )
 
+    if document_source_ids:
+        """
+        TODO: Complex logic with inline comments should be extracted to well-named functions
+        """
+        source_primary_asset_ids = document_source_ids.split(",")
+
+        # Need to use aliases to join through both page_node and source_node
+        from sqlalchemy import alias
+
+        SourceNode = alias(Node, name="source_node")
+        SourceVersion = alias(Version, name="source_version")
+
+        query = query.where(
+            select(DocumentSource)
+            .join(DocumentSource.page_node)  # Join to the page's node
+            .join(Node.version)  # Join to the page's version
+            .where(
+                Version.primary_asset_id == PrimaryAsset.id
+            )  # Link to outer query PrimaryAsset (the page)
+            .join(
+                SourceNode, DocumentSource.source_node_id == SourceNode.c.id
+            )  # Join to source node
+            .join(
+                SourceVersion, SourceNode.c.version_id == SourceVersion.c.id
+            )  # Join to source version
+            .where(
+                SourceVersion.c.primary_asset_id.in_(source_primary_asset_ids)
+            )  # Filter by source codebases
+            .exists()
+        )
+
     count_query = select(func.count()).select_from(query.subquery())
     total_count = session.exec(count_query).one()
     # TODO: This is a hack to sort by total_files. We should use the query utils instead, but It's very problematic.
@@ -126,27 +157,6 @@ def _list_primary_assets(
         primary_assets = result.all()
 
     return ListWithCount(results=primary_assets, total_count=total_count)
-
-
-@router.post("/primary_assets", response_model=PrimaryAsset)
-def create_primary_asset(
-    session: CurrentSession,
-    user: UserToken,
-    payload: PrimaryAssetCreate = Body(...),
-) -> PrimaryAsset:
-    new_asset = PrimaryAsset(
-        display_name=payload.display_name,
-        organization_id=user.organization_id,
-        kind=payload.kind,
-        provider=PrimaryAssetProvider.USER,
-        vcs_auto_update_policy=VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT
-        if payload.kind == PrimaryAssetKind.CODEBASE
-        else None,
-    )
-    session.add(new_asset)
-    session.commit()
-    session.refresh(new_asset)
-    return new_asset
 
 
 @router.put("/primary_assets/{primary_asset_id}", response_model=PrimaryAsset)

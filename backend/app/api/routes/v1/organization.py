@@ -3,8 +3,9 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Header, HTTPException
 
-from app.api.auth import OrgManagerPermission, UserToken
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_action
 from app.schemas.auth0_schema import (
     CreateInvitationInput,
     ModifyUserRolesInput,
@@ -18,12 +19,14 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/roles", status_code=200, dependencies=[OrgManagerPermission])
+@router.get("/roles", status_code=200)
 def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
+    session: CurrentSession,
     user: UserToken,
     page: int = 0,
     per_page: int = 100,
 ):
+    enforce_org_action(session, user, "users.manage")
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
         auth0_service = create_auth0_service()
@@ -33,12 +36,14 @@ def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
         raise HTTPException(500, "Unable to list roles.")
 
 
-@router.get("/users", status_code=200, dependencies=[OrgManagerPermission])
+@router.get("/users", status_code=200)
 def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
+    session: CurrentSession,
     user: UserToken,
     page: int = 0,
     per_page: int = 100,
 ):
+    enforce_org_action(session, user, "users.manage")
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
         auth0_service = create_auth0_service()
@@ -50,8 +55,13 @@ def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
         raise HTTPException(500, "Unable to list organization members.")
 
 
-@router.delete("/users/{user_id}", status_code=204, dependencies=[OrgManagerPermission])
-def delete_member(user: UserToken, user_id: str):  # noqa: ANN201 disable to proxy Auth0 any typed responses
+@router.delete("/users/{user_id}", status_code=204)
+def delete_member(
+    session: CurrentSession,
+    user: UserToken,
+    user_id: str,
+) -> None:
+    enforce_org_action(session, user, "users.manage")
     logging.info(f"DELETING {user_id} from {user.organization_id}")
     try:
         auth0_service = create_auth0_service()
@@ -66,11 +76,14 @@ def delete_member(user: UserToken, user_id: str):  # noqa: ANN201 disable to pro
 @router.put(
     "/users/{modified_user_id}/roles",
     status_code=200,
-    dependencies=[OrgManagerPermission],
 )
 def change_user_roles(
-    user: UserToken, modified_user_id: str, new_roles: ModifyUserRolesInput
+    session: CurrentSession,
+    user: UserToken,
+    modified_user_id: str,
+    new_roles: ModifyUserRolesInput,
 ) -> ModifyUserRolesResponse:
+    enforce_org_action(session, user, "users.manage")
     logging.info(f"Modifying roles for {modified_user_id} in {user.organization_id}")
     try:
         auth0_service = create_auth0_service()
@@ -84,12 +97,14 @@ def change_user_roles(
         raise HTTPException(500, "Unable to modify member roles.")
 
 
-@router.get("/invitations", status_code=200, dependencies=[OrgManagerPermission])
+@router.get("/invitations", status_code=200)
 def list_invitations(  # noqa: ANN201 disable to proxy Auth0 any typed responses
+    session: CurrentSession,
     user: UserToken,
     page: int = 0,
     per_page: int = 100,
 ):
+    enforce_org_action(session, user, "invitations.manage")
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
         auth0_service = create_auth0_service()
@@ -104,13 +119,14 @@ def list_invitations(  # noqa: ANN201 disable to proxy Auth0 any typed responses
         raise HTTPException(500, "Unable to list organization invitations.")
 
 
-@router.post("/invitations", status_code=201, dependencies=[OrgManagerPermission])
+@router.post("/invitations", status_code=201)
 def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed responses
+    session: CurrentSession,
     user: UserToken,
     invitations: CreateInvitationInput,
-    session: CurrentSession,
     authorization: str | None = Header(None),
 ):
+    enforce_org_action(session, user, "invitations.manage")
     logging.info(f"Listing members of organization = {user.organization_id}")
     access_token = authorization.replace("Bearer ", "")
     try:
@@ -134,12 +150,13 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
         raise HTTPException(500, "Unable to create org invitation(s).")
 
 
-@router.delete(
-    "/invitations/{invitation_id}", status_code=204, dependencies=[OrgManagerPermission]
-)
+@router.delete("/invitations/{invitation_id}", status_code=204)
 def revoke_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed responses
-    user: UserToken, invitation_id: str
+    session: CurrentSession,
+    user: UserToken,
+    invitation_id: str,
 ):
+    enforce_org_action(session, user, "invitations.manage")
     logging.info(f"REVOKING invitation {invitation_id} from {user.organization_id}")
     try:
         auth0_service = create_auth0_service()

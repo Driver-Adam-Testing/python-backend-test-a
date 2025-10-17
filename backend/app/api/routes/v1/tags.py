@@ -6,11 +6,7 @@ from database.models import Tag
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
-from app.api.auth import (
-    ContentEditorPermission,
-    ContentReadonlyPermission,
-    UserToken,
-)
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
 from app.schemas.content_schema import ListContentInput
 from app.schemas.tag_schema import (

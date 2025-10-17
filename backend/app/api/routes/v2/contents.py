@@ -1,7 +1,7 @@
 from typing import Any
 
 from database.models import DerivedContent, Node, PrimaryAsset, Version
-from fastapi import Body, HTTPException, Request
+from fastapi import Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
@@ -13,7 +13,6 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
-    ContentCreate,
     ContentDetailRead,
     ContentDetailReadSkinny,
     ListWithCount,
@@ -87,34 +86,3 @@ def _org_filter(organization_id: str) -> Any:
             Version.primary_asset.has(PrimaryAsset.organization_id == organization_id)
         )
     )
-
-
-@router.post("/contents", response_model=ContentDetailRead)
-def create_derived_content(
-    session: CurrentSession, user: UserToken, payload: ContentCreate = Body(...)
-) -> ContentDetailRead:
-    # Verify node belongs to user's organization
-    node = session.exec(
-        select(Node)
-        .join(Version)
-        .join(PrimaryAsset)
-        .where(Node.id == payload.node_id)
-        .where(PrimaryAsset.organization_id == user.organization_id)
-    ).one_or_none()
-
-    if not node:
-        raise HTTPException(status_code=404, detail="Node not found or not authorized")
-
-    new_content = DerivedContent(
-        node_id=payload.node_id,
-        relative_path=payload.relative_path,
-        content=payload.content,
-        content_name=payload.content_name,
-        misc_metadata=payload.misc_metadata,
-        order=payload.order,
-    )
-    session.add(new_content)
-    session.commit()
-    session.refresh(new_content)
-
-    return new_content

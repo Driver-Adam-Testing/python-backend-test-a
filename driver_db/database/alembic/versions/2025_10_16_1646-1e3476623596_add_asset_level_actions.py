@@ -42,7 +42,6 @@ def upgrade() -> None:
         ('87796dc4-0173-4202-9515-4be1627a0410', 'admin', 'codebase.view_versions'),
         ('f170386a-f4ee-4753-9efa-1da7aa831705', 'admin', 'codebase.generate_tech_docs'),
         ('2f9b6430-ec01-4614-8b42-42c23c659ead', 'admin', 'pdf.download'),
-        ('c03ed933-7406-4ab2-8e7e-97bb878c320d', 'admin', 'asset.upload'),
         ('e9895d52-f2cd-4b33-9da4-f14b7793b605', 'admin', 'autodoc.custom_config_upload'),
         ('cbbb0d4c-cdeb-45d5-9bb9-da8993ec354a', 'admin', 'asset.use_as_source'),
         ('46f1c5a0-38f5-4b34-abcf-c9d0c64cc609', 'admin', 'asset_tag.manage'),
@@ -50,9 +49,19 @@ def upgrade() -> None:
         ('c9121d7a-e008-486a-953a-12bf0e886bfb', 'admin', 'asset.delete')
     """)
 
+    # Grant asset.upload to member role (using static UUID)
+    op.execute("""
+        INSERT INTO role_action_allow_org (id, role, action_key) VALUES
+        ('44b685e5-c5d3-45ae-8c4c-538a6c08cd48', 'member', 'asset.upload')
+    """)
+
 
 def downgrade() -> None:
     # Remove role mappings
+    op.execute("""
+        DELETE FROM role_action_allow_org
+        WHERE action_key IN ('asset.upload')
+    """)
     op.execute("""
         DELETE FROM role_action_allow_asset
         WHERE action_key IN ('codebase.view_versions', 'codebase.generate_tech_docs', 'pdf.download',

@@ -53,6 +53,7 @@ def upgrade() -> None:
     op.execute("""
         INSERT INTO role_action_allow_org (id, role, action_key) VALUES
         ('44b685e5-c5d3-45ae-8c4c-538a6c08cd48', 'member', 'asset.upload')
+        ('9f4fd77f-a6b4-4657-9428-d7590b05e159', 'super_admin', 'asset.upload')
     """)
 
 

@@ -97,4 +97,4 @@ jobs:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
-        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/auth0_sync_modal.py
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/modal_main.py

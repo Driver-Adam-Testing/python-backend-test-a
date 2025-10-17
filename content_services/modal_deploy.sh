@@ -34,5 +34,5 @@ modal deploy --env=$environment src/main.py
 cd ..
 # Navigate to the auth0_sync directory
 cd auth0_sync
-# Perform modal deploy on src/auth0_sync_modal.py with the environment argument
-modal deploy --env=$environment src/auth0_sync_modal.py
+# Perform modal deploy on src/modal_main.py with the environment argument
+modal deploy --env=$environment src/modal_main.py

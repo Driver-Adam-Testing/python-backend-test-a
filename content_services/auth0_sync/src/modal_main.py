@@ -21,6 +21,14 @@ image = (
         "auth0_sync",
         copy=True,
     )
+    .add_local_python_source(
+        "event_processor",
+        copy=True,
+    )
+    .add_local_python_source(
+        "config",
+        copy=True,
+    )
 )
 
 app = modal.App("auth0_sync")
@@ -71,12 +79,26 @@ def sync_auth0(dry_run: bool = False, verbose: bool = False) -> dict:
     return stats
 
 
+@app.function(min_containers=1, **function_config)
+def process_auth0_events(event: dict) -> dict:
+    import logging
+
+    from event_processor.auth0_event_processor import process_auth0_event
+
+    logger = logging.getLogger(__name__)
+
+    logger.info(f"Processing Auth0 event: {event}")
+    result = process_auth0_event(event)
+    logger.info(f"Event processing result: {result}")
+    return result.model_dump()
+
+
 @app.local_entrypoint()
 def main(dry_run: bool = False, verbose: bool = False) -> None:
     """CLI entrypoint for manual Auth0 sync.
 
     Usage:
-        modal run src/auth0_sync_modal.py --dry-run --verbose
+        modal run src/modal_main.py --dry-run --verbose
     """
     result = sync_auth0.remote(dry_run=dry_run, verbose=verbose)
     print(f"\nSync completed. Stats: {result}")

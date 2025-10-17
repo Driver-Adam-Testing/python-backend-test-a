@@ -35,3 +35,9 @@ cd ../../
 cd ./content_services/autodocs
 poetry install --no-root
 poetry run modal deploy --env="$environment" src/main.py
+
+cd ../../
+
+cd ./content_services/auth0_sync
+poetry install --no-root
+poetry run modal deploy --env="$environment" src/modal_main.py

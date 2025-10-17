@@ -20,7 +20,7 @@ from typing import Any
 
 from auth0.management import Auth0
 from database.db import engine
-from database.models import Auth0SyncRun, Organization, OrgMembership, User
+from database.models import Auth0SyncRun, Organization, OrgMembership, OrgRole, User
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
 
@@ -34,6 +34,7 @@ class Auth0Sync:
         self.dry_run = dry_run
         self.verbose = verbose
         self.auth0_service = Auth0Service(
+            # TODO could use settings module as in other modal func in the app
             os.environ["AUTH0_MGMT_API_DOMAIN"],
             os.environ["AUTH0_MGMT_API_CLIENT_ID"],
             os.environ["AUTH0_MGMT_API_CLIENT_SECRET"],
@@ -287,7 +288,9 @@ class Auth0Sync:
                 self.stats["memberships_skipped"] += 1
             else:
                 # Create new membership
-                new_membership = OrgMembership(org_id=org_id, user_id=user_id)
+                new_membership = OrgMembership(
+                    org_id=org_id, user_id=user_id, role=OrgRole.member
+                )
                 session.add(new_membership)
 
                 if self.verbose:

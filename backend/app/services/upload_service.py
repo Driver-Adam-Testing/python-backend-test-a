@@ -4,10 +4,12 @@ import os
 import re
 from urllib.parse import unquote_plus
 
-from database.models import PrimaryAsset, Version
+from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Version
 from database.models_enums import (
     PrimaryAssetKind,
     PrimaryAssetProvider,
+    PrimaryAssetRole,
+    PrincipalKind,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
@@ -80,6 +82,17 @@ class UploadService:
                     vcs_metadata=None,
                 )
                 self.session.add(new_version)
+
+                # create admin grant for the user uploading the asset
+                user_grant = PrimaryAssetRoleGrant(
+                    primary_asset_id=new_asset.id,
+                    organization_id=org_id,
+                    principal_kind=PrincipalKind.user,
+                    user_id=user.user_id,
+                    role=PrimaryAssetRole.admin,
+                )
+                self.session.add(user_grant)
+
                 version_id = new_version.id
                 # TODO: add the creator and VersionCreator here
                 relative_path = f"{new_asset.id}/{new_version.id}/{unquote_plus(file_name)}"  # TODO: don't understand what unquote_plus does here, no spaces left in filename

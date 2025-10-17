@@ -91,6 +91,7 @@ class UploadService:
                 role=PrimaryAssetRole.admin,
             )
             self.session.add(user_grant)
+            self.session.commit()
 
             version_id = new_version.id
             # TODO: add the creator and VersionCreator here

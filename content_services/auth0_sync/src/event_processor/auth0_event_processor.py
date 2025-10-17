@@ -90,7 +90,6 @@ from .auth0_event_schema import (
 
 logger = logging.getLogger(__name__)
 
-# Module-level Auth0Service instance (created once on import)
 auth0_service = Auth0Service(
     auth0_mgmt_domain=settings.AUTH0_MGMT_API_DOMAIN,
     auth0_mgmt_client_id=settings.AUTH0_MGMT_API_CLIENT_ID,
@@ -170,10 +169,9 @@ def _handle_user_event(event: Auth0EventBridgeEvent) -> list[str]:
 
 
 def _process_user_update(user_id: str) -> list[str]:
-    print(f"Processing user update: {user_id}")
     """Process a user update by fetching fresh data from Auth0."""
+    print(f"Processing user update: {user_id}")
     try:
-        # user_data = retry_auth0_call(lambda: auth0_service.get_user_profile(user_id))
         user_data = auth0_service.get_user_profile(user_id)
     except requests.exceptions.HTTPError as e:
         if e.response is not None and e.response.status_code == 404:
@@ -258,9 +256,6 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
     - Brief inconsistency is acceptable in eventual consistency model
     """
     try:
-        # user_orgs = retry_auth0_call(
-        #     lambda: auth0_service.get_user_organizations(user_id)
-        # )
         user_orgs = auth0_service.get_user_organizations(user_id)
     except requests.exceptions.HTTPError as e:
         if e.response is not None and e.response.status_code == 404:
@@ -284,11 +279,7 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
         # Ensure user exists first (events can come out of order)
         existing_user = session.get(User, user_id)
         if not existing_user and is_member:
-            # User doesn't exist but should be a member - fetch and create them
             try:
-                # user_data = retry_auth0_call(
-                #     lambda: auth0_service.get_user_profile(user_id)
-                # )
                 user_data = auth0_service.get_user_profile(user_id)
             except requests.exceptions.HTTPError as e:
                 if e.response is not None and e.response.status_code == 404:
@@ -312,9 +303,6 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
         if not existing_org and is_member:
             # Organization doesn't exist but user should be a member - fetch and create it
             try:
-                # org_data = retry_auth0_call(
-                #     lambda: auth0_service.get_organization(org_id)
-                # )
                 org_data = auth0_service.get_organization(org_id)
             except requests.exceptions.HTTPError as e:
                 if e.response is not None and e.response.status_code == 404:

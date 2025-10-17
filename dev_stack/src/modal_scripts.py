@@ -46,7 +46,7 @@ cd ../../
 
 cd ./content_services/auth0_sync
 poetry install --no-root
-poetry run modal deploy --env="$environment" src/auth0_sync_modal.py
+poetry run modal deploy --env="$environment" src/modal_main.py
 
 """
 

@@ -1,0 +1,175 @@
+"""API routes for Team management."""
+
+import logging
+from uuid import UUID
+
+from fastapi import APIRouter, Query, status
+
+from app.api.auth import UserToken
+from app.api.session import CurrentSession
+from app.schemas.team_schema import (
+    CreateTeamRequest,
+    TeamResponse,
+    TeamsListResponse,
+    UpdateTeamRequest,
+)
+from app.services.team_service import TeamService
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=TeamResponse,
+    summary="Create a new team",
+    description="Create a new team with optional initial members",
+)
+def create_team(
+    session: CurrentSession,
+    user: UserToken,
+    request: CreateTeamRequest,
+) -> TeamResponse:
+    """
+    Create a new team.
+
+    - **name**: Team name (required, must be unique within organization)
+    - **members**: Optional list of initial team members with roles
+    """
+    logger.info(f"User {user.user_id} creating team '{request.name}'")
+    team_service = TeamService(session)
+    return team_service.create_team(
+        organization_id=user.organization_id,
+        request=request,
+    )
+
+
+@router.get(
+    "/",
+    response_model=TeamsListResponse,
+    summary="List teams",
+    description="Get a paginated list of teams for the organization",
+)
+def list_teams(
+    session: CurrentSession,
+    user: UserToken,
+    limit: int = Query(default=30, ge=1, le=100, description="Maximum number of results"),
+    offset: int = Query(default=0, ge=0, description="Number of results to skip"),
+) -> TeamsListResponse:
+    """
+    Get paginated list of teams.
+
+    Returns teams with aggregated counts of admins, members, and sources.
+    """
+    logger.info(f"User {user.user_id} listing teams (limit={limit}, offset={offset})")
+    team_service = TeamService(session)
+    return team_service.get_teams(
+        organization_id=user.organization_id,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/search",
+    response_model=TeamsListResponse,
+    summary="Search teams",
+    description="Search for teams by name",
+)
+def search_teams(
+    session: CurrentSession,
+    user: UserToken,
+    query: str = Query(..., min_length=1, description="Search query"),
+    limit: int = Query(default=30, ge=1, le=100, description="Maximum number of results"),
+    offset: int = Query(default=0, ge=0, description="Number of results to skip"),
+) -> TeamsListResponse:
+    """
+    Search teams by name (case-insensitive).
+
+    Returns teams matching the query with aggregated counts.
+    """
+    logger.info(f"User {user.user_id} searching teams with query '{query}'")
+    team_service = TeamService(session)
+    return team_service.search_teams(
+        organization_id=user.organization_id,
+        query=query,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/{team_id}",
+    response_model=TeamResponse,
+    summary="Get team by ID",
+    description="Get details for a single team",
+)
+def get_team(
+    session: CurrentSession,
+    user: UserToken,
+    team_id: UUID,
+) -> TeamResponse:
+    """
+    Get a single team by ID.
+
+    Returns team with aggregated counts of admins, members, and sources.
+    """
+    logger.info(f"User {user.user_id} getting team {team_id}")
+    team_service = TeamService(session)
+    return team_service.get_team(
+        team_id=team_id,
+        organization_id=user.organization_id,
+    )
+
+
+@router.put(
+    "/{team_id}",
+    response_model=TeamResponse,
+    summary="Update team",
+    description="Update a team's name",
+)
+def update_team(
+    session: CurrentSession,
+    user: UserToken,
+    team_id: UUID,
+    request: UpdateTeamRequest,
+) -> TeamResponse:
+    """
+    Update a team's name.
+
+    - **name**: New team name (required, must be unique within organization)
+    """
+    logger.info(f"User {user.user_id} updating team {team_id}")
+    team_service = TeamService(session)
+    return team_service.update_team(
+        team_id=team_id,
+        organization_id=user.organization_id,
+        request=request,
+    )
+
+
+@router.delete(
+    "/{team_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete team",
+    description="Delete a team and all its associations",
+)
+def delete_team(
+    session: CurrentSession,
+    user: UserToken,
+    team_id: UUID,
+) -> None:
+    """
+    Delete a team.
+
+    This will also remove:
+    - All team memberships
+    - All source access grants for this team
+    """
+    logger.info(f"User {user.user_id} deleting team {team_id}")
+    team_service = TeamService(session)
+    team_service.delete_team(
+        team_id=team_id,
+        organization_id=user.organization_id,
+    )

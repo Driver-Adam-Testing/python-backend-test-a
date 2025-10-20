@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
-from logging import getLogger
+from datetime import UTC, datetime
 from enum import StrEnum
+from logging import getLogger
 from uuid import UUID
 
 import modal
@@ -26,6 +26,7 @@ from app.api.auth import (
     UserToken,
 )
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action
 from app.core.config import settings
 from app.services.onboarding_checklist_service import OnboardingChecklistService
 
@@ -113,6 +114,15 @@ def run_autodoc(
             .selectinload(Version.primary_asset)
         )
     ).all()
+
+    for source in document_sources:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=source.source_node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
+
     if not document_sources:
         raise HTTPException(
             status_code=404,
@@ -202,7 +212,7 @@ def run_autodoc(
         session=session,
         organization_id=user.organization_id,
         user_id=user.user_id,
-    ).mark_generate_autodoc_completed(datetime.now(timezone.utc))
+    ).mark_generate_autodoc_completed(datetime.now(UTC))
 
     return autodoc_status
 
@@ -213,6 +223,21 @@ def get_autodoc_current_status(
     session: CurrentSession,
     page_id: UUID,
 ) -> AutoDocStatusHistory:
+    # TODO: enforce authorization check against the list of source assets
+    # node = session.exec(
+    #     select(Node)
+    #     .join(Version)
+    #     .join(PrimaryAsset)
+    #     .where(PrimaryAsset.organization_id == user.organization_id)
+    #     .where(Node.id == page_id)
+    #     .options(selectinload(Node.version))
+    # ).one()
+    # enforce_asset_action(
+    #     db=session,
+    #     user=user,
+    #     asset_id=node.version.primary_asset_id,
+    #     action_key="autodocs.manage"
+    # )
     autodoc_status = session.exec(
         select(AutoDocStatusHistory)
         .where(AutoDocStatusHistory.page_node_id == page_id)
@@ -243,6 +268,13 @@ def cancel(
         .where(Node.id == input.page_id)
         .options(selectinload(Node.version))
     ).one()
+    # TODO: enforce authorization check against the list of source assets
+    # enforce_asset_action(
+    #     db=session,
+    #     user=user,
+    #     asset_id=node.version.primary_asset_id,
+    #     action_key="autodocs.manage"
+    # )
     if node.version.status != VersionStatus.GENERATING:
         raise HTTPException(
             status_code=400,

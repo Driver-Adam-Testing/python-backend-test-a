@@ -4,7 +4,7 @@ import secrets
 import string
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
@@ -44,6 +44,9 @@ from ..models_enums import (
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
+
+if TYPE_CHECKING:
+    from .acl import PrimaryAssetRoleGrant
 
 
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
@@ -610,6 +613,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "primary_asset_tag"},
     )
+    grants: list["PrimaryAssetRoleGrant"] = Relationship(back_populates="primary_asset")
     vcs_auto_update_policy: VcsAutoUpdatePolicy | None = Field(
         sa_column=Column(String, nullable=True)
     )

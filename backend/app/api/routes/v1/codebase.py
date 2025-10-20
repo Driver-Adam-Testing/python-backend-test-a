@@ -17,8 +17,9 @@ from shared.usage.utils import bytes_to_sloc
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
-from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action
 from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseGenerationRequest,
@@ -44,7 +45,6 @@ class CodebaseVersionsResponse(BaseModel):
 @router.get(
     "/{codebase_id}/versions",
     summary="Get available codebase versions",
-    dependencies=[ContentReadonlyPermission],
 )
 def get_codebase_versions(
     session: CurrentSession,
@@ -53,6 +53,10 @@ def get_codebase_versions(
     limit: int = Query(default=10, gt=0),
     offset: int = Query(default=0, ge=0),
 ) -> CodebaseVersionsResponse:
+    enforce_asset_action(
+        db=session, user=user, asset_id=codebase_id, action_key="codebase.view_versions"
+    )
+
     # Find the primary asset that represents the codebase
     primary_asset_id = codebase_id  # URL MISNOMER
     primary_asset = session.exec(
@@ -65,8 +69,6 @@ def get_codebase_versions(
 
     if not primary_asset:
         # If not found, raise an error
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Codebase not found")
 
     # Query versions associated with this primary asset
@@ -103,7 +105,6 @@ def get_codebase_versions(
 @router.post(
     "/generate",
     summary="Execute codebase generation",
-    dependencies=[ContentEditorPermission],
 )
 def exec_codebase_generation(
     session: CurrentSession,
@@ -124,6 +125,16 @@ def exec_codebase_generation(
         )
     )
     result = session.exec(query).all()
+
+    primary_asset_ids = {v.primary_asset_id for v in result}
+    for primary_asset_id in primary_asset_ids:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=primary_asset_id,
+            action_key="codebase.generate_tech_docs",
+        )
+
     if len(result) != len(request.version_ids):
         # Only proceed if all versions are able to be processed
         raise HTTPException(

@@ -17,15 +17,17 @@ from app.api.routes.v2.schemas import (
     ListWithCount,
 )
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action
 
 
 @router.get("/document_sources", response_model=ListWithCount[DocumentSourceDetailRead])
-async def list_document_sources(
+def list_document_sources(
     request: Request,
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
 ) -> ListWithCount[DocumentSourceRead]:
+    # TODO: authorization with list endpoint!!
     if pagination.sort_by == "updated_at":
         pagination.sort_by = None
     query = (
@@ -57,11 +59,24 @@ async def list_document_sources(
 
 
 @router.post("/document_sources/batch", response_model=list[DocumentSourceDetailRead])
-async def batch_create_document_sources(
+def batch_create_document_sources(
     session: CurrentSession,
     user: UserToken,
     payload: list[DocumentSourceCreate],
 ) -> list[DocumentSourceDetailRead]:
+    node_ids = {data.source_node_id for data in payload}
+    query = (
+        select(Node).where(Node.id.in_(node_ids)).options(selectinload(Node.version))
+    )
+    nodes = session.exec(query).all()
+    for node in nodes:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
+
     created_document_sources = []
 
     for data in payload:
@@ -99,6 +114,8 @@ async def batch_delete_document_sources(
     user: UserToken,
     payload: list[DocumentSourceCreate],
 ) -> list[bool]:
+    # NOTE: depending on how we implement the sources/generate flow for autodocs, this may be unneeded.
+    # Because sources are supposed to be read-only once generation has commenced, it wouldn't be meaningful to delete sources.
     deletion_results = []
 
     for data in payload:

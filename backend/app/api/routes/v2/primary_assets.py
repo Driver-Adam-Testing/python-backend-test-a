@@ -34,6 +34,8 @@ from app.api.routes.v2.schemas import (
 )
 from app.api.session import CurrentSession
 from app.auth.models import User
+from app.authorization.fastapi import enforce_asset_action
+from app.authorization.query_filters import primary_asset_grant_filter
 from app.core.config import settings  # Assuming settings contains AWS credentials
 
 logger = getLogger(__name__)
@@ -90,6 +92,7 @@ def _list_primary_assets(
             ),
         )
         .where(PrimaryAsset.organization_id == user.organization_id)
+        .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
     )
 
     filters = dict(request.query_params)
@@ -166,6 +169,9 @@ def update_primary_asset(
     primary_asset_id: UUID = Path(...),
     payload: PrimaryAssetUpdate = Body(...),
 ) -> PrimaryAsset:
+    enforce_asset_action(
+        db=session, user=user, asset_id=primary_asset_id, action_key="asset.manage"
+    )
     asset = session.exec(
         select(PrimaryAsset)
         .where(PrimaryAsset.id == primary_asset_id)
@@ -196,6 +202,9 @@ def delete_primary_asset(
     user: UserToken,
     primary_asset_id: UUID = Path(...),
 ) -> PrimaryAsset:
+    enforce_asset_action(
+        db=session, user=user, asset_id=primary_asset_id, action_key="asset.delete"
+    )
     asset = session.exec(
         select(PrimaryAsset)
         .where(PrimaryAsset.id == primary_asset_id)

@@ -49,7 +49,7 @@ def enforce_org_action(db: Session, user: User, action_key: str) -> None:
         )
 
 
-def enforce_asset_action(
+def enforce_asset_action(  # TODO: should this take a list of asset ids?
     db: Session, user: User, asset_id: uuid.UUID, action_key: str
 ) -> None:
     """Check asset action and raise HTTPException(403) if denied.

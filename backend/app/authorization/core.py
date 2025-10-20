@@ -16,10 +16,16 @@ from database.models import (
 from database.models_enums import (
     OrgRole,
     PrimaryAssetRole,
-    PrincipalKind,
     TeamRole,
 )
 from sqlmodel import Session, select
+
+from .helpers import (
+    build_grant_condition,
+    get_user_team_ids,
+    is_org_member,
+    is_super_admin,
+)
 
 
 @dataclass
@@ -111,37 +117,6 @@ class AccessDecision:
 #     return (len(failures) == 0, failures)
 
 
-def _is_org_member(db: Session, user_id: uuid.UUID, organization_id: str) -> bool:
-    """Check if user is a member of the organization."""
-    query = select(OrgMembership).where(
-        OrgMembership.org_id == organization_id,
-        OrgMembership.user_id == user_id,
-    )
-    return db.exec(query).first() is not None
-
-
-def _is_super_admin(db: Session, user_id: uuid.UUID, organization_id: str) -> bool:
-    """Check if user is a super admin of the organization."""
-    query = select(OrgMembership).where(
-        OrgMembership.org_id == organization_id,
-        OrgMembership.user_id == user_id,
-        OrgMembership.role == OrgRole.super_admin,
-    )
-    return db.exec(query).first() is not None
-
-
-def _team_ids(db: Session, user_id: uuid.UUID, organization_id: str) -> list[uuid.UUID]:
-    """Get all team IDs for a user in an organization."""
-    query = (
-        select(TeamMembership.team_id)
-        .join(Team, Team.id == TeamMembership.team_id)
-        .where(
-            Team.organization_id == organization_id, TeamMembership.user_id == user_id
-        )
-    )
-    return list(db.exec(query).all())
-
-
 def _grant_rows(
     db: Session,
     organization_id: str,
@@ -149,37 +124,16 @@ def _grant_rows(
     user_id: uuid.UUID,
 ) -> list[PrimaryAssetRoleGrant]:
     """Get all applicable grant rows for a user on an asset."""
-    team_ids = _team_ids(db, user_id, organization_id)
-    is_member = _is_org_member(db, user_id, organization_id)
+    team_ids = get_user_team_ids(db, user_id, organization_id)
+    is_member = is_org_member(db, user_id, organization_id)
 
-    # Always check public grants
-    conds = [PrimaryAssetRoleGrant.principal_kind == PrincipalKind.public]
-
-    # Add member-specific conditions
-    if is_member:
-        conds.extend(
-            [
-                (
-                    (PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user)
-                    & (PrimaryAssetRoleGrant.user_id == user_id)
-                ),
-                (
-                    (PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team)
-                    & (PrimaryAssetRoleGrant.team_id.in_(team_ids))
-                ),
-                (PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org),
-            ]
-        )
-
-    # Build the OR condition
-    or_condition = conds[0]
-    for cond in conds[1:]:
-        or_condition = or_condition | cond
+    # Build grant condition using shared helper
+    grant_condition = build_grant_condition(user_id, team_ids, is_member)
 
     query = select(PrimaryAssetRoleGrant).where(
         PrimaryAssetRoleGrant.organization_id == organization_id,
         PrimaryAssetRoleGrant.primary_asset_id == asset_id,
-        or_condition,
+        grant_condition,
     )
 
     return list(db.exec(query).all())
@@ -273,7 +227,7 @@ def authorize_asset_action(
         return AccessDecision(False, None, ["asset_not_found_or_wrong_org"], [])
 
     # Super admins bypass role checks
-    if _is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
+    if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
         return AccessDecision(
             True, PrimaryAssetRole.admin.value, ["org_super_admin"], []
         )

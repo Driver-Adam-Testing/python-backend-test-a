@@ -78,8 +78,6 @@ from config import settings
 from database.db import engine
 from database.models import Organization, OrgMembership, User
 from database.models_enums import OrgRole
-
-# from shared.auth0.auth0_retry import retry_auth0_call
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
 

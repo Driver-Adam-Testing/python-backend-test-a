@@ -63,7 +63,8 @@ class Auth0Service:
             rest_options=RestClientOptions(
                 telemetry=False,
                 timeout=self.timeout,
-        ))
+            ),
+        )
 
     def get_mgmt_api_token(self: "Auth0Service") -> str:
         get_token = GetToken(
@@ -276,7 +277,7 @@ class Auth0Service:
             for invitation in invitations.invitations:
                 payload = {
                     "inviter": {"name": userinfo.get("name")},
-                    "invitee": invitation.invitee,
+                    "invitee": invitation.invitee.model_dump(),
                     "roles": invitation.roles,
                     "client_id": self.auth0_client_id,
                 }

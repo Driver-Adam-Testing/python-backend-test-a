@@ -259,6 +259,7 @@ class ContentService:
                     ),
                     content_name=node.version.primary_asset.display_name,
                     status=node.version.status,
+                    primary_asset_id=node.version.primary_asset.id,
                 )
         except ClientError:
             logger.exception("Content not found or not downloadable")

@@ -15,6 +15,7 @@ from aws_cdk import (
     aws_s3,
     aws_secretsmanager,
     aws_ssm,
+    RemovalPolicy
 )
 from constructs import Construct
 from cdk.settings import settings
@@ -79,6 +80,8 @@ class Backend(Construct):
         self.dropzone_bucket = aws_s3.Bucket(
             self,
             "DropzoneBucket",
+            removal_policy=RemovalPolicy.DESTROY, 
+            auto_delete_objects=True,       
             bucket_name=f"{settings.DEPLOYMENT_ENVIRONMENT}-codebase-dropzone",
             cors=[
                 {

@@ -1,10 +1,14 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, func
-from sqlmodel import CheckConstraint, Column, Field, Index, SQLModel
+from sqlmodel import CheckConstraint, Column, Field, Index, Relationship, SQLModel
 
 from ..models_enums import PrimaryAssetRole, PrincipalKind
+
+if TYPE_CHECKING:
+    from .base import PrimaryAsset
 
 
 class PrimaryAssetRoleGrant(SQLModel, table=True):
@@ -71,3 +75,4 @@ class PrimaryAssetRoleGrant(SQLModel, table=True):
         ),
         default=None,
     )
+    primary_asset: "PrimaryAsset" = Relationship(back_populates="grants")

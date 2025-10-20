@@ -20,7 +20,8 @@ from typing import Any
 
 from auth0.management import Auth0
 from database.db import engine
-from database.models import Auth0SyncRun, Organization, OrgMembership, OrgRole, User
+from database.models import Auth0SyncRun, Organization, OrgMembership, User
+from database.models_enums import OrgRole
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
 

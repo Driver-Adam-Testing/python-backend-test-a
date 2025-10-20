@@ -35,6 +35,7 @@ from app.api.routes.v2.schemas import (
 from app.api.session import CurrentSession
 from app.auth.models import User
 from app.authorization.fastapi import enforce_asset_action
+from app.authorization.query_filters import primary_asset_grant_filter
 from app.core.config import settings  # Assuming settings contains AWS credentials
 
 logger = getLogger(__name__)
@@ -91,6 +92,7 @@ def _list_primary_assets(
             ),
         )
         .where(PrimaryAsset.organization_id == user.organization_id)
+        .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
     )
 
     filters = dict(request.query_params)

@@ -27,7 +27,7 @@ def list_document_sources(
     user: UserToken,
     pagination: Pagination,
 ) -> ListWithCount[DocumentSourceRead]:
-    # TODO: authorization with list endpoint
+    # TODO: authorization with list endpoint!!
     if pagination.sort_by == "updated_at":
         pagination.sort_by = None
     query = (

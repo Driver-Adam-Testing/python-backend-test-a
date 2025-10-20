@@ -187,13 +187,12 @@ def codebase_card(
     - Public grants
     """
 
-    pa = aliased(PrimaryAsset)
     root = aliased(Node)
 
     completed_ver_id_subq = (
         select(Version.id)
         .where(
-            Version.primary_asset_id == pa.id,
+            Version.primary_asset_id == PrimaryAsset.id,
             Version.status == VersionStatus.GENERATION_COMPLETE,
         )
         .order_by(Version.created_at.desc())
@@ -202,8 +201,8 @@ def codebase_card(
     )
 
     base_subq = (
-        select(pa.id)
-        .where(pa.organization_id == user.organization_id)
+        select(PrimaryAsset.id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
         .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
         .outerjoin(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
     )
@@ -212,10 +211,10 @@ def codebase_card(
         PrimaryAssetKind.CODEBASE,
         PrimaryAssetKind.FILE,
     ]
-    base_subq = base_subq.where(pa.kind.in_(kinds))
+    base_subq = base_subq.where(PrimaryAsset.kind.in_(kinds))
 
     if id:
-        base_subq = base_subq.where(pa.id.in_(id))
+        base_subq = base_subq.where(PrimaryAsset.id.in_(id))
 
     if top_language:
         tl = [t.lower() for t in top_language.split(",")]

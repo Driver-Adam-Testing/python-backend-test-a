@@ -32,8 +32,9 @@ class AssetOnboardingLambda(Construct):
     ) -> None:
         super().__init__(scope, id)
 
-        client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
-        client_secret_secret = aws_secretsmanager.Secret(scope, "ClientSecretSecret")
+        deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
+        )
 
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -44,8 +45,8 @@ class AssetOnboardingLambda(Construct):
             environment={
                 "ENVIRONMENT": params.environment,
                 "LOG_LEVEL": "INFO",
-                "CLIENT_ID_SECRET": client_id_secret.secret_name,
-                "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
+                "CLIENT_ID_SECRET": settings.ONBOARDING_LAMDBA_CLIENT_ID,
+                "CLIENT_SECRET_SECRET": deployment_secrets.secret_name,
                 "API_URL": params.api_url,
                 "AUTH0_AUDIENCE": params.auth0_audience,
                 "AUTH0_URL": params.auth0_url,
@@ -58,8 +59,8 @@ class AssetOnboardingLambda(Construct):
             ),
             timeout=Duration.seconds(15),
         )
-        client_secret_secret.grant_read(lambda_function)
-        client_id_secret.grant_read(lambda_function)
+        deployment_secrets.grant_read(lambda_function)
+       
         params.dropzone_bucket.grant_read(lambda_function)
 
         sns_topic = aws_sns.Topic(scope, "CodeOnboardingTopic")

@@ -115,7 +115,8 @@ class Backend(Construct):
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
-            "ECS_CONTAINER_STOP_TIMEOUT": "2s"
+            "ECS_CONTAINER_STOP_TIMEOUT": "2s",
+            "TEST": "TEST"
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }
 

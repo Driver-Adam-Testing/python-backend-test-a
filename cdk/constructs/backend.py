@@ -116,7 +116,6 @@ class Backend(Construct):
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "TEST": "TEST"
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }
 

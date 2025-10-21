@@ -61,7 +61,7 @@ class TeamMemberResponse(BaseModel):
         from_attributes = True
 
 
-class TeamMembersListResponse(BaseModel):
+class TeamMembersResponse(BaseModel):
     """Response for list of team members."""
 
     members: list[TeamMemberResponse] = Field(..., description="List of team members")

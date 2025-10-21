@@ -4,22 +4,28 @@ import logging
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
+from database.models import PrimaryAssetRoleGrant, Team, TeamMembership, User
 from database.models_enums import TeamRole
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session
+from sqlmodel import Session, select
 
-from app.repositories import team_repository
+from app.repositories import org_membership_repository, team_repository
 from app.schemas.team_schema import (
     CreateTeamRequest,
     TeamMemberInput,
     TeamResponse,
-    TeamsListResponse,
+    TeamsResponse,
     UpdateTeamRequest,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def get_user_by_id(session: Session, user_id: str) -> User | None:
+    """Get a user by ID."""
+    query = select(User).where(User.id == user_id)
+    return session.exec(query).first()
 
 
 def map_team_role_to_backend(role: str) -> TeamRole:
@@ -136,7 +142,17 @@ class TeamService:
         # Add members if provided
         if request.members:
             try:
-                self._add_team_members(created_team.id, request.members)
+                self._add_team_members(
+                    created_team.id, organization_id, request.members
+                )
+            except ValueError as e:
+                # Rollback team creation if member validation fails
+                self.session.rollback()
+                logger.error(f"Member validation failed: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e),
+                )
             except Exception as e:
                 # Rollback team creation if member addition fails
                 self.session.rollback()
@@ -169,7 +185,7 @@ class TeamService:
         organization_id: str,
         limit: int = 30,
         offset: int = 0,
-    ) -> TeamsListResponse:
+    ) -> TeamsResponse:
         """
         Get paginated list of teams.
 
@@ -201,7 +217,7 @@ class TeamService:
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 
         logger.info(f"Found {len(teams)} teams (total: {total})")
-        return TeamsListResponse(teams=teams, total=total)
+        return TeamsResponse(teams=teams, total=total)
 
     def get_team(
         self,
@@ -372,7 +388,7 @@ class TeamService:
         query: str,
         limit: int = 30,
         offset: int = 0,
-    ) -> TeamsListResponse:
+    ) -> TeamsResponse:
         """
         Search teams by name.
 
@@ -407,11 +423,12 @@ class TeamService:
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 
         logger.info(f"Found {len(teams)} teams matching query (total: {total})")
-        return TeamsListResponse(teams=teams, total=total)
+        return TeamsResponse(teams=teams, total=total)
 
     def _add_team_members(
         self,
         team_id: UUID,
+        organization_id: str,
         members: list[TeamMemberInput],
     ) -> None:
         """
@@ -419,9 +436,26 @@ class TeamService:
 
         Args:
             team_id: Team ID
+            organization_id: Organization ID
             members: List of members to add
+
+        Raises:
+            ValueError: If user not found or not in organization
         """
         for member in members:
+            # Validate user exists
+            user = get_user_by_id(self.session, member.userId)
+            if not user:
+                raise ValueError(f"User {member.userId} not found")
+
+            # Validate user belongs to organization
+            if not org_membership_repository.check_user_in_organization(
+                self.session, member.userId, organization_id
+            ):
+                raise ValueError(
+                    f"User {member.userId} is not a member of this organization"
+                )
+
             team_role = map_team_role_to_backend(member.role)
             membership = TeamMembership(
                 id=uuid4(),

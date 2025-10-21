@@ -1,7 +1,6 @@
 """Schemas for Team-related API requests and responses."""
 
 from typing import Literal
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -55,7 +54,7 @@ class TeamResponse(BaseModel):
         from_attributes = True
 
 
-class TeamsListResponse(BaseModel):
+class TeamsResponse(BaseModel):
     """Response for list of teams."""
 
     teams: list[TeamResponse] = Field(..., description="List of teams")

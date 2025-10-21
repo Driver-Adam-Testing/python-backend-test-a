@@ -362,6 +362,34 @@ class TestAddTeamMembers:
         assert exc_info.value.status_code == 400
         assert "already exist" in exc_info.value.detail.lower()
 
+    @patch("app.services.team_member_service.org_membership_repository")
+    @patch("app.services.team_member_service.team_repository")
+    @patch("app.services.team_member_service.get_user_by_id")
+    def test_raises_403_when_user_not_in_organization(
+        self,
+        mock_get_user: MagicMock,
+        mock_team_repo: MagicMock,
+        mock_org_membership_repo: MagicMock,
+        team_member_service: TeamMemberService,
+        team_id: UUID,
+        org_id: str,
+        sample_team: Team,
+        sample_user: User,
+    ) -> None:
+        """Should raise HTTPException 403 when user not in organization."""
+        members = [TeamMemberAddInput(userId="user-external", role="admin")]
+        request = AddTeamMembersRequest(members=members)
+        mock_team_repo.get_team_by_id.return_value = sample_team
+        mock_get_user.return_value = sample_user
+        # User exists but is not in organization
+        mock_org_membership_repo.check_user_in_organization.return_value = False
+
+        with pytest.raises(HTTPException) as exc_info:
+            team_member_service.add_team_members(team_id, org_id, request)
+
+        assert exc_info.value.status_code == 403
+        assert "not a member of this organization" in exc_info.value.detail
+
 
 class TestUpdateTeamMembers:
     """Tests for update_team_members method."""

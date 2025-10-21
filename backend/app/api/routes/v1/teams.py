@@ -11,7 +11,7 @@ from app.api.session import CurrentSession
 from app.schemas.team_schema import (
     CreateTeamRequest,
     TeamResponse,
-    TeamsListResponse,
+    TeamsResponse,
     UpdateTeamRequest,
 )
 from app.services.team_service import TeamService
@@ -51,7 +51,7 @@ def create_team(
 
 @router.get(
     "/",
-    response_model=TeamsListResponse,
+    response_model=TeamsResponse,
     summary="List teams",
     description="Get a paginated list of teams for the organization",
 )
@@ -62,7 +62,7 @@ def list_teams(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-) -> TeamsListResponse:
+) -> TeamsResponse:
     """
     Get paginated list of teams.
 
@@ -79,7 +79,7 @@ def list_teams(
 
 @router.get(
     "/search",
-    response_model=TeamsListResponse,
+    response_model=TeamsResponse,
     summary="Search teams",
     description="Search for teams by name",
 )
@@ -91,7 +91,7 @@ def search_teams(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-) -> TeamsListResponse:
+) -> TeamsResponse:
     """
     Search teams by name (case-insensitive).
 

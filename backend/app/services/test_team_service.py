@@ -213,6 +213,42 @@ class TestCreateTeam:
         created_team = call_args[0][1]  # Second positional arg (team)
         assert created_team.name == "Engineering"
 
+    @patch("app.services.team_service.org_membership_repository")
+    @patch("app.services.team_service.get_user_by_id")
+    @patch("app.services.team_service.team_repository")
+    def test_raises_400_when_member_not_in_organization(
+        self,
+        mock_repo: MagicMock,
+        mock_get_user: MagicMock,
+        mock_org_membership_repo: MagicMock,
+        team_service: TeamService,
+        org_id: str,
+        sample_team: Team,
+    ) -> None:
+        """Should raise HTTPException 400 when member not in organization."""
+        from database.models import User
+
+        members = [TeamMemberInput(userId="user-external", role="admin")]
+        request = CreateTeamRequest(name="Engineering", members=members)
+        mock_repo.create_team.return_value = sample_team
+        # User exists
+        external_user = User(
+            id="user-external",
+            name="External User",
+            email="external@other.com",
+        )
+        mock_get_user.return_value = external_user
+        # But user is not in organization
+        mock_org_membership_repo.check_user_in_organization.return_value = False
+
+        with pytest.raises(HTTPException) as exc_info:
+            team_service.create_team(org_id, request)
+
+        assert exc_info.value.status_code == 400
+        assert "not a member of this organization" in exc_info.value.detail
+        # Verify rollback was called
+        team_service.session.rollback.assert_called()
+
 
 class TestGetTeams:
     """Tests for get_teams method."""

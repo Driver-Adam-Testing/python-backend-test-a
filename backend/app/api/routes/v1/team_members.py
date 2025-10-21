@@ -10,7 +10,7 @@ from app.api.session import CurrentSession
 from app.schemas.team_member_schema import (
     AddTeamMembersRequest,
     RemoveTeamMembersRequest,
-    TeamMembersListResponse,
+    TeamMembersResponse,
     UpdateTeamMembersRequest,
 )
 from app.services.team_member_service import TeamMemberService
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 @router.get(
     "/{team_id}/members",
-    response_model=TeamMembersListResponse,
+    response_model=TeamMembersResponse,
     summary="List team members",
     description=(
         "Get a paginated list of members for a specific team " "with optional filtering"
@@ -44,7 +44,7 @@ def list_team_members(
         min_length=1,
         description="Search by name or email",
     ),
-) -> TeamMembersListResponse:
+) -> TeamMembersResponse:
     """
     Get paginated list of team members.
 

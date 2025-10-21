@@ -9,13 +9,17 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.repositories import team_member_repository, team_repository
+from app.repositories import (
+    org_membership_repository,
+    team_member_repository,
+    team_repository,
+)
 from app.schemas.team_member_schema import (
     AddTeamMembersRequest,
     RemoveTeamMembersRequest,
     TeamMemberAddInput,
     TeamMemberResponse,
-    TeamMembersListResponse,
+    TeamMembersResponse,
     UpdateTeamMembersRequest,
 )
 
@@ -97,7 +101,7 @@ class TeamMemberService:
         search: str | None = None,
         limit: int = 30,
         offset: int = 0,
-    ) -> TeamMembersListResponse:
+    ) -> TeamMembersResponse:
         """
         Get paginated list of team members with optional filtering.
 
@@ -157,7 +161,7 @@ class TeamMemberService:
         ]
 
         logger.info(f"Found {len(members)} members (total: {total})")
-        return TeamMembersListResponse(members=members, total=total)
+        return TeamMembersResponse(members=members, total=total)
 
     def add_team_members(
         self,
@@ -192,7 +196,7 @@ class TeamMemberService:
                 detail="Team not found",
             )
 
-        # Verify all users exist
+        # Verify all users exist and belong to organization
         for member in request.members:
             user = get_user_by_id(self.session, member.userId)
             if not user:
@@ -200,6 +204,18 @@ class TeamMemberService:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"User {member.userId} not found",
+                )
+
+            # Validate user belongs to organization
+            if not org_membership_repository.check_user_in_organization(
+                self.session, member.userId, organization_id
+            ):
+                logger.error(
+                    f"User {member.userId} is not a member of organization {organization_id}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"User {member.userId} is not a member of this organization",
                 )
 
         # Add members

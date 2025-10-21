@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
+from app.api.routes.v1 import team_members
 from app.api.session import CurrentSession
 from app.schemas.team_schema import (
     CreateTeamRequest,
@@ -17,6 +18,9 @@ from app.services.team_service import TeamService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Include team members routes
+router.include_router(team_members.router, tags=["team-members"])
 
 
 @router.post(
@@ -54,7 +58,9 @@ def create_team(
 def list_teams(
     session: CurrentSession,
     user: UserToken,
-    limit: int = Query(default=30, ge=1, le=100, description="Maximum number of results"),
+    limit: int = Query(
+        default=30, ge=1, le=100, description="Maximum number of results"
+    ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
 ) -> TeamsListResponse:
     """
@@ -81,7 +87,9 @@ def search_teams(
     session: CurrentSession,
     user: UserToken,
     query: str = Query(..., min_length=1, description="Search query"),
-    limit: int = Query(default=30, ge=1, le=100, description="Maximum number of results"),
+    limit: int = Query(
+        default=30, ge=1, le=100, description="Maximum number of results"
+    ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
 ) -> TeamsListResponse:
     """

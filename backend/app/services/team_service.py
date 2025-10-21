@@ -10,8 +10,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
-from app.repositories.base_repository import BaseRepository
-from app.repositories.team_repository import TeamRepository
+from app.repositories import team_repository
 from app.schemas.team_schema import (
     CreateTeamRequest,
     TeamMemberInput,
@@ -58,8 +57,16 @@ def team_dict_to_response(team_dict: dict) -> TeamResponse:
     # Handle created_at and updated_at
     # For now, use defaults if fields don't exist (until migration is run)
     now_iso = datetime.utcnow().isoformat()
-    created_at = team.created_at.isoformat() if hasattr(team, "created_at") and team.created_at else now_iso
-    updated_at = team.updated_at.isoformat() if hasattr(team, "updated_at") and team.updated_at else now_iso
+    created_at = (
+        team.created_at.isoformat()
+        if hasattr(team, "created_at") and team.created_at
+        else now_iso
+    )
+    updated_at = (
+        team.updated_at.isoformat()
+        if hasattr(team, "updated_at") and team.updated_at
+        else now_iso
+    )
 
     return TeamResponse(
         id=str(team.id),
@@ -77,9 +84,6 @@ class TeamService:
 
     def __init__(self, session: Session) -> None:
         self.session = session
-        self.team_repository = TeamRepository(session)
-        self.team_membership_repository = BaseRepository(session, TeamMembership)
-        self.acl_repository = BaseRepository(session, PrimaryAssetRoleGrant)
 
     def create_team(
         self,
@@ -99,7 +103,9 @@ class TeamService:
         Raises:
             HTTPException: If team name already exists or validation fails
         """
-        logger.info(f"Creating team '{request.name}' for organization {organization_id}")
+        logger.info(
+            f"Creating team '{request.name}' for organization {organization_id}"
+        )
 
         # Create team
         team = Team(
@@ -109,14 +115,17 @@ class TeamService:
         )
 
         try:
-            created_team = self.team_repository.create(team)
+            created_team = team_repository.create_team(self.session, team)
         except IntegrityError as e:
             self.session.rollback()
             if "duplicate key value violates unique constraint" in str(e.orig):
                 logger.error(f"Team name '{request.name}' already exists")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Team name '{request.name}' already exists in this organization",
+                    detail=(
+                        f"Team name '{request.name}' already exists "
+                        f"in this organization"
+                    ),
                 )
             logger.error(f"Unexpected error creating team: {e}")
             raise HTTPException(
@@ -138,7 +147,8 @@ class TeamService:
                 )
 
         # Get team with counts
-        team_with_counts = self.team_repository.get_team_with_counts(
+        team_with_counts = team_repository.get_team_with_counts(
+            self.session,
             created_team.id,
             organization_id,
         )
@@ -149,7 +159,9 @@ class TeamService:
                 detail="Failed to retrieve created team",
             )
 
-        logger.info(f"Team '{request.name}' created successfully with ID {created_team.id}")
+        logger.info(
+            f"Team '{request.name}' created successfully with ID {created_team.id}"
+        )
         return team_dict_to_response(team_with_counts)
 
     def get_teams(
@@ -170,16 +182,21 @@ class TeamService:
             List of teams with total count
         """
         logger.info(
-            f"Getting teams for organization {organization_id} (limit={limit}, offset={offset})"
+            f"Getting teams for organization {organization_id} "
+            f"(limit={limit}, offset={offset})"
         )
 
-        teams_with_counts = self.team_repository.get_teams_with_counts(
+        teams_with_counts = team_repository.get_teams_with_counts(
+            session=self.session,
             organization_id=organization_id,
             limit=limit,
             offset=offset,
         )
 
-        total = self.team_repository.count_teams(organization_id)
+        total = team_repository.count_teams(
+            session=self.session,
+            organization_id=organization_id,
+        )
 
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 
@@ -206,7 +223,8 @@ class TeamService:
         """
         logger.info(f"Getting team {team_id} for organization {organization_id}")
 
-        team_with_counts = self.team_repository.get_team_with_counts(
+        team_with_counts = team_repository.get_team_with_counts(
+            session=self.session,
             team_id=team_id,
             organization_id=organization_id,
         )
@@ -243,11 +261,10 @@ class TeamService:
         logger.info(f"Updating team {team_id} to name '{request.name}'")
 
         # Get existing team
-        team = self.team_repository.get_by_conditions(
-            [
-                Team.id == team_id,
-                Team.organization_id == organization_id,
-            ]
+        team = team_repository.get_team_by_id(
+            session=self.session,
+            team_id=team_id,
+            organization_id=organization_id,
         )
 
         if not team:
@@ -270,7 +287,10 @@ class TeamService:
                 logger.error(f"Team name '{request.name}' already exists")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Team name '{request.name}' already exists in this organization",
+                    detail=(
+                        f"Team name '{request.name}' already exists "
+                        f"in this organization"
+                    ),
                 )
             logger.error(f"Unexpected error updating team: {e}")
             raise HTTPException(
@@ -279,7 +299,8 @@ class TeamService:
             )
 
         # Get updated team with counts
-        team_with_counts = self.team_repository.get_team_with_counts(
+        team_with_counts = team_repository.get_team_with_counts(
+            session=self.session,
             team_id=team_id,
             organization_id=organization_id,
         )
@@ -311,11 +332,10 @@ class TeamService:
         logger.info(f"Deleting team {team_id}")
 
         # Verify team exists and belongs to organization
-        team = self.team_repository.get_by_conditions(
-            [
-                Team.id == team_id,
-                Team.organization_id == organization_id,
-            ]
+        team = team_repository.get_team_by_id(
+            session=self.session,
+            team_id=team_id,
+            organization_id=organization_id,
         )
 
         if not team:
@@ -326,18 +346,17 @@ class TeamService:
             )
 
         try:
-            # Delete team (cascade will handle TeamMembership)
-            self.session.delete(team)
-
             # Delete source grants for this team
-            # Note: We could also use cascade, but being explicit here
-            acl_grants = self.session.query(PrimaryAssetRoleGrant).filter(
-                PrimaryAssetRoleGrant.team_id == team_id
-            ).all()
+            acl_grants = (
+                self.session.query(PrimaryAssetRoleGrant)
+                .filter(PrimaryAssetRoleGrant.team_id == team_id)
+                .all()
+            )
             for grant in acl_grants:
                 self.session.delete(grant)
 
-            self.session.commit()
+            # Delete team (cascade will handle TeamMembership)
+            team_repository.delete_team(self.session, team)
             logger.info(f"Team {team_id} deleted successfully")
         except Exception as e:
             self.session.rollback()
@@ -371,14 +390,19 @@ class TeamService:
             f"(limit={limit}, offset={offset})"
         )
 
-        teams_with_counts = self.team_repository.search_teams_with_counts(
+        teams_with_counts = team_repository.search_teams_with_counts(
+            session=self.session,
             organization_id=organization_id,
             query=query,
             limit=limit,
             offset=offset,
         )
 
-        total = self.team_repository.count_teams_by_search(organization_id, query)
+        total = team_repository.count_teams_by_search(
+            session=self.session,
+            organization_id=organization_id,
+            search_query=query,
+        )
 
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 

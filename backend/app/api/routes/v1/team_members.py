@@ -144,10 +144,10 @@ def remove_team_members(
     """
     Remove members from a team.
 
-    - **userIds**: List of user IDs to remove from the team
+    - **user_ids**: List of user IDs to remove from the team
     """
     logger.info(
-        f"User {user.user_id} removing {len(request.userIds)} members "
+        f"User {user.user_id} removing {len(request.user_ids)} members "
         f"from team {team_id}"
     )
     team_member_service = TeamMemberService(session)

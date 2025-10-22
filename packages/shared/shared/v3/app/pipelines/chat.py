@@ -16,7 +16,15 @@ from shared.v3.app.static.messages.driver_app_messages import (
     HowDriverWorksMessage,
     PromptGuidelinesMessage,
 )
+from shared.v3.app.static.tools.architecture_overview import (
+    ArchitectureOverviewTool,
+)
+from shared.v3.app.static.tools.changelog import ChangelogTool
+from shared.v3.app.static.tools.code_map import CodeMapTool
+from shared.v3.app.static.tools.detailed_changelog import DetailedChangelogTool
+from shared.v3.app.static.tools.file_documentation import FileDocumentationTool
 from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.app.static.tools.llm_onboarding_guide import LlmOnboardingGuideTool
 from shared.v3.globals.datasource_messages import (
     DataSourceMessage,
     DataSourceSystemMessage,
@@ -94,7 +102,15 @@ class ChatPipelineRequest(PipelineRequest):
         history = self._get_or_create_message_history()
         information_response, called_tools = client.multi_shot(
             message_history=history,
-            tool_types=[HybridSearchTool],
+            tool_types=[
+                HybridSearchTool,
+                ArchitectureOverviewTool,
+                CodeMapTool,
+                ChangelogTool,
+                DetailedChangelogTool,
+                FileDocumentationTool,
+                LlmOnboardingGuideTool,
+            ],
             iterations=3,
             datasource=self.datasource,
         )
@@ -112,7 +128,15 @@ class ChatPipelineRequest(PipelineRequest):
 
         async for chunk in client.multi_shot_stream(
             message_history=history,
-            tool_types=[HybridSearchTool],
+            tool_types=[
+                HybridSearchTool,
+                ArchitectureOverviewTool,
+                CodeMapTool,
+                ChangelogTool,
+                DetailedChangelogTool,
+                FileDocumentationTool,
+                LlmOnboardingGuideTool,
+            ],
             iterations=3,
             datasource=self.datasource,
         ):

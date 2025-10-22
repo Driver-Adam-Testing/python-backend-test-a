@@ -142,10 +142,10 @@ class LlmClient(ABC):
                 error_message = f"Error during tool execution: {exc!s}"
                 history.add_message(
                     LlmMessage(
-                        MessageKind.TOOL_CALL_RESPONSE,
-                        error_message,
+                        message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                        content=error_message,
                         tool_response=LlmMessage.ToolCallResponse(
-                            id=tool_msg.tool_response.id, name=tool.name
+                            id=tool_msg.tool_response.id, name=tool.__class__.__name__
                         ),
                     )
                 )

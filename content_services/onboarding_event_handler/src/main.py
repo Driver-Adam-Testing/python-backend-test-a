@@ -58,19 +58,16 @@ def _process_handler(
         cache_config = SecretCacheConfig()
         cache = SecretCache(config=cache_config, client=sm_client)
 
-        client_id = (
-            cache.get_secret_string(settings.CLIENT_ID_SECRET)
-            if settings.ENVIRONMENT != "local"
-            else settings.CLIENT_ID_SECRET
-        )
+        secrets = cache.get_secret_string(settings.CLIENT_SECRET_SECRET)
+        secrets_json = json.loads(secrets)
         client_secret = (
-            cache.get_secret_string(settings.CLIENT_SECRET_SECRET)
+            secrets_json["ONBOARDING_LAMDBA_CLIENT_SECRET"]
             if settings.ENVIRONMENT != "local"
             else settings.CLIENT_SECRET_SECRET
         )
         payload = json.dumps(
             {
-                "client_id": client_id,
+                "client_id": settings.CLIENT_ID_SECRET,
                 "client_secret": client_secret,
                 "audience": settings.AUTH0_AUDIENCE,
                 "grant_type": "client_credentials",

@@ -6,11 +6,12 @@ echo "deploying backend..."
 #If there's a setEnv.sh script in the / directory, copy it and run it before starting
 echo "Checking for setEnv script"
 if [ -f "../build/setEnv.sh" ] ; then
-    echo "Copy and run script setEnv.sh"
+    echo "Copy and run script setEnv.sh from deployment repo"
     cp "../build/setEnv.sh" .
     source setEnv.sh
 elif [ -f "setEnv.sh" ] ; then
   source setEnv.sh
+  echo "Using local setEnv.sh"
 else
     echo "There is no script setEnv.sh"
 fi

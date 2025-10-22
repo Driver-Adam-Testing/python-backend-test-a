@@ -2,8 +2,8 @@
 
 export BASE_URL="driverai.com"
 export AWS_REGION="us-east-1"
+export URL_PREFIX="dev"
 export AWS_ACCOUNT="550082761109"
-export AWS_PROFILE="dev"
 export DEPLOYMENT_ENVIRONMENT="dev"
 export AUTH0_TENANT="driverai-dev"
 export AUTH0_CLIENT_ID="JC322sFMG3tV3HePhJjtvDzRsnH12AsI"

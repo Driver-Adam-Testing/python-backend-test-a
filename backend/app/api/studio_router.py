@@ -6,6 +6,7 @@ from app.api.routes.v1 import (
     content,
     git_provider,
     organization,
+    source_members,
     tags,
     teams,
     upload,
@@ -49,6 +50,9 @@ studio_router.include_router(content.router, prefix="/content", tags=["content"]
 studio_router.include_router(codebase.router, prefix="/codebases", tags=["codebase"])
 studio_router.include_router(tags.router, prefix="/tags", tags=["tags"])
 studio_router.include_router(teams.router, prefix="/teams", tags=["teams"])
+studio_router.include_router(
+    source_members.router, tags=["source-members"]
+)  # Source members routes (no prefix, uses /sources/{id}/members)
 studio_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 studio_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 studio_router.include_router(user.router, prefix="/user", tags=["user"])

@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
-from app.api.routes.v1 import team_members
+from app.api.routes.v1 import team_members, team_sources
 from app.api.session import CurrentSession
 from app.schemas.team_schema import (
     CreateTeamRequest,
@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 # Include team members routes
 router.include_router(team_members.router, tags=["team-members"])
+
+# Include team sources routes
+router.include_router(team_sources.router, tags=["team-sources"])
 
 
 @router.post(

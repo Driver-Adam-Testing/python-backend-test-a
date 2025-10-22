@@ -198,24 +198,24 @@ class TeamMemberService:
 
         # Verify all users exist and belong to organization
         for member in request.members:
-            user = get_user_by_id(self.session, member.userId)
+            user = get_user_by_id(self.session, member.user_id)
             if not user:
-                logger.error(f"User {member.userId} not found")
+                logger.error(f"User {member.user_id} not found")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"User {member.userId} not found",
+                    detail=f"User {member.user_id} not found",
                 )
 
             # Validate user belongs to organization
             if not org_membership_repository.check_user_in_organization(
-                self.session, member.userId, organization_id
+                self.session, member.user_id, organization_id
             ):
                 logger.error(
-                    f"User {member.userId} is not a member of organization {organization_id}"
+                    f"User {member.user_id} is not a member of organization {organization_id}"
                 )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"User {member.userId} is not a member of this organization",
+                    detail=f"User {member.user_id} is not a member of this organization",
                 )
 
         # Add members
@@ -277,13 +277,13 @@ class TeamMemberService:
             membership = team_member_repository.get_membership(
                 session=self.session,
                 team_id=team_id,
-                user_id=member.userId,
+                user_id=member.user_id,
             )
             if not membership:
-                logger.error(f"User {member.userId} is not a member of team {team_id}")
+                logger.error(f"User {member.user_id} is not a member of team {team_id}")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"User {member.userId} is not a member of this team",
+                    detail=f"User {member.user_id} is not a member of this team",
                 )
 
             membership.role = map_team_role_to_backend(member.role)
@@ -319,7 +319,7 @@ class TeamMemberService:
         Raises:
             HTTPException: If team not found
         """
-        logger.info(f"Removing {len(request.userIds)} members from team {team_id}")
+        logger.info(f"Removing {len(request.user_ids)} members from team {team_id}")
 
         # Verify team exists and belongs to organization
         team = team_repository.get_team_by_id(
@@ -337,7 +337,7 @@ class TeamMemberService:
 
         # Remove members
         removed_count = 0
-        for user_id in request.userIds:
+        for user_id in request.user_ids:
             membership = team_member_repository.get_membership(
                 session=self.session,
                 team_id=team_id,
@@ -377,7 +377,7 @@ class TeamMemberService:
             membership = TeamMembership(
                 id=uuid4(),
                 team_id=team_id,
-                user_id=member.userId,
+                user_id=member.user_id,
                 role=team_role,
             )
             self.session.add(membership)

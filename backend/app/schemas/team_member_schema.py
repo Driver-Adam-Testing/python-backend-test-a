@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 class TeamMemberAddInput(BaseModel):
     """Input for adding a single team member."""
 
-    userId: str = Field(..., description="User ID")
+    user_id: str = Field(..., description="User ID")
     role: Literal["admin", "member"] = Field(..., description="Team role")
 
 
@@ -36,7 +36,7 @@ class UpdateTeamMembersRequest(BaseModel):
 class RemoveTeamMembersRequest(BaseModel):
     """Request to remove members from a team."""
 
-    userIds: list[str] = Field(
+    user_ids: list[str] = Field(
         ...,
         min_length=1,
         description="List of user IDs to remove",

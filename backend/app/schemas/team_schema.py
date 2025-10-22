@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 class TeamMemberInput(BaseModel):
     """Input for adding a team member."""
 
-    userId: str = Field(..., description="User ID")
+    user_id: str = Field(..., description="User ID")
     role: Literal["admin", "member"] = Field(..., description="Team role")
 
 

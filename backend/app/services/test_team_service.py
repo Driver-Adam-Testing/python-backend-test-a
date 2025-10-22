@@ -160,8 +160,8 @@ class TestCreateTeam:
     ) -> None:
         """Should create team with initial members."""
         members = [
-            TeamMemberInput(userId="user-1", role="admin"),
-            TeamMemberInput(userId="user-2", role="member"),
+            TeamMemberInput(user_id="user-1", role="admin"),
+            TeamMemberInput(user_id="user-2", role="member"),
         ]
         request = CreateTeamRequest(name="Engineering", members=members)
         mock_repo.create_team.return_value = sample_team
@@ -228,7 +228,7 @@ class TestCreateTeam:
         """Should raise HTTPException 400 when member not in organization."""
         from database.models import User
 
-        members = [TeamMemberInput(userId="user-external", role="admin")]
+        members = [TeamMemberInput(user_id="user-external", role="admin")]
         request = CreateTeamRequest(name="Engineering", members=members)
         mock_repo.create_team.return_value = sample_team
         # User exists

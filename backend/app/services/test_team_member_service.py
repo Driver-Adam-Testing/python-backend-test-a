@@ -282,7 +282,7 @@ class TestAddTeamMembers:
         sample_user: User,
     ) -> None:
         """Should add members to team successfully."""
-        members = [TeamMemberAddInput(userId="user-1", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-1", role="admin")]
         request = AddTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_get_user.return_value = sample_user
@@ -301,7 +301,7 @@ class TestAddTeamMembers:
         org_id: str,
     ) -> None:
         """Should raise HTTPException 404 when team not found."""
-        members = [TeamMemberAddInput(userId="user-1", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-1", role="admin")]
         request = AddTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = None
 
@@ -322,7 +322,7 @@ class TestAddTeamMembers:
         sample_team: Team,
     ) -> None:
         """Should raise HTTPException 404 when user not found."""
-        members = [TeamMemberAddInput(userId="user-1", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-1", role="admin")]
         request = AddTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_get_user.return_value = None
@@ -348,7 +348,7 @@ class TestAddTeamMembers:
         """Should raise HTTPException 400 when member already exists."""
         from sqlalchemy.exc import IntegrityError
 
-        members = [TeamMemberAddInput(userId="user-1", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-1", role="admin")]
         request = AddTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_get_user.return_value = sample_user
@@ -377,7 +377,7 @@ class TestAddTeamMembers:
         sample_user: User,
     ) -> None:
         """Should raise HTTPException 403 when user not in organization."""
-        members = [TeamMemberAddInput(userId="user-external", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-external", role="admin")]
         request = AddTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_get_user.return_value = sample_user
@@ -407,7 +407,7 @@ class TestUpdateTeamMembers:
         sample_membership: TeamMembership,
     ) -> None:
         """Should update member roles successfully."""
-        members = [TeamMemberAddInput(userId="user-1", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-1", role="admin")]
         request = UpdateTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_member_repo.get_membership.return_value = sample_membership
@@ -427,7 +427,7 @@ class TestUpdateTeamMembers:
         org_id: str,
     ) -> None:
         """Should raise HTTPException 404 when team not found."""
-        members = [TeamMemberAddInput(userId="user-1", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-1", role="admin")]
         request = UpdateTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = None
 
@@ -448,7 +448,7 @@ class TestUpdateTeamMembers:
         sample_team: Team,
     ) -> None:
         """Should raise HTTPException 404 when member not in team."""
-        members = [TeamMemberAddInput(userId="user-1", role="admin")]
+        members = [TeamMemberAddInput(user_id="user-1", role="admin")]
         request = UpdateTeamMembersRequest(members=members)
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_member_repo.get_membership.return_value = None
@@ -476,7 +476,7 @@ class TestRemoveTeamMembers:
         sample_membership: TeamMembership,
     ) -> None:
         """Should remove members from team successfully."""
-        request = RemoveTeamMembersRequest(userIds=["user-1"])
+        request = RemoveTeamMembersRequest(user_ids=["user-1"])
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_member_repo.get_membership.return_value = sample_membership
 
@@ -494,7 +494,7 @@ class TestRemoveTeamMembers:
         org_id: str,
     ) -> None:
         """Should raise HTTPException 404 when team not found."""
-        request = RemoveTeamMembersRequest(userIds=["user-1"])
+        request = RemoveTeamMembersRequest(user_ids=["user-1"])
         mock_team_repo.get_team_by_id.return_value = None
 
         with pytest.raises(HTTPException) as exc_info:
@@ -514,7 +514,7 @@ class TestRemoveTeamMembers:
         sample_team: Team,
     ) -> None:
         """Should not fail when removing non-existent members."""
-        request = RemoveTeamMembersRequest(userIds=["user-1", "user-2"])
+        request = RemoveTeamMembersRequest(user_ids=["user-1", "user-2"])
         mock_team_repo.get_team_by_id.return_value = sample_team
         mock_member_repo.get_membership.return_value = None  # Members don't exist
 
@@ -535,7 +535,7 @@ class TestRemoveTeamMembers:
         sample_team: Team,
     ) -> None:
         """Should remove multiple members in one operation."""
-        request = RemoveTeamMembersRequest(userIds=["user-1", "user-2", "user-3"])
+        request = RemoveTeamMembersRequest(user_ids=["user-1", "user-2", "user-3"])
         mock_team_repo.get_team_by_id.return_value = sample_team
 
         # Return a different membership for each call

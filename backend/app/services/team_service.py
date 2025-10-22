@@ -444,23 +444,23 @@ class TeamService:
         """
         for member in members:
             # Validate user exists
-            user = get_user_by_id(self.session, member.userId)
+            user = get_user_by_id(self.session, member.user_id)
             if not user:
-                raise ValueError(f"User {member.userId} not found")
+                raise ValueError(f"User {member.user_id} not found")
 
             # Validate user belongs to organization
             if not org_membership_repository.check_user_in_organization(
-                self.session, member.userId, organization_id
+                self.session, member.user_id, organization_id
             ):
                 raise ValueError(
-                    f"User {member.userId} is not a member of this organization"
+                    f"User {member.user_id} is not a member of this organization"
                 )
 
             team_role = map_team_role_to_backend(member.role)
             membership = TeamMembership(
                 id=uuid4(),
                 team_id=team_id,
-                user_id=member.userId,
+                user_id=member.user_id,
                 role=team_role,
             )
             self.session.add(membership)

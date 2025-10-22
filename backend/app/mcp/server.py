@@ -2,8 +2,7 @@ import os
 from inspect import cleandoc
 from typing import Annotated
 
-from database.models_enums import PrimaryAssetKind
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
 FASTMCP_STATELESS_HTTP = True
@@ -15,18 +14,24 @@ import logging  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import fastmcp  # noqa: E402
-from database.db import get_session  # noqa: E402
-from database.models import DerivedContent, Node, PrimaryAsset, Version  # noqa: E402
-from database.models_enums import ContentKind, VersionStatus  # noqa: E402
 from fastmcp import Context, FastMCP  # noqa: E402
-from fastmcp.exceptions import ToolError  # noqa: E402
 from shared.prompts.structured_prompting import Component, Prompt  # noqa: E402
-from sqlmodel import select  # noqa: E402
+from shared.tool_executors import (  # noqa: E402
+    ToolUseError,
+    get_architecture_overview,
+    get_changelog,
+    get_code_map,
+    get_codebase_names,
+    get_detailed_changelog,
+    get_file_documentation,
+    get_llm_onboarding_guide,
+)
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id  # noqa: E402
-from .code_map_v2 import CodeMap, get_code_map_simple  # noqa: E402
-from .logging_middleware import McpLoggingMiddleware  # noqa: E402
-from .mcp_helpers import get_latest_version_for_codebase  # noqa: E402
+from .logging_middleware import (  # noqa: E402
+    DriverMcpToolResponse,
+    McpLoggingMiddleware,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,41 +72,6 @@ logging_middleware = McpLoggingMiddleware()
 my_mcp.add_middleware(logging_middleware)
 
 
-def _get_root_node_content(
-    org_id: str, codebase_name: str, content_kind: ContentKind
-) -> DerivedContent:
-    with get_session() as db:
-        primary_asset = db.exec(
-            select(PrimaryAsset)
-            .where(PrimaryAsset.display_name == codebase_name)
-            .where(PrimaryAsset.organization_id == org_id)
-            .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-        ).first()
-
-        if not primary_asset:
-            raise ToolError(
-                f"`{codebase_name}` is not codebase recognized by Driver.  Use the `get_codebase_names` tool to get a list of valid codebase names."
-            )
-
-        derived_content = db.exec(
-            select(DerivedContent)
-            .join(Node, Node.id == DerivedContent.node_id)
-            .join(Version, Version.id == Node.version_id)
-            .where(Version.primary_asset_id == primary_asset.id)
-            .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-            .where(Node.depth == 0)
-            .where(DerivedContent.content_kind == content_kind)
-            .order_by(Version.updated_at.desc())
-        ).first()
-
-        if not derived_content:
-            raise ToolError(
-                f"No {content_kind.value} content exists for the `{codebase_name}` codebase."
-            )
-
-        return derived_content
-
-
 @my_mcp.prompt(
     name="driver_init",
     description=cleandoc(
@@ -112,74 +82,6 @@ def _get_root_node_content(
 )
 def driver_init() -> str:
     return MCP_INSTRUCTIONS
-
-
-@my_mcp.tool(
-    name="get_changelog",
-    description=cleandoc(
-        """
-        Fetch the complete high-level changelog for a codebase, broken down by year and month.
-
-        The codebase must be specified by name.
-
-        Helpful for orienting and reasoning about a codebase -- use this in any context where the historical development process and decisions might be helpful. Prioritize calling this at the beginning of a task.
-    """
-    ),
-)
-def get_changelog(
-    ctx: Context,
-    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-) -> str:
-    """ """
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_CHANGELOG
-    )
-    return dc.content or str(dc.misc_metadata)
-
-
-@my_mcp.tool(
-    name="get_detailed_changelog",
-    description=cleandoc(
-        """
-        Fetch the detailed changelog for a specific year and month of the given codebase.
-
-        Use this when more detailed information about the development process of the codebase at a specific time might be helpful.
-    """
-    ),
-)
-def get_detailed_changelog(
-    ctx: Context,
-    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-    year: Annotated[str, Field(description="The year of the changelog. (e.g. 2023)")],
-    month: Annotated[
-        str, Field(description="The month of the changelog. (e.g. 01, 02, ..., 12)")
-    ],
-) -> str:
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_CHANGELOG
-    )
-    return dc.misc_metadata.get(
-        f"{year}-{month}", "No detailed changelog available for this month."
-    )
-
-
-def _get_codebase_names_for_org(org_id: str) -> list[str]:
-    """
-    Get names of all codebases that have at least one completed version for a specific organization.
-    """
-    with get_session() as db:
-        assets = db.exec(
-            select(PrimaryAsset.display_name)
-            .join(Version, Version.primary_asset_id == PrimaryAsset.id)
-            .where(PrimaryAsset.organization_id == org_id)
-            .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-            .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-            .distinct()
-        ).all()
-
-        return assets
 
 
 @my_mcp.tool(
@@ -194,9 +96,15 @@ def _get_codebase_names_for_org(org_id: str) -> list[str]:
     ),
     exclude_args=["dummy"],
 )
-def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
-    org_id = get_organization_id(ctx)
-    return _get_codebase_names_for_org(org_id)
+def get_codebase_names_tool(
+    ctx: Context, dummy: str | None = None
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_codebase_names(org_id=org_id)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
 @my_mcp.tool(
@@ -207,15 +115,16 @@ def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
     """
     ),
 )
-def get_architecture_overview(
+def get_architecture_overview_tool(
     ctx: Context,
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-) -> str:
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_ARCHITECTURE
-    )
-    return dc.content
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_architecture_overview(org_id=org_id, codebase_name=codebase_name)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
 @my_mcp.tool(
@@ -226,128 +135,71 @@ def get_architecture_overview(
     """
     ),
 )
-def get_llm_onboarding_guide(
+def get_llm_onboarding_guide_tool(
     ctx: Context,
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-) -> str:
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_LLM_ONBOARDING
-    )
-    return dc.content
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_llm_onboarding_guide(org_id=org_id, codebase_name=codebase_name)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
-def _get_long_description(
-    org_id: str,
-    codebase_name: str,
-    path: str,
-) -> str:
-    with get_session() as db:
-        version = get_latest_version_for_codebase(db, org_id, codebase_name)
-        if not version:
-            raise ToolError(
-                f"No completed documentation found for codebase '{codebase_name}'."
-            )
+@my_mcp.tool(
+    name="get_changelog",
+    description=cleandoc(
+        """
+        Fetch the complete high-level changelog for a codebase, broken down by year and month.
 
-        full_path = f"{codebase_name}/{path.strip('/')}"
+        The codebase must be specified by name.
 
-        node = db.exec(
-            select(Node)
-            .where(Node.version_id == version.id)
-            .where(Node.relative_path == full_path)
-        ).first()
-
-        if not node:
-            raise ToolError(
-                f"File '{path}' not found in codebase '{codebase_name}' documentation. "
-            )
-
-        content = db.exec(
-            select(DerivedContent)
-            .where(DerivedContent.node_id == node.id)
-            .where(DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
-        ).first()
-
-        if not content or not content.content:
-            raise ToolError(
-                f"No documentation available for '{path}' in codebase '{codebase_name}'. "
-            )
-        return content.content
+        Helpful for orienting and reasoning about a codebase -- use this in any context where the historical development process and decisions might be helpful. Prioritize calling this at the beginning of a task.
+    """
+    ),
+)
+def get_changelog_tool(
+    ctx: Context,
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_changelog(org_id=org_id, codebase_name=codebase_name)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
-class FileDocumentationResponse(BaseModel):
-    content: str
-    lines_returned: int
-    next_line: int | None
-    lines_remaining: int
-    next_section: str | None
+@my_mcp.tool(
+    name="get_detailed_changelog",
+    description=cleandoc(
+        """
+        Fetch the detailed changelog for a specific year and month of the given codebase.
 
-
-def _apply_file_doc_pagination(
-    markdown_text: str, start_line: int, max_lines: int
-) -> FileDocumentationResponse:
-    if not markdown_text:
-        raise ToolError("No documentation available for the file.")
-
-    if start_line < 1:
-        raise ToolError("Start line must be greater than or equal to 1.")
-
-    if max_lines < 0:
-        raise ToolError("Max lines must be greater than or equal to 0.")
-
-    full_text = markdown_text.split("\n")
-
-    if start_line > len(full_text):
-        raise ToolError(
-            f"Start line {start_line} is greater than the number of lines in the file ({len(full_text)})"
+        Use this when more detailed information about the development process of the codebase at a specific time might be helpful.
+    """
+    ),
+)
+def get_detailed_changelog_tool(
+    ctx: Context,
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
+    year: Annotated[str, Field(description="The year of the changelog. (e.g. 2023)")],
+    month: Annotated[
+        str, Field(description="The month of the changelog. (e.g. 01, 02, ..., 12)")
+    ],
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_detailed_changelog(
+            org_id=org_id,
+            codebase_name=codebase_name,
+            year=year,
+            month=month,
         )
-
-    start_idx = start_line - 1
-
-    # return what's left of the file
-    if (start_idx + max_lines >= len(full_text)) or max_lines == 0:
-        content_lines = full_text[start_idx:]
-
-        return FileDocumentationResponse(
-            content="\n".join(content_lines),
-            lines_returned=len(content_lines),
-            next_line=None,
-            lines_remaining=0,
-            next_section=None,
-        )
-
-    end_idx = start_idx + max_lines - 1
-    partial_text = full_text[start_idx : end_idx + 1]
-
-    # we just happened to stop at the end of a section
-    if full_text[end_idx + 1].lstrip().startswith("#"):
-        return FileDocumentationResponse(
-            content="\n".join(partial_text),
-            lines_returned=len(partial_text),
-            next_line=end_idx + 2,
-            lines_remaining=len(full_text) - end_idx - 1,
-            next_section=full_text[end_idx + 1].lstrip().lstrip("#").strip(),
-        )
-
-    # we landed in the middle or start of a section
-    for idx in reversed(range(len(partial_text))):
-        if partial_text[idx].lstrip().startswith("#") and idx != 0:
-            return FileDocumentationResponse(
-                content="\n".join(partial_text[:idx]),
-                lines_returned=len(partial_text[:idx]),
-                next_line=idx + start_idx + 1,
-                lines_remaining=len(full_text) - idx - start_idx,
-                next_section=partial_text[idx].lstrip().lstrip("#").strip(),
-            )
-
-    # we started in the middle of a section that was too long
-    return FileDocumentationResponse(
-        content="\n".join(partial_text),
-        lines_returned=len(partial_text),
-        next_line=end_idx + 2,
-        lines_remaining=len(full_text) - end_idx - 1,
-        next_section=None,
-    )
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
 @my_mcp.tool(
@@ -379,7 +231,7 @@ def _apply_file_doc_pagination(
     """
     ),
 )
-def get_file_documentation(
+def get_file_documentation_tool(
     ctx: Context,
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
     path: Annotated[
@@ -402,59 +254,19 @@ def get_file_documentation(
             ge=0,
         ),
     ],
-) -> FileDocumentationResponse:
-    org_id = get_organization_id(ctx=ctx)
-    markdown_text = _get_long_description(
-        org_id=org_id, codebase_name=codebase_name, path=path
-    )
-    return _apply_file_doc_pagination(
-        markdown_text=markdown_text, start_line=start_line, max_lines=max_lines
-    )
-
-
-class CodeMapResponse(BaseModel):
-    code_map: CodeMap
-    nodes_returned: int
-    next_node: int | None
-    nodes_remaining: int
-
-
-def _apply_code_map_pagination(
-    code_map: CodeMap, start_node: int, max_nodes: int
-) -> CodeMapResponse:
-    total_nodes = len(code_map.payload)
-
-    if start_node < 0:
-        raise ToolError("Start node must be greater than or equal to 0.")
-
-    if max_nodes < 0:
-        raise ToolError("Max nodes must be greater than or equal to 0.")
-
-    if start_node >= total_nodes:
-        raise ToolError(
-            f"Start node {start_node} is greater than or equal to the total number of nodes ({total_nodes})"
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_file_documentation(
+            org_id=org_id,
+            codebase_name=codebase_name,
+            path=path,
+            start_line=start_line,
+            max_lines=max_lines,
         )
-
-    if max_nodes == 0 or start_node + max_nodes >= total_nodes:
-        paginated_nodes = code_map.payload[start_node:]
-
-        return CodeMapResponse(
-            code_map=CodeMap(payload=paginated_nodes),
-            nodes_returned=len(paginated_nodes),
-            next_node=None,
-            nodes_remaining=0,
-        )
-
-    paginated_nodes = code_map.payload[start_node : start_node + max_nodes]
-    next_node = start_node + max_nodes
-    nodes_remaining = total_nodes - next_node
-
-    return CodeMapResponse(
-        code_map=CodeMap(payload=paginated_nodes),
-        nodes_returned=len(paginated_nodes),
-        next_node=next_node,
-        nodes_remaining=nodes_remaining,
-    )
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
 @my_mcp.tool(
@@ -468,8 +280,7 @@ def _apply_code_map_pagination(
         Use in tandem with `get_file_documentation` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
 
         Returns an object with:
-        - code_map: Object containing:
-          - payload: List of nodes, each containing:
+        - code_map: List of nodes, each containing:
             - path: The file/directory path
             - type: "file" or "directory"
             - description: A short sentence describing what the file/directory contains
@@ -509,7 +320,7 @@ def _apply_code_map_pagination(
     """
     ),
 )
-def get_code_map(
+def get_code_map_tool(
     ctx: Context,
     codebase_name: Annotated[
         str,
@@ -545,16 +356,17 @@ def get_code_map(
             ge=0,
         ),
     ] = 0,
-) -> CodeMapResponse:
-    code_map = get_code_map_simple(
-        org_id=get_organization_id(ctx),
-        codebase_name=codebase_name,
-        path=path,
-        max_depth=max_depth,
-    )
-
-    return _apply_code_map_pagination(
-        code_map=code_map,
-        start_node=start_node,
-        max_nodes=max_nodes,
-    )
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_code_map(
+            org_id=org_id,
+            codebase_name=codebase_name,
+            path=path,
+            max_depth=max_depth,
+            start_node=start_node,
+            max_nodes=max_nodes,
+        )
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)

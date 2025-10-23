@@ -144,6 +144,8 @@ class TestGetUserSources:
             user_id=user_id,
             limit=50,
             offset=20,
+            roles=None,
+            search=None,
         )
 
         mock_service.get_user_sources.assert_called_once_with(

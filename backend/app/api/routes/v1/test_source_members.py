@@ -105,6 +105,8 @@ class TestGetSourceMembers:
             session=session,
             user=user,
             source_id=source_id,
+            limit=30,
+            offset=0,
             roles=["admin"],
             member_kind="user",
             search="john",

@@ -161,3 +161,10 @@ class UserSourcesResponse(BaseModel):
 
     sources: list[UserSourceResponse] = Field(..., description="List of user sources")
     total: int = Field(..., description="Total count of user sources")
+
+
+# ===== Generic Message Response =====
+class MessageResponse(BaseModel):
+    """Generic message response."""
+
+    message: str = Field(..., description="Response message")

@@ -1,0 +1,572 @@
+"""Service for User business logic."""
+
+import logging
+from datetime import datetime
+from uuid import UUID
+
+from database.models import PrimaryAsset, PrimaryAssetRoleGrant, TeamMembership
+from database.models_enums import PrimaryAssetRole, TeamRole
+from fastapi import HTTPException, status
+from sqlmodel import Session
+
+from app.repositories import team_repository, user_repository
+from app.schemas.user_schema import (
+    AddUserSourcesRequest,
+    AddUserTeamsRequest,
+    OrganizationMembersResponse,
+    RemoveUserSourcesRequest,
+    RemoveUserTeamsRequest,
+    UpdateUserSourcesRequest,
+    UpdateUserTeamsRequest,
+    UserResponse,
+    UserSourceResponse,
+    UserSourcesResponse,
+    UserTeamResponse,
+    UserTeamsResponse,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def map_team_role_to_backend(role: str) -> TeamRole:
+    """Map frontend role string to backend TeamRole enum."""
+    mapping = {
+        "admin": TeamRole.team_admin,
+        "member": TeamRole.member,
+    }
+    if role not in mapping:
+        raise ValueError(f"Invalid role: {role}")
+    return mapping[role]
+
+
+def map_team_role_to_frontend(role: TeamRole) -> str:
+    """Map backend TeamRole enum to frontend string."""
+    mapping = {
+        TeamRole.team_admin: "admin",
+        TeamRole.member: "member",
+    }
+    return mapping[role]
+
+
+def map_source_role_to_backend(role: str) -> PrimaryAssetRole:
+    """Map frontend role string to backend PrimaryAssetRole enum."""
+    mapping = {
+        "admin": PrimaryAssetRole.admin,
+        "member": PrimaryAssetRole.viewer,
+    }
+    if role not in mapping:
+        raise ValueError(f"Invalid role: {role}")
+    return mapping[role]
+
+
+def map_source_role_to_frontend(role: PrimaryAssetRole) -> str:
+    """Map backend PrimaryAssetRole enum to frontend string."""
+    mapping = {
+        PrimaryAssetRole.admin: "admin",
+        PrimaryAssetRole.viewer: "member",
+    }
+    return mapping[role]
+
+
+class UserService:
+    """Service for User operations."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def search_organization_users(
+        self,
+        organization_id: str,
+        query: str,
+        limit: int = 30,
+        offset: int = 0,
+    ) -> OrganizationMembersResponse:
+        """
+        Search for users within an organization.
+
+        Args:
+            organization_id: Organization ID
+            query: Search query for name or email
+            limit: Maximum number of results
+            offset: Number of results to skip
+
+        Returns:
+            OrganizationMembersResponse with users and total count
+        """
+        users = user_repository.search_organization_users(
+            session=self.session,
+            organization_id=organization_id,
+            query=query,
+            limit=limit,
+            offset=offset,
+        )
+
+        total = user_repository.count_organization_users(
+            session=self.session,
+            organization_id=organization_id,
+            query=query,
+        )
+
+        members = [
+            UserResponse(
+                user_id=user.id,
+                name=user.name or "",
+                email=user.email or "",
+                picture="",  # TODO: Fetch from Auth0 or add to User model
+            )
+            for user in users
+        ]
+
+        return OrganizationMembersResponse(
+            members=members,
+            total=total,
+        )
+
+    def get_user_teams(
+        self,
+        user_id: str,
+        organization_id: str,
+        roles: list[str] | None = None,
+        search: str | None = None,
+        limit: int = 30,
+        offset: int = 0,
+    ) -> UserTeamsResponse:
+        """
+        Get teams for a user.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            roles: Optional list of roles to filter by
+            search: Optional search query for team name
+            limit: Maximum number of results
+            offset: Number of results to skip
+
+        Returns:
+            UserTeamsResponse with teams and total count
+        """
+        team_data = user_repository.get_user_teams_with_details(
+            session=self.session,
+            user_id=user_id,
+            organization_id=organization_id,
+            roles=roles,
+            search=search,
+            limit=limit,
+            offset=offset,
+        )
+
+        total = user_repository.count_user_teams(
+            session=self.session,
+            user_id=user_id,
+            organization_id=organization_id,
+            roles=roles,
+            search=search,
+        )
+
+        teams = [self._build_user_team_response(data) for data in team_data]
+
+        return UserTeamsResponse(
+            teams=teams,
+            total=total,
+        )
+
+    def add_user_teams(
+        self,
+        user_id: str,
+        organization_id: str,
+        request: AddUserTeamsRequest,
+    ) -> None:
+        """
+        Add user to teams.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            request: Request containing teams to add
+
+        Raises:
+            HTTPException: If team not found or user already in team
+        """
+        for team_input in request.teams:
+            team_id = UUID(team_input.team_id)
+
+            # Verify team exists in organization
+            team = team_repository.get_team_by_id(
+                session=self.session,
+                team_id=team_id,
+                organization_id=organization_id,
+            )
+            if not team:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Team {team_input.team_id} not found",
+                )
+
+            # Check if membership already exists
+            existing = user_repository.get_user_team_membership(
+                session=self.session,
+                user_id=user_id,
+                team_id=team_id,
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"User {user_id} already in team {team_input.team_id}",
+                )
+
+            # Create membership
+            membership = TeamMembership(
+                team_id=team_id,
+                user_id=user_id,
+                role=map_team_role_to_backend(team_input.role),
+            )
+            user_repository.create_user_team_membership(
+                session=self.session,
+                membership=membership,
+            )
+
+    def update_user_teams(
+        self,
+        user_id: str,
+        organization_id: str,
+        request: UpdateUserTeamsRequest,
+    ) -> None:
+        """
+        Update user's team roles.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            request: Request containing teams with updated roles
+
+        Raises:
+            HTTPException: If team not found or user not in team
+        """
+        for team_input in request.teams:
+            team_id = UUID(team_input.team_id)
+
+            # Verify team exists in organization
+            team = team_repository.get_team_by_id(
+                session=self.session,
+                team_id=team_id,
+                organization_id=organization_id,
+            )
+            if not team:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Team {team_input.team_id} not found",
+                )
+
+            # Get existing membership
+            membership = user_repository.get_user_team_membership(
+                session=self.session,
+                user_id=user_id,
+                team_id=team_id,
+            )
+            if not membership:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"User {user_id} not in team {team_input.team_id}",
+                )
+
+            # Update role
+            membership.role = map_team_role_to_backend(team_input.role)
+            self.session.add(membership)
+
+        self.session.commit()
+
+    def remove_user_teams(
+        self,
+        user_id: str,
+        organization_id: str,
+        request: RemoveUserTeamsRequest,
+    ) -> None:
+        """
+        Remove user from teams.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            request: Request containing team IDs to remove
+
+        Raises:
+            HTTPException: If team not found or user not in team
+        """
+        for team_id_str in request.team_ids:
+            team_id = UUID(team_id_str)
+
+            # Verify team exists in organization
+            team = team_repository.get_team_by_id(
+                session=self.session,
+                team_id=team_id,
+                organization_id=organization_id,
+            )
+            if not team:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Team {team_id_str} not found",
+                )
+
+            # Get existing membership
+            membership = user_repository.get_user_team_membership(
+                session=self.session,
+                user_id=user_id,
+                team_id=team_id,
+            )
+            if not membership:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"User {user_id} not in team {team_id_str}",
+                )
+
+            # Delete membership
+            user_repository.delete_user_team_membership(
+                session=self.session,
+                membership=membership,
+            )
+
+    def get_user_sources(
+        self,
+        user_id: str,
+        organization_id: str,
+        roles: list[str] | None = None,
+        search: str | None = None,
+        limit: int = 30,
+        offset: int = 0,
+    ) -> UserSourcesResponse:
+        """
+        Get sources for a user.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            roles: Optional list of roles to filter by
+            search: Optional search query for display name
+            limit: Maximum number of results
+            offset: Number of results to skip
+
+        Returns:
+            UserSourcesResponse with sources and total count
+        """
+        source_data = user_repository.get_user_sources_with_details(
+            session=self.session,
+            user_id=user_id,
+            organization_id=organization_id,
+            roles=roles,
+            search=search,
+            limit=limit,
+            offset=offset,
+        )
+
+        total = user_repository.count_user_sources(
+            session=self.session,
+            user_id=user_id,
+            organization_id=organization_id,
+            roles=roles,
+            search=search,
+        )
+
+        sources = [
+            self._build_user_source_response(data, user_id) for data in source_data
+        ]
+
+        return UserSourcesResponse(
+            sources=sources,
+            total=total,
+        )
+
+    def add_user_sources(
+        self,
+        user_id: str,
+        organization_id: str,
+        request: AddUserSourcesRequest,
+    ) -> None:
+        """
+        Grant user direct access to sources.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            request: Request containing sources to grant access to
+
+        Raises:
+            HTTPException: If source not found or user already has access
+        """
+        for source_input in request.sources:
+            source_id = UUID(source_input.source_id)
+
+            # Verify source exists
+            asset = self.session.get(PrimaryAsset, source_id)
+            if not asset or asset.organization_id != organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Source {source_input.source_id} not found",
+                )
+
+            # Check if grant already exists
+            existing = user_repository.get_user_source_grant(
+                session=self.session,
+                user_id=user_id,
+                primary_asset_id=source_id,
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"User {user_id} already has access to source {source_input.source_id}",
+                )
+
+            # Create grant
+            grant = PrimaryAssetRoleGrant(
+                organization_id=organization_id,
+                primary_asset_id=source_id,
+                user_id=user_id,
+                role=map_source_role_to_backend(source_input.role),
+            )
+            user_repository.create_user_source_grant(
+                session=self.session,
+                grant=grant,
+            )
+
+    def update_user_sources(
+        self,
+        user_id: str,
+        organization_id: str,
+        request: UpdateUserSourcesRequest,
+    ) -> None:
+        """
+        Update user's source roles.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            request: Request containing sources with updated roles
+
+        Raises:
+            HTTPException: If source not found or user doesn't have access
+        """
+        for source_input in request.sources:
+            source_id = UUID(source_input.source_id)
+
+            # Verify source exists
+            asset = self.session.get(PrimaryAsset, source_id)
+            if not asset or asset.organization_id != organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Source {source_input.source_id} not found",
+                )
+
+            # Get existing grant
+            grant = user_repository.get_user_source_grant(
+                session=self.session,
+                user_id=user_id,
+                primary_asset_id=source_id,
+            )
+            if not grant:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"User {user_id} does not have access to source {source_input.source_id}",
+                )
+
+            # Update role
+            grant.role = map_source_role_to_backend(source_input.role)
+            self.session.add(grant)
+
+        self.session.commit()
+
+    def remove_user_sources(
+        self,
+        user_id: str,
+        organization_id: str,
+        request: RemoveUserSourcesRequest,
+    ) -> None:
+        """
+        Remove user's direct access to sources.
+
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            request: Request containing source IDs to remove
+
+        Raises:
+            HTTPException: If source not found or user doesn't have access
+        """
+        for source_id_str in request.source_ids:
+            source_id = UUID(source_id_str)
+
+            # Verify source exists
+            asset = self.session.get(PrimaryAsset, source_id)
+            if not asset or asset.organization_id != organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Source {source_id_str} not found",
+                )
+
+            # Get existing grant
+            grant = user_repository.get_user_source_grant(
+                session=self.session,
+                user_id=user_id,
+                primary_asset_id=source_id,
+            )
+            if not grant:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"User {user_id} does not have access to source {source_id_str}",
+                )
+
+            # Delete grant
+            user_repository.delete_user_source_grant(
+                session=self.session,
+                grant=grant,
+            )
+
+    def _build_user_team_response(self, data: dict) -> UserTeamResponse:
+        """Build UserTeamResponse from repository data."""
+        team = data["team"]
+        membership = data["membership"]
+
+        now_iso = datetime.utcnow().isoformat()
+        created_at = (
+            team.created_at.isoformat()
+            if hasattr(team, "created_at") and team.created_at
+            else now_iso
+        )
+        updated_at = (
+            team.updated_at.isoformat()
+            if hasattr(team, "updated_at") and team.updated_at
+            else now_iso
+        )
+
+        return UserTeamResponse(
+            id=str(team.id),
+            name=team.name,
+            admins=data["admins"],
+            members=data["members"],
+            sources=data["sources"],
+            created_at=created_at,
+            updated_at=updated_at,
+            role=map_team_role_to_frontend(membership.role),
+        )
+
+    def _build_user_source_response(
+        self, data: dict, user_id: str
+    ) -> UserSourceResponse:
+        """Build UserSourceResponse from repository data."""
+        grant = data["grant"]
+        asset = data["asset"]
+
+        return UserSourceResponse(
+            id=str(asset.id),
+            organization_id=asset.organization_id,
+            kind=asset.kind.value if hasattr(asset.kind, "value") else str(asset.kind),
+            display_name=asset.display_name,
+            provider=(
+                asset.provider.value
+                if asset.provider and hasattr(asset.provider, "value")
+                else None
+            ),
+            created_at=asset.created_at.isoformat(),
+            updated_at=asset.updated_at.isoformat(),
+            role=map_source_role_to_frontend(grant.role),
+            visibility="private",  # TODO: Add visibility field to PrimaryAssetRoleGrant
+            user_id=user_id,
+        )

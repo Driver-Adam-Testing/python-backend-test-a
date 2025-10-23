@@ -76,6 +76,9 @@ class Backend(Construct):
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
         )
 
+        openai_url = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
+        )
 
         self.dropzone_bucket = aws_s3.Bucket(
             self,
@@ -115,7 +118,8 @@ class Backend(Construct):
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
-            "ECS_CONTAINER_STOP_TIMEOUT": "2s"
+            "ECS_CONTAINER_STOP_TIMEOUT": "2s",
+            "OPENAI_URL": openai_url
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }
 

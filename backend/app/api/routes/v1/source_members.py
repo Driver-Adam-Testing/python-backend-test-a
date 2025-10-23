@@ -14,6 +14,7 @@ from app.schemas.source_access_schema import (
     UpdateSourceMembersRequest,
 )
 from app.services.source_access_service import SourceAccessService
+from backend.app.authorization.fastapi import enforce_asset_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ def get_source_members(
 
     Returns both users and teams with their roles and access details.
     """
+    enforce_asset_action(session, user, source_id, "asset.use_as_source")
     logger.info(
         f"User {user.user_id} getting members for source {source_id} "
         f"(limit={limit}, offset={offset}, roles={roles}, kind={member_kind}, search={search})"
@@ -81,6 +83,7 @@ def add_source_members(
 
     - **members**: List of members (users or teams) with roles to grant
     """
+    enforce_asset_action(session, user, source_id, "asset.manage")
     logger.info(
         f"User {user.user_id} adding {len(request.members)} members to source {source_id}"
     )
@@ -109,6 +112,7 @@ def update_source_members(
 
     - **members**: List of members with updated roles
     """
+    enforce_asset_action(session, user, source_id, "asset.manage")
     logger.info(
         f"User {user.user_id} updating {len(request.members)} members for source {source_id}"
     )
@@ -137,6 +141,7 @@ def remove_source_members(
 
     - **members**: List of members to remove (with member_id and kind)
     """
+    enforce_asset_action(session, user, source_id, "asset.manage")
     logger.info(
         f"User {user.user_id} removing {len(request.members)} members from source {source_id}"
     )

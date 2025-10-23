@@ -28,7 +28,9 @@ class Reference(BaseModel):
         return hash(self) == hash(other)
 
     @property
-    def short_path(self) -> str:
+    def short_path(self) -> str | None:
+        if self.relative_path is None:
+            return None
         parts = self.relative_path.split("/")
         if len(parts) > 3:
             return f"{parts[0]}/.../{parts[-2]}/{parts[-1]}"

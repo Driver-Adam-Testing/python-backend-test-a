@@ -14,6 +14,7 @@ from app.schemas.team_member_schema import (
     UpdateTeamMembersRequest,
 )
 from app.services.team_member_service import TeamMemberService
+from app.authorization.fastapi import enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ def list_team_members(
     - `roles`: Filter by team role (admin, member)
     - `search`: Search by user name or email (case-insensitive)
     """
+    enforce_team_action(session, user, team_id, "team.view")
     logger.info(
         f"User {user.user_id} listing members for team {team_id} "
         f"(roles={roles}, search={search}, limit={limit}, offset={offset})"
@@ -88,6 +90,7 @@ def add_team_members(
 
     **Note:** Users must already exist in the system.
     """
+    enforce_team_action(session, user, team_id, "team.manage")
     logger.info(
         f"User {user.user_id} adding {len(request.members)} members to team {team_id}"
     )
@@ -118,6 +121,7 @@ def update_team_members(
 
     **Note:** All users must already be members of the team.
     """
+    enforce_team_action(session, user, team_id, "team.manage")
     logger.info(
         f"User {user.user_id} updating {len(request.members)} members in team {team_id}"
     )
@@ -146,6 +150,7 @@ def remove_team_members(
 
     - **user_ids**: List of user IDs to remove from the team
     """
+    enforce_team_action(session, user, team_id, "team.manage")
     logger.info(
         f"User {user.user_id} removing {len(request.user_ids)} members "
         f"from team {team_id}"

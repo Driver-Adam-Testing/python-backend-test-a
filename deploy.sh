@@ -17,7 +17,7 @@ else
 fi
 
 #Push backend contianers
-#aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
 
 #TODO convert all of this push logic to a function
 BACKEND_IMAGE_NAME=python-backend
@@ -31,9 +31,11 @@ HATCHET_WORKER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$HATCHET_
 
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $BACKEND_REPO_URI .
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/hatchet_worker/Dockerfile .
+echo $BACKEND_REPO_URI
+echo $HATCHET_WORKER_REPO_URI
 
-BACKEND_LOCAL_DIGEST=$(docker image inspect $BACKEND_REPO_URI --format '{{json .RepoDigests}}' | grep -o 'sha256:[0-9a-f]\{64\}' )
-HATCHET_WORKER_LOCAL_DIGEST=$(docker image inspect $HATCHET_WORKER_REPO_URI --format '{{json .RepoDigests}}' | grep -o 'sha256:[0-9a-f]\{64\}')
+BACKEND_LOCAL_DIGEST=$(docker image inspect $BACKEND_REPO_URI --format '{{json .Id}}' | grep -o 'sha256:[0-9a-f]\{64\}' )
+HATCHET_WORKER_LOCAL_DIGEST=$(docker image inspect $HATCHET_WORKER_REPO_URI --format '{{json .Id}}' | grep -o 'sha256:[0-9a-f]\{64\}')
 
 BACKEND_REMOTE_DIGEST=$(aws ecr describe-images \
   --repository-name "$BACKEND_IMAGE_NAME" \
@@ -49,7 +51,6 @@ HATCHET_WORKER_REMOTE_DIGEST=$(aws ecr describe-images \
   --query 'imageDetails[0].imageDigest' \
   --output text 2>/dev/null || echo "NONE")
   
-
 if [ "$BACKEND_LOCAL_DIGEST" != "$BACKEND_REMOTE_DIGEST" ]; then
   echo "Backend Image has changed. Pushing new image..."
   docker push "$BACKEND_REPO_URI"
@@ -67,7 +68,7 @@ else
   echo "Image is up-to-date. No push needed."
   export HATCHET_WORKER_PUSHED=false
 fi
-
+echo "what"
 npm install -g aws-cdk@latest
 pip install aws-cdk-lib
 pip install aws-cdk.aws-lambda-python-alpha

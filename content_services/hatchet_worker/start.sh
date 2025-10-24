@@ -11,5 +11,7 @@ else
     echo "There is no script /setEnv.sh"
 fi
 
-echo "Hatchet Worker running off branch ${GIT_BRANCH} commit ${GIT_COMMIT}
-poetry run python worker.py
+echo "Hatchet Worker running off branch ${GIT_BRANCH} commit ${GIT_COMMIT}"
+export HATCHET_CLIENT_TLS_STRATEGY=none
+
+poetry run python src/worker.py

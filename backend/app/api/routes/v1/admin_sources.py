@@ -48,7 +48,7 @@ def get_admin_sources(
     )
     service = AdminSourcesService(session)
     return service.get_admin_sources(
-        organization_id=user.organization_id,
+        user=user,
         search=search,
         kinds=kind,
         tag_ids=tag_ids,

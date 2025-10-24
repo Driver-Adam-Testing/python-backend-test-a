@@ -6,10 +6,17 @@ Test Scenario 5: Verify database consistency when operations fail.
 Run with: pytest -m integration
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 from database.models import Team, TeamMembership
 from fastapi import HTTPException
 from sqlmodel import Session, select
+
+if TYPE_CHECKING:
+    from app.auth.models import User
 
 from app.schemas.source_access_schema import (
     AddTeamSourcesRequest,
@@ -23,6 +30,26 @@ from app.schemas.team_member_schema import (
 from app.services.source_access_service import SourceAccessService
 from app.services.team_member_service import TeamMemberService
 from app.test_factories import Auth0UserFactory, PrimaryAssetFactory, TeamFactory
+
+
+def create_mock_user(organization_id: str, user_id: str = "test-user-id") -> User:
+    """Create a mock User object for testing."""
+    from app.auth.models import User
+
+    return User(
+        org_id=organization_id,
+        org_name="Test Organization",
+        sub=user_id,
+        iss="https://test.auth0.com/",
+        aud=["test-audience"],
+        iat=1234567890,
+        exp=9999999999,
+        scope="",
+        azp="",
+        permissions=[],
+        user_email="test@example.com",
+        user_full_name="Test User",
+    )
 
 
 @pytest.mark.integration
@@ -70,10 +97,11 @@ class TestTransactionRollback:
         team = TeamFactory.create(integration_db_session, organization_id=org_id)
 
         # Attempt to add invalid source
+        mock_user = create_mock_user(org_id)
         with pytest.raises(HTTPException) as exc_info:
             service.add_team_sources(
+                user=mock_user,
                 team_id=team.id,
-                organization_id=org_id,
                 request=AddTeamSourcesRequest(
                     sources=[
                         TeamSourceInput(
@@ -112,6 +140,7 @@ class TestTransactionRollback:
         4. Verify original 2 members unchanged
         """
         org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
         member_service = TeamMemberService(integration_db_session)
 
         # Create team
@@ -122,8 +151,8 @@ class TestTransactionRollback:
         user2 = Auth0UserFactory.create(integration_db_session, organization_id=org_id)
 
         member_service.add_team_members(
+            user=mock_user,
             team_id=team.id,
-            organization_id=org_id,
             request=AddTeamMembersRequest(
                 members=[
                     TeamMemberAddInput(user_id=user1.id, role="admin"),
@@ -141,8 +170,8 @@ class TestTransactionRollback:
         # Attempt to update invalid user
         with pytest.raises(HTTPException) as exc_info:
             member_service.update_team_members(
+                user=mock_user,
                 team_id=team.id,
-                organization_id=org_id,
                 request=UpdateTeamMembersRequest(
                     members=[
                         TeamMemberAddInput(user_id="invalid-user-id", role="admin"),
@@ -203,6 +232,7 @@ class TestDuplicatePrevention:
         4. Verify only one membership exists
         """
         org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
         member_service = TeamMemberService(integration_db_session)
 
         # Create team and user
@@ -211,8 +241,8 @@ class TestDuplicatePrevention:
 
         # Add user to team
         member_service.add_team_members(
+            user=mock_user,
             team_id=team.id,
-            organization_id=org_id,
             request=AddTeamMembersRequest(
                 members=[TeamMemberAddInput(user_id=user.id, role="member")]
             ),
@@ -221,8 +251,8 @@ class TestDuplicatePrevention:
         # Attempt to add same user again
         with pytest.raises(HTTPException) as exc_info:
             member_service.add_team_members(
+                user=mock_user,
                 team_id=team.id,
-                organization_id=org_id,
                 request=AddTeamMembersRequest(
                     members=[TeamMemberAddInput(user_id=user.id, role="admin")]
                 ),
@@ -251,6 +281,7 @@ class TestDuplicatePrevention:
         4. Verify only one grant exists
         """
         org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
         service = SourceAccessService(integration_db_session)
 
         # Create team and source
@@ -261,8 +292,8 @@ class TestDuplicatePrevention:
 
         # Add source to team
         service.add_team_sources(
+            user=mock_user,
             team_id=team.id,
-            organization_id=org_id,
             request=AddTeamSourcesRequest(
                 sources=[TeamSourceInput(source_id=str(source.id), role="admin")]
             ),
@@ -271,8 +302,8 @@ class TestDuplicatePrevention:
         # Attempt to add same source again
         with pytest.raises(HTTPException) as exc_info:
             service.add_team_sources(
+                user=mock_user,
                 team_id=team.id,
-                organization_id=org_id,
                 request=AddTeamSourcesRequest(
                     sources=[TeamSourceInput(source_id=str(source.id), role="member")]
                 ),

@@ -3,12 +3,14 @@
 import logging
 from uuid import UUID, uuid4
 
-from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Team, User
+from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Team
+from database.models import User as DbUser
 from database.models_enums import PrimaryAssetRole, PrincipalKind
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.auth.models import User
 from app.repositories import acl_repository, team_repository
 from app.schemas.source_access_schema import (
     AddSourceMembersRequest,
@@ -78,7 +80,7 @@ def grant_to_team_source_response(
 def grant_to_source_member_response(
     grant: PrimaryAssetRoleGrant,
     asset: PrimaryAsset,
-    member: User | Team,
+    member: DbUser | Team,
     kind: str,
 ) -> SourceMemberResponse:
     """
@@ -87,7 +89,7 @@ def grant_to_source_member_response(
     Args:
         grant: PrimaryAssetRoleGrant instance
         asset: PrimaryAsset instance
-        member: User or Team instance
+        member: DbUser or Team instance
         kind: Member kind ('user' or 'team')
 
     Returns:
@@ -133,8 +135,8 @@ class SourceAccessService:
 
     def get_team_sources(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         roles: list[str] | None = None,
         visibilities: list[str] | None = None,
         search: str | None = None,
@@ -145,8 +147,8 @@ class SourceAccessService:
         Get paginated list of sources for a team.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             roles: Optional list of roles to filter by
             visibilities: Optional list of visibilities to filter by
             search: Optional search query
@@ -159,6 +161,7 @@ class SourceAccessService:
         Raises:
             HTTPException: If team not found
         """
+        organization_id = user.organization_id
         logger.info(
             f"Getting sources for team {team_id} (roles={roles}, "
             f"visibilities={visibilities}, search={search})"
@@ -208,22 +211,25 @@ class SourceAccessService:
 
     def add_team_sources(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         request: AddTeamSourcesRequest,
     ) -> None:
         """
         Add sources to a team.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             request: Add team sources request
 
         Raises:
             HTTPException: If team or source not found, or grant already exists
         """
-        logger.info(f"Adding {len(request.sources)} sources to team {team_id}")
+        organization_id = user.organization_id
+        logger.info(
+            f"Adding {len(request.sources)} sources to team {team_id} by user {user.user_id}"
+        )
 
         # Verify team exists
         team = team_repository.get_team_by_id(
@@ -274,22 +280,25 @@ class SourceAccessService:
 
     def update_team_sources(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         request: UpdateTeamSourcesRequest,
     ) -> None:
         """
         Update roles for team sources.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             request: Update team sources request
 
         Raises:
             HTTPException: If team or grant not found
         """
-        logger.info(f"Updating {len(request.sources)} sources for team {team_id}")
+        organization_id = user.organization_id
+        logger.info(
+            f"Updating {len(request.sources)} sources for team {team_id} by user {user.user_id}"
+        )
 
         # Verify team exists
         team = team_repository.get_team_by_id(
@@ -337,21 +346,22 @@ class SourceAccessService:
 
     def remove_team_sources(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         request: RemoveTeamSourcesRequest,
     ) -> None:
         """
         Remove sources from a team.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             request: Remove team sources request
 
         Raises:
             HTTPException: If team not found
         """
+        organization_id = user.organization_id
         logger.info(f"Removing {len(request.source_ids)} sources from team {team_id}")
 
         # Verify team exists
@@ -395,8 +405,8 @@ class SourceAccessService:
 
     def get_source_members(
         self,
+        user: User,
         source_id: UUID,
-        organization_id: str,
         roles: list[str] | None = None,
         member_kind: str | None = None,
         search: str | None = None,
@@ -407,8 +417,8 @@ class SourceAccessService:
         Get paginated list of members for a source.
 
         Args:
+            user: Authenticated user making the request
             source_id: Source (primary asset) ID
-            organization_id: Organization ID
             roles: Optional list of roles to filter by
             member_kind: Optional member kind filter
             search: Optional search query
@@ -421,8 +431,9 @@ class SourceAccessService:
         Raises:
             HTTPException: If source not found
         """
+        organization_id = user.organization_id
         logger.info(
-            f"Getting members for source {source_id} (roles={roles}, "
+            f"Getting members for source {source_id} by user {user.user_id} (roles={roles}, "
             f"kind={member_kind}, search={search})"
         )
 
@@ -472,21 +483,22 @@ class SourceAccessService:
 
     def add_source_members(
         self,
+        user: User,
         source_id: UUID,
-        organization_id: str,
         request: AddSourceMembersRequest,
     ) -> None:
         """
         Add members to a source.
 
         Args:
+            user: Authenticated user making the request
             source_id: Source (primary asset) ID
-            organization_id: Organization ID
             request: Add source members request
 
         Raises:
             HTTPException: If source or member not found, or grant already exists
         """
+        organization_id = user.organization_id
         logger.info(f"Adding {len(request.members)} members to source {source_id}")
 
         # Verify source exists
@@ -524,21 +536,22 @@ class SourceAccessService:
 
     def update_source_members(
         self,
+        user: User,
         source_id: UUID,
-        organization_id: str,
         request: UpdateSourceMembersRequest,
     ) -> None:
         """
         Update roles for source members.
 
         Args:
+            user: Authenticated user making the request
             source_id: Source (primary asset) ID
-            organization_id: Organization ID
             request: Update source members request
 
         Raises:
             HTTPException: If source or grant not found
         """
+        organization_id = user.organization_id
         logger.info(f"Updating {len(request.members)} members for source {source_id}")
 
         # Verify source exists
@@ -596,21 +609,22 @@ class SourceAccessService:
 
     def remove_source_members(
         self,
+        user: User,
         source_id: UUID,
-        organization_id: str,
         request: RemoveSourceMembersRequest,
     ) -> None:
         """
         Remove members from a source.
 
         Args:
+            user: Authenticated user making the request
             source_id: Source (primary asset) ID
-            organization_id: Organization ID
             request: Remove source members request
 
         Raises:
             HTTPException: If source not found
         """
+        organization_id = user.organization_id
         logger.info(f"Removing {len(request.members)} members from source {source_id}")
 
         # Verify source exists

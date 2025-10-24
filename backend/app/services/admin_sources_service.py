@@ -4,6 +4,7 @@ import logging
 
 from sqlmodel import Session
 
+from app.auth.models import User
 from app.repositories import admin_sources_repository
 from app.schemas.admin_sources_schema import (
     AdminSourceRecord,
@@ -21,7 +22,7 @@ class AdminSourcesService:
 
     def get_admin_sources(
         self,
-        organization_id: str,
+        user: User,
         search: str | None = None,
         kinds: list[str] | None = None,
         tag_ids: list[str] | None = None,
@@ -34,7 +35,7 @@ class AdminSourcesService:
         Get paginated list of sources with admin metadata.
 
         Args:
-            organization_id: Organization ID
+            user: Authenticated user making the request
             search: Optional search query for display_name
             kinds: Optional list of asset kinds to filter
             tag_ids: Optional list of tag IDs to filter
@@ -46,8 +47,9 @@ class AdminSourcesService:
         Returns:
             AdminSourcesResponse with sources and counts
         """
+        organization_id = user.organization_id
         logger.info(
-            f"Getting admin sources for organization {organization_id} "
+            f"Getting admin sources for organization {organization_id} by user {user.user_id} "
             f"(limit={limit}, offset={offset}, search={search})"
         )
 

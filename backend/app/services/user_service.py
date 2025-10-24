@@ -9,6 +9,7 @@ from database.models_enums import PrimaryAssetRole, PrincipalKind, TeamRole
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
+from app.auth.models import User
 from app.repositories import team_repository, user_repository
 from app.schemas.user_schema import (
     AddUserSourcesRequest,
@@ -76,7 +77,7 @@ class UserService:
 
     def search_organization_users(
         self,
-        organization_id: str,
+        user: User,
         query: str,
         limit: int = 30,
         offset: int = 0,
@@ -85,7 +86,7 @@ class UserService:
         Search for users within an organization.
 
         Args:
-            organization_id: Organization ID
+            user: Authenticated user making the request
             query: Search query for name or email
             limit: Maximum number of results
             offset: Number of results to skip
@@ -93,6 +94,7 @@ class UserService:
         Returns:
             OrganizationMembersResponse with users and total count
         """
+        organization_id = user.organization_id
         users = user_repository.search_organization_users(
             session=self.session,
             organization_id=organization_id,
@@ -124,8 +126,8 @@ class UserService:
 
     def get_user_teams(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         roles: list[str] | None = None,
         search: str | None = None,
         limit: int = 30,
@@ -135,8 +137,8 @@ class UserService:
         Get teams for a user.
 
         Args:
+            user: Authenticated user making the request
             user_id: User ID
-            organization_id: Organization ID
             roles: Optional list of roles to filter by
             search: Optional search query for team name
             limit: Maximum number of results
@@ -145,6 +147,7 @@ class UserService:
         Returns:
             UserTeamsResponse with teams and total count
         """
+        organization_id = user.organization_id
         team_data = user_repository.get_user_teams_with_details(
             session=self.session,
             user_id=user_id,
@@ -172,8 +175,8 @@ class UserService:
 
     def add_user_teams(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         request: AddUserTeamsRequest,
     ) -> None:
         """
@@ -187,6 +190,7 @@ class UserService:
         Raises:
             HTTPException: If team not found or user already in team
         """
+        organization_id = user.organization_id
         for team_input in request.teams:
             team_id = UUID(team_input.team_id)
 
@@ -227,8 +231,8 @@ class UserService:
 
     def update_user_teams(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         request: UpdateUserTeamsRequest,
     ) -> None:
         """
@@ -242,6 +246,7 @@ class UserService:
         Raises:
             HTTPException: If team not found or user not in team
         """
+        organization_id = user.organization_id
         for team_input in request.teams:
             team_id = UUID(team_input.team_id)
 
@@ -277,8 +282,8 @@ class UserService:
 
     def remove_user_teams(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         request: RemoveUserTeamsRequest,
     ) -> None:
         """
@@ -292,6 +297,7 @@ class UserService:
         Raises:
             HTTPException: If team not found or user not in team
         """
+        organization_id = user.organization_id
         for team_id_str in request.team_ids:
             team_id = UUID(team_id_str)
 
@@ -327,8 +333,8 @@ class UserService:
 
     def get_user_sources(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         roles: list[str] | None = None,
         search: str | None = None,
         limit: int = 30,
@@ -338,8 +344,8 @@ class UserService:
         Get sources for a user.
 
         Args:
+            user: Authenticated user making the request
             user_id: User ID
-            organization_id: Organization ID
             roles: Optional list of roles to filter by
             search: Optional search query for display name
             limit: Maximum number of results
@@ -348,6 +354,7 @@ class UserService:
         Returns:
             UserSourcesResponse with sources and total count
         """
+        organization_id = user.organization_id
         source_data = user_repository.get_user_sources_with_details(
             session=self.session,
             user_id=user_id,
@@ -377,8 +384,8 @@ class UserService:
 
     def add_user_sources(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         request: AddUserSourcesRequest,
     ) -> None:
         """
@@ -392,6 +399,7 @@ class UserService:
         Raises:
             HTTPException: If source not found or user already has access
         """
+        organization_id = user.organization_id
         for source_input in request.sources:
             source_id = UUID(source_input.source_id)
 
@@ -430,8 +438,8 @@ class UserService:
 
     def update_user_sources(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         request: UpdateUserSourcesRequest,
     ) -> None:
         """
@@ -445,6 +453,7 @@ class UserService:
         Raises:
             HTTPException: If source not found or user doesn't have access
         """
+        organization_id = user.organization_id
         for source_input in request.sources:
             source_id = UUID(source_input.source_id)
 
@@ -476,8 +485,8 @@ class UserService:
 
     def remove_user_sources(
         self,
+        user: User,
         user_id: str,
-        organization_id: str,
         request: RemoveUserSourcesRequest,
     ) -> None:
         """
@@ -491,6 +500,7 @@ class UserService:
         Raises:
             HTTPException: If source not found or user doesn't have access
         """
+        organization_id = user.organization_id
         for source_id_str in request.source_ids:
             source_id = UUID(source_id_str)
 

@@ -45,7 +45,7 @@ def search_organization_users(
     )
     service = UserService(session)
     return service.search_organization_users(
-        organization_id=user.organization_id,
+        user=user,
         query=query,
         limit=limit,
         offset=offset,
@@ -82,8 +82,8 @@ def get_user_teams(
     )
     service = UserService(session)
     return service.get_user_teams(
+        user=user,
         user_id=user_id,
-        organization_id=user.organization_id,
         roles=roles,
         search=search,
         limit=limit,
@@ -113,8 +113,8 @@ def add_user_teams(
     )
     service = UserService(session)
     service.add_user_teams(
+        user=user,
         user_id=user_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -141,8 +141,8 @@ def update_user_teams(
     )
     service = UserService(session)
     service.update_user_teams(
+        user=user,
         user_id=user_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -169,7 +169,7 @@ def remove_user_teams(
     )
     service = UserService(session)
     service.remove_user_teams(
+        user=user,
         user_id=user_id,
-        organization_id=user.organization_id,
         request=request,
     )

@@ -60,8 +60,8 @@ def list_team_members(
     )
     team_member_service = TeamMemberService(session)
     return team_member_service.get_team_members(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         roles=roles,
         search=search,
         limit=limit,
@@ -93,8 +93,8 @@ def add_team_members(
     )
     team_member_service = TeamMemberService(session)
     team_member_service.add_team_members(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -123,8 +123,8 @@ def update_team_members(
     )
     team_member_service = TeamMemberService(session)
     team_member_service.update_team_members(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -152,7 +152,7 @@ def remove_team_members(
     )
     team_member_service = TeamMemberService(session)
     team_member_service.remove_team_members(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         request=request,
     )

@@ -60,7 +60,7 @@ def trigger_asset_connection(
 
     match trigger_body.params.asset_kind:
         case PrimaryAssetKind.CODEBASE:
-            run_codebase_connection = modal.Function.lookup(
+            run_codebase_connection = modal.Function.from_name(
                 "inspector-v2",
                 "run_codebase_connection",
                 environment_name=settings.MODAL_ENVIRONMENT,
@@ -74,7 +74,7 @@ def trigger_asset_connection(
                 provider=trigger_body.params.provider,
             )
         case PrimaryAssetKind.FILE:
-            create_and_embed_pdf_summaries = modal.Function.lookup(
+            create_and_embed_pdf_summaries = modal.Function.from_name(
                 "pdf-summary-embedding",
                 "create_and_embed_pdf_summaries",
                 # TODO: this line is not need once we deploy to production.

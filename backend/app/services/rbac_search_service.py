@@ -2,9 +2,11 @@
 
 import logging
 
-from database.models import OrgMembership, Team, User
+from database.models import OrgMembership, Team
+from database.models import User as DbUser
 from sqlmodel import Session, func, or_, select
 
+from app.auth.models import User
 from app.schemas.rbac_search_schema import (
     MemberSearchItem,
     MemberSearchResponse,
@@ -18,7 +20,7 @@ def search_users_in_organization(
     organization_id: str,
     query: str,
     limit: int,
-) -> list[User]:
+) -> list[DbUser]:
     """
     Search for users in an organization.
 
@@ -33,16 +35,16 @@ def search_users_in_organization(
     """
     search_pattern = f"%{query}%"
     user_query = (
-        select(User)
-        .join(OrgMembership, User.id == OrgMembership.user_id)
+        select(DbUser)
+        .join(OrgMembership, DbUser.id == OrgMembership.user_id)
         .where(
             OrgMembership.org_id == organization_id,
             or_(
-                User.name.ilike(search_pattern),
-                User.email.ilike(search_pattern),
+                DbUser.name.ilike(search_pattern),
+                DbUser.email.ilike(search_pattern),
             ),
         )
-        .order_by(User.name)
+        .order_by(DbUser.name)
         .limit(limit)
     )
 
@@ -100,13 +102,13 @@ def count_users_in_organization(
     search_pattern = f"%{query}%"
     count_query = (
         select(func.count())
-        .select_from(User)
-        .join(OrgMembership, User.id == OrgMembership.user_id)
+        .select_from(DbUser)
+        .join(OrgMembership, DbUser.id == OrgMembership.user_id)
         .where(
             OrgMembership.org_id == organization_id,
             or_(
-                User.name.ilike(search_pattern),
-                User.email.ilike(search_pattern),
+                DbUser.name.ilike(search_pattern),
+                DbUser.email.ilike(search_pattern),
             ),
         )
     )
@@ -151,7 +153,7 @@ class RBACSearchService:
 
     def search_members(
         self,
-        organization_id: str,
+        user: User,
         query: str,
         limit: int = 30,
         offset: int = 0,
@@ -163,7 +165,7 @@ class RBACSearchService:
         and returns combined results, useful for adding members to sources.
 
         Args:
-            organization_id: Organization ID
+            user: Authenticated user making the request
             query: Search query (case-insensitive)
             limit: Maximum number of results
             offset: Number of results to skip
@@ -171,8 +173,9 @@ class RBACSearchService:
         Returns:
             MemberSearchResponse with combined user and team results
         """
+        organization_id = user.organization_id
         logger.info(
-            f"Searching members for organization {organization_id} "
+            f"Searching members for organization {organization_id} by user {user.user_id} "
             f"with query '{query}' (limit={limit}, offset={offset})"
         )
 

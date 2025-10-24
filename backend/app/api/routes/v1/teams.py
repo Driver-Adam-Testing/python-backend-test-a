@@ -47,7 +47,7 @@ def create_team(
     logger.info(f"User {user.user_id} creating team '{request.name}'")
     team_service = TeamService(session)
     return team_service.create_team(
-        organization_id=user.organization_id,
+        user=user,
         request=request,
     )
 
@@ -81,7 +81,7 @@ def list_teams(
     )
     team_service = TeamService(session)
     return team_service.get_teams(
-        organization_id=user.organization_id,
+        user=user,
         limit=limit,
         offset=offset,
         search=search,
@@ -107,8 +107,8 @@ def get_team(
     logger.info(f"User {user.user_id} getting team {team_id}")
     team_service = TeamService(session)
     return team_service.get_team(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
     )
 
 
@@ -132,8 +132,8 @@ def update_team(
     logger.info(f"User {user.user_id} updating team {team_id}")
     team_service = TeamService(session)
     return team_service.update_team(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -159,6 +159,6 @@ def delete_team(
     logger.info(f"User {user.user_id} deleting team {team_id}")
     team_service = TeamService(session)
     team_service.delete_team(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
     )

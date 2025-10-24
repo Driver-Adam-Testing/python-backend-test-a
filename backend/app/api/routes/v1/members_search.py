@@ -40,7 +40,7 @@ def search_members(
     )
     service = RBACSearchService(session)
     return service.search_members(
-        organization_id=user.organization_id,
+        user=user,
         query=query,
         limit=limit,
         offset=offset,

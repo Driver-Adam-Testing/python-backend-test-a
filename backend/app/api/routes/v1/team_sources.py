@@ -52,8 +52,8 @@ def get_team_sources(
     )
     service = SourceAccessService(session)
     return service.get_team_sources(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         roles=roles,
         visibilities=visibilities,
         search=search,
@@ -84,8 +84,8 @@ def add_team_sources(
     )
     service = SourceAccessService(session)
     service.add_team_sources(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -112,8 +112,8 @@ def update_team_sources(
     )
     service = SourceAccessService(session)
     service.update_team_sources(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -140,7 +140,7 @@ def remove_team_sources(
     )
     service = SourceAccessService(session)
     service.remove_team_sources(
+        user=user,
         team_id=team_id,
-        organization_id=user.organization_id,
         request=request,
     )

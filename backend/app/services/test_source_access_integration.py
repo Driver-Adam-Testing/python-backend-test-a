@@ -6,11 +6,18 @@ These tests verify RBAC access propagation, cascading deletes, and organization 
 Run with: pytest -m integration
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
 from database.models_enums import PrimaryAssetRole, PrincipalKind
 from fastapi import HTTPException
 from sqlmodel import Session, select
+
+if TYPE_CHECKING:
+    from app.auth.models import User
 
 from app.schemas.source_access_schema import (
     AddSourceMembersRequest,
@@ -33,6 +40,26 @@ from app.test_factories import (
 )
 
 
+def create_mock_user(organization_id: str, user_id: str = "test-user-id") -> User:
+    """Create a mock User object for testing."""
+    from app.auth.models import User
+
+    return User(
+        org_id=organization_id,
+        org_name="Test Organization",
+        sub=user_id,
+        iss="https://test.auth0.com/",
+        aud=["test-audience"],
+        iat=1234567890,
+        exp=9999999999,
+        scope="",
+        azp="",
+        permissions=[],
+        user_email="test@example.com",
+        user_full_name="Test User",
+    )
+
+
 @pytest.mark.integration
 class TestTeamSourceAccessPropagation:
     """Test Scenario 2: Team-Source access propagation."""
@@ -52,15 +79,14 @@ class TestTeamSourceAccessPropagation:
         6. Query source members - verify team appears
         """
         org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
         service = SourceAccessService(integration_db_session)
 
         # Step 1: Create team with members
-        team = TeamFactory.create(
-            integration_db_session, name="Engineering", organization_id=org_id
-        )
-        user1 = Auth0UserFactory.create(integration_db_session, organization_id=org_id)
-        user2 = Auth0UserFactory.create(integration_db_session, organization_id=org_id)
-        user3 = Auth0UserFactory.create(integration_db_session, organization_id=org_id)
+        team = TeamFactory.create(integration_db_session, name="Engineering")
+        user1 = Auth0UserFactory.create(integration_db_session)
+        user2 = Auth0UserFactory.create(integration_db_session)
+        user3 = Auth0UserFactory.create(integration_db_session)
 
         TeamMembershipFactory.create(
             integration_db_session, team_id=team.id, user_id=user1.id
@@ -74,13 +100,13 @@ class TestTeamSourceAccessPropagation:
 
         # Step 2: Create source
         source = PrimaryAssetFactory.create(
-            integration_db_session, display_name="My Codebase", organization_id=org_id
+            integration_db_session, display_name="My Codebase"
         )
 
         # Step 3: Add source to team
         service.add_team_sources(
+            user=mock_user,
             team_id=team.id,
-            organization_id=org_id,
             request=AddTeamSourcesRequest(
                 sources=[TeamSourceInput(source_id=str(source.id), role="admin")]
             ),
@@ -100,7 +126,7 @@ class TestTeamSourceAccessPropagation:
 
         # Step 5: Query team sources
         team_sources = service.get_team_sources(
-            team_id=team.id, organization_id=org_id, limit=10, offset=0
+            user=mock_user, team_id=team.id, limit=10, offset=0
         )
         assert team_sources.total == 1
         assert len(team_sources.sources) == 1
@@ -109,7 +135,7 @@ class TestTeamSourceAccessPropagation:
 
         # Step 6: Query source members
         source_members = service.get_source_members(
-            source_id=source.id, organization_id=org_id, limit=10, offset=0
+            user=mock_user, source_id=source.id, limit=10, offset=0
         )
         assert source_members.total == 1
         assert source_members.members[0].member_id == str(team.id)
@@ -121,19 +147,17 @@ class TestTeamSourceAccessPropagation:
     ) -> None:
         """Test that removing a source from a team deletes the grant."""
         org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
         service = SourceAccessService(integration_db_session)
 
         # Create team and source with existing grant
-        team = TeamFactory.create(integration_db_session, organization_id=org_id)
-        source = PrimaryAssetFactory.create(
-            integration_db_session, organization_id=org_id
-        )
+        team = TeamFactory.create(integration_db_session)
+        source = PrimaryAssetFactory.create(integration_db_session)
         PrimaryAssetRoleGrantFactory.create(
             integration_db_session,
             primary_asset_id=source.id,
             principal_kind=PrincipalKind.team,
             team_id=team.id,
-            organization_id=org_id,
         )
 
         # Verify grant exists
@@ -147,8 +171,8 @@ class TestTeamSourceAccessPropagation:
 
         # Remove source from team
         service.remove_team_sources(
+            user=mock_user,
             team_id=team.id,
-            organization_id=org_id,
             request=RemoveTeamSourcesRequest(source_ids=[str(source.id)]),
         )
 
@@ -180,18 +204,17 @@ class TestUserDirectVsTeamAccess:
         5. Remove direct access - verify no access remains
         """
         org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
         service = SourceAccessService(integration_db_session)
 
         # Create user and source
-        user = Auth0UserFactory.create(integration_db_session, organization_id=org_id)
-        source = PrimaryAssetFactory.create(
-            integration_db_session, organization_id=org_id
-        )
+        user = Auth0UserFactory.create(integration_db_session)
+        source = PrimaryAssetFactory.create(integration_db_session)
 
         # Step 1: Grant user direct access (role: member)
         service.add_source_members(
+            user=mock_user,
             source_id=source.id,
-            organization_id=org_id,
             request=AddSourceMembersRequest(
                 members=[
                     SourceMemberInput(member_id=user.id, kind="user", role="member")
@@ -200,13 +223,13 @@ class TestUserDirectVsTeamAccess:
         )
 
         # Step 2: Create team with user and grant team access (role: admin)
-        team = TeamFactory.create(integration_db_session, organization_id=org_id)
+        team = TeamFactory.create(integration_db_session)
         TeamMembershipFactory.create(
             integration_db_session, team_id=team.id, user_id=user.id
         )
         service.add_team_sources(
+            user=mock_user,
             team_id=team.id,
-            organization_id=org_id,
             request=AddTeamSourcesRequest(
                 sources=[TeamSourceInput(source_id=str(source.id), role="admin")]
             ),
@@ -237,8 +260,8 @@ class TestUserDirectVsTeamAccess:
         from app.schemas.team_member_schema import RemoveTeamMembersRequest
 
         member_service.remove_team_members(
+            user=mock_user,
             team_id=team.id,
-            organization_id=org_id,
             request=RemoveTeamMembersRequest(user_ids=[user.id]),
         )
 
@@ -261,8 +284,8 @@ class TestUserDirectVsTeamAccess:
 
         # Step 5: Remove direct access
         service.remove_source_members(
+            user=mock_user,
             source_id=source.id,
-            organization_id=org_id,
             request=RemoveSourceMembersRequest(
                 members=[RemoveSourceMemberInput(member_id=user.id, kind="user")]
             ),
@@ -309,12 +332,13 @@ class TestOrganizationIsolation:
         )
 
         # User in Org 2 attempts to get Org 1's team
+        mock_user_org2 = create_mock_user(org2_id)
         with pytest.raises(HTTPException) as exc_info:
-            team_service.get_team(team_id=team_org1.id, organization_id=org2_id)
+            team_service.get_team(user=mock_user_org2, team_id=team_org1.id)
         assert exc_info.value.status_code == 404
 
         # User in Org 2 lists teams - should only see Org 2 teams
-        org2_teams = team_service.get_teams(organization_id=org2_id, limit=10, offset=0)
+        org2_teams = team_service.get_teams(user=mock_user_org2, limit=10, offset=0)
         assert org2_teams.total == 1
         assert org2_teams.teams[0].id == str(team_org2.id)
         assert org2_teams.teams[0].name == "Org 2 Team"
@@ -338,6 +362,7 @@ class TestOrganizationIsolation:
 
         # User in Org 2 attempts to add members to Org 1's team
         member_service = TeamMemberService(integration_db_session)
+        mock_user_org2 = create_mock_user(org2_id)
         from app.schemas.team_member_schema import (
             AddTeamMembersRequest,
             TeamMemberAddInput,
@@ -345,8 +370,8 @@ class TestOrganizationIsolation:
 
         with pytest.raises(HTTPException) as exc_info:
             member_service.add_team_members(
+                user=mock_user_org2,
                 team_id=team_org1.id,
-                organization_id=org2_id,
                 request=AddTeamMembersRequest(
                     members=[TeamMemberAddInput(user_id=user_org2.id, role="member")]
                 ),
@@ -373,33 +398,27 @@ class TestCascadingDeletes:
         6. Verify users still exist (not deleted)
         """
         org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
         team_service = TeamService(integration_db_session)
 
         # Step 1: Create team with members and sources
-        team = TeamFactory.create(integration_db_session, organization_id=org_id)
+        team = TeamFactory.create(integration_db_session)
 
         # Add 5 members
-        users = [
-            Auth0UserFactory.create(integration_db_session, organization_id=org_id)
-            for _ in range(5)
-        ]
+        users = [Auth0UserFactory.create(integration_db_session) for _ in range(5)]
         for user in users:
             TeamMembershipFactory.create(
                 integration_db_session, team_id=team.id, user_id=user.id
             )
 
         # Add 3 sources
-        sources = [
-            PrimaryAssetFactory.create(integration_db_session, organization_id=org_id)
-            for _ in range(3)
-        ]
+        sources = [PrimaryAssetFactory.create(integration_db_session) for _ in range(3)]
         for source in sources:
             PrimaryAssetRoleGrantFactory.create(
                 integration_db_session,
                 primary_asset_id=source.id,
                 principal_kind=PrincipalKind.team,
                 team_id=team.id,
-                organization_id=org_id,
             )
 
         # Verify data exists before delete
@@ -416,7 +435,7 @@ class TestCascadingDeletes:
         assert len(grants_before) == 3
 
         # Step 2: Delete team
-        team_service.delete_team(team_id=team.id, organization_id=org_id)
+        team_service.delete_team(user=mock_user, team_id=team.id)
 
         # Step 3: Verify team deleted
         team_deleted = integration_db_session.get(Team, team.id)

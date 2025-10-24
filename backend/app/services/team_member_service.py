@@ -3,12 +3,14 @@
 import logging
 from uuid import UUID, uuid4
 
-from database.models import TeamMembership, User
+from database.models import TeamMembership
+from database.models import User as DbUser
 from database.models_enums import TeamRole
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.auth.models import User
 from app.repositories import (
     org_membership_repository,
     team_member_repository,
@@ -81,9 +83,9 @@ def member_dict_to_response(member_dict: dict) -> TeamMemberResponse:
     )
 
 
-def get_user_by_id(session: Session, user_id: str) -> User | None:
+def get_user_by_id(session: Session, user_id: str) -> DbUser | None:
     """Get a user by ID."""
-    query = select(User).where(User.id == user_id)
+    query = select(DbUser).where(DbUser.id == user_id)
     return session.exec(query).first()
 
 
@@ -95,8 +97,8 @@ class TeamMemberService:
 
     def get_team_members(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         roles: list[str] | None = None,
         search: str | None = None,
         limit: int = 30,
@@ -106,8 +108,8 @@ class TeamMemberService:
         Get paginated list of team members with optional filtering.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             roles: Optional list of roles to filter by
             search: Optional search query for name or email
             limit: Maximum number of results
@@ -119,8 +121,9 @@ class TeamMemberService:
         Raises:
             HTTPException: If team not found
         """
+        organization_id = user.organization_id
         logger.info(
-            f"Getting members for team {team_id} (roles={roles}, search={search}, "
+            f"Getting members for team {team_id} by user {user.user_id} (roles={roles}, search={search}, "
             f"limit={limit}, offset={offset})"
         )
 
@@ -165,22 +168,25 @@ class TeamMemberService:
 
     def add_team_members(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         request: AddTeamMembersRequest,
     ) -> None:
         """
         Add members to a team.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             request: Add team members request
 
         Raises:
             HTTPException: If team not found or member already exists
         """
-        logger.info(f"Adding {len(request.members)} members to team {team_id}")
+        organization_id = user.organization_id
+        logger.info(
+            f"Adding {len(request.members)} members to team {team_id} by user {user.user_id}"
+        )
 
         # Verify team exists and belongs to organization
         team = team_repository.get_team_by_id(
@@ -241,22 +247,25 @@ class TeamMemberService:
 
     def update_team_members(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         request: UpdateTeamMembersRequest,
     ) -> None:
         """
         Update roles for existing team members.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             request: Update team members request
 
         Raises:
             HTTPException: If team or member not found
         """
-        logger.info(f"Updating {len(request.members)} members in team {team_id}")
+        organization_id = user.organization_id
+        logger.info(
+            f"Updating {len(request.members)} members in team {team_id} by user {user.user_id}"
+        )
 
         # Verify team exists and belongs to organization
         team = team_repository.get_team_by_id(
@@ -304,22 +313,25 @@ class TeamMemberService:
 
     def remove_team_members(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         request: RemoveTeamMembersRequest,
     ) -> None:
         """
         Remove members from a team.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             request: Remove team members request
 
         Raises:
             HTTPException: If team not found
         """
-        logger.info(f"Removing {len(request.user_ids)} members from team {team_id}")
+        organization_id = user.organization_id
+        logger.info(
+            f"Removing {len(request.user_ids)} members from team {team_id} by user {user.user_id}"
+        )
 
         # Verify team exists and belongs to organization
         team = team_repository.get_team_by_id(

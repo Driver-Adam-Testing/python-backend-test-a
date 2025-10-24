@@ -14,7 +14,7 @@ from app.schemas.source_access_schema import (
     UpdateSourceMembersRequest,
 )
 from app.services.source_access_service import SourceAccessService
-from backend.app.authorization.fastapi import enforce_asset_action
+from app.authorization.fastapi import enforce_asset_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

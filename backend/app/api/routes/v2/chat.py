@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models import Node
+from database.models import DocumentSource, Node
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -31,10 +31,18 @@ async def create_streaming_post(
     user: UserToken,
     payload: ChatHttpRequest,
 ) -> StreamingResponse:
+    source_ids = payload.source_node_ids or []
+    if payload.page_node_id:
+        sources_query = select(DocumentSource).where(
+            DocumentSource.page_node_id == payload.page_node_id
+        )
+        sources = session.exec(sources_query).all()
+        for source in sources:
+            if source.source_node_id not in source_ids:
+                source_ids.append(source.source_node_id)
+
     query = (
-        select(Node)
-        .where(Node.id.in_(payload.source_node_ids))
-        .options(selectinload(Node.version))
+        select(Node).where(Node.id.in_(source_ids)).options(selectinload(Node.version))
     )
     nodes = session.exec(query).all()
     for node in nodes:

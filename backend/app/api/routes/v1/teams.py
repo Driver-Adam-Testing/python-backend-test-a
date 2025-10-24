@@ -15,6 +15,7 @@ from app.schemas.team_schema import (
     UpdateTeamRequest,
 )
 from app.services.team_service import TeamService
+from app.authorization.fastapi import enforce_org_action, enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ def create_team(
     - **name**: Team name (required, must be unique within organization)
     - **members**: Optional list of initial team members with roles
     """
+    enforce_org_action(session, user, "team.admin")
     logger.info(f"User {user.user_id} creating team '{request.name}'")
     team_service = TeamService(session)
     return team_service.create_team(
@@ -71,6 +73,7 @@ def list_teams(
 
     Returns teams with aggregated counts of admins, members, and sources.
     """
+    enforce_org_action(session, user, "team.view")
     logger.info(f"User {user.user_id} listing teams (limit={limit}, offset={offset})")
     team_service = TeamService(session)
     return team_service.get_teams(
@@ -100,6 +103,7 @@ def search_teams(
 
     Returns teams matching the query with aggregated counts.
     """
+    enforce_org_action(session, user, "team.view")
     logger.info(f"User {user.user_id} searching teams with query '{query}'")
     team_service = TeamService(session)
     return team_service.search_teams(
@@ -126,6 +130,7 @@ def get_team(
 
     Returns team with aggregated counts of admins, members, and sources.
     """
+    enforce_org_action(session, user, "team.view")
     logger.info(f"User {user.user_id} getting team {team_id}")
     team_service = TeamService(session)
     return team_service.get_team(
@@ -151,6 +156,7 @@ def update_team(
 
     - **name**: New team name (required, must be unique within organization)
     """
+    enforce_team_action(session, user, team_id, "team.manage")
     logger.info(f"User {user.user_id} updating team {team_id}")
     team_service = TeamService(session)
     return team_service.update_team(
@@ -178,6 +184,7 @@ def delete_team(
     - All team memberships
     - All source access grants for this team
     """
+    enforce_org_action(session, user, "team.admin")
     logger.info(f"User {user.user_id} deleting team {team_id}")
     team_service = TeamService(session)
     team_service.delete_team(

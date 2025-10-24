@@ -26,7 +26,7 @@ def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
     page: int = 0,
     per_page: int = 100,
 ):
-    enforce_org_action(session, user, "users.manage")
+    enforce_org_action(session, user, "users.view")
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
         auth0_service = create_auth0_service()
@@ -43,7 +43,7 @@ def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
     page: int = 0,
     per_page: int = 100,
 ):
-    enforce_org_action(session, user, "users.manage")
+    enforce_org_action(session, user, "users.view")
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
         auth0_service = create_auth0_service()

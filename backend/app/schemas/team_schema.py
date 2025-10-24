@@ -67,3 +67,6 @@ class TeamsPaginationParams(BaseModel):
 
     limit: int = Field(default=30, ge=1, le=100, description="Maximum results")
     offset: int = Field(default=0, ge=0, description="Offset for pagination")
+    search: str | None = Field(
+        default=None, description="Optional search query to filter teams by name"
+    )

@@ -56,7 +56,7 @@ def create_team(
     "/",
     response_model=TeamsResponse,
     summary="List teams",
-    description="Get a paginated list of teams for the organization",
+    description="Get a paginated list of teams for the organization with optional search",
 )
 def list_teams(
     session: CurrentSession,
@@ -65,48 +65,26 @@ def list_teams(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
+    search: str | None = Query(
+        default=None, description="Optional search query to filter teams by name"
+    ),
 ) -> TeamsResponse:
     """
     Get paginated list of teams.
 
     Returns teams with aggregated counts of admins, members, and sources.
+    Optionally filter by team name using the search parameter.
     """
-    logger.info(f"User {user.user_id} listing teams (limit={limit}, offset={offset})")
+    logger.info(
+        f"User {user.user_id} listing teams "
+        f"(limit={limit}, offset={offset}, search={search})"
+    )
     team_service = TeamService(session)
     return team_service.get_teams(
         organization_id=user.organization_id,
         limit=limit,
         offset=offset,
-    )
-
-
-@router.get(
-    "/search",
-    response_model=TeamsResponse,
-    summary="Search teams",
-    description="Search for teams by name",
-)
-def search_teams(
-    session: CurrentSession,
-    user: UserToken,
-    query: str = Query(..., min_length=1, description="Search query"),
-    limit: int = Query(
-        default=30, ge=1, le=100, description="Maximum number of results"
-    ),
-    offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-) -> TeamsResponse:
-    """
-    Search teams by name (case-insensitive).
-
-    Returns teams matching the query with aggregated counts.
-    """
-    logger.info(f"User {user.user_id} searching teams with query '{query}'")
-    team_service = TeamService(session)
-    return team_service.search_teams(
-        organization_id=user.organization_id,
-        query=query,
-        limit=limit,
-        offset=offset,
+        search=search,
     )
 
 

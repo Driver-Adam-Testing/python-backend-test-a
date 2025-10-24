@@ -294,6 +294,101 @@ class TestGetTeams:
             offset=20,
         )
 
+    @patch("app.services.team_service.team_repository")
+    def test_uses_search_when_search_param_provided(
+        self,
+        mock_repo: MagicMock,
+        team_service: TeamService,
+        org_id: str,
+        team_dict_with_counts: dict[str, Any],
+    ) -> None:
+        """Should use search repository functions when search parameter is provided."""
+        mock_repo.search_teams_with_counts.return_value = [team_dict_with_counts]
+        mock_repo.count_teams_by_search.return_value = 1
+
+        result = team_service.get_teams(org_id, limit=30, offset=0, search="Eng")
+
+        assert len(result.teams) == 1
+        assert result.total == 1
+        mock_repo.search_teams_with_counts.assert_called_once_with(
+            session=team_service.session,
+            organization_id=org_id,
+            query="Eng",
+            limit=30,
+            offset=0,
+        )
+        mock_repo.count_teams_by_search.assert_called_once_with(
+            session=team_service.session,
+            organization_id=org_id,
+            search_query="Eng",
+        )
+        # Should not call regular get_teams functions
+        mock_repo.get_teams_with_counts.assert_not_called()
+        mock_repo.count_teams.assert_not_called()
+
+    @patch("app.services.team_service.team_repository")
+    def test_uses_regular_get_when_search_is_none(
+        self,
+        mock_repo: MagicMock,
+        team_service: TeamService,
+        org_id: str,
+        team_dict_with_counts: dict[str, Any],
+    ) -> None:
+        """Should use regular get functions when search is None."""
+        mock_repo.get_teams_with_counts.return_value = [team_dict_with_counts]
+        mock_repo.count_teams.return_value = 1
+
+        result = team_service.get_teams(org_id, limit=30, offset=0, search=None)
+
+        assert len(result.teams) == 1
+        mock_repo.get_teams_with_counts.assert_called_once()
+        mock_repo.count_teams.assert_called_once()
+        # Should not call search functions
+        mock_repo.search_teams_with_counts.assert_not_called()
+        mock_repo.count_teams_by_search.assert_not_called()
+
+    @patch("app.services.team_service.team_repository")
+    def test_uses_regular_get_when_search_is_empty_string(
+        self,
+        mock_repo: MagicMock,
+        team_service: TeamService,
+        org_id: str,
+        team_dict_with_counts: dict[str, Any],
+    ) -> None:
+        """Should use regular get functions when search is empty string."""
+        mock_repo.get_teams_with_counts.return_value = [team_dict_with_counts]
+        mock_repo.count_teams.return_value = 1
+
+        result = team_service.get_teams(org_id, limit=30, offset=0, search="")
+
+        assert len(result.teams) == 1
+        mock_repo.get_teams_with_counts.assert_called_once()
+        mock_repo.count_teams.assert_called_once()
+        # Should not call search functions
+        mock_repo.search_teams_with_counts.assert_not_called()
+        mock_repo.count_teams_by_search.assert_not_called()
+
+    @patch("app.services.team_service.team_repository")
+    def test_uses_regular_get_when_search_is_whitespace_only(
+        self,
+        mock_repo: MagicMock,
+        team_service: TeamService,
+        org_id: str,
+        team_dict_with_counts: dict[str, Any],
+    ) -> None:
+        """Should use regular get functions when search is only whitespace."""
+        mock_repo.get_teams_with_counts.return_value = [team_dict_with_counts]
+        mock_repo.count_teams.return_value = 1
+
+        result = team_service.get_teams(org_id, limit=30, offset=0, search="   ")
+
+        assert len(result.teams) == 1
+        mock_repo.get_teams_with_counts.assert_called_once()
+        mock_repo.count_teams.assert_called_once()
+        # Should not call search functions
+        mock_repo.search_teams_with_counts.assert_not_called()
+        mock_repo.count_teams_by_search.assert_not_called()
+
 
 class TestGetTeam:
     """Tests for get_team method."""
@@ -456,44 +551,3 @@ class TestDeleteTeam:
 
         # Verify grants were deleted
         assert team_service.session.delete.call_count == 2
-
-
-class TestSearchTeams:
-    """Tests for search_teams method."""
-
-    @patch("app.services.team_service.team_repository")
-    def test_searches_teams_by_query(
-        self,
-        mock_repo: MagicMock,
-        team_service: TeamService,
-        org_id: str,
-        team_dict_with_counts: dict[str, Any],
-    ) -> None:
-        """Should search teams and return results."""
-        mock_repo.search_teams_with_counts.return_value = [team_dict_with_counts]
-        mock_repo.count_teams_by_search.return_value = 1
-
-        result = team_service.search_teams(org_id, "eng", limit=30, offset=0)
-
-        assert len(result.teams) == 1
-        assert result.total == 1
-        mock_repo.search_teams_with_counts.assert_called_once_with(
-            session=team_service.session,
-            organization_id=org_id,
-            query="eng",
-            limit=30,
-            offset=0,
-        )
-
-    @patch("app.services.team_service.team_repository")
-    def test_returns_empty_when_no_matches(
-        self, mock_repo: MagicMock, team_service: TeamService, org_id: str
-    ) -> None:
-        """Should return empty list when no matches found."""
-        mock_repo.search_teams_with_counts.return_value = []
-        mock_repo.count_teams_by_search.return_value = 0
-
-        result = team_service.search_teams(org_id, "nonexistent")
-
-        assert len(result.teams) == 0
-        assert result.total == 0

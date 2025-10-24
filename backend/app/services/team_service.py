@@ -185,34 +185,53 @@ class TeamService:
         organization_id: str,
         limit: int = 30,
         offset: int = 0,
+        search: str | None = None,
     ) -> TeamsResponse:
         """
-        Get paginated list of teams.
+        Get paginated list of teams with optional search.
 
         Args:
             organization_id: Organization ID
             limit: Maximum number of results
             offset: Number of results to skip
+            search: Optional search query to filter teams by name
 
         Returns:
             List of teams with total count
         """
         logger.info(
             f"Getting teams for organization {organization_id} "
-            f"(limit={limit}, offset={offset})"
+            f"(limit={limit}, offset={offset}, search={search})"
         )
 
-        teams_with_counts = team_repository.get_teams_with_counts(
-            session=self.session,
-            organization_id=organization_id,
-            limit=limit,
-            offset=offset,
-        )
+        # If search is provided and not empty, use search function
+        if search and search.strip():
+            teams_with_counts = team_repository.search_teams_with_counts(
+                session=self.session,
+                organization_id=organization_id,
+                query=search,
+                limit=limit,
+                offset=offset,
+            )
 
-        total = team_repository.count_teams(
-            session=self.session,
-            organization_id=organization_id,
-        )
+            total = team_repository.count_teams_by_search(
+                session=self.session,
+                organization_id=organization_id,
+                search_query=search,
+            )
+        else:
+            # Otherwise, get all teams
+            teams_with_counts = team_repository.get_teams_with_counts(
+                session=self.session,
+                organization_id=organization_id,
+                limit=limit,
+                offset=offset,
+            )
+
+            total = team_repository.count_teams(
+                session=self.session,
+                organization_id=organization_id,
+            )
 
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 
@@ -381,49 +400,6 @@ class TeamService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to delete team",
             )
-
-    def search_teams(
-        self,
-        organization_id: str,
-        query: str,
-        limit: int = 30,
-        offset: int = 0,
-    ) -> TeamsResponse:
-        """
-        Search teams by name.
-
-        Args:
-            organization_id: Organization ID
-            query: Search query (case-insensitive)
-            limit: Maximum number of results
-            offset: Number of results to skip
-
-        Returns:
-            List of matching teams with total count
-        """
-        logger.info(
-            f"Searching teams for organization {organization_id} with query '{query}' "
-            f"(limit={limit}, offset={offset})"
-        )
-
-        teams_with_counts = team_repository.search_teams_with_counts(
-            session=self.session,
-            organization_id=organization_id,
-            query=query,
-            limit=limit,
-            offset=offset,
-        )
-
-        total = team_repository.count_teams_by_search(
-            session=self.session,
-            organization_id=organization_id,
-            search_query=query,
-        )
-
-        teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
-
-        logger.info(f"Found {len(teams)} teams matching query (total: {total})")
-        return TeamsResponse(teams=teams, total=total)
 
     def _add_team_members(
         self,

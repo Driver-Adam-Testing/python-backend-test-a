@@ -1,50 +1,35 @@
 FROM python:3.12-slim
 
-WORKDIR /app/
+ENV PYTHONUNBUFFERED=1 \
+ POETRY_VERSION=1.4.2 \
+ HATCHET_ENV=production
+ 
+# Install system dependencies and Poetry
+RUN apt-get update && \
+ apt-get install -y curl && \
+ curl -sSL https://install.python-poetry.org | python3 - && \
+ ln -s /root/.local/bin/poetry /usr/local/bin/poetry && \
+ apt-get clean && \
+ rm -rf /var/lib/apt/lists/\*
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python && \
-    cd /usr/local/bin && \
-    ln -s /opt/poetry/bin/poetry
-
-# Configure Poetry to not create virtual environments
-RUN poetry config virtualenvs.create false
+ RUN python -m pip install --upgrade pip setuptools wheel
+ 
+WORKDIR /app
+ 
+COPY pyproject.toml poetry.lock\* /app/
 
 # Copy the driver-db package first
 COPY driver_db /driver_db
 COPY packages /packages
+COPY content_services/auto_toml /auto_toml
+ 
+RUN poetry config virtualenvs.create false && \
+ poetry install --no-interaction --no-ansi
+ 
+COPY content_services/hatchet_worker/src /app
 
-# Copy pyproject.toml and poetry.lock first for better caching
-COPY backend/pyproject.toml backend/poetry.lock /app/
-
-
-ENV PYTHONPATH=/app
-
-# Install dependencies
-ARG INSTALL_DEV=false
-RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
-
-RUN apt-get purge -y --auto-remove build-essential curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install start scripts
-COPY backend/scripts/start-reload.sh /start-reload.sh
-COPY backend/scripts/start.sh /start.sh
-COPY backend/scripts/gunicorn_conf.py /gunicorn_conf.py
-RUN chmod +x /start-reload.sh
+COPY content_services/hatchet_worker/start.sh /start.sh
 RUN chmod +x /start.sh
-
-# Copy the rest of the application
-COPY backend/scripts/ /app/scripts/
-COPY backend/prestart.sh /app/
-COPY backend/tests-start.sh /app/
-COPY backend/app /app/app
 
 # Copy the setEnv.sh if using the deployment repo
 COPY setEnv.sh* / 
@@ -57,4 +42,4 @@ ARG GIT_BRANCH
 ENV GIT_COMMIT=${GIT_COMMIT}
 ENV GIT_BRANCH=${GIT_BRANCH}
 
-CMD [ "/bin/sh", "-c", "if [ \"$INSTALL_DEV\" = 'true' ]; then exec /start-reload.sh \"$@\"; else exec /start.sh \"$@\"; fi" ]
+CMD [ "/bin/sh", "-c", "/start.sh" ]

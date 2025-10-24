@@ -1,0 +1,179 @@
+import json
+from aws_cdk import (
+    CfnOutput,
+    Duration,
+    Stack,
+    aws_ec2,
+    aws_ecr,
+    aws_ecs,
+    aws_events,
+    aws_iam,
+    aws_logs,
+    aws_route53,
+    aws_s3,
+    aws_secretsmanager,
+    aws_ssm,
+    RemovalPolicy,
+)
+from constructs import Construct
+from cdk.settings import settings
+
+
+class HatchetWorkerParams:
+    def __init__(
+        self,
+        environment: str,
+        aws_region: str,
+        aws_account: str,
+        metrics_bus: aws_events.EventBus,
+    ) -> None:
+        self.environment = environment
+        self.aws_region = aws_region
+        self.aws_account = aws_account
+        self.metrics_bus = metrics_bus
+
+
+class HatchetWorker(Construct):
+    def __init__(self, scope: Construct, id: str, params: HatchetWorkerParams) -> None:
+        super().__init__(scope, id)
+
+        # --- Baseline lookups / shared infra ---
+        vpc_id = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/vpc/id"
+        )
+        vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC", vpc_id=vpc_id)
+
+        cluster_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/ecs/cluster/name"
+        )
+        cluster = aws_ecs.Cluster.from_cluster_attributes(
+            self, id="BaselineCluster", cluster_name=cluster_name, vpc=vpc
+        )
+
+        hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/hostedZoneId"
+        )
+        hosted_zone_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/hostedZoneName"
+        )
+        hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
+            self,
+            id="BaselineHostedZone",
+            zone_name=hosted_zone_name,
+            hosted_zone_id=hosted_zone_id,
+        )
+
+        openai_url = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
+        )
+
+        base_env = {
+            "PROJECT_NAME": "DriverAI Hatchet Worker",
+            "ENVIRONMENT": params.environment,
+            "AWS_REGION": params.aws_region,
+            "ECS_CONTAINER_STOP_TIMEOUT": "2s",
+            "OPENAI_URL": openai_url,
+        }
+
+        deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
+        )
+        secret_fields = settings.SECRECTS_KEYS.split(",")
+        secrets_map = {
+            k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
+            for k in secret_fields
+        }
+        base_env.update(settings.to_dict())
+
+        worker_task_def = aws_ecs.FargateTaskDefinition(
+            self,
+            "HatchetWorkerTaskDef",
+            cpu=2048,
+            memory_limit_mib=4096,
+            runtime_platform=aws_ecs.RuntimePlatform(
+                cpu_architecture=aws_ecs.CpuArchitecture.X86_64
+            ),
+        )
+
+        worker_container = worker_task_def.add_container(
+            "HatchetWorkerContainer",
+            image=aws_ecs.ContainerImage.from_ecr_repository(
+                aws_ecr.Repository.from_repository_name(
+                    self, "HatchetWorkerRepo", "hatchet-worker" 
+                ),
+                tag="latest",
+            ),
+            environment=base_env,
+            secrets=secrets_map,
+            logging=aws_ecs.LogDrivers.aws_logs(
+                stream_prefix="python-worker",
+                log_retention=aws_logs.RetentionDays.ONE_WEEK,
+            ),
+        )
+        # Optional: a port for metrics/debugging
+        # worker_container.add_port_mappings(aws_ecs.PortMapping(container_port=9000))
+
+        # Inline policy example: customer-scoped Secrets Manager access (match main service)
+        worker_task_def.task_role.attach_inline_policy(
+            aws_iam.Policy(
+                self,
+                "CustomerSecretsRWWorker",
+                document=aws_iam.PolicyDocument(
+                    statements=[
+                        aws_iam.PolicyStatement(
+                            effect=aws_iam.Effect.ALLOW,
+                            actions=[
+                                "secretsmanager:CreateSecret",
+                                "secretsmanager:ListSecrets",
+                                "secretsmanager:DescribeSecret",
+                            ],
+                            resources=[
+                                f"arn:aws:secretsmanager:{Stack.of(self).region}:{Stack.of(self).account}:secret:DRIVER_AI_CUSTOMER/*"
+                            ],
+                        )
+                    ]
+                ),
+            )
+        )
+
+        # --- Fargate Service (Internal only, no ALB) ---
+        self.worker_service = aws_ecs.FargateService(
+            self,
+            "HatchetWorkerSvc",
+            cluster=cluster,
+            task_definition=worker_task_def,
+            desired_count=2,  # Run 2 copies
+            assign_public_ip=False,
+            vpc_subnets=aws_ec2.SubnetSelection(
+                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+            ),
+            circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),
+            min_healthy_percent=100,
+            max_healthy_percent=200,
+        )
+
+        # --- CPU-based autoscaling ---
+        scalable = self.worker_service.auto_scale_task_count(
+            min_capacity=2,  # keep at least 2 running
+            max_capacity=10,  # adjust as needed
+        )
+        scalable.scale_on_cpu_utilization(
+            "CpuScaling",
+            target_utilization_percent=50,  # aim to keep avg CPU around 50%
+            scale_in_cooldown=Duration.seconds(120),
+            scale_out_cooldown=Duration.seconds(60),
+        )
+
+        # service discovery: uncomment for dns-based discovery for this worker
+        # self.worker_service.enable_cloud_map(name="worker")
+
+        # Allow the worker to emit metrics/events
+        params.metrics_bus.grant_all_put_events(worker_task_def.task_role)
+
+        # Outputs
+        CfnOutput(
+            self,
+            "WorkerServiceArn",
+            export_name="WorkerServiceArn",
+            value=self.worker_service.service_arn,
+        )

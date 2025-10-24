@@ -16,11 +16,57 @@ else
     echo "There is no script setEnv.sh"
 fi
 
-#Always need the container, always push it. 
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
-DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest .
-docker push $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest
+#Push backend contianers
+#aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
 
+#TODO convert all of this push logic to a function
+BACKEND_IMAGE_NAME=python-backend
+BACKEND_TAG=latest 
+BACKEND_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$BACKEND_IMAGE_NAME:$BACKEND_TAG
+
+HATCHET_WORKER_IMAGE_NAME=hatchet-worker
+HATCHET_WORKER_TAG=latest 
+HATCHET_WORKER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$HATCHET_WORKER_IMAGE_NAME:$HATCHET_WORKER_TAG
+
+
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $BACKEND_REPO_URI .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/hatchet_worker/Dockerfile .
+
+BACKEND_LOCAL_DIGEST=$(docker image inspect $BACKEND_REPO_URI --format '{{json .RepoDigests}}' | grep -o 'sha256:[0-9a-f]\{64\}' )
+HATCHET_WORKER_LOCAL_DIGEST=$(docker image inspect $HATCHET_WORKER_REPO_URI --format '{{json .RepoDigests}}' | grep -o 'sha256:[0-9a-f]\{64\}')
+
+BACKEND_REMOTE_DIGEST=$(aws ecr describe-images \
+  --repository-name "$BACKEND_IMAGE_NAME" \
+  --image-ids imageTag="$BACKEND_TAG" \
+  --region "$AWS_REGION" \
+  --query 'imageDetails[0].imageDigest' \
+  --output text 2>/dev/null || echo "NONE")
+
+HATCHET_WORKER_REMOTE_DIGEST=$(aws ecr describe-images \
+  --repository-name "$HATCHET_WORKER_IMAGE_NAME" \
+  --image-ids imageTag="$HATCHET_WORKER_TAG" \
+  --region "$AWS_REGION" \
+  --query 'imageDetails[0].imageDigest' \
+  --output text 2>/dev/null || echo "NONE")
+  
+
+if [ "$BACKEND_LOCAL_DIGEST" != "$BACKEND_REMOTE_DIGEST" ]; then
+  echo "Backend Image has changed. Pushing new image..."
+  docker push "$BACKEND_REPO_URI"
+  export BACKEND_PUSHED=true
+else
+  echo "Image is up-to-date. No push needed."
+  export BACKEND_PUSHED=false
+fi
+
+if [ "$HATCHET_WORKER_LOCAL_DIGEST" != "$HATCHET_WORKER_REMOTE_DIGEST" ]; then
+  echo "Hatchet worker Image has changed. Pushing new image..."
+  docker push "$HATCHET_WORKER_REPO_URI"
+  export HATCHET_WORKER_PUSHED=true
+else
+  echo "Image is up-to-date. No push needed."
+  export HATCHET_WORKER_PUSHED=false
+fi
 
 npm install -g aws-cdk@latest
 pip install aws-cdk-lib
@@ -41,9 +87,21 @@ CLUSTER_NAME=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'V2BaseIn
 
 SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-ApiBackendBackendApiService')]" --output text)
 
-echo "Forcing redeploy..."
+HATCHET_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetWorkerHatchetWorkerSvc')]" --output text)
 
-aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
+if [ "$BACKEND_PUSHED" = "true" ]; then
+    echo "Forcing backend redeploy..."
+
+    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
+fi
+
+if [ "$HATCHET_WORKER_PUSHED" = "true" ]; then
+    echo "Forcing hatchet worker redeploy..."
+
+    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment
+fi
+
+#TODO Also wait for hatchet worker service to stablize?
 
 echo "Waiting up to 5 minutes for ECS service to stabilize..."
 set +e

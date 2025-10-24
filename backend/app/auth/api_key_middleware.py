@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 from app.auth.api_key_common import create_api_key_payload
 from app.auth.models import User
-from app.services.auth0_service import Auth0Service
+from app.services.auth0_factory import create_auth0_service
 from cachetools import TTLCache, cached
 from database.db import get_session
 from database.models import ApiKey
@@ -11,7 +11,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 from sqlmodel import select
 
-_auth0 = Auth0Service()
+_auth0 = create_auth0_service()
 
 
 def _is_member_of_org(user_id: str, org_id: str) -> bool:

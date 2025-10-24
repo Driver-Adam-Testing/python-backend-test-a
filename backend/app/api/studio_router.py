@@ -2,35 +2,34 @@ from fastapi import APIRouter
 
 from app.api.routes.legacy.schema import graphql_router, sandbox_router
 from app.api.routes.v1 import (
-    agent_pipelines,
     codebase,
     content,
     git_provider,
     organization,
-    search,
+    source_members,
     tags,
+    teams,
     upload,
     usage,
     user,
 )
-from app.api.routes.v2 import (
-    api_key as v2_api_key,
-)
 
 # ruff: noqa: F401
 from app.api.routes.v2 import (
-    autodocs,
     about_you_survey,
+    autodocs,
     chat,
     codebase_card,
     contents,
     convenience_endpoints,
     document_sources,
-    generate,
-    nodes,
+    onboarding_checklist,
     primary_asset_tags,
     primary_assets,
     versions,
+)
+from app.api.routes.v2 import (
+    api_key as v2_api_key,
 )
 from app.api.routes.v2 import (
     router as v2_router,
@@ -38,7 +37,6 @@ from app.api.routes.v2 import (
 from app.api.routes.v2 import (
     tags as v2_tags,
 )
-from app.api.routes.v2 import onboarding_checklist
 from app.core.config import settings
 
 studio_router = APIRouter()
@@ -48,14 +46,14 @@ studio_router.include_router(v2_api_key.router, prefix="/api_key", tags=["api_ke
 studio_router.include_router(
     git_provider.router, prefix="/git-provider", tags=["git-provider"]
 )
-studio_router.include_router(search.router, prefix="/search", tags=["search"])
 studio_router.include_router(content.router, prefix="/content", tags=["content"])
 studio_router.include_router(codebase.router, prefix="/codebases", tags=["codebase"])
 studio_router.include_router(tags.router, prefix="/tags", tags=["tags"])
-studio_router.include_router(upload.router, prefix="/upload", tags=["upload"])
+studio_router.include_router(teams.router, prefix="/teams", tags=["teams"])
 studio_router.include_router(
-    agent_pipelines.router, prefix="/agent_pipelines", tags=["agent_pipelines"]
-)
+    source_members.router, tags=["source-members"]
+)  # Source members routes (no prefix, uses /sources/{id}/members)
+studio_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 studio_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 studio_router.include_router(user.router, prefix="/user", tags=["user"])
 studio_router.include_router(about_you_survey.router, tags=["about_you_survey"])
@@ -70,7 +68,6 @@ if settings.ENVIRONMENT != "production":
         sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"]
     )
 
-studio_router.include_router(generate.router, prefix="/generate", tags=["generate"])
 studio_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 studio_router.include_router(autodocs.router, prefix="/autodocs", tags=["autodocs"])
 studio_router.include_router(

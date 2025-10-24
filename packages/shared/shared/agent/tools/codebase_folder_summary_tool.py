@@ -1,5 +1,6 @@
 from database.db import get_session
-from database.models import ContentKind, DerivedContent, Node
+from database.models import DerivedContent, Node
+from database.models_enums import ContentKind
 from sqlmodel import select
 
 from shared.agent.agent_base import AgentBase

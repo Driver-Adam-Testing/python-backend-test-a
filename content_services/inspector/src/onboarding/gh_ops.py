@@ -8,7 +8,7 @@ from uuid import UUID
 import httpx
 import jwt
 import requests
-from database.models import VcsAutoUpdatePolicy
+from database.models_enums import VcsAutoUpdatePolicy
 from onboarding.onboard_utils import AccessTokenError
 from onboarding.vcs_utils import (
     AuthorInfo,

@@ -1,5 +1,6 @@
 from database.db import get_session
-from database.models import ContentKind, DerivedContent
+from database.models import DerivedContent
+from database.models_enums import ContentKind
 from shared.v3.globals.glossary import (
     REFERENCE,
     REFERENCE_CONTENT,

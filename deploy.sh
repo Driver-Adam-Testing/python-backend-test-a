@@ -5,19 +5,20 @@ echo "deploying backend..."
 
 #If there's a setEnv.sh script in the / directory, copy it and run it before starting
 echo "Checking for setEnv script"
-if [ -f "../setEnv.sh" ] ; then
-    echo "Copy and run script setEnv.sh"
-    cp ../setEnv.sh .
+if [ -f "../build/setEnv.sh" ] ; then
+    echo "Copy and run script setEnv.sh from deployment repo"
+    cp "../build/setEnv.sh" .
     source setEnv.sh
 elif [ -f "setEnv.sh" ] ; then
   source setEnv.sh
+  echo "Using local setEnv.sh"
 else
     echo "There is no script setEnv.sh"
 fi
 
 #Always need the container, always push it. 
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
-docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest .
 docker push $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest
 
 
@@ -44,7 +45,7 @@ echo "Forcing redeploy..."
 
 aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
 
-echo "Waiting up to 5min ECS service to stablize..."
+echo "Waiting up to 5 minutes for ECS service to stabilize..."
 set +e
 timeout 300 aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME
 status=$?
@@ -85,7 +86,10 @@ fi
 echo "checking server logs..."
 
 # 3) On timeout/failure: figure out which tasks are involved (RUNNING + STOPPED)
-mapfile -t TASKS < <(aws ecs list-tasks \
+TASKS=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && TASKS+=("$line")
+done < <(aws ecs list-tasks \
   --cluster $CLUSTER_NAME \
   --service-name $SERVICE_NAME \
   --region $AWS_REGION \
@@ -93,7 +97,10 @@ mapfile -t TASKS < <(aws ecs list-tasks \
 
 # If no tasks returned at all, also check STOPPED (sometimes nothing is RUNNING yet)
 if [[ ${#TASKS[@]} -eq 0 || -z "${TASKS[0]:-}" ]]; then
-  mapfile -t TASKS < <(aws ecs list-tasks \
+  TASKS=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && TASKS+=("$line")
+  done < <(aws ecs list-tasks \
     --cluster $CLUSTER_NAME \
     --service-name $SERVICE_NAME \
     --desired-status STOPPED \
@@ -148,7 +155,7 @@ for ARN in "${TASKS[@]}"; do
 
   [[ -z "$TD_ARN" || "$TD_ARN" == "None" ]] && { echo "No taskDefinitionArn for $ARN"; continue; }
 
-  aws ecs describe-task-definition --region "$REGION" --task-definition "$TD_ARN" \
+  aws ecs describe-task-definition --region "$REGION" --task-definition "$TD_ARN" --output json \
   | jq -r --arg DEFREG "$REGION" '
       .taskDefinition.containerDefinitions[]
       | select(.logConfiguration.logDriver=="awslogs")
@@ -170,7 +177,11 @@ for ARN in "${TASKS[@]}"; do
 
       TOKEN=""
       while :; do
-        [[ -n "${TOKEN}" ]] && NT=(--next-token "$TOKEN") || NT=()
+        if [[ -n "${TOKEN}" ]]; then
+          NEXT_TOKEN_ARG="--next-token ${TOKEN}"
+        else
+          NEXT_TOKEN_ARG=""
+        fi
         RESP="$(aws logs filter-log-events \
                   --region "$LOGREG" \
                   --log-group-name "$GROUP" \
@@ -178,7 +189,7 @@ for ARN in "${TASKS[@]}"; do
                   --start-time "$START_MS" \
                   --interleaved \
                   --limit 10000 \
-                  --output json "${NT[@]}")"
+                  --output json ${NEXT_TOKEN_ARG})"
 
         # Print logs (interleaved, timestamped)
         jq -r --arg LABEL "$TASK_ID/$CNAME" '

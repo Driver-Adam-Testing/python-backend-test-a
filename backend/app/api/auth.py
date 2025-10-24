@@ -10,8 +10,6 @@ from app.auth.models import M2M, User
 from app.auth.permissions import (
     CONTENT_EDITOR,
     CONTENT_READONLY,
-    GIT_PROVIDER_MANAGER,
-    ORG_MANAGER,
     SUBSCRIPTION_MANAGER,
     USAGE_CREDITOR,
 )
@@ -50,9 +48,8 @@ def require_permission(permission: str) -> Callable[[dict[str, Any]], bool]:
     return dep
 
 
+# TODO once authorization is fully migrated, there should be no usages of these. Verify!
 ContentEditorPermission = Depends(require_permission(CONTENT_EDITOR))
 ContentReadonlyPermission = Depends(require_permission(CONTENT_READONLY))
-OrgManagerPermission = Depends(require_permission(ORG_MANAGER))
 UsageCreditPermission = Depends(require_permission(USAGE_CREDITOR))
 SubscriptionManagerPermission = Depends(require_permission(SUBSCRIPTION_MANAGER))
-GitProviderManagerPermission = Depends(require_permission(GIT_PROVIDER_MANAGER))

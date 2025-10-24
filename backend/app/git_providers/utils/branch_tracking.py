@@ -1,4 +1,5 @@
-from database.models import PrimaryAsset, PrimaryAssetKind
+from database.models import PrimaryAsset
+from database.models_enums import PrimaryAssetKind
 from sqlmodel import Session, select
 
 

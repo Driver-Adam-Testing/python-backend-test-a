@@ -5,7 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, TeamMembership
-from database.models_enums import PrimaryAssetRole, TeamRole
+from database.models_enums import PrimaryAssetRole, PrincipalKind, TeamRole
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
@@ -419,6 +419,7 @@ class UserService:
             grant = PrimaryAssetRoleGrant(
                 organization_id=organization_id,
                 primary_asset_id=source_id,
+                principal_kind=PrincipalKind.user,
                 user_id=user_id,
                 role=map_source_role_to_backend(source_input.role),
             )

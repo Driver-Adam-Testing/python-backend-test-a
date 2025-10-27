@@ -2,6 +2,7 @@
 
 import logging
 from uuid import UUID
+import uuid
 
 from fastapi import APIRouter, Query, status
 
@@ -14,7 +15,7 @@ from app.schemas.source_access_schema import (
     UpdateTeamSourcesRequest,
 )
 from app.services.source_access_service import SourceAccessService
-from app.authorization.fastapi import enforce_team_action
+from app.authorization.fastapi import enforce_asset_action, enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -82,6 +83,13 @@ def add_team_sources(
     - **sources**: List of sources with roles to grant
     """
     enforce_team_action(session, user, team_id, "team.manage")
+    for source in request.sources:
+        enforce_asset_action(
+            session,
+            user,
+            uuid.UUID(source.source_id),
+            "asset.manage",
+        )
     logger.info(
         f"User {user.user_id} adding {len(request.sources)} sources to team {team_id}"
     )
@@ -111,6 +119,13 @@ def update_team_sources(
     - **sources**: List of sources with updated roles
     """
     enforce_team_action(session, user, team_id, "team.manage")
+    for source in request.sources:
+        enforce_asset_action(
+            session,
+            user,
+            uuid.UUID(source.source_id),
+            "asset.manage",
+        )
     logger.info(
         f"User {user.user_id} updating {len(request.sources)} sources for team {team_id}"
     )
@@ -140,6 +155,13 @@ def remove_team_sources(
     - **source_ids**: List of source IDs to remove
     """
     enforce_team_action(session, user, team_id, "team.manage")
+    for source_id in request.source_ids:
+        enforce_asset_action(
+            session,
+            user,
+            uuid.UUID(source_id),
+            "asset.manage",
+        )
     logger.info(
         f"User {user.user_id} removing {len(request.source_ids)} sources from team {team_id}"
     )

@@ -1,6 +1,7 @@
 """API routes for User Sources management."""
 
 import logging
+import uuid
 
 from fastapi import APIRouter, Query, status
 
@@ -13,6 +14,7 @@ from app.schemas.user_schema import (
     UserSourcesResponse,
 )
 from app.services.user_service import UserService
+from app.authorization.fastapi import enforce_asset_action, enforce_org_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -42,6 +44,10 @@ def get_user_sources(
 
     Returns sources with role and visibility information.
     """
+    # Assuming the service is doing its job and only fetching sources that
+    # this user has access to, the only enforcement is that the user is 
+    # a member of the organization. Is this enough?
+    enforce_org_action(session, user, "users.view")
     logger.info(
         f"User {user.user_id} getting sources for user {user_id} "
         f"(limit={limit}, offset={offset}, roles={roles}, search={search})"
@@ -74,6 +80,13 @@ def add_user_sources(
 
     - **sources**: List of sources with roles to grant access to
     """
+    for source in request.sources:
+        enforce_asset_action(
+            session,
+            user,
+            uuid.UUID(source.source_id),
+            "asset.manage",
+        )
     logger.info(
         f"User {user.user_id} granting user {user_id} access to {len(request.sources)} sources"
     )
@@ -102,6 +115,13 @@ def update_user_sources(
 
     - **sources**: List of sources with updated roles
     """
+    for source in request.sources:
+        enforce_asset_action(
+            session,
+            user,
+            uuid.UUID(source.source_id),
+            "asset.manage",
+        )
     logger.info(
         f"User {user.user_id} updating roles for user {user_id} on {len(request.sources)} sources"
     )
@@ -130,6 +150,13 @@ def remove_user_sources(
 
     - **source_ids**: List of source IDs to remove access from
     """
+    for source_id in request.source_ids:
+        enforce_asset_action(
+            session,
+            user,
+            uuid.UUID(source_id),
+            "asset.manage",
+        )
     logger.info(
         f"User {user.user_id} removing user {user_id} access from {len(request.source_ids)} sources"
     )

@@ -81,9 +81,10 @@ def list_teams(
     logger.info(f"User {user.user_id} listing teams (limit={limit}, offset={offset})")
     team_service = TeamService(session)
     return team_service.get_teams(
-        organization_id=user.organization_id,
+        user=user,
         limit=limit,
         offset=offset,
+        search=search
     )
 
 

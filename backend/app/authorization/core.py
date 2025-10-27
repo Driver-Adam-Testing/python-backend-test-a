@@ -268,6 +268,13 @@ def authorize_team_action(
     # if not ent_ok:
     #     return AccessDecision(False, None, ["plan_denied"], cap_fails)
 
+    # TODO - doesn't this get rid of the need for super_admin in any of the role_action_allow_* tables? If so, is this desirable?
+    # Super admins bypass role checks
+    if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
+        return AccessDecision(
+            True, TeamRole.team_admin.value, ["org_super_admin"], []
+        )
+
     role = _team_role(ctx.db, team_id, ctx.user_id, ctx.organization_id)
     if role and _role_allows_team_action(ctx.db, role, action_key):
         return AccessDecision(True, role.value, ["role_allows"], [])

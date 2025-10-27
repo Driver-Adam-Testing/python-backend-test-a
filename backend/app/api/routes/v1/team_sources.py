@@ -14,6 +14,7 @@ from app.schemas.source_access_schema import (
     UpdateTeamSourcesRequest,
 )
 from app.services.source_access_service import SourceAccessService
+from app.authorization.fastapi import enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ def get_team_sources(
 
     Returns sources with role and visibility information.
     """
+    enforce_team_action(session, user, team_id, "team.view")
     logger.info(
         f"User {user.user_id} getting sources for team {team_id} "
         f"(limit={limit}, offset={offset}, roles={roles}, search={search})"
@@ -79,6 +81,7 @@ def add_team_sources(
 
     - **sources**: List of sources with roles to grant
     """
+    enforce_team_action(session, user, team_id, "team.manage")
     logger.info(
         f"User {user.user_id} adding {len(request.sources)} sources to team {team_id}"
     )
@@ -107,6 +110,7 @@ def update_team_sources(
 
     - **sources**: List of sources with updated roles
     """
+    enforce_team_action(session, user, team_id, "team.manage")
     logger.info(
         f"User {user.user_id} updating {len(request.sources)} sources for team {team_id}"
     )
@@ -135,6 +139,7 @@ def remove_team_sources(
 
     - **source_ids**: List of source IDs to remove
     """
+    enforce_team_action(session, user, team_id, "team.manage")
     logger.info(
         f"User {user.user_id} removing {len(request.source_ids)} sources from team {team_id}"
     )

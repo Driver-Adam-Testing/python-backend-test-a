@@ -54,6 +54,19 @@ def enforce_org_action(db: Session, user: User, action_key: str) -> None:
                 "reasons": decision.reasons,
             },
         )
+    
+def enforce_org_actions(db: Session, user: User, action_keys: list[str]) -> None:
+    for action_key in action_keys:
+        decision = check_org_action(db, user, action_key)
+        if not decision.allowed:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "insufficient_permissions",
+                    "action": action_key,
+                    "reasons": decision.reasons,
+                },
+            )
 
 
 def enforce_asset_action(  # TODO: should this take a list of asset ids?

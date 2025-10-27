@@ -8,7 +8,7 @@ from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.schemas.rbac_search_schema import MemberSearchResponse
 from app.services.rbac_search_service import RBACSearchService
-from app.authorization.fastapi import enforce_org_action
+from app.authorization.fastapi import enforce_org_actions
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -35,8 +35,7 @@ def search_members(
     Returns combined results from users (by name/email) and teams (by name).
     Used for adding members to sources.
     """
-    enforce_org_action(session, user, "users.view")
-    enforce_org_action(session, user, "team.view")
+    enforce_org_actions(session, user, ["users.view", "team.view"])
     logger.info(
         f"User {user.user_id} searching for members with query '{query}' "
         f"(limit={limit}, offset={offset})"

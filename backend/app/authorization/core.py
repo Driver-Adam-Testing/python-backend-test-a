@@ -247,6 +247,12 @@ def authorize_org_action(ctx: AuthContext, action_key: str) -> AccessDecision:
     # if not ent_ok:
     #     return AccessDecision(False, None, ["plan_denied"], cap_fails)
 
+    # Super admins bypass role checks
+    if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
+        return AccessDecision(
+            True, OrgRole.super_admin.value, ["org_super_admin"], []
+        )
+
     # Check org role
     role = _org_role(ctx.db, ctx.user_id, ctx.organization_id)
     if role and _role_allows_org_action(ctx.db, role, action_key):

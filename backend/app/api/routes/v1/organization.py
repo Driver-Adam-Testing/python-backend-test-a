@@ -6,10 +6,14 @@ from fastapi import APIRouter, Header, HTTPException
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_org_action
+from app.repositories.user_repository import (
+    get_organization_membership,
+    update_organization_role,
+)
 from app.schemas.auth0_schema import (
     CreateInvitationInput,
-    ModifyUserRolesInput,
-    ModifyUserRolesResponse,
+    SetUserRoleInput,
+    SetUserRoleResponse,
 )
 from app.services.auth0_factory import create_auth0_service
 from app.services.onboarding_checklist_service import OnboardingChecklistService
@@ -74,27 +78,46 @@ def delete_member(
 
 
 @router.put(
-    "/users/{modified_user_id}/roles",
+    "/users/{modified_user_id}/role",
     status_code=200,
 )
 def change_user_roles(
     session: CurrentSession,
     user: UserToken,
     modified_user_id: str,
-    new_roles: ModifyUserRolesInput,
-) -> ModifyUserRolesResponse:
+    role_input: SetUserRoleInput,
+) -> SetUserRoleResponse:
     enforce_org_action(session, user, "users.manage")
-    logging.info(f"Modifying roles for {modified_user_id} in {user.organization_id}")
+    logging.info(f"Setting role for {modified_user_id} in {user.organization_id}")
+
     try:
-        auth0_service = create_auth0_service()
-        return auth0_service.modify_user_roles(
-            user=user, modified_user_id=modified_user_id, roles=new_roles.roles
+        # Get current membership
+        membership = get_organization_membership(
+            session, modified_user_id, user.organization_id
         )
-    except PermissionError:
-        raise HTTPException(403, "Insufficient permissions.")
+        if not membership:
+            raise HTTPException(
+                404, f"User {modified_user_id} is not a member of this organization"
+            )
+
+        # Update role (validation happens in repository function)
+        update_organization_role(
+            session, modified_user_id, user.organization_id, role_input.role
+        )
+
+        # Return the new role with org context
+        return SetUserRoleResponse(
+            user_id=modified_user_id,
+            organization_id=user.organization_id,
+            role=role_input.role,
+        )
+    except ValueError as e:
+        # Invalid role or other validation error
+        logger.error(f"Validation error setting user role: {e}")
+        raise HTTPException(400, str(e))
     except Exception as e:
-        logger.error(f"An error occurred modifying member roles: {e}")
-        raise HTTPException(500, "Unable to modify member roles.")
+        logger.error(f"An error occurred setting user role: {e}")
+        raise HTTPException(500, "Unable to set user role.")
 
 
 @router.get("/invitations", status_code=200)

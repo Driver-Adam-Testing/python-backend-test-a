@@ -437,3 +437,74 @@ def _map_frontend_role_to_backend(role: str) -> TeamRole:
         "member": TeamRole.member,
     }
     return mapping[role]
+
+
+def get_organization_membership(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+) -> OrgMembership | None:
+    """
+    Get a user's organization membership.
+
+    Args:
+        session: Database session
+        user_id: User ID (Auth0 user ID)
+        organization_id: Organization ID
+
+    Returns:
+        OrgMembership or None if not found
+    """
+    query = select(OrgMembership).where(
+        OrgMembership.user_id == user_id,
+        OrgMembership.org_id == organization_id,
+    )
+    return session.exec(query).first()
+
+
+def update_organization_role(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+    new_role: str,
+) -> OrgMembership:
+    """
+    Update a user's organization role.
+
+    Args:
+        session: Database session
+        user_id: User ID (Auth0 user ID)
+        organization_id: Organization ID
+        new_role: New role value (must be valid OrgRole)
+
+    Returns:
+        Updated OrgMembership
+
+    Raises:
+        ValueError: If role is invalid or membership not found
+    """
+    from database.models_enums import OrgRole
+
+    # Validate role
+    try:
+        role_enum = OrgRole(new_role)
+    except ValueError:
+        valid_roles = [r.value for r in OrgRole]
+        raise ValueError(
+            f"Invalid role '{new_role}'. Valid roles are: {', '.join(valid_roles)}"
+        )
+
+    # Get membership
+    membership = get_organization_membership(session, user_id, organization_id)
+    if not membership:
+        raise ValueError(
+            f"User {user_id} is not a member of organization {organization_id}"
+        )
+
+    # Update role
+    membership.role = role_enum
+    session.add(membership)
+    session.commit()
+    session.refresh(membership)
+
+    return membership

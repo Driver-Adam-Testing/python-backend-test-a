@@ -508,3 +508,45 @@ def update_organization_role(
     session.refresh(membership)
 
     return membership
+
+
+def count_organization_super_admins(
+    session: Session,
+    organization_id: str,
+) -> int:
+    """
+    Count the number of super_admin users in an organization.
+
+    Args:
+        session: Database session
+        organization_id: Organization ID
+
+    Returns:
+        Count of super_admin users
+    """
+    from database.models_enums import OrgRole
+
+    query = (
+        select(func.count())
+        .select_from(OrgMembership)
+        .where(
+            OrgMembership.org_id == organization_id,
+            OrgMembership.role == OrgRole.super_admin,
+        )
+    )
+    return session.exec(query).one()
+
+
+def delete_organization_membership(
+    session: Session,
+    membership: OrgMembership,
+) -> None:
+    """
+    Delete a user's organization membership.
+
+    Args:
+        session: Database session
+        membership: OrgMembership instance to delete
+    """
+    session.delete(membership)
+    session.commit()

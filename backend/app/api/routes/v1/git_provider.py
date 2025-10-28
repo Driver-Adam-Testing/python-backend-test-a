@@ -370,7 +370,7 @@ def github_callback(
         session.add(gh_app_install)
         session.commit()
 
-        connect_repos = modal.Function.lookup(
+        connect_repos = modal.Function.from_name(
             "inspector-v2",
             "connect_repos_for_installation",
             environment_name=settings.MODAL_ENVIRONMENT,

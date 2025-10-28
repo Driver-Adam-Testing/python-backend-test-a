@@ -56,8 +56,8 @@ def get_source_members(
     )
     service = SourceAccessService(session)
     return service.get_source_members(
+        user=user,
         source_id=source_id,
-        organization_id=user.organization_id,
         roles=roles,
         member_kind=member_kind,
         search=search,
@@ -89,8 +89,8 @@ def add_source_members(
     )
     service = SourceAccessService(session)
     service.add_source_members(
+        user=user,
         source_id=source_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -118,8 +118,8 @@ def update_source_members(
     )
     service = SourceAccessService(session)
     service.update_source_members(
+        user=user,
         source_id=source_id,
-        organization_id=user.organization_id,
         request=request,
     )
 
@@ -147,7 +147,7 @@ def remove_source_members(
     )
     service = SourceAccessService(session)
     service.remove_source_members(
+        user=user,
         source_id=source_id,
-        organization_id=user.organization_id,
         request=request,
     )

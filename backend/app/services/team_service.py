@@ -4,12 +4,14 @@ import logging
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from database.models import PrimaryAssetRoleGrant, Team, TeamMembership, User
+from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
+from database.models import User as DbUser
 from database.models_enums import TeamRole
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.auth.models import User
 from app.repositories import org_membership_repository, team_repository
 from app.schemas.team_schema import (
     CreateTeamRequest,
@@ -22,9 +24,9 @@ from app.schemas.team_schema import (
 logger = logging.getLogger(__name__)
 
 
-def get_user_by_id(session: Session, user_id: str) -> User | None:
+def get_user_by_id(session: Session, user_id: str) -> DbUser | None:
     """Get a user by ID."""
-    query = select(User).where(User.id == user_id)
+    query = select(DbUser).where(DbUser.id == user_id)
     return session.exec(query).first()
 
 
@@ -93,14 +95,14 @@ class TeamService:
 
     def create_team(
         self,
-        organization_id: str,
+        user: User,
         request: CreateTeamRequest,
     ) -> TeamResponse:
         """
         Create a new team.
 
         Args:
-            organization_id: Organization ID
+            user: Authenticated user making the request
             request: Create team request
 
         Returns:
@@ -109,8 +111,9 @@ class TeamService:
         Raises:
             HTTPException: If team name already exists or validation fails
         """
+        organization_id = user.organization_id
         logger.info(
-            f"Creating team '{request.name}' for organization {organization_id}"
+            f"Creating team '{request.name}' for organization {organization_id} by user {user.user_id}"
         )
 
         # Create team
@@ -182,37 +185,57 @@ class TeamService:
 
     def get_teams(
         self,
-        organization_id: str,
+        user: User,
         limit: int = 30,
         offset: int = 0,
+        search: str | None = None,
     ) -> TeamsResponse:
         """
-        Get paginated list of teams.
+        Get paginated list of teams with optional search.
 
         Args:
-            organization_id: Organization ID
+            user: Authenticated user making the request
             limit: Maximum number of results
             offset: Number of results to skip
+            search: Optional search query to filter teams by name
 
         Returns:
             List of teams with total count
         """
+        organization_id = user.organization_id
         logger.info(
-            f"Getting teams for organization {organization_id} "
-            f"(limit={limit}, offset={offset})"
+            f"Getting teams for organization {organization_id} by user {user.user_id} "
+            f"(limit={limit}, offset={offset}, search={search})"
         )
 
-        teams_with_counts = team_repository.get_teams_with_counts(
-            session=self.session,
-            organization_id=organization_id,
-            limit=limit,
-            offset=offset,
-        )
+        # If search is provided and not empty, use search function
+        if search and search.strip():
+            teams_with_counts = team_repository.search_teams_with_counts(
+                session=self.session,
+                organization_id=organization_id,
+                query=search,
+                limit=limit,
+                offset=offset,
+            )
 
-        total = team_repository.count_teams(
-            session=self.session,
-            organization_id=organization_id,
-        )
+            total = team_repository.count_teams_by_search(
+                session=self.session,
+                organization_id=organization_id,
+                search_query=search,
+            )
+        else:
+            # Otherwise, get all teams
+            teams_with_counts = team_repository.get_teams_with_counts(
+                session=self.session,
+                organization_id=organization_id,
+                limit=limit,
+                offset=offset,
+            )
+
+            total = team_repository.count_teams(
+                session=self.session,
+                organization_id=organization_id,
+            )
 
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 
@@ -221,15 +244,15 @@ class TeamService:
 
     def get_team(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
     ) -> TeamResponse:
         """
         Get a single team by ID.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
 
         Returns:
             Team with counts
@@ -237,7 +260,10 @@ class TeamService:
         Raises:
             HTTPException: If team not found
         """
-        logger.info(f"Getting team {team_id} for organization {organization_id}")
+        organization_id = user.organization_id
+        logger.info(
+            f"Getting team {team_id} for organization {organization_id} by user {user.user_id}"
+        )
 
         team_with_counts = team_repository.get_team_with_counts(
             session=self.session,
@@ -256,16 +282,16 @@ class TeamService:
 
     def update_team(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
         request: UpdateTeamRequest,
     ) -> TeamResponse:
         """
         Update a team's name.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
             request: Update team request
 
         Returns:
@@ -274,7 +300,10 @@ class TeamService:
         Raises:
             HTTPException: If team not found or name already exists
         """
-        logger.info(f"Updating team {team_id} to name '{request.name}'")
+        organization_id = user.organization_id
+        logger.info(
+            f"Updating team {team_id} to name '{request.name}' by user {user.user_id}"
+        )
 
         # Get existing team
         team = team_repository.get_team_by_id(
@@ -332,20 +361,21 @@ class TeamService:
 
     def delete_team(
         self,
+        user: User,
         team_id: UUID,
-        organization_id: str,
     ) -> None:
         """
         Delete a team and all its associations.
 
         Args:
+            user: Authenticated user making the request
             team_id: Team ID
-            organization_id: Organization ID
 
         Raises:
             HTTPException: If team not found
         """
-        logger.info(f"Deleting team {team_id}")
+        organization_id = user.organization_id
+        logger.info(f"Deleting team {team_id} by user {user.user_id}")
 
         # Verify team exists and belongs to organization
         team = team_repository.get_team_by_id(
@@ -381,49 +411,6 @@ class TeamService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to delete team",
             )
-
-    def search_teams(
-        self,
-        organization_id: str,
-        query: str,
-        limit: int = 30,
-        offset: int = 0,
-    ) -> TeamsResponse:
-        """
-        Search teams by name.
-
-        Args:
-            organization_id: Organization ID
-            query: Search query (case-insensitive)
-            limit: Maximum number of results
-            offset: Number of results to skip
-
-        Returns:
-            List of matching teams with total count
-        """
-        logger.info(
-            f"Searching teams for organization {organization_id} with query '{query}' "
-            f"(limit={limit}, offset={offset})"
-        )
-
-        teams_with_counts = team_repository.search_teams_with_counts(
-            session=self.session,
-            organization_id=organization_id,
-            query=query,
-            limit=limit,
-            offset=offset,
-        )
-
-        total = team_repository.count_teams_by_search(
-            session=self.session,
-            organization_id=organization_id,
-            search_query=query,
-        )
-
-        teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
-
-        logger.info(f"Found {len(teams)} teams matching query (total: {total})")
-        return TeamsResponse(teams=teams, total=total)
 
     def _add_team_members(
         self,

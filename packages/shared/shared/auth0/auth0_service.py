@@ -13,6 +13,10 @@ from shared.auth0.schemas import (
     CreateInvitationInput,
     ModifyUserRolesResponse,
 )
+from shared.repositories.organization_repository import (
+    get_organization_member_roles,
+    list_organization_roles,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -162,19 +166,50 @@ class Auth0Service:
             raise e
 
     def list_members(
-        self: "Auth0Service", user: UserToken, page: int = 0, per_page: int = 100
+        self: "Auth0Service",
+        user: UserToken,
+        session: Any,
+        page: int = 0,
+        per_page: int = 100,
     ) -> any:
+        """
+        List organization members from Auth0, enriched with roles from the database.
+
+        Args:
+            user: Current user token
+            session: Database session
+            page: Page number for pagination
+            per_page: Number of results per page
+
+        Returns:
+            Auth0 members list with role information from database
+        """
         self.verify_org_management_permissions(user)
         try:
+            # Get user info from Auth0
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
-            return management_api.organizations.all_organization_members(
+            auth0_members = management_api.organizations.all_organization_members(
                 id=user.organization_id,
                 page=page,
                 per_page=per_page,
-                # Roles are not returned by default, so we have to do this explicitly
-                fields=["user_id", "email", "picture", "name", "roles"],
+                fields=["user_id", "email", "picture", "name"],
             )
+
+            # Get role mappings from database
+            role_mappings = get_organization_member_roles(session, user.organization_id)
+
+            # Enrich Auth0 data with database roles
+            if isinstance(auth0_members, dict) and "members" in auth0_members:
+                # Paginated response format
+                for member in auth0_members.get("members", []):
+                    member["role"] = role_mappings.get(member["user_id"], "member")
+            elif isinstance(auth0_members, list):
+                # Direct list format
+                for member in auth0_members:
+                    member["role"] = role_mappings.get(member["user_id"], "member")
+
+            return auth0_members
         except Exception as e:
             logger.error(
                 f"Something went wrong listing users for organization {user.organization_display_name} requested by {user.user_id}"
@@ -197,11 +232,24 @@ class Auth0Service:
             )
             raise e
 
-    def list_roles(self: "Auth0Service", page: int = 0, per_page: int = 100) -> any:
+    def list_roles(
+        self: "Auth0Service", page: int = 0, per_page: int = 100
+    ) -> dict[str, any]:
+        """
+        List organization roles from the database.
+
+        Note: page and per_page parameters are kept for API compatibility but not used,
+        as organization roles are a small, static list.
+        """
         try:
-            mgmt_api_token = self.get_mgmt_api_token()
-            management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
-            return management_api.roles.list(page=page, per_page=per_page)
+            roles = list_organization_roles()
+            # Return in a format similar to Auth0's paginated response
+            return {
+                "roles": roles,
+                "start": 0,
+                "limit": len(roles),
+                "total": len(roles),
+            }
         except Exception as e:
             logger.error("Something went wrong listing roles")
             raise e

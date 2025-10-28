@@ -47,7 +47,7 @@ def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
         auth0_service = create_auth0_service()
-        return auth0_service.list_members(user, page=page, per_page=per_page)
+        return auth0_service.list_members(user, session, page=page, per_page=per_page)
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")
     except Exception as e:

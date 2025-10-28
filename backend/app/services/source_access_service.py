@@ -13,17 +13,18 @@ from sqlmodel import Session
 from app.auth.models import User
 from app.repositories import acl_repository, team_repository
 from app.schemas.source_access_schema import (
-    AddSourceMembersRequest,
+    AddSourceUsersRequest,
     AddTeamSourcesRequest,
-    RemoveSourceMembersRequest,
+    RemoveSourceUsersRequest,
     RemoveTeamSourcesRequest,
-    SourceMemberInput,
-    SourceMemberResponse,
-    SourceMembersResponse,
+    SourceUserInput,
+    SourceUserResponse,
+    SourceUsersResponse,
+    TeamMembershipInfo,
     TeamSourceInput,
     TeamSourceResponse,
     TeamSourcesResponse,
-    UpdateSourceMembersRequest,
+    UpdateSourceUsersRequest,
     UpdateTeamSourcesRequest,
 )
 
@@ -77,51 +78,102 @@ def grant_to_team_source_response(
     )
 
 
-def grant_to_source_member_response(
+def build_source_user_response(
+    session: Session,
     grant: PrimaryAssetRoleGrant,
-    asset: PrimaryAsset,
-    member: DbUser | Team,
+    user_or_team: DbUser | Team,
     kind: str,
-) -> SourceMemberResponse:
+    organization_id: str,
+    source_id: UUID,
+) -> SourceUserResponse:
     """
-    Convert grant, asset, and member to SourceMemberResponse.
+    Build SourceUserResponse with full user profile information.
 
     Args:
+        session: Database session for fetching additional data
         grant: PrimaryAssetRoleGrant instance
-        asset: PrimaryAsset instance
-        member: DbUser or Team instance
-        kind: Member kind ('user' or 'team')
+        user_or_team: DbUser or Team instance
+        kind: User kind ('user' or 'team')
+        organization_id: Organization ID
+        source_id: Source ID to filter teams by access
 
     Returns:
-        SourceMemberResponse object
+        SourceUserResponse object with user profile and team memberships
     """
     if kind == "user":
-        user = member
-        return SourceMemberResponse(
-            member_id=user.id,
-            kind="user",
+        user = user_or_team
+
+        # Fetch user's org membership for role and super_admin status
+        org_membership = acl_repository.get_user_org_membership(
+            session=session,
+            user_id=user.id,
+            organization_id=organization_id,
+        )
+
+        is_super_admin = False
+        user_role = "member"
+        if org_membership:
+            from database.models_enums import OrgRole
+
+            is_super_admin = org_membership.role == OrgRole.super_admin
+            user_role = org_membership.role.value
+
+        # Fetch user's team memberships
+        team_memberships_data = acl_repository.get_user_team_memberships(
+            session=session,
+            user_id=user.id,
+            organization_id=organization_id,
+        )
+
+        # Get team IDs that have access to this source
+        from sqlmodel import select
+
+        team_ids_with_source_access = set(
+            session.exec(
+                select(PrimaryAssetRoleGrant.team_id).where(
+                    PrimaryAssetRoleGrant.primary_asset_id == source_id,
+                    PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+                    PrimaryAssetRoleGrant.team_id.is_not(None),
+                    PrimaryAssetRoleGrant.organization_id == organization_id,
+                )
+            ).all()
+        )
+
+        # Build team membership list - only teams with access to this source
+        teams = [
+            TeamMembershipInfo(
+                team_id=str(item["team"].id),
+                display_name=item["team"].name,
+                team_role=item["membership"].role.value,
+            )
+            for item in team_memberships_data
+            if item["team"].id in team_ids_with_source_access
+        ]
+
+        return SourceUserResponse(
+            user_id=user.id,
             name=user.name or "",
             email=user.email or "",
             picture="",  # TODO: Fetch from Auth0 or add to User model
-            source_id=str(asset.id),
-            source_name=asset.display_name,
-            source_role=map_source_role_to_frontend(grant.role),
             visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
+            is_super_admin=is_super_admin,
+            user_role=user_role,
+            teams=teams,
         )
     else:  # team
-        team = member
-        return SourceMemberResponse(
-            member_id=str(team.id),
-            kind="team",
+        team = user_or_team
+        # For teams, return minimal user-like response (since schema is user-only now)
+        return SourceUserResponse(
+            user_id=str(team.id),
             name=team.name,
             email=None,
             picture=None,
-            source_id=str(asset.id),
-            source_name=asset.display_name,
-            source_role=map_source_role_to_frontend(grant.role),
             visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
+            is_super_admin=False,
+            user_role="team",  # Indicate this is a team
+            teams=[],  # Teams don't have team memberships
         )
 
 
@@ -401,40 +453,40 @@ class SourceAccessService:
                 detail="Failed to remove team sources",
             )
 
-    # ===== Source Members Methods =====
+    # ===== Source Users Methods =====
 
-    def get_source_members(
+    def get_source_users(
         self,
         user: User,
         source_id: UUID,
         roles: list[str] | None = None,
-        member_kind: str | None = None,
+        user_kind: str | None = None,
         search: str | None = None,
         limit: int = 30,
         offset: int = 0,
-    ) -> SourceMembersResponse:
+    ) -> SourceUsersResponse:
         """
-        Get paginated list of members for a source.
+        Get paginated list of users for a source.
 
         Args:
             user: Authenticated user making the request
             source_id: Source (primary asset) ID
             roles: Optional list of roles to filter by
-            member_kind: Optional member kind filter
+            user_kind: Optional user kind filter
             search: Optional search query
             limit: Maximum number of results
             offset: Number of results to skip
 
         Returns:
-            List of source members with total count
+            List of source users with total count
 
         Raises:
             HTTPException: If source not found
         """
         organization_id = user.organization_id
         logger.info(
-            f"Getting members for source {source_id} by user {user.user_id} (roles={roles}, "
-            f"kind={member_kind}, search={search})"
+            f"Getting users for source {source_id} by user {user.user_id} (roles={roles}, "
+            f"kind={user_kind}, search={search})"
         )
 
         # Verify source exists
@@ -451,55 +503,60 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
-        members_with_details = acl_repository.get_source_members_with_details(
+        users_with_details = acl_repository.get_source_users_with_details(
             session=self.session,
             primary_asset_id=source_id,
             organization_id=organization_id,
             roles=roles,
-            member_kind=member_kind,
+            user_kind=user_kind,
             search=search,
             limit=limit,
             offset=offset,
         )
 
-        total = acl_repository.count_source_members(
+        total = acl_repository.count_source_users(
             session=self.session,
             primary_asset_id=source_id,
             organization_id=organization_id,
             roles=roles,
-            member_kind=member_kind,
+            user_kind=user_kind,
             search=search,
         )
 
-        members = [
-            grant_to_source_member_response(
-                item["grant"], item["asset"], item["member"], item["kind"]
+        users = [
+            build_source_user_response(
+                session=self.session,
+                grant=item["grant"],
+                user_or_team=item["member"],
+                kind=item["kind"],
+                organization_id=organization_id,
+                source_id=source_id,
             )
-            for item in members_with_details
+            for item in users_with_details
         ]
 
-        logger.info(f"Found {len(members)} members (total: {total})")
-        return SourceMembersResponse(members=members, total=total)
+        logger.info(f"Found {len(users)} users (total: {total})")
+        return SourceUsersResponse(users=users, total=total)
 
-    def add_source_members(
+    def add_source_users(
         self,
         user: User,
         source_id: UUID,
-        request: AddSourceMembersRequest,
+        request: AddSourceUsersRequest,
     ) -> None:
         """
-        Add members to a source.
+        Add users to a source.
 
         Args:
             user: Authenticated user making the request
             source_id: Source (primary asset) ID
-            request: Add source members request
+            request: Add source users request
 
         Raises:
-            HTTPException: If source or member not found, or grant already exists
+            HTTPException: If source or user not found, or grant already exists
         """
         organization_id = user.organization_id
-        logger.info(f"Adding {len(request.members)} members to source {source_id}")
+        logger.info(f"Adding {len(request.users)} users to source {source_id}")
 
         # Verify source exists
         asset = acl_repository.get_primary_asset_by_id(
@@ -515,44 +572,44 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
-        # Add members
+        # Add users
         try:
-            self._add_members_to_source(source_id, organization_id, request.members)
+            self._add_users_to_source(source_id, organization_id, request.users)
             self.session.commit()
-            logger.info(f"Successfully added {len(request.members)} members to source")
+            logger.info(f"Successfully added {len(request.users)} users to source")
         except IntegrityError as e:
             self.session.rollback()
             if "duplicate key value violates unique constraint" in str(e.orig):
-                logger.error("One or more members already have access to source")
+                logger.error("One or more users already have access to source")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="One or more members already have access to this source",
+                    detail="One or more users already have access to this source",
                 )
-            logger.error(f"Unexpected error adding members: {e}")
+            logger.error(f"Unexpected error adding users: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to add members to source",
+                detail="Failed to add users to source",
             )
 
-    def update_source_members(
+    def update_source_users(
         self,
         user: User,
         source_id: UUID,
-        request: UpdateSourceMembersRequest,
+        request: UpdateSourceUsersRequest,
     ) -> None:
         """
-        Update roles for source members.
+        Update roles for source users.
 
         Args:
             user: Authenticated user making the request
             source_id: Source (primary asset) ID
-            request: Update source members request
+            request: Update source users request
 
         Raises:
             HTTPException: If source or grant not found
         """
         organization_id = user.organization_id
-        logger.info(f"Updating {len(request.members)} members for source {source_id}")
+        logger.info(f"Updating {len(request.users)} users for source {source_id}")
 
         # Verify source exists
         asset = acl_repository.get_primary_asset_by_id(
@@ -568,64 +625,64 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
-        # Update each member's role
-        for member in request.members:
-            if member.kind == "user":
+        # Update each user's role
+        for source_user in request.users:
+            if source_user.kind == "user":
                 grant = acl_repository.get_grant_by_user_and_asset(
                     session=self.session,
-                    user_id=member.member_id,
+                    user_id=source_user.user_id,
                     primary_asset_id=source_id,
                 )
             else:  # team
                 grant = acl_repository.get_grant_by_team_and_asset(
                     session=self.session,
-                    team_id=UUID(member.member_id),
+                    team_id=UUID(source_user.user_id),
                     primary_asset_id=source_id,
                 )
 
             if not grant:
                 logger.error(
-                    f"Member {member.member_id} ({member.kind}) does not have "
+                    f"User {source_user.user_id} ({source_user.kind}) does not have "
                     f"access to source {source_id}"
                 )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Member {member.member_id} does not have access to this source",
+                    detail=f"User {source_user.user_id} does not have access to this source",
                 )
 
-            grant.role = map_source_role_to_backend(member.role)
+            grant.role = map_source_role_to_backend(source_user.role)
             self.session.add(grant)
 
         try:
             self.session.commit()
-            logger.info(f"Successfully updated {len(request.members)} members")
+            logger.info(f"Successfully updated {len(request.users)} users")
         except Exception as e:
             self.session.rollback()
-            logger.error(f"Failed to update source members: {e}")
+            logger.error(f"Failed to update source users: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update source members",
+                detail="Failed to update source users",
             )
 
-    def remove_source_members(
+    def remove_source_users(
         self,
         user: User,
         source_id: UUID,
-        request: RemoveSourceMembersRequest,
+        request: RemoveSourceUsersRequest,
     ) -> None:
         """
-        Remove members from a source.
+        Remove users from a source.
 
         Args:
             user: Authenticated user making the request
             source_id: Source (primary asset) ID
-            request: Remove source members request
+            request: Remove source users request
 
         Raises:
             HTTPException: If source not found
         """
         organization_id = user.organization_id
-        logger.info(f"Removing {len(request.members)} members from source {source_id}")
+        logger.info(f"Removing {len(request.users)} users from source {source_id}")
 
         # Verify source exists
         asset = acl_repository.get_primary_asset_by_id(
@@ -641,19 +698,19 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
-        # Remove members
+        # Remove users
         removed_count = 0
-        for member in request.members:
-            if member.kind == "user":
+        for source_user in request.users:
+            if source_user.kind == "user":
                 grant = acl_repository.get_grant_by_user_and_asset(
                     session=self.session,
-                    user_id=member.member_id,
+                    user_id=source_user.user_id,
                     primary_asset_id=source_id,
                 )
             else:  # team
                 grant = acl_repository.get_grant_by_team_and_asset(
                     session=self.session,
-                    team_id=UUID(member.member_id),
+                    team_id=UUID(source_user.user_id),
                     primary_asset_id=source_id,
                 )
 
@@ -663,13 +720,13 @@ class SourceAccessService:
 
         try:
             self.session.commit()
-            logger.info(f"Successfully removed {removed_count} members from source")
+            logger.info(f"Successfully removed {removed_count} users from source")
         except Exception as e:
             self.session.rollback()
-            logger.error(f"Failed to remove source members: {e}")
+            logger.error(f"Failed to remove source users: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to remove source members",
+                detail="Failed to remove source users",
             )
 
     # ===== Private Helper Methods =====
@@ -701,30 +758,30 @@ class SourceAccessService:
             )
             self.session.add(grant)
 
-    def _add_members_to_source(
+    def _add_users_to_source(
         self,
         source_id: UUID,
         organization_id: str,
-        members: list[SourceMemberInput],
+        users: list[SourceUserInput],
     ) -> None:
         """
-        Add members to a source (internal helper).
+        Add users to a source (internal helper).
 
         Args:
             source_id: Source (primary asset) ID
             organization_id: Organization ID
-            members: List of members to add
+            users: List of users to add
         """
-        for member in members:
-            role = map_source_role_to_backend(member.role)
+        for source_user in users:
+            role = map_source_role_to_backend(source_user.role)
 
-            if member.kind == "user":
+            if source_user.kind == "user":
                 grant = PrimaryAssetRoleGrant(
                     id=uuid4(),
                     primary_asset_id=source_id,
                     organization_id=organization_id,
                     principal_kind=PrincipalKind.user,
-                    user_id=member.member_id,
+                    user_id=source_user.user_id,
                     team_id=None,
                     role=role,
                 )
@@ -734,7 +791,7 @@ class SourceAccessService:
                     primary_asset_id=source_id,
                     organization_id=organization_id,
                     principal_kind=PrincipalKind.team,
-                    team_id=UUID(member.member_id),
+                    team_id=UUID(source_user.user_id),
                     user_id=None,
                     role=role,
                 )

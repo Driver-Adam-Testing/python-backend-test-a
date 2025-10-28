@@ -24,7 +24,10 @@ class ChangelogTool(LlmTool):
     Attributes
     ----------
     codebase_name: str
-        Name of the Driver supported codebase.
+        Name of the Driver supported codebase (root directory name)
+
+        File names, PDF file names, sub-directories, etc. are NOT valid
+        codebase names.
     """
 
     codebase_name: str

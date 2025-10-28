@@ -19,7 +19,10 @@ class DetailedChangelogTool(LlmTool):
     Attributes
     ----------
     codebase_name: str
-        Name of the Driver supported codebase.
+        Name of the Driver supported codebase (root directory name)
+
+        File names, PDF file names, sub-directories, etc. are NOT valid
+        codebase names.
     year: str
         The year of the changelog (e.g. "2023").
     month: str

@@ -20,13 +20,26 @@ class FileDocumentationTool(LlmTool):
     Use in tandem with `CodeMapTool` to effectively navigate a codebase and
     understand implementation details in files relevant for your tasks.
 
+    CRITICAL: If the DATA_SOURCES are 'Tuned = True', DO NOT use this tool to
+    provide information about files or directories that are NOT explicitly
+    included in the DATA_SOURCES.
+    If the DATA_SOURCES are 'Tuned = False', there are no restrictions on the
+    tool's usage.
+
     Attributes
     ----------
     codebase_name: str
-        Name of the Driver supported codebase.
+        Name of the Driver supported codebase (root directory name)
+
+        File names, PDF file names, sub-directories, etc. are NOT valid
+        codebase names.
+
     path: str
         The file path to get documentation. Should not include the root
         directory of the codebase (e.g., 'codebase_root/src' is incorrect).
+
+        CRITICAL: If the DATA_SOURCES are 'Tuned = True', the path should be
+        limited to files that are explicitly included in the DATA_SOURCES.
     """
 
     codebase_name: str

@@ -54,14 +54,29 @@ class CodeMapTool(LlmTool):
       used to return detailed symbol-level documentation for files of interest
       from using `CodeMapTool`.
 
+    CRITICAL: If the DATA_SOURCES are 'Tuned = True', DO NOT use this tool to
+    provide information about files or directories that are NOT explicitly
+    included in the DATA_SOURCES.
+    If the DATA_SOURCES are 'Tuned = False', there are no restrictions on the
+    tool's usage.
+
     Attributes
     ----------
     codebase_name: str
-        Name of the Driver supported codebase.
+        Name of the Driver supported codebase (root directory name)
+
+        File names, PDF file names, sub-directories, etc. are NOT valid
+        codebase names.
+
     path: str
         The directory path to explore (e.g., 'src', 'src/utils'). Use empty
         string for root. Should not include the root directory of the codebase
         (e.g., 'codebase_root/src' is incorrect).
+
+        CRITICAL: If the DATA_SOURCES are 'Tuned = True', the path should be
+        limited to directories that are explicitly included in the
+        DATA_SOURCES.
+
     max_depth: int
         Maximum depth to traverse relative to the specified path (0 = only the
         directory itself, 1 = directory + immediate children, etc.)

@@ -22,8 +22,10 @@ class LlmOnboardingGuideTool(LlmTool):
     Attributes
     ----------
     codebase_name: str
-        The name of the codebase to get an LLM onboarding guide for. Must be a
-        valid codebase name that exists in the system.
+        Name of the Driver supported codebase (root directory name)
+
+        File names, PDF file names, sub-directories, etc. are NOT valid
+        codebase names.
     """
 
     codebase_name: str

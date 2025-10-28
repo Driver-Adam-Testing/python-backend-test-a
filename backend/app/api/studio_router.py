@@ -60,11 +60,15 @@ studio_router.include_router(
 studio_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 studio_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 studio_router.include_router(user.router, prefix="/user", tags=["user"])
-studio_router.include_router(user_teams.router, prefix="/users", tags=["users"])
-studio_router.include_router(user_sources.router, prefix="/users", tags=["users"])
+studio_router.include_router(
+    user_teams.router, prefix="/admin/users", tags=["admin-users"]
+)
+studio_router.include_router(
+    user_sources.router, prefix="/admin/users", tags=["admin-users"]
+)
 studio_router.include_router(members_search.router, prefix="/members", tags=["members"])
 studio_router.include_router(
-    admin_sources.router, prefix="/sources", tags=["admin-sources"]
+    admin_sources.router, prefix="/admin/sources", tags=["admin-sources"]
 )
 studio_router.include_router(about_you_survey.router, tags=["about_you_survey"])
 studio_router.include_router(onboarding_checklist.router, tags=["onboarding_checklist"])

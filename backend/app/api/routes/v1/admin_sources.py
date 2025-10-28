@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get(
-    "/admin",
+    "/",
     response_model=AdminSourcesResponse,
     summary="Get admin sources list",
     description="Get paginated list of all sources with admin metadata including member and team counts",

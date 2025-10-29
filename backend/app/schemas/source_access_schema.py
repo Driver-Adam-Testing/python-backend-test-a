@@ -1,21 +1,22 @@
 """Schemas for Source Access (ACL) related API requests and responses."""
 
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 # ===== Common Types =====
 SourceRole = Literal["admin", "member"]
 SourceVisibility = Literal["private", "internal", "public"]
-SourceMemberKind = Literal["user", "team"]
+SourceUserKind = Literal["user", "team"]
 
 
 # ===== Team Sources Request Schemas =====
 class TeamSourceInput(BaseModel):
     """Input for adding/updating a single source for a team."""
 
-    source_id: str = Field(..., description="Primary asset ID (source ID)")
-    role: SourceRole = Field(..., description="Source role")
+    source_id: str = Field(..., description="Source ID")
+    role: SourceRole = Field(..., description="Team's role for this source")
 
 
 class AddTeamSourcesRequest(BaseModel):
@@ -44,53 +45,82 @@ class RemoveTeamSourcesRequest(BaseModel):
     source_ids: list[str] = Field(
         ...,
         min_length=1,
-        description="List of source IDs (primary_asset_id) to remove",
+        description="List of source IDs to remove",
     )
 
 
-# ===== Source Members Request Schemas =====
-class SourceMemberInput(BaseModel):
-    """Input for adding/updating a single member for a source."""
+class SourceUserInput(BaseModel):
+    """Input for adding/updating a single user for a source."""
 
-    member_id: str = Field(..., description="User ID or Team ID")
-    kind: SourceMemberKind = Field(..., description="Member type: user or team")
-    role: SourceRole = Field(..., description="Source role")
+    user_id: str = Field(..., description="User ID or Team ID")
+    role: SourceRole = Field(..., description="Role for this source")
 
 
-class AddSourceMembersRequest(BaseModel):
-    """Request to add members to a source."""
+class AddSourceUsersRequest(BaseModel):
+    """Request to add users (not teams) to a source."""
 
-    members: list[SourceMemberInput] = Field(
+    users: list[SourceUserInput] = Field(
         ...,
         min_length=1,
-        description="List of members (users or teams) to add",
+        description="List of users to add",
     )
 
 
-class UpdateSourceMembersRequest(BaseModel):
-    """Request to update source member roles."""
+class UpdateSourceUsersRequest(BaseModel):
+    """Request to update source user roles (users only, not teams)."""
 
-    members: list[SourceMemberInput] = Field(
+    users: list[SourceUserInput] = Field(
         ...,
         min_length=1,
-        description="List of members with updated roles",
+        description="List of users with updated roles",
     )
 
 
-class RemoveSourceMemberInput(BaseModel):
-    """Input for removing a single member from a source."""
+class RemoveSourceUsersRequest(BaseModel):
+    """Request to remove users (not teams) from a source."""
 
-    member_id: str = Field(..., description="User ID or Team ID")
-    kind: SourceMemberKind = Field(..., description="Member type: user or team")
-
-
-class RemoveSourceMembersRequest(BaseModel):
-    """Request to remove members from a source."""
-
-    members: list[RemoveSourceMemberInput] = Field(
+    user_ids: list[str] = Field(
         ...,
         min_length=1,
-        description="List of members to remove",
+        description="List of user IDs to remove",
+    )
+
+
+# ===== Source Teams Request Schemas =====
+class SourceTeamInput(BaseModel):
+    """Input for adding/updating a single team for a source."""
+
+    team_id: UUID = Field(..., description="Team ID")
+    role: SourceRole = Field(..., description="Team's role for this source")
+
+
+class AddSourceTeamsRequest(BaseModel):
+    """Request to add teams to a source."""
+
+    teams: list[SourceTeamInput] = Field(
+        ...,
+        min_length=1,
+        description="List of teams to add",
+    )
+
+
+class UpdateSourceTeamsRequest(BaseModel):
+    """Request to update source team roles."""
+
+    teams: list[SourceTeamInput] = Field(
+        ...,
+        min_length=1,
+        description="List of teams with updated roles",
+    )
+
+
+class RemoveSourceTeamsRequest(BaseModel):
+    """Request to remove teams from a source."""
+
+    team_ids: list[UUID] = Field(
+        ...,
+        min_length=1,
+        description="List of team IDs to remove",
     )
 
 
@@ -98,7 +128,7 @@ class RemoveSourceMembersRequest(BaseModel):
 class TeamSourceResponse(BaseModel):
     """Response for a single team source."""
 
-    id: str = Field(..., description="Primary asset ID")
+    id: str = Field(..., description="Source ID")
     organization_id: str = Field(..., description="Organization ID")
     kind: str = Field(..., description="Asset type: CODEBASE, FILE, PAGE, etc.")
     display_name: str = Field(..., description="Source display name")
@@ -107,9 +137,9 @@ class TeamSourceResponse(BaseModel):
     updated_at: str = Field(..., description="ISO datetime when asset was updated")
     role: SourceRole = Field(..., description="Team's role for this source")
     visibility: SourceVisibility = Field(
-        ..., description="Visibility: private, internal, or public"
+        ..., description="Source visibility: private, internal, or public"
     )
-    team_id: str = Field(..., description="Team ID")
+    team_id: UUID = Field(..., description="Team ID")
 
     class Config:
         from_attributes = True
@@ -122,24 +152,16 @@ class TeamSourcesResponse(BaseModel):
     total: int = Field(..., description="Total count of team sources")
 
 
-# ===== Source Members Response Schemas =====
-class SourceMemberResponse(BaseModel):
-    """Response for a single source member (user or team)."""
+# ===== Source Teams Response Schemas =====
+class SourceTeamResponse(BaseModel):
+    """Response for a single team with access to a source."""
 
-    member_id: str = Field(..., description="User ID or Team ID")
-    kind: SourceMemberKind = Field(..., description="Member type: user or team")
-    name: str = Field(..., description="User name or team name")
-    email: str | None = Field(
-        None, description="Email (for users only, null for teams)"
-    )
-    picture: str | None = Field(
-        None, description="Profile picture (for users only, null for teams)"
-    )
-    source_id: str = Field(..., description="Source (primary asset) ID")
-    source_name: str = Field(..., description="Source display name")
-    source_role: SourceRole = Field(..., description="Member's role for this source")
+    team_id: UUID = Field(..., description="Team ID")
+    team_name: str = Field(..., description="Team name")
+    role: SourceRole = Field(..., description="Team's role for this source")
+    member_count: int = Field(..., description="Number of users in the team")
     visibility: SourceVisibility = Field(
-        ..., description="Visibility: private, internal, or public"
+        ..., description="Source visibility: private, internal, or public"
     )
     created_at: str = Field(..., description="ISO datetime when access was granted")
 
@@ -147,10 +169,50 @@ class SourceMemberResponse(BaseModel):
         from_attributes = True
 
 
-class SourceMembersResponse(BaseModel):
-    """Response for list of source members."""
+class SourceTeamsResponse(BaseModel):
+    """Response for list of teams with access to a source."""
 
-    members: list[SourceMemberResponse] = Field(
-        ..., description="List of source members"
+    teams: list[SourceTeamResponse] = Field(..., description="List of teams")
+    total: int = Field(..., description="Total count of teams")
+
+
+# ===== Source Users Response Schemas =====
+class TeamMembershipInfo(BaseModel):
+    """Information about a user's team membership."""
+
+    team_id: UUID = Field(..., description="Team ID")
+    display_name: str = Field(..., description="Team name")
+    team_role: str = Field(..., description="User's role in the team")
+
+    class Config:
+        from_attributes = True
+
+
+class SourceUserResponse(BaseModel):
+    """Response for a single source user with full profile information (users only, not teams)."""
+
+    user_id: str = Field(..., description="User ID")
+    name: str = Field(..., description="User name")
+    email: str | None = Field(None, description="Email address")
+    picture: str | None = Field(None, description="Profile picture URL")
+    visibility: SourceVisibility = Field(
+        ..., description="Source visibility: private, internal, or public"
     )
-    total: int = Field(..., description="Total count of source members")
+    created_at: str = Field(..., description="ISO datetime when access was granted")
+    is_super_admin: bool = Field(
+        ..., description="Whether user is a super admin in the organization"
+    )
+    user_role: str = Field(..., description="User's role for this source")
+    teams: list[TeamMembershipInfo] = Field(
+        ..., description="List of teams the user belongs to"
+    )
+
+    class Config:
+        from_attributes = True
+
+
+class SourceUsersResponse(BaseModel):
+    """Response for list of source users (users only, not teams)."""
+
+    users: list[SourceUserResponse] = Field(..., description="List of source users")
+    total: int = Field(..., description="Total count of source users")

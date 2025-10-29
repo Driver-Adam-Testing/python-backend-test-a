@@ -20,12 +20,11 @@ if TYPE_CHECKING:
     from app.auth.models import User
 
 from app.schemas.source_access_schema import (
-    AddSourceMembersRequest,
+    AddSourceUsersRequest,
     AddTeamSourcesRequest,
-    RemoveSourceMemberInput,
-    RemoveSourceMembersRequest,
+    RemoveSourceUsersRequest,
     RemoveTeamSourcesRequest,
-    SourceMemberInput,
+    SourceUserInput,
     TeamSourceInput,
 )
 from app.services.source_access_service import SourceAccessService
@@ -133,14 +132,16 @@ class TestTeamSourceAccessPropagation:
         assert team_sources.sources[0].id == str(source.id)
         assert team_sources.sources[0].role == "admin"
 
-        # Step 6: Query source members
-        source_members = service.get_source_members(
-            user=mock_user, source_id=source.id, limit=10, offset=0
+        # Step 6: Query source teams (teams with access to the source)
+        source_teams = service.get_source_teams(
+            user=mock_user,
+            source_id=source.id,
+            limit=10,
+            offset=0,
         )
-        assert source_members.total == 1
-        assert source_members.members[0].member_id == str(team.id)
-        assert source_members.members[0].kind == "team"
-        assert source_members.members[0].source_role == "admin"
+        assert source_teams.total == 1
+        assert source_teams.teams[0].team_id == team.id
+        assert source_teams.teams[0].team_name == "Engineering"
 
     def test_remove_source_from_team_deletes_grant(
         self, integration_db_session: Session
@@ -212,13 +213,11 @@ class TestUserDirectVsTeamAccess:
         source = PrimaryAssetFactory.create(integration_db_session)
 
         # Step 1: Grant user direct access (role: member)
-        service.add_source_members(
+        service.add_source_users(
             user=mock_user,
             source_id=source.id,
-            request=AddSourceMembersRequest(
-                members=[
-                    SourceMemberInput(member_id=user.id, kind="user", role="member")
-                ]
+            request=AddSourceUsersRequest(
+                users=[SourceUserInput(user_id=user.id, role="member")]
             ),
         )
 
@@ -283,12 +282,10 @@ class TestUserDirectVsTeamAccess:
         assert team_grant is not None  # Team still has access to source
 
         # Step 5: Remove direct access
-        service.remove_source_members(
+        service.remove_source_users(
             user=mock_user,
             source_id=source.id,
-            request=RemoveSourceMembersRequest(
-                members=[RemoveSourceMemberInput(member_id=user.id, kind="user")]
-            ),
+            request=RemoveSourceUsersRequest(user_ids=[user.id]),
         )
 
         # Verify user has no direct access

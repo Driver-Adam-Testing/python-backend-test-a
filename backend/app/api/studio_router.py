@@ -8,12 +8,14 @@ from app.api.routes.v1 import (
     git_provider,
     members_search,
     organization,
-    source_members,
+    source_teams,
+    source_users,
     tags,
     teams,
     upload,
     usage,
     user,
+    user_profile,
     user_sources,
     user_teams,
 )
@@ -55,11 +57,15 @@ studio_router.include_router(codebase.router, prefix="/codebases", tags=["codeba
 studio_router.include_router(tags.router, prefix="/tags", tags=["tags"])
 studio_router.include_router(teams.router, prefix="/teams", tags=["teams"])
 studio_router.include_router(
-    source_members.router, tags=["source-members"]
-)  # Source members routes (no prefix, uses /sources/{id}/members)
+    source_users.router, tags=["source-users"]
+)  # Source users routes (no prefix, uses /sources/{id}/users)
+studio_router.include_router(
+    source_teams.router, tags=["source-teams"]
+)  # Source teams routes (no prefix, uses /sources/{id}/teams)
 studio_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 studio_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 studio_router.include_router(user.router, prefix="/user", tags=["user"])
+studio_router.include_router(user_profile.router, prefix="/me", tags=["user-profile"])
 studio_router.include_router(
     user_teams.router, prefix="/admin/users", tags=["admin-users"]
 )

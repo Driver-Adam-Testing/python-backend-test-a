@@ -103,7 +103,7 @@ class CodeMapTool(LlmTool):
         code_map = {
             "code_map": [
                 {
-                    "path": node.path,
+                    "path": node.absolute_path,
                     "type": node.type,
                     "description": node.description,
                 }

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class CodeMapNode(BaseModel):
-    path: str
+    absolute_path: str
     type: str
     description: str | None
 
@@ -76,7 +76,7 @@ def _build_flat_node_list(
 
         result.append(
             CodeMapNode(
-                path=node.relative_path,
+                absolute_path=node.relative_path,
                 type="file" if node.kind == NodeKind.CODEBASE_FILE else "directory",
                 description=content.content,
             )

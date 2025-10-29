@@ -74,7 +74,7 @@ def grant_to_team_source_response(
         updated_at=asset.updated_at.isoformat() if asset.updated_at else "",
         role=map_source_role_to_frontend(grant.role),
         visibility="private",  # TODO: Use actual visibility when field is added
-        team_id=str(grant.team_id) if grant.team_id else "",
+        team_id=grant.team_id,
     )
 
 
@@ -142,7 +142,7 @@ def build_source_user_response(
         # Build team membership list - only teams with access to this source
         teams = [
             TeamMembershipInfo(
-                team_id=str(item["team"].id),
+                team_id=item["team"].id,
                 display_name=item["team"].name,
                 team_role=item["membership"].role.value,
             )

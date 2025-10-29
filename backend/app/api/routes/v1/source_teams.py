@@ -80,7 +80,7 @@ def get_source_teams(
         )
         teams.append(
             SourceTeamResponse(
-                team_id=item.user_id,
+                team_id=team_id,
                 team_name=item.name,
                 role="admin" if item.user_role == "admin" else "member",  # Map role
                 member_count=member_count,

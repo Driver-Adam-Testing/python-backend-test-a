@@ -1,6 +1,7 @@
 """Schemas for Source Access (ACL) related API requests and responses."""
 
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -14,8 +15,8 @@ SourceUserKind = Literal["user", "team"]
 class TeamSourceInput(BaseModel):
     """Input for adding/updating a single source for a team."""
 
-    source_id: str = Field(..., description="Primary asset ID (source ID)")
-    role: SourceRole = Field(..., description="Source role")
+    source_id: str = Field(..., description="Source ID")
+    role: SourceRole = Field(..., description="Team's role for this source")
 
 
 class AddTeamSourcesRequest(BaseModel):
@@ -44,17 +45,17 @@ class RemoveTeamSourcesRequest(BaseModel):
     source_ids: list[str] = Field(
         ...,
         min_length=1,
-        description="List of source IDs (primary_asset_id) to remove",
+        description="List of source IDs to remove",
     )
 
 
 # ===== Source Users Request Schemas (DEPRECATED - kept for backward compatibility) =====
 class SourceUserInput(BaseModel):
-    """Input for adding/updating a single user for a source (DEPRECATED: use UserOnlyInput or SourceTeamInput)."""
+    """Input for adding/updating a single user or team for a source (DEPRECATED: use UserOnlyInput or SourceTeamInput)."""
 
     user_id: str = Field(..., description="User ID or Team ID")
-    kind: SourceUserKind = Field(..., description="User type: user or team")
-    role: SourceRole = Field(..., description="Source role")
+    kind: SourceUserKind = Field(..., description="Type: user or team")
+    role: SourceRole = Field(..., description="Role for this source")
 
 
 class AddSourceUsersRequest(BaseModel):
@@ -63,7 +64,7 @@ class AddSourceUsersRequest(BaseModel):
     users: list[SourceUserInput] = Field(
         ...,
         min_length=1,
-        description="List of users (users or teams) to add",
+        description="List of users or teams to add",
     )
 
 
@@ -73,15 +74,15 @@ class UpdateSourceUsersRequest(BaseModel):
     users: list[SourceUserInput] = Field(
         ...,
         min_length=1,
-        description="List of users with updated roles",
+        description="List of users or teams with updated roles",
     )
 
 
 class RemoveSourceUserInput(BaseModel):
-    """Input for removing a single user from a source (DEPRECATED)."""
+    """Input for removing a single user or team from a source (DEPRECATED)."""
 
     user_id: str = Field(..., description="User ID or Team ID")
-    kind: SourceUserKind = Field(..., description="User type: user or team")
+    kind: SourceUserKind = Field(..., description="Type: user or team")
 
 
 class RemoveSourceUsersRequest(BaseModel):
@@ -90,7 +91,7 @@ class RemoveSourceUsersRequest(BaseModel):
     users: list[RemoveSourceUserInput] = Field(
         ...,
         min_length=1,
-        description="List of users to remove",
+        description="List of users or teams to remove",
     )
 
 
@@ -99,7 +100,7 @@ class UserOnlyInput(BaseModel):
     """Input for adding/updating a single user for a source (users only, not teams)."""
 
     user_id: str = Field(..., description="User ID")
-    role: SourceRole = Field(..., description="Source role")
+    role: SourceRole = Field(..., description="User's role for this source")
 
 
 class AddSourceUsersOnlyRequest(BaseModel):
@@ -136,8 +137,8 @@ class RemoveSourceUsersOnlyRequest(BaseModel):
 class SourceTeamInput(BaseModel):
     """Input for adding/updating a single team for a source."""
 
-    team_id: str = Field(..., description="Team ID (UUID)")
-    role: SourceRole = Field(..., description="Source role")
+    team_id: UUID = Field(..., description="Team ID")
+    role: SourceRole = Field(..., description="Team's role for this source")
 
 
 class AddSourceTeamsRequest(BaseModel):
@@ -163,10 +164,10 @@ class UpdateSourceTeamsRequest(BaseModel):
 class RemoveSourceTeamsRequest(BaseModel):
     """Request to remove teams from a source."""
 
-    team_ids: list[str] = Field(
+    team_ids: list[UUID] = Field(
         ...,
         min_length=1,
-        description="List of team IDs (UUID) to remove",
+        description="List of team IDs to remove",
     )
 
 
@@ -174,7 +175,7 @@ class RemoveSourceTeamsRequest(BaseModel):
 class TeamSourceResponse(BaseModel):
     """Response for a single team source."""
 
-    id: str = Field(..., description="Primary asset ID")
+    id: str = Field(..., description="Source ID")
     organization_id: str = Field(..., description="Organization ID")
     kind: str = Field(..., description="Asset type: CODEBASE, FILE, PAGE, etc.")
     display_name: str = Field(..., description="Source display name")
@@ -183,9 +184,9 @@ class TeamSourceResponse(BaseModel):
     updated_at: str = Field(..., description="ISO datetime when asset was updated")
     role: SourceRole = Field(..., description="Team's role for this source")
     visibility: SourceVisibility = Field(
-        ..., description="Visibility: private, internal, or public"
+        ..., description="Source visibility: private, internal, or public"
     )
-    team_id: str = Field(..., description="Team ID")
+    team_id: UUID = Field(..., description="Team ID")
 
     class Config:
         from_attributes = True
@@ -202,12 +203,12 @@ class TeamSourcesResponse(BaseModel):
 class SourceTeamResponse(BaseModel):
     """Response for a single team with access to a source."""
 
-    team_id: str = Field(..., description="Team ID (UUID)")
+    team_id: UUID = Field(..., description="Team ID")
     team_name: str = Field(..., description="Team name")
     role: SourceRole = Field(..., description="Team's role for this source")
     member_count: int = Field(..., description="Number of users in the team")
     visibility: SourceVisibility = Field(
-        ..., description="Visibility: private, internal, or public"
+        ..., description="Source visibility: private, internal, or public"
     )
     created_at: str = Field(..., description="ISO datetime when access was granted")
 
@@ -226,9 +227,9 @@ class SourceTeamsResponse(BaseModel):
 class TeamMembershipInfo(BaseModel):
     """Information about a user's team membership."""
 
-    team_id: str = Field(..., description="Team ID (UUID)")
+    team_id: UUID = Field(..., description="Team ID")
     display_name: str = Field(..., description="Team name")
-    team_role: str = Field(..., description="User's role in the team (admin or member)")
+    team_role: str = Field(..., description="User's role in the team")
 
     class Config:
         from_attributes = True
@@ -242,13 +243,13 @@ class SourceUserResponse(BaseModel):
     email: str | None = Field(None, description="Email address")
     picture: str | None = Field(None, description="Profile picture URL")
     visibility: SourceVisibility = Field(
-        ..., description="Visibility: private, internal, or public"
+        ..., description="Source visibility: private, internal, or public"
     )
     created_at: str = Field(..., description="ISO datetime when access was granted")
     is_super_admin: bool = Field(
         ..., description="Whether user is a super admin in the organization"
     )
-    user_role: str = Field(..., description="User's role in the organization")
+    user_role: str = Field(..., description="User's role for this source")
     teams: list[TeamMembershipInfo] = Field(
         ..., description="List of teams the user belongs to"
     )

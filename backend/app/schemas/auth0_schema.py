@@ -32,3 +32,16 @@ class SetUserRoleResponse(BaseModel):
     user_id: str
     organization_id: str
     role: str = Field(description="The user's current organization role")
+
+
+class BulkSetUserRoleItem(BaseModel):
+    user_id: str
+    role: str = Field(description="Organization role (e.g., 'super_admin', 'member')")
+
+
+class BulkSetUserRoleInput(BaseModel):
+    members: list[BulkSetUserRoleItem]
+
+
+class BulkSetUserRoleResponse(BaseModel):
+    updated: list[SetUserRoleResponse]

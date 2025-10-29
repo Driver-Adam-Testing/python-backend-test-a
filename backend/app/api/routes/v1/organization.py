@@ -7,6 +7,8 @@ from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_org_action
 from app.schemas.auth0_schema import (
+    BulkSetUserRoleInput,
+    BulkSetUserRoleResponse,
     CreateInvitationInput,
     SetUserRoleInput,
     SetUserRoleResponse,
@@ -74,6 +76,31 @@ def delete_member(
     except Exception as e:
         logger.error(f"An error occurred removing a member from an organization: {e}")
         raise HTTPException(500, "Unable to remove organization members.")
+
+
+@router.put("/users/role", status_code=200)
+def bulk_change_user_roles(
+    session: CurrentSession,
+    user: UserToken,
+    bulk_input: BulkSetUserRoleInput,
+) -> BulkSetUserRoleResponse:
+    enforce_org_action(session, user, "users.manage")
+    logging.info(
+        f"Bulk updating {len(bulk_input.members)} user roles in {user.organization_id}"
+    )
+
+    try:
+        organizations_service = OrganizationsService(session)
+        return organizations_service.bulk_update_member_roles(user, bulk_input)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # Invalid role or other validation error
+        logger.error(f"Validation error in bulk role update: {e}")
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        logger.error(f"An error occurred in bulk role update: {e}")
+        raise HTTPException(500, "Unable to update user roles.")
 
 
 @router.put(

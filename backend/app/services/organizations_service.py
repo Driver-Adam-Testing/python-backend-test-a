@@ -13,7 +13,11 @@ from app.repositories.user_repository import (
     get_organization_membership,
     update_organization_role,
 )
-from app.schemas.auth0_schema import SetUserRoleResponse
+from app.schemas.auth0_schema import (
+    BulkSetUserRoleInput,
+    BulkSetUserRoleResponse,
+    SetUserRoleResponse,
+)
 from app.services.auth0_factory import create_auth0_service
 
 logger = logging.getLogger(__name__)
@@ -119,3 +123,59 @@ class OrganizationsService:
             organization_id=user.organization_id,
             role=new_role,
         )
+
+    def bulk_update_member_roles(
+        self,
+        user: UserToken,
+        bulk_input: BulkSetUserRoleInput,
+    ) -> BulkSetUserRoleResponse:
+        """
+        Update multiple members' roles in an organization.
+
+        Validates all users exist before updating any roles.
+        Updates all roles or fails completely (all-or-nothing).
+
+        Args:
+            user: Authenticated user token (for organization context)
+            bulk_input: Input containing list of user_id and role pairs
+
+        Returns:
+            BulkSetUserRoleResponse with list of updated users
+
+        Raises:
+            HTTPException: 404 if any user not found in organization
+            HTTPException: 400 if input is empty
+            ValueError: If any role is invalid (raised by repository)
+        """
+        if not bulk_input.members:
+            raise HTTPException(400, "No members provided to update")
+
+        # Validate all users exist in the organization before making any updates
+        for member_update in bulk_input.members:
+            membership = get_organization_membership(
+                self.session, member_update.user_id, user.organization_id
+            )
+            if not membership:
+                raise HTTPException(
+                    404,
+                    f"User {member_update.user_id} is not a member of this organization",
+                )
+
+        # Update all roles
+        updated_users: list[SetUserRoleResponse] = []
+        for member_update in bulk_input.members:
+            update_organization_role(
+                self.session,
+                member_update.user_id,
+                user.organization_id,
+                member_update.role,
+            )
+            updated_users.append(
+                SetUserRoleResponse(
+                    user_id=member_update.user_id,
+                    organization_id=user.organization_id,
+                    role=member_update.role,
+                )
+            )
+
+        return BulkSetUserRoleResponse(updated=updated_users)

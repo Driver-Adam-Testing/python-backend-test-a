@@ -292,6 +292,11 @@ def authorize_team_action(
         [],
     )
 
+def authorize_super_admin(ctx: AuthContext, user_id: uuid.UUID, organization_id: str) -> AccessDecision:
+    if(is_super_admin(ctx, user_id, organization_id)):
+        return AccessDecision(True, OrgRole.super_admin.value, ["org_super_admin"], [])
+    return AccessDecision(False, OrgRole.super_admin.value, ["org_super_admin"], [])
+
 
 # def enforce_limit(
 #     db: Session,

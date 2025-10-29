@@ -13,6 +13,7 @@ from app.schemas.auth0_schema import (
     SetUserRoleInput,
     SetUserRoleResponse,
 )
+from app.schemas.organization_schema import ListMembersResponse
 from app.services.auth0_factory import create_auth0_service
 from app.services.onboarding_checklist_service import OnboardingChecklistService
 from app.services.organizations_service import OrganizationsService
@@ -40,19 +41,19 @@ def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 
 
 @router.get("/users", status_code=200)
-def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
+def list_members(
     session: CurrentSession,
     user: UserToken,
     page: int = 0,
     per_page: int = 100,
-):
+) -> ListMembersResponse:
     enforce_org_action(session, user, "users.view")
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
-        auth0_service = create_auth0_service()
-        return auth0_service.list_members(user, session, page=page, per_page=per_page)
-    except PermissionError:
-        raise HTTPException(403, "Insufficient permissions.")
+        organizations_service = OrganizationsService(session)
+        return organizations_service.list_members(user, page=page, per_page=per_page)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"An error occurred listing members of an organization: {e}")
         raise HTTPException(500, "Unable to list organization members.")

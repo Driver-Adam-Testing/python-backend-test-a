@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -231,17 +231,10 @@ class TestAuth0Service(unittest.TestCase):
         self.fail("Completed without sufficient permissions")
 
     @pytest.mark.unit
-    @patch("shared.auth0.auth0_service.get_organization_member_roles")
     @patch("auth0.management.Organizations.all_organization_members")
-    def test_list_members(
-        self, mock_list_members: any, mock_get_roles: any
-    ) -> None:
-        mock_list_members.return_value = [
-            {"user_id": "auth0|user1", "name": "User One", "email": "user1@example.com"}
-        ]
-        mock_get_roles.return_value = {"auth0|user1": "super_admin"}
+    def test_list_members(self, mock_list_members: any) -> None:
+        mock_list_members.return_value = {"mocked": "listed org members"}
         auth0_service = create_test_auth0_service()
-        mock_session = MagicMock()
         response = auth0_service.list_members(
             UserToken(
                 org_id="mock_org_id",
@@ -257,26 +250,22 @@ class TestAuth0Service(unittest.TestCase):
                 user_email="mock@mock.com",
                 user_full_name="mock full name",
             ),
-            mock_session,
             page=1,
             per_page=9,
         )
-        self.assertEqual(response[0]["user_id"], "auth0|user1")
-        self.assertEqual(response[0]["role"], "super_admin")
+        self.assertTrue(response["mocked"] == "listed org members")
         mock_list_members.assert_called_with(
             id="mock_org_id",
             page=1,
             per_page=9,
-            fields=["user_id", "email", "picture", "name"],
+            fields=["user_id", "email", "picture", "name", "roles"],
         )
-        mock_get_roles.assert_called_with(mock_session, "mock_org_id")
 
     @pytest.mark.unit
     @patch("auth0.management.Organizations.all_organization_members")
     def test_list_members_perms(self, mock_list_members: any) -> None:
         mock_list_members.return_value = {"mocked": "listed org members"}
         auth0_service = create_test_auth0_service()
-        mock_session = MagicMock()
         try:
             auth0_service.list_members(
                 UserToken(
@@ -293,7 +282,6 @@ class TestAuth0Service(unittest.TestCase):
                     user_email="mock@mock.com",
                     user_full_name="mock full name",
                 ),
-                mock_session,
                 page=1,
                 per_page=9,
             )
@@ -362,18 +350,14 @@ class TestAuth0Service(unittest.TestCase):
         self.fail("Completed without sufficient permissions")
 
     @pytest.mark.unit
-    @patch("shared.auth0.auth0_service.list_organization_roles")
+    @patch("auth0.management.Roles.list")
     def test_list_roles(self, mock_list_roles: any) -> None:
-        mock_list_roles.return_value = [
-            {"id": "super_admin", "name": "Super Admin"},
-            {"id": "member", "name": "Member"},
-        ]
+        mock_list_roles.return_value = {"mocked": "list of roles"}
         auth0_service = create_test_auth0_service()
         response = auth0_service.list_roles()
-        self.assertEqual(len(response["roles"]), 2)
-        self.assertEqual(response["roles"][0]["id"], "super_admin")
-        self.assertEqual(response["total"], 2)
-        mock_list_roles.assert_called_once()
+        self.assertTrue(response["mocked"] == "list of roles")
+        # Verify default paginations params are passed through
+        mock_list_roles.assert_called_with(page=0, per_page=100)
 
     @pytest.mark.unit
     @patch("auth0.authentication.Users.userinfo")

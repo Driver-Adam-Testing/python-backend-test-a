@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlmodel import Session
 
 from app.api.auth import UserToken
+from app.repositories.org_membership_repository import list_organization_members
 from app.repositories.user_repository import (
     count_organization_super_admins,
     delete_organization_membership,
@@ -17,6 +18,10 @@ from app.schemas.auth0_schema import (
     BulkSetUserRoleInput,
     BulkSetUserRoleResponse,
     SetUserRoleResponse,
+)
+from app.schemas.organization_schema import (
+    ListMembersResponse,
+    OrganizationMember,
 )
 from app.services.auth0_factory import create_auth0_service
 
@@ -179,3 +184,43 @@ class OrganizationsService:
             )
 
         return BulkSetUserRoleResponse(updated=updated_users)
+
+    def list_members(
+        self,
+        user: UserToken,
+        page: int = 0,
+        per_page: int = 100,
+    ) -> ListMembersResponse:
+        """
+        List all members of an organization.
+
+        Args:
+            user: Authenticated user token (for organization context)
+            page: Page number (0-indexed)
+            per_page: Number of results per page
+
+        Returns:
+            ListMembersResponse with members list, pagination info, and total count
+        """
+        members_data, total_count = list_organization_members(
+            self.session, user.organization_id, page=page, per_page=per_page
+        )
+
+        # Transform members data to OrganizationMember objects
+        members = [
+            OrganizationMember(
+                user_id=member["user_id"],
+                email=member["email"],
+                picture=None,  # Not stored in database
+                name=member["name"],
+                role=member["role"],  # Singular role as enum value
+            )
+            for member in members_data
+        ]
+
+        return ListMembersResponse(
+            members=members,
+            start=page * per_page,
+            limit=per_page,
+            total=total_count,
+        )

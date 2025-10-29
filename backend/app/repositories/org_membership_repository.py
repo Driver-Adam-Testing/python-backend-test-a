@@ -160,3 +160,66 @@ def list_organization_members(
     ]
 
     return members, total_count
+
+
+def bulk_update_organization_roles(
+    session: Session,
+    organization_id: str,
+    role_updates: list[tuple[str, OrgRole]],
+) -> list[OrgMembership]:
+    """
+    Update multiple users' organization roles in a single transaction.
+
+    All updates are applied atomically - either all succeed or all fail.
+    This ensures data consistency when updating multiple roles at once.
+
+    Args:
+        session: Database session
+        organization_id: Organization ID
+        role_updates: List of (user_id, new_role) tuples to update
+
+    Returns:
+        List of updated OrgMembership objects
+
+    Raises:
+        ValueError: If any user is not a member of the organization
+    """
+    if not role_updates:
+        return []
+
+    # Extract user IDs
+    user_ids = [user_id for user_id, _ in role_updates]
+
+    # Fetch all memberships in a single query
+    query = select(OrgMembership).where(
+        OrgMembership.org_id == organization_id,
+        OrgMembership.user_id.in_(user_ids),
+    )
+    memberships = session.exec(query).all()
+
+    # Create a mapping of user_id to membership
+    membership_map = {m.user_id: m for m in memberships}
+
+    # Validate all users exist in the organization
+    missing_users = [uid for uid in user_ids if uid not in membership_map]
+    if missing_users:
+        raise ValueError(
+            f"Users not found in organization: {', '.join(missing_users)}"
+        )
+
+    # Update all roles
+    updated_memberships = []
+    for user_id, new_role in role_updates:
+        membership = membership_map[user_id]
+        membership.role = new_role
+        session.add(membership)
+        updated_memberships.append(membership)
+
+    # Commit all changes at once
+    session.commit()
+
+    # Refresh all updated memberships
+    for membership in updated_memberships:
+        session.refresh(membership)
+
+    return updated_memberships

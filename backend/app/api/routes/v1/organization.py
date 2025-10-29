@@ -6,14 +6,14 @@ from fastapi import APIRouter, Header, HTTPException
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_org_action
-from app.schemas.auth0_schema import (
+from app.schemas.auth0_schema import CreateInvitationInput
+from app.schemas.organization_schema import (
     BulkSetUserRoleInput,
     BulkSetUserRoleResponse,
-    CreateInvitationInput,
+    ListMembersResponse,
     SetUserRoleInput,
     SetUserRoleResponse,
 )
-from app.schemas.organization_schema import ListMembersResponse
 from app.services.auth0_factory import create_auth0_service
 from app.services.onboarding_checklist_service import OnboardingChecklistService
 from app.services.organizations_service import OrganizationsService

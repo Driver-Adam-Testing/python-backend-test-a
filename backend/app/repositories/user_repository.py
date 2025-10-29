@@ -10,7 +10,7 @@ from database.models import (
     TeamMembership,
     User,
 )
-from database.models_enums import PrimaryAssetRole, TeamRole
+from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
 from sqlmodel import Session, func, or_, select
 
 
@@ -466,7 +466,7 @@ def update_organization_role(
     session: Session,
     user_id: str,
     organization_id: str,
-    new_role: str,
+    new_role: OrgRole,
 ) -> OrgMembership:
     """
     Update a user's organization role.
@@ -475,25 +475,14 @@ def update_organization_role(
         session: Database session
         user_id: User ID (Auth0 user ID)
         organization_id: Organization ID
-        new_role: New role value (must be valid OrgRole)
+        new_role: New role enum value
 
     Returns:
         Updated OrgMembership
 
     Raises:
-        ValueError: If role is invalid or membership not found
+        ValueError: If membership not found
     """
-    from database.models_enums import OrgRole
-
-    # Validate role
-    try:
-        role_enum = OrgRole(new_role)
-    except ValueError:
-        valid_roles = [r.value for r in OrgRole]
-        raise ValueError(
-            f"Invalid role '{new_role}'. Valid roles are: {', '.join(valid_roles)}"
-        )
-
     # Get membership
     membership = get_organization_membership(session, user_id, organization_id)
     if not membership:
@@ -502,7 +491,7 @@ def update_organization_role(
         )
 
     # Update role
-    membership.role = role_enum
+    membership.role = new_role
     session.add(membership)
     session.commit()
     session.refresh(membership)

@@ -7,21 +7,22 @@ from fastapi import HTTPException
 from sqlmodel import Session
 
 from app.api.auth import UserToken
-from app.repositories.org_membership_repository import list_organization_members
+from app.repositories.org_membership_repository import (
+    bulk_update_organization_roles,
+    list_organization_members,
+)
 from app.repositories.user_repository import (
     count_organization_super_admins,
     delete_organization_membership,
     get_organization_membership,
     update_organization_role,
 )
-from app.schemas.auth0_schema import (
+from app.schemas.organization_schema import (
     BulkSetUserRoleInput,
     BulkSetUserRoleResponse,
-    SetUserRoleResponse,
-)
-from app.schemas.organization_schema import (
     ListMembersResponse,
     OrganizationMember,
+    SetUserRoleResponse,
 )
 from app.services.auth0_factory import create_auth0_service
 
@@ -88,19 +89,19 @@ class OrganizationsService:
         self,
         user: UserToken,
         modified_user_id: str,
-        new_role: str,
+        new_role: OrgRole,
     ) -> SetUserRoleResponse:
         """
         Update a member's role in an organization.
 
         Validates that:
         - User exists in the organization
-        - Role is valid (handled by repository layer)
+        - Role is valid (handled by Pydantic validation)
 
         Args:
             user: Authenticated user token (for organization context)
             modified_user_id: ID of user whose role to update
-            new_role: New role value (e.g., 'super_admin', 'member')
+            new_role: New role enum value
 
         Returns:
             SetUserRoleResponse with user_id, organization_id, and role
@@ -117,7 +118,7 @@ class OrganizationsService:
                 404, f"User {modified_user_id} is not a member of this organization"
             )
 
-        # Update role (validation happens in repository function)
+        # Update role
         update_organization_role(
             self.session, modified_user_id, user.organization_id, new_role
         )
@@ -137,8 +138,7 @@ class OrganizationsService:
         """
         Update multiple members' roles in an organization.
 
-        Validates all users exist before updating any roles.
-        Updates all roles or fails completely (all-or-nothing).
+        Updates all roles atomically in a single transaction - either all succeed or all fail.
 
         Args:
             user: Authenticated user token (for organization context)
@@ -148,40 +148,35 @@ class OrganizationsService:
             BulkSetUserRoleResponse with list of updated users
 
         Raises:
-            HTTPException: 404 if any user not found in organization
             HTTPException: 400 if input is empty
-            ValueError: If any role is invalid (raised by repository)
+            HTTPException: 404 if any user not found in organization (via ValueError from repository)
         """
         if not bulk_input.members:
             raise HTTPException(400, "No members provided to update")
 
-        # Validate all users exist in the organization before making any updates
-        for member_update in bulk_input.members:
-            membership = get_organization_membership(
-                self.session, member_update.user_id, user.organization_id
-            )
-            if not membership:
-                raise HTTPException(
-                    404,
-                    f"User {member_update.user_id} is not a member of this organization",
-                )
+        # Prepare role updates as list of tuples
+        role_updates = [
+            (member.user_id, member.role) for member in bulk_input.members
+        ]
 
-        # Update all roles
-        updated_users: list[SetUserRoleResponse] = []
-        for member_update in bulk_input.members:
-            update_organization_role(
-                self.session,
-                member_update.user_id,
-                user.organization_id,
-                member_update.role,
+        # Update all roles in a single transaction
+        try:
+            bulk_update_organization_roles(
+                self.session, user.organization_id, role_updates
             )
-            updated_users.append(
-                SetUserRoleResponse(
-                    user_id=member_update.user_id,
-                    organization_id=user.organization_id,
-                    role=member_update.role,
-                )
+        except ValueError as e:
+            # Repository raises ValueError if any user not found
+            raise HTTPException(404, str(e))
+
+        # Build response
+        updated_users = [
+            SetUserRoleResponse(
+                user_id=member.user_id,
+                organization_id=user.organization_id,
+                role=member.role,
             )
+            for member in bulk_input.members
+        ]
 
         return BulkSetUserRoleResponse(updated=updated_users)
 

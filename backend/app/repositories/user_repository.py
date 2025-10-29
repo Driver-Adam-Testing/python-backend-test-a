@@ -10,7 +10,7 @@ from database.models import (
     TeamMembership,
     User,
 )
-from database.models_enums import PrimaryAssetRole, TeamRole
+from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
 from sqlmodel import Session, func, or_, select
 
 
@@ -437,3 +437,105 @@ def _map_frontend_role_to_backend(role: str) -> TeamRole:
         "member": TeamRole.member,
     }
     return mapping[role]
+
+
+def get_organization_membership(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+) -> OrgMembership | None:
+    """
+    Get a user's organization membership.
+
+    Args:
+        session: Database session
+        user_id: User ID (Auth0 user ID)
+        organization_id: Organization ID
+
+    Returns:
+        OrgMembership or None if not found
+    """
+    query = select(OrgMembership).where(
+        OrgMembership.user_id == user_id,
+        OrgMembership.org_id == organization_id,
+    )
+    return session.exec(query).first()
+
+
+def update_organization_role(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+    new_role: OrgRole,
+) -> OrgMembership:
+    """
+    Update a user's organization role.
+
+    Args:
+        session: Database session
+        user_id: User ID (Auth0 user ID)
+        organization_id: Organization ID
+        new_role: New role enum value
+
+    Returns:
+        Updated OrgMembership
+
+    Raises:
+        ValueError: If membership not found
+    """
+    # Get membership
+    membership = get_organization_membership(session, user_id, organization_id)
+    if not membership:
+        raise ValueError(
+            f"User {user_id} is not a member of organization {organization_id}"
+        )
+
+    # Update role
+    membership.role = new_role
+    session.add(membership)
+    session.commit()
+    session.refresh(membership)
+
+    return membership
+
+
+def count_organization_super_admins(
+    session: Session,
+    organization_id: str,
+) -> int:
+    """
+    Count the number of super_admin users in an organization.
+
+    Args:
+        session: Database session
+        organization_id: Organization ID
+
+    Returns:
+        Count of super_admin users
+    """
+    from database.models_enums import OrgRole
+
+    query = (
+        select(func.count())
+        .select_from(OrgMembership)
+        .where(
+            OrgMembership.org_id == organization_id,
+            OrgMembership.role == OrgRole.super_admin,
+        )
+    )
+    return session.exec(query).one()
+
+
+def delete_organization_membership(
+    session: Session,
+    membership: OrgMembership,
+) -> None:
+    """
+    Delete a user's organization membership.
+
+    Args:
+        session: Database session
+        membership: OrgMembership instance to delete
+    """
+    session.delete(membership)
+    session.commit()

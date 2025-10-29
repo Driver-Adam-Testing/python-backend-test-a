@@ -6,13 +6,17 @@ from fastapi import APIRouter, Header, HTTPException
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_org_action
-from app.schemas.auth0_schema import (
-    CreateInvitationInput,
-    ModifyUserRolesInput,
-    ModifyUserRolesResponse,
+from app.schemas.auth0_schema import CreateInvitationInput
+from app.schemas.organization_schema import (
+    BulkSetUserRoleInput,
+    BulkSetUserRoleResponse,
+    ListMembersResponse,
+    SetUserRoleInput,
+    SetUserRoleResponse,
 )
 from app.services.auth0_factory import create_auth0_service
 from app.services.onboarding_checklist_service import OnboardingChecklistService
+from app.services.organizations_service import OrganizationsService
 
 router = APIRouter()
 
@@ -37,19 +41,19 @@ def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 
 
 @router.get("/users", status_code=200)
-def list_members(  # noqa: ANN201 disable to proxy Auth0 any typed responses
+def list_members(
     session: CurrentSession,
     user: UserToken,
     page: int = 0,
     per_page: int = 100,
-):
+) -> ListMembersResponse:
     enforce_org_action(session, user, "users.view")
     logging.info(f"Listing members of organization = {user.organization_id}")
     try:
-        auth0_service = create_auth0_service()
-        return auth0_service.list_members(user, page=page, per_page=per_page)
-    except PermissionError:
-        raise HTTPException(403, "Insufficient permissions.")
+        organizations_service = OrganizationsService(session)
+        return organizations_service.list_members(user, page=page, per_page=per_page)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"An error occurred listing members of an organization: {e}")
         raise HTTPException(500, "Unable to list organization members.")
@@ -64,8 +68,10 @@ def delete_member(
     enforce_org_action(session, user, "users.manage")
     logging.info(f"DELETING {user_id} from {user.organization_id}")
     try:
-        auth0_service = create_auth0_service()
-        return auth0_service.delete_user_from_organization(user, user_id)
+        organizations_service = OrganizationsService(session)
+        organizations_service.delete_member(user, user_id)
+    except HTTPException:
+        raise
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")
     except Exception as e:
@@ -73,28 +79,58 @@ def delete_member(
         raise HTTPException(500, "Unable to remove organization members.")
 
 
+@router.put("/users/role", status_code=200)
+def bulk_change_user_roles(
+    session: CurrentSession,
+    user: UserToken,
+    bulk_input: BulkSetUserRoleInput,
+) -> BulkSetUserRoleResponse:
+    enforce_org_action(session, user, "users.manage")
+    logging.info(
+        f"Bulk updating {len(bulk_input.members)} user roles in {user.organization_id}"
+    )
+
+    try:
+        organizations_service = OrganizationsService(session)
+        return organizations_service.bulk_update_member_roles(user, bulk_input)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # Invalid role or other validation error
+        logger.error(f"Validation error in bulk role update: {e}")
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        logger.error(f"An error occurred in bulk role update: {e}")
+        raise HTTPException(500, "Unable to update user roles.")
+
+
 @router.put(
-    "/users/{modified_user_id}/roles",
+    "/users/{modified_user_id}/role",
     status_code=200,
 )
 def change_user_roles(
     session: CurrentSession,
     user: UserToken,
     modified_user_id: str,
-    new_roles: ModifyUserRolesInput,
-) -> ModifyUserRolesResponse:
+    role_input: SetUserRoleInput,
+) -> SetUserRoleResponse:
     enforce_org_action(session, user, "users.manage")
-    logging.info(f"Modifying roles for {modified_user_id} in {user.organization_id}")
+    logging.info(f"Setting role for {modified_user_id} in {user.organization_id}")
+
     try:
-        auth0_service = create_auth0_service()
-        return auth0_service.modify_user_roles(
-            user=user, modified_user_id=modified_user_id, roles=new_roles.roles
+        organizations_service = OrganizationsService(session)
+        return organizations_service.update_member_role(
+            user, modified_user_id, role_input.role
         )
-    except PermissionError:
-        raise HTTPException(403, "Insufficient permissions.")
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # Invalid role or other validation error
+        logger.error(f"Validation error setting user role: {e}")
+        raise HTTPException(400, str(e))
     except Exception as e:
-        logger.error(f"An error occurred modifying member roles: {e}")
-        raise HTTPException(500, "Unable to modify member roles.")
+        logger.error(f"An error occurred setting user role: {e}")
+        raise HTTPException(500, "Unable to set user role.")
 
 
 @router.get("/invitations", status_code=200)

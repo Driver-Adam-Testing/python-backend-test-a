@@ -15,6 +15,7 @@ from app.api.routes.v1 import (
     upload,
     usage,
     user,
+    user_profile,
     user_sources,
     user_teams,
 )
@@ -64,6 +65,7 @@ studio_router.include_router(
 studio_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 studio_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 studio_router.include_router(user.router, prefix="/user", tags=["user"])
+studio_router.include_router(user_profile.router, prefix="/me", tags=["user-profile"])
 studio_router.include_router(
     user_teams.router, prefix="/admin/users", tags=["admin-users"]
 )

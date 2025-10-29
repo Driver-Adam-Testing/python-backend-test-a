@@ -49,82 +49,35 @@ class RemoveTeamSourcesRequest(BaseModel):
     )
 
 
-# ===== Source Users Request Schemas (DEPRECATED - kept for backward compatibility) =====
 class SourceUserInput(BaseModel):
-    """Input for adding/updating a single user or team for a source (DEPRECATED: use UserOnlyInput or SourceTeamInput)."""
+    """Input for adding/updating a single user for a source."""
 
     user_id: str = Field(..., description="User ID or Team ID")
-    kind: SourceUserKind = Field(..., description="Type: user or team")
     role: SourceRole = Field(..., description="Role for this source")
 
 
 class AddSourceUsersRequest(BaseModel):
-    """Request to add users to a source (DEPRECATED: supports both users and teams)."""
+    """Request to add users (not teams) to a source."""
 
     users: list[SourceUserInput] = Field(
-        ...,
-        min_length=1,
-        description="List of users or teams to add",
-    )
-
-
-class UpdateSourceUsersRequest(BaseModel):
-    """Request to update source user roles (DEPRECATED: supports both users and teams)."""
-
-    users: list[SourceUserInput] = Field(
-        ...,
-        min_length=1,
-        description="List of users or teams with updated roles",
-    )
-
-
-class RemoveSourceUserInput(BaseModel):
-    """Input for removing a single user or team from a source (DEPRECATED)."""
-
-    user_id: str = Field(..., description="User ID or Team ID")
-    kind: SourceUserKind = Field(..., description="Type: user or team")
-
-
-class RemoveSourceUsersRequest(BaseModel):
-    """Request to remove users from a source (DEPRECATED: supports both users and teams)."""
-
-    users: list[RemoveSourceUserInput] = Field(
-        ...,
-        min_length=1,
-        description="List of users or teams to remove",
-    )
-
-
-# ===== Source Users (Users Only) Request Schemas =====
-class UserOnlyInput(BaseModel):
-    """Input for adding/updating a single user for a source (users only, not teams)."""
-
-    user_id: str = Field(..., description="User ID")
-    role: SourceRole = Field(..., description="User's role for this source")
-
-
-class AddSourceUsersOnlyRequest(BaseModel):
-    """Request to add users (users only, not teams) to a source."""
-
-    users: list[UserOnlyInput] = Field(
         ...,
         min_length=1,
         description="List of users to add",
     )
 
 
-class UpdateSourceUsersOnlyRequest(BaseModel):
+class UpdateSourceUsersRequest(BaseModel):
     """Request to update source user roles (users only, not teams)."""
 
-    users: list[UserOnlyInput] = Field(
+    users: list[SourceUserInput] = Field(
         ...,
         min_length=1,
         description="List of users with updated roles",
     )
 
 
-class RemoveSourceUsersOnlyRequest(BaseModel):
-    """Request to remove users (users only, not teams) from a source."""
+class RemoveSourceUsersRequest(BaseModel):
+    """Request to remove users (not teams) from a source."""
 
     user_ids: list[str] = Field(
         ...,

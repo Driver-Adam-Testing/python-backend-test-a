@@ -8,18 +8,11 @@ from fastapi import APIRouter, Query, status
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
-from app.repositories import team_member_repository
 from app.schemas.source_access_schema import (
     AddSourceTeamsRequest,
-    AddSourceUsersRequest,
     RemoveSourceTeamsRequest,
-    RemoveSourceUserInput,
-    RemoveSourceUsersRequest,
-    SourceTeamResponse,
     SourceTeamsResponse,
-    SourceUserInput,
     UpdateSourceTeamsRequest,
-    UpdateSourceUsersRequest,
 )
 from app.services.source_access_service import SourceAccessService
 
@@ -57,39 +50,14 @@ def get_source_teams(
         f"(limit={limit}, offset={offset}, roles={roles}, search={search})"
     )
     service = SourceAccessService(session)
-    # Get teams with user_kind="team"
-    result = service.get_source_users(
+    return service.get_source_teams(
         user=user,
         source_id=source_id,
         roles=roles,
-        user_kind="team",  # Hardcoded to only return teams
         search=search,
         limit=limit,
         offset=offset,
     )
-
-    # Convert SourceUsersResponse to SourceTeamsResponse
-    teams = []
-    for item in result.users:
-        # Get member count for each team
-        team_id = UUID(item.user_id)
-        member_count = team_member_repository.count_team_members(
-            session=session,
-            team_id=team_id,
-            organization_id=user.organization_id,
-        )
-        teams.append(
-            SourceTeamResponse(
-                team_id=team_id,
-                team_name=item.name,
-                role="admin" if item.user_role == "admin" else "member",  # Map role
-                member_count=member_count,
-                visibility=item.visibility,
-                created_at=item.created_at,
-            )
-        )
-
-    return SourceTeamsResponse(teams=teams, total=result.total)
 
 
 @router.post(
@@ -114,17 +82,10 @@ def add_source_teams(
         f"User {user.user_id} adding {len(request.teams)} teams to source {source_id}"
     )
     service = SourceAccessService(session)
-    # Convert to the format expected by service
-    converted_request = AddSourceUsersRequest(
-        users=[
-            SourceUserInput(user_id=t.team_id, kind="team", role=t.role)
-            for t in request.teams
-        ]
-    )
-    service.add_source_users(
+    service.add_source_teams(
         user=user,
         source_id=source_id,
-        request=converted_request,
+        request=request,
     )
 
 
@@ -150,17 +111,10 @@ def update_source_teams(
         f"User {user.user_id} updating {len(request.teams)} teams for source {source_id}"
     )
     service = SourceAccessService(session)
-    # Convert to the format expected by service
-    converted_request = UpdateSourceUsersRequest(
-        users=[
-            SourceUserInput(user_id=t.team_id, kind="team", role=t.role)
-            for t in request.teams
-        ]
-    )
-    service.update_source_users(
+    service.update_source_teams(
         user=user,
         source_id=source_id,
-        request=converted_request,
+        request=request,
     )
 
 
@@ -186,14 +140,8 @@ def remove_source_teams(
         f"User {user.user_id} removing {len(request.team_ids)} teams from source {source_id}"
     )
     service = SourceAccessService(session)
-    # Convert to the format expected by service
-    converted_request = RemoveSourceUsersRequest(
-        users=[
-            RemoveSourceUserInput(user_id=tid, kind="team") for tid in request.team_ids
-        ]
-    )
-    service.remove_source_users(
+    service.remove_source_teams(
         user=user,
         source_id=source_id,
-        request=converted_request,
+        request=request,
     )

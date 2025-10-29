@@ -9,14 +9,9 @@ from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
 from app.schemas.source_access_schema import (
-    AddSourceUsersOnlyRequest,
     AddSourceUsersRequest,
-    RemoveSourceUserInput,
-    RemoveSourceUsersOnlyRequest,
     RemoveSourceUsersRequest,
-    SourceUserInput,
     SourceUsersResponse,
-    UpdateSourceUsersOnlyRequest,
     UpdateSourceUsersRequest,
 )
 from app.services.source_access_service import SourceAccessService
@@ -59,7 +54,6 @@ def get_source_users(
         user=user,
         source_id=source_id,
         roles=roles,
-        user_kind="user",  # Hardcoded to only return users
         search=search,
         limit=limit,
         offset=offset,
@@ -76,7 +70,7 @@ def add_source_users(
     session: CurrentSession,
     user: UserToken,
     source_id: UUID,
-    request: AddSourceUsersOnlyRequest,
+    request: AddSourceUsersRequest,
 ) -> None:
     """
     Add users to a source.
@@ -88,17 +82,10 @@ def add_source_users(
         f"User {user.user_id} adding {len(request.users)} users to source {source_id}"
     )
     service = SourceAccessService(session)
-    # Convert to the format expected by service
-    converted_request = AddSourceUsersRequest(
-        users=[
-            SourceUserInput(user_id=u.user_id, kind="user", role=u.role)
-            for u in request.users
-        ]
-    )
     service.add_source_users(
         user=user,
         source_id=source_id,
-        request=converted_request,
+        request=request,
     )
 
 
@@ -112,7 +99,7 @@ def update_source_users(
     session: CurrentSession,
     user: UserToken,
     source_id: UUID,
-    request: UpdateSourceUsersOnlyRequest,
+    request: UpdateSourceUsersRequest,
 ) -> None:
     """
     Update roles for source's users.
@@ -124,17 +111,10 @@ def update_source_users(
         f"User {user.user_id} updating {len(request.users)} users for source {source_id}"
     )
     service = SourceAccessService(session)
-    # Convert to the format expected by service
-    converted_request = UpdateSourceUsersRequest(
-        users=[
-            SourceUserInput(user_id=u.user_id, kind="user", role=u.role)
-            for u in request.users
-        ]
-    )
     service.update_source_users(
         user=user,
         source_id=source_id,
-        request=converted_request,
+        request=request,
     )
 
 
@@ -148,7 +128,7 @@ def remove_source_users(
     session: CurrentSession,
     user: UserToken,
     source_id: UUID,
-    request: RemoveSourceUsersOnlyRequest,
+    request: RemoveSourceUsersRequest,
 ) -> None:
     """
     Remove users from a source.
@@ -160,14 +140,8 @@ def remove_source_users(
         f"User {user.user_id} removing {len(request.user_ids)} users from source {source_id}"
     )
     service = SourceAccessService(session)
-    # Convert to the format expected by service
-    converted_request = RemoveSourceUsersRequest(
-        users=[
-            RemoveSourceUserInput(user_id=uid, kind="user") for uid in request.user_ids
-        ]
-    )
     service.remove_source_users(
         user=user,
         source_id=source_id,
-        request=converted_request,
+        request=request,
     )

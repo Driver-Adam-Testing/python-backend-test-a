@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 from app.schemas.source_access_schema import (
     AddSourceUsersRequest,
     AddTeamSourcesRequest,
-    RemoveSourceUserInput,
     RemoveSourceUsersRequest,
     RemoveTeamSourcesRequest,
     SourceUserInput,
@@ -134,16 +133,15 @@ class TestTeamSourceAccessPropagation:
         assert team_sources.sources[0].role == "admin"
 
         # Step 6: Query source teams (teams with access to the source)
-        source_teams = service.get_source_users(
+        source_teams = service.get_source_teams(
             user=mock_user,
             source_id=source.id,
-            user_kind="team",  # Filter for teams only
             limit=10,
             offset=0,
         )
         assert source_teams.total == 1
-        assert source_teams.users[0].user_id == str(team.id)
-        assert source_teams.users[0].user_role == "team"  # Indicates this is a team
+        assert source_teams.teams[0].team_id == team.id
+        assert source_teams.teams[0].team_name == "Engineering"
 
     def test_remove_source_from_team_deletes_grant(
         self, integration_db_session: Session
@@ -219,7 +217,7 @@ class TestUserDirectVsTeamAccess:
             user=mock_user,
             source_id=source.id,
             request=AddSourceUsersRequest(
-                users=[SourceUserInput(user_id=user.id, kind="user", role="member")]
+                users=[SourceUserInput(user_id=user.id, role="member")]
             ),
         )
 
@@ -287,9 +285,7 @@ class TestUserDirectVsTeamAccess:
         service.remove_source_users(
             user=mock_user,
             source_id=source.id,
-            request=RemoveSourceUsersRequest(
-                users=[RemoveSourceUserInput(user_id=user.id, kind="user")]
-            ),
+            request=RemoveSourceUsersRequest(user_ids=[user.id]),
         )
 
         # Verify user has no direct access

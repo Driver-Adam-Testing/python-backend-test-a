@@ -95,16 +95,19 @@ class TeamMembershipFactory:
         team_id: UUID,
         user_id: str,
         role: TeamRole = TeamRole.member,
-        organization_id: str = "test-org-id",
+        organization_id: str = "test-org-id",  # Kept for API compatibility but not used
         **kwargs: Any,
     ) -> TeamMembership:
-        """Create a team membership in the database."""
+        """Create a team membership in the database.
+
+        Note: organization_id parameter is kept for backward compatibility but is not
+        used since TeamMembership model doesn't have that field.
+        """
         defaults = {
             "id": uuid4(),
             "team_id": team_id,
             "user_id": user_id,
             "role": role,
-            "organization_id": organization_id,
         }
         membership = TeamMembership(**(defaults | kwargs))
         session.add(membership)

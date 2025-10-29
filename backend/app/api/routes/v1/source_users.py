@@ -10,9 +10,14 @@ from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
 from app.schemas.source_access_schema import (
     AddSourceUsersOnlyRequest,
+    AddSourceUsersRequest,
+    RemoveSourceUserInput,
     RemoveSourceUsersOnlyRequest,
+    RemoveSourceUsersRequest,
+    SourceUserInput,
     SourceUsersResponse,
     UpdateSourceUsersOnlyRequest,
+    UpdateSourceUsersRequest,
 )
 from app.services.source_access_service import SourceAccessService
 
@@ -84,8 +89,6 @@ def add_source_users(
     )
     service = SourceAccessService(session)
     # Convert to the format expected by service
-    from app.schemas.source_access_schema import AddSourceUsersRequest, SourceUserInput
-
     converted_request = AddSourceUsersRequest(
         users=[
             SourceUserInput(user_id=u.user_id, kind="user", role=u.role)
@@ -122,11 +125,6 @@ def update_source_users(
     )
     service = SourceAccessService(session)
     # Convert to the format expected by service
-    from app.schemas.source_access_schema import (
-        SourceUserInput,
-        UpdateSourceUsersRequest,
-    )
-
     converted_request = UpdateSourceUsersRequest(
         users=[
             SourceUserInput(user_id=u.user_id, kind="user", role=u.role)
@@ -163,11 +161,6 @@ def remove_source_users(
     )
     service = SourceAccessService(session)
     # Convert to the format expected by service
-    from app.schemas.source_access_schema import (
-        RemoveSourceUserInput,
-        RemoveSourceUsersRequest,
-    )
-
     converted_request = RemoveSourceUsersRequest(
         users=[
             RemoveSourceUserInput(user_id=uid, kind="user") for uid in request.user_ids

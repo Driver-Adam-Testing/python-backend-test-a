@@ -8,11 +8,18 @@ from fastapi import APIRouter, Query, status
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
+from app.repositories import team_member_repository
 from app.schemas.source_access_schema import (
     AddSourceTeamsRequest,
+    AddSourceUsersRequest,
     RemoveSourceTeamsRequest,
+    RemoveSourceUserInput,
+    RemoveSourceUsersRequest,
+    SourceTeamResponse,
     SourceTeamsResponse,
+    SourceUserInput,
     UpdateSourceTeamsRequest,
+    UpdateSourceUsersRequest,
 )
 from app.services.source_access_service import SourceAccessService
 
@@ -62,9 +69,6 @@ def get_source_teams(
     )
 
     # Convert SourceUsersResponse to SourceTeamsResponse
-    from app.repositories import team_member_repository
-    from app.schemas.source_access_schema import SourceTeamResponse
-
     teams = []
     for item in result.users:
         # Get member count for each team
@@ -111,8 +115,6 @@ def add_source_teams(
     )
     service = SourceAccessService(session)
     # Convert to the format expected by service
-    from app.schemas.source_access_schema import AddSourceUsersRequest, SourceUserInput
-
     converted_request = AddSourceUsersRequest(
         users=[
             SourceUserInput(user_id=t.team_id, kind="team", role=t.role)
@@ -149,11 +151,6 @@ def update_source_teams(
     )
     service = SourceAccessService(session)
     # Convert to the format expected by service
-    from app.schemas.source_access_schema import (
-        SourceUserInput,
-        UpdateSourceUsersRequest,
-    )
-
     converted_request = UpdateSourceUsersRequest(
         users=[
             SourceUserInput(user_id=t.team_id, kind="team", role=t.role)
@@ -190,11 +187,6 @@ def remove_source_teams(
     )
     service = SourceAccessService(session)
     # Convert to the format expected by service
-    from app.schemas.source_access_schema import (
-        RemoveSourceUserInput,
-        RemoveSourceUsersRequest,
-    )
-
     converted_request = RemoveSourceUsersRequest(
         users=[
             RemoveSourceUserInput(user_id=tid, kind="team") for tid in request.team_ids

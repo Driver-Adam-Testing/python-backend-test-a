@@ -28,14 +28,14 @@ def get_me(
     Get the current user's profile.
 
     Returns:
-    - **id**: User ID from Auth0
-    - **email**: User email
-    - **name**: User name
-    - **organization_id**: Organization ID
-    - **org_role**: Organization role (super_admin/member)
-    - **entitlements**: List of entitlements or null
-    - **team_admin**: True if user is admin of ANY team
-    - **source_admin**: True if user has admin role for ANY source (direct grant)
+    - id: User ID from Auth0
+    - email: User email
+    - name: User name
+    - organization_id: Organization ID
+    - org_role: Organization role (super_admin/member)
+    - entitlements: List of entitlements or null
+    - team_admin: True if user is admin of ANY team
+    - source_admin: True if user has admin role for ANY source (direct grant)
     """
     logger.info(f"User {user.user_id} fetching their profile")
     service = UserProfileService(session)

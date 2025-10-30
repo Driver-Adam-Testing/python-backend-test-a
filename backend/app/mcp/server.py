@@ -1,8 +1,7 @@
 import os
 from inspect import cleandoc
-from typing import Annotated, Any
+from typing import Annotated
 
-from database.models_enums import PrimaryAssetKind
 from pydantic import Field
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
@@ -11,23 +10,28 @@ FASTMCP_MASK_ERROR_DETAILS = True
 os.environ["FASTMCP_STATELESS_HTTP"] = str(FASTMCP_STATELESS_HTTP)
 os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
 
-import logging
-from pathlib import Path
+import logging  # noqa: E402
+from pathlib import Path  # noqa: E402
 
-import fastmcp
-from database.db import get_session
-from database.models import DerivedContent, Node, PrimaryAsset, Version
-from database.models_enums import ContentKind, VersionStatus
-from fastmcp import Context, FastMCP
-from fastmcp.exceptions import ToolError
-from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
-from fastmcp.server.middleware.logging import LoggingMiddleware
-from shared.prompts.structured_prompting import Component, Prompt
-from sqlmodel import select
+import fastmcp  # noqa: E402
+from fastmcp import Context, FastMCP  # noqa: E402
+from shared.prompts.structured_prompting import Component, Prompt  # noqa: E402
+from shared.tool_executors import (  # noqa: E402
+    ToolUseError,
+    get_architecture_overview,
+    get_changelog,
+    get_code_map,
+    get_codebase_names,
+    get_detailed_changelog,
+    get_file_documentation,
+    get_llm_onboarding_guide,
+)
 
-from .auth_middleware import McpAuthMiddleware, get_organization_id
-from .code_map_v2 import get_code_map_simple
-from .mcp_helpers import get_latest_version_for_codebase
+from .auth_middleware import McpAuthMiddleware, get_organization_id  # noqa: E402
+from .logging_middleware import (  # noqa: E402
+    DriverMcpToolResponse,
+    McpLoggingMiddleware,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,63 +65,11 @@ assert (
     fastmcp.settings.mask_error_details is True
 ), "FastMCP must be configured to mask error details."
 
-my_mcp.add_middleware(
-    ErrorHandlingMiddleware(
-        logger=logger,
-        include_traceback=True,
-        error_callback=None,
-        transform_errors=False,
-    )
-)
-
 auth_middleware = McpAuthMiddleware()
 my_mcp.add_middleware(auth_middleware)
 
-my_mcp.add_middleware(
-    LoggingMiddleware(
-        logger=logger,
-        log_level=logging.INFO,
-        include_payloads=True,
-        max_payload_length=1000,
-        methods=None,
-        payload_serializer=None,
-    )
-)
-
-
-def _get_root_node_content(
-    org_id: str, codebase_name: str, content_kind: ContentKind
-) -> DerivedContent:
-    with get_session() as db:
-        primary_asset = db.exec(
-            select(PrimaryAsset)
-            .where(PrimaryAsset.display_name == codebase_name)
-            .where(PrimaryAsset.organization_id == org_id)
-            .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-        ).first()
-
-        if not primary_asset:
-            raise ToolError(
-                f"`{codebase_name}` is not codebase recognized by Driver.  Use the `get_codebase_names` tool to get a list of valid codebase names."
-            )
-
-        derived_content = db.exec(
-            select(DerivedContent)
-            .join(Node, Node.id == DerivedContent.node_id)
-            .join(Version, Version.id == Node.version_id)
-            .where(Version.primary_asset_id == primary_asset.id)
-            .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-            .where(Node.depth == 0)
-            .where(DerivedContent.content_kind == content_kind)
-            .order_by(Version.updated_at.desc())
-        ).first()
-
-        if not derived_content:
-            raise ToolError(
-                f"No {content_kind.value} content exists for the `{codebase_name}` codebase."
-            )
-
-        return derived_content
+logging_middleware = McpLoggingMiddleware()
+my_mcp.add_middleware(logging_middleware)
 
 
 @my_mcp.prompt(
@@ -133,6 +85,69 @@ def driver_init() -> str:
 
 
 @my_mcp.tool(
+    name="get_codebase_names",
+    description=cleandoc(
+        """
+        Get names of all codebases supported by the Driver MCP.
+        Only returns codebases belonging to the authenticated user's Driver organization.
+
+        All other Driver MCP tools will generally require a codebase name parameter. You must call this tool to get the list of valid codebase names. To resolve which codebase name is relevant for your tasks, you may want to use local tools such as `git` and facilities that print the name of the working directory. You can then cross-reference this with the list provided by this tool to ensure you pick the right one and properly call the other Driver MCP tools.
+    """
+    ),
+    exclude_args=["dummy"],
+)
+def get_codebase_names_tool(
+    ctx: Context, dummy: str | None = None
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_codebase_names(org_id=org_id)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
+
+
+@my_mcp.tool(
+    name="get_architecture_overview",
+    description=cleandoc(
+        """
+    Get a complete architectural overview document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
+    """
+    ),
+)
+def get_architecture_overview_tool(
+    ctx: Context,
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_architecture_overview(org_id=org_id, codebase_name=codebase_name)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
+
+
+@my_mcp.tool(
+    name="get_llm_onboarding_guide",
+    description=cleandoc(
+        """
+    Get an LLM onboarding guide document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
+    """
+    ),
+)
+def get_llm_onboarding_guide_tool(
+    ctx: Context,
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_llm_onboarding_guide(org_id=org_id, codebase_name=codebase_name)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
+
+
+@my_mcp.tool(
     name="get_changelog",
     description=cleandoc(
         """
@@ -144,16 +159,16 @@ def driver_init() -> str:
     """
     ),
 )
-def get_changelog(
+def get_changelog_tool(
     ctx: Context,
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-) -> str:
-    """ """
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_CHANGELOG
-    )
-    return dc.content or str(dc.misc_metadata)
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_changelog(org_id=org_id, codebase_name=codebase_name)
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
 @my_mcp.tool(
@@ -166,148 +181,92 @@ def get_changelog(
     """
     ),
 )
-def get_detailed_changelog(
+def get_detailed_changelog_tool(
     ctx: Context,
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
     year: Annotated[str, Field(description="The year of the changelog. (e.g. 2023)")],
     month: Annotated[
         str, Field(description="The month of the changelog. (e.g. 01, 02, ..., 12)")
     ],
-) -> str:
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_CHANGELOG
-    )
-    return dc.misc_metadata.get(
-        f"{year}-{month}", "No detailed changelog available for this month."
-    )
-
-
-def _get_codebase_names_for_org(org_id: str) -> list[str]:
-    """
-    Get names of all codebases that have at least one completed version for a specific organization.
-    """
-    with get_session() as db:
-        assets = db.exec(
-            select(PrimaryAsset.display_name)
-            .join(Version, Version.primary_asset_id == PrimaryAsset.id)
-            .where(PrimaryAsset.organization_id == org_id)
-            .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-            .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-            .distinct()
-        ).all()
-
-        return assets
-
-
-@my_mcp.tool(
-    name="get_codebase_names",
-    description=cleandoc(
-        """
-        Get names of all codebases supported by the Driver MCP.
-        Only returns codebases belonging to the authenticated user's Driver organization.
-
-        All other Driver MCP tools will generally require a codebase name parameter. You must call this tool to get the list of valid codebase names. To resolve which codebase name is relevant for your tasks, you may want to use local tools such as `git` and facilities that print the name of the working directory. You can then cross-reference this with the list provided by this tool to ensure you pick the right one and properly call the other Driver MCP tools.
-    """
-    ),
-    exclude_args=["dummy"],
-)
-def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
-    org_id = get_organization_id(ctx)
-    return _get_codebase_names_for_org(org_id)
-
-
-@my_mcp.tool(
-    name="get_architecture_overview",
-    description=cleandoc(
-        """
-    Get a complete architectural overview document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
-    """
-    ),
-)
-def get_architecture_overview(
-    ctx: Context,
-    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-) -> str:
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_ARCHITECTURE
-    )
-    return dc.content
-
-
-@my_mcp.tool(
-    name="get_llm_onboarding_guide",
-    description=cleandoc(
-        """
-    Get an LLM onboarding guide document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
-    """
-    ),
-)
-def get_llm_onboarding_guide(
-    ctx: Context,
-    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-) -> str:
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.DEEP_CONTEXT_LLM_ONBOARDING
-    )
-    return dc.content
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_detailed_changelog(
+            org_id=org_id,
+            codebase_name=codebase_name,
+            year=year,
+            month=month,
+        )
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
 @my_mcp.tool(
     name="get_file_documentation",
     description=cleandoc(
         """
-        Get detailed symbol-level documentation for a specific file in a codebase.
+    Get detailed symbol-level documentation for a specific file in a codebase.
 
-        Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
+    Usage Patterns:
+    1. Full file: Set start_line=1, max_lines=0 (reads entire file).  ALWAYS use this pattern for the first call.
+    2. Large files (when you hit token limits):
+        - First call: start_line=1, max_lines=500
+        - Next calls: Use next_line from previous response, max_lines=500
+        - Continue until lines_remaining=0
+
+    Response includes pagination fields:
+    - lines_returned: Number of lines in this response
+    - next_line: Line number for your next call (null when done)
+    - lines_remaining: How many lines are left to read
+    - next_section: Preview of what content comes next (null at EOF)
+
+    Example pagination workflow:
+    1. Call with start_line=1, max_lines=500
+    2. Check response.lines_remaining > 0
+    3. Call with start_line=response.next_line, max_lines=500
+    4. Repeat until lines_remaining=0
+
+    Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
     """
     ),
 )
-def get_file_documentation(
+def get_file_documentation_tool(
     ctx: Context,
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-    path: Annotated[
+    relative_file_path: Annotated[
         str,
         Field(
-            description="The file path to get documentation. This should NOT include the codebase name (e.g., 'src/my_file.py' NOT 'codebase-name/src/utils/open.c').')."
+            description="The file path to get documentation for, relative to the codebase root. This should NOT include the root directory name (e.g., 'src/my_file.py' NOT 'my-codebase/src/utils/open.c').')."
         ),
     ],
-) -> str:
-    org_id = get_organization_id(ctx)
-
-    with get_session() as db:
-        version = get_latest_version_for_codebase(db, org_id, codebase_name)
-        if not version:
-            raise ToolError(
-                f"No completed documentation found for codebase '{codebase_name}'."
-            )
-
-        full_path = f"{codebase_name}/{path.strip('/')}"
-
-        node = db.exec(
-            select(Node)
-            .where(Node.version_id == version.id)
-            .where(Node.relative_path == full_path)
-        ).first()
-
-        if not node:
-            raise ToolError(
-                f"File '{path}' not found in codebase '{codebase_name}' documentation. "
-            )
-
-        content = db.exec(
-            select(DerivedContent)
-            .where(DerivedContent.node_id == node.id)
-            .where(DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
-        ).first()
-
-        if not content or not content.content:
-            raise ToolError(
-                f"No documentation available for '{path}' in codebase '{codebase_name}'. "
-            )
-        return content.content
+    start_line: Annotated[
+        int,
+        Field(
+            description="The line number to start from.  ALWAYS use 1 for the first call.",
+            ge=1,
+        ),
+    ] = 1,
+    max_lines: Annotated[
+        int,
+        Field(
+            description="The maximum number of lines to return. 0 means no limit.  ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ] = 0,
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_file_documentation(
+            org_id=org_id,
+            codebase_name=codebase_name,
+            path=relative_file_path,
+            start_line=start_line,
+            max_lines=max_lines,
+        )
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
 
 
 @my_mcp.tool(
@@ -321,18 +280,33 @@ def get_file_documentation(
         Use in tandem with `get_file_documentation` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
 
         Returns an object with:
-        - payload: List of nodes, each containing:
-          - path: The file/directory path
-          - type: "file" or "directory"
-          - description: A short sentence describing what the file/directory contains
-        - errors: List of helpful error messages if no results found
+        - code_map: List of nodes, each containing:
+            - absolute_path: The file/directory path including the codebase root
+            - type: "file" or "directory"
+            - description: A short sentence describing what the file/directory contains
+        - nodes_returned: Number of nodes in this response
+        - next_node: Node index for your next call (null when done)
+        - nodes_remaining: How many nodes are left to read
+
+        Usage Patterns:
+        1. Full result: Set start_node=0, max_nodes=0 (reads all nodes). ALWAYS use this pattern for the first call.
+        2. Large results (when you hit token limits):
+            - First call: start_node=0, max_nodes=50
+            - Next calls: Use next_node from previous response, max_nodes=50
+            - Continue until nodes_remaining=0
+
+        Example pagination workflow:
+        1. Call with start_node=0, max_nodes=50
+        2. Check response.nodes_remaining > 0
+        3. Call with start_node=response.next_node, max_nodes=50
+        4. Repeat until nodes_remaining=0
 
         USAGE:
         - Use max_depth=0 to see only the directory itself
         - Use max_depth=1 to see the directory and its immediate children
         - Use max_depth=2 to include grandchildren
         - max_depth is relative to the specified path, not the codebase root
-        - Provide directory paths only (e.g., "src", "src/utils", not "src/main.py")
+        - Provide relative directory paths only (e.g., "src", "src/utils", not "src/main.py")
 
         Examples:
         - List all top-level items: get_code_map("my-codebase", "", 1)
@@ -346,7 +320,7 @@ def get_file_documentation(
     """
     ),
 )
-def get_code_map(
+def get_code_map_tool(
     ctx: Context,
     codebase_name: Annotated[
         str,
@@ -354,10 +328,10 @@ def get_code_map(
             description="The name of the codebase, as it exists in Driver, to explore (e.g., 'my-codebase')"
         ),
     ],
-    path: Annotated[
+    relative_directory_path: Annotated[
         str,
         Field(
-            description="The directory path to explore (e.g., 'src', 'src/utils'). Use empty string for root. Should not include the codebase name (e.g., 'my-codebase/src' is incorrect)."
+            description="The directory path to explore, relative to the codebase root (e.g., 'src', 'src/utils'). Use empty string for root. Should not include the root directory name (e.g., 'my-codebase/src' is incorrect)."
         ),
     ] = "",
     max_depth: Annotated[
@@ -368,11 +342,31 @@ def get_code_map(
             le=20,
         ),
     ] = 2,
-) -> dict[str, Any]:
-    response = get_code_map_simple(
-        org_id=get_organization_id(ctx),
-        codebase_name=codebase_name,
-        path=path,
-        max_depth=max_depth,
-    )
-    return response.model_dump()
+    start_node: Annotated[
+        int,
+        Field(
+            description="The node index to start from. ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ] = 0,
+    max_nodes: Annotated[
+        int,
+        Field(
+            description="The maximum number of nodes to return. 0 means no limit. ALWAYS use 0 for the first call.",
+            ge=0,
+        ),
+    ] = 0,
+) -> DriverMcpToolResponse:
+    try:
+        org_id = get_organization_id(ctx)
+        payload = get_code_map(
+            org_id=org_id,
+            codebase_name=codebase_name,
+            path=relative_directory_path,
+            max_depth=max_depth,
+            start_node=start_node,
+            max_nodes=max_nodes,
+        )
+        return DriverMcpToolResponse(payload=payload, error_message=None)
+    except ToolUseError as e:
+        return DriverMcpToolResponse(payload=None, error_message=e.agent_message)

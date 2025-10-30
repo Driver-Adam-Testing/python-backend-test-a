@@ -1,8 +1,8 @@
 """Repository functions for Organization Membership data access."""
 
-from database.models_enums import OrgRole
 from database.models import OrgMembership, User
-from sqlmodel import Session, select, col
+from database.models_enums import OrgRole
+from sqlmodel import Session, col, select
 
 
 def check_user_in_organization(
@@ -51,6 +51,7 @@ def get_org_membership(
     )
     return session.exec(query).first()
 
+
 def list_organization_roles() -> list[dict[str, str]]:
     """
     List all available organization roles.
@@ -77,7 +78,7 @@ def get_organization_member_roles(
         organization_id: Organization ID
 
     Returns:
-        Dictionary mapping user_id to role value (e.g., {"auth0|user1": "super_admin"})
+        Dictionary mapping user_id to role value (e.g., {"auth0|user1": "org_super_admin"})
     """
     query = select(OrgMembership).where(OrgMembership.org_id == organization_id)
     memberships = session.exec(query).all()
@@ -131,10 +132,7 @@ def list_organization_members(
         - total_count: Total number of members in the organization
     """
     # Get total count
-    count_query = (
-        select(OrgMembership)
-        .where(OrgMembership.org_id == organization_id)
-    )
+    count_query = select(OrgMembership).where(OrgMembership.org_id == organization_id)
     total_count = len(session.exec(count_query).all())
 
     # Get paginated results
@@ -203,9 +201,7 @@ def bulk_update_organization_roles(
     # Validate all users exist in the organization
     missing_users = [uid for uid in user_ids if uid not in membership_map]
     if missing_users:
-        raise ValueError(
-            f"Users not found in organization: {', '.join(missing_users)}"
-        )
+        raise ValueError(f"Users not found in organization: {', '.join(missing_users)}")
 
     # Update all roles
     updated_memberships = []

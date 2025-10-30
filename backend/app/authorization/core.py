@@ -146,10 +146,10 @@ def _effective_asset_role(
     rows = _grant_rows(db, organization_id, asset_id, user_id)
     roles = {r.role for r in rows}  # Keep as enum objects, not .value
 
-    if PrimaryAssetRole.admin in roles:
-        return PrimaryAssetRole.admin
-    if PrimaryAssetRole.viewer in roles:
-        return PrimaryAssetRole.viewer
+    if PrimaryAssetRole.asset_admin in roles:
+        return PrimaryAssetRole.asset_admin
+    if PrimaryAssetRole.asset_viewer in roles:
+        return PrimaryAssetRole.asset_viewer
     return None  # No access
 
 
@@ -229,7 +229,7 @@ def authorize_asset_action(
     # Super admins bypass role checks
     if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
         return AccessDecision(
-            True, PrimaryAssetRole.admin.value, ["org_super_admin"], []
+            True, PrimaryAssetRole.asset_admin.value, ["org_super_admin"], []
         )
 
     # Check role-based access
@@ -250,7 +250,7 @@ def authorize_org_action(ctx: AuthContext, action_key: str) -> AccessDecision:
     # Super admins bypass role checks
     if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
         return AccessDecision(
-            True, OrgRole.super_admin.value, ["org_super_admin"], []
+            True, OrgRole.org_super_admin.value, ["org_super_admin"], []
         )
 
     # Check org role
@@ -277,9 +277,7 @@ def authorize_team_action(
     # TODO - doesn't this get rid of the need for super_admin in any of the role_action_allow_* tables? If so, is this desirable?
     # Super admins bypass role checks
     if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
-        return AccessDecision(
-            True, TeamRole.team_admin.value, ["org_super_admin"], []
-        )
+        return AccessDecision(True, TeamRole.team_admin.value, ["org_super_admin"], [])
 
     role = _team_role(ctx.db, team_id, ctx.user_id, ctx.organization_id)
     if role and _role_allows_team_action(ctx.db, role, action_key):
@@ -292,10 +290,15 @@ def authorize_team_action(
         [],
     )
 
-def authorize_super_admin(ctx: AuthContext, user_id: uuid.UUID, organization_id: str) -> AccessDecision:
-    if(is_super_admin(ctx, user_id, organization_id)):
-        return AccessDecision(True, OrgRole.super_admin.value, ["org_super_admin"], [])
-    return AccessDecision(False, OrgRole.super_admin.value, ["org_super_admin"], [])
+
+def authorize_super_admin(
+    ctx: AuthContext, user_id: uuid.UUID, organization_id: str
+) -> AccessDecision:
+    if is_super_admin(ctx, user_id, organization_id):
+        return AccessDecision(
+            True, OrgRole.org_super_admin.value, ["org_super_admin"], []
+        )
+    return AccessDecision(False, OrgRole.org_super_admin.value, ["org_super_admin"], [])
 
 
 # def enforce_limit(

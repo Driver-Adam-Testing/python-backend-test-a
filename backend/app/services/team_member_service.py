@@ -28,26 +28,6 @@ from app.schemas.team_member_schema import (
 logger = logging.getLogger(__name__)
 
 
-def map_team_role_to_backend(role: str) -> TeamRole:
-    """Map frontend role string to backend TeamRole enum."""
-    mapping = {
-        "admin": TeamRole.team_admin,
-        "member": TeamRole.member,
-    }
-    if role not in mapping:
-        raise ValueError(f"Invalid role: {role}")
-    return mapping[role]
-
-
-def map_team_role_to_frontend(role: TeamRole) -> str:
-    """Map backend TeamRole enum to frontend string."""
-    mapping = {
-        TeamRole.team_admin: "admin",
-        TeamRole.member: "member",
-    }
-    return mapping[role]
-
-
 def member_dict_to_response(member_dict: dict) -> TeamMemberResponse:
     """
     Convert member dictionary to TeamMemberResponse.
@@ -75,7 +55,7 @@ def member_dict_to_response(member_dict: dict) -> TeamMemberResponse:
         picture="",  # TODO: Fetch from Auth0 or add to User model
         team_id=str(team.id),
         team_name=team.name,
-        team_role=map_team_role_to_frontend(membership.role),
+        team_role=membership.role,
         created_at=membership.created_at.isoformat()
         if hasattr(membership, "created_at") and membership.created_at
         else last_active,
@@ -99,7 +79,7 @@ class TeamMemberService:
         self,
         user: User,
         team_id: UUID,
-        roles: list[str] | None = None,
+        roles: list[TeamRole] | None = None,
         search: str | None = None,
         limit: int = 30,
         offset: int = 0,
@@ -295,7 +275,7 @@ class TeamMemberService:
                     detail=f"User {member.user_id} is not a member of this team",
                 )
 
-            membership.role = map_team_role_to_backend(member.role)
+            membership.role = member.role
             self.session.add(membership)
 
         try:
@@ -385,11 +365,10 @@ class TeamMemberService:
             members: List of members to add
         """
         for member in members:
-            team_role = map_team_role_to_backend(member.role)
             membership = TeamMembership(
                 id=uuid4(),
                 team_id=team_id,
                 user_id=member.user_id,
-                role=team_role,
+                role=member.role,
             )
             self.session.add(membership)

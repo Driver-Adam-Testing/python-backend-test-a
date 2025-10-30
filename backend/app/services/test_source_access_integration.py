@@ -120,7 +120,7 @@ class TestTeamSourceAccessPropagation:
         ).first()
         assert grant is not None
         assert grant.principal_kind == PrincipalKind.team
-        assert grant.role == PrimaryAssetRole.admin
+        assert grant.role == PrimaryAssetRole.asset_admin
         assert grant.organization_id == org_id
 
         # Step 5: Query team sources
@@ -243,7 +243,7 @@ class TestUserDirectVsTeamAccess:
         ).first()
         assert user_direct_grant is not None
         assert (
-            user_direct_grant.role == PrimaryAssetRole.viewer
+            user_direct_grant.role == PrimaryAssetRole.asset_viewer
         )  # "member" maps to viewer
 
         # Verify both grants exist in DB

@@ -30,13 +30,7 @@ from app.schemas.user_schema import (
     UserSourceInput,
     UserTeamInput,
 )
-from app.services.user_service import (
-    UserService,
-    map_source_role_to_backend,
-    map_source_role_to_frontend,
-    map_team_role_to_backend,
-    map_team_role_to_frontend,
-)
+from app.services.user_service import UserService
 
 
 @pytest.fixture
@@ -133,7 +127,7 @@ def sample_grant(user_id: str, asset_id: UUID, org_id: str) -> PrimaryAssetRoleG
         primary_asset_id=asset_id,
         organization_id=org_id,
         user_id=user_id,
-        role=PrimaryAssetRole.admin,
+        role=PrimaryAssetRole.asset_admin,
     )
 
 
@@ -326,7 +320,7 @@ class TestUpdateUserTeams:
             request=request,
         )
 
-        assert sample_membership.role == TeamRole.member
+        assert sample_membership.role == TeamRole.team_member
         service.session.add.assert_called_once_with(sample_membership)
         service.session.commit.assert_called_once()
 
@@ -538,7 +532,7 @@ class TestUpdateUserSources:
             request=request,
         )
 
-        assert sample_grant.role == PrimaryAssetRole.viewer
+        assert sample_grant.role == PrimaryAssetRole.asset_viewer
         service.session.add.assert_called_once_with(sample_grant)
         service.session.commit.assert_called_once()
 
@@ -573,37 +567,3 @@ class TestRemoveUserSources:
             session=service.session,
             grant=sample_grant,
         )
-
-
-class TestRoleMappingFunctions:
-    """Tests for role mapping helper functions."""
-
-    def test_map_team_role_to_backend(self) -> None:
-        """Should map frontend team roles to backend enums."""
-        assert map_team_role_to_backend("admin") == TeamRole.team_admin
-        assert map_team_role_to_backend("member") == TeamRole.member
-
-    def test_map_team_role_to_backend_raises_for_invalid_role(self) -> None:
-        """Should raise ValueError for invalid team role."""
-        with pytest.raises(ValueError):
-            map_team_role_to_backend("invalid")
-
-    def test_map_team_role_to_frontend(self) -> None:
-        """Should map backend team role enums to frontend strings."""
-        assert map_team_role_to_frontend(TeamRole.team_admin) == "admin"
-        assert map_team_role_to_frontend(TeamRole.member) == "member"
-
-    def test_map_source_role_to_backend(self) -> None:
-        """Should map frontend source roles to backend enums."""
-        assert map_source_role_to_backend("admin") == PrimaryAssetRole.admin
-        assert map_source_role_to_backend("member") == PrimaryAssetRole.viewer
-
-    def test_map_source_role_to_backend_raises_for_invalid_role(self) -> None:
-        """Should raise ValueError for invalid source role."""
-        with pytest.raises(ValueError):
-            map_source_role_to_backend("invalid")
-
-    def test_map_source_role_to_frontend(self) -> None:
-        """Should map backend source role enums to frontend strings."""
-        assert map_source_role_to_frontend(PrimaryAssetRole.admin) == "admin"
-        assert map_source_role_to_frontend(PrimaryAssetRole.viewer) == "member"

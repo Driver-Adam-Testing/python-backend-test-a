@@ -3,10 +3,12 @@
 import logging
 from uuid import UUID
 
+from database.models_enums import TeamRole
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_team_action
 from app.schemas.team_member_schema import (
     AddTeamMembersRequest,
     RemoveTeamMembersRequest,
@@ -14,7 +16,6 @@ from app.schemas.team_member_schema import (
     UpdateTeamMembersRequest,
 )
 from app.services.team_member_service import TeamMemberService
-from app.authorization.fastapi import enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -36,9 +37,9 @@ def list_team_members(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    roles: list[str] | None = Query(
+    roles: list[TeamRole] | None = Query(
         default=None,
-        description="Filter by roles (admin, member)",
+        description="Filter by roles (team_admin, team_member)",
     ),
     search: str | None = Query(
         default=None,

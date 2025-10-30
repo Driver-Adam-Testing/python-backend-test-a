@@ -90,7 +90,7 @@ def get_user_teams_with_details(
     session: Session,
     user_id: str,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[TeamRole] | None = None,
     search: str | None = None,
     limit: int = 30,
     offset: int = 0,
@@ -125,7 +125,7 @@ def get_user_teams_with_details(
             TeamMembership.team_id,
             func.count(TeamMembership.id).label("member_count"),
         )
-        .where(TeamMembership.role == TeamRole.member)
+        .where(TeamMembership.role == TeamRole.team_member)
         .group_by(TeamMembership.team_id)
         .subquery()
     )
@@ -159,8 +159,7 @@ def get_user_teams_with_details(
     )
 
     if roles:
-        backend_roles = [_map_frontend_role_to_backend(role) for role in roles]
-        query = query.where(TeamMembership.role.in_(backend_roles))
+        query = query.where(TeamMembership.role.in_(roles))
 
     if search:
         query = query.where(Team.name.ilike(f"%{search}%"))
@@ -185,7 +184,7 @@ def count_user_teams(
     session: Session,
     user_id: str,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[TeamRole] | None = None,
     search: str | None = None,
 ) -> int:
     """
@@ -212,8 +211,7 @@ def count_user_teams(
     )
 
     if roles:
-        backend_roles = [_map_frontend_role_to_backend(role) for role in roles]
-        query = query.where(TeamMembership.role.in_(backend_roles))
+        query = query.where(TeamMembership.role.in_(roles))
 
     if search:
         query = query.where(Team.name.ilike(f"%{search}%"))
@@ -283,7 +281,7 @@ def get_user_sources_with_details(
     session: Session,
     user_id: str,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[PrimaryAssetRole] | None = None,
     search: str | None = None,
     limit: int = 30,
     offset: int = 0,
@@ -313,11 +311,7 @@ def get_user_sources_with_details(
     )
 
     if roles:
-        backend_roles = [
-            PrimaryAssetRole.admin if r == "admin" else PrimaryAssetRole.viewer
-            for r in roles
-        ]
-        query = query.where(PrimaryAssetRoleGrant.role.in_(backend_roles))
+        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
@@ -333,7 +327,7 @@ def count_user_sources(
     session: Session,
     user_id: str,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[PrimaryAssetRole] | None = None,
     search: str | None = None,
 ) -> int:
     """
@@ -360,11 +354,7 @@ def count_user_sources(
     )
 
     if roles:
-        backend_roles = [
-            PrimaryAssetRole.admin if r == "admin" else PrimaryAssetRole.viewer
-            for r in roles
-        ]
-        query = query.where(PrimaryAssetRoleGrant.role.in_(backend_roles))
+        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
@@ -428,15 +418,6 @@ def delete_user_source_grant(
     """
     session.delete(grant)
     session.commit()
-
-
-def _map_frontend_role_to_backend(role: str) -> TeamRole:
-    """Map frontend role string to backend TeamRole enum."""
-    mapping = {
-        "admin": TeamRole.team_admin,
-        "member": TeamRole.member,
-    }
-    return mapping[role]
 
 
 def get_organization_membership(
@@ -520,7 +501,7 @@ def count_organization_super_admins(
         .select_from(OrgMembership)
         .where(
             OrgMembership.org_id == organization_id,
-            OrgMembership.role == OrgRole.super_admin,
+            OrgMembership.role == OrgRole.org_super_admin,
         )
     )
     return session.exec(query).one()

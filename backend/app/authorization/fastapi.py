@@ -8,8 +8,11 @@ from app.authorization.core import (
     AuthContext,
     authorize_asset_action,
     authorize_org_action,
+    authorize_super_admin,
     authorize_team_action,
+    authorize_org_member
 )
+from database.models_enums import OrgRole
 from fastapi import HTTPException
 from sqlmodel import Session
 
@@ -28,11 +31,20 @@ def check_org_action(db: Session, user: User, action_key: str) -> AccessDecision
     ctx = _build_auth_context(db, user)
     return authorize_org_action(ctx, action_key)
 
-
 def check_team_action(db: Session, user: User, team_id: uuid.UUID, action_key: str) -> AccessDecision:
     """Check team action authorization and return decision."""
     ctx = _build_auth_context(db, user)
     return authorize_team_action(ctx, team_id, action_key)
+
+
+def check_org_membership(db: Session, user: User) -> AccessDecision:
+    ctx = _build_auth_context(db, user)
+    return authorize_org_member(ctx, user)
+
+
+def check_super_admin(db: Session, user: User) -> AccessDecision:
+    ctx = _build_auth_context(db, user)
+    return authorize_super_admin(ctx, user)
 
 
 def check_asset_action(
@@ -105,6 +117,28 @@ def enforce_team_action(  # TODO: should this take a list of team ids?
                 "error": "insufficient_permissions",
                 "action": action_key,
                 "team_id": str(team_id),
+                "reasons": decision.reasons,
+            },
+        )
+    
+def enforce_super_admin(db: Session, user: User) -> None:
+    decision = check_super_admin(db, user)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "insufficient_permissions",
+                "reasons": decision.reasons,
+            },
+        )
+    
+def enforce_org_membership(db: Session, user: User) -> None:
+    decision = check_org_membership(db, user)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "insufficient_permissions",
                 "reasons": decision.reasons,
             },
         )

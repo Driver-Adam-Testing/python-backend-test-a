@@ -20,6 +20,8 @@ from database.models_enums import (
 )
 from sqlmodel import Session, select
 
+from app.api.auth import UserToken
+
 from .helpers import (
     build_grant_condition,
     get_user_team_ids,
@@ -290,15 +292,15 @@ def authorize_team_action(
         [],
     )
 
+def authorize_super_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
+    if is_super_admin(ctx.db, user.user_id, user.organization_id):
+        return AccessDecision(True, OrgRole.super_admin.value, ["org_super_admin"], [])
+    return AccessDecision(False, OrgRole.super_admin.value, ["org_super_admin"], [])
 
-def authorize_super_admin(
-    ctx: AuthContext, user_id: uuid.UUID, organization_id: str
-) -> AccessDecision:
-    if is_super_admin(ctx, user_id, organization_id):
-        return AccessDecision(
-            True, OrgRole.org_super_admin.value, ["org_super_admin"], []
-        )
-    return AccessDecision(False, OrgRole.org_super_admin.value, ["org_super_admin"], [])
+def authorize_org_member(ctx: AuthContext, user: UserToken) -> AccessDecision:
+    if is_org_member(ctx.db, user.user_id, user.organization_id):
+        return AccessDecision(True, OrgRole.member.value, ["org_member"], [])
+    return AccessDecision(False, OrgRole.member.value, ["org_member"], [])
 
 
 # def enforce_limit(

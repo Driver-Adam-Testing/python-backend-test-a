@@ -11,12 +11,13 @@ from sqlalchemy import ColumnElement
 from sqlmodel import Session, select
 
 
-def is_super_admin(db: Session, user_id: uuid.UUID, organization_id: str) -> bool:
+def is_super_admin(db: Session, user_id: str, organization_id: str) -> bool:
     """Check if user is a super admin of the organization.
 
     Super admins bypass all authorization checks and have full access
     to all resources within their organization.
     """
+    print(f"user id = {user_id}, org id = {organization_id}, role = {OrgRole.super_admin}")
     query = select(OrgMembership).where(
         OrgMembership.org_id == organization_id,
         OrgMembership.user_id == user_id,
@@ -25,7 +26,7 @@ def is_super_admin(db: Session, user_id: uuid.UUID, organization_id: str) -> boo
     return db.exec(query).first() is not None
 
 
-def is_org_member(db: Session, user_id: uuid.UUID, organization_id: str) -> bool:
+def is_org_member(db: Session, user_id: str, organization_id: str) -> bool:
     query = select(OrgMembership).where(
         OrgMembership.org_id == organization_id,
         OrgMembership.user_id == user_id,
@@ -34,7 +35,7 @@ def is_org_member(db: Session, user_id: uuid.UUID, organization_id: str) -> bool
 
 
 def get_user_team_ids(
-    db: Session, user_id: uuid.UUID, organization_id: str
+    db: Session, user_id: str, organization_id: str
 ) -> list[uuid.UUID]:
     query = (
         select(TeamMembership.team_id)
@@ -47,7 +48,7 @@ def get_user_team_ids(
 
 
 def build_grant_condition(
-    user_id: uuid.UUID, team_ids: list[uuid.UUID], is_member: bool
+    user_id: str, team_ids: list[uuid.UUID], is_member: bool
 ) -> ColumnElement[bool]:
     """Build SQLAlchemy condition for matching grants.
 
@@ -58,7 +59,7 @@ def build_grant_condition(
     - Org-wide grants (all org members) - only if user is org member
 
     Args:
-        user_id: UUID of the user
+        user_id: ID of the user
         team_ids: List of team UUIDs the user is a member of
         is_member: Whether user is an org member
 

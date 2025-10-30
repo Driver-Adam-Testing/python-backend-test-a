@@ -8,6 +8,7 @@ from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.schemas.admin_sources_schema import AdminSourcesResponse
 from app.services.admin_sources_service import AdminSourcesService
+from app.authorization.fastapi import enforce_super_admin
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ def get_admin_sources(
     Returns sources with visibility, member counts, and team counts.
     Supports filtering by search term, asset kind, and tags.
     """
+    enforce_super_admin(session, user)
     logger.info(
         f"User {user.user_id} getting admin sources "
         f"(limit={limit}, offset={offset}, search={search})"

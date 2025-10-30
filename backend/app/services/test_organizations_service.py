@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from database.models_enums import OrgRole
 
 from app.api.auth import UserToken
 from app.services.organizations_service import OrganizationsService
@@ -88,7 +87,7 @@ class TestListMembers:
                     "user_id": "auth0|user1",
                     "email": "alice@example.com",
                     "name": "Alice",
-                    "role": "super_admin",
+                    "role": "org_super_admin",
                 }
             ],
             1,
@@ -101,7 +100,7 @@ class TestListMembers:
         assert result.members[0].email == "alice@example.com"
         assert result.members[0].name == "Alice"
         assert result.members[0].picture is None
-        assert result.members[0].role == "super_admin"
+        assert result.members[0].role == "org_super_admin"
         assert result.start == 0
         assert result.limit == 100
         assert result.total == 1
@@ -124,19 +123,19 @@ class TestListMembers:
                     "user_id": "auth0|user1",
                     "email": "alice@example.com",
                     "name": "Alice",
-                    "role": "super_admin",
+                    "role": "org_super_admin",
                 },
                 {
                     "user_id": "auth0|user2",
                     "email": "bob@example.com",
                     "name": "Bob",
-                    "role": "member",
+                    "role": "org_member",
                 },
                 {
                     "user_id": "auth0|user3",
                     "email": "charlie@example.com",
                     "name": "Charlie",
-                    "role": "member",
+                    "role": "org_member",
                 },
             ],
             3,
@@ -169,13 +168,13 @@ class TestListMembers:
                     "user_id": "auth0|user1",
                     "email": "alice@example.com",
                     "name": "Alice",
-                    "role": "super_admin",
+                    "role": "org_super_admin",
                 },
                 {
                     "user_id": "auth0|user2",
                     "email": "bob@example.com",
                     "name": "Bob",
-                    "role": "member",
+                    "role": "org_member",
                 },
             ],
             5,  # Total of 5 members in org
@@ -206,7 +205,7 @@ class TestListMembers:
                     "user_id": "auth0|user3",
                     "email": "charlie@example.com",
                     "name": "Charlie",
-                    "role": "member",
+                    "role": "org_member",
                 }
             ],
             5,  # Total of 5 members in org
@@ -238,13 +237,13 @@ class TestListMembers:
                     "user_id": "auth0|user1",
                     "email": "alice@example.com",
                     "name": "Alice",
-                    "role": "super_admin",
+                    "role": "org_super_admin",
                 },
                 {
                     "user_id": "auth0|user2",
                     "email": "bob@example.com",
                     "name": "Bob",
-                    "role": "member",
+                    "role": "org_member",
                 },
             ],
             2,
@@ -254,10 +253,10 @@ class TestListMembers:
 
         # Verify role is a singular string
         assert isinstance(result.members[0].role, str)
-        assert result.members[0].role == "super_admin"
+        assert result.members[0].role == "org_super_admin"
 
         assert isinstance(result.members[1].role, str)
-        assert result.members[1].role == "member"
+        assert result.members[1].role == "org_member"
 
     @patch("app.services.organizations_service.list_organization_members")
     def test_list_members_null_name_handling(
@@ -274,13 +273,13 @@ class TestListMembers:
                     "user_id": "auth0|user1",
                     "email": "alice@example.com",
                     "name": "Alice",
-                    "role": "super_admin",
+                    "role": "org_super_admin",
                 },
                 {
                     "user_id": "auth0|user2",
                     "email": "bob@example.com",
                     "name": None,
-                    "role": "member",
+                    "role": "org_member",
                 },
             ],
             2,

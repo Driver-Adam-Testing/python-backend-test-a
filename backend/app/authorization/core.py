@@ -16,6 +16,7 @@ from database.models import (
 from database.models_enums import (
     OrgRole,
     PrimaryAssetRole,
+    PrincipalKind,
     TeamRole,
 )
 from sqlmodel import Session, select
@@ -214,6 +215,45 @@ def _role_allows_team_action(db: Session, role: TeamRole, action_key: str) -> bo
     )
     return db.exec(query).first() is not None
 
+def check_team_admin(db: Session, user_id: str, organization_id: str) -> bool:
+    """
+    Check if user is admin of ANY team in the organization.
+
+    Returns True if user has TeamRole.team_admin in at least one team.
+    """
+    query = (
+        select(TeamMembership)
+        .join(Team, Team.id == TeamMembership.team_id)
+        .where(
+            TeamMembership.user_id == user_id,
+            TeamMembership.role == TeamRole.team_admin,
+            Team.organization_id == organization_id
+        )
+        .limit(1)
+    )
+    result = db.exec(query).first()
+    return result is not None
+
+def check_source_admin(db: Session, user_id: str, organization_id: str) -> bool:
+    """
+    Check if user has admin role for ANY source (direct grant).
+
+    Returns True if user has PrimaryAssetRole.asset_admin for at least one source
+    where principal_kind='user'.
+    """
+    query = (
+        select(PrimaryAssetRoleGrant)
+        .where(
+            PrimaryAssetRoleGrant.user_id == user_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+            PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin,
+        )
+        .limit(1)
+    )
+    result = db.exec(query).first()
+    return result is not None
+
 
 def authorize_asset_action(
     ctx: AuthContext, asset_id: uuid.UUID, action_key: str
@@ -237,7 +277,7 @@ def authorize_asset_action(
     # Super admins bypass role checks
     if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
         decision = AccessDecision(
-            True, PrimaryAssetRole.admin.value, ["org_super_admin"], []
+            True, PrimaryAssetRole.asset_admin.value, ["org_super_admin"], []
         )
         logger.info(
             "Asset action allowed: user_id=%s, org_id=%s, asset_id=%s, action=%s, role=%s, reasons=%s",
@@ -345,6 +385,7 @@ def authorize_team_action(
     )
     return decision
 
+
 def authorize_super_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
     if is_super_admin(ctx.db, user.user_id, user.organization_id):
         decision = AccessDecision(True, OrgRole.super_admin.value, ["org_super_admin"], [])
@@ -360,6 +401,7 @@ def authorize_super_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
     )
     return decision
 
+
 def authorize_org_member(ctx: AuthContext, user: UserToken) -> AccessDecision:
     if is_org_member(ctx.db, user.user_id, user.organization_id):
         decision = AccessDecision(True, OrgRole.member.value, ["org_member"], [])
@@ -371,6 +413,59 @@ def authorize_org_member(ctx: AuthContext, user: UserToken) -> AccessDecision:
     decision = AccessDecision(False, None, ["not_org_member"], [])
     logger.warning(
         "Org member check denied: user_id=%s, org_id=%s, reasons=%s",
+        user.user_id, user.organization_id, decision.reasons
+    )
+    return decision
+
+def authorize_source_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
+    # Super admins bypass role checks
+    if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
+        decision = AccessDecision(
+            True, PrimaryAssetRole.asset_admin.value, ["org_super_admin"], []
+        )
+        logger.info(
+            "Source admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
+            user.user_id, user.organization_id, decision.role, decision.reasons
+        )
+        return decision
+    
+    if check_source_admin(ctx.db, user.user_id, user.organization_id):
+        decision = AccessDecision(True, PrimaryAssetRole.asset_admin.value, ["source_admin"], [])
+        logger.info(
+            "Source admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
+            user.user_id, user.organization_id, decision.role, decision.reasons
+        )
+        return decision
+    decision = AccessDecision(False, None, ["not_source_admin"], [])
+    logger.warning(
+        "Source admin check denied: user_id=%s, org_id=%s, reasons=%s",
+        user.user_id, user.organization_id, decision.reasons
+    )
+    return decision
+
+
+def authorize_team_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
+    # Super admins bypass role checks
+    if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
+        decision = AccessDecision(
+            True, TeamRole.team_admin.value, ["org_super_admin"], []
+        )
+        logger.info(
+            "Team admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
+            user.user_id, user.organization_id, decision.role, decision.reasons
+        )
+        return decision
+    
+    if check_team_admin(ctx.db, user.user_id, user.organization_id):
+        decision = AccessDecision(True, TeamRole.team_admin.value, ["team_admin"], [])
+        logger.info(
+            "Team admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
+            user.user_id, user.organization_id, decision.role, decision.reasons
+        )
+        return decision
+    decision = AccessDecision(False, None, ["not_team_admin"], [])
+    logger.warning(
+        "Team admin check denied: user_id=%s, org_id=%s, reasons=%s",
         user.user_id, user.organization_id, decision.reasons
     )
     return decision

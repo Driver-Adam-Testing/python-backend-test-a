@@ -8,9 +8,11 @@ from app.authorization.core import (
     AuthContext,
     authorize_asset_action,
     authorize_org_action,
+    authorize_source_admin,
     authorize_super_admin,
     authorize_team_action,
-    authorize_org_member
+    authorize_org_member,
+    authorize_team_admin
 )
 from database.models_enums import OrgRole
 from fastapi import HTTPException
@@ -45,6 +47,16 @@ def check_org_membership(db: Session, user: User) -> AccessDecision:
 def check_super_admin(db: Session, user: User) -> AccessDecision:
     ctx = _build_auth_context(db, user)
     return authorize_super_admin(ctx, user)
+
+
+def check_source_admin(db: Session, user: User) -> AccessDecision:
+    ctx = _build_auth_context(db, user)
+    return authorize_source_admin(ctx, user)
+
+
+def check_team_admin(db: Session, user: User) -> AccessDecision:
+    ctx = _build_auth_context(db, user)
+    return authorize_team_admin(ctx, user)
 
 
 def check_asset_action(
@@ -134,6 +146,28 @@ def enforce_super_admin(db: Session, user: User) -> None:
     
 def enforce_org_membership(db: Session, user: User) -> None:
     decision = check_org_membership(db, user)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "insufficient_permissions",
+                "reasons": decision.reasons,
+            },
+        )
+    
+def enforce_any_source_admin(db: Session, user: User) -> None:
+    decision = check_source_admin(db, user)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "insufficient_permissions",
+                "reasons": decision.reasons,
+            },
+        )
+    
+def enforce_any_team_admin(db: Session, user: User) -> None:
+    decision = check_team_admin(db, user)
     if not decision.allowed:
         raise HTTPException(
             status_code=403,

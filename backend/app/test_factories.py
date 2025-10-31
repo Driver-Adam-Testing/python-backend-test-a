@@ -153,7 +153,7 @@ class PrimaryAssetRoleGrantFactory:
         session: Session,
         primary_asset_id: UUID,
         principal_kind: PrincipalKind,
-        role: PrimaryAssetRole = PrimaryAssetRole.asset_viewer,
+        role: PrimaryAssetRole = PrimaryAssetRole.asset_member,
         organization_id: str = "test-org-id",
         user_id: str | None = None,
         team_id: UUID | None = None,

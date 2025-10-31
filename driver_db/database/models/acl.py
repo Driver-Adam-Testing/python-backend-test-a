@@ -24,7 +24,7 @@ class PrimaryAssetRoleGrant(SQLModel, table=True):
             name="chk_exactly_one_principal",
         ),
         CheckConstraint(
-            "principal_kind NOT IN ('org','public') OR role = 'asset_viewer'",
+            "principal_kind NOT IN ('org','public') OR role = 'asset_member'",
             name="chk_org_public_view_only",
         ),
         # One public grant per asset

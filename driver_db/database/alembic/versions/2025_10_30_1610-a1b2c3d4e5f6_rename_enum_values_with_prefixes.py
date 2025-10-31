@@ -16,9 +16,13 @@ depends_on = None
 
 
 def upgrade() -> None:
+    op.execute(
+        "ALTER TABLE primary_asset_role_grant DROP CONSTRAINT chk_org_public_view_only"
+    )
+
     # Rename PrimaryAssetRole enum values
     op.execute("ALTER TYPE primaryassetrole RENAME VALUE 'admin' TO 'asset_admin'")
-    op.execute("ALTER TYPE primaryassetrole RENAME VALUE 'viewer' TO 'asset_viewer'")
+    op.execute("ALTER TYPE primaryassetrole RENAME VALUE 'viewer' TO 'asset_member'")
 
     # Rename TeamRole enum values
     op.execute("ALTER TYPE teamrole RENAME VALUE 'member' TO 'team_member'")
@@ -28,12 +32,10 @@ def upgrade() -> None:
     op.execute("ALTER TYPE orgrole RENAME VALUE 'member' TO 'org_member'")
 
     # Update the check constraint to use new enum value
-    op.execute(
-        "ALTER TABLE primary_asset_role_grant DROP CONSTRAINT chk_org_public_view_only"
-    )
+
     op.execute(
         "ALTER TABLE primary_asset_role_grant ADD CONSTRAINT chk_org_public_view_only "
-        "CHECK (principal_kind NOT IN ('org','public') OR role = 'asset_viewer')"
+        "CHECK (principal_kind NOT IN ('org','public') OR role = 'asset_member')"
     )
 
 
@@ -41,10 +43,6 @@ def downgrade() -> None:
     # Revert check constraint
     op.execute(
         "ALTER TABLE primary_asset_role_grant DROP CONSTRAINT chk_org_public_view_only"
-    )
-    op.execute(
-        "ALTER TABLE primary_asset_role_grant ADD CONSTRAINT chk_org_public_view_only "
-        "CHECK (principal_kind NOT IN ('org','public') OR role = 'viewer')"
     )
 
     # Revert OrgRole enum values
@@ -55,5 +53,10 @@ def downgrade() -> None:
     op.execute("ALTER TYPE teamrole RENAME VALUE 'team_member' TO 'member'")
 
     # Revert PrimaryAssetRole enum values
-    op.execute("ALTER TYPE primaryassetrole RENAME VALUE 'asset_viewer' TO 'viewer'")
+    op.execute("ALTER TYPE primaryassetrole RENAME VALUE 'asset_member' TO 'viewer'")
     op.execute("ALTER TYPE primaryassetrole RENAME VALUE 'asset_admin' TO 'admin'")
+
+    op.execute(
+        "ALTER TABLE primary_asset_role_grant ADD CONSTRAINT chk_org_public_view_only "
+        "CHECK (principal_kind NOT IN ('org','public') OR role = 'viewer')"
+    )

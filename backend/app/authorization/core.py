@@ -148,8 +148,8 @@ def _effective_asset_role(
 
     if PrimaryAssetRole.asset_admin in roles:
         return PrimaryAssetRole.asset_admin
-    if PrimaryAssetRole.asset_viewer in roles:
-        return PrimaryAssetRole.asset_viewer
+    if PrimaryAssetRole.asset_member in roles:
+        return PrimaryAssetRole.asset_member
     return None  # No access
 
 

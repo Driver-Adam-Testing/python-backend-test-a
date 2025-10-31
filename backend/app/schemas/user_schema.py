@@ -100,7 +100,7 @@ class UserSourceInput(BaseModel):
 
     source_id: str = Field(..., description="Primary asset ID (source ID)")
     role: PrimaryAssetRole = Field(
-        ..., description="Source role: asset_admin or asset_viewer"
+        ..., description="Source role: asset_admin or asset_member"
     )
 
 

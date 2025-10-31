@@ -36,7 +36,7 @@ def get_user_sources(
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
     roles: list[PrimaryAssetRole] | None = Query(
-        default=None, description="Filter by roles: asset_admin, asset_viewer"
+        default=None, description="Filter by roles: asset_admin, asset_member"
     ),
     search: str | None = Query(default=None, description="Search by display name"),
 ) -> UserSourcesResponse:

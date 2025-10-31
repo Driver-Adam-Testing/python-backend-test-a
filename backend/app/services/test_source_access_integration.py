@@ -243,7 +243,7 @@ class TestUserDirectVsTeamAccess:
         ).first()
         assert user_direct_grant is not None
         assert (
-            user_direct_grant.role == PrimaryAssetRole.asset_viewer
+            user_direct_grant.role == PrimaryAssetRole.asset_member
         )  # "member" maps to viewer
 
         # Verify both grants exist in DB

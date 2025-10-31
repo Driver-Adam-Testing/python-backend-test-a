@@ -282,7 +282,7 @@ class LlmPipelineKind(str, enum.Enum):
 
 class PrimaryAssetRole(enum.StrEnum):
     asset_admin = enum.auto()
-    asset_viewer = enum.auto()
+    asset_member = enum.auto()
 
 
 class PrincipalKind(enum.StrEnum):

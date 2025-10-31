@@ -38,7 +38,7 @@ def create_acl_for_existing_assets() -> None:
                 primary_asset_id=asset.id,
                 organization_id=asset.organization_id,
                 principal_kind=PrincipalKind.org,
-                role=PrimaryAssetRole.asset_viewer,
+                role=PrimaryAssetRole.asset_member,
             )
             session.add(new_grant)
             session.commit()

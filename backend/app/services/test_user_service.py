@@ -532,7 +532,7 @@ class TestUpdateUserSources:
             request=request,
         )
 
-        assert sample_grant.role == PrimaryAssetRole.asset_viewer
+        assert sample_grant.role == PrimaryAssetRole.asset_member
         service.session.add.assert_called_once_with(sample_grant)
         service.session.commit.assert_called_once()
 

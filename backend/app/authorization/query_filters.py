@@ -25,7 +25,7 @@ from .helpers import (
 
 
 def primary_asset_grant_filter(
-    db: Session, user_id: uuid.UUID, organization_id: str
+    db: Session, user_id: str, organization_id: str
 ) -> Any:
     """
     Filter for PrimaryAssets where user has a grant.
@@ -74,7 +74,7 @@ def primary_asset_grant_filter(
     )
 
 
-def content_grant_filter(db: Session, user_id: uuid.UUID, organization_id: str) -> Any:
+def content_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:
     """
     Filter for DerivedContent where user has a grant to the associated PrimaryAsset.
 

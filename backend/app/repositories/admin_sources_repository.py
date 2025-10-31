@@ -97,10 +97,8 @@ def get_sources_with_counts(
     )
 
     if not is_super_admin(session, user_id, organization_id):
-        user_teams_subquery = (
-            select(TeamMembership.team_id)
-            .where(TeamMembership.user_id == user_id)
-            .subquery()
+        user_teams_query = select(TeamMembership.team_id).where(
+            TeamMembership.user_id == user_id
         )
 
         query = (
@@ -114,7 +112,7 @@ def get_sources_with_counts(
                     PrimaryAssetRoleGrant.organization_id == organization_id,
                     # User has access through direct grant OR team grant
                     (PrimaryAssetRoleGrant.user_id == user_id)
-                    | (PrimaryAssetRoleGrant.team_id.in_(user_teams_subquery)),
+                    | (PrimaryAssetRoleGrant.team_id.in_(user_teams_query)),
                 )
             )
             .distinct()
@@ -193,10 +191,8 @@ def count_sources(
     )
 
     if not is_super_admin(session, user_id, organization_id):
-        user_teams_subquery = (
-            select(TeamMembership.team_id)
-            .where(TeamMembership.user_id == user_id)
-            .subquery()
+        user_teams_query = select(TeamMembership.team_id).where(
+            TeamMembership.user_id == user_id
         )
 
         query = (
@@ -210,7 +206,7 @@ def count_sources(
                     PrimaryAssetRoleGrant.organization_id == organization_id,
                     # User has access through direct grant OR team grant
                     (PrimaryAssetRoleGrant.user_id == user_id)
-                    | (PrimaryAssetRoleGrant.team_id.in_(user_teams_subquery)),
+                    | (PrimaryAssetRoleGrant.team_id.in_(user_teams_query)),
                 )
             )
             .distinct()

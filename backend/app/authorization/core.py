@@ -19,7 +19,7 @@ from database.models_enums import (
     PrincipalKind,
     TeamRole,
 )
-from sqlmodel import Session, select
+from sqlmodel import Session, or_, select
 
 from app.api.auth import UserToken
 
@@ -236,18 +236,26 @@ def check_team_admin(db: Session, user_id: str, organization_id: str) -> bool:
 
 def check_source_admin(db: Session, user_id: str, organization_id: str) -> bool:
     """
-    Check if user has admin role for ANY source (direct grant).
+    Check if user has admin role for ANY source (direct grant or team grant).
 
     Returns True if user has PrimaryAssetRole.asset_admin for at least one source
-    where principal_kind='user'.
+    through either:
+    - Direct grant (principal_kind='user' and user_id matches)
+    - Team grant (principal_kind='team' and user is member of that team)
     """
+    user_teams_query = select(TeamMembership.team_id).where(
+        TeamMembership.user_id == user_id
+    )
+
     query = (
         select(PrimaryAssetRoleGrant)
         .where(
-            PrimaryAssetRoleGrant.user_id == user_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
-            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
             PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin,
+            or_(
+                (PrimaryAssetRoleGrant.user_id == user_id),
+                (PrimaryAssetRoleGrant.team_id.in_(user_teams_query)),
+            ),
         )
         .limit(1)
     )

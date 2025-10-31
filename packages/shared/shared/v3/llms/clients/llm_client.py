@@ -4,6 +4,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
+from shared.chunking.text_splitter import split_text
 from shared.v3.globals.iteration_messages import (
     IterationMessage,
     MultiShotIterationContextMessage,
@@ -125,6 +126,7 @@ class LlmClient(ABC):
         for finished in asyncio.as_completed(tasks):
             try:
                 tool_msg: LlmMessage = await finished
+                tool_msg = self._truncate_message_content(tool_msg)
                 history.add_message(tool_msg)
                 tool = next(
                     (
@@ -142,10 +144,10 @@ class LlmClient(ABC):
                 error_message = f"Error during tool execution: {exc!s}"
                 history.add_message(
                     LlmMessage(
-                        MessageKind.TOOL_CALL_RESPONSE,
-                        error_message,
+                        message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                        content=error_message,
                         tool_response=LlmMessage.ToolCallResponse(
-                            id=tool_msg.tool_response.id, name=tool.name
+                            id=tool_msg.tool_response.id if tool_msg.tool_response else None, name=tool.__class__.__name__
                         ),
                     )
                 )
@@ -202,6 +204,16 @@ class LlmClient(ABC):
                 )
             else:
                 yield chunk
+
+    def _truncate_message_content(self, message: LlmMessage) -> LlmMessage:
+        if message.content:
+            message.content = split_text(
+                text=message.content,
+                model=self.config.llm_model_id,
+                chunk_size=int(self.config.max_output_tokens * 0.7),
+                chunk_overlap=0,
+            )[0].text
+        return message
 
     def multi_shot(
         self,

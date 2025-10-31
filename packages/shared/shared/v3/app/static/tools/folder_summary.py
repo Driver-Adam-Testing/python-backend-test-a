@@ -125,5 +125,6 @@ class FolderSummaryTool(LlmTool):
     def status(self) -> LlmTool.LlmToolStatusString:
         if self._references:
             unique_paths = {ref.short_path for ref in self.references}
-            return "Folder summaries ready:\n" + "\n".join(unique_paths)
-        return f"Summarising folder: {self.folder_path}…\n"
+            if unique_paths:
+                return "Folder summaries ready:\n" + "\n".join(unique_paths)
+        return f"Summarizing folder: {self.folder_path}…\n"

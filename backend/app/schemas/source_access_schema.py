@@ -202,7 +202,7 @@ class SourceUserResponse(BaseModel):
     is_super_admin: bool = Field(
         ..., description="Whether user is a super admin in the organization"
     )
-    user_role: str = Field(..., description="User's role for this source")
+    role: str = Field(..., description="User's role for this source")
     teams: list[TeamMembershipInfo] = Field(
         ..., description="List of teams the user belongs to"
     )

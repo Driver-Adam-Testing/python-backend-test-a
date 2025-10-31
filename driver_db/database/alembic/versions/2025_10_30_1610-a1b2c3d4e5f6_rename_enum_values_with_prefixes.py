@@ -1,7 +1,7 @@
 """rename enum values with prefixes
 
 Revision ID: a1b2c3d4e5f6
-Revises: 4060b23411c9
+Revises: cf24527010fc
 Create Date: 2025-10-30 16:10:00.000000
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a1b2c3d4e5f6"
-down_revision = "4060b23411c9"
+down_revision = "cf24527010fc"
 branch_labels = None
 depends_on = None
 

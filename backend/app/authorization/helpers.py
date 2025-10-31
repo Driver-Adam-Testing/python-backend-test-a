@@ -17,7 +17,6 @@ def is_super_admin(db: Session, user_id: str, organization_id: str) -> bool:
     Super admins bypass all authorization checks and have full access
     to all resources within their organization.
     """
-    print(f"user id = {user_id}, org id = {organization_id}, role = {OrgRole.super_admin}")
     query = select(OrgMembership).where(
         OrgMembership.org_id == organization_id,
         OrgMembership.user_id == user_id,

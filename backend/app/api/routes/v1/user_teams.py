@@ -15,6 +15,7 @@ from app.schemas.user_schema import (
     UserTeamsResponse,
 )
 from app.services.user_service import UserService
+from app.authorization.fastapi import enforce_org_action, enforce_super_admin, enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ def search_organization_users(
 
     Returns users matching the search query by name or email.
     """
+    enforce_org_action(session, user, "users.view")
     logger.info(
         f"User {user.user_id} searching for users with query '{query}' "
         f"(limit={limit}, offset={offset})"
@@ -77,6 +79,7 @@ def get_user_teams(
 
     Returns teams with role and count information.
     """
+    enforce_super_admin(session, user)
     logger.info(
         f"User {user.user_id} getting teams for user {user_id} "
         f"(limit={limit}, offset={offset}, roles={roles}, search={search})"
@@ -109,6 +112,7 @@ def add_user_teams(
 
     - **teams**: List of teams with roles to add user to
     """
+    enforce_super_admin(session, user)
     logger.info(
         f"User {user.user_id} adding user {user_id} to {len(request.teams)} teams"
     )
@@ -137,6 +141,7 @@ def update_user_teams(
 
     - **teams**: List of teams with updated roles
     """
+    enforce_super_admin(session, user)
     logger.info(
         f"User {user.user_id} updating roles for user {user_id} in {len(request.teams)} teams"
     )
@@ -165,6 +170,7 @@ def remove_user_teams(
 
     - **team_ids**: List of team IDs to remove user from
     """
+    enforce_super_admin(session, user)
     logger.info(
         f"User {user.user_id} removing user {user_id} from {len(request.team_ids)} teams"
     )

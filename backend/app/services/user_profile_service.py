@@ -15,6 +15,7 @@ from sqlmodel import Session, select
 
 from app.auth.models import User
 from app.schemas.user_profile_schema import Entitlement, MeResponse
+from app.authorization.core import check_source_admin, check_team_admin
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +67,10 @@ class UserProfileService:
         entitlements = self._get_entitlements(organization_id)
 
         # Check if user is team admin
-        is_team_admin = self._check_team_admin(user_id, organization_id)
+        is_team_admin = check_team_admin(self.session, user_id, organization_id)
 
         # Check if user has source admin role
-        is_source_admin = self._check_source_admin(user_id, organization_id)
+        is_source_admin = check_source_admin(self.session, user_id, organization_id)
 
         return MeResponse(
             id=db_user.id,
@@ -123,41 +124,3 @@ class UserProfileService:
                 )
 
         return entitlements if entitlements else None
-
-    def _check_team_admin(self, user_id: str, organization_id: str) -> bool:
-        """
-        Check if user is admin of ANY team.
-
-        Returns True if user has TeamRole.team_admin in at least one team.
-        Note: TeamMembership doesn't have organization_id, so we filter by user_id only.
-        """
-        query = (
-            select(TeamMembership)
-            .where(
-                TeamMembership.user_id == user_id,
-                TeamMembership.role == TeamRole.team_admin,
-            )
-            .limit(1)
-        )
-        result = self.session.exec(query).first()
-        return result is not None
-
-    def _check_source_admin(self, user_id: str, organization_id: str) -> bool:
-        """
-        Check if user has admin role for ANY source (direct grant).
-
-        Returns True if user has PrimaryAssetRole.admin for at least one source
-        where principal_kind='user'.
-        """
-        query = (
-            select(PrimaryAssetRoleGrant)
-            .where(
-                PrimaryAssetRoleGrant.user_id == user_id,
-                PrimaryAssetRoleGrant.organization_id == organization_id,
-                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
-                PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin,
-            )
-            .limit(1)
-        )
-        result = self.session.exec(query).first()
-        return result is not None

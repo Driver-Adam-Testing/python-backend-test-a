@@ -56,6 +56,7 @@ class AdminSourcesService:
         # Get sources with counts
         source_data = admin_sources_repository.get_sources_with_counts(
             session=self.session,
+            user_id=user.user_id,
             organization_id=organization_id,
             search=search,
             kinds=kinds,
@@ -69,6 +70,7 @@ class AdminSourcesService:
         # Get total count
         total_count = admin_sources_repository.count_sources(
             session=self.session,
+            user_id=user.user_id,
             organization_id=organization_id,
             search=search,
             kinds=kinds,

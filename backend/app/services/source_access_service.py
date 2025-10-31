@@ -178,7 +178,7 @@ def build_source_user_response(
             visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=is_super_admin,
-            user_role=user_role,
+            role=user_role,
             teams=teams,
         )
     else:  # team
@@ -192,7 +192,7 @@ def build_source_user_response(
             visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=False,
-            user_role="team",  # Indicate this is a team
+            role="team_member",  # Indicate this is a team
             teams=[],  # Teams don't have team memberships
         )
 

@@ -55,7 +55,7 @@ def member_dict_to_response(member_dict: dict) -> TeamMemberResponse:
         picture="",  # TODO: Fetch from Auth0 or add to User model
         team_id=str(team.id),
         team_name=team.name,
-        team_role=membership.role,
+        role=membership.role,
         created_at=membership.created_at.isoformat()
         if hasattr(membership, "created_at") and membership.created_at
         else last_active,

@@ -52,7 +52,7 @@ class TeamMemberResponse(BaseModel):
     picture: str = Field(..., description="User's profile picture URL")
     team_id: str = Field(..., description="Team ID")
     team_name: str = Field(..., description="Team name")
-    team_role: TeamRole = Field(..., description="Team role")
+    role: TeamRole = Field(..., description="Team role")
     created_at: str = Field(..., description="ISO datetime when member was added")
     last_active: str = Field(..., description="ISO datetime of last activity")
 

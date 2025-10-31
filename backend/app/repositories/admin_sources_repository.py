@@ -2,12 +2,22 @@
 
 from uuid import UUID
 
-from database.models import PrimaryAsset, PrimaryAssetRoleGrant, PrimaryAssetTag, Tag
+from database.models import (
+    PrimaryAsset,
+    PrimaryAssetRoleGrant,
+    PrimaryAssetTag,
+    Tag,
+    TeamMembership,
+)
 from sqlmodel import Session, and_, func, select
+
+from app.authorization.helpers import is_super_admin
+from database.models_enums import PrimaryAssetRole
 
 
 def get_sources_with_counts(
     session: Session,
+    user_id: str,
     organization_id: str,
     search: str | None = None,
     kinds: list[str] | None = None,
@@ -86,6 +96,30 @@ def get_sources_with_counts(
         .where(PrimaryAsset.organization_id == organization_id)
     )
 
+    if not is_super_admin(session, user_id, organization_id):
+        user_teams_subquery = (
+            select(TeamMembership.team_id)
+            .where(TeamMembership.user_id == user_id)
+            .subquery()
+        )
+
+        query = (
+            query.join(
+                PrimaryAssetRoleGrant,
+                PrimaryAsset.id == PrimaryAssetRoleGrant.primary_asset_id,
+            )
+            .where(PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin)
+            .where(
+                and_(
+                    PrimaryAssetRoleGrant.organization_id == organization_id,
+                    # User has access through direct grant OR team grant
+                    (PrimaryAssetRoleGrant.user_id == user_id)
+                    | (PrimaryAssetRoleGrant.team_id.in_(user_teams_subquery)),
+                )
+            )
+            .distinct()
+        )
+
     # Apply search filter
     if search:
         search_pattern = f"%{search}%"
@@ -132,6 +166,7 @@ def get_sources_with_counts(
 
 def count_sources(
     session: Session,
+    user_id: str,
     organization_id: str,
     search: str | None = None,
     kinds: list[str] | None = None,
@@ -142,6 +177,7 @@ def count_sources(
 
     Args:
         session: Database session
+        user_id: User ID for ACL filtering
         organization_id: Organization ID
         search: Optional search query
         kinds: Optional list of asset kinds
@@ -155,6 +191,30 @@ def count_sources(
         .select_from(PrimaryAsset)
         .where(PrimaryAsset.organization_id == organization_id)
     )
+
+    if not is_super_admin(session, user_id, organization_id):
+        user_teams_subquery = (
+            select(TeamMembership.team_id)
+            .where(TeamMembership.user_id == user_id)
+            .subquery()
+        )
+
+        query = (
+            query.join(
+                PrimaryAssetRoleGrant,
+                PrimaryAsset.id == PrimaryAssetRoleGrant.primary_asset_id,
+            )
+            .where(PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin)
+            .where(
+                and_(
+                    PrimaryAssetRoleGrant.organization_id == organization_id,
+                    # User has access through direct grant OR team grant
+                    (PrimaryAssetRoleGrant.user_id == user_id)
+                    | (PrimaryAssetRoleGrant.team_id.in_(user_teams_subquery)),
+                )
+            )
+            .distinct()
+        )
 
     # Apply search filter
     if search:

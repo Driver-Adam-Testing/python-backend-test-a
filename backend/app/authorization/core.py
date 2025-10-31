@@ -313,7 +313,7 @@ def authorize_org_action(ctx: AuthContext, action_key: str) -> AccessDecision:
     # Super admins bypass role checks
     if is_super_admin(ctx.db, ctx.user_id, ctx.organization_id):
         decision = AccessDecision(
-            True, OrgRole.super_admin.value, ["org_super_admin"], []
+            True, OrgRole.org_super_admin.value, ["org_super_admin"], []
         )
         logger.info(
             "Org action allowed: user_id=%s, org_id=%s, action=%s, role=%s, reasons=%s",
@@ -388,7 +388,7 @@ def authorize_team_action(
 
 def authorize_super_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
     if is_super_admin(ctx.db, user.user_id, user.organization_id):
-        decision = AccessDecision(True, OrgRole.super_admin.value, ["org_super_admin"], [])
+        decision = AccessDecision(True, OrgRole.org_super_admin.value, ["org_super_admin"], [])
         logger.info(
             "Super admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
             user.user_id, user.organization_id, decision.role, decision.reasons
@@ -404,7 +404,7 @@ def authorize_super_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
 
 def authorize_org_member(ctx: AuthContext, user: UserToken) -> AccessDecision:
     if is_org_member(ctx.db, user.user_id, user.organization_id):
-        decision = AccessDecision(True, OrgRole.member.value, ["org_member"], [])
+        decision = AccessDecision(True, OrgRole.org_member.value, ["org_member"], [])
         logger.info(
             "Org member check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
             user.user_id, user.organization_id, decision.role, decision.reasons

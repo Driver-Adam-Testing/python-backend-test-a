@@ -20,7 +20,7 @@ def is_super_admin(db: Session, user_id: uuid.UUID, organization_id: str) -> boo
     query = select(OrgMembership).where(
         OrgMembership.org_id == organization_id,
         OrgMembership.user_id == user_id,
-        OrgMembership.role == OrgRole.super_admin,
+        OrgMembership.role == OrgRole.org_super_admin,
     )
     return db.exec(query).first() is not None
 

@@ -63,7 +63,7 @@ def get_teams_with_counts(
             TeamMembership.team_id,
             func.count(TeamMembership.id).label("member_count"),
         )
-        .where(TeamMembership.role == TeamRole.member)
+        .where(TeamMembership.role == TeamRole.team_member)
         .group_by(TeamMembership.team_id)
         .subquery()
     )
@@ -138,7 +138,7 @@ def get_team_with_counts(
             TeamMembership.team_id,
             func.count(TeamMembership.id).label("member_count"),
         )
-        .where(TeamMembership.role == TeamRole.member)
+        .where(TeamMembership.role == TeamRole.team_member)
         .group_by(TeamMembership.team_id)
         .subquery()
     )
@@ -215,7 +215,7 @@ def search_teams_with_counts(
             TeamMembership.team_id,
             func.count(TeamMembership.id).label("member_count"),
         )
-        .where(TeamMembership.role == TeamRole.member)
+        .where(TeamMembership.role == TeamRole.team_member)
         .group_by(TeamMembership.team_id)
         .subquery()
     )

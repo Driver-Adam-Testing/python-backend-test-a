@@ -1,12 +1,7 @@
 """Schemas for User-related API requests and responses."""
 
-from typing import Literal
-
+from database.models_enums import PrimaryAssetRole, TeamRole
 from pydantic import BaseModel, Field
-
-# ===== Common Types =====
-TeamRole = Literal["admin", "member"]
-SourceRole = Literal["admin", "member"]
 
 
 # ===== User Search =====
@@ -42,7 +37,7 @@ class UserTeamInput(BaseModel):
     """Input for adding/updating a single team for a user."""
 
     team_id: str = Field(..., description="Team ID")
-    role: TeamRole = Field(..., description="Team role: admin or member")
+    role: TeamRole = Field(..., description="Team role: team_admin or team_member")
 
 
 class AddUserTeamsRequest(BaseModel):
@@ -104,7 +99,9 @@ class UserSourceInput(BaseModel):
     """Input for adding/updating a single source for a user."""
 
     source_id: str = Field(..., description="Primary asset ID (source ID)")
-    role: SourceRole = Field(..., description="Source role: admin or member")
+    role: PrimaryAssetRole = Field(
+        ..., description="Source role: asset_admin or asset_member"
+    )
 
 
 class AddUserSourcesRequest(BaseModel):
@@ -148,7 +145,7 @@ class UserSourceResponse(BaseModel):
     provider: str | None = Field(None, description="Provider: GITHUB, GITLAB, etc.")
     created_at: str = Field(..., description="ISO datetime when asset was created")
     updated_at: str = Field(..., description="ISO datetime when asset was updated")
-    role: SourceRole = Field(..., description="User's role for this source")
+    role: PrimaryAssetRole = Field(..., description="User's role for this source")
     visibility: str = Field(..., description="Visibility: private, internal, or public")
     user_id: str = Field(..., description="User ID")
 

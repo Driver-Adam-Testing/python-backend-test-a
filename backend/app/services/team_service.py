@@ -6,7 +6,6 @@ from uuid import UUID, uuid4
 
 from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
 from database.models import User as DbUser
-from database.models_enums import TeamRole
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -28,26 +27,6 @@ def get_user_by_id(session: Session, user_id: str) -> DbUser | None:
     """Get a user by ID."""
     query = select(DbUser).where(DbUser.id == user_id)
     return session.exec(query).first()
-
-
-def map_team_role_to_backend(role: str) -> TeamRole:
-    """Map frontend role string to backend TeamRole enum."""
-    mapping = {
-        "admin": TeamRole.team_admin,
-        "member": TeamRole.member,
-    }
-    if role not in mapping:
-        raise ValueError(f"Invalid role: {role}")
-    return mapping[role]
-
-
-def map_team_role_to_frontend(role: TeamRole) -> str:
-    """Map backend TeamRole enum to frontend string."""
-    mapping = {
-        TeamRole.team_admin: "admin",
-        TeamRole.member: "member",
-    }
-    return mapping[role]
 
 
 def team_dict_to_response(team_dict: dict) -> TeamResponse:
@@ -443,12 +422,11 @@ class TeamService:
                     f"User {member.user_id} is not a member of this organization"
                 )
 
-            team_role = map_team_role_to_backend(member.role)
             membership = TeamMembership(
                 id=uuid4(),
                 team_id=team_id,
                 user_id=member.user_id,
-                role=team_role,
+                role=member.role,
             )
             self.session.add(membership)
 

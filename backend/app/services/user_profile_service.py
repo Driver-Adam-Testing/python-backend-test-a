@@ -155,7 +155,7 @@ class UserProfileService:
                 PrimaryAssetRoleGrant.user_id == user_id,
                 PrimaryAssetRoleGrant.organization_id == organization_id,
                 PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
-                PrimaryAssetRoleGrant.role == PrimaryAssetRole.admin,
+                PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin,
             )
             .limit(1)
         )

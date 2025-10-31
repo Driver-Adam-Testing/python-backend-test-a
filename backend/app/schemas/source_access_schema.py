@@ -3,10 +3,10 @@
 from typing import Literal
 from uuid import UUID
 
+from database.models_enums import PrimaryAssetRole
 from pydantic import BaseModel, Field
 
 # ===== Common Types =====
-SourceRole = Literal["admin", "member"]
 SourceVisibility = Literal["private", "internal", "public"]
 SourceUserKind = Literal["user", "team"]
 
@@ -16,7 +16,7 @@ class TeamSourceInput(BaseModel):
     """Input for adding/updating a single source for a team."""
 
     source_id: str = Field(..., description="Source ID")
-    role: SourceRole = Field(..., description="Team's role for this source")
+    role: PrimaryAssetRole = Field(..., description="Team's role for this source")
 
 
 class AddTeamSourcesRequest(BaseModel):
@@ -53,7 +53,7 @@ class SourceUserInput(BaseModel):
     """Input for adding/updating a single user for a source."""
 
     user_id: str = Field(..., description="User ID or Team ID")
-    role: SourceRole = Field(..., description="Role for this source")
+    role: PrimaryAssetRole = Field(..., description="Role for this source")
 
 
 class AddSourceUsersRequest(BaseModel):
@@ -91,7 +91,7 @@ class SourceTeamInput(BaseModel):
     """Input for adding/updating a single team for a source."""
 
     team_id: UUID = Field(..., description="Team ID")
-    role: SourceRole = Field(..., description="Team's role for this source")
+    role: PrimaryAssetRole = Field(..., description="Team's role for this source")
 
 
 class AddSourceTeamsRequest(BaseModel):
@@ -135,7 +135,7 @@ class TeamSourceResponse(BaseModel):
     provider: str | None = Field(None, description="Provider: GITHUB, GITLAB, etc.")
     created_at: str = Field(..., description="ISO datetime when asset was created")
     updated_at: str = Field(..., description="ISO datetime when asset was updated")
-    role: SourceRole = Field(..., description="Team's role for this source")
+    role: PrimaryAssetRole = Field(..., description="Team's role for this source")
     visibility: SourceVisibility = Field(
         ..., description="Source visibility: private, internal, or public"
     )
@@ -158,7 +158,7 @@ class SourceTeamResponse(BaseModel):
 
     team_id: UUID = Field(..., description="Team ID")
     team_name: str = Field(..., description="Team name")
-    role: SourceRole = Field(..., description="Team's role for this source")
+    role: PrimaryAssetRole = Field(..., description="Team's role for this source")
     member_count: int = Field(..., description="Number of users in the team")
     visibility: SourceVisibility = Field(
         ..., description="Source visibility: private, internal, or public"

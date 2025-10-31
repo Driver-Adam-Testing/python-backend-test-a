@@ -11,7 +11,7 @@ def get_team_members_with_details(
     session: Session,
     team_id: UUID,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[TeamRole] | None = None,
     search: str | None = None,
     limit: int = 30,
     offset: int = 0,
@@ -42,8 +42,7 @@ def get_team_members_with_details(
     )
 
     if roles:
-        backend_roles = [_map_frontend_role_to_backend(role) for role in roles]
-        query = query.where(TeamMembership.role.in_(backend_roles))
+        query = query.where(TeamMembership.role.in_(roles))
 
     if search:
         search_pattern = f"%{search}%"
@@ -72,7 +71,7 @@ def count_team_members(
     session: Session,
     team_id: UUID,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[TeamRole] | None = None,
     search: str | None = None,
 ) -> int:
     """
@@ -100,8 +99,7 @@ def count_team_members(
     )
 
     if roles:
-        backend_roles = [_map_frontend_role_to_backend(role) for role in roles]
-        query = query.where(TeamMembership.role.in_(backend_roles))
+        query = query.where(TeamMembership.role.in_(roles))
 
     if search:
         search_pattern = f"%{search}%"
@@ -173,12 +171,3 @@ def delete_membership(
     """
     session.delete(membership)
     session.commit()
-
-
-def _map_frontend_role_to_backend(role: str) -> TeamRole:
-    """Map frontend role string to backend TeamRole enum."""
-    mapping = {
-        "admin": TeamRole.team_admin,
-        "member": TeamRole.member,
-    }
-    return mapping[role]

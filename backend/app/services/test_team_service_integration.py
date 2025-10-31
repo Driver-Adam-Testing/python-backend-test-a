@@ -110,7 +110,7 @@ class TestTeamLifecycleIntegration:
         ).all()
         assert len(memberships) == 2
         admin_count = sum(1 for m in memberships if m.role == TeamRole.team_admin)
-        member_count = sum(1 for m in memberships if m.role == TeamRole.member)
+        member_count = sum(1 for m in memberships if m.role == TeamRole.team_member)
         assert admin_count == 1
         assert member_count == 1
 

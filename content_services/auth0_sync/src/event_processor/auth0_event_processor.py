@@ -329,7 +329,7 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
 
         if is_member and not existing_membership:
             new_membership = OrgMembership(
-                user_id=user_id, org_id=org_id, role=OrgRole.member
+                user_id=user_id, org_id=org_id, role=OrgRole.org_member
             )
             session.add(new_membership)
             logger.info(f"Created membership: {user_id} in {org_id}")

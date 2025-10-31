@@ -303,13 +303,26 @@ def get_user_sources_with_details(
     """
     from sqlalchemy.orm import selectinload
 
+    # Subquery to get all team IDs that the user is a member of
+    user_teams_subq = (
+        select(TeamMembership.team_id)
+        .where(TeamMembership.user_id == user_id)
+        .subquery()
+    )
+
+    # Query for grants - include both direct user grants and team grants
     query = (
         select(PrimaryAssetRoleGrant, PrimaryAsset)
         .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
         .options(selectinload(PrimaryAsset.most_recent_version))
         .where(
-            PrimaryAssetRoleGrant.user_id == user_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
+            or_(
+                # Direct user grants
+                PrimaryAssetRoleGrant.user_id == user_id,
+                # Team grants where user is a member
+                PrimaryAssetRoleGrant.team_id.in_(select(user_teams_subq)),
+            ),
         )
     )
 
@@ -346,13 +359,25 @@ def count_user_sources(
     Returns:
         Count of matching sources
     """
+    # Subquery to get all team IDs that the user is a member of
+    user_teams_subq = (
+        select(TeamMembership.team_id)
+        .where(TeamMembership.user_id == user_id)
+        .subquery()
+    )
+
     query = (
         select(func.count())
         .select_from(PrimaryAssetRoleGrant)
         .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
         .where(
-            PrimaryAssetRoleGrant.user_id == user_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
+            or_(
+                # Direct user grants
+                PrimaryAssetRoleGrant.user_id == user_id,
+                # Team grants where user is a member
+                PrimaryAssetRoleGrant.team_id.in_(select(user_teams_subq)),
+            ),
         )
     )
 

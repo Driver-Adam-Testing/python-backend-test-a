@@ -301,9 +301,12 @@ def get_user_sources_with_details(
     Returns:
         List of dictionaries with 'grant' and 'asset' keys
     """
+    from sqlalchemy.orm import selectinload
+
     query = (
         select(PrimaryAssetRoleGrant, PrimaryAsset)
         .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        .options(selectinload(PrimaryAsset.most_recent_version))
         .where(
             PrimaryAssetRoleGrant.user_id == user_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,

@@ -525,6 +525,11 @@ class UserService:
         grant = data["grant"]
         asset = data["asset"]
 
+        # Compute is_browsable from most_recent_version
+        is_browsable = (
+            asset.most_recent_version.browsable if asset.most_recent_version else False
+        )
+
         return UserSourceResponse(
             id=str(asset.id),
             organization_id=asset.organization_id,
@@ -540,4 +545,5 @@ class UserService:
             role=grant.role,
             visibility="private",  # TODO: Add visibility field to PrimaryAssetRoleGrant
             user_id=user_id,
+            is_browsable=is_browsable,
         )

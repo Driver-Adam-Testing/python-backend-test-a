@@ -12,6 +12,7 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.schemas import ListWithCount
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_membership
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ def create_api_key(
     session: CurrentSession,
     user: UserToken,
 ) -> ApiKey:
+    enforce_org_membership(session, user)
     api_key = ApiKey(
         organization_id=user.organization_id,
         user_id=user.user_id,
@@ -38,6 +40,7 @@ def get_api_keys(
     pagination: Pagination,
     request: Request,
 ) -> ListWithCount[ApiKey]:
+    enforce_org_membership(session, user)
     query = (
         select(ApiKey)
         .where(ApiKey.user_id == user.user_id)
@@ -63,6 +66,7 @@ def delete_api_key(
     user: UserToken,
     api_key_id: UUID = Path(...),
 ) -> None:
+    enforce_org_membership(session, user)
     api_key = session.exec(
         select(ApiKey)
         .where(ApiKey.id == api_key_id)

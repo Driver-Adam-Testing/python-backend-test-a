@@ -17,6 +17,7 @@ from app.api.auth import M2MToken, UsageCreditPermission, UserToken
 from app.api.routes.v2.query_utils import Pagination
 from app.api.session import CurrentSession
 from app.core.config import settings
+from app.authorization.fastapi import enforce_super_admin
 
 router = APIRouter()
 
@@ -26,6 +27,7 @@ router = APIRouter()
     summary="Get Usage Balance Summary",
 )
 def get_usage_balance(session: CurrentSession, user: UserToken) -> UsageBalance:
+    enforce_super_admin(session, user)
     usage_service = UsageService(session)
     organization_id = user.organization_id
     usage_balance = usage_service.get_usage_balance(organization_id)
@@ -42,6 +44,7 @@ def get_usage_summary(
     start_date: datetime | None = Query(None),
     end_date: datetime | None = Query(None),
 ) -> UsageEventSummary:
+    enforce_super_admin(session, user)
     usage_service = UsageService(session)
     organization_id = user.organization_id
     usage_summary = usage_service.get_usage_summary(
@@ -57,6 +60,7 @@ def get_usage_summary(
 def get_charges(
     session: CurrentSession, user: UserToken, pagination: Pagination
 ) -> list[UsageCharge]:
+    enforce_super_admin(session, user)
     limit = pagination.limit
     offset = pagination.offset
     sort_direction = pagination.sort_direction
@@ -76,6 +80,7 @@ def credit_usage(
     current_token: M2MToken,
     credit_usage_event: CreditUsageEvent,
 ) -> JSONResponse:
+    # TODO - fix M2M token validation. This should not be callable by customers. It is currently broken.
     if current_token is None:
         raise HTTPException(403, "Forbidden")
 

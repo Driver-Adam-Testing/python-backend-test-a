@@ -11,6 +11,7 @@ from database.models import (
     User,
 )
 from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, or_, select
 
 
@@ -301,7 +302,6 @@ def get_user_sources_with_details(
     Returns:
         List of dictionaries with 'grant' and 'asset' keys
     """
-    from sqlalchemy.orm import selectinload
 
     # Subquery to get all team IDs that the user is a member of
     user_teams_subq = (
@@ -522,7 +522,6 @@ def count_organization_super_admins(
     Returns:
         Count of super_admin users
     """
-    from database.models_enums import OrgRole
 
     query = (
         select(func.count())

@@ -11,6 +11,7 @@ from database.models import (
     User,
 )
 from database.models_enums import PrimaryAssetRole, PrincipalKind
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, select
 
 
@@ -86,7 +87,6 @@ def get_team_sources_with_details(
     Returns:
         List of dictionaries with 'grant' and 'asset' keys
     """
-    from sqlalchemy.orm import selectinload
 
     query = (
         select(PrimaryAssetRoleGrant, PrimaryAsset)

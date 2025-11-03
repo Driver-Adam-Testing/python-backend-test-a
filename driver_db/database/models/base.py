@@ -609,6 +609,13 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "overlaps": "most_recent_version, most_recent_completed_version",
         },
     )
+    nodes: list["Node"] = Relationship(
+        back_populates="primary_asset",
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "cascade": "all, delete-orphan",
+        },
+    )
     tags: list["Tag"] = Relationship(
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "primary_asset_tag"},
@@ -702,6 +709,13 @@ class Version(SQLModel, table=True):  # type: ignore
             "order_by": "desc(InspectorRun.updated_at)",
         },
     )
+    version_nodes: list["VersionNode"] = Relationship(
+        back_populates="version",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
+    )
 
     @property
     def browsable(self) -> bool:
@@ -713,12 +727,51 @@ class Version(SQLModel, table=True):  # type: ignore
         }
 
 
+class VersionNode(SQLModel, table=True):
+    __tablename__ = "version_node"
+    version_id: uuid.UUID = Field(
+        foreign_key="version.id", primary_key=True, ondelete="CASCADE", index=True
+    )
+    # Relative path here since Node represents just the raw content in the file
+    relative_path: str = Field(primary_key=True, index=True)
+    # Not 100% needed, but enforces the dedupe boundary at the PrimaryAsset leve
+    primary_asset_id: uuid.UUID = Field(
+        foreign_key="primary_asset.id", nullable=False
+    )  # Needed?
+    # If a duplicate file (same content hash) exists in a codebase, we would point to the same node, hence this isn't a PK or unique constraint
+    node_content_id: uuid.UUID = Field(foreign_key="node.id", nullable=False)
+    # Depth here instead of the node since the same node can be at different depths in different commits
+    depth: int = Field(
+        sa_column=Column(
+            Integer,
+            Computed(
+                "length(trim(trailing '/' from relative_path)) - length(replace(trim(trailing '/' from relative_path), '/', ''))",
+                persisted=True,
+            ),
+            index=True,
+        )
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+        default=None,
+    )
+    version: "Version" = Relationship(back_populates="version_nodes")
+
+
 class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "node"
     __table_args__ = (
-        Index(
-            "ix_version_id_relative_path", "version_id", "relative_path", unique=True
-        ),
         # Index for root_node on a version
         Index(
             "idx_node_version_id_relative_path_length",
@@ -733,7 +786,14 @@ class Node(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    content_hash: str | None
     kind: NodeKind
+    primary_asset_id: UUID = Field(
+        foreign_key="primary_asset.id",
+        ondelete="CASCADE",
+        nullable=True,  # TODO: change after initial migration
+        index=True,
+    )
     version_id: UUID = Field(
         foreign_key="version.id",
         ondelete="CASCADE",
@@ -780,6 +840,7 @@ class Node(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
+    primary_asset: "PrimaryAsset" = Relationship(back_populates="nodes")
     version: "Version" = Relationship(back_populates="nodes")
     contents: list["DerivedContent"] = Relationship(
         back_populates="node",

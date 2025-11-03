@@ -6,7 +6,7 @@ from uuid import UUID
 
 import strawberry
 from app.api.routes.legacy.s3 import S3BucketAccess
-from database.models import DerivedContent, Node, PrimaryAsset, Version
+from database.models import DerivedContent, Node, PrimaryAsset, Version, VersionNode
 from database.models_enums import ContentKind, NodeKind
 from fastapi import HTTPException
 from sqlalchemy.orm import selectinload
@@ -143,13 +143,13 @@ def fetch_code_metadata(node: Node) -> CodeMetadata | None:
     )
 
 
-def fetch_code_content_from_s3(node: Node) -> str:
+def fetch_code_content_from_s3(node: Node, version: Version, relative_path: str) -> str:
     s3_access = S3BucketAccess(
-        organization_id=node.version.primary_asset.organization_id,
-        primary_asset_id=node.version.primary_asset_id,
-        version_id=node.version_id,
+        organization_id=version.primary_asset.organization_id,
+        primary_asset_id=version.primary_asset_id,
+        version_id=version.id,
     )
-    return s3_access.get_file_content(relative_path=node.relative_path)
+    return s3_access.get_file_content(relative_path=relative_path)
 
 
 def get_document_set(
@@ -193,15 +193,26 @@ def get_document_set(
     if not version:
         raise HTTPException(status_code=400, detail="No version found")
 
-    # Find the node
+    # Find the node via VersionNode
+    version_node = session.exec(
+        select(VersionNode).where(
+            VersionNode.version_id == version.id,
+            VersionNode.relative_path == relative_path,
+        )
+    ).one_or_none()
+
+    if not version_node:
+        raise HTTPException(status_code=400, detail="No node found for given path")
+
+    # Get the actual node content
     node = session.exec(
         select(Node)
-        .where(Node.version_id == version.id, Node.relative_path == relative_path)
+        .where(Node.id == version_node.node_content_id)
         .options(selectinload(Node.version).selectinload(Version.primary_asset))
     ).one_or_none()
 
     if not node:
-        raise HTTPException(status_code=400, detail="No node found for given path")
+        raise HTTPException(status_code=400, detail="Node content not found")
 
     docs = session.exec(
         select(DerivedContent).where(DerivedContent.node_id == node.id)
@@ -315,10 +326,10 @@ def get_document_set(
         code_metadata = fetch_code_metadata(node)
         code_content = None
         if fetch_code_content:
-            code_content = fetch_code_content_from_s3(node)
+            code_content = fetch_code_content_from_s3(node, version, relative_path)
         document_set.code = Code(  # type: ignore
-            file_name=node.relative_path.split("/")[-1],
-            extension=node.relative_path.split(".")[-1],
+            file_name=relative_path.split("/")[-1],
+            extension=relative_path.split(".")[-1],
             content=code_content,
             metadata=code_metadata,
         )

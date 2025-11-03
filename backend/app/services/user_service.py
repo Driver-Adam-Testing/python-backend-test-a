@@ -522,8 +522,13 @@ class UserService:
         self, data: dict, user_id: str
     ) -> UserSourceResponse:
         """Build UserSourceResponse from repository data."""
-        grant = data["grant"]
+        role = data["role"]
         asset = data["asset"]
+
+        # Compute is_browsable from most_recent_version
+        is_browsable = (
+            asset.most_recent_version.browsable if asset.most_recent_version else False
+        )
 
         return UserSourceResponse(
             id=str(asset.id),
@@ -537,7 +542,8 @@ class UserService:
             ),
             created_at=asset.created_at.isoformat(),
             updated_at=asset.updated_at.isoformat(),
-            role=grant.role,
+            role=PrimaryAssetRole(role),
             visibility="private",  # TODO: Add visibility field to PrimaryAssetRoleGrant
             user_id=user_id,
+            is_browsable=is_browsable,
         )

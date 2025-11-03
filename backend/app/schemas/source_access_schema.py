@@ -140,6 +140,9 @@ class TeamSourceResponse(BaseModel):
         ..., description="Source visibility: private, internal, or public"
     )
     team_id: UUID = Field(..., description="Team ID")
+    is_browsable: bool = Field(
+        ..., description="Whether the source is browsable (has a completed version)"
+    )
 
     class Config:
         from_attributes = True

@@ -2,6 +2,10 @@
 
 from uuid import UUID
 
+from app.authorization.query_filters import (
+    effective_asset_role_expr,
+    primary_asset_grant_filter,
+)
 from database.models import (
     OrgMembership,
     PrimaryAsset,
@@ -10,7 +14,8 @@ from database.models import (
     TeamMembership,
     User,
 )
-from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
+from database.models_enums import OrgRole, PrimaryAssetKind, PrimaryAssetRole, TeamRole
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, or_, select
 
 
@@ -301,12 +306,17 @@ def get_user_sources_with_details(
     Returns:
         List of dictionaries with 'grant' and 'asset' keys
     """
+    # Query for grants - include both direct user grants and team grants
+    role_expr = effective_asset_role_expr(
+        session, user_id, organization_id, PrimaryAsset.id
+    )
     query = (
-        select(PrimaryAssetRoleGrant, PrimaryAsset)
-        .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        select(PrimaryAsset, role_expr.label("effective_role"))
+        .options(selectinload(PrimaryAsset.most_recent_version))
+        .where(PrimaryAsset.organization_id == organization_id)
         .where(
-            PrimaryAssetRoleGrant.user_id == user_id,
-            PrimaryAssetRoleGrant.organization_id == organization_id,
+            primary_asset_grant_filter(session, user_id, organization_id),
+            PrimaryAsset.kind != PrimaryAssetKind.PAGE,
         )
     )
 
@@ -320,7 +330,7 @@ def get_user_sources_with_details(
 
     results = session.exec(query).all()
 
-    return [{"grant": grant, "asset": asset} for grant, asset in results]
+    return [{"role": role, "asset": asset} for asset, role in results]
 
 
 def count_user_sources(
@@ -345,11 +355,11 @@ def count_user_sources(
     """
     query = (
         select(func.count())
-        .select_from(PrimaryAssetRoleGrant)
-        .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        .select_from(PrimaryAsset)
+        .where(PrimaryAsset.organization_id == organization_id)
         .where(
-            PrimaryAssetRoleGrant.user_id == user_id,
-            PrimaryAssetRoleGrant.organization_id == organization_id,
+            primary_asset_grant_filter(session, user_id, organization_id),
+            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 
@@ -494,7 +504,6 @@ def count_organization_super_admins(
     Returns:
         Count of super_admin users
     """
-    from database.models_enums import OrgRole
 
     query = (
         select(func.count())

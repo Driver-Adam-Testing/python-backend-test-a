@@ -2,7 +2,10 @@
 
 from uuid import UUID
 
-from app.authorization.query_filters import primary_asset_grant_filter
+from app.authorization.query_filters import (
+    effective_asset_role_expr,
+    primary_asset_grant_filter,
+)
 from database.models import (
     OrgMembership,
     PrimaryAsset,
@@ -304,9 +307,11 @@ def get_user_sources_with_details(
         List of dictionaries with 'grant' and 'asset' keys
     """
     # Query for grants - include both direct user grants and team grants
+    role_expr = effective_asset_role_expr(
+        session, user_id, organization_id, PrimaryAsset.id
+    )
     query = (
-        select(PrimaryAsset)
-        .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        select(PrimaryAsset, role_expr.label("effective_role"))
         .options(selectinload(PrimaryAsset.most_recent_version))
         .where(PrimaryAsset.organization_id == organization_id)
         .where(
@@ -325,7 +330,7 @@ def get_user_sources_with_details(
 
     results = session.exec(query).all()
 
-    return [{"asset": asset} for asset in results]
+    return [{"role": role, "asset": asset} for asset, role in results]
 
 
 def count_user_sources(

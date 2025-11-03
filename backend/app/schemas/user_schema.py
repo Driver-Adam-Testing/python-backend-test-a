@@ -145,9 +145,7 @@ class UserSourceResponse(BaseModel):
     provider: str | None = Field(None, description="Provider: GITHUB, GITLAB, etc.")
     created_at: str = Field(..., description="ISO datetime when asset was created")
     updated_at: str = Field(..., description="ISO datetime when asset was updated")
-    role: PrimaryAssetRole | None = Field(
-        ..., description="User's role for this source"
-    )
+    role: PrimaryAssetRole = Field(..., description="User's role for this source")
     visibility: str = Field(..., description="Visibility: private, internal, or public")
     user_id: str = Field(..., description="User ID")
     is_browsable: bool = Field(

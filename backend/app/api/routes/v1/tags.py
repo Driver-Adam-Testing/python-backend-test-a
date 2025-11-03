@@ -18,6 +18,7 @@ from app.schemas.tag_schema import (
     TagType,
 )
 from app.services.tag_service import TagService
+from app.authorization.fastapi import enforce_org_membership
 
 router = APIRouter()
 
@@ -34,6 +35,7 @@ def new_tag(
     user: UserToken,
     new_tag: NewTagInput,
 ) -> Tag:
+    enforce_org_membership(session, user)
     logging.info("Creating new tag")
     tag_service = TagService(session)
     return tag_service.create_tag(user=user, lt_input=new_tag)
@@ -48,6 +50,7 @@ def read_tags(
     name: str | None = None,
     type: TagType | None = None,
 ) -> ListTagsResults:
+    enforce_org_membership(session, user)
     tag_service = TagService(session)
     return tag_service.list_tags(
         user=user,
@@ -65,6 +68,7 @@ def update_tag(
     tag_id: str,
     updated_tag: EditTagInput,
 ) -> Tag:
+    enforce_org_membership(session, user)
     """Update a tag. All users in an organization can edit all tags in the organization currently."""
     tag_service = TagService(session)
     return tag_service.edit_tag(user=user, tag_id=tag_id, lt_input=updated_tag)
@@ -84,6 +88,7 @@ def read_tag_contents(
     offset: int | None = 0,
     latest_version_only: bool = False,
 ) -> ListTagContentsResults:
+    enforce_org_membership(session, user)
     tag_service = TagService(session)
     return tag_service.list_tag_contents(
         user=user,
@@ -108,6 +113,7 @@ def delete_tag(
     tag_id: UUID,
 ) -> None:
     """Delete a tag by its ID."""
+    enforce_org_membership(session, user)
     tag_service = TagService(session)
     try:
         tag_service.delete_tag(user=user, tag_id=tag_id)

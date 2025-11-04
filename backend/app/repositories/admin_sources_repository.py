@@ -166,8 +166,8 @@ def get_sources_with_counts(
     return [
         {
             "asset": row[0],
-            "members_count": row[1],
-            "teams_count": row[2],
+            "members_count": row[2],
+            "teams_count": row[3],
         }
         for row in results
     ]

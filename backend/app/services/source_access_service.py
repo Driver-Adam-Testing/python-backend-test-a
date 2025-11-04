@@ -50,6 +50,11 @@ def grant_to_team_source_response(
     Returns:
         TeamSourceResponse object
     """
+    # Compute is_browsable from most_recent_version
+    is_browsable = (
+        asset.most_recent_version.browsable if asset.most_recent_version else False
+    )
+
     return TeamSourceResponse(
         id=str(asset.id),
         organization_id=asset.organization_id,
@@ -61,6 +66,7 @@ def grant_to_team_source_response(
         role=grant.role,
         visibility="private",  # TODO: Use actual visibility when field is added
         team_id=grant.team_id,
+        is_browsable=is_browsable,
     )
 
 

@@ -148,6 +148,9 @@ class UserSourceResponse(BaseModel):
     role: PrimaryAssetRole = Field(..., description="User's role for this source")
     visibility: str = Field(..., description="Visibility: private, internal, or public")
     user_id: str = Field(..., description="User ID")
+    is_browsable: bool = Field(
+        ..., description="Whether the source is browsable (has a completed version)"
+    )
 
     class Config:
         from_attributes = True

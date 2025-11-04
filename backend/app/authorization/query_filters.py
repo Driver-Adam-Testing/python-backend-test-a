@@ -15,11 +15,9 @@ from database.models import (
     PrimaryAssetRoleGrant,
     Version,
 )
-
-from database.models_enums import PrimaryAssetRole
+from database.models_enums import PrimaryAssetKind, PrimaryAssetRole
 from sqlalchemy import and_, case, literal
 from sqlalchemy.orm import aliased
-
 from sqlmodel import Session, select
 
 from .helpers import (

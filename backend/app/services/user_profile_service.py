@@ -63,7 +63,7 @@ class UserProfileService:
             email=db_user.email or "",
             name=db_user.name or "",
             organization_id=organization_id,
-            org_role=str(org_membership.role.value),
+            org_role=org_membership.role,
             entitlements=None,
             team_admin=is_team_admin,
             source_admin=is_source_admin,

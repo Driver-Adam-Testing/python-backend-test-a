@@ -28,6 +28,7 @@ from .helpers import (
     is_org_member,
     is_super_admin,
 )
+from .query_filters import primary_asset_grant_filter
 
 logger = logging.getLogger(__name__)
 
@@ -242,28 +243,29 @@ def check_source_admin(db: Session, user_id: str, organization_id: str) -> bool:
 
     Returns True if user has an effective asset_admin role on at least one asset.
     This includes:
-    - Super admins (who have admin on all assets)
+    - Super admins (who have admin on all assets, even if no assets exist)
     - Assets with admin grants via public, org, user, or team principals
+
+    Uses primary_asset_grant_filter to check if any asset exists with admin access.
     """
-    # Super admins have admin on all assets
+    # Super admins always have source_admin access
     if is_super_admin(db, user_id, organization_id):
         return True
 
-    team_ids = get_user_team_ids(db, user_id, organization_id)
-    is_member = is_org_member(db, user_id, organization_id)
+    # Check if there exists any asset where user has admin access
+    admin_filter = primary_asset_grant_filter(
+        db, user_id, organization_id, role=PrimaryAssetRole.asset_admin
+    )
 
-    grant_condition = build_grant_condition(user_id, team_ids, is_member)
-
-    # Check if there exists at least one asset with an admin grant
     query = (
-        select(PrimaryAssetRoleGrant)
+        select(PrimaryAsset)
         .where(
-            PrimaryAssetRoleGrant.organization_id == organization_id,
-            PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin,
-            grant_condition,
+            PrimaryAsset.organization_id == organization_id,
+            admin_filter,
         )
         .limit(1)
     )
+
     result = db.exec(query).first()
     return result is not None
 

@@ -101,7 +101,12 @@ def effective_asset_role_expr(
     )
 
 
-def primary_asset_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:
+def primary_asset_grant_filter(
+    db: Session,
+    user_id: str,
+    organization_id: str,
+    role: PrimaryAssetRole | None = None,
+) -> Any:
     """
     Filter for PrimaryAssets where user has a grant.
 
@@ -123,6 +128,12 @@ def primary_asset_grant_filter(db: Session, user_id: str, organization_id: str) 
             primary_asset_grant_filter(db, user_id, org_id)
         )
 
+        # Filter for admin access only
+        query = select(PrimaryAsset).where(
+            PrimaryAsset.organization_id == org_id,
+            primary_asset_grant_filter(db, user_id, org_id, role=PrimaryAssetRole.asset_admin)
+        )
+
         # With effective role
         role_expr = effective_asset_role_expr(db, user_id, org_id, PrimaryAsset.id)
         query = select(PrimaryAsset, role_expr.label("effective_role")).where(
@@ -134,6 +145,7 @@ def primary_asset_grant_filter(db: Session, user_id: str, organization_id: str) 
         db: Database session
         user_id: UUID of the user
         organization_id: Organization ID
+        role: Optional role filter (e.g., PrimaryAssetRole.asset_admin)
 
     Returns:
         SQLAlchemy filter condition, or True if user is super admin
@@ -146,15 +158,16 @@ def primary_asset_grant_filter(db: Session, user_id: str, organization_id: str) 
 
     grant_condition = build_grant_condition(user_id, team_ids, is_member)
 
-    return (
-        select(PrimaryAssetRoleGrant)
-        .where(
-            PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id,
-            PrimaryAssetRoleGrant.organization_id == organization_id,
-            grant_condition,
-        )
-        .exists()
-    )
+    conditions = [
+        PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id,
+        PrimaryAssetRoleGrant.organization_id == organization_id,
+        grant_condition,
+    ]
+
+    if role is not None:
+        conditions.append(PrimaryAssetRoleGrant.role == role)
+
+    return select(PrimaryAssetRoleGrant).where(*conditions).exists()
 
 
 def content_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:

@@ -37,13 +37,6 @@ def get_admin_sources(
         pattern="^(ASC|DESC)$",
     ),
 ) -> AdminSourcesResponse:
-    """
-    Get paginated list of sources for admin management.
-
-    Returns only sources where the user has effective admin role.
-    Excludes Pages from results (only returns Codebases and PDFs).
-    Supports filtering by search term, asset kind, and tags.
-    """
     enforce_any_source_admin(session, user)
     logger.info(
         f"User {user.user_id} getting admin sources "

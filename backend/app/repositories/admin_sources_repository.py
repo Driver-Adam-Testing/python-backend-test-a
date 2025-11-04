@@ -50,7 +50,6 @@ def get_sources_with_counts(
     Returns:
         List of dicts with asset, members_count, and teams_count
     """
-    # Subquery for member counts (user grants)
     members_count_subquery = (
         select(
             PrimaryAssetRoleGrant.primary_asset_id,
@@ -66,7 +65,6 @@ def get_sources_with_counts(
         .subquery()
     )
 
-    # Subquery for team counts
     teams_count_subquery = (
         select(
             PrimaryAssetRoleGrant.primary_asset_id,
@@ -81,8 +79,7 @@ def get_sources_with_counts(
         .group_by(PrimaryAssetRoleGrant.primary_asset_id)
         .subquery()
     )
-    # Main query - filter for sources where user has effective admin role
-    # Exclude Pages (only return Codebases and PDFs)
+
     role_expr = effective_asset_role_expr(
         session, user_id, organization_id, PrimaryAsset.id
     )
@@ -105,25 +102,20 @@ def get_sources_with_counts(
         )
         .where(
             PrimaryAsset.organization_id == organization_id,
-            # Filter for assets where user has effective admin role
             primary_asset_grant_filter(
                 session, user_id, organization_id, role=PrimaryAssetRole.asset_admin
             ),
-            # Exclude Pages (only Codebases and PDFs)
             exclude_page_assets_filter(),
         )
     )
 
-    # Apply search filter
     if search:
         search_pattern = f"%{search}%"
         query = query.where(PrimaryAsset.display_name.ilike(search_pattern))
 
-    # Apply kind filter
     if kinds:
         query = query.where(PrimaryAsset.kind.in_(kinds))
 
-    # Apply tag filter
     if tag_ids:
         tag_uuids = [UUID(tag_id) for tag_id in tag_ids]
         query = (
@@ -135,17 +127,13 @@ def get_sources_with_counts(
             .distinct()
         )
 
-    # Apply sorting
     sort_column = getattr(PrimaryAsset, sort_by, PrimaryAsset.updated_at)
     if sort_direction.upper() == "ASC":
         query = query.order_by(sort_column.asc())
     else:
         query = query.order_by(sort_column.desc())
 
-    # Apply pagination
     query = query.offset(offset).limit(limit)
-
-    # Execute and build results
     results = session.exec(query).all()
 
     return [
@@ -188,25 +176,20 @@ def count_sources(
         .select_from(PrimaryAsset)
         .where(
             PrimaryAsset.organization_id == organization_id,
-            # Filter for assets where user has effective admin role
             primary_asset_grant_filter(
                 session, user_id, organization_id, role=PrimaryAssetRole.asset_admin
             ),
-            # Exclude Pages (only Codebases and PDFs)
             exclude_page_assets_filter(),
         )
     )
 
-    # Apply search filter
     if search:
         search_pattern = f"%{search}%"
         query = query.where(PrimaryAsset.display_name.ilike(search_pattern))
 
-    # Apply kind filter
     if kinds:
         query = query.where(PrimaryAsset.kind.in_(kinds))
 
-    # Apply tag filter
     if tag_ids:
         tag_uuids = [UUID(tag_id) for tag_id in tag_ids]
         query = (

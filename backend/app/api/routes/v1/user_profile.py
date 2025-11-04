@@ -6,6 +6,7 @@ from fastapi import APIRouter, status
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_membership
 from app.schemas.user_profile_schema import MeResponse
 from app.services.user_profile_service import UserProfileService
 
@@ -37,6 +38,8 @@ def get_me(
     - team_admin: True if user is admin of ANY team
     - source_admin: True if user has effective admin role on ANY asset
     """
+    enforce_org_membership(session, user)
+
     logger.info(f"User {user.user_id} fetching their profile")
     service = UserProfileService(session)
     return service.get_current_user_profile(user)

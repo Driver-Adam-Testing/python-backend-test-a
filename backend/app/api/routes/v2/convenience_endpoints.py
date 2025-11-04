@@ -26,7 +26,7 @@ from app.api.routes.v2.schemas import (
     DerivedContentUpdate,
 )
 from app.api.session import CurrentSession
-from app.authorization.fastapi import enforce_asset_action
+from app.authorization.fastapi import enforce_asset_action, enforce_org_membership
 
 
 @router.put("/edit_page/{node_id}", response_model=None)
@@ -100,6 +100,8 @@ def edit_page_CONVENIENCE_METHOD(
 
 @router.post("/new_page", response_model=ContentDetailRead)
 def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
+    enforce_org_membership(session, user)
+
     # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
     existing_assets = session.exec(
         select(PrimaryAsset).where(

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__driver-mcp-local",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(poetry lock:*)",
+      "mcp__driver-mcp__get_llm_onboarding_guide",
+      "Bash(poetry run python -m pytest:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "driver-mcp-dev",
+    "driver-mcp-local",
+    "driver-mcp-staging"
+  ]
+}

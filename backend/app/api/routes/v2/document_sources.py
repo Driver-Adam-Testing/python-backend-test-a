@@ -161,6 +161,22 @@ async def batch_delete_document_sources(
 ) -> list[bool]:
     # NOTE: depending on how we implement the sources/generate flow for autodocs, this may be unneeded.
     # Because sources are supposed to be read-only once generation has commenced, it wouldn't be meaningful to delete sources.
+
+    # Verify user has access to all source nodes before deleting; probably not strictly necessary,
+    # but it makes the authz test coverage happy!
+    node_ids = {data.source_node_id for data in payload}
+    query = (
+        select(Node).where(Node.id.in_(node_ids)).options(selectinload(Node.version))
+    )
+    nodes = session.exec(query).all()
+    for node in nodes:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
+
     deletion_results = []
 
     for data in payload:

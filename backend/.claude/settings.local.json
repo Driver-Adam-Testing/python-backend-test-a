@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/andrewmark/projects/driver-ai-app/**)",
+      "WebFetch(domain:gofastmcp.com)",
+      "Bash(poetry run pytest:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

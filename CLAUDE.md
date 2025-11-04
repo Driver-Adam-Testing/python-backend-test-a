@@ -35,3 +35,11 @@
 
 ### 7. Misc
 - For all application-critical network requests, use a retry mechanism, such as retry_with_exponential_backoff with appropriate parameters. Use discresion.
+
+## Development Workflow
+
+### Running Python Commands
+- **Always use Poetry** to run Python commands in the backend
+- Use `cd backend && poetry run python -m pytest ...` instead of `python -m pytest ...`
+- Use `cd backend && poetry run python ...` instead of `python ...`
+- This ensures you're using the correct virtual environment with all dependencies

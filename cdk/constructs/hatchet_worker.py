@@ -107,7 +107,7 @@ class HatchetWorker(Construct):
             secrets=secrets_map,
             logging=aws_ecs.LogDrivers.aws_logs(
                 stream_prefix="python-worker",
-                log_retention=aws_logs.RetentionDays.ONE_WEEK,
+                log_retention=aws_logs.RetentionDays.ONE_YEAR,
             ),
         )
         # Optional: a port for metrics/debugging

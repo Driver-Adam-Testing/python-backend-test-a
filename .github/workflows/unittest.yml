@@ -39,6 +39,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           PROJECT_NAME: unittest
+          OPENAI_API_KEY: fake
         run: poetry run pytest -m unit
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4

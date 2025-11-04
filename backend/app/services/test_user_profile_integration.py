@@ -175,7 +175,8 @@ class TestUserProfileIntegration:
         # Assertions
         assert profile.org_role == "super_admin"
         assert profile.team_admin is False
-        assert profile.source_admin is False
+        # Super admins have effective admin role on all assets
+        assert profile.source_admin is True
 
     def test_get_current_user_profile_with_all_roles(
         self, integration_db_session: Session

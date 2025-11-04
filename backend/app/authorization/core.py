@@ -1,8 +1,10 @@
 """Action-based authorization with entitlement checks."""
 
-import uuid, logging
+import logging
+import uuid
 from dataclasses import dataclass
 
+from app.api.auth import UserToken
 from database.models import (
     OrgMembership,
     PrimaryAsset,
@@ -16,12 +18,9 @@ from database.models import (
 from database.models_enums import (
     OrgRole,
     PrimaryAssetRole,
-    PrincipalKind,
     TeamRole,
 )
-from sqlmodel import Session, or_, select
-
-from app.api.auth import UserToken
+from sqlmodel import Session, select
 
 from .helpers import (
     build_grant_condition,
@@ -29,8 +28,10 @@ from .helpers import (
     is_org_member,
     is_super_admin,
 )
+from .query_filters import primary_asset_grant_filter
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class AuthContext:
@@ -215,6 +216,7 @@ def _role_allows_team_action(db: Session, role: TeamRole, action_key: str) -> bo
     )
     return db.exec(query).first() is not None
 
+
 def check_team_admin(db: Session, user_id: str, organization_id: str) -> bool:
     """
     Check if user is admin of ANY team in the organization.
@@ -227,38 +229,43 @@ def check_team_admin(db: Session, user_id: str, organization_id: str) -> bool:
         .where(
             TeamMembership.user_id == user_id,
             TeamMembership.role == TeamRole.team_admin,
-            Team.organization_id == organization_id
+            Team.organization_id == organization_id,
         )
         .limit(1)
     )
     result = db.exec(query).first()
     return result is not None
 
+
 def check_source_admin(db: Session, user_id: str, organization_id: str) -> bool:
     """
-    Check if user has admin role for ANY source (direct grant or team grant).
+    Check if user has effective admin role for ANY asset.
 
-    Returns True if user has PrimaryAssetRole.asset_admin for at least one source
-    through either:
-    - Direct grant (principal_kind='user' and user_id matches)
-    - Team grant (principal_kind='team' and user is member of that team)
+    Returns True if user has an effective asset_admin role on at least one asset.
+    This includes:
+    - Super admins (who have admin on all assets, even if no assets exist)
+    - Assets with admin grants via public, org, user, or team principals
+
+    Uses primary_asset_grant_filter to check if any asset exists with admin access.
     """
-    user_teams_query = select(TeamMembership.team_id).where(
-        TeamMembership.user_id == user_id
+    # Super admins always have source_admin access
+    if is_super_admin(db, user_id, organization_id):
+        return True
+
+    # Check if there exists any asset where user has admin access
+    admin_filter = primary_asset_grant_filter(
+        db, user_id, organization_id, role=PrimaryAssetRole.asset_admin
     )
 
     query = (
-        select(PrimaryAssetRoleGrant)
+        select(PrimaryAsset)
         .where(
-            PrimaryAssetRoleGrant.organization_id == organization_id,
-            PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin,
-            or_(
-                (PrimaryAssetRoleGrant.user_id == user_id),
-                (PrimaryAssetRoleGrant.team_id.in_(user_teams_query)),
-            ),
+            PrimaryAsset.organization_id == organization_id,
+            admin_filter,
         )
         .limit(1)
     )
+
     result = db.exec(query).first()
     return result is not None
 
@@ -278,7 +285,11 @@ def authorize_asset_action(
         decision = AccessDecision(False, None, ["asset_not_found_or_wrong_org"], [])
         logger.warning(
             "Asset action denied: user_id=%s, org_id=%s, asset_id=%s, action=%s, reasons=%s",
-            ctx.user_id, ctx.organization_id, asset_id, action_key, decision.reasons
+            ctx.user_id,
+            ctx.organization_id,
+            asset_id,
+            action_key,
+            decision.reasons,
         )
         return decision
 
@@ -289,24 +300,41 @@ def authorize_asset_action(
         )
         logger.info(
             "Asset action allowed: user_id=%s, org_id=%s, asset_id=%s, action=%s, role=%s, reasons=%s",
-            ctx.user_id, ctx.organization_id, asset_id, action_key, decision.role, decision.reasons
+            ctx.user_id,
+            ctx.organization_id,
+            asset_id,
+            action_key,
+            decision.role,
+            decision.reasons,
         )
         return decision
 
     # Check role-based access
     role = _effective_asset_role(ctx.db, ctx.organization_id, asset_id, ctx.user_id)
     if _role_allows_asset_action(ctx.db, role, action_key):
-        decision = AccessDecision(True, role.value if role else None, ["role_allows"], [])
+        decision = AccessDecision(
+            True, role.value if role else None, ["role_allows"], []
+        )
         logger.info(
             "Asset action allowed: user_id=%s, org_id=%s, asset_id=%s, action=%s, role=%s, reasons=%s",
-            ctx.user_id, ctx.organization_id, asset_id, action_key, decision.role, decision.reasons
+            ctx.user_id,
+            ctx.organization_id,
+            asset_id,
+            action_key,
+            decision.role,
+            decision.reasons,
         )
         return decision
 
     decision = AccessDecision(False, role.value if role else None, ["role_denied"], [])
     logger.warning(
         "Asset action denied: user_id=%s, org_id=%s, asset_id=%s, action=%s, role=%s, reasons=%s",
-        ctx.user_id, ctx.organization_id, asset_id, action_key, decision.role, decision.reasons
+        ctx.user_id,
+        ctx.organization_id,
+        asset_id,
+        action_key,
+        decision.role,
+        decision.reasons,
     )
     return decision
 
@@ -325,7 +353,11 @@ def authorize_org_action(ctx: AuthContext, action_key: str) -> AccessDecision:
         )
         logger.info(
             "Org action allowed: user_id=%s, org_id=%s, action=%s, role=%s, reasons=%s",
-            ctx.user_id, ctx.organization_id, action_key, decision.role, decision.reasons
+            ctx.user_id,
+            ctx.organization_id,
+            action_key,
+            decision.role,
+            decision.reasons,
         )
         return decision
 
@@ -335,7 +367,11 @@ def authorize_org_action(ctx: AuthContext, action_key: str) -> AccessDecision:
         decision = AccessDecision(True, role.value, ["role_allows"], [])
         logger.info(
             "Org action allowed: user_id=%s, org_id=%s, action=%s, role=%s, reasons=%s",
-            ctx.user_id, ctx.organization_id, action_key, decision.role, decision.reasons
+            ctx.user_id,
+            ctx.organization_id,
+            action_key,
+            decision.role,
+            decision.reasons,
         )
         return decision
 
@@ -347,7 +383,11 @@ def authorize_org_action(ctx: AuthContext, action_key: str) -> AccessDecision:
     )
     logger.warning(
         "Org action denied: user_id=%s, org_id=%s, action=%s, role=%s, reasons=%s",
-        ctx.user_id, ctx.organization_id, action_key, decision.role, decision.reasons
+        ctx.user_id,
+        ctx.organization_id,
+        action_key,
+        decision.role,
+        decision.reasons,
     )
     return decision
 
@@ -368,7 +408,12 @@ def authorize_team_action(
         )
         logger.info(
             "Team action allowed: user_id=%s, org_id=%s, team_id=%s, action=%s, role=%s, reasons=%s",
-            ctx.user_id, ctx.organization_id, team_id, action_key, decision.role, decision.reasons
+            ctx.user_id,
+            ctx.organization_id,
+            team_id,
+            action_key,
+            decision.role,
+            decision.reasons,
         )
         return decision
 
@@ -377,7 +422,12 @@ def authorize_team_action(
         decision = AccessDecision(True, role.value, ["role_allows"], [])
         logger.info(
             "Team action allowed: user_id=%s, org_id=%s, team_id=%s, action=%s, role=%s, reasons=%s",
-            ctx.user_id, ctx.organization_id, team_id, action_key, decision.role, decision.reasons
+            ctx.user_id,
+            ctx.organization_id,
+            team_id,
+            action_key,
+            decision.role,
+            decision.reasons,
         )
         return decision
 
@@ -389,23 +439,35 @@ def authorize_team_action(
     )
     logger.warning(
         "Team action denied: user_id=%s, org_id=%s, team_id=%s, action=%s, role=%s, reasons=%s",
-        ctx.user_id, ctx.organization_id, team_id, action_key, decision.role, decision.reasons
+        ctx.user_id,
+        ctx.organization_id,
+        team_id,
+        action_key,
+        decision.role,
+        decision.reasons,
     )
     return decision
 
 
 def authorize_super_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
     if is_super_admin(ctx.db, user.user_id, user.organization_id):
-        decision = AccessDecision(True, OrgRole.org_super_admin.value, ["org_super_admin"], [])
+        decision = AccessDecision(
+            True, OrgRole.org_super_admin.value, ["org_super_admin"], []
+        )
         logger.info(
             "Super admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
-            user.user_id, user.organization_id, decision.role, decision.reasons
+            user.user_id,
+            user.organization_id,
+            decision.role,
+            decision.reasons,
         )
         return decision
     decision = AccessDecision(False, None, ["not_super_admin"], [])
     logger.warning(
         "Super admin check denied: user_id=%s, org_id=%s, reasons=%s",
-        user.user_id, user.organization_id, decision.reasons
+        user.user_id,
+        user.organization_id,
+        decision.reasons,
     )
     return decision
 
@@ -415,15 +477,21 @@ def authorize_org_member(ctx: AuthContext, user: UserToken) -> AccessDecision:
         decision = AccessDecision(True, OrgRole.org_member.value, ["org_member"], [])
         logger.info(
             "Org member check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
-            user.user_id, user.organization_id, decision.role, decision.reasons
+            user.user_id,
+            user.organization_id,
+            decision.role,
+            decision.reasons,
         )
         return decision
     decision = AccessDecision(False, None, ["not_org_member"], [])
     logger.warning(
         "Org member check denied: user_id=%s, org_id=%s, reasons=%s",
-        user.user_id, user.organization_id, decision.reasons
+        user.user_id,
+        user.organization_id,
+        decision.reasons,
     )
     return decision
+
 
 def authorize_source_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
     # Super admins bypass role checks
@@ -433,21 +501,31 @@ def authorize_source_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
         )
         logger.info(
             "Source admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
-            user.user_id, user.organization_id, decision.role, decision.reasons
+            user.user_id,
+            user.organization_id,
+            decision.role,
+            decision.reasons,
         )
         return decision
-    
+
     if check_source_admin(ctx.db, user.user_id, user.organization_id):
-        decision = AccessDecision(True, PrimaryAssetRole.asset_admin.value, ["source_admin"], [])
+        decision = AccessDecision(
+            True, PrimaryAssetRole.asset_admin.value, ["source_admin"], []
+        )
         logger.info(
             "Source admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
-            user.user_id, user.organization_id, decision.role, decision.reasons
+            user.user_id,
+            user.organization_id,
+            decision.role,
+            decision.reasons,
         )
         return decision
     decision = AccessDecision(False, None, ["not_source_admin"], [])
     logger.warning(
         "Source admin check denied: user_id=%s, org_id=%s, reasons=%s",
-        user.user_id, user.organization_id, decision.reasons
+        user.user_id,
+        user.organization_id,
+        decision.reasons,
     )
     return decision
 
@@ -460,21 +538,29 @@ def authorize_team_admin(ctx: AuthContext, user: UserToken) -> AccessDecision:
         )
         logger.info(
             "Team admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
-            user.user_id, user.organization_id, decision.role, decision.reasons
+            user.user_id,
+            user.organization_id,
+            decision.role,
+            decision.reasons,
         )
         return decision
-    
+
     if check_team_admin(ctx.db, user.user_id, user.organization_id):
         decision = AccessDecision(True, TeamRole.team_admin.value, ["team_admin"], [])
         logger.info(
             "Team admin check allowed: user_id=%s, org_id=%s, role=%s, reasons=%s",
-            user.user_id, user.organization_id, decision.role, decision.reasons
+            user.user_id,
+            user.organization_id,
+            decision.role,
+            decision.reasons,
         )
         return decision
     decision = AccessDecision(False, None, ["not_team_admin"], [])
     logger.warning(
         "Team admin check denied: user_id=%s, org_id=%s, reasons=%s",
-        user.user_id, user.organization_id, decision.reasons
+        user.user_id,
+        user.organization_id,
+        decision.reasons,
     )
     return decision
 

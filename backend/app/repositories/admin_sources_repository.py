@@ -2,6 +2,11 @@
 
 from uuid import UUID
 
+from app.authorization.helpers import is_super_admin
+from app.authorization.query_filters import (
+    effective_asset_role_expr,
+    primary_asset_grant_filter,
+)
 from database.models import (
     PrimaryAsset,
     PrimaryAssetRoleGrant,
@@ -9,10 +14,8 @@ from database.models import (
     Tag,
     TeamMembership,
 )
+from database.models_enums import PrimaryAssetKind, PrimaryAssetRole
 from sqlmodel import Session, and_, func, select
-
-from app.authorization.helpers import is_super_admin
-from database.models_enums import PrimaryAssetRole
 
 
 def get_sources_with_counts(
@@ -75,11 +78,15 @@ def get_sources_with_counts(
         .group_by(PrimaryAssetRoleGrant.primary_asset_id)
         .subquery()
     )
-
+    # TODO: adjust to filter down assets that the user has asset_admin effective role
     # Main query
+    role_expr = effective_asset_role_expr(
+        session, user_id, organization_id, PrimaryAsset.id
+    )
     query = (
         select(
             PrimaryAsset,
+            role_expr.label("effective_role"),
             func.coalesce(members_count_subquery.c.members_count, 0).label(
                 "members_count"
             ),
@@ -93,7 +100,11 @@ def get_sources_with_counts(
             teams_count_subquery,
             PrimaryAsset.id == teams_count_subquery.c.primary_asset_id,
         )
-        .where(PrimaryAsset.organization_id == organization_id)
+        .where(
+            PrimaryAsset.organization_id == organization_id,
+            primary_asset_grant_filter(session, user_id, organization_id),
+            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
+        )
     )
 
     if not is_super_admin(session, user_id, organization_id):
@@ -155,8 +166,8 @@ def get_sources_with_counts(
     return [
         {
             "asset": row[0],
-            "members_count": row[1],
-            "teams_count": row[2],
+            "members_count": row[2],
+            "teams_count": row[3],
         }
         for row in results
     ]

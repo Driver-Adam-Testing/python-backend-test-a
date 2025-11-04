@@ -15,7 +15,7 @@ from database.models import (
     Version,
 )
 from database.models_enums import PrimaryAssetRole
-from sqlalchemy import case
+from sqlalchemy import case, literal
 from sqlmodel import Session, select
 
 from .helpers import (
@@ -49,13 +49,13 @@ def _grant_exists_subquery(
 
 
 def effective_asset_role_expr(
-    db: Session, user_id: uuid.UUID, organization_id: str, asset_id_column: Any
+    db: Session, user_id: str, organization_id: str, asset_id_column: Any
 ) -> Any:
     """
     Returns a SQL expression that computes the effective role for a user on an asset.
 
     The effective role is the highest priority role among all applicable grants:
-    - asset_admin (highest priority)
+    - asset_admin (highest priority) - includes org super_admins
     - asset_member
 
     Args:
@@ -67,6 +67,10 @@ def effective_asset_role_expr(
     Returns:
         SQL expression that evaluates to the role string, or None if no grants
     """
+    # Super admins have asset_admin role on all assets
+    if is_super_admin(db, user_id, organization_id):
+        return literal(PrimaryAssetRole.asset_admin.value)
+
     team_ids = get_user_team_ids(db, user_id, organization_id)
     is_member = is_org_member(db, user_id, organization_id)
 
@@ -95,9 +99,7 @@ def effective_asset_role_expr(
     )
 
 
-def primary_asset_grant_filter(
-    db: Session, user_id: str, organization_id: str
-) -> Any:
+def primary_asset_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:
     """
     Filter for PrimaryAssets where user has a grant.
 

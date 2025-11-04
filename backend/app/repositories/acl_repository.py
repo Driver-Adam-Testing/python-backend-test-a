@@ -11,6 +11,7 @@ from database.models import (
     User,
 )
 from database.models_enums import PrimaryAssetRole, PrincipalKind
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, select
 
 
@@ -64,7 +65,7 @@ def get_team_sources_with_details(
     session: Session,
     team_id: UUID,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[PrimaryAssetRole] | None = None,
     visibilities: list[str] | None = None,
     search: str | None = None,
     limit: int = 30,
@@ -86,9 +87,11 @@ def get_team_sources_with_details(
     Returns:
         List of dictionaries with 'grant' and 'asset' keys
     """
+
     query = (
         select(PrimaryAssetRoleGrant, PrimaryAsset)
         .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        .options(selectinload(PrimaryAsset.most_recent_version))
         .where(
             PrimaryAssetRoleGrant.team_id == team_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
@@ -97,11 +100,7 @@ def get_team_sources_with_details(
 
     # Filter by roles
     if roles:
-        backend_roles = [
-            PrimaryAssetRole.admin if r == "admin" else PrimaryAssetRole.viewer
-            for r in roles
-        ]
-        query = query.where(PrimaryAssetRoleGrant.role.in_(backend_roles))
+        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
     # TODO: Add visibility filtering once visibility field is added to PrimaryAssetRoleGrant
 
@@ -120,7 +119,7 @@ def count_team_sources(
     session: Session,
     team_id: UUID,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[PrimaryAssetRole] | None = None,
     visibilities: list[str] | None = None,
     search: str | None = None,
 ) -> int:
@@ -149,11 +148,7 @@ def count_team_sources(
     )
 
     if roles:
-        backend_roles = [
-            PrimaryAssetRole.admin if r == "admin" else PrimaryAssetRole.viewer
-            for r in roles
-        ]
-        query = query.where(PrimaryAssetRoleGrant.role.in_(backend_roles))
+        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
     # TODO: Add visibility filtering once visibility field is added
 
@@ -167,7 +162,7 @@ def get_source_users_with_details(
     session: Session,
     primary_asset_id: UUID,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
     limit: int = 30,
@@ -210,11 +205,7 @@ def get_source_users_with_details(
         )
 
         if roles:
-            backend_roles = [
-                PrimaryAssetRole.admin if r == "admin" else PrimaryAssetRole.viewer
-                for r in roles
-            ]
-            query = query.where(PrimaryAssetRoleGrant.role.in_(backend_roles))
+            query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
         team_grants = session.exec(query).all()
 
@@ -243,12 +234,8 @@ def get_source_users_with_details(
     )
 
     if roles:
-        backend_roles = [
-            PrimaryAssetRole.admin if r == "admin" else PrimaryAssetRole.viewer
-            for r in roles
-        ]
         direct_user_query = direct_user_query.where(
-            PrimaryAssetRoleGrant.role.in_(backend_roles)
+            PrimaryAssetRoleGrant.role.in_(roles)
         )
 
     direct_grants = session.exec(direct_user_query).all()
@@ -268,11 +255,7 @@ def get_source_users_with_details(
     )
 
     if roles:
-        backend_roles = [
-            PrimaryAssetRole.admin if r == "admin" else PrimaryAssetRole.viewer
-            for r in roles
-        ]
-        team_query = team_query.where(PrimaryAssetRoleGrant.role.in_(backend_roles))
+        team_query = team_query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
     team_grants = session.exec(team_query).all()
 
@@ -317,7 +300,7 @@ def count_source_users(
     session: Session,
     primary_asset_id: UUID,
     organization_id: str,
-    roles: list[str] | None = None,
+    roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
 ) -> int:

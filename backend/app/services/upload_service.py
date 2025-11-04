@@ -88,7 +88,7 @@ class UploadService:
                 organization_id=org_id,
                 principal_kind=PrincipalKind.user,
                 user_id=user.user_id,
-                role=PrimaryAssetRole.admin,
+                role=PrimaryAssetRole.asset_admin,
             )
             self.session.add(user_grant)
             self.session.commit()

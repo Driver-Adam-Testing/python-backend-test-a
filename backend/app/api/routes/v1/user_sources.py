@@ -3,10 +3,12 @@
 import logging
 import uuid
 
+from database.models_enums import PrimaryAssetRole
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action, enforce_org_action
 from app.schemas.user_schema import (
     AddUserSourcesRequest,
     RemoveUserSourcesRequest,
@@ -14,7 +16,6 @@ from app.schemas.user_schema import (
     UserSourcesResponse,
 )
 from app.services.user_service import UserService
-from app.authorization.fastapi import enforce_asset_action, enforce_org_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -34,8 +35,8 @@ def get_user_sources(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    roles: list[str] | None = Query(
-        default=None, description="Filter by roles: admin, member"
+    roles: list[PrimaryAssetRole] | None = Query(
+        default=None, description="Filter by roles: asset_admin, asset_member"
     ),
     search: str | None = Query(default=None, description="Search by display name"),
 ) -> UserSourcesResponse:
@@ -45,7 +46,7 @@ def get_user_sources(
     Returns sources with role and visibility information.
     """
     # Assuming the service is doing its job and only fetching sources that
-    # this user has access to, the only enforcement is that the user is 
+    # this user has access to, the only enforcement is that the user is
     # a member of the organization. Is this enough?
     enforce_org_action(session, user, "users.view")
     logger.info(

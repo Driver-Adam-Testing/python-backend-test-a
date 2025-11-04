@@ -281,8 +281,8 @@ class LlmPipelineKind(str, enum.Enum):
 
 
 class PrimaryAssetRole(enum.StrEnum):
-    admin = enum.auto()
-    viewer = enum.auto()
+    asset_admin = enum.auto()
+    asset_member = enum.auto()
 
 
 class PrincipalKind(enum.StrEnum):
@@ -294,9 +294,9 @@ class PrincipalKind(enum.StrEnum):
 
 class TeamRole(enum.StrEnum):
     team_admin = enum.auto()
-    member = enum.auto()
+    team_member = enum.auto()
 
 
 class OrgRole(enum.StrEnum):
-    super_admin = enum.auto()
-    member = enum.auto()
+    org_super_admin = enum.auto()
+    org_member = enum.auto()

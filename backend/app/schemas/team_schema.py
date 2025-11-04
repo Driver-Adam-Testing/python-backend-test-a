@@ -1,7 +1,6 @@
 """Schemas for Team-related API requests and responses."""
 
-from typing import Literal
-
+from database.models_enums import TeamRole
 from pydantic import BaseModel, Field
 
 
@@ -10,7 +9,7 @@ class TeamMemberInput(BaseModel):
     """Input for adding a team member."""
 
     user_id: str = Field(..., description="User ID")
-    role: Literal["admin", "member"] = Field(..., description="Team role")
+    role: TeamRole = Field(..., description="Team role")
 
 
 # ===== Team Requests =====

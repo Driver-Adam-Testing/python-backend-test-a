@@ -56,7 +56,7 @@ class Auth0UserFactory:
         email: str | None = None,
         name: str | None = None,
         organization_id: str = "test-org-id",
-        org_role: OrgRole = OrgRole.member,
+        org_role: OrgRole = OrgRole.org_member,
         **kwargs: Any,
     ) -> User:
         """Create a user in the database and add them to the organization."""
@@ -94,7 +94,7 @@ class TeamMembershipFactory:
         session: Session,
         team_id: UUID,
         user_id: str,
-        role: TeamRole = TeamRole.member,
+        role: TeamRole = TeamRole.team_member,
         organization_id: str = "test-org-id",  # Kept for API compatibility but not used
         **kwargs: Any,
     ) -> TeamMembership:
@@ -153,7 +153,7 @@ class PrimaryAssetRoleGrantFactory:
         session: Session,
         primary_asset_id: UUID,
         principal_kind: PrincipalKind,
-        role: PrimaryAssetRole = PrimaryAssetRole.viewer,
+        role: PrimaryAssetRole = PrimaryAssetRole.asset_member,
         organization_id: str = "test-org-id",
         user_id: str | None = None,
         team_id: UUID | None = None,

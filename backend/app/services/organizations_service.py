@@ -67,7 +67,7 @@ class OrganizationsService:
             )
 
         # Check if removing last super_admin
-        if membership.role == OrgRole.super_admin:
+        if membership.role == OrgRole.org_super_admin:
             super_admin_count = count_organization_super_admins(
                 self.session, user.organization_id
             )
@@ -155,9 +155,7 @@ class OrganizationsService:
             raise HTTPException(400, "No members provided to update")
 
         # Prepare role updates as list of tuples
-        role_updates = [
-            (member.user_id, member.role) for member in bulk_input.members
-        ]
+        role_updates = [(member.user_id, member.role) for member in bulk_input.members]
 
         # Update all roles in a single transaction
         try:

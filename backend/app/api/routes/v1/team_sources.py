@@ -1,13 +1,15 @@
 """API routes for Team Sources (Team ACL) management."""
 
 import logging
-from uuid import UUID
 import uuid
+from uuid import UUID
 
+from database.models_enums import PrimaryAssetRole
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action, enforce_team_action
 from app.schemas.source_access_schema import (
     AddTeamSourcesRequest,
     RemoveTeamSourcesRequest,
@@ -15,7 +17,6 @@ from app.schemas.source_access_schema import (
     UpdateTeamSourcesRequest,
 )
 from app.services.source_access_service import SourceAccessService
-from app.authorization.fastapi import enforce_asset_action, enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -35,8 +36,8 @@ def get_team_sources(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    roles: list[str] | None = Query(
-        default=None, description="Filter by roles: admin, member"
+    roles: list[PrimaryAssetRole] | None = Query(
+        default=None, description="Filter by roles"
     ),
     visibilities: list[str] | None = Query(
         default=None, description="Filter by visibility: private, internal, public"

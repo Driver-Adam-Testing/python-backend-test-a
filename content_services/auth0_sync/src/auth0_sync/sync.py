@@ -290,7 +290,7 @@ class Auth0Sync:
             else:
                 # Create new membership
                 new_membership = OrgMembership(
-                    org_id=org_id, user_id=user_id, role=OrgRole.member
+                    org_id=org_id, user_id=user_id, role=OrgRole.org_member
                 )
                 session.add(new_membership)
 

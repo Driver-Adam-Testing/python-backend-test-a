@@ -45,8 +45,34 @@ class DataSource(BaseModel):
                     raise ValueError(
                         "Some node_ids do not match the given organization_id."
                     )
+                node_list = session.exec(
+                    select(Node).where(Node.id.in_(self.node_ids))
+                ).all()
 
         self._cached_nodes = None
+        self._is_tuned = self._calculate_is_tuned(node_list)
+
+    @staticmethod
+    def _calculate_is_tuned(nodes: list[Node]) -> bool:
+        for node in nodes:
+            if (
+                node.kind == NodeKind.CODEBASE_DIRECTORY
+                and node.relative_path.endswith("/")
+                and node.relative_path.count("/") == 1
+            ):
+                # node is a root level directory
+                pass
+
+            elif node.kind == NodeKind.OTHER and node.relative_path.lower().endswith(
+                "pdf"
+            ):
+                # node is a PDF file
+                pass
+            else:
+                # node is a file or subdirectory
+                return True
+
+        return False
 
     @classmethod
     def from_node_ids(
@@ -247,7 +273,9 @@ class DataSource(BaseModel):
         for version_id, grouped_nodes in sorted(
             version_groups.items(), key=lambda x: str(x[0])
         ):
-            summary_lines.append(f"Version: {str(version_id)[:8]} ...")
+            summary_lines.append(
+                f"Tuned = {self._is_tuned}\nVersion: {str(version_id)[:8]} ..."
+            )
             built_tree = build_tree(grouped_nodes)
             traverse_tree(built_tree, indent=1)
 

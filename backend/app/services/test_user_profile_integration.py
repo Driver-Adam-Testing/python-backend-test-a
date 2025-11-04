@@ -50,7 +50,7 @@ class TestUserProfileIntegration:
             email="test@example.com",
             name="Test User",
             organization_id="test-org-id",
-            org_role=OrgRole.member,
+            org_role=OrgRole.org_member,
         )
 
         # Create mock JWT user
@@ -81,7 +81,7 @@ class TestUserProfileIntegration:
             email="admin@example.com",
             name="Admin User",
             organization_id="test-org-id",
-            org_role=OrgRole.member,
+            org_role=OrgRole.org_member,
         )
 
         # Create team and make user an admin
@@ -120,7 +120,7 @@ class TestUserProfileIntegration:
             email="sourceadmin@example.com",
             name="Source Admin User",
             organization_id="test-org-id",
-            org_role=OrgRole.member,
+            org_role=OrgRole.org_member,
         )
 
         # Create source
@@ -135,7 +135,7 @@ class TestUserProfileIntegration:
             session=integration_db_session,
             primary_asset_id=source.id,
             principal_kind=PrincipalKind.user,
-            role=PrimaryAssetRole.admin,
+            role=PrimaryAssetRole.asset_admin,
             user_id=db_user.id,
             organization_id="test-org-id",
         )
@@ -162,7 +162,7 @@ class TestUserProfileIntegration:
             email="superadmin@example.com",
             name="Super Admin",
             organization_id="test-org-id",
-            org_role=OrgRole.super_admin,
+            org_role=OrgRole.org_super_admin,
         )
 
         # Create mock JWT user
@@ -188,7 +188,7 @@ class TestUserProfileIntegration:
             email="allroles@example.com",
             name="All Roles User",
             organization_id="test-org-id",
-            org_role=OrgRole.super_admin,
+            org_role=OrgRole.org_super_admin,
         )
 
         # Create team and make user an admin
@@ -215,7 +215,7 @@ class TestUserProfileIntegration:
             session=integration_db_session,
             primary_asset_id=source.id,
             principal_kind=PrincipalKind.user,
-            role=PrimaryAssetRole.admin,
+            role=PrimaryAssetRole.asset_admin,
             user_id=db_user.id,
             organization_id="test-org-id",
         )

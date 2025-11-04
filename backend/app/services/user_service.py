@@ -29,46 +29,6 @@ from app.schemas.user_schema import (
 logger = logging.getLogger(__name__)
 
 
-def map_team_role_to_backend(role: str) -> TeamRole:
-    """Map frontend role string to backend TeamRole enum."""
-    mapping = {
-        "admin": TeamRole.team_admin,
-        "member": TeamRole.member,
-    }
-    if role not in mapping:
-        raise ValueError(f"Invalid role: {role}")
-    return mapping[role]
-
-
-def map_team_role_to_frontend(role: TeamRole) -> str:
-    """Map backend TeamRole enum to frontend string."""
-    mapping = {
-        TeamRole.team_admin: "admin",
-        TeamRole.member: "member",
-    }
-    return mapping[role]
-
-
-def map_source_role_to_backend(role: str) -> PrimaryAssetRole:
-    """Map frontend role string to backend PrimaryAssetRole enum."""
-    mapping = {
-        "admin": PrimaryAssetRole.admin,
-        "member": PrimaryAssetRole.viewer,
-    }
-    if role not in mapping:
-        raise ValueError(f"Invalid role: {role}")
-    return mapping[role]
-
-
-def map_source_role_to_frontend(role: PrimaryAssetRole) -> str:
-    """Map backend PrimaryAssetRole enum to frontend string."""
-    mapping = {
-        PrimaryAssetRole.admin: "admin",
-        PrimaryAssetRole.viewer: "member",
-    }
-    return mapping[role]
-
-
 class UserService:
     """Service for User operations."""
 
@@ -128,7 +88,7 @@ class UserService:
         self,
         user: User,
         user_id: str,
-        roles: list[str] | None = None,
+        roles: list[TeamRole] | None = None,
         search: str | None = None,
         limit: int = 30,
         offset: int = 0,
@@ -222,7 +182,7 @@ class UserService:
             membership = TeamMembership(
                 team_id=team_id,
                 user_id=user_id,
-                role=map_team_role_to_backend(team_input.role),
+                role=team_input.role,
             )
             user_repository.create_user_team_membership(
                 session=self.session,
@@ -275,7 +235,7 @@ class UserService:
                 )
 
             # Update role
-            membership.role = map_team_role_to_backend(team_input.role)
+            membership.role = team_input.role
             self.session.add(membership)
 
         self.session.commit()
@@ -335,7 +295,7 @@ class UserService:
         self,
         user: User,
         user_id: str,
-        roles: list[str] | None = None,
+        roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
         limit: int = 30,
         offset: int = 0,
@@ -429,7 +389,7 @@ class UserService:
                 primary_asset_id=source_id,
                 principal_kind=PrincipalKind.user,
                 user_id=user_id,
-                role=map_source_role_to_backend(source_input.role),
+                role=source_input.role,
             )
             user_repository.create_user_source_grant(
                 session=self.session,
@@ -478,7 +438,7 @@ class UserService:
                 )
 
             # Update role
-            grant.role = map_source_role_to_backend(source_input.role)
+            grant.role = source_input.role
             self.session.add(grant)
 
         self.session.commit()
@@ -555,15 +515,20 @@ class UserService:
             sources=data["sources"],
             created_at=created_at,
             updated_at=updated_at,
-            role=map_team_role_to_frontend(membership.role),
+            role=membership.role,
         )
 
     def _build_user_source_response(
         self, data: dict, user_id: str
     ) -> UserSourceResponse:
         """Build UserSourceResponse from repository data."""
-        grant = data["grant"]
+        role = data["role"]
         asset = data["asset"]
+
+        # Compute is_browsable from most_recent_version
+        is_browsable = (
+            asset.most_recent_version.browsable if asset.most_recent_version else False
+        )
 
         return UserSourceResponse(
             id=str(asset.id),
@@ -577,7 +542,8 @@ class UserService:
             ),
             created_at=asset.created_at.isoformat(),
             updated_at=asset.updated_at.isoformat(),
-            role=map_source_role_to_frontend(grant.role),
+            role=PrimaryAssetRole(role),
             visibility="private",  # TODO: Add visibility field to PrimaryAssetRoleGrant
             user_id=user_id,
+            is_browsable=is_browsable,
         )

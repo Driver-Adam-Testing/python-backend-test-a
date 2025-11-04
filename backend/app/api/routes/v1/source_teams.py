@@ -3,6 +3,7 @@
 import logging
 from uuid import UUID
 
+from database.models_enums import PrimaryAssetRole
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
@@ -34,8 +35,8 @@ def get_source_teams(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    roles: list[str] | None = Query(
-        default=None, description="Filter by roles: admin, member"
+    roles: list[PrimaryAssetRole] | None = Query(
+        default=None, description="Filter by roles"
     ),
     search: str | None = Query(default=None, description="Search by team name"),
 ) -> SourceTeamsResponse:

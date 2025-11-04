@@ -104,7 +104,7 @@ def sample_grant(user_id: str, asset_id: UUID, org_id: str) -> PrimaryAssetRoleG
         primary_asset_id=asset_id,
         organization_id=org_id,
         user_id=user_id,
-        role=PrimaryAssetRole.admin,
+        role=PrimaryAssetRole.asset_admin,
     )
 
 
@@ -490,17 +490,3 @@ class TestDeleteUserSourceGrant:
 
         session.delete.assert_called_once_with(sample_grant)
         session.commit.assert_called_once()
-
-
-class TestMapFrontendRoleToBackend:
-    """Tests for _map_frontend_role_to_backend function."""
-
-    def test_maps_admin_role(self) -> None:
-        """Should map 'admin' to TeamRole.team_admin."""
-        result = user_repository._map_frontend_role_to_backend("admin")
-        assert result == TeamRole.team_admin
-
-    def test_maps_member_role(self) -> None:
-        """Should map 'member' to TeamRole.member."""
-        result = user_repository._map_frontend_role_to_backend("member")
-        assert result == TeamRole.member

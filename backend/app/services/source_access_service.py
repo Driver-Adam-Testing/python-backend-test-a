@@ -37,26 +37,6 @@ from app.schemas.source_access_schema import (
 logger = logging.getLogger(__name__)
 
 
-def map_source_role_to_backend(role: str) -> PrimaryAssetRole:
-    """Map frontend role string to backend PrimaryAssetRole enum."""
-    mapping = {
-        "admin": PrimaryAssetRole.admin,
-        "member": PrimaryAssetRole.viewer,
-    }
-    if role not in mapping:
-        raise ValueError(f"Invalid role: {role}")
-    return mapping[role]
-
-
-def map_source_role_to_frontend(role: PrimaryAssetRole) -> str:
-    """Map backend PrimaryAssetRole enum to frontend string."""
-    mapping = {
-        PrimaryAssetRole.admin: "admin",
-        PrimaryAssetRole.viewer: "member",
-    }
-    return mapping[role]
-
-
 def grant_to_team_source_response(
     grant: PrimaryAssetRoleGrant, asset: PrimaryAsset
 ) -> TeamSourceResponse:
@@ -70,6 +50,11 @@ def grant_to_team_source_response(
     Returns:
         TeamSourceResponse object
     """
+    # Compute is_browsable from most_recent_version
+    is_browsable = (
+        asset.most_recent_version.browsable if asset.most_recent_version else False
+    )
+
     return TeamSourceResponse(
         id=str(asset.id),
         organization_id=asset.organization_id,
@@ -78,9 +63,10 @@ def grant_to_team_source_response(
         provider=asset.provider.value if asset.provider else None,
         created_at=asset.created_at.isoformat() if asset.created_at else "",
         updated_at=asset.updated_at.isoformat() if asset.updated_at else "",
-        role=map_source_role_to_frontend(grant.role),
+        role=grant.role,
         visibility="private",  # TODO: Use actual visibility when field is added
         team_id=grant.team_id,
+        is_browsable=is_browsable,
     )
 
 
@@ -111,7 +97,7 @@ def build_source_team_response(
     return SourceTeamResponse(
         team_id=team.id,
         team_name=team.name,
-        role="admin" if grant.role == PrimaryAssetRole.admin else "member",
+        role=grant.role,
         member_count=member_count,
         visibility="private",  # TODO: Use actual visibility
         created_at=grant.created_at.isoformat() if grant.created_at else "",
@@ -151,11 +137,11 @@ def build_source_user_response(
         )
 
         is_super_admin = False
-        user_role = "member"
+        user_role = "org_member"
         if org_membership:
             from database.models_enums import OrgRole
 
-            is_super_admin = org_membership.role == OrgRole.super_admin
+            is_super_admin = org_membership.role == OrgRole.org_super_admin
             user_role = org_membership.role.value
 
         # Fetch user's team memberships
@@ -198,7 +184,7 @@ def build_source_user_response(
             visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=is_super_admin,
-            user_role=user_role,
+            role=user_role,
             teams=teams,
         )
     else:  # team
@@ -212,7 +198,7 @@ def build_source_user_response(
             visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=False,
-            user_role="team",  # Indicate this is a team
+            role="team_member",  # Indicate this is a team
             teams=[],  # Teams don't have team memberships
         )
 
@@ -229,7 +215,7 @@ class SourceAccessService:
         self,
         user: User,
         team_id: UUID,
-        roles: list[str] | None = None,
+        roles: list[PrimaryAssetRole] | None = None,
         visibilities: list[str] | None = None,
         search: str | None = None,
         limit: int = 30,
@@ -422,7 +408,7 @@ class SourceAccessService:
                     detail=f"Source {source.source_id} is not assigned to this team",
                 )
 
-            grant.role = map_source_role_to_backend(source.role)
+            grant.role = source.role
             self.session.add(grant)
 
         try:
@@ -499,7 +485,7 @@ class SourceAccessService:
         self,
         user: User,
         source_id: UUID,
-        roles: list[str] | None = None,
+        roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
         limit: int = 30,
         offset: int = 0,
@@ -580,7 +566,7 @@ class SourceAccessService:
         self,
         user: User,
         source_id: UUID,
-        roles: list[str] | None = None,
+        roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
         limit: int = 30,
         offset: int = 0,
@@ -759,7 +745,7 @@ class SourceAccessService:
                     detail=f"User {user_input.user_id} does not have access to this source",
                 )
 
-            grant.role = map_source_role_to_backend(user_input.role)
+            grant.role = user_input.role
             self.session.add(grant)
 
         try:
@@ -949,7 +935,7 @@ class SourceAccessService:
                     detail=f"Team {team_input.team_id} does not have access to this source",
                 )
 
-            grant.role = map_source_role_to_backend(team_input.role)
+            grant.role = team_input.role
             self.session.add(grant)
 
         try:
@@ -1038,14 +1024,13 @@ class SourceAccessService:
             sources: List of sources to add
         """
         for source in sources:
-            role = map_source_role_to_backend(source.role)
             grant = PrimaryAssetRoleGrant(
                 primary_asset_id=UUID(source.source_id),
                 organization_id=organization_id,
                 principal_kind=PrincipalKind.team,
                 team_id=team_id,
                 user_id=None,
-                role=role,
+                role=source.role,
             )
             self.session.add(grant)
 
@@ -1064,15 +1049,13 @@ class SourceAccessService:
             users: List of users to add
         """
         for user_input in users:
-            role = map_source_role_to_backend(user_input.role)
-
             grant = PrimaryAssetRoleGrant(
                 primary_asset_id=source_id,
                 organization_id=organization_id,
                 principal_kind=PrincipalKind.user,
                 user_id=user_input.user_id,
                 team_id=None,
-                role=role,
+                role=user_input.role,
             )
 
             self.session.add(grant)
@@ -1106,15 +1089,13 @@ class SourceAccessService:
                     detail=f"Team {team_input.team_id} not found",
                 )
 
-            role = map_source_role_to_backend(team_input.role)
-
             grant = PrimaryAssetRoleGrant(
                 primary_asset_id=source_id,
                 organization_id=organization_id,
                 principal_kind=PrincipalKind.team,
                 team_id=team_input.team_id,
                 user_id=None,
-                role=role,
+                role=team_input.role,
             )
 
             self.session.add(grant)

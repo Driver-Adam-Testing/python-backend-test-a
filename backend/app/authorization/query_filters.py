@@ -4,16 +4,19 @@ These filters allow list endpoints to filter results based on user grants
 without loading all records into memory first.
 """
 
-import uuid
 from typing import Any
 
 from database.models import (
     DerivedContent,
+    DocumentSource,
     Node,
     PrimaryAsset,
     PrimaryAssetRoleGrant,
     Version,
 )
+from database.models_enums import PrimaryAssetKind
+from sqlalchemy import and_
+from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
 from .helpers import (
@@ -24,9 +27,7 @@ from .helpers import (
 )
 
 
-def primary_asset_grant_filter(
-    db: Session, user_id: str, organization_id: str
-) -> Any:
+def primary_asset_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:
     """
     Filter for PrimaryAssets where user has a grant.
 
@@ -124,6 +125,88 @@ def content_grant_filter(db: Session, user_id: str, organization_id: str) -> Any
                     grant_condition,
                 )
                 .exists()
+            )
+        )
+    )
+
+
+def exclude_page_assets_filter() -> Any:
+    return PrimaryAsset.kind.notin_(
+        [PrimaryAssetKind.PAGE, PrimaryAssetKind.PAGE_TEMPLATE]
+    )
+
+
+def only_page_assets_filter() -> Any:
+    return PrimaryAsset.kind.in_(
+        [PrimaryAssetKind.PAGE, PrimaryAssetKind.PAGE_TEMPLATE]
+    )
+
+
+def page_source_authorization_filter(
+    db: Session, user_id: str, organization_id: str
+) -> Any:
+    """
+    Authorization filter for PAGE assets based on source grants.
+
+    Pages have different authorization than regular assets:
+    - Regular assets: User needs grant to the asset itself
+    - Page assets: User needs grants to ALL sources referenced by the page
+
+    A page is accessible if NO unauthorized sources exist for it.
+    """
+    team_ids = get_user_team_ids(db, user_id, organization_id)
+    is_member = is_org_member(db, user_id, organization_id)
+    grant_condition = build_grant_condition(user_id, team_ids, is_member)
+
+    SourceNode = aliased(Node)
+    SourceVersion = aliased(Version)
+
+    unauthorized_source_exists = (
+        select(DocumentSource)
+        .join(Node, DocumentSource.page_node_id == Node.id)
+        .join(Version, Node.version_id == Version.id)
+        .where(Version.primary_asset_id == PrimaryAsset.id)
+        .join(SourceNode, DocumentSource.source_node_id == SourceNode.id)
+        .join(SourceVersion, SourceNode.version_id == SourceVersion.id)
+        .where(
+            ~select(PrimaryAssetRoleGrant)
+            .where(
+                PrimaryAssetRoleGrant.primary_asset_id
+                == SourceVersion.primary_asset_id,
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                grant_condition,
+            )
+            .exists()
+        )
+        .exists()
+    )
+
+    return ~unauthorized_source_exists
+
+
+def page_asset_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:
+    if is_super_admin(db, user_id, organization_id):
+        return only_page_assets_filter()
+
+    return and_(
+        only_page_assets_filter(),
+        page_source_authorization_filter(db, user_id, organization_id),
+    )
+
+
+def page_content_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:
+    if is_super_admin(db, user_id, organization_id):
+        return DerivedContent.node.has(
+            Node.version.has(Version.primary_asset.has(only_page_assets_filter()))
+        )
+
+    return DerivedContent.node.has(
+        Node.version.has(
+            Version.primary_asset.has(
+                and_(
+                    only_page_assets_filter(),
+                    page_source_authorization_filter(db, user_id, organization_id),
+                )
             )
         )
     )

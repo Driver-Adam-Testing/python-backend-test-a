@@ -15,7 +15,10 @@ from app.api.routes.v2.schemas import (
     VersionDetailRead,
 )
 from app.api.session import CurrentSession
-from app.authorization.query_filters import primary_asset_grant_filter
+from app.authorization.query_filters import (
+    exclude_page_assets_filter,
+    primary_asset_grant_filter,
+)
 
 
 @router.get("/versions", response_model=ListWithCount[VersionDetailRead])
@@ -29,6 +32,7 @@ def list_versions(
         select(Version)
         .join(PrimaryAsset)
         .where(PrimaryAsset.organization_id == user.organization_id)
+        .where(exclude_page_assets_filter())
         .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
         .options(
             selectinload(Version.root_node),

@@ -467,3 +467,324 @@ class TestCascadingDeletes:
                 select(User).where(User.id == user.id)
             ).first()
             assert user_in_db is not None
+
+
+@pytest.mark.integration
+class TestGetSourceUsersEffectiveAccess:
+    """Test that get_source_users returns all effective users (direct + team-based)."""
+
+    def test_get_source_users_includes_team_members(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that get_source_users returns all users with effective access.
+
+        Steps:
+        1. Create a source
+        2. Create user A with direct grant (member role)
+        3. Create user B with no direct grant
+        4. Create team with user B as member
+        5. Grant team access to source (admin role)
+        6. Call get_source_users
+        7. Verify both users appear in results
+        8. Verify user A has access_type='direct' and source_role='member'
+        9. Verify user B has access_type='team' and source_role='admin'
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        # Step 1: Create source
+        source = PrimaryAssetFactory.create(
+            integration_db_session, display_name="Test Source"
+        )
+
+        # Step 2: Create user A with direct grant
+        user_a = Auth0UserFactory.create(integration_db_session, name="User A")
+        service.add_source_users(
+            user=mock_user,
+            source_id=source.id,
+            request=AddSourceUsersRequest(
+                users=[
+                    SourceUserInput(
+                        user_id=user_a.id, role=PrimaryAssetRole.asset_member
+                    )
+                ]
+            ),
+        )
+
+        # Step 3-5: Create user B, team, and team grant
+        user_b = Auth0UserFactory.create(integration_db_session, name="User B")
+        team = TeamFactory.create(integration_db_session, name="Test Team")
+        TeamMembershipFactory.create(
+            integration_db_session, team_id=team.id, user_id=user_b.id
+        )
+        service.add_team_sources(
+            user=mock_user,
+            team_id=team.id,
+            request=AddTeamSourcesRequest(
+                sources=[
+                    TeamSourceInput(
+                        source_id=str(source.id), role=PrimaryAssetRole.asset_admin
+                    )
+                ]
+            ),
+        )
+
+        # Step 6: Call get_source_users
+        result = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            limit=100,
+            offset=0,
+        )
+
+        # Step 7: Verify both users appear
+        assert result.total == 2
+        assert len(result.users) == 2
+
+        # Find users in results
+        user_a_result = next((u for u in result.users if u.user_id == user_a.id), None)
+        user_b_result = next((u for u in result.users if u.user_id == user_b.id), None)
+
+        assert user_a_result is not None, "User A should appear in results"
+        assert user_b_result is not None, "User B should appear in results"
+
+        # Step 8: Verify user A has direct access
+        assert user_a_result.access_type == "direct"
+        assert user_a_result.source_role == PrimaryAssetRole.asset_member
+        assert user_a_result.name == "User A"
+
+        # Step 9: Verify user B has inherited access (via team)
+        assert user_b_result.access_type == "inherited"
+        assert user_b_result.source_role == PrimaryAssetRole.asset_admin
+        assert user_b_result.name == "User B"
+        # Verify user B's team membership is shown with source_role
+        assert len(user_b_result.teams) == 1
+        assert user_b_result.teams[0].team_id == team.id
+        assert user_b_result.teams[0].display_name == "Test Team"
+        assert user_b_result.teams[0].source_role == PrimaryAssetRole.asset_admin
+
+    def test_get_source_users_direct_grant_takes_precedence(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that direct grants take precedence over team grants.
+
+        Steps:
+        1. Create source
+        2. Create user with direct grant (admin role)
+        3. Create team with user, grant team access (member role)
+        4. Call get_source_users
+        5. Verify user appears once with access_type='direct' and source_role='admin'
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        # Step 1: Create source
+        source = PrimaryAssetFactory.create(integration_db_session)
+
+        # Step 2: Create user with direct grant (admin)
+        user = Auth0UserFactory.create(integration_db_session, name="Test User")
+        service.add_source_users(
+            user=mock_user,
+            source_id=source.id,
+            request=AddSourceUsersRequest(
+                users=[
+                    SourceUserInput(user_id=user.id, role=PrimaryAssetRole.asset_admin)
+                ]
+            ),
+        )
+
+        # Step 3: Create team with user, grant team access (member)
+        team = TeamFactory.create(integration_db_session)
+        TeamMembershipFactory.create(
+            integration_db_session, team_id=team.id, user_id=user.id
+        )
+        service.add_team_sources(
+            user=mock_user,
+            team_id=team.id,
+            request=AddTeamSourcesRequest(
+                sources=[
+                    TeamSourceInput(
+                        source_id=str(source.id), role=PrimaryAssetRole.asset_member
+                    )
+                ]
+            ),
+        )
+
+        # Step 4: Call get_source_users
+        result = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            limit=100,
+            offset=0,
+        )
+
+        # Step 5: Verify user appears once with direct grant details
+        assert result.total == 1
+        assert len(result.users) == 1
+        user_result = result.users[0]
+        assert user_result.user_id == user.id
+        assert user_result.access_type == "direct"
+        assert user_result.source_role == PrimaryAssetRole.asset_admin
+        # User should still see their team membership
+        assert len(user_result.teams) == 1
+        assert user_result.teams[0].team_id == team.id
+
+    def test_get_source_users_filters_by_role(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that get_source_users correctly filters by source role.
+
+        Steps:
+        1. Create source
+        2. Create user A with direct admin grant
+        3. Create user B via team with member grant
+        4. Call get_source_users with roles=['admin']
+        5. Verify only user A appears
+        6. Call get_source_users with roles=['member']
+        7. Verify only user B appears
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        # Step 1: Create source
+        source = PrimaryAssetFactory.create(integration_db_session)
+
+        # Step 2: Create user A with direct admin grant
+        user_a = Auth0UserFactory.create(integration_db_session, name="Admin User")
+        service.add_source_users(
+            user=mock_user,
+            source_id=source.id,
+            request=AddSourceUsersRequest(
+                users=[
+                    SourceUserInput(
+                        user_id=user_a.id, role=PrimaryAssetRole.asset_admin
+                    )
+                ]
+            ),
+        )
+
+        # Step 3: Create user B via team with member grant
+        user_b = Auth0UserFactory.create(integration_db_session, name="Member User")
+        team = TeamFactory.create(integration_db_session)
+        TeamMembershipFactory.create(
+            integration_db_session, team_id=team.id, user_id=user_b.id
+        )
+        service.add_team_sources(
+            user=mock_user,
+            team_id=team.id,
+            request=AddTeamSourcesRequest(
+                sources=[
+                    TeamSourceInput(
+                        source_id=str(source.id), role=PrimaryAssetRole.asset_member
+                    )
+                ]
+            ),
+        )
+
+        # Step 4: Filter by admin role
+        result_admin = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            roles=[PrimaryAssetRole.asset_admin],
+            limit=100,
+            offset=0,
+        )
+        assert result_admin.total == 1
+        assert result_admin.users[0].user_id == user_a.id
+        assert result_admin.users[0].source_role == PrimaryAssetRole.asset_admin
+
+        # Step 6: Filter by member role
+        result_member = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            roles=[PrimaryAssetRole.asset_member],
+            limit=100,
+            offset=0,
+        )
+        assert result_member.total == 1
+        assert result_member.users[0].user_id == user_b.id
+        assert result_member.users[0].source_role == PrimaryAssetRole.asset_member
+
+    def test_get_source_users_filters_by_access_type(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that get_source_users correctly filters by access_type.
+
+        Steps:
+        1. Create source
+        2. Create user A with direct admin grant
+        3. Create user B via team with member grant
+        4. Call get_source_users with access_type='direct'
+        5. Verify only user A appears
+        6. Call get_source_users with access_type='inherited'
+        7. Verify only user B appears
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        # Step 1: Create source
+        source = PrimaryAssetFactory.create(integration_db_session)
+
+        # Step 2: Create user A with direct admin grant
+        user_a = Auth0UserFactory.create(integration_db_session, name="Direct User")
+        service.add_source_users(
+            user=mock_user,
+            source_id=source.id,
+            request=AddSourceUsersRequest(
+                users=[
+                    SourceUserInput(
+                        user_id=user_a.id, role=PrimaryAssetRole.asset_admin
+                    )
+                ]
+            ),
+        )
+
+        # Step 3: Create user B via team with member grant
+        user_b = Auth0UserFactory.create(integration_db_session, name="Inherited User")
+        team = TeamFactory.create(integration_db_session)
+        TeamMembershipFactory.create(
+            integration_db_session, team_id=team.id, user_id=user_b.id
+        )
+        service.add_team_sources(
+            user=mock_user,
+            team_id=team.id,
+            request=AddTeamSourcesRequest(
+                sources=[
+                    TeamSourceInput(
+                        source_id=str(source.id), role=PrimaryAssetRole.asset_member
+                    )
+                ]
+            ),
+        )
+
+        # Step 4: Filter by direct access
+        result_direct = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            access_type="direct",
+            limit=100,
+            offset=0,
+        )
+        assert result_direct.total == 1
+        assert result_direct.users[0].user_id == user_a.id
+        assert result_direct.users[0].access_type == "direct"
+
+        # Step 6: Filter by inherited access
+        result_inherited = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            access_type="inherited",
+            limit=100,
+            offset=0,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.users[0].user_id == user_b.id
+        assert result_inherited.users[0].access_type == "inherited"

@@ -117,7 +117,7 @@ def build_source_user_response(
 
     Args:
         session: Database session for fetching additional data
-        grant: PrimaryAssetRoleGrant instance
+        grant: PrimaryAssetRoleGrant instance (can be direct user grant or team grant)
         user_or_team: DbUser or Team instance
         kind: User kind ('user' or 'team')
         organization_id: Organization ID
@@ -137,12 +137,17 @@ def build_source_user_response(
         )
 
         is_super_admin = False
-        user_role = "org_member"
+        org_role = "org_member"
         if org_membership:
             from database.models_enums import OrgRole
 
             is_super_admin = org_membership.role == OrgRole.org_super_admin
-            user_role = org_membership.role.value
+            org_role = org_membership.role.value
+
+        # Determine access type: direct (user grant) or inherited (team grant)
+        access_type = (
+            "direct" if grant.principal_kind == PrincipalKind.user else "inherited"
+        )
 
         # Fetch user's team memberships
         team_memberships_data = acl_repository.get_user_team_memberships(
@@ -151,19 +156,21 @@ def build_source_user_response(
             organization_id=organization_id,
         )
 
-        # Get team IDs that have access to this source
+        # Get teams that have access to this source with their roles
         from sqlmodel import select
 
-        team_ids_with_source_access = set(
-            session.exec(
-                select(PrimaryAssetRoleGrant.team_id).where(
-                    PrimaryAssetRoleGrant.primary_asset_id == source_id,
-                    PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
-                    PrimaryAssetRoleGrant.team_id.is_not(None),
-                    PrimaryAssetRoleGrant.organization_id == organization_id,
-                )
-            ).all()
+        team_grants_query = select(PrimaryAssetRoleGrant).where(
+            PrimaryAssetRoleGrant.primary_asset_id == source_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+            PrimaryAssetRoleGrant.team_id.is_not(None),
+            PrimaryAssetRoleGrant.organization_id == organization_id,
         )
+        team_grants = session.exec(team_grants_query).all()
+
+        # Build a map of team_id -> source_role
+        team_source_roles = {
+            grant.team_id: grant.role for grant in team_grants if grant.team_id
+        }
 
         # Build team membership list - only teams with access to this source
         teams = [
@@ -171,9 +178,10 @@ def build_source_user_response(
                 team_id=item["team"].id,
                 display_name=item["team"].name,
                 team_role=item["membership"].role.value,
+                source_role=team_source_roles[item["team"].id],
             )
             for item in team_memberships_data
-            if item["team"].id in team_ids_with_source_access
+            if item["team"].id in team_source_roles
         ]
 
         return SourceUserResponse(
@@ -181,10 +189,11 @@ def build_source_user_response(
             name=user.name or "",
             email=user.email or "",
             picture="",  # TODO: Fetch from Auth0 or add to User model
-            visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=is_super_admin,
-            role=user_role,
+            source_role=grant.role,  # Role on the source (from grant)
+            access_type=access_type,  # How user has access
+            org_role=org_role,  # Role in organization
             teams=teams,
         )
     else:  # team
@@ -195,10 +204,11 @@ def build_source_user_response(
             name=team.name,
             email=None,
             picture=None,
-            visibility="private",  # TODO: Use actual visibility
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=False,
-            role="team_member",  # Indicate this is a team
+            source_role=grant.role,  # Role on the source
+            access_type="direct",  # Teams always have direct grants
+            org_role="team_member",  # Indicate this is a team
             teams=[],  # Teams don't have team memberships
         )
 
@@ -487,6 +497,7 @@ class SourceAccessService:
         source_id: UUID,
         roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
+        access_type: str | None = None,
         limit: int = 30,
         offset: int = 0,
     ) -> SourceUsersResponse:
@@ -498,6 +509,7 @@ class SourceAccessService:
             source_id: Source (primary asset) ID
             roles: Optional list of roles to filter by
             search: Optional search query
+            access_type: Optional access type filter ('direct' or 'inherited')
             limit: Maximum number of results
             offset: Number of results to skip
 
@@ -510,7 +522,8 @@ class SourceAccessService:
         user_kind = PrincipalKind.user.value
         organization_id = user.organization_id
         logger.info(
-            f"Getting users for source {source_id} by user {user.user_id} (roles={roles}, search={search})"
+            f"Getting users for source {source_id} by user {user.user_id} "
+            f"(roles={roles}, search={search}, access_type={access_type})"
         )
 
         # Verify source exists
@@ -534,6 +547,7 @@ class SourceAccessService:
             roles=roles,
             user_kind=user_kind,
             search=search,
+            access_type=access_type,
             limit=limit,
             offset=offset,
         )
@@ -545,6 +559,7 @@ class SourceAccessService:
             roles=roles,
             user_kind=user_kind,
             search=search,
+            access_type=access_type,
         )
 
         users = [

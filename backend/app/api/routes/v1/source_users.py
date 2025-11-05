@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 @router.get(
     "/sources/{source_id}/users",
     response_model=SourceUsersResponse,
-    summary="List source users",
-    description="Get paginated list of users (not teams) that have access to a source",
+    summary="List all effective users with source access",
+    description="Get paginated list of all users with effective access to a source (includes direct grants and team-based access)",
 )
 def get_source_users(
     session: CurrentSession,
@@ -36,19 +36,31 @@ def get_source_users(
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
     roles: list[PrimaryAssetRole] | None = Query(
-        default=None, description="Filter by roles"
+        default=None, description="Filter by source access roles"
     ),
     search: str | None = Query(default=None, description="Search by name or email"),
+    access_type: str | None = Query(
+        default=None, description="Filter by access type: 'direct' or 'inherited'"
+    ),
 ) -> SourceUsersResponse:
     """
-    Get paginated list of users for a source.
+    Get paginated list of all users with effective access to a source.
 
-    Returns only users (not teams) with their roles and access details.
+    Returns all users (not teams) who have access to the source, including:
+    - Users with direct grants to the source
+    - Users who are members of teams that have access to the source (inherited access)
+
+    Each user response includes their source role, access type (direct/inherited),
+    org role, and list of teams they belong to that have access to this source.
+
+    Filters:
+    - access_type='direct': Only users with explicit direct grants
+    - access_type='inherited': Only users with team-based access
     """
     enforce_asset_action(session, user, source_id, "asset.use_as_source")
     logger.info(
         f"User {user.user_id} getting users for source {source_id} "
-        f"(limit={limit}, offset={offset}, roles={roles}, search={search})"
+        f"(limit={limit}, offset={offset}, roles={roles}, search={search}, access_type={access_type})"
     )
     service = SourceAccessService(session)
     return service.get_source_users(
@@ -56,6 +68,7 @@ def get_source_users(
         source_id=source_id,
         roles=roles,
         search=search,
+        access_type=access_type,
         limit=limit,
         offset=offset,
     )

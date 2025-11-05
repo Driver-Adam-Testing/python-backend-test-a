@@ -165,6 +165,7 @@ def get_source_users_with_details(
     roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
+    access_type: str | None = None,
     limit: int = 30,
     offset: int = 0,
 ) -> list[dict]:
@@ -182,6 +183,7 @@ def get_source_users_with_details(
         roles: Optional list of roles to filter by
         user_kind: Optional user kind filter ('user' or 'team')
         search: Optional search query for name or email
+        access_type: Optional access type filter ('direct' or 'inherited')
         limit: Maximum number of results
         offset: Number of results to skip
 
@@ -226,54 +228,58 @@ def get_source_users_with_details(
     # Handle user_kind='user' or None - return users with direct + team-based access
     users_dict = {}  # user_id -> {grant, user}
 
-    # 1. Get users with direct grants
-    direct_user_query = select(PrimaryAssetRoleGrant).where(
-        PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
-        PrimaryAssetRoleGrant.organization_id == organization_id,
-        PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
-    )
-
-    if roles:
-        direct_user_query = direct_user_query.where(
-            PrimaryAssetRoleGrant.role.in_(roles)
+    # 1. Get users with direct grants (if not filtered to 'inherited' only)
+    if access_type != "inherited":
+        direct_user_query = select(PrimaryAssetRoleGrant).where(
+            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
         )
 
-    direct_grants = session.exec(direct_user_query).all()
-
-    for grant in direct_grants:
-        if grant.user_id:
-            user = session.exec(select(User).where(User.id == grant.user_id)).first()
-            if user:
-                users_dict[grant.user_id] = {"grant": grant, "user": user}
-
-    # 2. Get users from teams that have access to the source
-    # Get team grants
-    team_query = select(PrimaryAssetRoleGrant).where(
-        PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
-        PrimaryAssetRoleGrant.organization_id == organization_id,
-        PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
-    )
-
-    if roles:
-        team_query = team_query.where(PrimaryAssetRoleGrant.role.in_(roles))
-
-    team_grants = session.exec(team_query).all()
-
-    # For each team, get all members
-    for team_grant in team_grants:
-        if team_grant.team_id:
-            # Get team members
-            team_members_query = (
-                select(TeamMembership, User)
-                .join(User, TeamMembership.user_id == User.id)
-                .where(TeamMembership.team_id == team_grant.team_id)
+        if roles:
+            direct_user_query = direct_user_query.where(
+                PrimaryAssetRoleGrant.role.in_(roles)
             )
-            team_members = session.exec(team_members_query).all()
 
-            for _membership, user in team_members:
-                # Only add if not already in dict (direct grants take precedence)
-                if user.id not in users_dict:
-                    users_dict[user.id] = {"grant": team_grant, "user": user}
+        direct_grants = session.exec(direct_user_query).all()
+
+        for grant in direct_grants:
+            if grant.user_id:
+                user = session.exec(
+                    select(User).where(User.id == grant.user_id)
+                ).first()
+                if user:
+                    users_dict[grant.user_id] = {"grant": grant, "user": user}
+
+    # 2. Get users from teams that have access to the source (if not filtered to 'direct' only)
+    if access_type != "direct":
+        # Get team grants
+        team_query = select(PrimaryAssetRoleGrant).where(
+            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+        )
+
+        if roles:
+            team_query = team_query.where(PrimaryAssetRoleGrant.role.in_(roles))
+
+        team_grants = session.exec(team_query).all()
+
+        # For each team, get all members
+        for team_grant in team_grants:
+            if team_grant.team_id:
+                # Get team members
+                team_members_query = (
+                    select(TeamMembership, User)
+                    .join(User, TeamMembership.user_id == User.id)
+                    .where(TeamMembership.team_id == team_grant.team_id)
+                )
+                team_members = session.exec(team_members_query).all()
+
+                for _membership, user in team_members:
+                    # Only add if not already in dict (direct grants take precedence)
+                    if user.id not in users_dict:
+                        users_dict[user.id] = {"grant": team_grant, "user": user}
 
     # Convert dict to list and apply search filter
     for data in users_dict.values():
@@ -303,6 +309,7 @@ def count_source_users(
     roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
+    access_type: str | None = None,
 ) -> int:
     """
     Count users for a source with optional filtering.
@@ -314,6 +321,7 @@ def count_source_users(
         roles: Optional list of roles to filter by
         user_kind: Optional user kind filter
         search: Optional search query
+        access_type: Optional access type filter ('direct' or 'inherited')
 
     Returns:
         Count of matching users
@@ -326,6 +334,7 @@ def count_source_users(
         roles=roles,
         user_kind=user_kind,
         search=search,
+        access_type=access_type,
         limit=999999,  # Get all for counting
         offset=0,
     )

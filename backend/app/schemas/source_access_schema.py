@@ -186,6 +186,9 @@ class TeamMembershipInfo(BaseModel):
     team_id: UUID = Field(..., description="Team ID")
     display_name: str = Field(..., description="Team name")
     team_role: str = Field(..., description="User's role in the team")
+    source_role: PrimaryAssetRole = Field(
+        ..., description="Role the team has to the source/asset"
+    )
 
     class Config:
         from_attributes = True
@@ -198,16 +201,22 @@ class SourceUserResponse(BaseModel):
     name: str = Field(..., description="User name")
     email: str | None = Field(None, description="Email address")
     picture: str | None = Field(None, description="Profile picture URL")
-    visibility: SourceVisibility = Field(
-        ..., description="Source visibility: private, internal, or public"
-    )
     created_at: str = Field(..., description="ISO datetime when access was granted")
     is_super_admin: bool = Field(
         ..., description="Whether user is a super admin in the organization"
     )
-    role: str = Field(..., description="User's role for this source")
+    source_role: PrimaryAssetRole = Field(
+        ...,
+        description="User's effective role on this source (from direct grant or team grant)",
+    )
+    access_type: str = Field(
+        ...,
+        description="How user has access: 'direct' for direct grants, 'inherited' for team-based access",
+    )
+    org_role: str = Field(..., description="User's role in the organization")
     teams: list[TeamMembershipInfo] = Field(
-        ..., description="List of teams the user belongs to"
+        ...,
+        description="List of teams the user belongs to that have access to this source",
     )
 
     class Config:

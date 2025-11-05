@@ -60,7 +60,9 @@ class PrimaryAssetRoleGrant(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    primary_asset_id: uuid.UUID = Field(foreign_key="primary_asset.id", index=True)
+    primary_asset_id: uuid.UUID = Field(
+        foreign_key="primary_asset.id", index=True, ondelete="CASCADE"
+    )
     organization_id: str = Field(
         foreign_key="organization.id", index=True
     )  # TODO: is this duplicative? Can it be removed?

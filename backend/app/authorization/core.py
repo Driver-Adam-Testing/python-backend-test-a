@@ -38,7 +38,7 @@ class AuthContext:
     """Context for authorization checks."""
 
     db: Session
-    user_id: uuid.UUID
+    user_id: str
     organization_id: str
 
 
@@ -126,7 +126,7 @@ def _grant_rows(
     db: Session,
     organization_id: str,
     asset_id: uuid.UUID,
-    user_id: uuid.UUID,
+    user_id: str,
 ) -> list[PrimaryAssetRoleGrant]:
     """Get all applicable grant rows for a user on an asset."""
     team_ids = get_user_team_ids(db, user_id, organization_id)
@@ -145,7 +145,7 @@ def _grant_rows(
 
 
 def _effective_asset_role(
-    db: Session, organization_id: str, asset_id: uuid.UUID, user_id: uuid.UUID
+    db: Session, organization_id: str, asset_id: uuid.UUID, user_id: str
 ) -> PrimaryAssetRole | None:
     """Get the effective role for a user on an asset."""
     rows = _grant_rows(db, organization_id, asset_id, user_id)
@@ -172,7 +172,7 @@ def _role_allows_asset_action(
     return db.exec(query).first() is not None
 
 
-def _org_role(db: Session, user_id: uuid.UUID, organization_id: str) -> OrgRole | None:
+def _org_role(db: Session, user_id: str, organization_id: str) -> OrgRole | None:
     """Get user's org role."""
     query = select(OrgMembership.role).where(
         OrgMembership.org_id == organization_id,
@@ -192,7 +192,7 @@ def _role_allows_org_action(db: Session, role: OrgRole, action_key: str) -> bool
 
 
 def _team_role(
-    db: Session, team_id: uuid.UUID, user_id: uuid.UUID, organization_id: str
+    db: Session, team_id: uuid.UUID, user_id: str, organization_id: str
 ) -> TeamRole | None:
     """Get user's role in a team."""
     query = (

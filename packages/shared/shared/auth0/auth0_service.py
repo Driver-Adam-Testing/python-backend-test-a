@@ -8,7 +8,6 @@ from auth0.management import Auth0
 from auth0.rest import RestClientOptions
 
 from shared.auth0.models import User as UserToken
-from shared.auth0.permissions import ORG_MANAGER
 from shared.auth0.schemas import (
     CreateInvitationInput,
     ModifyUserRolesResponse,
@@ -77,12 +76,6 @@ class Auth0Service:
         )
         return token["access_token"]
 
-    def verify_org_management_permissions(
-        self: "Auth0Service", user: UserToken
-    ) -> None:
-        if ORG_MANAGER not in user.permissions:
-            raise PermissionError("Insufficient permissions.")
-
     def change_self_password(
         self: "Auth0Service", user: UserToken, access_token: str
     ) -> str:
@@ -122,7 +115,6 @@ class Auth0Service:
         roles: list[str],
         modified_user_id: str,
     ) -> any:
-        self.verify_org_management_permissions(user)
         try:
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
@@ -164,7 +156,6 @@ class Auth0Service:
     def list_members(
         self: "Auth0Service", user: UserToken, page: int = 0, per_page: int = 100
     ) -> any:
-        self.verify_org_management_permissions(user)
         try:
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
@@ -184,7 +175,6 @@ class Auth0Service:
     def list_invitations(
         self: "Auth0Service", user: UserToken, page: int = 0, per_page: int = 100
     ) -> any:
-        self.verify_org_management_permissions(user)
         try:
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
@@ -262,7 +252,6 @@ class Auth0Service:
         access_token: str,
         invitations: CreateInvitationInput,
     ) -> any:
-        self.verify_org_management_permissions(user)
         users = Users(domain=self.auth0_domain)
         try:
             userinfo = users.userinfo(access_token)
@@ -304,7 +293,6 @@ class Auth0Service:
     def delete_user_from_organization(
         self: "Auth0Service", user: UserToken, user_id_to_remove: str
     ) -> any:
-        self.verify_org_management_permissions(user)
         try:
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
@@ -321,7 +309,6 @@ class Auth0Service:
     def delete_invitation(
         self: "Auth0Service", user: UserToken, invitation_id: str
     ) -> any:
-        self.verify_org_management_permissions(user)
         try:
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)

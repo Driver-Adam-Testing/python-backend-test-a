@@ -129,7 +129,6 @@ def build_source_user_response(
     if kind == "user":
         user = user_or_team
 
-        # Fetch user's org membership for role and super_admin status
         org_membership = acl_repository.get_user_org_membership(
             session=session,
             user_id=user.id,
@@ -144,19 +143,16 @@ def build_source_user_response(
             is_super_admin = org_membership.role == OrgRole.org_super_admin
             org_role = org_membership.role.value
 
-        # Determine access type: direct (user grant) or inherited (team grant)
         access_type = (
             "direct" if grant.principal_kind == PrincipalKind.user else "inherited"
         )
 
-        # Fetch user's team memberships
         team_memberships_data = acl_repository.get_user_team_memberships(
             session=session,
             user_id=user.id,
             organization_id=organization_id,
         )
 
-        # Get teams that have access to this source with their roles
         from sqlmodel import select
 
         team_grants_query = select(PrimaryAssetRoleGrant).where(
@@ -167,12 +163,10 @@ def build_source_user_response(
         )
         team_grants = session.exec(team_grants_query).all()
 
-        # Build a map of team_id -> source_role
         team_source_roles = {
             grant.team_id: grant.role for grant in team_grants if grant.team_id
         }
 
-        # Build team membership list - only teams with access to this source
         teams = [
             TeamMembershipInfo(
                 team_id=item["team"].id,
@@ -188,17 +182,16 @@ def build_source_user_response(
             user_id=user.id,
             name=user.name or "",
             email=user.email or "",
-            picture="",  # TODO: Fetch from Auth0 or add to User model
+            picture="",
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=is_super_admin,
-            source_role=grant.role,  # Role on the source (from grant)
-            access_type=access_type,  # How user has access
-            org_role=org_role,  # Role in organization
+            source_role=grant.role,
+            access_type=access_type,
+            org_role=org_role,
             teams=teams,
         )
-    else:  # team
+    else:
         team = user_or_team
-        # For teams, return minimal user-like response (since schema is user-only now)
         return SourceUserResponse(
             user_id=str(team.id),
             name=team.name,
@@ -206,10 +199,10 @@ def build_source_user_response(
             picture=None,
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=False,
-            source_role=grant.role,  # Role on the source
-            access_type="direct",  # Teams always have direct grants
-            org_role="team_member",  # Indicate this is a team
-            teams=[],  # Teams don't have team memberships
+            source_role=grant.role,
+            access_type="direct",
+            org_role="team_member",
+            teams=[],
         )
 
 

@@ -225,10 +225,8 @@ def get_source_users_with_details(
 
         return output[offset : offset + limit]
 
-    # Handle user_kind='user' or None - return users with direct + team-based access
-    users_dict = {}  # user_id -> {grant, user}
+    users_dict = {}
 
-    # 1. Get users with direct grants (if not filtered to 'inherited' only)
     if access_type != "inherited":
         direct_user_query = select(PrimaryAssetRoleGrant).where(
             PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
@@ -251,9 +249,7 @@ def get_source_users_with_details(
                 if user:
                     users_dict[grant.user_id] = {"grant": grant, "user": user}
 
-    # 2. Get users from teams that have access to the source (if not filtered to 'direct' only)
     if access_type != "direct":
-        # Get team grants
         team_query = select(PrimaryAssetRoleGrant).where(
             PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
@@ -265,10 +261,8 @@ def get_source_users_with_details(
 
         team_grants = session.exec(team_query).all()
 
-        # For each team, get all members
         for team_grant in team_grants:
             if team_grant.team_id:
-                # Get team members
                 team_members_query = (
                     select(TeamMembership, User)
                     .join(User, TeamMembership.user_id == User.id)
@@ -277,16 +271,13 @@ def get_source_users_with_details(
                 team_members = session.exec(team_members_query).all()
 
                 for _membership, user in team_members:
-                    # Only add if not already in dict (direct grants take precedence)
                     if user.id not in users_dict:
                         users_dict[user.id] = {"grant": team_grant, "user": user}
 
-    # Convert dict to list and apply search filter
     for data in users_dict.values():
         user = data["user"]
         grant = data["grant"]
 
-        # Apply search filter
         if search and (
             search.lower() not in (user.name or "").lower()
             and search.lower() not in (user.email or "").lower()
@@ -295,10 +286,8 @@ def get_source_users_with_details(
 
         output.append({"grant": grant, "asset": asset, "kind": "user", "member": user})
 
-    # Sort by user name for consistent ordering
     output.sort(key=lambda x: (x["member"].name or "").lower())
 
-    # Apply pagination
     return output[offset : offset + limit]
 
 
@@ -326,7 +315,6 @@ def count_source_users(
     Returns:
         Count of matching users
     """
-    # Use the same logic as get_source_users_with_details but just count
     results = get_source_users_with_details(
         session=session,
         primary_asset_id=primary_asset_id,
@@ -335,7 +323,7 @@ def count_source_users(
         user_kind=user_kind,
         search=search,
         access_type=access_type,
-        limit=999999,  # Get all for counting
+        limit=999999,
         offset=0,
     )
     return len(results)

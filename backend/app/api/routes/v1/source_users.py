@@ -43,20 +43,6 @@ def get_source_users(
         default=None, description="Filter by access type: 'direct' or 'inherited'"
     ),
 ) -> SourceUsersResponse:
-    """
-    Get paginated list of all users with effective access to a source.
-
-    Returns all users (not teams) who have access to the source, including:
-    - Users with direct grants to the source
-    - Users who are members of teams that have access to the source (inherited access)
-
-    Each user response includes their source role, access type (direct/inherited),
-    org role, and list of teams they belong to that have access to this source.
-
-    Filters:
-    - access_type='direct': Only users with explicit direct grants
-    - access_type='inherited': Only users with team-based access
-    """
     enforce_asset_action(session, user, source_id, "asset.use_as_source")
     logger.info(
         f"User {user.user_id} getting users for source {source_id} "
@@ -86,11 +72,6 @@ def add_source_users(
     source_id: UUID,
     request: AddSourceUsersRequest,
 ) -> None:
-    """
-    Add users to a source.
-
-    - **users**: List of users (not teams) with roles to grant
-    """
     enforce_asset_action(session, user, source_id, "asset.manage")
     logger.info(
         f"User {user.user_id} adding {len(request.users)} users to source {source_id}"

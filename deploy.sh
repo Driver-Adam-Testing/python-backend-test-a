@@ -68,7 +68,7 @@ else
   echo "Image is up-to-date. No push needed."
   export HATCHET_WORKER_PUSHED=false
 fi
-echo "what"
+
 npm install -g aws-cdk@latest
 pip install aws-cdk-lib
 pip install aws-cdk.aws-lambda-python-alpha

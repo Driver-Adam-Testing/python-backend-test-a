@@ -1,8 +1,10 @@
 #!/bin/bash
 
 export BASE_URL="driverai.com"
+export URL_PREFIX="dev"
 export AWS_REGION="us-east-1"
 export AWS_ACCOUNT="550082761109"
+export AWS_PROFILE="dev"
 export AWS_AZ_COUNT="2"
 export DEPLOYMENT_ENVIRONMENT="dev"
 export AUTH0_TENANT="driverai-dev"

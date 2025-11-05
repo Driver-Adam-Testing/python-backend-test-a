@@ -73,7 +73,7 @@ class HatchetWorker(Construct):
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "OPENAI_URL": openai_url,
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077"
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077"
         }
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(

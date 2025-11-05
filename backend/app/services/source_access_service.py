@@ -5,10 +5,10 @@ from uuid import UUID
 
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Team
 from database.models import User as DbUser
-from database.models_enums import PrimaryAssetRole, PrincipalKind
+from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.auth.models import User
 from app.repositories import acl_repository, team_member_repository, team_repository
@@ -138,8 +138,6 @@ def build_source_user_response(
         is_super_admin = False
         org_role = "org_member"
         if org_membership:
-            from database.models_enums import OrgRole
-
             is_super_admin = org_membership.role == OrgRole.org_super_admin
             org_role = org_membership.role.value
 
@@ -152,8 +150,6 @@ def build_source_user_response(
             user_id=user.id,
             organization_id=organization_id,
         )
-
-        from sqlmodel import select
 
         team_grants_query = select(PrimaryAssetRoleGrant).where(
             PrimaryAssetRoleGrant.primary_asset_id == source_id,

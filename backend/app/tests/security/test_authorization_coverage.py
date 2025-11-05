@@ -255,6 +255,8 @@ def test_unprotected_endpoint_is_safe(
     """Verify unprotected router only contains expected safe endpoints."""
     path = unprotected_route["path"]
 
+    # TODO dont just skip gql. we should check authz if possible
+
     # Known issue: git-provider router mixes protected and unprotected routes
     # This should be refactored but is marked as xfail for now
     if (

@@ -16,7 +16,7 @@ from database.models import (
     Version,
 )
 from database.models_enums import PrimaryAssetKind, PrimaryAssetRole
-from sqlalchemy import and_, case, literal
+from sqlalchemy import and_, case, literal, true
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
@@ -249,6 +249,9 @@ def page_source_authorization_filter(
 
     A page is accessible if NO unauthorized sources exist for it.
     """
+    if is_super_admin(db, user_id, organization_id):
+        return true()
+
     team_ids = get_user_team_ids(db, user_id, organization_id)
     is_member = is_org_member(db, user_id, organization_id)
     grant_condition = build_grant_condition(user_id, team_ids, is_member)

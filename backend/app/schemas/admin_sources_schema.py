@@ -2,10 +2,8 @@
 
 from typing import Literal
 
+from app.schemas.common import SourceVisibility
 from pydantic import BaseModel, ConfigDict, Field
-
-# ===== Common Types =====
-SourceVisibility = Literal["private", "internal", "public"]
 
 
 # ===== Admin Sources Request =====

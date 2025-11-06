@@ -4,59 +4,20 @@ from typing import Any
 from uuid import UUID
 
 from app.authorization.query_filters import (
+    asset_visibility_expr,
     effective_asset_role_expr,
     exclude_page_assets_filter,
     primary_asset_grant_filter,
 )
-from app.schemas.admin_sources_schema import SourceVisibility
+from app.schemas.common import SourceVisibility
 from database.models import (
     PrimaryAsset,
     PrimaryAssetRoleGrant,
     PrimaryAssetTag,
     Tag,
 )
-from database.models_enums import PrimaryAssetRole, PrincipalKind
-from sqlmodel import Session, and_, case, func, literal, select
-
-
-def _build_visibility_subqueries(organization_id: str) -> tuple:
-    org_grant_subquery = (
-        select(
-            PrimaryAssetRoleGrant.primary_asset_id,
-            literal(True).label("has_org_grant"),
-        )
-        .where(
-            and_(
-                PrimaryAssetRoleGrant.organization_id == organization_id,
-                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org,
-            )
-        )
-        .subquery()
-    )
-
-    public_grant_subquery = (
-        select(
-            PrimaryAssetRoleGrant.primary_asset_id,
-            literal(True).label("has_public_grant"),
-        )
-        .where(
-            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.public,
-        )
-        .subquery()
-    )
-
-    return org_grant_subquery, public_grant_subquery
-
-
-def _build_visibility_expression(
-    org_grant_subquery: Any, public_grant_subquery: Any
-) -> Any:
-    """Visibility precedence: public > internal > private."""
-    return case(
-        (public_grant_subquery.c.has_public_grant.is_not(None), literal("public")),
-        (org_grant_subquery.c.has_org_grant.is_not(None), literal("internal")),
-        else_=literal("private"),
-    )
+from database.models_enums import PrimaryAssetRole
+from sqlmodel import Session, and_, func, select
 
 
 def _apply_common_filters(
@@ -138,11 +99,8 @@ def get_sources_with_counts(
         .subquery()
     )
 
-    org_grant_subquery, public_grant_subquery = _build_visibility_subqueries(
-        organization_id
-    )
-    visibility_expr = _build_visibility_expression(
-        org_grant_subquery, public_grant_subquery
+    visibility_expr, org_grant_subquery, public_grant_subquery = asset_visibility_expr(
+        organization_id, PrimaryAsset.id
     )
 
     role_expr = effective_asset_role_expr(
@@ -222,14 +180,10 @@ def count_sources(
     """
     query = select(func.count()).select_from(PrimaryAsset)
 
-    # Add visibility joins if needed
     visibility_expr = None
     if visibility:
-        org_grant_subquery, public_grant_subquery = _build_visibility_subqueries(
-            organization_id
-        )
-        visibility_expr = _build_visibility_expression(
-            org_grant_subquery, public_grant_subquery
+        visibility_expr, org_grant_subquery, public_grant_subquery = (
+            asset_visibility_expr(organization_id, PrimaryAsset.id)
         )
         query = query.outerjoin(
             org_grant_subquery,

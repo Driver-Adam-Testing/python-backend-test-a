@@ -11,17 +11,17 @@ from typing import TYPE_CHECKING
 import pytest
 from database.models_enums import PrimaryAssetRole, PrincipalKind
 
-if TYPE_CHECKING:
-    from sqlmodel import Session
-
-    from app.auth.models import User
-
 from app.services.admin_sources_service import AdminSourcesService
 from app.test_factories import (
     Auth0UserFactory,
     PrimaryAssetFactory,
     PrimaryAssetRoleGrantFactory,
 )
+
+if TYPE_CHECKING:
+    from sqlmodel import Session
+
+    from app.auth.models import User
 
 
 def create_mock_user(organization_id: str, user_id: str = "test-user-id") -> User:

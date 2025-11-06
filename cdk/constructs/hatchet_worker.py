@@ -73,16 +73,24 @@ class HatchetWorker(Construct):
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "OPENAI_URL": openai_url,
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077"
         }
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
         )
+
+        hatchet_token_secrect = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
+        )
+
         secret_fields = settings.SECRECTS_KEYS.split(",")
         secrets_map = {
             k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
             for k in secret_fields
         }
+        secrets_map["HATCHET_CLIENT_TOKEN"] = aws_ecs.Secret.from_secrets_manager(hatchet_token_secrect)
+
         base_env.update(settings.to_dict())
 
         worker_task_def = aws_ecs.FargateTaskDefinition(

@@ -1,20 +1,22 @@
-from datetime import datetime
-
+from database.models import ApiKey, OnboardingChecklist, PrimaryAsset, Version
+from database.models_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter
 from sqlmodel import select
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_membership
 from app.services.onboarding_checklist_service import OnboardingChecklistService
-from database.models import ApiKey, OnboardingChecklist, PrimaryAsset, Version
-from database.models_enums import PrimaryAssetKind, VersionStatus
-
 
 router = APIRouter()
 
 
 @router.get("/onboarding-checklist", response_model=OnboardingChecklist)
-def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> OnboardingChecklist:
+def get_onboarding_checklist(
+    session: CurrentSession, user: UserToken
+) -> OnboardingChecklist:
+    enforce_org_membership(session, user)
+
     # Fetch or create the checklist record
     svc = OnboardingChecklistService.get_or_create_checklist(
         session=session,
@@ -42,7 +44,11 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
             .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
             .where(PrimaryAsset.organization_id == user.organization_id)
             .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-            .where(Version.status.in_([VersionStatus.GENERATION_COMPLETE, VersionStatus.GENERATING]))
+            .where(
+                Version.status.in_(
+                    [VersionStatus.GENERATION_COMPLETE, VersionStatus.GENERATING]
+                )
+            )
             .order_by(Version.created_at.asc())
         ).first()
 
@@ -100,5 +106,3 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
             session.refresh(checklist)
 
     return checklist
-
-

@@ -316,7 +316,7 @@ def get_user_sources_with_details(
         .where(PrimaryAsset.organization_id == organization_id)
         .where(
             primary_asset_grant_filter(session, user_id, organization_id),
-            PrimaryAsset.kind != PrimaryAssetKind.PAGE,
+            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 

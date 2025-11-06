@@ -2,27 +2,16 @@
 
 import logging
 
-from database.models import (
-    Organization,
-    OrgMembership,
-    PrimaryAssetRoleGrant,
-    TeamMembership,
-)
+from database.models import OrgMembership
 from database.models import User as DbUser
-from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, TeamRole
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.auth.models import User
-from app.schemas.user_profile_schema import Entitlement, MeResponse
 from app.authorization.core import check_source_admin, check_team_admin
+from app.schemas.user_profile_schema import MeResponse
 
 logger = logging.getLogger(__name__)
-
-
-def map_org_role_to_string(role: OrgRole) -> str:
-    """Map OrgRole enum to string."""
-    return role.value
 
 
 class UserProfileService:
@@ -63,9 +52,6 @@ class UserProfileService:
                 detail=f"User {user_id} not a member of organization {organization_id}",
             )
 
-        # Get entitlements from organization metadata
-        entitlements = self._get_entitlements(organization_id)
-
         # Check if user is team admin
         is_team_admin = check_team_admin(self.session, user_id, organization_id)
 
@@ -77,8 +63,8 @@ class UserProfileService:
             email=db_user.email or "",
             name=db_user.name or "",
             organization_id=organization_id,
-            org_role=map_org_role_to_string(org_membership.role),
-            entitlements=entitlements,
+            org_role=org_membership.role,
+            entitlements=None,
             team_admin=is_team_admin,
             source_admin=is_source_admin,
         )
@@ -97,30 +83,3 @@ class UserProfileService:
             OrgMembership.org_id == organization_id,
         )
         return self.session.exec(query).first()
-
-    def _get_entitlements(self, organization_id: str) -> list[Entitlement] | None:
-        """
-        Get entitlements from organization metadata.
-
-        Returns None if no entitlements or organization not found.
-        """
-        query = select(Organization).where(Organization.id == organization_id)
-        org = self.session.exec(query).first()
-
-        if not org or not org.org_metadata:
-            return None
-
-        # Extract entitlements from org_metadata if present
-        entitlements_data = org.org_metadata.get("entitlements")
-        if not entitlements_data or not isinstance(entitlements_data, list):
-            return None
-
-        # Convert to Entitlement objects
-        entitlements = []
-        for item in entitlements_data:
-            if isinstance(item, dict) and "name" in item and "enabled" in item:
-                entitlements.append(
-                    Entitlement(name=item["name"], enabled=item["enabled"])
-                )
-
-        return entitlements if entitlements else None

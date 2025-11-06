@@ -620,7 +620,13 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "primary_asset_tag"},
     )
-    grants: list["PrimaryAssetRoleGrant"] = Relationship(back_populates="primary_asset")
+    grants: list["PrimaryAssetRoleGrant"] = Relationship(
+        back_populates="primary_asset",
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "cascade": "all, delete-orphan",
+        },
+    )
     vcs_auto_update_policy: VcsAutoUpdatePolicy | None = Field(
         sa_column=Column(String, nullable=True)
     )

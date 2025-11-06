@@ -6,9 +6,9 @@ from fastapi import APIRouter, Query
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_any_source_admin
 from app.schemas.admin_sources_schema import AdminSourcesResponse
 from app.services.admin_sources_service import AdminSourcesService
-from app.authorization.fastapi import enforce_any_source_admin
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
     "/",
     response_model=AdminSourcesResponse,
     summary="Get admin sources list",
-    description="Get paginated list of all sources with admin metadata including member and team counts",
+    description="Get paginated list of sources where the user has effective admin role. Excludes Pages (only returns Codebases and PDFs).",
 )
 def get_admin_sources(
     session: CurrentSession,
@@ -37,12 +37,6 @@ def get_admin_sources(
         pattern="^(ASC|DESC)$",
     ),
 ) -> AdminSourcesResponse:
-    """
-    Get paginated list of sources for admin management.
-
-    Returns sources with visibility, member counts, and team counts.
-    Supports filtering by search term, asset kind, and tags.
-    """
     enforce_any_source_admin(session, user)
     logger.info(
         f"User {user.user_id} getting admin sources "

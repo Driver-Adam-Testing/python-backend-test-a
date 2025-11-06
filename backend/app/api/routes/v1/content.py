@@ -54,6 +54,7 @@ def get_download_content_by_id(
 )
 def export_markdown_content_to_rst(
     session: CurrentSession,
+    user: UserToken,  # for consistency with other endpoints, validate token here...
     request: ExportSingleRequest,
 ) -> StreamingResponse:
     content_service = ContentService(session)

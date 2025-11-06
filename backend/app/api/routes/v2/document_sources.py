@@ -1,5 +1,7 @@
+from uuid import UUID
+
 from database.models import DocumentSource, Node, PrimaryAsset, Version
-from fastapi import Request
+from fastapi import HTTPException, Query, Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import delete, func, select
 
@@ -18,18 +20,60 @@ from app.api.routes.v2.schemas import (
 )
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
+from app.authorization.query_filters import page_source_authorization_filter
 
 
-@router.get("/document_sources", response_model=ListWithCount[DocumentSourceDetailRead])
-def list_document_sources(
+@router.get("/page_sources", response_model=ListWithCount[DocumentSourceDetailRead])
+def list_page_sources(
     request: Request,
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
+    page_node_id: UUID = Query(..., description="Page node ID (required)"),
 ) -> ListWithCount[DocumentSourceRead]:
-    # TODO: authorization with list endpoint!!
+    """
+    List sources for a specific page.
+
+    Requires page_node_id parameter. User must have access to ALL sources
+    for the page to view the page sources.
+    """
+    page_node = session.exec(
+        select(Node).options(selectinload(Node.version)).where(Node.id == page_node_id)
+    ).one_or_none()
+
+    if not page_node:
+        raise HTTPException(status_code=404, detail="Page node not found")
+
+    page_asset_id = page_node.version.primary_asset_id
+
+    page_asset = session.exec(
+        select(PrimaryAsset).where(PrimaryAsset.id == page_asset_id)
+    ).one_or_none()
+
+    if not page_asset or page_asset.organization_id != user.organization_id:
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    page_query = (
+        select(PrimaryAsset)
+        .where(PrimaryAsset.id == page_asset_id)
+        .where(
+            page_source_authorization_filter(
+                session, user.user_id, user.organization_id
+            )
+        )
+    )
+
+    authorized_page = session.exec(page_query).one_or_none()
+
+    if not authorized_page:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. You must have access to all sources for this page.",
+        )
+
     if pagination.sort_by == "updated_at":
         pagination.sort_by = None
+
     query = (
         select(DocumentSource)
         .join(DocumentSource.source_node)
@@ -43,6 +87,7 @@ def list_document_sources(
             .selectinload(Node.version)
             .selectinload(Version.creator),
         )
+        .where(DocumentSource.page_node_id == page_node_id)
         .where(PrimaryAsset.organization_id == user.organization_id)
     )
 
@@ -116,6 +161,22 @@ async def batch_delete_document_sources(
 ) -> list[bool]:
     # NOTE: depending on how we implement the sources/generate flow for autodocs, this may be unneeded.
     # Because sources are supposed to be read-only once generation has commenced, it wouldn't be meaningful to delete sources.
+
+    # Verify user has access to all source nodes before deleting; probably not strictly necessary,
+    # but it makes the authz test coverage happy!
+    node_ids = {data.source_node_id for data in payload}
+    query = (
+        select(Node).where(Node.id.in_(node_ids)).options(selectinload(Node.version))
+    )
+    nodes = session.exec(query).all()
+    for node in nodes:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
+
     deletion_results = []
 
     for data in payload:

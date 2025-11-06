@@ -1,5 +1,6 @@
 import hashlib
 from logging import getLogger
+from typing import Any
 from uuid import UUID
 
 import boto3
@@ -35,7 +36,12 @@ from app.api.routes.v2.schemas import (
 from app.api.session import CurrentSession
 from app.auth.models import User
 from app.authorization.fastapi import enforce_asset_action
-from app.authorization.query_filters import primary_asset_grant_filter
+from app.authorization.query_filters import (
+    effective_asset_role_expr,
+    exclude_page_assets_filter,
+    page_asset_grant_filter,
+    primary_asset_grant_filter,
+)
 from app.core.config import settings  # Assuming settings contains AWS credentials
 
 logger = getLogger(__name__)
@@ -50,21 +56,66 @@ def list_primary_assets(
     tag_ids: str | None = None,
     document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
-    return _list_primary_assets(
-        request, session, user, pagination, tag_ids, document_source_ids
+    """
+    List non-page primary assets (CODEBASE, FILE, etc).
+
+    Uses standard asset-based authorization. For PAGE assets, use /page_assets.
+    """
+    return _list_assets_with_filter(
+        request,
+        session,
+        user,
+        pagination,
+        auth_filter=lambda s, uid, oid: primary_asset_grant_filter(s, uid, oid),
+        asset_kind_filter=exclude_page_assets_filter(),
+        tag_ids=tag_ids,
+        document_source_ids=document_source_ids,
     )
 
 
-def _list_primary_assets(
+@router.get("/page_assets", response_model=ListWithCount[PrimaryAssetDetailRead])
+def list_page_assets(
     request: Request,
     session: CurrentSession,
-    user: User,
+    user: UserToken,
     pagination: Pagination,
     tag_ids: str | None = None,
     document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
+    """
+    List PAGE assets where user has grants to ALL sources.
+
+    This endpoint only returns PAGE and PAGE_TEMPLATE assets.
+    Authorization is source-based: user must have access to ALL sources
+    referenced by each page.
+    """
+    return _list_assets_with_filter(
+        request,
+        session,
+        user,
+        pagination,
+        auth_filter=lambda s, uid, oid: page_asset_grant_filter(s, uid, oid),
+        asset_kind_filter=None,  # page_asset_grant_filter already includes kind filter
+        tag_ids=tag_ids,
+        document_source_ids=document_source_ids,
+    )
+
+
+def _list_assets_with_filter(
+    request: Request,
+    session: CurrentSession,
+    user: User,
+    pagination: Pagination,
+    auth_filter: callable,
+    asset_kind_filter: Any | None = None,
+    tag_ids: str | None = None,
+    document_source_ids: str | None = None,
+) -> ListWithCount[PrimaryAssetDetailRead]:
+    role_expr = effective_asset_role_expr(
+        session, user.user_id, user.organization_id, PrimaryAsset.id
+    )
     query = (
-        select(PrimaryAsset)
+        select(PrimaryAsset, role_expr.label("effective_role"))
         .options(
             selectinload(PrimaryAsset.most_recent_version),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
@@ -92,8 +143,12 @@ def _list_primary_assets(
             ),
         )
         .where(PrimaryAsset.organization_id == user.organization_id)
-        .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
     )
+
+    if asset_kind_filter is not None:
+        query = query.where(asset_kind_filter)
+
+    query = query.where(auth_filter(session, user.user_id, user.organization_id))
 
     filters = dict(request.query_params)
     query = apply_filters_to_query(query, filters, PrimaryAsset)
@@ -141,23 +196,33 @@ def _list_primary_assets(
     total_count = session.exec(count_query).one()
     # TODO: This is a hack to sort by total_files. We should use the query utils instead, but It's very problematic.
     if pagination.sort_by == "most_recent_version.root_node.total_files":
-        primary_assets = session.exec(query).all()
-        primary_assets = sorted(
-            primary_assets,
-            key=lambda x: (
-                x.most_recent_version.root_node.total_files
-                if x.most_recent_version.root_node
+        results = session.exec(query).all()
+        results = sorted(
+            results,
+            key=lambda row: (
+                row[0].most_recent_version.root_node.total_files
+                if row[0].most_recent_version.root_node
                 else 0
             ),
             reverse=(pagination.sort_direction == "DESC"),
         )
-        primary_assets = primary_assets[
-            pagination.offset : pagination.offset + pagination.limit
-        ]
+        results = results[pagination.offset : pagination.offset + pagination.limit]
     else:
         query = apply_sorting_to_query(query, pagination, PrimaryAsset)
-        result = session.exec(query)
-        primary_assets = result.all()
+        results = session.exec(query).all()
+
+    # This is awkward: we need to add effective_role to each asset, but can't do it directly
+    # because PrimaryAsset is a SQLModel and Pydantic models are immutable. Using **asset.__dict__
+    # is gross because it includes SQLAlchemy internals, but model_construct() filters to only
+    # defined fields so it's safe. This is a symptom of endpoints being tightly coupled to table
+    # definitions rather than serving the needs of the application
+    primary_assets: list[PrimaryAssetDetailRead] = []
+    for asset, role in results:
+        asset_with_role = PrimaryAssetDetailRead.model_construct(
+            **asset.__dict__,
+            effective_role=role,
+        )
+        primary_assets.append(asset_with_role)
 
     return ListWithCount(results=primary_assets, total_count=total_count)
 

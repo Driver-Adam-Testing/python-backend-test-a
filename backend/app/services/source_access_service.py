@@ -99,7 +99,6 @@ def build_source_team_response(
         team_name=team.name,
         role=grant.role,
         member_count=member_count,
-        visibility="private",  # TODO: Use actual visibility
         created_at=grant.created_at.isoformat() if grant.created_at else "",
     )
 
@@ -608,6 +607,7 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
+        # TODO: andrew question - why are get calling "get source users" here for teams? very confusing
         teams_with_details = acl_repository.get_source_users_with_details(
             session=self.session,
             primary_asset_id=source_id,

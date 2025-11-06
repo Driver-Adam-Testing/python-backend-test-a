@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 # ===== Common Types =====
 SourceVisibility = Literal["private", "internal", "public"]
 SourceUserKind = Literal["user", "team"]
-AccessType = Literal["direct", "inherited"]
+AssignmentType = Literal["direct", "inherited"]
 
 
 # ===== Team Sources Request Schemas =====
@@ -210,7 +210,7 @@ class SourceUserResponse(BaseModel):
         ...,
         description="User's effective role on this source (from direct grant or team grant)",
     )
-    access_type: AccessType = Field(
+    access_type: AssignmentType = Field(
         ...,
         description="How user has access: 'direct' for direct grants, 'inherited' for team-based access",
     )

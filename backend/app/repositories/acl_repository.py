@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from app.schemas.source_access_schema import AccessType
+from app.schemas.source_access_schema import AssignmentType
 from database.models import (
     OrgMembership,
     PrimaryAsset,
@@ -166,7 +166,7 @@ def get_source_users_with_details(
     roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
-    access_type: AccessType | None = None,
+    assignment_type: AssignmentType | None = None,
     limit: int = 30,
     offset: int = 0,
 ) -> list[dict]:
@@ -184,7 +184,7 @@ def get_source_users_with_details(
         roles: Optional list of roles to filter by
         user_kind: Optional user kind filter ('user' or 'team')
         search: Optional search query for name or email
-        access_type: Optional access type filter ('direct' or 'inherited')
+        assignment_type: Optional assignment type filter ('direct' or 'inherited')
         limit: Maximum number of results
         offset: Number of results to skip
 
@@ -228,7 +228,7 @@ def get_source_users_with_details(
 
     users_dict = {}
 
-    if access_type != "inherited":
+    if assignment_type != "inherited":
         direct_user_query = select(PrimaryAssetRoleGrant).where(
             PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
@@ -250,7 +250,7 @@ def get_source_users_with_details(
                 if user:
                     users_dict[grant.user_id] = {"grant": grant, "user": user}
 
-    if access_type != "direct":
+    if assignment_type != "direct":
         team_query = select(PrimaryAssetRoleGrant).where(
             PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
@@ -299,7 +299,7 @@ def count_source_users(
     roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
-    access_type: AccessType | None = None,
+    assignment_type: AssignmentType | None = None,
 ) -> int:
     """
     Count users for a source with optional filtering.
@@ -311,7 +311,7 @@ def count_source_users(
         roles: Optional list of roles to filter by
         user_kind: Optional user kind filter
         search: Optional search query
-        access_type: Optional access type filter ('direct' or 'inherited')
+        assignment_type: Optional assignment type filter ('direct' or 'inherited')
 
     Returns:
         Count of matching users
@@ -323,7 +323,7 @@ def count_source_users(
         roles=roles,
         user_kind=user_kind,
         search=search,
-        access_type=access_type,
+        assignment_type=assignment_type,
         limit=999999,
         offset=0,
     )

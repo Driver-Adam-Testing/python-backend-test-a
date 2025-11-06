@@ -711,19 +711,19 @@ class TestGetSourceUsersEffectiveAccess:
         assert result_member.users[0].user_id == user_b.id
         assert result_member.users[0].source_role == PrimaryAssetRole.asset_member
 
-    def test_get_source_users_filters_by_access_type(
+    def test_get_source_users_filters_by_assignment_type(
         self, integration_db_session: Session
     ) -> None:
         """
-        Test that get_source_users correctly filters by access_type.
+        Test that get_source_users correctly filters by assignment_type.
 
         Steps:
         1. Create source
         2. Create user A with direct admin grant
         3. Create user B via team with member grant
-        4. Call get_source_users with access_type='direct'
+        4. Call get_source_users with assignment_type='direct'
         5. Verify only user A appears
-        6. Call get_source_users with access_type='inherited'
+        6. Call get_source_users with assignment_type='inherited'
         7. Verify only user B appears
         """
         org_id = "test-org-id"
@@ -769,7 +769,7 @@ class TestGetSourceUsersEffectiveAccess:
         result_direct = service.get_source_users(
             user=mock_user,
             source_id=source.id,
-            access_type="direct",
+            assignment_type="direct",
             limit=100,
             offset=0,
         )
@@ -781,7 +781,7 @@ class TestGetSourceUsersEffectiveAccess:
         result_inherited = service.get_source_users(
             user=mock_user,
             source_id=source.id,
-            access_type="inherited",
+            assignment_type="inherited",
             limit=100,
             offset=0,
         )

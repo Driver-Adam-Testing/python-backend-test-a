@@ -10,8 +10,8 @@ from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
 from app.schemas.source_access_schema import (
-    AccessType,
     AddSourceUsersRequest,
+    AssignmentType,
     RemoveSourceUsersRequest,
     SourceUsersResponse,
     UpdateSourceUsersRequest,
@@ -40,14 +40,14 @@ def get_source_users(
         default=None, description="Filter by source access roles"
     ),
     search: str | None = Query(default=None, description="Search by name or email"),
-    access_type: AccessType | None = Query(
-        default=None, description="Filter by access type: 'direct' or 'inherited'"
+    assignment_type: AssignmentType | None = Query(
+        default=None, description="Filter by assignment type: 'direct' or 'inherited'"
     ),
 ) -> SourceUsersResponse:
     enforce_asset_action(session, user, source_id, "asset.use_as_source")
     logger.info(
         f"User {user.user_id} getting users for source {source_id} "
-        f"(limit={limit}, offset={offset}, roles={roles}, search={search}, access_type={access_type})"
+        f"(limit={limit}, offset={offset}, roles={roles}, search={search}, assignment_type={assignment_type})"
     )
     service = SourceAccessService(session)
     return service.get_source_users(
@@ -55,7 +55,7 @@ def get_source_users(
         source_id=source_id,
         roles=roles,
         search=search,
-        access_type=access_type,
+        assignment_type=assignment_type,
         limit=limit,
         offset=offset,
     )

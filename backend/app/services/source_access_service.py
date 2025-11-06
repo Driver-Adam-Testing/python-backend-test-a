@@ -13,10 +13,10 @@ from sqlmodel import Session, select
 from app.auth.models import User
 from app.repositories import acl_repository, team_member_repository, team_repository
 from app.schemas.source_access_schema import (
-    AccessType,
     AddSourceTeamsRequest,
     AddSourceUsersRequest,
     AddTeamSourcesRequest,
+    AssignmentType,
     RemoveSourceTeamsRequest,
     RemoveSourceUsersRequest,
     RemoveTeamSourcesRequest,
@@ -142,7 +142,7 @@ def build_source_user_response(
             is_super_admin = org_membership.role == OrgRole.org_super_admin
             org_role = org_membership.role.value
 
-        access_type = (
+        assignment_type = (
             "direct" if grant.principal_kind == PrincipalKind.user else "inherited"
         )
 
@@ -183,7 +183,7 @@ def build_source_user_response(
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=is_super_admin,
             source_role=grant.role,
-            access_type=access_type,
+            access_type=assignment_type,
             org_role=org_role,
             teams=teams,
         )
@@ -487,7 +487,7 @@ class SourceAccessService:
         source_id: UUID,
         roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
-        access_type: AccessType | None = None,
+        assignment_type: AssignmentType | None = None,
         limit: int = 30,
         offset: int = 0,
     ) -> SourceUsersResponse:
@@ -499,7 +499,7 @@ class SourceAccessService:
             source_id: Source (primary asset) ID
             roles: Optional list of roles to filter by
             search: Optional search query
-            access_type: Optional access type filter ('direct' or 'inherited')
+            assignment_type: Optional assignment type filter ('direct' or 'inherited')
             limit: Maximum number of results
             offset: Number of results to skip
 
@@ -513,7 +513,7 @@ class SourceAccessService:
         organization_id = user.organization_id
         logger.info(
             f"Getting users for source {source_id} by user {user.user_id} "
-            f"(roles={roles}, search={search}, access_type={access_type})"
+            f"(roles={roles}, search={search}, assignment_type={assignment_type})"
         )
 
         # Verify source exists
@@ -537,7 +537,7 @@ class SourceAccessService:
             roles=roles,
             user_kind=user_kind,
             search=search,
-            access_type=access_type,
+            assignment_type=assignment_type,
             limit=limit,
             offset=offset,
         )
@@ -549,7 +549,7 @@ class SourceAccessService:
             roles=roles,
             user_kind=user_kind,
             search=search,
-            access_type=access_type,
+            assignment_type=assignment_type,
         )
 
         users = [

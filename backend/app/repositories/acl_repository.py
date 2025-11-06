@@ -11,7 +11,8 @@ from database.models import (
     TeamMembership,
     User,
 )
-from database.models_enums import PrimaryAssetRole, PrincipalKind
+from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind
+from sqlalchemy import literal, union_all
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, select
 
@@ -164,16 +165,15 @@ def get_source_users_with_details(
     primary_asset_id: UUID,
     organization_id: str,
     roles: list[PrimaryAssetRole] | None = None,
-    user_kind: str | None = None,
     search: str | None = None,
     assignment_type: AssignmentType | None = None,
     limit: int = 30,
     offset: int = 0,
 ) -> list[dict]:
     """
-    Get users (users and teams) for a source with full details.
+    Get users for a source with full details using efficient SQL.
 
-    When user_kind='user', returns all users with access including:
+    Returns all users with access including:
     - Users with direct grants to the source
     - Users who are members of teams that have grants to the source
 
@@ -182,114 +182,201 @@ def get_source_users_with_details(
         primary_asset_id: Primary asset (source) ID
         organization_id: Organization ID
         roles: Optional list of roles to filter by
-        user_kind: Optional user kind filter ('user' or 'team')
         search: Optional search query for name or email
         assignment_type: Optional assignment type filter ('direct' or 'inherited')
         limit: Maximum number of results
         offset: Number of results to skip
 
     Returns:
-        List of dictionaries with 'grant', 'asset', and 'member' (User or Team) keys
+        List of dictionaries with user data: user_id, name, email, effective_role,
+        assignment_type, org_role, is_super_admin, created_at
     """
-    output = []
-    asset = session.exec(
-        select(PrimaryAsset).where(PrimaryAsset.id == primary_asset_id)
-    ).first()
-
-    if not asset:
-        return []
-
-    # Handle user_kind='team' - only return teams
-    if user_kind == "team":
-        query = select(PrimaryAssetRoleGrant).where(
-            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
-            PrimaryAssetRoleGrant.organization_id == organization_id,
-            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+    # CTE 1: Direct user grants
+    direct_grants_cte = (
+        select(
+            PrimaryAssetRoleGrant.user_id,
+            PrimaryAssetRoleGrant.role.label("grant_role"),
+            literal("direct").label("assignment_type"),
+            PrimaryAssetRoleGrant.created_at,
         )
-
-        if roles:
-            query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
-
-        team_grants = session.exec(query).all()
-
-        for grant in team_grants:
-            if grant.team_id:
-                team = session.exec(
-                    select(Team).where(Team.id == grant.team_id)
-                ).first()
-                if team:
-                    if search and search.lower() not in team.name.lower():
-                        continue
-                    output.append(
-                        {"grant": grant, "asset": asset, "kind": "team", "member": team}
-                    )
-
-        return output[offset : offset + limit]
-
-    users_dict = {}
-
-    if assignment_type != "inherited":
-        direct_user_query = select(PrimaryAssetRoleGrant).where(
+        .where(
             PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
             PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+            PrimaryAssetRoleGrant.user_id.is_not(None),
+        )
+        .cte("direct_grants")
+    )
+
+    # CTE 2: Team-based grants (inherited)
+    team_grants_cte = (
+        select(
+            TeamMembership.user_id,
+            PrimaryAssetRoleGrant.role.label("grant_role"),
+            literal("inherited").label("assignment_type"),
+            PrimaryAssetRoleGrant.created_at,
+        )
+        .select_from(PrimaryAssetRoleGrant)
+        .join(TeamMembership, TeamMembership.team_id == PrimaryAssetRoleGrant.team_id)
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+            PrimaryAssetRoleGrant.team_id.is_not(None),
+        )
+        .cte("team_grants")
+    )
+
+    # Build union based on assignment_type filter
+    if assignment_type == "direct":
+        all_grants = select(
+            direct_grants_cte.c.user_id,
+            direct_grants_cte.c.grant_role,
+            direct_grants_cte.c.assignment_type,
+            direct_grants_cte.c.created_at,
+        ).subquery("all_grants")
+    elif assignment_type == "inherited":
+        all_grants = select(
+            team_grants_cte.c.user_id,
+            team_grants_cte.c.grant_role,
+            team_grants_cte.c.assignment_type,
+            team_grants_cte.c.created_at,
+        ).subquery("all_grants")
+    else:
+        # Union both direct and team grants
+        all_grants = union_all(
+            select(
+                direct_grants_cte.c.user_id,
+                direct_grants_cte.c.grant_role,
+                direct_grants_cte.c.assignment_type,
+                direct_grants_cte.c.created_at,
+            ),
+            select(
+                team_grants_cte.c.user_id,
+                team_grants_cte.c.grant_role,
+                team_grants_cte.c.assignment_type,
+                team_grants_cte.c.created_at,
+            ),
+        ).subquery("all_grants")
+
+    # Compute effective role per user (max priority role)
+    # Also prefer 'direct' assignment_type over 'inherited' when user has both
+    effective_roles = (
+        select(
+            all_grants.c.user_id,
+            func.max(all_grants.c.grant_role).label("effective_role"),
+            # Use MAX to prefer 'direct' over 'inherited' (alphabetically)
+            func.max(all_grants.c.assignment_type).label("assignment_type"),
+            func.min(all_grants.c.created_at).label("created_at"),
+        )
+        .group_by(all_grants.c.user_id)
+        .subquery("effective_roles")
+    )
+
+    # Main query: Join with User and OrgMembership
+    query = (
+        select(
+            User.id.label("user_id"),
+            User.name,
+            User.email,
+            effective_roles.c.effective_role,
+            effective_roles.c.assignment_type,
+            effective_roles.c.created_at,
+            OrgMembership.role.label("org_role"),
+        )
+        .select_from(effective_roles)
+        .join(User, User.id == effective_roles.c.user_id)
+        .outerjoin(
+            OrgMembership,
+            (OrgMembership.user_id == User.id)
+            & (OrgMembership.org_id == organization_id),
+        )
+    )
+
+    # Apply filters
+    if roles:
+        query = query.where(effective_roles.c.effective_role.in_(roles))
+
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.where(
+            (User.name.ilike(search_pattern)) | (User.email.ilike(search_pattern))
         )
 
-        if roles:
-            direct_user_query = direct_user_query.where(
-                PrimaryAssetRoleGrant.role.in_(roles)
-            )
+    # Order and paginate
+    query = query.order_by(User.name).offset(offset).limit(limit)
 
-        direct_grants = session.exec(direct_user_query).all()
+    results = session.exec(query).all()
 
-        for grant in direct_grants:
-            if grant.user_id:
-                user = session.exec(
-                    select(User).where(User.id == grant.user_id)
-                ).first()
-                if user:
-                    users_dict[grant.user_id] = {"grant": grant, "user": user}
+    # Convert to dictionary format
+    return [
+        {
+            "user_id": row.user_id,
+            "name": row.name or "",
+            "email": row.email or "",
+            "effective_role": row.effective_role,
+            "assignment_type": row.assignment_type,
+            "created_at": row.created_at.isoformat() if row.created_at else "",
+            "org_role": row.org_role or OrgRole.org_member,
+            "is_super_admin": row.org_role == OrgRole.org_super_admin
+            if row.org_role
+            else False,
+        }
+        for row in results
+    ]
 
-    if assignment_type != "direct":
-        team_query = select(PrimaryAssetRoleGrant).where(
+
+def get_source_teams_with_details(
+    session: Session,
+    primary_asset_id: UUID,
+    organization_id: str,
+    roles: list[PrimaryAssetRole] | None = None,
+    search: str | None = None,
+    limit: int = 30,
+    offset: int = 0,
+) -> list[dict]:
+    """
+    Get teams for a source with full details using efficient SQL.
+
+    Args:
+        session: Database session
+        primary_asset_id: Primary asset (source) ID
+        organization_id: Organization ID
+        roles: Optional list of roles to filter by
+        search: Optional search query for team name
+        limit: Maximum number of results
+        offset: Number of results to skip
+
+    Returns:
+        List of dictionaries with 'grant', 'asset', 'kind', and 'member' (Team) keys
+    """
+    query = (
+        select(PrimaryAssetRoleGrant, Team)
+        .join(Team, PrimaryAssetRoleGrant.team_id == Team.id)
+        .where(
             PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
             PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
         )
+    )
 
-        if roles:
-            team_query = team_query.where(PrimaryAssetRoleGrant.role.in_(roles))
+    if roles:
+        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
-        team_grants = session.exec(team_query).all()
+    if search:
+        query = query.where(Team.name.ilike(f"%{search}%"))
 
-        for team_grant in team_grants:
-            if team_grant.team_id:
-                team_members_query = (
-                    select(TeamMembership, User)
-                    .join(User, TeamMembership.user_id == User.id)
-                    .where(TeamMembership.team_id == team_grant.team_id)
-                )
-                team_members = session.exec(team_members_query).all()
+    query = query.order_by(Team.name).offset(offset).limit(limit)
+    results = session.exec(query).all()
 
-                for _membership, user in team_members:
-                    if user.id not in users_dict:
-                        users_dict[user.id] = {"grant": team_grant, "user": user}
-
-    for data in users_dict.values():
-        user = data["user"]
-        grant = data["grant"]
-
-        if search and (
-            search.lower() not in (user.name or "").lower()
-            and search.lower() not in (user.email or "").lower()
-        ):
-            continue
-
-        output.append({"grant": grant, "asset": asset, "kind": "user", "member": user})
-
-    output.sort(key=lambda x: (x["member"].name or "").lower())
-
-    return output[offset : offset + limit]
+    # Return in format compatible with existing service layer
+    asset = session.exec(
+        select(PrimaryAsset).where(PrimaryAsset.id == primary_asset_id)
+    ).first()
+    return [
+        {"grant": grant, "asset": asset, "kind": "team", "member": team}
+        for grant, team in results
+    ]
 
 
 def count_source_users(
@@ -297,37 +384,152 @@ def count_source_users(
     primary_asset_id: UUID,
     organization_id: str,
     roles: list[PrimaryAssetRole] | None = None,
-    user_kind: str | None = None,
     search: str | None = None,
     assignment_type: AssignmentType | None = None,
 ) -> int:
     """
-    Count users for a source with optional filtering.
+    Count users for a source with optional filtering using efficient SQL.
 
     Args:
         session: Database session
         primary_asset_id: Primary asset (source) ID
         organization_id: Organization ID
         roles: Optional list of roles to filter by
-        user_kind: Optional user kind filter
         search: Optional search query
         assignment_type: Optional assignment type filter ('direct' or 'inherited')
 
     Returns:
         Count of matching users
     """
-    results = get_source_users_with_details(
-        session=session,
-        primary_asset_id=primary_asset_id,
-        organization_id=organization_id,
-        roles=roles,
-        user_kind=user_kind,
-        search=search,
-        assignment_type=assignment_type,
-        limit=999999,
-        offset=0,
+    # CTE 1: Direct user grants
+    direct_grants_cte = (
+        select(
+            PrimaryAssetRoleGrant.user_id,
+            PrimaryAssetRoleGrant.role.label("grant_role"),
+            literal("direct").label("assignment_type"),
+        )
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+            PrimaryAssetRoleGrant.user_id.is_not(None),
+        )
+        .cte("direct_grants")
     )
-    return len(results)
+
+    # CTE 2: Team-based grants (inherited)
+    team_grants_cte = (
+        select(
+            TeamMembership.user_id,
+            PrimaryAssetRoleGrant.role.label("grant_role"),
+            literal("inherited").label("assignment_type"),
+        )
+        .select_from(PrimaryAssetRoleGrant)
+        .join(TeamMembership, TeamMembership.team_id == PrimaryAssetRoleGrant.team_id)
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+            PrimaryAssetRoleGrant.team_id.is_not(None),
+        )
+        .cte("team_grants")
+    )
+
+    # Build union based on assignment_type filter
+    if assignment_type == "direct":
+        all_grants = select(
+            direct_grants_cte.c.user_id,
+            direct_grants_cte.c.grant_role,
+            direct_grants_cte.c.assignment_type,
+        ).subquery("all_grants")
+    elif assignment_type == "inherited":
+        all_grants = select(
+            team_grants_cte.c.user_id,
+            team_grants_cte.c.grant_role,
+            team_grants_cte.c.assignment_type,
+        ).subquery("all_grants")
+    else:
+        # Union both direct and team grants
+        all_grants = union_all(
+            select(
+                direct_grants_cte.c.user_id,
+                direct_grants_cte.c.grant_role,
+                direct_grants_cte.c.assignment_type,
+            ),
+            select(
+                team_grants_cte.c.user_id,
+                team_grants_cte.c.grant_role,
+                team_grants_cte.c.assignment_type,
+            ),
+        ).subquery("all_grants")
+
+    # Compute effective role per user
+    effective_roles = (
+        select(
+            all_grants.c.user_id,
+            func.max(all_grants.c.grant_role).label("effective_role"),
+        )
+        .group_by(all_grants.c.user_id)
+        .subquery("effective_roles")
+    )
+
+    # Count query with filters
+    count_query = select(func.count()).select_from(effective_roles)
+
+    # Join User for search filter
+    if search or roles:
+        count_query = count_query.join(User, User.id == effective_roles.c.user_id)
+
+    if roles:
+        count_query = count_query.where(effective_roles.c.effective_role.in_(roles))
+
+    if search:
+        search_pattern = f"%{search}%"
+        count_query = count_query.where(
+            (User.name.ilike(search_pattern)) | (User.email.ilike(search_pattern))
+        )
+
+    return session.exec(count_query).one()
+
+
+def count_source_teams(
+    session: Session,
+    primary_asset_id: UUID,
+    organization_id: str,
+    roles: list[PrimaryAssetRole] | None = None,
+    search: str | None = None,
+) -> int:
+    """
+    Count teams for a source with optional filtering using efficient SQL.
+
+    Args:
+        session: Database session
+        primary_asset_id: Primary asset (source) ID
+        organization_id: Organization ID
+        roles: Optional list of roles to filter by
+        search: Optional search query
+
+    Returns:
+        Count of matching teams
+    """
+    query = (
+        select(func.count())
+        .select_from(PrimaryAssetRoleGrant)
+        .join(Team, PrimaryAssetRoleGrant.team_id == Team.id)
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+        )
+    )
+
+    if roles:
+        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
+
+    if search:
+        query = query.where(Team.name.ilike(f"%{search}%"))
+
+    return session.exec(query).one()
 
 
 def create_grant(
@@ -439,3 +641,76 @@ def get_user_team_memberships(
 
     results = session.exec(query).all()
     return [{"membership": membership, "team": team} for membership, team in results]
+
+
+def get_source_team_memberships_batch(
+    session: Session,
+    source_id: UUID,
+    user_ids: list[str],
+    organization_id: str,
+) -> dict[str, list[dict]]:
+    """
+    Batch fetch team memberships for multiple users that grant access to a source.
+
+    Returns only teams that have grants to the specified source.
+
+    Args:
+        session: Database session
+        source_id: Source (primary asset) ID
+        user_ids: List of user IDs to fetch team memberships for
+        organization_id: Organization ID
+
+    Returns:
+        Dictionary mapping user_id to list of TeamMembershipInfo dictionaries with keys:
+        - team_id: UUID
+        - display_name: str
+        - team_role: str
+        - source_role: PrimaryAssetRole
+    """
+    if not user_ids:
+        return {}
+
+    # Get all team grants for this source
+    team_grants_query = select(PrimaryAssetRoleGrant).where(
+        PrimaryAssetRoleGrant.primary_asset_id == source_id,
+        PrimaryAssetRoleGrant.organization_id == organization_id,
+        PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+        PrimaryAssetRoleGrant.team_id.is_not(None),
+    )
+    team_grants = session.exec(team_grants_query).all()
+
+    # Create mapping of team_id -> source_role
+    team_source_roles = {
+        grant.team_id: grant.role for grant in team_grants if grant.team_id
+    }
+
+    if not team_source_roles:
+        return {user_id: [] for user_id in user_ids}
+
+    # Batch fetch team memberships for all users, filtered to teams with source access
+    query = (
+        select(TeamMembership, Team)
+        .join(Team, TeamMembership.team_id == Team.id)
+        .where(
+            TeamMembership.user_id.in_(user_ids),
+            Team.organization_id == organization_id,
+            Team.id.in_(list(team_source_roles.keys())),
+        )
+        .order_by(TeamMembership.user_id, Team.name)
+    )
+
+    results = session.exec(query).all()
+
+    # Group by user_id
+    teams_by_user: dict[str, list[dict]] = {user_id: [] for user_id in user_ids}
+    for membership, team in results:
+        teams_by_user[membership.user_id].append(
+            {
+                "team_id": team.id,
+                "display_name": team.name,
+                "team_role": membership.role.value,
+                "source_role": team_source_roles[team.id],
+            }
+        )
+
+    return teams_by_user

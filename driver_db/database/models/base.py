@@ -102,17 +102,18 @@ class DocumentSource(SQLModel, table=True):
     __tablename__ = "document_source"
     """Link table between documents and their sources."""
 
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     source_node_id: None | uuid.UUID = Field(
         default=None,
         foreign_key="node.id",
-        primary_key=True,
-        ondelete="CASCADE",
+        nullable=True,
+        ondelete="SET NULL",
     )
     page_node_id: None | uuid.UUID = Field(
         default=None,
         foreign_key="node.id",
-        primary_key=True,
-        ondelete="CASCADE",
+        nullable=True,
+        ondelete="SET NULL",
     )
     source_node: "Node" = Relationship(
         back_populates="document_sources",
@@ -121,6 +122,18 @@ class DocumentSource(SQLModel, table=True):
     page_node: "Node" = Relationship(
         back_populates="document_sources",
         sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_node_id"},
+    )
+    source_version_node_id: None | uuid.UUID = Field(
+        default=None,
+        foreign_key="version_node.id",
+        nullable=True,
+        ondelete="CASCADE",
+    )
+    page_version_node_id: None | uuid.UUID = Field(
+        default=None,
+        foreign_key="version_node.id",
+        nullable=True,
+        ondelete="CASCADE",
     )
 
 
@@ -735,17 +748,22 @@ class Version(SQLModel, table=True):  # type: ignore
 
 class VersionNode(SQLModel, table=True):
     __tablename__ = "version_node"
+    __table_args__ = (
+        UniqueConstraint(
+            "version_id",
+            "relative_path",
+            name="ix_version_node_version_id_relative_path",
+            postgresql_nulls_not_distinct=True,
+        ),
+    )
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     version_id: uuid.UUID = Field(
-        foreign_key="version.id", primary_key=True, ondelete="CASCADE", index=True
+        foreign_key="version.id", ondelete="CASCADE", index=True
     )
     # Relative path here since Node represents just the raw content in the file
-    relative_path: str = Field(primary_key=True, index=True)
-    # Not 100% needed, but enforces the dedupe boundary at the PrimaryAsset leve
-    primary_asset_id: uuid.UUID = Field(
-        foreign_key="primary_asset.id", nullable=False
-    )  # Needed?
+    relative_path: str = Field(index=True)
     # If a duplicate file (same content hash) exists in a codebase, we would point to the same node, hence this isn't a PK or unique constraint
-    node_content_id: uuid.UUID = Field(foreign_key="node.id", nullable=False)
+    node_id: uuid.UUID = Field(foreign_key="node.id", nullable=False)
     # Depth here instead of the node since the same node can be at different depths in different commits
     depth: int = Field(
         sa_column=Column(
@@ -792,7 +810,7 @@ class Node(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    content_hash: str | None
+    source_hash: str | None
     kind: NodeKind
     primary_asset_id: UUID = Field(
         foreign_key="primary_asset.id",

@@ -210,7 +210,7 @@ class SourceUserResponse(BaseModel):
         ...,
         description="User's effective role on this source (from direct grant or team grant)",
     )
-    access_type: AssignmentType = Field(
+    assignment_type: AssignmentType = Field(
         ...,
         description="How user has access: 'direct' for direct grants, 'inherited' for team-based access",
     )

@@ -142,7 +142,7 @@ def build_source_user_response(
             is_super_admin = org_membership.role == OrgRole.org_super_admin
             org_role = org_membership.role.value
 
-        assignment_type = (
+        assignment_type: AssignmentType = (
             "direct" if grant.principal_kind == PrincipalKind.user else "inherited"
         )
 
@@ -183,7 +183,7 @@ def build_source_user_response(
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=is_super_admin,
             source_role=grant.role,
-            access_type=assignment_type,
+            assignment_type=assignment_type,
             org_role=org_role,
             teams=teams,
         )
@@ -197,7 +197,7 @@ def build_source_user_response(
             created_at=grant.created_at.isoformat() if grant.created_at else "",
             is_super_admin=False,
             source_role=grant.role,
-            access_type="direct",
+            assignment_type="direct",
             org_role="team_member",
             teams=[],
         )

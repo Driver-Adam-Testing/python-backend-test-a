@@ -13,6 +13,7 @@ from sqlmodel import Session, select
 from app.auth.models import User
 from app.repositories import acl_repository, team_member_repository, team_repository
 from app.schemas.source_access_schema import (
+    AccessType,
     AddSourceTeamsRequest,
     AddSourceUsersRequest,
     AddTeamSourcesRequest,
@@ -486,7 +487,7 @@ class SourceAccessService:
         source_id: UUID,
         roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
-        access_type: str | None = None,
+        access_type: AccessType | None = None,
         limit: int = 30,
         offset: int = 0,
     ) -> SourceUsersResponse:

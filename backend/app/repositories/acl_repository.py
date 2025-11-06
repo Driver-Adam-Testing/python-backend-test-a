@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from app.schemas.source_access_schema import AccessType
 from database.models import (
     OrgMembership,
     PrimaryAsset,
@@ -165,7 +166,7 @@ def get_source_users_with_details(
     roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
-    access_type: str | None = None,
+    access_type: AccessType | None = None,
     limit: int = 30,
     offset: int = 0,
 ) -> list[dict]:
@@ -298,7 +299,7 @@ def count_source_users(
     roles: list[PrimaryAssetRole] | None = None,
     user_kind: str | None = None,
     search: str | None = None,
-    access_type: str | None = None,
+    access_type: AccessType | None = None,
 ) -> int:
     """
     Count users for a source with optional filtering.

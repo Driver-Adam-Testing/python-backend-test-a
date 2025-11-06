@@ -10,6 +10,7 @@ from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
 from app.schemas.source_access_schema import (
+    AccessType,
     AddSourceUsersRequest,
     RemoveSourceUsersRequest,
     SourceUsersResponse,
@@ -39,7 +40,7 @@ def get_source_users(
         default=None, description="Filter by source access roles"
     ),
     search: str | None = Query(default=None, description="Search by name or email"),
-    access_type: str | None = Query(
+    access_type: AccessType | None = Query(
         default=None, description="Filter by access type: 'direct' or 'inherited'"
     ),
 ) -> SourceUsersResponse:

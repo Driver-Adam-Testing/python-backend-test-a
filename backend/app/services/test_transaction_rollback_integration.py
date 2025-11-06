@@ -106,7 +106,7 @@ class TestTransactionRollback:
                     sources=[
                         TeamSourceInput(
                             source_id="00000000-0000-0000-0000-000000000000",
-                            role="admin",
+                            role="asset_admin",
                         )
                     ]
                 ),
@@ -155,8 +155,8 @@ class TestTransactionRollback:
             team_id=team.id,
             request=AddTeamMembersRequest(
                 members=[
-                    TeamMemberAddInput(user_id=user1.id, role="admin"),
-                    TeamMemberAddInput(user_id=user2.id, role="member"),
+                    TeamMemberAddInput(user_id=user1.id, role="team_admin"),
+                    TeamMemberAddInput(user_id=user2.id, role="team_member"),
                 ]
             ),
         )
@@ -174,7 +174,7 @@ class TestTransactionRollback:
                 team_id=team.id,
                 request=UpdateTeamMembersRequest(
                     members=[
-                        TeamMemberAddInput(user_id="invalid-user-id", role="admin"),
+                        TeamMemberAddInput(user_id="invalid-user-id", role="team_admin"),
                     ]
                 ),
             )
@@ -244,7 +244,7 @@ class TestDuplicatePrevention:
             user=mock_user,
             team_id=team.id,
             request=AddTeamMembersRequest(
-                members=[TeamMemberAddInput(user_id=user.id, role="member")]
+                members=[TeamMemberAddInput(user_id=user.id, role="team_member")]
             ),
         )
 
@@ -254,7 +254,7 @@ class TestDuplicatePrevention:
                 user=mock_user,
                 team_id=team.id,
                 request=AddTeamMembersRequest(
-                    members=[TeamMemberAddInput(user_id=user.id, role="admin")]
+                    members=[TeamMemberAddInput(user_id=user.id, role="team_admin")]
                 ),
             )
         assert exc_info.value.status_code == 400  # Duplicate should be 400, not 409
@@ -295,7 +295,7 @@ class TestDuplicatePrevention:
             user=mock_user,
             team_id=team.id,
             request=AddTeamSourcesRequest(
-                sources=[TeamSourceInput(source_id=str(source.id), role="admin")]
+                sources=[TeamSourceInput(source_id=str(source.id), role="asset_admin")]
             ),
         )
 
@@ -305,7 +305,7 @@ class TestDuplicatePrevention:
                 user=mock_user,
                 team_id=team.id,
                 request=AddTeamSourcesRequest(
-                    sources=[TeamSourceInput(source_id=str(source.id), role="member")]
+                    sources=[TeamSourceInput(source_id=str(source.id), role="asset_member")]
                 ),
             )
         assert exc_info.value.status_code == 400  # Duplicate should be 400, not 409

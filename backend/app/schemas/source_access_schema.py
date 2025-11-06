@@ -3,7 +3,7 @@
 from typing import Literal
 from uuid import UUID
 
-from database.models_enums import PrimaryAssetRole
+from database.models_enums import OrgRole, PrimaryAssetRole
 from pydantic import BaseModel, Field
 
 # ===== Common Types =====
@@ -214,7 +214,7 @@ class SourceUserResponse(BaseModel):
         ...,
         description="How user has access: 'direct' for direct grants, 'inherited' for team-based access",
     )
-    org_role: str = Field(..., description="User's role in the organization")
+    org_role: OrgRole = Field(..., description="User's role in the organization")
     teams: list[TeamMembershipInfo] = Field(
         ...,
         description="List of teams the user belongs to that have access to this source",

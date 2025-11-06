@@ -108,99 +108,67 @@ def build_source_team_response(
 def build_source_user_response(
     session: Session,
     grant: PrimaryAssetRoleGrant,
-    user_or_team: DbUser | Team,
-    kind: str,
+    user: DbUser,
     organization_id: str,
     source_id: UUID,
 ) -> SourceUserResponse:
-    """
-    Build SourceUserResponse with full user profile information.
+    org_membership = acl_repository.get_user_org_membership(
+        session=session,
+        user_id=user.id,
+        organization_id=organization_id,
+    )
 
-    Args:
-        session: Database session for fetching additional data
-        grant: PrimaryAssetRoleGrant instance (can be direct user grant or team grant)
-        user_or_team: DbUser or Team instance
-        kind: User kind ('user' or 'team')
-        organization_id: Organization ID
-        source_id: Source ID to filter teams by access
+    is_super_admin = False
+    org_role = OrgRole.org_member
+    if org_membership:
+        is_super_admin = org_membership.role == OrgRole.org_super_admin
+        org_role = org_membership.role
 
-    Returns:
-        SourceUserResponse object with user profile and team memberships
-    """
-    if kind == "user":
-        user = user_or_team
+    assignment_type: AssignmentType = (
+        "direct" if grant.principal_kind == PrincipalKind.user else "inherited"
+    )
 
-        org_membership = acl_repository.get_user_org_membership(
-            session=session,
-            user_id=user.id,
-            organization_id=organization_id,
+    team_memberships_data = acl_repository.get_user_team_memberships(
+        session=session,
+        user_id=user.id,
+        organization_id=organization_id,
+    )
+
+    team_grants_query = select(PrimaryAssetRoleGrant).where(
+        PrimaryAssetRoleGrant.primary_asset_id == source_id,
+        PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+        PrimaryAssetRoleGrant.team_id.is_not(None),
+        PrimaryAssetRoleGrant.organization_id == organization_id,
+    )
+    team_grants = session.exec(team_grants_query).all()
+
+    team_source_roles = {
+        grant.team_id: grant.role for grant in team_grants if grant.team_id
+    }
+
+    teams = [
+        TeamMembershipInfo(
+            team_id=item["team"].id,
+            display_name=item["team"].name,
+            team_role=item["membership"].role.value,
+            source_role=team_source_roles[item["team"].id],
         )
+        for item in team_memberships_data
+        if item["team"].id in team_source_roles
+    ]
 
-        is_super_admin = False
-        org_role = "org_member"
-        if org_membership:
-            is_super_admin = org_membership.role == OrgRole.org_super_admin
-            org_role = org_membership.role.value
-
-        assignment_type: AssignmentType = (
-            "direct" if grant.principal_kind == PrincipalKind.user else "inherited"
-        )
-
-        team_memberships_data = acl_repository.get_user_team_memberships(
-            session=session,
-            user_id=user.id,
-            organization_id=organization_id,
-        )
-
-        team_grants_query = select(PrimaryAssetRoleGrant).where(
-            PrimaryAssetRoleGrant.primary_asset_id == source_id,
-            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
-            PrimaryAssetRoleGrant.team_id.is_not(None),
-            PrimaryAssetRoleGrant.organization_id == organization_id,
-        )
-        team_grants = session.exec(team_grants_query).all()
-
-        team_source_roles = {
-            grant.team_id: grant.role for grant in team_grants if grant.team_id
-        }
-
-        teams = [
-            TeamMembershipInfo(
-                team_id=item["team"].id,
-                display_name=item["team"].name,
-                team_role=item["membership"].role.value,
-                source_role=team_source_roles[item["team"].id],
-            )
-            for item in team_memberships_data
-            if item["team"].id in team_source_roles
-        ]
-
-        return SourceUserResponse(
-            user_id=user.id,
-            name=user.name or "",
-            email=user.email or "",
-            picture="",
-            created_at=grant.created_at.isoformat() if grant.created_at else "",
-            is_super_admin=is_super_admin,
-            source_role=grant.role,
-            assignment_type=assignment_type,
-            org_role=org_role,
-            teams=teams,
-        )
-    else:
-        team = user_or_team
-        return SourceUserResponse(
-            user_id=str(team.id),
-            name=team.name,
-            email=None,
-            picture=None,
-            created_at=grant.created_at.isoformat() if grant.created_at else "",
-            is_super_admin=False,
-            source_role=grant.role,
-            assignment_type="direct",
-            org_role="team_member",
-            teams=[],
-        )
+    return SourceUserResponse(
+        user_id=user.id,
+        name=user.name or "",
+        email=user.email or "",
+        picture="",
+        created_at=grant.created_at.isoformat() if grant.created_at else "",
+        is_super_admin=is_super_admin,
+        source_role=grant.role,
+        assignment_type=assignment_type,
+        org_role=org_role,
+        teams=teams,
+    )
 
 
 class SourceAccessService:
@@ -556,8 +524,7 @@ class SourceAccessService:
             build_source_user_response(
                 session=self.session,
                 grant=item["grant"],
-                user_or_team=item["member"],
-                kind=item["kind"],
+                user=item["member"],
                 organization_id=organization_id,
                 source_id=source_id,
             )

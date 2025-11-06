@@ -44,7 +44,13 @@ def get_source_users(
         default=None, description="Filter by assignment type: 'direct' or 'inherited'"
     ),
 ) -> SourceUsersResponse:
-    enforce_asset_action(session, user, source_id, "asset.use_as_source")
+    """
+    Get paginated list of users for a source.
+
+    Returns only users (not teams) with their roles and access details.
+    """
+    enforce_asset_action(session, user, source_id, "asset.manage")
+    
     logger.info(
         f"User {user.user_id} getting users for source {source_id} "
         f"(limit={limit}, offset={offset}, roles={roles}, search={search}, assignment_type={assignment_type})"

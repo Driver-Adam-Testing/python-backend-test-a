@@ -164,9 +164,6 @@ class SourceTeamResponse(BaseModel):
     team_name: str = Field(..., description="Team name")
     role: PrimaryAssetRole = Field(..., description="Team's role for this source")
     member_count: int = Field(..., description="Number of users in the team")
-    visibility: SourceVisibility = Field(
-        ..., description="Source visibility: private, internal, or public"
-    )
     created_at: str = Field(..., description="ISO datetime when access was granted")
 
     class Config:

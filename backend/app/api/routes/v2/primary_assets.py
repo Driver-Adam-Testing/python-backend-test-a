@@ -37,6 +37,7 @@ from app.api.session import CurrentSession
 from app.auth.models import User
 from app.authorization.fastapi import enforce_asset_action
 from app.authorization.query_filters import (
+    effective_asset_role_expr,
     exclude_page_assets_filter,
     page_asset_grant_filter,
     primary_asset_grant_filter,
@@ -110,8 +111,11 @@ def _list_assets_with_filter(
     tag_ids: str | None = None,
     document_source_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:
+    role_expr = effective_asset_role_expr(
+        session, user.user_id, user.organization_id, PrimaryAsset.id
+    )
     query = (
-        select(PrimaryAsset)
+        select(PrimaryAsset, role_expr.label("effective_role"))
         .options(
             selectinload(PrimaryAsset.most_recent_version),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
@@ -192,23 +196,33 @@ def _list_assets_with_filter(
     total_count = session.exec(count_query).one()
     # TODO: This is a hack to sort by total_files. We should use the query utils instead, but It's very problematic.
     if pagination.sort_by == "most_recent_version.root_node.total_files":
-        primary_assets = session.exec(query).all()
-        primary_assets = sorted(
-            primary_assets,
-            key=lambda x: (
-                x.most_recent_version.root_node.total_files
-                if x.most_recent_version.root_node
+        results = session.exec(query).all()
+        results = sorted(
+            results,
+            key=lambda row: (
+                row[0].most_recent_version.root_node.total_files
+                if row[0].most_recent_version.root_node
                 else 0
             ),
             reverse=(pagination.sort_direction == "DESC"),
         )
-        primary_assets = primary_assets[
-            pagination.offset : pagination.offset + pagination.limit
-        ]
+        results = results[pagination.offset : pagination.offset + pagination.limit]
     else:
         query = apply_sorting_to_query(query, pagination, PrimaryAsset)
-        result = session.exec(query)
-        primary_assets = result.all()
+        results = session.exec(query).all()
+
+    # This is awkward: we need to add effective_role to each asset, but can't do it directly
+    # because PrimaryAsset is a SQLModel and Pydantic models are immutable. Using **asset.__dict__
+    # is gross because it includes SQLAlchemy internals, but model_construct() filters to only
+    # defined fields so it's safe. This is a symptom of endpoints being tightly coupled to table
+    # definitions rather than serving the needs of the application
+    primary_assets: list[PrimaryAssetDetailRead] = []
+    for asset, role in results:
+        asset_with_role = PrimaryAssetDetailRead.model_construct(
+            **asset.__dict__,
+            effective_role=role,
+        )
+        primary_assets.append(asset_with_role)
 
     return ListWithCount(results=primary_assets, total_count=total_count)
 

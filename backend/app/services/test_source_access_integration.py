@@ -107,7 +107,7 @@ class TestTeamSourceAccessPropagation:
             user=mock_user,
             team_id=team.id,
             request=AddTeamSourcesRequest(
-                sources=[TeamSourceInput(source_id=str(source.id), role="admin")]
+                sources=[TeamSourceInput(source_id=str(source.id), role="asset_admin")]
             ),
         )
 
@@ -130,7 +130,7 @@ class TestTeamSourceAccessPropagation:
         assert team_sources.total == 1
         assert len(team_sources.sources) == 1
         assert team_sources.sources[0].id == str(source.id)
-        assert team_sources.sources[0].role == "admin"
+        assert team_sources.sources[0].role == "asset_admin"
 
         # Step 6: Query source teams (teams with access to the source)
         source_teams = service.get_source_teams(
@@ -217,7 +217,7 @@ class TestUserDirectVsTeamAccess:
             user=mock_user,
             source_id=source.id,
             request=AddSourceUsersRequest(
-                users=[SourceUserInput(user_id=user.id, role="member")]
+                users=[SourceUserInput(user_id=user.id, role="asset_member")]
             ),
         )
 
@@ -230,7 +230,7 @@ class TestUserDirectVsTeamAccess:
             user=mock_user,
             team_id=team.id,
             request=AddTeamSourcesRequest(
-                sources=[TeamSourceInput(source_id=str(source.id), role="admin")]
+                sources=[TeamSourceInput(source_id=str(source.id), role="asset_admin")]
             ),
         )
 
@@ -370,7 +370,7 @@ class TestOrganizationIsolation:
                 user=mock_user_org2,
                 team_id=team_org1.id,
                 request=AddTeamMembersRequest(
-                    members=[TeamMemberAddInput(user_id=user_org2.id, role="member")]
+                    members=[TeamMemberAddInput(user_id=user_org2.id, role="team_member")]
                 ),
             )
         assert exc_info.value.status_code in [403, 404]

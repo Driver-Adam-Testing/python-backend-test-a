@@ -7,6 +7,7 @@ from database.models_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,
+    PrimaryAssetRole,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
@@ -185,6 +186,7 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
     most_recent_completed_version: PrimaryAssetVersionRead | None
     tags: list[TagRead] | None
     codebase_settings_auto_commit_docs: bool | None = None
+    effective_role: PrimaryAssetRole
 
     @computed_field
     @property

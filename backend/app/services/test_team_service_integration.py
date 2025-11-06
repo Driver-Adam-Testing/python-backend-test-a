@@ -10,7 +10,7 @@ Run with: pytest -m integration
 import pytest
 from database.models import Team, TeamMembership
 from database.models import User as DbUser
-from database.models_enums import TeamRole
+from database.models_enums import OrgRole, TeamRole
 from sqlmodel import Session, select
 
 from app.auth.models import User
@@ -27,7 +27,7 @@ from app.schemas.team_schema import (
 )
 from app.services.team_member_service import TeamMemberService
 from app.services.team_service import TeamService
-from app.test_factories import Auth0UserFactory, TeamFactory
+from app.test_factories import Auth0UserFactory, TeamFactory, TeamMembershipFactory
 
 
 def create_mock_user(organization_id: str, user_id: str = "test-user-id") -> User:
@@ -91,8 +91,8 @@ class TestTeamLifecycleIntegration:
         create_request = CreateTeamRequest(
             name="Engineering",
             members=[
-                TeamMemberInput(user_id=user1.id, role="admin"),
-                TeamMemberInput(user_id=user2.id, role="member"),
+                TeamMemberInput(user_id=user1.id, role="team_admin"),
+                TeamMemberInput(user_id=user2.id, role="team_member"),
             ],
         )
         team_response = service.create_team(user=mock_user, request=create_request)
@@ -120,9 +120,9 @@ class TestTeamLifecycleIntegration:
             team_id=team_in_db.id,
             request=AddTeamMembersRequest(
                 members=[
-                    TeamMemberAddInput(user_id=user3.id, role="member"),
-                    TeamMemberAddInput(user_id=user4.id, role="member"),
-                    TeamMemberAddInput(user_id=user5.id, role="admin"),
+                    TeamMemberAddInput(user_id=user3.id, role="team_member"),
+                    TeamMemberAddInput(user_id=user4.id, role="team_member"),
+                    TeamMemberAddInput(user_id=user5.id, role="team_admin"),
                 ]
             ),
         )
@@ -143,7 +143,7 @@ class TestTeamLifecycleIntegration:
             user=mock_user,
             team_id=team_in_db.id,
             request=UpdateTeamMembersRequest(
-                members=[TeamMemberAddInput(user_id=user2.id, role="admin")]
+                members=[TeamMemberAddInput(user_id=user2.id, role="team_admin")]
             ),
         )
 
@@ -251,12 +251,22 @@ class TestTeamLifecycleIntegration:
 class TestTeamPaginationIntegration:
     """Test team pagination with real data."""
 
-    def test_get_teams_pagination_with_search(
+    def test_get_teams_pagination_with_search_as_super_admin(
         self, integration_db_session: Session
     ) -> None:
-        """Test pagination and search with multiple teams."""
+        """Test pagination and search with multiple teams as super admin."""
         org_id = "test-org-id"
-        mock_user = create_mock_user(org_id)
+
+        # Create super admin user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="test-super-admin",
+            email="admin@example.com",
+            name="Super Admin",
+            organization_id=org_id,
+            org_role=OrgRole.org_super_admin,
+        )
+        mock_user = create_mock_user(org_id, db_user.id)
         service = TeamService(integration_db_session)
 
         # Create 15 teams
@@ -275,7 +285,7 @@ class TestTeamPaginationIntegration:
                 organization_id=org_id,
             )
 
-        # Test 1: Get all teams (first page)
+        # Test 1: Get all teams (first page) - super admin sees all
         all_teams_page1 = service.get_teams(user=mock_user, limit=10, offset=0)
         assert len(all_teams_page1.teams) == 10
         assert all_teams_page1.total == 20
@@ -299,3 +309,107 @@ class TestTeamPaginationIntegration:
         )
         assert len(eng_teams_page1.teams) == 2
         assert eng_teams_page1.total == 5
+
+    def test_get_teams_as_regular_user_only_shows_member_teams(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test that regular users only see teams they are members of."""
+        org_id = "test-org-id"
+
+        # Create regular user (not super admin)
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="test-regular-user",
+            email="user@example.com",
+            name="Regular User",
+            organization_id=org_id,
+            org_role=OrgRole.org_member,
+        )
+        mock_user = create_mock_user(org_id, db_user.id)
+        service = TeamService(integration_db_session)
+
+        # Create 10 teams
+        teams = []
+        for i in range(10):
+            team = TeamFactory.create(
+                integration_db_session,
+                name=f"Team {i:02d}",
+                organization_id=org_id,
+            )
+            teams.append(team)
+
+        # Add user as member to only 3 teams
+        for i in [0, 2, 5]:
+            TeamMembershipFactory.create(
+                session=integration_db_session,
+                team_id=teams[i].id,
+                user_id=db_user.id,
+                role=TeamRole.team_member,
+            )
+
+        # Test: Regular user should only see 3 teams they're a member of
+        user_teams = service.get_teams(user=mock_user, limit=30, offset=0)
+        assert len(user_teams.teams) == 3
+        assert user_teams.total == 3
+
+        # Verify it's the correct teams
+        team_names = {team.name for team in user_teams.teams}
+        assert team_names == {"Team 00", "Team 02", "Team 05"}
+
+    def test_get_teams_search_as_regular_user_only_shows_member_teams(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test that regular users can search but only see teams they are members of."""
+        org_id = "test-org-id"
+
+        # Create regular user (not super admin)
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="test-regular-user-2",
+            email="user2@example.com",
+            name="Regular User 2",
+            organization_id=org_id,
+            org_role=OrgRole.org_member,
+        )
+        mock_user = create_mock_user(org_id, db_user.id)
+        service = TeamService(integration_db_session)
+
+        # Create teams
+        eng_team_1 = TeamFactory.create(
+            integration_db_session,
+            name="Engineering Alpha",
+            organization_id=org_id,
+        )
+
+        design_team = TeamFactory.create(
+            integration_db_session,
+            name="Design Team",
+            organization_id=org_id,
+        )
+
+        # Add user as member to only Engineering Alpha and Design Team
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=eng_team_1.id,
+            user_id=db_user.id,
+            role=TeamRole.team_member,
+        )
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=design_team.id,
+            user_id=db_user.id,
+            role=TeamRole.team_admin,
+        )
+
+        # Test: Search for "Engineering" should only return Engineering Alpha (not Beta)
+        eng_teams = service.get_teams(
+            user=mock_user, search="Engineering", limit=30, offset=0
+        )
+        assert len(eng_teams.teams) == 1
+        assert eng_teams.total == 1
+        assert eng_teams.teams[0].name == "Engineering Alpha"
+
+        # Test: List all teams should return 2 teams
+        all_teams = service.get_teams(user=mock_user, limit=30, offset=0)
+        assert len(all_teams.teams) == 2
+        assert all_teams.total == 2

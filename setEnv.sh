@@ -1,9 +1,11 @@
 #!/bin/bash
 
 export BASE_URL="driverai.com"
-export AWS_REGION="us-east-1"
 export URL_PREFIX="dev"
+export AWS_REGION="us-east-1"
 export AWS_ACCOUNT="550082761109"
+export AWS_PROFILE="dev"
+export AWS_AZ_COUNT="2"
 export DEPLOYMENT_ENVIRONMENT="dev"
 export AUTH0_TENANT="driverai-dev"
 export AUTH0_CLIENT_ID="JC322sFMG3tV3HePhJjtvDzRsnH12AsI"
@@ -36,7 +38,7 @@ export GH_CLIENT_ID="Iv1.2cdbf00b132438f4"
 export GH_REDIRECT_URI="https://api.dev.driverai.com/api/v1/git-provider/github/callback"
 export SENTRY_DSN="https://3d0184383f887d2b700c1cab16a18fd1@o4508898376220672.ingest.us.sentry.io/4508898381266944"
 export SECRECTS_NAME="driverDeploymentSecrects"
-export SECRECTS_KEYS="AUTH0_MGMT_API_CLIENT_SECRET,POSTGRES_PASSWORD,ASYNC_DATABASE_URL,MODAL_TOKEN_SECRET,S3ADMIN_AWS_SECRET_ACCESS_KEY,GH_CLIENT_SECRET,GH_WEBHOOK_SECRET,GH_CLIENT_PEM_SECRET,OPENAI_API_KEY"
+export SECRECTS_KEYS="AUTH0_MGMT_API_CLIENT_SECRET,POSTGRES_PASSWORD,ASYNC_DATABASE_URL,MODAL_TOKEN_SECRET,S3ADMIN_AWS_SECRET_ACCESS_KEY,GH_CLIENT_SECRET,GH_WEBHOOK_SECRET,GH_CLIENT_PEM_SECRET,OPENAI_API_KEY,ONBOARDING_LAMDBA_CLIENT_SECRET,AZURE_CLI_PASSWORD"
 export VITE_TURNSTILE_SITE_KEY="0x4AAAAAABvTHdGtTtHVBQbs"
 export VITE_AUTH0_CLIENT_ID="JC322sFMG3tV3HePhJjtvDzRsnH12AsI"
 export VITE_AUTH0_DOMAIN="auth.dev.driverai.com"
@@ -52,3 +54,11 @@ export VITE_POSTHOG_KEY="phc_yAaRtX4VzR1Ftu6r3pXrGBJzicJadqllJcDSaTOI1cw"
 export VITE_UPLOAD_DOMAIN="dev-codebase-dropzone.s3.amazonaws.com"
 export NPM_RC="@tiptap-pro:registry=https://registry.tiptap.dev/
 //registry.tiptap.dev/:_authToken=x/tbFIO+KRGuUa9Im3gcvgsMauxAOde6hvFvS9yrb/u4AjycPRvGYLhsjoxatlAo"
+export ENABLE_AZURE_OPENAI="true"
+export AZURE_LOCATION="eastus"
+export AZURE_CLI_TENANT_ID="8af8cb5c-3252-41dc-8d7d-ae57013e67cb"
+export AZURE_CLI_APP_ID="4b7a4eed-b2e8-4f8e-a8ba-07264d80da01"
+export IS_PRIVATE_DEPLOY="false"
+if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+    unset AWS_PROFILE
+fi

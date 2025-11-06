@@ -1,22 +1,16 @@
 from datetime import datetime
 
-import boto3
-from database.models import UsageEventType
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Query
 from shared.interfaces.usage.usage_schema import (
-    CreditUsageEvent,
     UsageBalance,
     UsageCharge,
     UsageEventSummary,
 )
 from shared.usage.usage_service import UsageService
-from shared.usage.utils import sloc_to_bytes
 
-from app.api.auth import M2MToken, UsageCreditPermission, UserToken
+from app.api.auth import UserToken
 from app.api.routes.v2.query_utils import Pagination
 from app.api.session import CurrentSession
-from app.core.config import settings
 from app.authorization.fastapi import enforce_super_admin
 
 router = APIRouter()
@@ -73,13 +67,13 @@ def get_charges(
 # TODO - fix M2M token validation. This should not be callable by customers. It is currently broken.
 # I think this may start working again when we remove the old auth system. Places where the current impl
 # prevents this from working:
-# 
+#
 # 1. main.py requries user auth (require_jwt) for all endpoints underneath /studio/v1
 # 2. auth.py require_permission requires a user jwt (require_jwt) to check permissions. M2M tokens have permissions, but not a user. They're a machine, not a User.
-# 
+#
 # The require_m2m_jwt in this endpoint never gets reached because of (at least) those reasons as things stand.
-# 
-# jwt_middleware 
+#
+# jwt_middleware
 # @router.post(
 #     "/credit",
 #     summary="Issue Usage Credits",
@@ -90,7 +84,7 @@ def get_charges(
 #     current_token: M2MToken,
 #     credit_usage_event: CreditUsageEvent,
 # ) -> JSONResponse:
-   
+
 #     if current_token is None:
 #         raise HTTPException(403, "Forbidden")
 

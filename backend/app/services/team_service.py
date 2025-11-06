@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.auth.models import User
+from app.authorization.helpers import is_super_admin
 from app.repositories import org_membership_repository, team_repository
 from app.schemas.team_schema import (
     CreateTeamRequest,
@@ -24,21 +25,12 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_by_id(session: Session, user_id: str) -> DbUser | None:
-    """Get a user by ID."""
     query = select(DbUser).where(DbUser.id == user_id)
     return session.exec(query).first()
 
 
 def team_dict_to_response(team_dict: dict) -> TeamResponse:
-    """
-    Convert team dictionary with counts to TeamResponse.
-
-    Args:
-        team_dict: Dictionary with 'team', 'admins', 'members', 'sources' keys
-
-    Returns:
-        TeamResponse object
-    """
+    """Expects dict with 'team', 'admins', 'members', 'sources' keys."""
     team = team_dict["team"]
 
     # Handle created_at and updated_at
@@ -77,19 +69,7 @@ class TeamService:
         user: User,
         request: CreateTeamRequest,
     ) -> TeamResponse:
-        """
-        Create a new team.
-
-        Args:
-            user: Authenticated user making the request
-            request: Create team request
-
-        Returns:
-            Created team with counts
-
-        Raises:
-            HTTPException: If team name already exists or validation fails
-        """
+        """Raises HTTPException if team name already exists or validation fails."""
         organization_id = user.organization_id
         logger.info(
             f"Creating team '{request.name}' for organization {organization_id} by user {user.user_id}"
@@ -169,25 +149,17 @@ class TeamService:
         offset: int = 0,
         search: str | None = None,
     ) -> TeamsResponse:
-        """
-        Get paginated list of teams with optional search.
-
-        Args:
-            user: Authenticated user making the request
-            limit: Maximum number of results
-            offset: Number of results to skip
-            search: Optional search query to filter teams by name
-
-        Returns:
-            List of teams with total count
-        """
+        """Super admins see all teams. Regular users only see teams they are members of."""
         organization_id = user.organization_id
+        user_id = user.user_id
         logger.info(
-            f"Getting teams for organization {organization_id} by user {user.user_id} "
+            f"Getting teams for organization {organization_id} by user {user_id} "
             f"(limit={limit}, offset={offset}, search={search})"
         )
+        is_admin = is_super_admin(self.session, user_id, organization_id)
+        filter_user_id = None if is_admin else user_id
 
-        # If search is provided and not empty, use search function
+        # Get teams with optional search filter
         if search and search.strip():
             teams_with_counts = team_repository.search_teams_with_counts(
                 session=self.session,
@@ -195,30 +167,31 @@ class TeamService:
                 query=search,
                 limit=limit,
                 offset=offset,
+                user_id=filter_user_id,
             )
-
             total = team_repository.count_teams_by_search(
                 session=self.session,
                 organization_id=organization_id,
                 search_query=search,
+                user_id=filter_user_id,
             )
         else:
-            # Otherwise, get all teams
             teams_with_counts = team_repository.get_teams_with_counts(
                 session=self.session,
                 organization_id=organization_id,
                 limit=limit,
                 offset=offset,
+                user_id=filter_user_id,
             )
-
             total = team_repository.count_teams(
                 session=self.session,
                 organization_id=organization_id,
+                user_id=filter_user_id,
             )
 
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 
-        logger.info(f"Found {len(teams)} teams (total: {total})")
+        logger.info(f"Found {len(teams)} teams (total: {total}) (is_admin={is_admin})")
         return TeamsResponse(teams=teams, total=total)
 
     def get_team(
@@ -226,19 +199,7 @@ class TeamService:
         user: User,
         team_id: UUID,
     ) -> TeamResponse:
-        """
-        Get a single team by ID.
-
-        Args:
-            user: Authenticated user making the request
-            team_id: Team ID
-
-        Returns:
-            Team with counts
-
-        Raises:
-            HTTPException: If team not found
-        """
+        """Raises HTTPException if team not found."""
         organization_id = user.organization_id
         logger.info(
             f"Getting team {team_id} for organization {organization_id} by user {user.user_id}"
@@ -265,20 +226,7 @@ class TeamService:
         team_id: UUID,
         request: UpdateTeamRequest,
     ) -> TeamResponse:
-        """
-        Update a team's name.
-
-        Args:
-            user: Authenticated user making the request
-            team_id: Team ID
-            request: Update team request
-
-        Returns:
-            Updated team with counts
-
-        Raises:
-            HTTPException: If team not found or name already exists
-        """
+        """Raises HTTPException if team not found or name already exists."""
         organization_id = user.organization_id
         logger.info(
             f"Updating team {team_id} to name '{request.name}' by user {user.user_id}"
@@ -343,16 +291,7 @@ class TeamService:
         user: User,
         team_id: UUID,
     ) -> None:
-        """
-        Delete a team and all its associations.
-
-        Args:
-            user: Authenticated user making the request
-            team_id: Team ID
-
-        Raises:
-            HTTPException: If team not found
-        """
+        """Also deletes memberships and source grants. Raises HTTPException if not found."""
         organization_id = user.organization_id
         logger.info(f"Deleting team {team_id} by user {user.user_id}")
 
@@ -397,17 +336,7 @@ class TeamService:
         organization_id: str,
         members: list[TeamMemberInput],
     ) -> None:
-        """
-        Add members to a team (internal helper).
-
-        Args:
-            team_id: Team ID
-            organization_id: Organization ID
-            members: List of members to add
-
-        Raises:
-            ValueError: If user not found or not in organization
-        """
+        """Raises ValueError if user not found or not in organization."""
         for member in members:
             # Validate user exists
             user = get_user_by_id(self.session, member.user_id)

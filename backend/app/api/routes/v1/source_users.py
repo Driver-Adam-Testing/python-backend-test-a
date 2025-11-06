@@ -45,7 +45,7 @@ def get_source_users(
 
     Returns only users (not teams) with their roles and access details.
     """
-    enforce_asset_action(session, user, source_id, "asset.use_as_source")
+    enforce_asset_action(session, user, source_id, "asset.manage")
     logger.info(
         f"User {user.user_id} getting users for source {source_id} "
         f"(limit={limit}, offset={offset}, roles={roles}, search={search})"

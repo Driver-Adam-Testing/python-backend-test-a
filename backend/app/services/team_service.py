@@ -156,73 +156,38 @@ class TeamService:
             f"Getting teams for organization {organization_id} by user {user_id} "
             f"(limit={limit}, offset={offset}, search={search})"
         )
-
-        # Check if user is super admin
         is_admin = is_super_admin(self.session, user_id, organization_id)
+        filter_user_id = None if is_admin else user_id
 
-        # If search is provided and not empty, use search function
+        # Get teams with optional search filter
         if search and search.strip():
-            if is_admin:
-                # Super admins see all teams
-                teams_with_counts = team_repository.search_teams_with_counts(
-                    session=self.session,
-                    organization_id=organization_id,
-                    query=search,
-                    limit=limit,
-                    offset=offset,
-                )
-
-                total = team_repository.count_teams_by_search(
-                    session=self.session,
-                    organization_id=organization_id,
-                    search_query=search,
-                )
-            else:
-                # Regular users only see teams they're members of
-                teams_with_counts = team_repository.search_user_teams_with_counts(
-                    session=self.session,
-                    organization_id=organization_id,
-                    user_id=user_id,
-                    query=search,
-                    limit=limit,
-                    offset=offset,
-                )
-
-                total = team_repository.count_user_teams_by_search(
-                    session=self.session,
-                    organization_id=organization_id,
-                    user_id=user_id,
-                    search_query=search,
-                )
+            teams_with_counts = team_repository.search_teams_with_counts(
+                session=self.session,
+                organization_id=organization_id,
+                query=search,
+                limit=limit,
+                offset=offset,
+                user_id=filter_user_id,
+            )
+            total = team_repository.count_teams_by_search(
+                session=self.session,
+                organization_id=organization_id,
+                search_query=search,
+                user_id=filter_user_id,
+            )
         else:
-            if is_admin:
-                # Super admins see all teams
-                teams_with_counts = team_repository.get_teams_with_counts(
-                    session=self.session,
-                    organization_id=organization_id,
-                    limit=limit,
-                    offset=offset,
-                )
-
-                total = team_repository.count_teams(
-                    session=self.session,
-                    organization_id=organization_id,
-                )
-            else:
-                # Regular users only see teams they're members of
-                teams_with_counts = team_repository.get_user_teams_with_counts(
-                    session=self.session,
-                    organization_id=organization_id,
-                    user_id=user_id,
-                    limit=limit,
-                    offset=offset,
-                )
-
-                total = team_repository.count_user_teams(
-                    session=self.session,
-                    organization_id=organization_id,
-                    user_id=user_id,
-                )
+            teams_with_counts = team_repository.get_teams_with_counts(
+                session=self.session,
+                organization_id=organization_id,
+                limit=limit,
+                offset=offset,
+                user_id=filter_user_id,
+            )
+            total = team_repository.count_teams(
+                session=self.session,
+                organization_id=organization_id,
+                user_id=filter_user_id,
+            )
 
         teams = [team_dict_to_response(team_dict) for team_dict in teams_with_counts]
 

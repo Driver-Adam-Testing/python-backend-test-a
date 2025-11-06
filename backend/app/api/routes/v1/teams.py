@@ -8,6 +8,7 @@ from fastapi import APIRouter, Query, status
 from app.api.auth import UserToken
 from app.api.routes.v1 import team_members, team_sources
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_action, enforce_team_action
 from app.schemas.team_schema import (
     CreateTeamRequest,
     TeamResponse,
@@ -15,7 +16,6 @@ from app.schemas.team_schema import (
     UpdateTeamRequest,
 )
 from app.services.team_service import TeamService
-from app.authorization.fastapi import enforce_org_action, enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -39,9 +39,7 @@ def create_team(
     user: UserToken,
     request: CreateTeamRequest,
 ) -> TeamResponse:
-    """
-    Create a new team.
-
+    """Request fields:
     - **name**: Team name (required, must be unique within organization)
     - **members**: Optional list of initial team members with roles
     """
@@ -71,21 +69,11 @@ def list_teams(
         default=None, description="Optional search query to filter teams by name"
     ),
 ) -> TeamsResponse:
-    """
-    Get paginated list of teams.
-
-    Returns teams with aggregated counts of admins, members, and sources.
-    Optionally filter by team name using the search parameter.
-    """
+    """Super admins see all teams. Regular users only see teams they are members of."""
     enforce_org_action(session, user, "team.view")
     logger.info(f"User {user.user_id} listing teams (limit={limit}, offset={offset})")
     team_service = TeamService(session)
-    return team_service.get_teams(
-        user=user,
-        limit=limit,
-        offset=offset,
-        search=search
-    )
+    return team_service.get_teams(user=user, limit=limit, offset=offset, search=search)
 
 
 @router.get(
@@ -103,19 +91,15 @@ def search_teams(
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
 ) -> TeamsResponse:
-    """
-    Search teams by name (case-insensitive).
-
-    Returns teams matching the query with aggregated counts.
-    """
+    """Super admins see all teams. Regular users only see teams they are members of."""
     enforce_org_action(session, user, "team.view")
     logger.info(f"User {user.user_id} searching teams with query '{query}'")
     team_service = TeamService(session)
-    return team_service.search_teams(
-        organization_id=user.organization_id,
-        query=query,
+    return team_service.get_teams(
+        user=user,
         limit=limit,
         offset=offset,
+        search=query,
     )
 
 
@@ -130,11 +114,6 @@ def get_team(
     user: UserToken,
     team_id: UUID,
 ) -> TeamResponse:
-    """
-    Get a single team by ID.
-
-    Returns team with aggregated counts of admins, members, and sources.
-    """
     enforce_org_action(session, user, "team.view")
     logger.info(f"User {user.user_id} getting team {team_id}")
     team_service = TeamService(session)
@@ -156,11 +135,7 @@ def update_team(
     team_id: UUID,
     request: UpdateTeamRequest,
 ) -> TeamResponse:
-    """
-    Update a team's name.
-
-    - **name**: New team name (required, must be unique within organization)
-    """
+    """Request field: **name** - New team name (must be unique within organization)."""
     enforce_team_action(session, user, team_id, "team.manage")
     logger.info(f"User {user.user_id} updating team {team_id}")
     team_service = TeamService(session)
@@ -182,13 +157,7 @@ def delete_team(
     user: UserToken,
     team_id: UUID,
 ) -> None:
-    """
-    Delete a team.
-
-    This will also remove:
-    - All team memberships
-    - All source access grants for this team
-    """
+    """Also removes all team memberships and source access grants."""
     enforce_org_action(session, user, "team.admin")
     logger.info(f"User {user.user_id} deleting team {team_id}")
     team_service = TeamService(session)

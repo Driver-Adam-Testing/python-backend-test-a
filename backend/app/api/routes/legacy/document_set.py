@@ -207,7 +207,7 @@ def get_document_set(
     # Get the actual node content
     node = session.exec(
         select(Node)
-        .where(Node.id == version_node.node_content_id)
+        .where(Node.id == version_node.node_id)
         .options(selectinload(Node.version).selectinload(Version.primary_asset))
     ).one_or_none()
 

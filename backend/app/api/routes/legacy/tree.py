@@ -30,7 +30,7 @@ def get_codebase_tree(
     # Perform a single query to fetch all necessary data via VersionNode
     results = session.exec(
         select(VersionNode, Node, Version, PrimaryAsset)
-        .join(Node, VersionNode.node_content_id == Node.id)
+        .join(Node, VersionNode.node_id == Node.id)
         .join(Version, VersionNode.version_id == Version.id)
         .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
         .where(VersionNode.version_id == version_id)

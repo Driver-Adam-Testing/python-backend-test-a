@@ -96,11 +96,11 @@ if [ "$BACKEND_PUSHED" = "true" ]; then
     aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
 fi
 
-if [ "$HATCHET_WORKER_PUSHED" = "true" ]; then
-    echo "Forcing hatchet worker redeploy..."
-
-    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment
-fi
+# if [ "$HATCHET_WORKER_PUSHED" = "true" ]; then
+#     echo "Forcing hatchet worker redeploy..."
+# 
+#     aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment
+# fi
 
 #TODO Also wait for hatchet worker service to stablize?
 

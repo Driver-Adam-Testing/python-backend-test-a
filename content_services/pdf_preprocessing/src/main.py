@@ -20,11 +20,9 @@ image_jve = (
 pdf_preprocessing_modal_config = {
     "image": image_jve,
     "secrets": [
-        modal.Secret.from_name("driver-api-credentials"),
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("anthropic"),
     ],
     "proxy": (
         modal.Proxy.from_name("my-proxy")

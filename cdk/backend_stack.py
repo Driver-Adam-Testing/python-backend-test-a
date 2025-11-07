@@ -33,16 +33,16 @@ class BackendStack(Stack):
             ),
         )
 
-        self.hatchetworker = HatchetWorker(
-            self,
-            "HatchetWorker",
-            HatchetWorkerParams(
-                environment=settings.DEPLOYMENT_ENVIRONMENT,
-                metrics_bus=self.metrics_lambda.metrics_bus,
-                aws_region=self.cdkenv.region,
-                aws_account=self.cdkenv.account
-            ),
-        )
+        # self.hatchetworker = HatchetWorker(
+        #     self,
+        #     "HatchetWorker",
+        #     HatchetWorkerParams(
+        #         environment=settings.DEPLOYMENT_ENVIRONMENT,
+        #         metrics_bus=self.metrics_lambda.metrics_bus,
+        #         aws_region=self.cdkenv.region,
+        #         aws_account=self.cdkenv.account
+        #     ),
+        # )
         
         self.backend = Backend(
             self,

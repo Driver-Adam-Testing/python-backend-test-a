@@ -43,6 +43,7 @@ def integration_db_engine() -> Generator[Engine, None, None]:
         Team,
         TeamMembership,
         User,
+        Version,
     )
 
     # Start PostgreSQL container
@@ -65,6 +66,7 @@ def integration_db_engine() -> Generator[Engine, None, None]:
         GitProviderApp.__table__,
         GitProviderAppInstallation.__table__,
         PrimaryAsset.__table__,
+        Version.__table__,
         PrimaryAssetRoleGrant.__table__,
     ]
     SQLModel.metadata.create_all(engine, tables=tables_to_create)

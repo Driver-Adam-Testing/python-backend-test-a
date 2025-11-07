@@ -1,11 +1,17 @@
 """Repository functions for User data access."""
 
+from typing import Any
 from uuid import UUID
 
 from app.authorization.query_filters import (
+    asset_org_grant_role_expr,
+    assignment_type_expr,
     effective_asset_role_expr,
     primary_asset_grant_filter,
+    user_direct_grant_role_expr,
+    user_org_role_expr,
 )
+from app.schemas.user_schema import AssignmentType
 from database.models import (
     OrgMembership,
     PrimaryAsset,
@@ -282,55 +288,80 @@ def delete_user_team_membership(
     session.commit()
 
 
-def get_user_sources_with_details(
+def _user_sources_base_query(
     session: Session,
     user_id: str,
     organization_id: str,
     roles: list[PrimaryAssetRole] | None = None,
     search: str | None = None,
-    limit: int = 30,
-    offset: int = 0,
-) -> list[dict]:
-    """
-    Get sources for a user with full PrimaryAsset details.
-
-    Args:
-        session: Database session
-        user_id: User ID
-        organization_id: Organization ID
-        roles: Optional list of roles to filter by (admin, member)
-        search: Optional search query for display name
-        limit: Maximum number of results
-        offset: Number of results to skip
-
-    Returns:
-        List of dictionaries with 'grant' and 'asset' keys
-    """
-    # Query for grants - include both direct user grants and team grants
-    role_expr = effective_asset_role_expr(
+    assignment_type: AssignmentType | None = None,
+) -> Any:
+    effective_role = effective_asset_role_expr(
         session, user_id, organization_id, PrimaryAsset.id
     )
+    asset_org_role = asset_org_grant_role_expr(organization_id, PrimaryAsset.id)
+    source_role = user_direct_grant_role_expr(user_id, organization_id, PrimaryAsset.id)
+    user_org_role = user_org_role_expr(user_id, organization_id)
+    computed_assignment_type = assignment_type_expr(
+        session, user_id, organization_id, effective_role, source_role
+    )
+
     query = (
-        select(PrimaryAsset, role_expr.label("effective_role"))
+        select(
+            PrimaryAsset,
+            effective_role.label("effective_role"),
+            asset_org_role.label("asset_org_role"),
+            source_role.label("source_role"),
+            user_org_role.label("user_org_role"),
+        )
         .options(selectinload(PrimaryAsset.most_recent_version))
-        .where(PrimaryAsset.organization_id == organization_id)
         .where(
+            PrimaryAsset.organization_id == organization_id,
             primary_asset_grant_filter(session, user_id, organization_id),
             PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 
+    # Apply filters
     if roles:
         query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
 
-    query = query.order_by(PrimaryAsset.display_name).offset(offset).limit(limit)
+    if assignment_type:
+        query = query.where(computed_assignment_type == assignment_type.value)
 
-    results = session.exec(query).all()
+    return query.order_by(PrimaryAsset.display_name)
 
-    return [{"role": role, "asset": asset} for asset, role in results]
+
+def get_user_sources_with_details(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+    roles: list[PrimaryAssetRole] | None = None,
+    search: str | None = None,
+    assignment_type: AssignmentType | None = None,
+    limit: int = 30,
+    offset: int = 0,
+) -> list[dict]:
+    """Get paginated sources for a user with full details."""
+    query = _user_sources_base_query(
+        session, user_id, organization_id, roles, search, assignment_type
+    )
+    paginated_query = query.offset(offset).limit(limit)
+    results = session.exec(paginated_query).all()
+
+    return [
+        {
+            "asset": asset,
+            "effective_role": effective_role,
+            "asset_org_role": asset_org_role,
+            "source_role": source_role,
+            "user_org_role": user_org_role,
+        }
+        for asset, effective_role, asset_org_role, source_role, user_org_role in results
+    ]
 
 
 def count_user_sources(
@@ -339,37 +370,67 @@ def count_user_sources(
     organization_id: str,
     roles: list[PrimaryAssetRole] | None = None,
     search: str | None = None,
+    assignment_type: AssignmentType | None = None,
 ) -> int:
-    """
-    Count sources for a user with optional filtering.
+    base_query = _user_sources_base_query(
+        session, user_id, organization_id, roles, search, assignment_type
+    )
+    count_query = select(func.count()).select_from(base_query.subquery())
+    return session.exec(count_query).one()
 
-    Args:
-        session: Database session
-        user_id: User ID
-        organization_id: Organization ID
-        roles: Optional list of roles to filter by
-        search: Optional search query
 
-    Returns:
-        Count of matching sources
+def get_user_team_grants_for_assets(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+    asset_ids: list[UUID],
+) -> dict[UUID, list[dict]]:
     """
+    Get team grants for assets where user is a team member.
+
+    Returns dict mapping asset_id -> list of team grant dicts.
+    """
+    if not asset_ids:
+        return {}
+
     query = (
-        select(func.count())
-        .select_from(PrimaryAsset)
-        .where(PrimaryAsset.organization_id == organization_id)
-        .where(
-            primary_asset_grant_filter(session, user_id, organization_id),
-            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            Team.id.label("team_id"),
+            Team.name.label("display_name"),
+            TeamMembership.role.label("team_role"),
+            PrimaryAssetRoleGrant.role.label("source_role"),
         )
+        .select_from(PrimaryAssetRoleGrant)
+        .join(Team, Team.id == PrimaryAssetRoleGrant.team_id)
+        .join(
+            TeamMembership,
+            (TeamMembership.team_id == Team.id) & (TeamMembership.user_id == user_id),
+        )
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id.in_(asset_ids),
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            Team.organization_id == organization_id,
+        )
+        .order_by(Team.name)
     )
 
-    if roles:
-        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
+    results = session.exec(query).all()
 
-    if search:
-        query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
+    asset_teams: dict[UUID, list[dict]] = {}
+    for asset_id, team_id, display_name, team_role, source_role in results:
+        if asset_id not in asset_teams:
+            asset_teams[asset_id] = []
+        asset_teams[asset_id].append(
+            {
+                "team_id": team_id,
+                "display_name": display_name,
+                "team_role": team_role,
+                "source_role": source_role,
+            }
+        )
 
-    return session.exec(query).one()
+    return asset_teams
 
 
 def get_user_source_grant(

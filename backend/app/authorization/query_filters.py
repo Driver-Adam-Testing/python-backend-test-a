@@ -7,6 +7,7 @@ without loading all records into memory first.
 import uuid
 from typing import Any
 
+from app.schemas.user_schema import AssignmentType
 from database.models import (
     DerivedContent,
     DocumentSource,
@@ -373,7 +374,7 @@ def assignment_type_expr(
     is_super = is_super_admin(db, user_id, organization_id)
 
     if is_super:
-        return literal("inherited")
+        return literal(AssignmentType.INHERITED.value)
 
     # If source_role == effective_role AND source_role is not NULL, then 'direct', else 'inherited'
     # We need to check for non-NULL source_role because NULL means no direct grant
@@ -382,7 +383,7 @@ def assignment_type_expr(
         (
             (source_role_expr.isnot(None))
             & (cast(source_role_expr, String) == cast(effective_role_expr, String)),
-            literal("direct"),
+            literal(AssignmentType.DIRECT.value),
         ),
-        else_=literal("inherited"),
+        else_=literal(AssignmentType.INHERITED.value),
     )

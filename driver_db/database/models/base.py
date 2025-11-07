@@ -812,7 +812,7 @@ class Node(SQLModel, table=True):  # type: ignore
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     source_hash: str | None
     kind: NodeKind
-    primary_asset_id: UUID = Field(
+    primary_asset_id: UUID = Field(  # Change to organization_id instead
         foreign_key="primary_asset.id",
         ondelete="CASCADE",
         nullable=True,  # TODO: change after initial migration

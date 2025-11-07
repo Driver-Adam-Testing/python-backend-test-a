@@ -1,15 +1,26 @@
 import hashlib
 import logging
+import os
 from uuid import UUID
 
-# import boto3
+import boto3
 from database.db import engine
-from database.models import DerivedContent, Node, PrimaryAsset, Version, VersionNode
-from database.models_enums import ContentKind, NodeKind, PrimaryAssetKind, VersionStatus
+from database.models import (
+    DerivedContent,
+    DocumentSource,
+    Node,
+    PrimaryAsset,
+    Version,
+    VersionNode,
+)
+from database.models_enums import ContentKind, NodeKind
 from sqlmodel import Session, select
 
+# TODO: Delete all connected versions except the latest
+# TODO: handle connected codebases
+
 # Configuration flag: Set to True to use S3 content, False to use DerivedContent long description
-USE_S3 = False
+USE_S3 = True
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -17,43 +28,45 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# def setup_s3_client() -> boto3.client:
-#     """Initialize and return S3 client."""
-#     return boto3.client(
-#         "s3",
-#         aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
-#         aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
-#         region_name=settings.AWS_REGION,
-#         endpoint_url=settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None,
-#     )
-#
-#
-# def hash_organization_id(organization_id: str) -> str:
-#     """Hash organization ID to get S3 bucket name."""
-#     return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-#
-#
-# def fetch_s3_content(
-#     s3_client: boto3.client,
-#     organization_id: str,
-#     primary_asset_id: UUID,
-#     version_id: UUID,
-#     relative_path: str,
-# ) -> str | None:
-#     """Fetch file content from S3."""
-#     bucket = hash_organization_id(organization_id)
-#     key = f"{primary_asset_id}/{version_id}/{relative_path.lstrip('/')}"
-#
-#     try:
-#         obj = s3_client.get_object(Bucket=bucket, Key=key)
-#         file_content = obj["Body"].read()
-#         return file_content.decode("utf-8", errors="replace")
-#     except s3_client.exceptions.NoSuchKey:
-#         logger.warning(f"S3 content not found: {bucket}/{key}")
-#         return None
-#     except Exception as e:
-#         logger.error(f"Error fetching S3 content for {key}: {e}")
-#         return None
+def setup_s3_client() -> boto3.client:
+    """Initialize and return S3 client."""
+    return boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("S3ADMIN_AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("S3ADMIN_AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("AWS_REGION"),
+        endpoint_url=os.getenv("AWS_S3_ENDPOINT_URL")
+        if os.getenv("AWS_S3_ENDPOINT_URL")
+        else None,
+    )
+
+
+def hash_organization_id(organization_id: str) -> str:
+    """Hash organization ID to get S3 bucket name."""
+    return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+
+
+def fetch_s3_content(
+    s3_client: boto3.client,
+    organization_id: str,
+    primary_asset_id: UUID,
+    version_id: UUID,
+    relative_path: str,
+) -> str | None:
+    """Fetch file content from S3."""
+    bucket = hash_organization_id(organization_id)
+    key = f"{primary_asset_id}/{version_id}/{relative_path.lstrip('/')}"
+
+    try:
+        obj = s3_client.get_object(Bucket=bucket, Key=key)
+        file_content = obj["Body"].read()
+        return file_content.decode("utf-8", errors="replace")
+    except s3_client.exceptions.NoSuchKey:
+        logger.warning(f"S3 content not found: {bucket}/{key}")
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching S3 content for {key}: {e}")
+        return None
 
 
 def fetch_long_description(session: Session, node_id: UUID) -> str | None:
@@ -90,6 +103,38 @@ def hash_directory_node(children_hashes: list[str]) -> str:
     return hashlib.sha256(hash_input.encode("utf-8")).hexdigest()
 
 
+def update_document_sources(
+    session: Session, old_node_id: UUID, new_version_node_id: UUID
+) -> None:
+    """
+    Update DocumentSource records to point to new VersionNode.
+
+    When migrating a node, any DocumentSource records that reference the old node
+    should be updated to point to the newly created VersionNode.
+    """
+    # Update source_version_node_id for DocumentSources that reference this node as source
+    source_docs = session.exec(
+        select(DocumentSource).where(DocumentSource.source_node_id == old_node_id)
+    ).all()
+
+    for doc_source in source_docs:
+        doc_source.source_version_node_id = new_version_node_id
+        logger.info(
+            f"Updated DocumentSource {doc_source.id} source_version_node_id -> {new_version_node_id}"
+        )
+
+    # Update page_version_node_id for DocumentSources that reference this node as page
+    page_docs = session.exec(
+        select(DocumentSource).where(DocumentSource.page_node_id == old_node_id)
+    ).all()
+
+    for doc_source in page_docs:
+        doc_source.page_version_node_id = new_version_node_id
+        logger.info(
+            f"Updated DocumentSource {doc_source.id} page_version_node_id -> {new_version_node_id}"
+        )
+
+
 def get_directory_children_hashes(
     session: Session, version_id: UUID, relative_path: str
 ) -> list[str]:
@@ -102,8 +147,8 @@ def get_directory_children_hashes(
 
     # Join VersionNode with Node to get content hashes
     children_hashes = session.exec(
-        select(Node.content_hash)
-        .join(VersionNode, VersionNode.node_content_id == Node.id)
+        select(Node.source_hash)
+        .join(VersionNode, VersionNode.node_id == Node.id)
         .where(VersionNode.version_id == version_id)
         .where(VersionNode.relative_path.startswith(dir_path))
         .where(VersionNode.depth == target_depth + 1)
@@ -114,13 +159,13 @@ def get_directory_children_hashes(
 
 
 def find_node_by_hash(
-    session: Session, primary_asset_id: UUID, content_hash: str
+    session: Session, primary_asset_id: UUID, source_hash: str
 ) -> Node | None:
     """Find existing Node with matching hash for the same PrimaryAsset."""
     return session.exec(
         select(Node)
         .where(Node.primary_asset_id == primary_asset_id)
-        .where(Node.content_hash == content_hash)
+        .where(Node.source_hash == source_hash)
         .limit(1)
     ).first()
 
@@ -156,32 +201,35 @@ def migrate_file_node(
             return
 
     # Hash the content
-    content_hash = hash_file_content(content)
+    source_hash = hash_file_content(content)
 
     # Check for existing node with same hash
-    existing_node = find_node_by_hash(session, version.primary_asset_id, content_hash)
+    existing_node = find_node_by_hash(session, version.primary_asset_id, source_hash)
 
     if existing_node:
         print(
-            f"Found existing node with hash {content_hash}, reusing node {existing_node.id}"
+            f"Found existing node with hash {source_hash}, reusing node {existing_node.id}"
         )
         # Create VersionNode link to existing node
         version_node = VersionNode(
             version_id=version.id,
             relative_path=node.relative_path,
-            primary_asset_id=version.primary_asset_id,
-            node_content_id=existing_node.id,
+            node_id=existing_node.id,
         )
         session.add(version_node)
+        session.flush()  # Get the new version_node ID
+
+        # Update DocumentSource records to point to new VersionNode
+        update_document_sources(session, node.id, version_node.id)
 
         # Delete old node (cascade deletes DerivedContent)
         session.delete(node)
         session.commit()
     else:
-        print(f"Creating new node with hash {content_hash}")
+        print(f"Creating new node with hash {source_hash}")
         # Create new Node with hash
         new_node = Node(
-            content_hash=content_hash,
+            source_hash=source_hash,
             kind=node.kind,
             primary_asset_id=version.primary_asset_id,
             version_id=version.id,
@@ -203,10 +251,13 @@ def migrate_file_node(
         version_node = VersionNode(
             version_id=version.id,
             relative_path=node.relative_path,
-            primary_asset_id=version.primary_asset_id,
-            node_content_id=new_node.id,
+            node_id=new_node.id,
         )
         session.add(version_node)
+        session.flush()  # Get the new version_node ID
+
+        # Update DocumentSource records to point to new VersionNode
+        update_document_sources(session, node.id, version_node.id)
 
         # Delete old node (DerivedContent already moved, so no cascade delete)
         session.delete(node)
@@ -227,32 +278,35 @@ def migrate_directory_node(
     )
 
     # Hash directory based on children content hashes
-    content_hash = hash_directory_node(children_hashes)
+    source_hash = hash_directory_node(children_hashes)
 
     # Check for existing node with same hash
-    existing_node = find_node_by_hash(session, version.primary_asset_id, content_hash)
+    existing_node = find_node_by_hash(session, version.primary_asset_id, source_hash)
 
     if existing_node:
         print(
-            f"Found existing directory node with hash {content_hash}, reusing node {existing_node.id}"
+            f"Found existing directory node with hash {source_hash}, reusing node {existing_node.id}"
         )
         # Create VersionNode link to existing node
         version_node = VersionNode(
             version_id=version.id,
             relative_path=node.relative_path,
-            primary_asset_id=version.primary_asset_id,
-            node_content_id=existing_node.id,
+            node_id=existing_node.id,
         )
         session.add(version_node)
+        session.flush()  # Get the new version_node ID
+
+        # Update DocumentSource records to point to new VersionNode
+        update_document_sources(session, node.id, version_node.id)
 
         # Delete old node (cascade deletes DerivedContent)
         session.delete(node)
         session.commit()
     else:
-        print(f"Creating new directory node with hash {content_hash}")
+        print(f"Creating new directory node with hash {source_hash}")
         # Create new Node with hash
         new_node = Node(
-            content_hash=content_hash,
+            source_hash=source_hash,
             kind=node.kind,
             primary_asset_id=version.primary_asset_id,
             version_id=version.id,
@@ -274,14 +328,45 @@ def migrate_directory_node(
         version_node = VersionNode(
             version_id=version.id,
             relative_path=node.relative_path,
-            primary_asset_id=version.primary_asset_id,
-            node_content_id=new_node.id,
+            node_id=new_node.id,
         )
         session.add(version_node)
+        session.flush()  # Get the new version_node ID
+
+        # Update DocumentSource records to point to new VersionNode
+        update_document_sources(session, node.id, version_node.id)
 
         # Delete old node (DerivedContent already moved, so no cascade delete)
         session.delete(node)
         session.commit()
+
+
+def migrate_other_node(
+    session: Session,
+    version: Version,
+    node: Node,
+) -> None:
+    """
+    Migrate nodes of other kinds by reusing existing node.
+
+    Since we're not doing content-based hashing for these nodes,
+    we simply create a VersionNode link to the existing node.
+    """
+    print(f"Migrating other node: {node.relative_path} (version: {version.id})")
+
+    # Create VersionNode link to existing node (no need to create new Node)
+    version_node = VersionNode(
+        version_id=version.id,
+        relative_path=node.relative_path,
+        node_id=node.id,
+    )
+    session.add(version_node)
+    session.flush()  # Get the new version_node ID
+
+    # Update DocumentSource records to point to new VersionNode
+    update_document_sources(session, node.id, version_node.id)
+
+    session.commit()
 
 
 def migrate_version(
@@ -310,9 +395,8 @@ def migrate_version(
             elif node.kind == NodeKind.CODEBASE_DIRECTORY:
                 migrate_directory_node(session, version, node)
             else:
-                logger.warning(
-                    f"Unknown node kind: {node.kind}, skipping node {node.id}"
-                )
+                # NodeKind.OTHER
+                migrate_other_node(session, version, node)
         except Exception as e:
             logger.error(f"Error migrating node {node.id}: {e}")
             session.rollback()
@@ -329,46 +413,36 @@ def migrate_all_versions() -> None:
     # * handling versions in states besides GENERATION_COMPLETE?
     # * handling assets other than codebases?
 
-    s3_client = None  # setup_s3_client() if USE_S3 else None
+    s3_client = setup_s3_client() if USE_S3 else None
 
     with Session(engine) as session:
         # Get all codebase PrimaryAssets
-        primary_assets = session.exec(
-            select(PrimaryAsset).where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-        ).all()
+        primary_assets = session.exec(select(PrimaryAsset)).all()
 
         print(f"Found {len(primary_assets)} codebase primary assets")
 
         for primary_asset in primary_assets:
-            if str(primary_asset.id) not in [
-                "64647130-650d-4c00-9104-799dc97be024",
-                "4a977ae1-ac8c-48c1-bd7e-81272467c691",
-            ]:
-                print(
-                    f"Processing primary asset: {primary_asset.display_name} ({primary_asset.id})"
-                )
+            print(
+                f"Processing primary asset: {primary_asset.display_name} ({primary_asset.id}). Kind: {primary_asset.kind}"
+            )
+            # Get all versions for this primary asset in reverse chronological order
+            versions = session.exec(
+                select(Version)
+                .where(Version.primary_asset_id == primary_asset.id)
+                .order_by(Version.updated_at.desc())
+            ).all()
 
-                # Get all versions for this primary asset in reverse chronological order
-                versions = session.exec(
-                    select(Version)
-                    .where(Version.primary_asset_id == primary_asset.id)
-                    .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-                    .order_by(Version.updated_at.desc())
-                ).all()
+            print(f"Found {len(versions)} versions for {primary_asset.display_name}")
 
-                print(
-                    f"Found {len(versions)} versions for {primary_asset.display_name}"
-                )
-
-                for version in versions:
-                    try:
-                        migrate_version(session, s3_client, version)
-                    except Exception as e:
-                        print("=========\n=========\n=========")
-                        logger.error(f"Error migrating version {version.id}: {e}")
-                        print("=========\n=========\n=========")
-                        session.rollback()
-                        # Continue with next version
+            for version in versions:
+                try:
+                    migrate_version(session, s3_client, version)
+                except Exception as e:
+                    print("=========\n=========\n=========")
+                    logger.error(f"Error migrating version {version.id}: {e}")
+                    print("=========\n=========\n=========")
+                    session.rollback()
+                    # Continue with next version
 
     print("Migration complete")
 

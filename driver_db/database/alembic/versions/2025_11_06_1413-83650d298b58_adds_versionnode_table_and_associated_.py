@@ -90,6 +90,12 @@ def upgrade() -> None:
     op.alter_column(
         "document_source", "page_node_id", existing_type=sa.UUID(), nullable=True
     )
+    op.drop_constraint(
+        "document_sources_source_node_id_fkey", "document_source", type_="foreignkey"
+    )
+    op.drop_constraint(
+        "document_sources_page_node_id_fkey", "document_source", type_="foreignkey"
+    )
     op.create_foreign_key(
         None, "document_source", "node", ["source_node_id"], ["id"], ondelete="SET NULL"
     )
@@ -165,8 +171,22 @@ def downgrade() -> None:
     op.create_primary_key(
         "document_sources_pkey", "document_source", ["source_node_id", "page_node_id"]
     )
-    # op.create_foreign_key('document_sources_source_node_id_fkey', 'document_source', 'node', ['source_node_id'], ['id'], ondelete='CASCADE')
-    # op.create_foreign_key('document_sources_page_node_id_fkey', 'document_source', 'node', ['page_node_id'], ['id'], ondelete='CASCADE')
+    op.create_foreign_key(
+        "document_sources_source_node_id_fkey",
+        "document_source",
+        "node",
+        ["source_node_id"],
+        ["id"],
+        ondelete="CASCADE",
+    )
+    op.create_foreign_key(
+        "document_sources_page_node_id_fkey",
+        "document_source",
+        "node",
+        ["page_node_id"],
+        ["id"],
+        ondelete="CASCADE",
+    )
     # op.create_index('ix_document_source_source_node_id', 'document_source', ['source_node_id'], unique=False)
     # op.create_index('ix_document_source_page_node_id', 'document_source', ['page_node_id'], unique=False)
     op.drop_column("document_source", "page_version_node_id")

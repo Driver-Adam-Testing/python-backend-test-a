@@ -13,6 +13,8 @@ from database.models_enums import (
 )
 from pydantic import BaseModel, computed_field
 
+from app.schemas.common import SourceVisibility
+
 T = TypeVar("T")
 
 
@@ -187,6 +189,7 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
     tags: list[TagRead] | None
     codebase_settings_auto_commit_docs: bool | None = None
     effective_role: PrimaryAssetRole
+    visibility: SourceVisibility
 
     @computed_field
     @property

@@ -52,6 +52,55 @@ def _grant_exists_subquery(
     )
 
 
+def asset_visibility_expr(
+    organization_id: str, asset_id_column: Any
+) -> tuple[Any, Any, Any]:
+    """
+    Returns SQL expression for asset visibility based on grant type, plus subqueries for joining.
+
+    Visibility precedence: public > internal > private
+    - public: Has grant with principal_kind = 'public'
+    - internal: Has grant with principal_kind = 'org'
+    - private: No org or public grants
+
+    Returns:
+        Tuple of (visibility_expr, org_grant_subquery, public_grant_subquery)
+        The subqueries must be joined to the main query for the expression to work.
+    """
+    org_grant_subquery = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            literal(True).label("has_org_grant"),
+        )
+        .where(
+            and_(
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org,
+            )
+        )
+        .subquery()
+    )
+
+    public_grant_subquery = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            literal(True).label("has_public_grant"),
+        )
+        .where(
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.public,
+        )
+        .subquery()
+    )
+
+    visibility_case_expr = case(
+        (public_grant_subquery.c.has_public_grant.is_not(None), literal("public")),
+        (org_grant_subquery.c.has_org_grant.is_not(None), literal("internal")),
+        else_=literal("private"),
+    )
+
+    return visibility_case_expr, org_grant_subquery, public_grant_subquery
+
+
 def effective_asset_role_expr(
     db: Session, user_id: str, organization_id: str, asset_id_column: Any
 ) -> Any:

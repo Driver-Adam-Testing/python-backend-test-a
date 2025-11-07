@@ -7,7 +7,7 @@ from fastapi import APIRouter, Query
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_any_source_admin
-from app.schemas.admin_sources_schema import AdminSourcesResponse
+from app.schemas.admin_sources_schema import AdminSourcesResponse, SourceVisibility
 from app.services.admin_sources_service import AdminSourcesService
 
 router = APIRouter()
@@ -30,6 +30,9 @@ def get_admin_sources(
     search: str | None = Query(default=None, description="Search by display name"),
     kind: list[str] | None = Query(default=None, description="Filter by asset type"),
     tag_ids: list[str] | None = Query(default=None, description="Filter by tag IDs"),
+    visibility: list[SourceVisibility] | None = Query(
+        default=None, description="Filter by visibility"
+    ),
     sort_by: str = Query(default="updated_at", description="Sort field"),
     sort_direction: str = Query(
         default="DESC",
@@ -48,6 +51,7 @@ def get_admin_sources(
         search=search,
         kinds=kind,
         tag_ids=tag_ids,
+        visibility=visibility,
         sort_by=sort_by,
         sort_direction=sort_direction,
         limit=limit,

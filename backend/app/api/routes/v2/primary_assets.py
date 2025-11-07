@@ -37,6 +37,7 @@ from app.api.session import CurrentSession
 from app.auth.models import User
 from app.authorization.fastapi import enforce_asset_action
 from app.authorization.query_filters import (
+    asset_visibility_expr,
     effective_asset_role_expr,
     exclude_page_assets_filter,
     page_asset_grant_filter,
@@ -114,8 +115,23 @@ def _list_assets_with_filter(
     role_expr = effective_asset_role_expr(
         session, user.user_id, user.organization_id, PrimaryAsset.id
     )
+    visibility_expr, org_grant_subquery, public_grant_subquery = asset_visibility_expr(
+        user.organization_id, PrimaryAsset.id
+    )
     query = (
-        select(PrimaryAsset, role_expr.label("effective_role"))
+        select(
+            PrimaryAsset,
+            role_expr.label("effective_role"),
+            visibility_expr.label("visibility"),
+        )
+        .outerjoin(
+            org_grant_subquery,
+            PrimaryAsset.id == org_grant_subquery.c.primary_asset_id,
+        )
+        .outerjoin(
+            public_grant_subquery,
+            PrimaryAsset.id == public_grant_subquery.c.primary_asset_id,
+        )
         .options(
             selectinload(PrimaryAsset.most_recent_version),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
@@ -211,18 +227,19 @@ def _list_assets_with_filter(
         query = apply_sorting_to_query(query, pagination, PrimaryAsset)
         results = session.exec(query).all()
 
-    # This is awkward: we need to add effective_role to each asset, but can't do it directly
+    # This is awkward: we need to add effective_role and visibility to each asset, but can't do it directly
     # because PrimaryAsset is a SQLModel and Pydantic models are immutable. Using **asset.__dict__
     # is gross because it includes SQLAlchemy internals, but model_construct() filters to only
     # defined fields so it's safe. This is a symptom of endpoints being tightly coupled to table
     # definitions rather than serving the needs of the application
     primary_assets: list[PrimaryAssetDetailRead] = []
-    for asset, role in results:
-        asset_with_role = PrimaryAssetDetailRead.model_construct(
+    for asset, role, visibility in results:
+        asset_with_metadata = PrimaryAssetDetailRead.model_construct(
             **asset.__dict__,
             effective_role=role,
+            visibility=visibility,
         )
-        primary_assets.append(asset_with_role)
+        primary_assets.append(asset_with_metadata)
 
     return ListWithCount(results=primary_assets, total_count=total_count)
 

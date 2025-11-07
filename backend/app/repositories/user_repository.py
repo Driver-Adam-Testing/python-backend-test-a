@@ -1,5 +1,6 @@
 """Repository functions for User data access."""
 
+from typing import Any
 from uuid import UUID
 
 from app.authorization.query_filters import (
@@ -287,32 +288,14 @@ def delete_user_team_membership(
     session.commit()
 
 
-def get_user_sources_with_details(
+def _user_sources_base_query(
     session: Session,
     user_id: str,
     organization_id: str,
     roles: list[PrimaryAssetRole] | None = None,
     search: str | None = None,
     assignment_type: AssignmentType | None = None,
-    limit: int = 30,
-    offset: int = 0,
-) -> list[dict]:
-    """
-    Get sources for a user with full PrimaryAsset details.
-
-    Args:
-        session: Database session
-        user_id: User ID
-        organization_id: Organization ID
-        roles: Optional list of roles to filter by (admin, member)
-        search: Optional search query for display name
-        assignment_type: Optional filter by assignment type (direct/inherited)
-        limit: Maximum number of results
-        offset: Number of results to skip
-
-    Returns:
-        List of dictionaries with 'grant' and 'asset' keys
-    """
+) -> Any:
     effective_role = effective_asset_role_expr(
         session, user_id, organization_id, PrimaryAsset.id
     )
@@ -332,13 +315,14 @@ def get_user_sources_with_details(
             user_org_role.label("user_org_role"),
         )
         .options(selectinload(PrimaryAsset.most_recent_version))
-        .where(PrimaryAsset.organization_id == organization_id)
         .where(
+            PrimaryAsset.organization_id == organization_id,
             primary_asset_grant_filter(session, user_id, organization_id),
             PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 
+    # Apply filters
     if roles:
         query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
@@ -348,9 +332,25 @@ def get_user_sources_with_details(
     if assignment_type:
         query = query.where(computed_assignment_type == assignment_type.value)
 
-    query = query.order_by(PrimaryAsset.display_name).offset(offset).limit(limit)
+    return query.order_by(PrimaryAsset.display_name)
 
-    results = session.exec(query).all()
+
+def get_user_sources_with_details(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+    roles: list[PrimaryAssetRole] | None = None,
+    search: str | None = None,
+    assignment_type: AssignmentType | None = None,
+    limit: int = 30,
+    offset: int = 0,
+) -> list[dict]:
+    """Get paginated sources for a user with full details."""
+    query = _user_sources_base_query(
+        session, user_id, organization_id, roles, search, assignment_type
+    )
+    paginated_query = query.offset(offset).limit(limit)
+    results = session.exec(paginated_query).all()
 
     return [
         {
@@ -372,49 +372,11 @@ def count_user_sources(
     search: str | None = None,
     assignment_type: AssignmentType | None = None,
 ) -> int:
-    """
-    Count sources for a user with optional filtering.
-
-    Args:
-        session: Database session
-        user_id: User ID
-        organization_id: Organization ID
-        roles: Optional list of roles to filter by
-        search: Optional search query
-        assignment_type: Optional filter by assignment type (direct/inherited)
-
-    Returns:
-        Count of matching sources
-    """
-    query = (
-        select(func.count())
-        .select_from(PrimaryAsset)
-        .where(PrimaryAsset.organization_id == organization_id)
-        .where(
-            primary_asset_grant_filter(session, user_id, organization_id),
-            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
-        )
+    base_query = _user_sources_base_query(
+        session, user_id, organization_id, roles, search, assignment_type
     )
-
-    if roles:
-        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
-
-    if search:
-        query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
-
-    if assignment_type:
-        effective_role = effective_asset_role_expr(
-            session, user_id, organization_id, PrimaryAsset.id
-        )
-        source_role = user_direct_grant_role_expr(
-            user_id, organization_id, PrimaryAsset.id
-        )
-        computed_assignment_type = assignment_type_expr(
-            session, user_id, organization_id, effective_role, source_role
-        )
-        query = query.where(computed_assignment_type == assignment_type.value)
-
-    return session.exec(query).one()
+    count_query = select(func.count()).select_from(base_query.subquery())
+    return session.exec(count_query).one()
 
 
 def get_user_team_grants_for_assets(

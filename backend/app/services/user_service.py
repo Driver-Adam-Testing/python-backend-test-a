@@ -336,10 +336,7 @@ class UserService:
             for data in source_data
         ]
 
-        return UserSourcesResponse(
-            sources=sources,
-            total=total,
-        )
+        return UserSourcesResponse(sources=sources, total=total)
 
     def add_user_sources(
         self,

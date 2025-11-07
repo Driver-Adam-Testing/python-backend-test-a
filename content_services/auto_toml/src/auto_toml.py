@@ -57,9 +57,9 @@ class AutoToml:
         SCALE_PDF_AND_USE_DIRS = 4
         FAIL = 5
 
-    LLM_SCATTER_MODEL: ClassVar[str] = (
-        "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
-    )
+    LLM_SCATTER_MODEL: ClassVar[
+        str
+    ] = "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
     LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
@@ -702,9 +702,7 @@ class AutoToml:
         cls, text: str, llm: ChatOpenAI | None, scale_factor: int = 1
     ) -> str:
         encoder = tiktoken.encoding_for_model(
-            "gpt-4o"
-            if llm and llm.model in ["gpt-4.1", "o3-mini"]
-            else cls.LLM_SCATTER_MODEL
+            llm.model if llm else cls.LLM_SCATTER_MODEL
         )
         max_tokens = int(
             (

@@ -461,7 +461,7 @@ In general, your edited output document should be about the same length as the o
         updated_document = self.doc_content
 
         for chunk in edit_chunks:
-            user_prompt = f"**Edit instructions:\n\n{chunk}\n\n**Previous document version:\n\n{updated_document}"
+            user_prompt = f"**Edit instructions:\n\n{chunk.text}\n\n**Previous document version:\n\n{updated_document}"
             updated_document = await bounded_llm_generate(
                 llm=gather_llm,
                 system_prompt=system_prompt,

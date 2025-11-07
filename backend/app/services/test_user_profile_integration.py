@@ -65,7 +65,7 @@ class TestUserProfileIntegration:
         assert profile.email == "test@example.com"
         assert profile.name == "Test User"
         assert profile.organization_id == "test-org-id"
-        assert profile.org_role == "member"
+        assert profile.org_role == "org_member"
         assert profile.entitlements is None
         assert profile.team_admin is False
         assert profile.source_admin is False
@@ -173,7 +173,7 @@ class TestUserProfileIntegration:
         profile = service.get_current_user_profile(mock_user)
 
         # Assertions
-        assert profile.org_role == "super_admin"
+        assert profile.org_role == "org_super_admin"
         assert profile.team_admin is False
         # Super admins have effective admin role on all assets
         assert profile.source_admin is True
@@ -229,6 +229,6 @@ class TestUserProfileIntegration:
         profile = service.get_current_user_profile(mock_user)
 
         # Assertions
-        assert profile.org_role == "super_admin"
+        assert profile.org_role == "org_super_admin"
         assert profile.team_admin is True
         assert profile.source_admin is True

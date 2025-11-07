@@ -12,17 +12,6 @@ def get_team_by_id(
     team_id: UUID,
     organization_id: str,
 ) -> Team | None:
-    """
-    Get a single team by ID.
-
-    Args:
-        session: Database session
-        team_id: Team ID
-        organization_id: Organization ID to verify ownership
-
-    Returns:
-        Team or None if not found
-    """
     query = select(Team).where(
         Team.id == team_id,
         Team.organization_id == organization_id,
@@ -35,18 +24,10 @@ def get_teams_with_counts(
     organization_id: str,
     limit: int = 30,
     offset: int = 0,
+    user_id: str | None = None,
 ) -> list[dict]:
     """
-    Get teams with aggregated counts of admins, members, and sources.
-
-    Args:
-        session: Database session
-        organization_id: Organization ID to filter by
-        limit: Maximum number of results
-        offset: Number of results to skip
-
-    Returns:
-        List of dictionaries with team data and counts
+    If user_id is provided, only returns teams where the user is a member.
     """
     admin_count_subq = (
         select(
@@ -94,6 +75,13 @@ def get_teams_with_counts(
         .limit(limit)
     )
 
+    if user_id:
+        query = query.where(
+            Team.id.in_(
+                select(TeamMembership.team_id).where(TeamMembership.user_id == user_id)
+            )
+        )
+
     results = session.exec(query).all()
 
     return [
@@ -112,17 +100,7 @@ def get_team_with_counts(
     team_id: UUID,
     organization_id: str,
 ) -> dict | None:
-    """
-    Get a single team with aggregated counts.
-
-    Args:
-        session: Database session
-        team_id: Team ID
-        organization_id: Organization ID to verify ownership
-
-    Returns:
-        Dictionary with team data and counts, or None if not found
-    """
+    """Returns dict with 'team', 'admins', 'members', 'sources' keys, or None if not found."""
     admin_count_subq = (
         select(
             TeamMembership.team_id,
@@ -186,19 +164,10 @@ def search_teams_with_counts(
     query: str,
     limit: int = 30,
     offset: int = 0,
+    user_id: str | None = None,
 ) -> list[dict]:
     """
-    Search teams by name with aggregated counts.
-
-    Args:
-        session: Database session
-        organization_id: Organization ID to filter by
-        query: Search query (case-insensitive)
-        limit: Maximum number of results
-        offset: Number of results to skip
-
-    Returns:
-        List of dictionaries with team data and counts
+    If user_id is provided, only returns teams where the user is a member.
     """
     admin_count_subq = (
         select(
@@ -249,6 +218,13 @@ def search_teams_with_counts(
         .limit(limit)
     )
 
+    if user_id:
+        search_query = search_query.where(
+            Team.id.in_(
+                select(TeamMembership.team_id).where(TeamMembership.user_id == user_id)
+            )
+        )
+
     results = session.exec(search_query).all()
 
     return [
@@ -265,22 +241,27 @@ def search_teams_with_counts(
 def count_teams(
     session: Session,
     organization_id: str,
+    user_id: str | None = None,
 ) -> int:
     """
-    Count total teams in an organization.
-
-    Args:
-        session: Database session
-        organization_id: Organization ID
-
-    Returns:
-        Count of teams
+    If user_id is provided, only counts teams where the user is a member.
     """
-    query = (
-        select(func.count())
-        .select_from(Team)
-        .where(Team.organization_id == organization_id)
-    )
+    if user_id:
+        query = (
+            select(func.count())
+            .select_from(Team)
+            .join(TeamMembership, Team.id == TeamMembership.team_id)
+            .where(
+                Team.organization_id == organization_id,
+                TeamMembership.user_id == user_id,
+            )
+        )
+    else:
+        query = (
+            select(func.count())
+            .select_from(Team)
+            .where(Team.organization_id == organization_id)
+        )
     return session.exec(query).one()
 
 
@@ -288,26 +269,28 @@ def count_teams_by_search(
     session: Session,
     organization_id: str,
     search_query: str,
+    user_id: str | None = None,
 ) -> int:
-    """
-    Count teams matching a search query.
-
-    Args:
-        session: Database session
-        organization_id: Organization ID
-        search_query: Search query (case-insensitive)
-
-    Returns:
-        Count of matching teams
-    """
-    query = (
-        select(func.count())
-        .select_from(Team)
-        .where(
-            Team.organization_id == organization_id,
-            Team.name.ilike(f"%{search_query}%"),
+    if user_id:
+        query = (
+            select(func.count())
+            .select_from(Team)
+            .join(TeamMembership, Team.id == TeamMembership.team_id)
+            .where(
+                Team.organization_id == organization_id,
+                Team.name.ilike(f"%{search_query}%"),
+                TeamMembership.user_id == user_id,
+            )
         )
-    )
+    else:
+        query = (
+            select(func.count())
+            .select_from(Team)
+            .where(
+                Team.organization_id == organization_id,
+                Team.name.ilike(f"%{search_query}%"),
+            )
+        )
     return session.exec(query).one()
 
 
@@ -315,16 +298,6 @@ def create_team(
     session: Session,
     team: Team,
 ) -> Team:
-    """
-    Create a new team.
-
-    Args:
-        session: Database session
-        team: Team instance to create
-
-    Returns:
-        Created team
-    """
     session.add(team)
     session.commit()
     session.refresh(team)
@@ -335,12 +308,5 @@ def delete_team(
     session: Session,
     team: Team,
 ) -> None:
-    """
-    Delete a team.
-
-    Args:
-        session: Database session
-        team: Team instance to delete
-    """
     session.delete(team)
     session.commit()

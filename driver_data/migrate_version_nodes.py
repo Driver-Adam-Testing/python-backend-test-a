@@ -215,6 +215,7 @@ def migrate_file_node(
             version_id=version.id,
             relative_path=node.relative_path,
             node_id=existing_node.id,
+            misc_metadata=node.misc_metadata,
         )
         session.add(version_node)
         session.flush()  # Get the new version_node ID
@@ -252,6 +253,7 @@ def migrate_file_node(
             version_id=version.id,
             relative_path=node.relative_path,
             node_id=new_node.id,
+            misc_metadata=node.misc_metadata,
         )
         session.add(version_node)
         session.flush()  # Get the new version_node ID
@@ -292,6 +294,7 @@ def migrate_directory_node(
             version_id=version.id,
             relative_path=node.relative_path,
             node_id=existing_node.id,
+            misc_metadata=node.misc_metadata,
         )
         session.add(version_node)
         session.flush()  # Get the new version_node ID
@@ -329,6 +332,7 @@ def migrate_directory_node(
             version_id=version.id,
             relative_path=node.relative_path,
             node_id=new_node.id,
+            misc_metadata=node.misc_metadata,
         )
         session.add(version_node)
         session.flush()  # Get the new version_node ID
@@ -359,6 +363,7 @@ def migrate_other_node(
         version_id=version.id,
         relative_path=node.relative_path,
         node_id=node.id,
+        misc_metadata=node.misc_metadata,
     )
     session.add(version_node)
     session.flush()  # Get the new version_node ID

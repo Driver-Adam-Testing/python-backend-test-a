@@ -791,7 +791,7 @@ class VersionNode(SQLModel, table=True):
         default=None,
     )
     version: "Version" = Relationship(back_populates="version_nodes")
-    node: "Node" = Relationship(back_populates="version_node")
+    node: "Node" = Relationship(back_populates="version_nodes")
 
 
 class Node(SQLModel, table=True):  # type: ignore

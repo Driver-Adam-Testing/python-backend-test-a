@@ -791,6 +791,7 @@ class VersionNode(SQLModel, table=True):
         default=None,
     )
     version: "Version" = Relationship(back_populates="version_nodes")
+    node: "Node" = Relationship(back_populates="version_node")
 
 
 class Node(SQLModel, table=True):  # type: ignore
@@ -890,6 +891,8 @@ class Node(SQLModel, table=True):  # type: ignore
             "passive_deletes": True,
         },
     )
+
+    version_nodes: list["VersionNode"] = Relationship(back_populates="node")
 
     @property
     def s3_url(self) -> str:

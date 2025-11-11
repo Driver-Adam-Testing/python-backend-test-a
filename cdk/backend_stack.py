@@ -68,11 +68,12 @@ class BackendStack(Stack):
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
                 environment=settings.DEPLOYMENT_ENVIRONMENT,
-                api_url=f"{self.backend.alb_internal_url}/studio/v1",
+                api_url=f"{self.backend.api_url}/studio/v1",
                 auth0_audience=settings.ONBOARDING_LAMDBA_AUTH0_AUDIENCE,
                 auth0_url=settings.ONBOARDING_LAMDBA_AUTH0_URL,
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=True,
                 vpc=self.backend.vpc,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY
             ),
         )

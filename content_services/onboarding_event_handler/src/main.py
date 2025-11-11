@@ -6,7 +6,9 @@ from urllib.parse import unquote_plus
 
 import botocore
 import httpx
+import sentry_sdk
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from src.utils.aws_s3 import (
     generate_get_presigned_url,
     has_allowed_guard_duty_tag,
@@ -25,6 +27,15 @@ else:
 logger = logging.getLogger()
 logger.info(f"Log level set to {log_level}")
 
+is_private_deploy = os.getenv("IS_PRIVATE_DEPLOY") and os.getenv("IS_PRIVATE_DEPLOY") == "True"
+
+if(not is_private_deploy):
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
+        integrations=[AwsLambdaIntegration(timeout_warning=True)],
+        traces_sample_rate=0.1,
+        environment=settings.ENVIRONMENT,
+    )
 
 def handler(
     event: dict,
@@ -34,6 +45,8 @@ def handler(
         return _process_handler(event, context)
     except Exception as e:
         logger.exception("Unhandled error in Lambda handler")
+        if(not is_private_deploy):
+            sentry_sdk.capture_exception(e)
 
 
 def _process_handler(
@@ -124,6 +137,8 @@ def _process_handler(
                 onboarded.append(onboarding_result)
             except Exception as e:
                 logger.error(f"Failed to process S3 record {real_object_key}: {e}")
+                if(not is_private_deploy):
+                    sentry_sdk.capture_exception(e)
                 # Continue processing other records instead of failing the entire batch
     return onboarded
 

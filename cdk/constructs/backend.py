@@ -82,6 +82,7 @@ class Backend(Construct):
             zone_name=hosted_zone_name,
             hosted_zone_id=hosted_zone_id,
         )
+        api_domain_name = "api." + hosted_zone.zone_name
 
         inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
@@ -178,7 +179,7 @@ class Backend(Construct):
             desired_count=2,
             cluster=cluster,
             domain_zone=hosted_zone,
-            domain_name="api." + hosted_zone.zone_name,
+            domain_name=api_domain_name,
             task_image_options=task_options,
             task_subnets=aws_ec2.SubnetSelection(
                 subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
@@ -241,8 +242,7 @@ class Backend(Construct):
 
         params.metrics_bus.grant_all_put_events(self.service.task_definition.task_role)
 
-        # Internal ALB DNS name for VPC-internal communication
-        self.alb_internal_url = f"https://{self.service.load_balancer.load_balancer_dns_name}"
+        self.api_url = f"https://{api_domain_name}"
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes
         # https://linear.app/driver-ai/issue/PE-1077/explore-options-for-allowing-app-notes-containing-httplocalhost-and

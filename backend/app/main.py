@@ -61,8 +61,8 @@ def _configure_logging() -> None:
     logging.info("Log Level set to %s", log_level)
 
 
-def _configure_sentry(env: str, dsn: str) -> None:
-    if env == "local":
+def _configure_sentry(env: str, is_private_deploy: bool, dsn: str) -> None:
+    if is_private_deploy or env == "local":
         return
 
     sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1}.get(env, 0.1)
@@ -77,7 +77,7 @@ def _configure_sentry(env: str, dsn: str) -> None:
 
 
 _configure_logging()
-_configure_sentry(settings.ENVIRONMENT, settings.SENTRY_DSN)
+_configure_sentry(settings.ENVIRONMENT, settings.IS_PRIVATE_DEPLOY, settings.SENTRY_DSN)
 
 
 # ---------------------------------------------------------------------------

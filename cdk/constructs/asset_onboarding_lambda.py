@@ -26,6 +26,7 @@ class AssetOnboardingLambdaParams:
     dropzone_bucket: aws_s3.Bucket
     use_legacy_dropzone: bool
     vpc: aws_ec2.IVpc
+    is_private_deploy: bool
 
 
 class AssetOnboardingLambda(Construct):
@@ -53,7 +54,9 @@ class AssetOnboardingLambda(Construct):
                 "AUTH0_AUDIENCE": params.auth0_audience,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
-                "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone)
+                "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
+                "SENTRY_DSN": settings.SENTRY_DSN,
+                "IS_PRIVATE_DEPLOY": str(params.is_private_deploy)
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]

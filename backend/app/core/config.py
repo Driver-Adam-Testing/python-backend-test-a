@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     DOMAIN: str = "localhost"
     ENVIRONMENT: str = "local"
+    IS_PRIVATE_DEPLOY: bool = False
     AUTH0_DOMAIN: str = DEFAULT_SECRET
     AUTH0_CLIENT_ID: str = DEFAULT_SECRET
     AUTH0_AUDIENCE: str = DEFAULT_SECRET

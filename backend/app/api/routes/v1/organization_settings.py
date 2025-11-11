@@ -1,5 +1,4 @@
 import logging
-from typing import Literal
 
 from database.models_enums import SourceVisibility
 from fastapi import APIRouter
@@ -21,14 +20,14 @@ class DefaultSourceVisibilityResponse(BaseModel):
 
 
 class UpdateDefaultSourceVisibilityRequest(BaseModel):
-    default_source_visibility: Literal["private", "internal"] = Field(
+    default_source_visibility: SourceVisibility = Field(
         ..., description="New default visibility for sources (public not yet supported)"
     )
 
     @field_validator("default_source_visibility")
     @classmethod
-    def validate_not_public(cls, v: str) -> str:
-        if v == "public":
+    def validate_not_public(cls, v: SourceVisibility) -> SourceVisibility:
+        if v == SourceVisibility.PUBLIC:
             raise ValueError("Public visibility is not yet supported")
         return v
 
@@ -72,14 +71,7 @@ def update_default_source_visibility(
         f"{request.default_source_visibility} for org {user.organization_id}"
     )
 
-    # Convert string literal to enum
-    visibility_enum = (
-        SourceVisibility.PRIVATE
-        if request.default_source_visibility == "private"
-        else SourceVisibility.INTERNAL
-    )
-
     visibility = organization_repository.update_default_source_visibility(
-        session, user.organization_id, visibility_enum
+        session, user.organization_id, request.default_source_visibility
     )
     return DefaultSourceVisibilityResponse(default_source_visibility=visibility)

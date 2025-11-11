@@ -50,13 +50,24 @@ class Backend(Construct):
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
-        vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC", vpc_id=vpc_id)
+        self.vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC", vpc_id=vpc_id)
+
+        self.s3_vpc_endpoint = aws_ec2.GatewayVpcEndpoint(
+            self,
+            "S3VpcEndpoint",
+            vpc=self.vpc,
+            service=aws_ec2.GatewayVpcEndpointAwsService.S3,
+            subnets=[
+                aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_ISOLATED),
+                aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            ],
+        )
 
         cluster_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/ecs/cluster/name"
         )
         cluster = aws_ecs.Cluster.from_cluster_attributes(
-            self, id="BaselineCluster", cluster_name=cluster_name, vpc=vpc
+            self, id="BaselineCluster", cluster_name=cluster_name, vpc=self.vpc
         )
 
         hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(
@@ -229,6 +240,9 @@ class Backend(Construct):
         )
 
         params.metrics_bus.grant_all_put_events(self.service.task_definition.task_role)
+
+        # Internal ALB DNS name for VPC-internal communication
+        self.alb_internal_url = f"https://{self.service.load_balancer.load_balancer_dns_name}"
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes
         # https://linear.app/driver-ai/issue/PE-1077/explore-options-for-allowing-app-notes-containing-httplocalhost-and

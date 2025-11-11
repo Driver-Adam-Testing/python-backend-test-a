@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from aws_cdk import (
     Duration,
+    aws_ec2,
     aws_iam,
     aws_lambda,
     aws_lambda_event_sources,
@@ -24,6 +25,7 @@ class AssetOnboardingLambdaParams:
     auth0_audience: str
     dropzone_bucket: aws_s3.Bucket
     use_legacy_dropzone: bool
+    vpc: aws_ec2.IVpc
 
 
 class AssetOnboardingLambda(Construct):
@@ -51,13 +53,16 @@ class AssetOnboardingLambda(Construct):
                 "AUTH0_AUDIENCE": params.auth0_audience,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
-                "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
-                "SENTRY_DSN": settings.SENTRY_DSN,
+                "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone)
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]
             ),
             timeout=Duration.seconds(15),
+            vpc=params.vpc,
+            vpc_subnets=aws_ec2.SubnetSelection(
+                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+            ),
         )
         deployment_secrets.grant_read(lambda_function)
        

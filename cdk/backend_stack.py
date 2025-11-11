@@ -10,7 +10,6 @@ from cdk.constructs.asset_onboarding_lambda import (
 from cdk.constructs.auth0_event_lambda import Auth0EventLambda
 from cdk.constructs.backend import Backend, BackendParams
 from cdk.constructs.hatchet_worker import HatchetWorker, HatchetWorkerParams
-from cdk.constructs.inspector import Inspector, InspectorParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 from cdk.settings import settings
 
@@ -69,15 +68,11 @@ class BackendStack(Stack):
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
                 environment=settings.DEPLOYMENT_ENVIRONMENT,
-                api_url=settings.ONBOARDING_LAMDBA_API_URL,
+                api_url=f"{self.backend.alb_internal_url}/studio/v1",
                 auth0_audience=settings.ONBOARDING_LAMDBA_AUTH0_AUDIENCE,
                 auth0_url=settings.ONBOARDING_LAMDBA_AUTH0_URL,
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=True,
+                vpc=self.backend.vpc,
             ),
-        )
-        self.inspector = Inspector(
-            self,
-            "Inspector",
-            InspectorParams(environment=settings.DEPLOYMENT_ENVIRONMENT),
         )

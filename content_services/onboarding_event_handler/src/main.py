@@ -6,22 +6,13 @@ from urllib.parse import unquote_plus
 
 import botocore
 import httpx
-import sentry_sdk
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
-from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from src.utils.aws_s3 import (
     generate_get_presigned_url,
     has_allowed_guard_duty_tag,
     head_object,
 )
 from src.utils.config import settings
-
-sentry_sdk.init(
-    dsn=os.environ["SENTRY_DSN"],
-    integrations=[AwsLambdaIntegration(timeout_warning=True)],
-    traces_sample_rate=0.1,
-    environment=settings.ENVIRONMENT,
-)
 
 log_level = os.environ.get("LOG_LEVEL").upper() or logging.INFO
 if len(logging.getLogger().handlers) > 0:
@@ -43,7 +34,6 @@ def handler(
         return _process_handler(event, context)
     except Exception as e:
         logger.exception("Unhandled error in Lambda handler")
-        sentry_sdk.capture_exception(e)
 
 
 def _process_handler(
@@ -134,7 +124,6 @@ def _process_handler(
                 onboarded.append(onboarding_result)
             except Exception as e:
                 logger.error(f"Failed to process S3 record {real_object_key}: {e}")
-                sentry_sdk.capture_exception(e)
                 # Continue processing other records instead of failing the entire batch
     return onboarded
 

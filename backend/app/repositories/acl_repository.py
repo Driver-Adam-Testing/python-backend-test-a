@@ -10,7 +10,7 @@ from database.models import (
     TeamMembership,
     User,
 )
-from database.models_enums import PrimaryAssetRole, PrincipalKind
+from database.models_enums import PrimaryAssetRole, PrincipalKind, SourceVisibility
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, select
 
@@ -441,3 +441,44 @@ def get_user_team_memberships(
 
     results = session.exec(query).all()
     return [{"membership": membership, "team": team} for membership, team in results]
+
+
+def create_default_visibility_grants(
+    session: Session,
+    primary_asset_id: UUID,
+    organization_id: str,
+    creator_user_id: str,
+    visibility: SourceVisibility,
+) -> list[PrimaryAssetRoleGrant]:
+    grants = []
+
+    creator_grant = PrimaryAssetRoleGrant(
+        primary_asset_id=primary_asset_id,
+        organization_id=organization_id,
+        principal_kind=PrincipalKind.user,
+        user_id=creator_user_id,
+        role=PrimaryAssetRole.asset_admin,
+    )
+    session.add(creator_grant)
+    grants.append(creator_grant)
+
+    if visibility == SourceVisibility.INTERNAL:
+        org_grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(org_grant)
+        grants.append(org_grant)
+    elif visibility == SourceVisibility.PUBLIC:
+        public_grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.public,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(public_grant)
+        grants.append(public_grant)
+
+    return grants

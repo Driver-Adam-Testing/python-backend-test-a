@@ -9,14 +9,13 @@ from app.authorization.query_filters import (
     exclude_page_assets_filter,
     primary_asset_grant_filter,
 )
-from app.schemas.common import SourceVisibility
 from database.models import (
     PrimaryAsset,
     PrimaryAssetRoleGrant,
     PrimaryAssetTag,
     Tag,
 )
-from database.models_enums import PrimaryAssetRole
+from database.models_enums import PrimaryAssetRole, SourceVisibility
 from sqlmodel import Session, and_, func, select
 
 

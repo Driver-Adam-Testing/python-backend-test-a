@@ -5,7 +5,13 @@ import os
 from uuid import UUID
 
 import requests
-from database.models_enums import VcsAutoUpdatePolicy
+from database.models import Organization, PrimaryAssetRoleGrant
+from database.models_enums import (
+    PrimaryAssetRole,
+    PrincipalKind,
+    SourceVisibility,
+    VcsAutoUpdatePolicy,
+)
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from onboarding.vcs_utils import (
     AuthorInfo,
@@ -23,6 +29,37 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
+
+
+def _create_git_provider_grants(
+    session: Session,
+    primary_asset_id: UUID,
+    organization_id: str,
+) -> None:
+    org = session.get(Organization, organization_id)
+    if not org:
+        raise ValueError(f"Organization {organization_id} not found")
+
+    visibility = org.default_source_visibility
+
+    if visibility == SourceVisibility.INTERNAL:
+        grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(grant)
+        print(f"INFO: Created internal visibility grant for asset {primary_asset_id}")
+    elif visibility == SourceVisibility.PUBLIC:
+        grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.public,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(grant)
+        print(f"INFO: Created public visibility grant for asset {primary_asset_id}")
 
 
 def fetch_access_token(installation_id: str) -> str:
@@ -446,6 +483,9 @@ def download_and_upload_repo(
                 )
                 session.add(version)
                 version_id = version.id
+
+                _create_git_provider_grants(session, primary_asset_id, org_id)
+
                 print(
                     f"Creating primary asset and version for {repo_name}:{commit} for org: {org_id}. Version ID: {version_id}"
                 )

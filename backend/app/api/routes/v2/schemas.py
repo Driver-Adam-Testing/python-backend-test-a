@@ -8,12 +8,11 @@ from database.models_enums import (
     NodeKind,
     PrimaryAssetKind,
     PrimaryAssetRole,
+    SourceVisibility,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
 from pydantic import BaseModel, computed_field
-
-from app.schemas.common import SourceVisibility
 
 T = TypeVar("T")
 

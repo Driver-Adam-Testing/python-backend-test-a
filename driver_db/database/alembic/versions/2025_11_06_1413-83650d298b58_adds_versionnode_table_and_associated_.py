@@ -9,6 +9,7 @@ Create Date: 2025-11-06 14:13:16.743695
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "83650d298b58"
@@ -45,6 +46,18 @@ def upgrade() -> None:
             sa.DateTime(timezone=True),
             server_default=sa.text("now()"),
             nullable=False,
+        ),
+        sa.Column(
+            "total_files",
+            sa.Integer(),
+            sa.Computed(
+                "(misc_metadata->>'total_files')::INTEGER",
+                persisted=True,
+            ),
+            nullable=True,
+        ),
+        sa.Column(
+            "misc_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True
         ),
         sa.ForeignKeyConstraint(
             ["node_id"],

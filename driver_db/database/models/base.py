@@ -790,6 +790,19 @@ class VersionNode(SQLModel, table=True):
         ),
         default=None,
     )
+    total_files: int | None = Field(
+        sa_column=Column(
+            Integer,
+            Computed("(misc_metadata->>'total_files')::INTEGER", persisted=True),
+            index=True,
+            nullable=True,
+        ),
+        default=None,
+    )
+
+    misc_metadata: dict | None = Field(  # type: ignore
+        sa_column=Column(JSONB, nullable=True), default=None
+    )
     version: "Version" = Relationship(back_populates="version_nodes")
     node: "Node" = Relationship(back_populates="version_nodes")
 

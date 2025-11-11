@@ -12,6 +12,7 @@ from aws_cdk import (
     aws_iam,
     aws_logs,
     aws_route53,
+    aws_route53_targets,
     aws_s3,
     aws_secretsmanager,
     aws_ssm,
@@ -242,6 +243,32 @@ class Backend(Construct):
 
         params.metrics_bus.grant_all_put_events(self.service.task_definition.task_role)
 
+        # Create private hosted zone entry for internal VPC routing
+        private_hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/privateHostedZoneId"
+        )
+        private_hosted_zone_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/privateHostedZoneName"
+        )
+        private_hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
+            self,
+            id="BaselinePrivateHostedZone",
+            zone_name=private_hosted_zone_name,
+            hosted_zone_id=private_hosted_zone_id,
+        )
+
+        # Create A record in private zone pointing to ALB's private IPs
+        # TODO: Manually added Auth0 auth.*.driverai.com record needs to exist in private hosted zone too
+        aws_route53.ARecord(
+            self,
+            "PrivateApiDnsRecord",
+            zone=private_hosted_zone,
+            record_name=api_domain_name,
+            target=aws_route53.RecordTarget.from_alias(
+                aws_route53_targets.LoadBalancerTarget(self.service.load_balancer)
+            ),
+        )
+        
         self.api_url = f"https://{api_domain_name}"
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes

@@ -41,7 +41,7 @@ def _create_git_provider_grants(
 
     visibility = org.default_source_visibility
 
-    if visibility == SourceVisibility.INTERNAL:
+    if visibility == SourceVisibility.internal:
         grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
             organization_id=organization_id,
@@ -50,7 +50,7 @@ def _create_git_provider_grants(
         )
         session.add(grant)
         print(f"INFO: Created internal visibility grant for asset {primary_asset_id}")
-    elif visibility == SourceVisibility.PUBLIC:
+    elif visibility == SourceVisibility.public:
         grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
             organization_id=organization_id,

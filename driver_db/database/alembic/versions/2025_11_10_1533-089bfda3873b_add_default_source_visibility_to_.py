@@ -44,7 +44,6 @@ def upgrade() -> None:
         "organization",
         "default_source_visibility",
         nullable=False,
-        server_default="private",
     )
 
 

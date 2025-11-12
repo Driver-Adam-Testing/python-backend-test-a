@@ -303,6 +303,6 @@ class OrgRole(enum.StrEnum):
 
 
 class SourceVisibility(enum.StrEnum):
-    PRIVATE = "private"
-    INTERNAL = "internal"
-    PUBLIC = "public"
+    private = "private"
+    internal = "internal"
+    public = "public"

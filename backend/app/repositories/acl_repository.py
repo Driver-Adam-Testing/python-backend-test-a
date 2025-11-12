@@ -462,7 +462,7 @@ def create_default_visibility_grants(
     session.add(creator_grant)
     grants.append(creator_grant)
 
-    if visibility == SourceVisibility.INTERNAL:
+    if visibility == SourceVisibility.internal:
         org_grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
             organization_id=organization_id,
@@ -471,7 +471,7 @@ def create_default_visibility_grants(
         )
         session.add(org_grant)
         grants.append(org_grant)
-    elif visibility == SourceVisibility.PUBLIC:
+    elif visibility == SourceVisibility.public:
         public_grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
             organization_id=organization_id,

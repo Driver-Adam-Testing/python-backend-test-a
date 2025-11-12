@@ -1180,7 +1180,7 @@ class Organization(SQLModel, table=True):
     display_name: str | None = Field(default=None)
     org_metadata: dict = Field(default={}, sa_column=Column(JSONB, nullable=False))
     default_source_visibility: SourceVisibility = Field(
-        default=SourceVisibility.PRIVATE
+        default=SourceVisibility.private
     )
 
     created_at: datetime = Field(

@@ -203,13 +203,37 @@ class SourceUserResponse(BaseModel):
     is_super_admin: bool = Field(
         ..., description="Whether user is a super admin in the organization"
     )
+
+    # Granular role breakdown - shows exactly how user has access
+    user_org_role: str | None = Field(
+        None,
+        description="User's role in the organization (org_super_admin, org_admin, org_member)",
+    )
+    asset_org_role: str | None = Field(
+        None,
+        description="Organization-wide grant role for this asset (if org has blanket access)",
+    )
+    team_source_role: str | None = Field(
+        None,
+        description="Highest role from team grants (max across all teams user belongs to)",
+    )
+    user_grant_role: str | None = Field(
+        None,
+        description="Direct user grant role for this asset (null if no direct grant)",
+    )
+    effective_role: str | None = Field(
+        None,
+        description="Final effective role after hierarchy resolution (highest of all grants)",
+    )
+
+    # Existing fields - kept for backward compatibility
     source_role: PrimaryAssetRole = Field(
         ...,
         description="User's effective role on this source (from direct grant or team grant)",
     )
     assignment_type: AssignmentType = Field(
         ...,
-        description="How user has access: 'direct' for direct grants, 'inherited' for team-based access",
+        description="How user has access: 'direct' for direct grants, 'inherited' for team or org-based access",
     )
     org_role: OrgRole = Field(..., description="User's role in the organization")
     teams: list[TeamMembershipInfo] = Field(

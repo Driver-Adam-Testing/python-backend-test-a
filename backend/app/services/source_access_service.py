@@ -469,6 +469,13 @@ class SourceAccessService:
                 picture="",
                 created_at=data["created_at"],
                 is_super_admin=data["is_super_admin"],
+                # Granular role breakdown
+                user_org_role=data["user_org_role"],
+                asset_org_role=data["asset_org_role"],
+                team_source_role=data["team_source_role"],
+                user_grant_role=data["user_grant_role"],
+                effective_role=data["effective_role"],
+                # Existing fields (for backward compatibility)
                 source_role=data["effective_role"],
                 assignment_type=data["assignment_type"],
                 org_role=data["org_role"],

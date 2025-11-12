@@ -5,16 +5,21 @@ from shared.prompts.structured_prompting import (
     Component,
     Prompt,
 )
-from utils.lang_specialization.default import (
-    default_imports_checker,
-)
 from utils.lang_specialization.ruby import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_RUBY,
     RubyClassCollection,
     RubyClassRawSymbolCollection,
+    RubyImportRawSymbolCollection,
+    RubyMethodCollection,
     RubyModuleCollection,
     RubyModuleRawSymbolCollection,
+    RubyTopLevelConstantCollection,
+    RubyTopLevelConstantRawSymbolCollection,
+    RubyTopLevelMethodRawSymbolCollection,
+    RubyTopLevelVariableCollection,
+    RubyTopLevelVariableRawSymbolCollection,
+    render_ruby_imports,
 )
 from utils.templates import S
 
@@ -33,10 +38,31 @@ SOURCE_CODE_SMALL_TEMPLATE_RUBY = [
         .into_str(),
     ),
     (
-        S.LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker,
-        lambda _llm, output, _code: output,
+        RubyImportRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: render_ruby_imports(output),
+        None,
+    ),
+    (
+        S.FN_COND_JSON,
+        "# Global Constants",
+        RubyTopLevelConstantRawSymbolCollection.from_static_analysis,
+        RubyTopLevelConstantCollection.from_llm,
+        None,
+    ),
+    (
+        S.FN_COND_JSON,
+        "# Global Variables",
+        RubyTopLevelVariableRawSymbolCollection.from_static_analysis,
+        RubyTopLevelVariableCollection.from_llm,
+        None,
+    ),
+    (
+        S.FN_COND_JSON,
+        "# Top Level Methods",
+        RubyTopLevelMethodRawSymbolCollection.from_static_analysis,
+        RubyMethodCollection.from_llm,
         None,
     ),
     (

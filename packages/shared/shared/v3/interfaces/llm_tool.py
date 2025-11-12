@@ -154,8 +154,11 @@ class LlmTool(LlmParseable, ABC):
     @property
     def status(self) -> LlmToolStatusString:
         if self._references:
-            unique_short_paths = {ref.short_path for ref in self.references}
-            return f"References: \n{"\n".join(unique_short_paths)}"
+            unique_short_paths = {
+                ref.short_path for ref in self.references if ref.short_path is not None
+            }
+            if unique_short_paths:
+                return f"References: \n{"\n".join(unique_short_paths)}"
         if self.one_sentence_first_person_rationale_for_calling_the_tool:
             return self.one_sentence_first_person_rationale_for_calling_the_tool
         return f"Tool called: {self.__class__.__name__}"

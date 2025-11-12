@@ -7,10 +7,13 @@ from database.models_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,
+    PrimaryAssetRole,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
 from pydantic import BaseModel, computed_field
+
+from app.schemas.common import SourceVisibility
 
 T = TypeVar("T")
 
@@ -185,6 +188,8 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
     most_recent_completed_version: PrimaryAssetVersionRead | None
     tags: list[TagRead] | None
     codebase_settings_auto_commit_docs: bool | None = None
+    effective_role: PrimaryAssetRole
+    visibility: SourceVisibility
 
     @computed_field
     @property
@@ -194,10 +199,6 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
 
     class Config:
         from_attributes = True
-
-
-class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):
-    primary_asset: PrimaryAssetRead
 
 
 class ContentDetailRead(ContentRead):
@@ -229,11 +230,6 @@ class TagDetailRead(TagRead):
 # Create and Update Schemas
 
 
-class PrimaryAssetCreate(BaseModel):
-    display_name: str
-    kind: PrimaryAssetKind
-
-
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
     codebase_settings_auto_commit_docs: bool | None = None
@@ -244,26 +240,10 @@ class VersionUpdate(BaseModel):
     status: VersionStatus | None = None
 
 
-class NodeCreate(BaseModel):
-    version_id: UUID
-    relative_path: str
-
-
-class NodeUpdate(BaseModel):
-    relative_path: str | None = None
-
-
 class TagCreate(BaseModel):
     name: str
     hex_color: str
     type: str
-
-
-class ContentCreate(BaseModel):
-    node_id: UUID
-    content_kind: ContentKind
-    content: str | None = None
-    misc_metadata: dict | None = None
 
 
 class DerivedContentUpdate(BaseModel):

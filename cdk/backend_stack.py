@@ -8,6 +8,7 @@ from cdk.constructs.asset_onboarding_lambda import (
 )
 from cdk.constructs.auth0_event_lambda import Auth0EventLambda, Auth0EventLambdaParams
 from cdk.constructs.backend import Backend, BackendParams
+from cdk.constructs.hatchet_worker import HatchetWorker, HatchetWorkerParams
 from cdk.constructs.inspector import Inspector, InspectorParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 from cdk.settings import settings
@@ -35,11 +36,20 @@ class BackendStack(Stack):
         self.auth0_event_lambda = Auth0EventLambda(
             self,
             "Auth0EventLambda",
-            Auth0EventLambdaParams(
-                environment=settings.DEPLOYMENT_ENVIRONMENT,
-            ),
+            environment=settings.DEPLOYMENT_ENVIRONMENT
         )
 
+        self.hatchetworker = HatchetWorker(
+            self,
+            "HatchetWorker",
+            HatchetWorkerParams(
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
+                metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account
+            ),
+        )
+        
         self.backend = Backend(
             self,
             "ApiBackend",

@@ -1,7 +1,7 @@
 from typing import Any
 
 from database.models import DerivedContent, Node, PrimaryAsset, Version
-from fastapi import Body, HTTPException, Request
+from fastapi import Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
@@ -13,13 +13,17 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
-    ContentCreate,
     ContentDetailRead,
     ContentDetailReadSkinny,
     ListWithCount,
 )
 from app.api.session import CurrentSession
 from app.auth.models import User
+from app.authorization.query_filters import (
+    content_grant_filter,
+    exclude_page_assets_filter,
+    page_content_grant_filter,
+)
 
 
 @router.get("/contents")
@@ -35,19 +39,78 @@ def list_contents(
 
     By default returns skinny response without content field for efficiency.
 
-    TODO: Add organization_id to DerivedContent model to eliminate joins.
+    This endpoint filters content based on the user's grants to the associated PrimaryAsset.
+    Users will only see content from PrimaryAssets they have access to via:
+    - Direct user grants
+    - Team membership grants
+    - Organization-wide grants
+    - Public grants
+
+    NOTE: This endpoint excludes page-related assets. Use /page_contents for page content.
     """
-    return _list_contents(request, session, user, pagination, include_content)
+    return _list_contents_with_filter(
+        request,
+        session,
+        user,
+        pagination,
+        include_content,
+        auth_filter=lambda s, uid, oid: content_grant_filter(s, uid, oid),
+        additional_filters=[_exclude_page_content()],
+    )
 
 
-def _list_contents(
+@router.get("/page_contents")
+def list_page_contents(
+    request: Request,
+    session: CurrentSession,
+    user: UserToken,
+    pagination: Pagination,
+    include_content: bool = False,
+) -> ListWithCount[ContentDetailReadSkinny] | ListWithCount[ContentDetailRead]:
+    """
+    List contents from page assets with source-based authorization.
+
+    By default returns skinny response without content field for efficiency.
+
+    This endpoint only returns content from PAGE and PAGE_TEMPLATE assets.
+    Authorization is source-based: user must have access to ALL sources
+    referenced by each page to see its content.
+    """
+    return _list_contents_with_filter(
+        request,
+        session,
+        user,
+        pagination,
+        include_content,
+        auth_filter=lambda s, uid, oid: page_content_grant_filter(s, uid, oid),
+        additional_filters=[],
+    )
+
+
+def _list_contents_with_filter(
     request: Request,
     session: CurrentSession,
     user: User,
     pagination: Pagination,
-    include_content: bool = False,
+    include_content: bool,
+    auth_filter: callable,
+    additional_filters: list[Any],
 ) -> ListWithCount[ContentDetailReadSkinny] | ListWithCount[ContentDetailRead]:
-    query = _base_content_query(user.organization_id)
+    query = (
+        select(DerivedContent)
+        .options(
+            selectinload(DerivedContent.node)
+            .selectinload(Node.version)
+            .selectinload(Version.primary_asset)
+            .selectinload(PrimaryAsset.tags)
+        )
+        .where(_org_filter(user.organization_id))
+    )
+
+    for filter_condition in additional_filters:
+        query = query.where(filter_condition)
+
+    query = query.where(auth_filter(session, user.user_id, user.organization_id))
 
     filters = dict(request.query_params)
     query = apply_filters_to_query(query, filters, DerivedContent)
@@ -68,16 +131,9 @@ def _list_contents(
         )
 
 
-def _base_content_query(organization_id: str) -> Any:
-    return (
-        select(DerivedContent)
-        .options(
-            selectinload(DerivedContent.node)
-            .selectinload(Node.version)
-            .selectinload(Version.primary_asset)
-            .selectinload(PrimaryAsset.tags)
-        )
-        .where(_org_filter(organization_id))
+def _exclude_page_content() -> Any:
+    return DerivedContent.node.has(
+        Node.version.has(Version.primary_asset.has(exclude_page_assets_filter()))
     )
 
 
@@ -87,34 +143,3 @@ def _org_filter(organization_id: str) -> Any:
             Version.primary_asset.has(PrimaryAsset.organization_id == organization_id)
         )
     )
-
-
-@router.post("/contents", response_model=ContentDetailRead)
-def create_derived_content(
-    session: CurrentSession, user: UserToken, payload: ContentCreate = Body(...)
-) -> ContentDetailRead:
-    # Verify node belongs to user's organization
-    node = session.exec(
-        select(Node)
-        .join(Version)
-        .join(PrimaryAsset)
-        .where(Node.id == payload.node_id)
-        .where(PrimaryAsset.organization_id == user.organization_id)
-    ).one_or_none()
-
-    if not node:
-        raise HTTPException(status_code=404, detail="Node not found or not authorized")
-
-    new_content = DerivedContent(
-        node_id=payload.node_id,
-        relative_path=payload.relative_path,
-        content=payload.content,
-        content_name=payload.content_name,
-        misc_metadata=payload.misc_metadata,
-        order=payload.order,
-    )
-    session.add(new_content)
-    session.commit()
-    session.refresh(new_content)
-
-    return new_content

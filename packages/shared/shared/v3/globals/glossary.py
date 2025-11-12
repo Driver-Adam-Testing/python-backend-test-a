@@ -117,3 +117,21 @@ DATA_SOURCES = GlossaryDefinition(
     "DATA_SOURCES",
     "The data sources are the data sources that are available to the assistant via tools.",
 )
+
+TOOL_RESPONSE_CONTENT_JSON = GlossaryDefinition(
+    "tool response content json",
+    "TOOL_RESPONSE_CONTENT_JSON",
+    "The 'tool response content json' is content of the tool response that has been retrieved for the assistant in JSON format.",
+)
+
+TOOL_RESPONSE_CONTENT_MARKDOWN = GlossaryDefinition(
+    "tool response content markdown",
+    "TOOL_RESPONSE_CONTENT_MARKDOWN",
+    "The 'tool response content markdown' is content of the tool response that has been retrieved for the assistant in markdown format.",
+)
+
+TOOL_RESPONSE_CONTENT_YAML = GlossaryDefinition(
+    "tool response content yaml",
+    "TOOL_RESPONSE_CONTENT_YAML",
+    "The 'tool response content yaml' is content of the tool response that has been retrieved for the assistant in YAML format.",
+)

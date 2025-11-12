@@ -27,11 +27,9 @@ from pydantic import BaseModel
 from shared.interfaces.aws_client_config import AWSClientConfig
 from sqlmodel import select
 
-from app.api.auth import (
-    OrgManagerPermission,
-    UserToken,
-)
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_action
 from app.core.config import settings
 from app.git_providers.utils.errors import (
     GitProviderAccessTokenError,
@@ -79,39 +77,40 @@ class OkResponse(BaseModel):
 @router.get(
     "/app",
     summary="Get git provider apps",
-    dependencies=[OrgManagerPermission],
     response_model=list[GitProviderApp],
 )
 def get_apps(
     session: CurrentSession,
     current_user: UserToken,
 ) -> list[GitProviderApp]:
+    enforce_org_action(session, current_user, "vcs.manage")
     return provider_service.list_apps(session, current_user.organization_id)
 
 
 @router.post(
     "/app",
     summary="Create git provider app.",
-    dependencies=[OrgManagerPermission],
     response_model=GitProviderApp,
 )
 def create_app(
     session: CurrentSession,
     gp_app_input: CreateGitProviderAppRequest,
+    current_user: UserToken,
 ) -> GitProviderApp:
+    enforce_org_action(session, current_user, "vcs.manage")
     return provider_service.create_app(session, gp_app_input.model_dump(by_alias=True))
 
 
 @router.delete(
     "/app/{application_id}",
     summary="Delete git provider app.",
-    dependencies=[OrgManagerPermission],
 )
 def delete_git_provider_app(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
 ) -> JSONResponse:
+    enforce_org_action(session, current_user, "vcs.manage")
     provider_service.delete_app(session, current_user.organization_id, application_id)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -124,13 +123,13 @@ def delete_git_provider_app(
     "/app/{application_id}/installations",
     summary="Get app install for logged.",
     response_model=list[GitProviderAppInstallation],
-    dependencies=[OrgManagerPermission],
 )
 def get_app_installation(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
 ) -> list[GitProviderAppInstallation]:
+    enforce_org_action(session, current_user, "vcs.manage")
     return provider_service.list_app_installations(
         session,
         current_user.organization_id,
@@ -141,7 +140,6 @@ def get_app_installation(
 @router.post(
     "/app/{application_id}/token",
     summary="Add access token to the app.",
-    dependencies=[OrgManagerPermission],
 )
 def add_access_token(
     session: CurrentSession,
@@ -149,6 +147,7 @@ def add_access_token(
     application_id: str,
     gat: AccessTokenData,
 ) -> JSONResponse:
+    enforce_org_action(session, current_user, "vcs.manage")
     try:
         install = provider_service.install_access_token(
             session, current_user.organization_id, application_id, gat.model_dump()
@@ -168,7 +167,6 @@ def add_access_token(
 
 @router.get(
     "/app/{application_id}/installations/{installation_id}/webhook",
-    dependencies=[OrgManagerPermission],
     summary="Get details for setting up a webhook.",
     response_model=WebhookInfo,
 )
@@ -178,6 +176,7 @@ def get_app_installation_webhook_info(
     application_id: UUID,
     installation_id: UUID,
 ) -> WebhookInfo:
+    enforce_org_action(session, current_user, "vcs.manage")
     webhook_info = provider_service.get_webhook_info(
         session,
         current_user.organization_id,
@@ -189,7 +188,6 @@ def get_app_installation_webhook_info(
 
 @router.delete(
     "/app/{application_id}/installations/{installation_id}",
-    dependencies=[OrgManagerPermission],
     summary="Delete app install",
 )
 def delete_app_installation(
@@ -198,6 +196,7 @@ def delete_app_installation(
     application_id: str,
     installation_id: str,
 ) -> JSONResponse:
+    enforce_org_action(session, current_user, "vcs.manage")
     provider_service.revoke_access_token(
         session, current_user.organization_id, application_id, installation_id
     )
@@ -209,7 +208,6 @@ def delete_app_installation(
 
 @router.get(
     "/app/{application_id}/repos/{installation_id}",
-    dependencies=[OrgManagerPermission],
     response_model=list[GitRepository],
 )
 def get_repositories_by_installation_id(
@@ -218,6 +216,7 @@ def get_repositories_by_installation_id(
     application_id: str,
     installation_id: str,
 ) -> list[GitRepository]:
+    enforce_org_action(session, current_user, "vcs.manage")
     try:
         return provider_service.list_repositories(
             session,
@@ -233,7 +232,6 @@ def get_repositories_by_installation_id(
 
 @router.put(
     "/app/{application_id}/repos/{installation_id}/token",
-    dependencies=[OrgManagerPermission],
 )
 def update_git_provider_group_access_token(
     session: CurrentSession,
@@ -242,6 +240,7 @@ def update_git_provider_group_access_token(
     installation_id: str,
     new_gat: AccessTokenData,
 ) -> JSONResponse:
+    enforce_org_action(session, current_user, "vcs.manage")
     try:
         provider_service.update_access_token(
             session,
@@ -261,7 +260,6 @@ def update_git_provider_group_access_token(
 
 @router.post(
     "/app/{application_id}/connect-repos",
-    dependencies=[OrgManagerPermission],
 )
 def connect_git_provider_repo(
     session: CurrentSession,
@@ -269,6 +267,7 @@ def connect_git_provider_repo(
     application_id: UUID,
     repos: list[GitRepository],
 ) -> JSONResponse:
+    enforce_org_action(session, current_user, "vcs.manage")
     # Get the app to determine provider type
     app = git_provider_app_by_id(
         session, current_user.organization_id, str(application_id)
@@ -371,7 +370,7 @@ def github_callback(
         session.add(gh_app_install)
         session.commit()
 
-        connect_repos = modal.Function.lookup(
+        connect_repos = modal.Function.from_name(
             "inspector-v2",
             "connect_repos_for_installation",
             environment_name=settings.MODAL_ENVIRONMENT,

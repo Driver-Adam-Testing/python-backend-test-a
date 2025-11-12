@@ -5,10 +5,9 @@ from enum import StrEnum
 from logging import Formatter, LogRecord
 from typing import Any
 
-from fastmcp.exceptions import ToolError
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult  # noqa: TCH002
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from app.mcp.auth_middleware import get_organization_id, get_user, get_user_id
 
@@ -23,8 +22,8 @@ class _McpLogData(BaseModel):
     component_name: str
     component_type: _McpComponentType
     params: dict[str, Any] | None
-    response: str | None
-    errors: list | None
+    payload: str | None
+    error_message: str | None
     org_id: str
     org_name: str
     user_id: str
@@ -73,6 +72,11 @@ class _McpJsonFormatter(Formatter):
         return json.dumps(json_record)
 
 
+class DriverMcpToolResponse(BaseModel):
+    payload: Any | None
+    error_message: str | None
+
+
 class McpLoggingMiddleware(Middleware):
     def __init__(self) -> None:
         self._RESPONSE_MAX_LENGTH = 500
@@ -91,8 +95,8 @@ class McpLoggingMiddleware(Middleware):
             component_name=ctx.message.name,
             component_type=_McpComponentType.TOOL,
             params=ctx.message.arguments,
-            response=None,
-            errors=None,
+            payload=None,
+            error_message=None,
             org_id=get_organization_id(ctx.fastmcp_context),
             org_name=user["org_name"],
             user_id=get_user_id(ctx.fastmcp_context),
@@ -101,19 +105,38 @@ class McpLoggingMiddleware(Middleware):
 
         try:
             tool_result: ToolResult = await call_next(ctx)
-            log_data.response = (
-                str(tool_result.content[0].text)[: self._RESPONSE_MAX_LENGTH] + "..."
-            )
-            self._logger.info(
-                "Tool call completed without errors", extra=log_data.model_dump()
-            )
+        except Exception as e:
+            log_data.error_message = str(e)
 
-        except ToolError as e:
-            log_data.errors = [str(e)]
             self._logger.error(
-                "Tool call completed with errors", extra=log_data.model_dump()
+                "Tool call raised an exception", extra=log_data.model_dump()
             )
             raise
+        try:
+            response = DriverMcpToolResponse.model_validate(
+                tool_result.structured_content
+            )
+            if response.error_message:
+                log_data.error_message = response.error_message
+
+                self._logger.error(
+                    "Tool call completed with errors", extra=log_data.model_dump()
+                )
+            else:
+                payload_str = str(response.payload)
+                if len(payload_str) > self._RESPONSE_MAX_LENGTH:
+                    payload_str = payload_str[: self._RESPONSE_MAX_LENGTH] + "..."
+                log_data.payload = payload_str
+
+                self._logger.info(
+                    "Tool call completed without errors",
+                    extra=log_data.model_dump(),
+                )
+
+        except ValidationError as e:
+            raise ValidationError(
+                f"All Driver MCP tools must return DriverMcpToolResponse.  Error: {e}"
+            ) from e
 
         return tool_result
 
@@ -124,8 +147,8 @@ class McpLoggingMiddleware(Middleware):
             component_name=ctx.message.name,
             component_type=_McpComponentType.PROMPT,
             params=None,
-            response=None,
-            errors=None,
+            payload=None,
+            error_message=None,
             org_id=get_organization_id(ctx.fastmcp_context),
             org_name=user["org_name"],
             user_id=get_user_id(ctx.fastmcp_context),

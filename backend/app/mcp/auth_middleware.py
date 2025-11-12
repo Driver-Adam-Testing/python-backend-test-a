@@ -5,7 +5,7 @@ from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 
 from app.auth.api_key_async import verify_api_key_async
-from app.services.auth0_async import AsyncAuth0Service
+from app.services.auth0_factory import create_async_auth0_service
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class McpAuthMiddleware(Middleware):
     def __init__(self) -> None:
         super().__init__()
-        self.auth0 = AsyncAuth0Service()
+        self.auth0 = create_async_auth0_service()
 
     async def on_message(self, context: MiddlewareContext, call_next: any) -> any:
         try:

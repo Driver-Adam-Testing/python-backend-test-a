@@ -1,0 +1,577 @@
+import concurrent.futures
+from dataclasses import dataclass
+from enum import Enum, auto
+from pathlib import Path
+from typing import Any
+
+from database.models_enums import ContentKind
+from shared.inspector.utils.dag import LiteNode, NodeKind
+from shared.inspector.utils.io import get_prompt_template
+from shared.inspector.utils.models import ChatOpenAI
+from shared.inspector.utils.threadpool import FastShutdownThreadPoolExecutor
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
+
+PARENT_PATH = Path(__file__).parent
+
+
+@dataclass(frozen=True)
+class ContentDocs:
+    docs: dict[str, Any]
+
+
+class AggregationState(Enum):
+    CHILD_LIST = auto()
+    MANY_CHUNKS = auto()
+
+
+def folder_chunk_description(
+    llm: ChatOpenAI,
+    folder_name: str,
+    codebase_name: str,
+    description_chunk: str,
+) -> str:
+    system_prompt = get_prompt_template(
+        PARENT_PATH / "prompt_templates/folders/chunk_description.txt"
+    )
+    human_prompt = (
+        f"Chunk of child descriptions for folder `{folder_name}` in codebase `{codebase_name}`:"
+        f"\n\n{description_chunk}"
+    )
+    return llm.generate_response(system_prompt, human_prompt)
+
+
+def folder_compress_chunks(
+    llm: ChatOpenAI,
+    folder_name: str,
+    codebase_name: str,
+    description_chunk: str,
+) -> str:
+    system_prompt = get_prompt_template(
+        PARENT_PATH / "prompt_templates/folders/compress_chunks.txt"
+    )
+    human_prompt = (
+        f"Chunk of child subset descriptions for folder `{folder_name}` in codebase `{codebase_name}`:"
+        f"\n\n{description_chunk}"
+    )
+    return llm.generate_response(system_prompt, human_prompt)
+
+
+def folder_single_sentence_from_child_list(
+    llm: ChatOpenAI,
+    folder_name: str,
+    codebase_name: str,
+    data: str,
+    is_root: bool,
+    previous_content: str | None,
+) -> str:
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_sentence_from_child_list.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+    )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single sentence description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
+
+    user_prompt_structured = Prompt.empty()
+    if is_root:
+        root_specialization = """
+This folder is the root of an entire codebase. As such, write your single sentence description to concisely summarize the purpose and contents of the codebase as a whole.
+"""
+        user_prompt_structured.append(Component(string=root_specialization))
+
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES).append(
+        TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION
+    ).append(
+        Component(
+            string=f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+        )
+    )
+
+    user_prompt = user_prompt_structured.into_str()
+
+    return llm.generate_response(system_prompt, user_prompt)
+
+
+def folder_single_paragraph_from_child_list(
+    llm: ChatOpenAI,
+    folder_name: str,
+    codebase_name: str,
+    data: str,
+    previous_content: str | None,
+) -> str:
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_paragraph_from_child_list.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+    )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single paragraph description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(
+            Component(
+                string=f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+            )
+        )
+        .into_str()
+    )
+
+    return llm.generate_response(system_prompt, user_prompt)
+
+
+def folder_single_sentence_from_chunk_descriptions(
+    llm: ChatOpenAI,
+    folder_name: str,
+    codebase_name: str,
+    data: str,
+    is_root: bool,
+    previous_content: str | None,
+) -> str:
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_sentence_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
+    )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single sentence description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
+        .append(Component(string=data))
+        .into_str()
+    )
+    return llm.generate_response(system_prompt, user_prompt)
+
+
+def folder_single_paragraph_from_chunk_descriptions(
+    llm: ChatOpenAI,
+    folder_name: str,
+    codebase_name: str,
+    data: str,
+    previous_content: str | None,
+) -> str:
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_paragraph_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+    )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single paragraph description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(Component(string=data))
+        .into_str()
+    )
+    return llm.generate_response(system_prompt, user_prompt)
+
+
+def _return_with_simple_message(message: str, folder_node: LiteNode) -> dict[str, any]:
+    long_description = message
+    short_descriptions = {
+        "single_sentence": message,
+        "single_paragraph": message,
+    }
+    return {
+        "short": short_descriptions,
+        "long": long_description,
+    }
+
+
+def comprehend_folder_top_down(
+    llm: ChatOpenAI,
+    codebase_name: str,
+    node: LiteNode,
+    chunk_size: int,
+    chunk_overlap: int,
+    max_workers: int,
+    child_nodes_to_docs: dict[LiteNode, ContentDocs],
+    compression_loop_max_itr: int,
+    raise_hard_errors: bool = True,
+    redundant_folder_flag: bool = False,
+    use_async: bool = False,
+    previous_content: dict[str, str] | None = None,
+) -> dict[str, any]:
+    from shared.chunking.text_splitter import split_text
+
+    folder_name = node.root_rel_path.name
+    print(
+        f"Incorporating `{node.root_rel_path}` for repo `{codebase_name}` ({len(child_nodes_to_docs)} child nodes)"
+    )
+    # Handle empty directories.
+    if len(child_nodes_to_docs) == 0:
+        description = "No analyzable contents."
+        return _return_with_simple_message(message=description, folder_node=node)
+
+    # Handle redundant folders.
+    if redundant_folder_flag:
+        description = "No unique content; see single subfolder."
+        return _return_with_simple_message(message=description, folder_node=node)
+
+    # Base all content generation on a list of all child single sentence descriptions.
+    print(f"Aggregating child info for folder `{folder_name}`")
+    child_single_sentence_descriptions = {
+        k: v["short"]["single_sentence"]
+        for k, v in dict(
+            sorted(
+                child_nodes_to_docs.items(),
+                key=lambda x: str(x[0]).lower(),
+            )
+        ).items()
+    }
+    child_folder_list = ""
+    child_file_list = ""
+    for k, v in child_single_sentence_descriptions.items():
+        if k.kind == NodeKind.FILE:
+            child_file_list += (
+                f"- **[{k.root_rel_path.name}]({k.root_rel_path})**: {v}\n"
+            )
+        else:  # subfolder or root folder
+            child_folder_list += (
+                f"- **[{k.root_rel_path.name}]({k.root_rel_path})**: {v}\n"
+            )
+    if child_folder_list:
+        folder_prefix = "## Folders\n"
+        child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"
+    else:
+        child_folder_list_finalized = ""
+    if child_file_list:
+        file_prefix = "## Files\n"
+        child_file_list_finalized = f"{file_prefix}{child_file_list}"
+    else:
+        child_file_list_finalized = ""
+    completed_child_lists = (
+        f"{child_folder_list_finalized}\n{child_file_list_finalized}"
+    )
+
+    # Proceed according to child list content length relative to chunk size.
+    print(f"Checking if compression is required for folder `{folder_name}` content...")
+    list_chunks: list[str] = split_text(
+        text=completed_child_lists,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+    if len(list_chunks) > 1:
+        chunk_texts = [c.text for c in list_chunks]
+        aggregation_state = AggregationState.MANY_CHUNKS
+        print(
+            f"Number of initial chunks for folder `{folder_name}`: {len(list_chunks)}"
+        )
+        if use_async:
+            with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(
+                        folder_chunk_description,
+                        llm,
+                        folder_name,
+                        codebase_name,
+                        c_str,
+                    ): idx
+                    for idx, c_str in enumerate(chunk_texts)
+                }
+                # Make sure the original chunk order is preserved.
+                results = []
+                for idx, future in enumerate(
+                    concurrent.futures.as_completed(futures.keys())
+                ):
+                    res = future.result()
+                    if res is not None:
+                        print(
+                            f"Processed {idx}/{len(list_chunks) - 1} initial chunks for folder `{folder_name}`"
+                        )
+                        results.append((futures[future], res))
+                chunk_detailed_descriptions: list[str] = [
+                    r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
+                ]
+                aggregated_descriptions = ""
+                for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
+                    aggregated_descriptions += f"Folder content subset {idx} description for folder {folder_name}:\n\n{c_str}\n\n"
+                compression_idx = 0
+                while (
+                    len(
+                        split_text(
+                            text=aggregated_descriptions,
+                            chunk_size=chunk_size,
+                            chunk_overlap=chunk_overlap,
+                        )
+                    )
+                    > 1
+                ):
+                    chunks = split_text(
+                        text=aggregated_descriptions,
+                        chunk_size=chunk_size,
+                        chunk_overlap=chunk_overlap,
+                    )
+                    with FastShutdownThreadPoolExecutor(
+                        max_workers=max_workers
+                    ) as executor:
+                        num_chunks = len(chunks)
+                        futures = {
+                            executor.submit(
+                                folder_compress_chunks,
+                                llm,
+                                folder_name,
+                                codebase_name,
+                                c_str,
+                            ): idx
+                            for idx, c_str in enumerate([c.text for c in chunks])
+                        }
+                        # Make sure the original chunk order is preserved.
+                        results = []
+                        for idx, future in enumerate(
+                            concurrent.futures.as_completed(futures.keys())
+                        ):
+                            res = future.result()
+                            if res is not None:
+                                print(
+                                    f"Processed {idx}/{num_chunks - 1} chunks for folder `{folder_name}` "
+                                    f"in compression iteration {compression_idx}"
+                                )
+                                results.append((futures[future], res))
+                        chunk_detailed_descriptions = [
+                            r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
+                        ]
+                    aggregated_descriptions = ""
+                    for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
+                        aggregated_descriptions += (
+                            f"Folder content subset {idx} description for folder {folder_name}:"
+                            f"\n\n{c_str}\n\n"
+                        )
+                    compression_idx += 1
+                    if compression_idx >= compression_loop_max_itr:
+                        if raise_hard_errors:
+                            raise RuntimeError(
+                                f"Compression loop max iteration ({compression_loop_max_itr}) "
+                                f"reached for folder `{folder_name}`"
+                            )
+                        else:
+                            print(
+                                f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) "
+                                f"reached for folder `{folder_name}`"
+                            )
+                            description = "Folder contents too large to process."
+                            return _return_with_simple_message(
+                                message=description,
+                                folder_node=node,
+                            )
+            print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
+            data = aggregated_descriptions
+        else:
+            chunk_detailed_descriptions = []
+            for idx, c_str in enumerate(chunk_texts):
+                chunk_detailed_descriptions.append(
+                    folder_chunk_description(
+                        llm=llm,
+                        folder_name=folder_name,
+                        codebase_name=codebase_name,
+                        description_chunk=c_str,
+                    )
+                )
+                print(
+                    f"Initial folder child content chunk {idx + 1}/{len(list_chunks)} processed for folder `{folder_name}`"
+                )
+            # Compression steps, if needed.
+            aggregated_descriptions = ""
+            for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
+                aggregated_descriptions += f"Folder content subset {idx} description for folder {folder_name}:\n\n{c_str}\n\n"
+            compression_idx = 0
+            while (
+                len(
+                    split_text(
+                        text=aggregated_descriptions,
+                        chunk_size=chunk_size,
+                        chunk_overlap=chunk_overlap,
+                    )
+                )
+                > 1
+            ):
+                chunks = split_text(
+                    text=aggregated_descriptions,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap,
+                )
+                print(
+                    f"Compressing {len(chunks)} chunk descriptions for folder `{folder_name}`"
+                )
+                chunk_detailed_descriptions = []
+                for idx, c_str in enumerate([c.text for c in chunks]):
+                    chunk_detailed_descriptions.append(
+                        folder_compress_chunks(
+                            llm=llm,
+                            folder_name=folder_name,
+                            codebase_name=codebase_name,
+                            description_chunk=c_str,
+                        )
+                    )
+                    print(
+                        f"Compression chunk {idx + 1}/{len(chunks)} for compression iteration "
+                        f"{compression_idx + 1} processed for folder `{folder_name}`"
+                    )
+                aggregated_descriptions = ""
+                for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
+                    aggregated_descriptions += f"Folder content subset {idx} description for folder {folder_name}:\n\n{c_str}\n\n"
+                compression_idx += 1
+                if compression_idx >= compression_loop_max_itr:
+                    if raise_hard_errors:
+                        raise RuntimeError(
+                            f"Compression loop max iteration ({compression_loop_max_itr}) reached for folder `{folder_name}`"
+                        )
+                    else:
+                        print(
+                            f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) reached for folder `{folder_name}`"
+                        )
+                        description = "Folder contents too large to process."
+                        return _return_with_simple_message(
+                            message=description,
+                            folder_node=node,
+                        )
+            print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
+            data = aggregated_descriptions
+    else:  # child list is small enough
+        aggregation_state = AggregationState.CHILD_LIST
+        data = completed_child_lists
+
+    # Dispatch to the correct single sentence/paragraph generation function depending on the
+    # compression/aggregation strategy that was used.
+    print(f"Generating final folder content for `{folder_name}` ...")
+    match aggregation_state:
+        case AggregationState.MANY_CHUNKS:
+            single_sentence_fn = folder_single_sentence_from_chunk_descriptions
+            single_paragraph_fn = folder_single_paragraph_from_chunk_descriptions
+        case AggregationState.CHILD_LIST:
+            single_sentence_fn = folder_single_sentence_from_child_list
+            single_paragraph_fn = folder_single_paragraph_from_child_list
+        case _:
+            raise ValueError(
+                f"Unexpected value `{aggregation_state}` for `aggregation_state` for folder processing"
+            )
+    is_root = node.kind == NodeKind.ROOT_FOLDER
+    if use_async:
+        with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
+            single_sentence_future = executor.submit(
+                single_sentence_fn,
+                llm,
+                folder_name,
+                codebase_name,
+                data,
+                is_root=is_root,
+            )
+            single_paragraph_future = executor.submit(
+                single_paragraph_fn,
+                llm,
+                folder_name,
+                codebase_name,
+                data,
+            )
+            single_sentence = single_sentence_future.result().replace("\x00", "")
+            single_paragraph = single_paragraph_future.result().replace("\x00", "")
+            short_descriptions = {
+                "single_sentence": single_sentence,
+                "single_paragraph": single_paragraph,
+            }
+    else:
+        single_sentence = single_sentence_fn(
+            llm=llm,
+            folder_name=folder_name,
+            codebase_name=codebase_name,
+            data=data,
+            is_root=is_root,
+            previous_content=previous_content.get(
+                ContentKind.SHORT_SENTENCE_DESCRIPTION, None
+            )
+            if previous_content
+            else None,
+        )
+        single_paragraph = single_paragraph_fn(
+            llm=llm,
+            folder_name=folder_name,
+            codebase_name=codebase_name,
+            data=data,
+            previous_content=previous_content.get(
+                ContentKind.SHORT_PARAGRAPH_DESCRIPTION, None
+            )
+            if previous_content
+            else None,
+        )
+        single_sentence = single_sentence.replace("\x00", "")
+        single_paragraph = single_paragraph.replace("\x00", "")
+        short_descriptions = {
+            "single_sentence": single_sentence,
+            "single_paragraph": single_paragraph,
+        }
+    long_description = completed_child_lists.replace("\x00", "")
+
+    print(
+        f"Short description for `{folder_name}` at `{node.root_rel_path}`:\n{short_descriptions['single_paragraph']}"
+    )
+
+    return {
+        "short": short_descriptions,
+        "long": long_description,
+    }

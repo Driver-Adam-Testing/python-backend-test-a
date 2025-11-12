@@ -8,12 +8,16 @@ from database.models import (
     DerivedContent,
     Node,
     PrimaryAsset,
-    PrimaryAssetKind,
-    PrimaryAssetProvider,
     PrimaryAssetTag,
     Version,
 )
-from database.models_enums import ContentKind, VcsAutoUpdatePolicy, VersionStatus
+from database.models_enums import (
+    ContentKind,
+    PrimaryAssetKind,
+    PrimaryAssetProvider,
+    VcsAutoUpdatePolicy,
+    VersionStatus,
+)
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import and_, func, or_
@@ -28,6 +32,7 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.schemas import ListWithCount, TagRead
 from app.api.session import CurrentSession  # noqa: TCH001
+from app.authorization.query_filters import primary_asset_grant_filter
 
 
 class CommitAuthor(BaseModel):
@@ -172,15 +177,22 @@ def codebase_card(
 
     Identical output to the original implementation, but with **far fewer
     database round-trips** thanks to batched loading of `DerivedContent`.
+
+    This endpoint filters assets based on the user's grants to the PrimaryAsset.
+    Users will only see assets they have access to via:
+    - Super admin role (see all assets in org)
+    - Direct user grants
+    - Team membership grants
+    - Organization-wide grants
+    - Public grants
     """
 
-    pa = aliased(PrimaryAsset)
     root = aliased(Node)
 
     completed_ver_id_subq = (
         select(Version.id)
         .where(
-            Version.primary_asset_id == pa.id,
+            Version.primary_asset_id == PrimaryAsset.id,
             Version.status == VersionStatus.GENERATION_COMPLETE,
         )
         .order_by(Version.created_at.desc())
@@ -189,8 +201,9 @@ def codebase_card(
     )
 
     base_subq = (
-        select(pa.id)
-        .where(pa.organization_id == user.organization_id)
+        select(PrimaryAsset.id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
+        .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
         .outerjoin(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
     )
 
@@ -198,10 +211,10 @@ def codebase_card(
         PrimaryAssetKind.CODEBASE,
         PrimaryAssetKind.FILE,
     ]
-    base_subq = base_subq.where(pa.kind.in_(kinds))
+    base_subq = base_subq.where(PrimaryAsset.kind.in_(kinds))
 
     if id:
-        base_subq = base_subq.where(pa.id.in_(id))
+        base_subq = base_subq.where(PrimaryAsset.id.in_(id))
 
     if top_language:
         tl = [t.lower() for t in top_language.split(",")]

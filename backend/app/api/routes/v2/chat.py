@@ -1,14 +1,18 @@
 from uuid import UUID
 
+from database.models import DocumentSource, Node
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from shared.v3.app.pipelines.chat import (
     ChatPipelineRequest,
 )  # local import after FastAPI deps
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action
 
 router = APIRouter()
 
@@ -27,6 +31,27 @@ async def create_streaming_post(
     user: UserToken,
     payload: ChatHttpRequest,
 ) -> StreamingResponse:
+    source_ids = payload.source_node_ids or []
+    if payload.page_node_id:
+        sources_query = select(DocumentSource).where(
+            DocumentSource.page_node_id == payload.page_node_id
+        )
+        sources = session.exec(sources_query).all()
+        for source in sources:
+            if source.source_node_id not in source_ids:
+                source_ids.append(source.source_node_id)
+
+    query = (
+        select(Node).where(Node.id.in_(source_ids)).options(selectinload(Node.version))
+    )
+    nodes = session.exec(query).all()
+    for node in nodes:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
     request = ChatPipelineRequest(
         user_prompt=payload.user_prompt,
         node_ids=payload.source_node_ids,

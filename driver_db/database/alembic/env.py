@@ -1,5 +1,12 @@
 import datetime
+import sys
 from logging.config import fileConfig
+from pathlib import Path
+
+from sqlmodel import SQLModel
+
+# Add parent directory to sys.path to enable 'import database.models'
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from alembic import context
 from database.config import settings
@@ -11,7 +18,6 @@ from sqlalchemy.engine import Connection
 config = context.config
 fileConfig(str(config.config_file_name))
 
-from database.models import SQLModel  # noqa PGH004
 
 target_metadata = SQLModel.metadata
 
@@ -29,10 +35,7 @@ def include_object(
         "ix_chunkandembedding___ts_vector__",
     ]:
         return False
-    if type_ == "column" and name == "__ts_vector__":
-        return False
-    # Otherwise, return True so Alembic processes it normally
-    return True
+    return not (type_ == "column" and name == "__ts_vector__")
 
 
 def run_migrations_offline() -> None:

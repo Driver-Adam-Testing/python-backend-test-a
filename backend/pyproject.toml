@@ -26,11 +26,10 @@ boto3 = "^1.34.114"
 moto = "^5.0.9"
 aws-cdk-lib = "^2.144.0"
 constructs = "^10.3.0"
-tiktoken = "^0.7.0"
+tiktoken = "^0.12.0"
 pypandoc-binary = "^1.14"
 python-gitlab = "^5.6.0"
 pyjwt = "^2.10.1"
-email-validator = "^2.1.0.post1"
 sentry-sdk = { version = "^2.22.0", extras = ["fastapi"] }
 cachetools = "^6.0.0"
 httpx = "^0.28.1"
@@ -46,6 +45,7 @@ pre-commit = "^3.6.2"
 pytest-mock = "^3.12.0"
 fastapi-cli = "^0.0.4"
 pytest-asyncio = "<1.0"
+testcontainers = {extras = ["postgres"], version = "^4.13.2"}
 
 
 [build-system]
@@ -57,7 +57,10 @@ strict = true
 exclude = ["venv", "alembic"]
 
 [tool.pytest.ini_options]
-markers = ["unit"]
+markers = [
+    "unit: Unit tests with mocked dependencies (default)",
+    "integration: Integration tests with real database (in-memory SQLite)"
+]
 addopts = "--cov --cov-report=term-missing --cov-report=xml:coverage/coverage.xml"
 
 [tool.coverage]

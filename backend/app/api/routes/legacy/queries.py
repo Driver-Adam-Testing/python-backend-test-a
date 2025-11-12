@@ -1,16 +1,17 @@
 import logging
+import uuid
 
 import strawberry
 from app.api.routes.legacy.document_set import DocumentSet, get_document_set
-from app.api.routes.legacy.orm_ops import (
-    check_access,
-)
 from app.api.routes.legacy.scalars import ID, NodeType
 from app.api.routes.legacy.tree import FlatNode, get_codebase_tree
+from app.authorization.fastapi import check_asset_action, check_org_action
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
+from database.models import Version
 from graphql import GraphQLError
+from sqlmodel import select
 from strawberry.types import Info
 from strawberry.types.nodes import Selection
 
@@ -58,12 +59,16 @@ class Query:
                 extensions={"code": "BAD_REQUEST"},
             )
         session = info.context.session
-        if not check_access(
-            session,
-            info.context.user.organization_id,
-            primary_asset_id=str(primaryAssetId),
-        ):
-            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+        user = info.context.user
+
+        decision = check_asset_action(
+            db=session,
+            user=user,
+            asset_id=uuid.UUID(str(primaryAssetId)),
+            action_key="codebase.view_versions",
+        )
+        if not decision.allowed:
+            raise GraphQLError("Access denied", extensions={"code": "FORBIDDEN"})
 
         fetch_code_content = is_code_content_requested(info)
         logger.info("Is code content requested: %s", fetch_code_content)
@@ -71,7 +76,7 @@ class Query:
             nodeKind,
             path,
             str(primaryAssetId),
-            info.context.user.organization_id,
+            user.organization_id,
             session,
             fetch_code_content,
             versionId,
@@ -85,24 +90,48 @@ class Query:
         workspaceId: ID | None = None,
         versionId: ID | None = None,
     ) -> list[FlatNode]:
+        if versionId is None:
+            raise GraphQLError(
+                "versionId must not be None",
+                extensions={"code": "BAD_REQUEST"},
+            )
+
         session = info.context.session
         user = info.context.user
-        # Access now happens on Primary Asset
-        # if not check_access(session, user.organization_id, primary_asset_id=str(codebaseId), version_id=str(versionId) if versionId else None):
-        #     raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+
+        version = session.exec(
+            select(Version).where(Version.id == str(versionId))
+        ).first()
+        if not version:
+            raise GraphQLError("Version not found", extensions={"code": "NOT_FOUND"})
+
+        decision = check_asset_action(
+            db=session,
+            user=user,
+            asset_id=version.primary_asset_id,
+            action_key="codebase.view_versions",
+        )
+        if not decision.allowed:
+            raise GraphQLError("Access denied", extensions={"code": "FORBIDDEN"})
 
         return get_codebase_tree(
             session=session,
             organization_id=user.organization_id,
-            version_id=str(versionId) if versionId else None,
+            version_id=str(versionId),
         )
 
     @strawberry.field
     def connectedGitProviders(self, info: Info) -> list[GitProvider]:
         """This endpoint lists which git providers (ie Github, Gitlab, etc)that a user/org has configured. It is polled by the UI."""
-        providers = []
+        session = info.context.session
         user = info.context.user
-        gh_repository = GithubAppInstallationsRepository(info.context.session)
+
+        decision = check_org_action(db=session, user=user, action_key="vcs.manage")
+        if not decision.allowed:
+            raise GraphQLError("Access denied", extensions={"code": "FORBIDDEN"})
+
+        providers = []
+        gh_repository = GithubAppInstallationsRepository(session)
         if len(gh_repository.list_by_organization_id(user.organization_id)) > 0:
             providers.append(
                 GitProvider(

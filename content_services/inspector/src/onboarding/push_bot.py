@@ -47,8 +47,9 @@ async def push_docs(version_id: uuid.UUID) -> None:
     import tempfile
 
     from database.db import engine
-    from database.models import GitProviderAppInstallation, PrimaryAssetProvider
-    from onboarding import bitbucket_ops, gh_ops, gitlab_ops, azure_devops_ops
+    from database.models import GitProviderAppInstallation
+    from database.models_enums import PrimaryAssetProvider
+    from onboarding import azure_devops_ops, bitbucket_ops, gh_ops, gitlab_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
@@ -131,9 +132,15 @@ async def push_docs(version_id: uuid.UUID) -> None:
                 base_url = app_install.git_provider_app.base_url
                 # Extract project from VCS metadata
                 vcs_metadata = version.vcs_metadata or {}
-                project = vcs_metadata.get("repository", {}).get("namespace", "").split("/")[-1]
+                project = (
+                    vcs_metadata.get("repository", {})
+                    .get("namespace", "")
+                    .split("/")[-1]
+                )
                 if not project:
-                    raise ValueError(f"Could not determine project from VCS metadata for version {version_id}")
+                    raise ValueError(
+                        f"Could not determine project from VCS metadata for version {version_id}"
+                    )
             access_token = azure_devops_ops.fetch_access_token(install_id)
             clone_url, full_name = azure_devops_ops.get_repo_clone_info_from_id(
                 base_url, project, repo_id, access_token
@@ -160,7 +167,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             shutil.rmtree(driver_docs_path)
 
         dst_path = repo_dir / "driver_docs" / repo_name
-        COMMIT_MESSAGE = "Docs: update driver docs for commit: " + commit_slug
+        COMMIT_MESSAGE = "docs: update driver docs for commit: " + commit_slug
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)

@@ -1,16 +1,18 @@
 import json
+import logging
 from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
 import strawberry
 from app.api.routes.legacy.s3 import S3BucketAccess
-from app.core.logger import logger
 from database.models import DerivedContent, Node, PrimaryAsset, Version
 from database.models_enums import ContentKind, NodeKind
 from fastapi import HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
+
+logger = logging.getLogger(__name__)
 
 
 class DerivedContentTypes(Enum):

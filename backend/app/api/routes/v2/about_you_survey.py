@@ -1,11 +1,11 @@
+from database.models import AboutYouSurvey
 from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
 from sqlmodel import select
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
-from database.models import AboutYouSurvey
-
+from app.authorization.fastapi import enforce_org_membership
 
 router = APIRouter()
 
@@ -24,6 +24,8 @@ def submit_survey(
     user: UserToken,
     payload: SurveyCreate = Body(...),
 ) -> None:
+    enforce_org_membership(session, user)
+
     existing = session.exec(
         select(AboutYouSurvey)
         .where(AboutYouSurvey.organization_id == user.organization_id)
@@ -33,7 +35,7 @@ def submit_survey(
     if existing is not None:
         raise HTTPException(
             status_code=400,
-            detail="Survey already exists for this user. Cannot submit multiple surveys."
+            detail="Survey already exists for this user. Cannot submit multiple surveys.",
         )
 
     record = AboutYouSurvey(
@@ -54,7 +56,11 @@ class SurveySubmittedResponse(BaseModel):
 
 
 @router.get("/about-you-survey-submitted", response_model=SurveySubmittedResponse)
-def survey_submitted(session: CurrentSession, user: UserToken) -> SurveySubmittedResponse:
+def survey_submitted(
+    session: CurrentSession, user: UserToken
+) -> SurveySubmittedResponse:
+    enforce_org_membership(session, user)
+
     exists = (
         session.exec(
             select(AboutYouSurvey)
@@ -64,5 +70,3 @@ def survey_submitted(session: CurrentSession, user: UserToken) -> SurveySubmitte
         is not None
     )
     return SurveySubmittedResponse(submitted=exists)
-
-

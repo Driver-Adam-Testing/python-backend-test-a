@@ -1,5 +1,6 @@
 from database.db import get_session
-from database.models import ContentKind, DerivedContent
+from database.models import DerivedContent
+from database.models_enums import ContentKind
 from shared.v3.globals.glossary import (
     REFERENCE,
     REFERENCE_CONTENT,
@@ -124,5 +125,6 @@ class FolderSummaryTool(LlmTool):
     def status(self) -> LlmTool.LlmToolStatusString:
         if self._references:
             unique_paths = {ref.short_path for ref in self.references}
-            return "Folder summaries ready:\n" + "\n".join(unique_paths)
-        return f"Summarising folder: {self.folder_path}…\n"
+            if unique_paths:
+                return "Folder summaries ready:\n" + "\n".join(unique_paths)
+        return f"Summarizing folder: {self.folder_path}…\n"

@@ -12,9 +12,7 @@ cache = SecretCache(config=cache_config, client=sm_client)
 
 # Load Modal secrets and set environment variables at module initialization
 modal_secrets = json.loads(cache.get_secret_string(os.getenv("MODAL_SECRET_NAME")))
-os.environ["MODAL_TOKEN_ID"] = modal_secrets["MODAL_TOKEN_ID"]
 os.environ["MODAL_TOKEN_SECRET"] = modal_secrets["MODAL_TOKEN_SECRET"]
-os.environ["MODAL_ENVIRONMENT"] = modal_secrets["MODAL_ENVIRONMENT"]
 
 # Import Modal SDK after setting environment variables
 import modal

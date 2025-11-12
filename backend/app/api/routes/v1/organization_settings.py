@@ -8,6 +8,7 @@ from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_super_admin
 from app.repositories import organization_repository
+from app.schemas.common import validate_visibility_not_public
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,12 +25,9 @@ class UpdateDefaultSourceVisibilityRequest(BaseModel):
         ..., description="New default visibility for sources (public not yet supported)"
     )
 
-    @field_validator("default_source_visibility")
-    @classmethod
-    def validate_not_public(cls, v: SourceVisibility) -> SourceVisibility:
-        if v == SourceVisibility.PUBLIC:
-            raise ValueError("Public visibility is not yet supported")
-        return v
+    _validate_not_public = field_validator("default_source_visibility")(
+        validate_visibility_not_public
+    )
 
 
 @router.get(

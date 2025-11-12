@@ -44,6 +44,7 @@ from app.authorization.query_filters import (
     primary_asset_grant_filter,
 )
 from app.core.config import settings  # Assuming settings contains AWS credentials
+from app.repositories import acl_repository
 
 logger = getLogger(__name__)
 
@@ -271,6 +272,14 @@ def update_primary_asset(
         )
     if payload.vcs_auto_update_policy is not None:
         asset.vcs_auto_update_policy = payload.vcs_auto_update_policy
+
+    if payload.visibility is not None:
+        acl_repository.update_asset_visibility(
+            session=session,
+            primary_asset_id=primary_asset_id,
+            organization_id=user.organization_id,
+            visibility=payload.visibility,
+        )
 
     session.add(asset)
     session.commit()

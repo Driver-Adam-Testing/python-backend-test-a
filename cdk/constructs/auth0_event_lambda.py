@@ -20,21 +20,13 @@ from aws_cdk import (
 from constructs import Construct
 
 
-class Auth0EventLambdaParams:
-    environment: str
-
-    def __init__(
-        self,
-        environment: str,
-        cloudwatch_alarm_arn: str | None = None,
-    ) -> None:
-        self.environment = environment
-        self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
-
-
 class Auth0EventLambda(Construct):
     def __init__(
-        self, scope: Construct, id: str, params: Auth0EventLambdaParams
+        self,
+        scope: Construct,
+        id: str,
+        environment: str,
+        cloudwatch_alarm_arn: str | None = None,
     ) -> None:
         super().__init__(scope, id)
 
@@ -54,16 +46,6 @@ class Auth0EventLambda(Construct):
 
         # Create secrets for sensitive data
         modal_secrets = aws_secretsmanager.Secret(self, "Auth0EventLambdaModalSecret")
-
-        # Create  SQS DL queue
-        # self.events_dlq = aws_sqs.Queue(
-        #     self,
-        #     "Auth0EventsDLQ",
-        #     queue_name="auth0-events-dlq",
-        #     visibility_timeout=Duration.seconds(300),
-        #     retention_period=Duration.days(14),
-        #     receive_message_wait_time=Duration.seconds(20),
-        # )
 
         # Create Lambda function
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
@@ -87,21 +69,18 @@ class Auth0EventLambda(Construct):
             ),
             reserved_concurrent_executions=10,
             timeout=Duration.seconds(60),
-            # dead_letter_queue=self.events_dlq,
-            # dead_letter_queue_enabled=True,
-            # retry_attempts=2,
         )
 
         # Grant Lambda permissions to read secrets
         modal_secrets.grant_read(self.lambda_function)
 
         # Configure CloudWatch Logs with retention
-        log_group = aws_logs.LogGroup(
+        aws_logs.LogGroup(
             self,
             "Auth0EventProcessorLogGroup",
             log_group_name=f"/aws/lambda/{self.lambda_function.function_name}",
-            retention=aws_logs.RetentionDays.TWO_WEEKS,
-            removal_policy=RemovalPolicy.DESTROY,
+            retention=aws_logs.RetentionDays.ONE_YEAR,
+            removal_policy=RemovalPolicy.RETAIN,
         )
 
         # Create EventBridge rule with event pattern
@@ -131,52 +110,13 @@ class Auth0EventLambda(Construct):
         rule.add_target(
             targets.LambdaFunction(
                 self.lambda_function,
-                # dead_letter_queue=self.events_dlq,
-                # max_event_age=Duration.hours(2),
-                # retry_attempts=2,
             )
         )
 
-        # # Add SQS event source to Lambda
-        # self.lambda_function.add_event_source(
-        #     aws_lambda_event_sources.SqsEventSource(
-        #         self.events_dlq,
-        #         batch_size=10,
-        #         max_batching_window=Duration.seconds(5),
-        #         report_batch_item_failures=True,
-        #     )
-        # )
-        #
-        # # Grant Lambda permissions to access SQS
-        # self.events_dlq.grant_consume_messages(self.lambda_function)
-
-        # # CloudWatch Alarms
-        # self.dlq_depth_alarm = aws_cloudwatch.Alarm(
-        #     self,
-        #     "Auth0EventsDLQAlarm",
-        #     alarm_description=f"[{params.environment}] Auth0 Events Undelivered In DLQ",
-        #     metric=self.events_dlq.metric_approximate_number_of_messages_visible(),
-        #     threshold=1,
-        #     evaluation_periods=1,
-        #     comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-        #     treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-        # )
-        #
-        # self.dlq_message_age_alarm = aws_cloudwatch.Alarm(
-        #     self,
-        #     "Auth0EventsDLQMessageAgeAlarm",
-        #     alarm_description="Auth0 Events DLQ Message Age > 2 hours",
-        #     metric=self.events_dlq.metric_approximate_age_of_oldest_message(),
-        #     threshold=7200,
-        #     evaluation_periods=1,
-        #     comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-        #     treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-        # )
-        #
         self.lambda_error_rate_alarm = aws_cloudwatch.Alarm(
             self,
             "Auth0EventsLambdaErrorAlarm",
-            alarm_description=f"[{params.environment}] Auth0 Events Lambda Errors > 5 over last 5 minutes",
+            alarm_description=f"[{environment}] Auth0 Events Lambda Errors > 5 over last 5 minutes",
             metric=self.lambda_function.metric_errors(),
             threshold=5,
             evaluation_periods=1,
@@ -187,7 +127,7 @@ class Auth0EventLambda(Construct):
         self.lambda_throttle_alarm = aws_cloudwatch.Alarm(
             self,
             "Auth0EventsLambdaThrottleAlarm",
-            alarm_description=f"[{params.environment}] Auth0 Events Lambda Throttled",
+            alarm_description=f"[{environment}] Auth0 Events Lambda Throttled",
             metric=self.lambda_function.metric_throttles(),
             threshold=1,
             evaluation_periods=1,
@@ -195,19 +135,17 @@ class Auth0EventLambda(Construct):
             treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
         )
 
-        if params.cloudwatch_alarm_arn:
+        if cloudwatch_alarm_arn:
             notification_action = aws_cloudwatch_actions.SnsAction(
                 aws_sns.Topic.from_topic_arn(
                     id="Auth0EventsNotifySupportTopic",
-                    topic_arn=params.cloudwatch_alarm_arn,
+                    topic_arn=cloudwatch_alarm_arn,
                     scope=self,
                 )
             )
-            #     self.dlq_depth_alarm.add_alarm_action(notification_action)
-            #     self.dlq_message_age_alarm.add_alarm_action(notification_action)
             self.lambda_error_rate_alarm.add_alarm_action(notification_action)
             self.lambda_throttle_alarm.add_alarm_action(notification_action)
         else:
             print(
-                f"*** NO CW ALARM CONFIGURED FOR Auth0EventLambda in {params.environment} ***"
+                f"*** NO CW ALARM CONFIGURED FOR Auth0EventLambda in {environment} ***"
             )

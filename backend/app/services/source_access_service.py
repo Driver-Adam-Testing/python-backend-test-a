@@ -473,12 +473,10 @@ class SourceAccessService:
                 user_org_role=data["user_org_role"],
                 asset_org_role=data["asset_org_role"],
                 team_source_role=data["team_source_role"],
-                user_grant_role=data["user_grant_role"],
                 effective_role=data["effective_role"],
                 # Existing fields (for backward compatibility)
                 source_role=data["effective_role"],
                 assignment_type=data["assignment_type"],
-                org_role=data["org_role"],
                 teams=[
                     TeamMembershipInfo(**team_data)
                     for team_data in teams_by_user.get(data["user_id"], [])

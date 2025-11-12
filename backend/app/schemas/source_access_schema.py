@@ -3,7 +3,7 @@
 from typing import Literal
 from uuid import UUID
 
-from database.models_enums import OrgRole, PrimaryAssetRole
+from database.models_enums import PrimaryAssetRole
 from pydantic import BaseModel, Field
 
 # ===== Common Types =====
@@ -217,10 +217,6 @@ class SourceUserResponse(BaseModel):
         None,
         description="Highest role from team grants (max across all teams user belongs to)",
     )
-    user_grant_role: str | None = Field(
-        None,
-        description="Direct user grant role for this asset (null if no direct grant)",
-    )
     effective_role: str | None = Field(
         None,
         description="Final effective role after hierarchy resolution (highest of all grants)",
@@ -235,7 +231,6 @@ class SourceUserResponse(BaseModel):
         ...,
         description="How user has access: 'direct' for direct grants, 'inherited' for team or org-based access",
     )
-    org_role: OrgRole = Field(..., description="User's role in the organization")
     teams: list[TeamMembershipInfo] = Field(
         ...,
         description="List of teams the user belongs to that have access to this source",

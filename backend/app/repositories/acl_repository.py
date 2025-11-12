@@ -402,7 +402,10 @@ def get_source_users_with_details(
             "user_id": row.user_id,
             "name": row.name or "",
             "email": row.email or "",
-            "effective_role": row.effective_role,
+            # Override effective_role to asset_admin for org_super_admin users
+            "effective_role": PrimaryAssetRole.asset_admin.value
+            if row.org_role == OrgRole.org_super_admin
+            else row.effective_role,
             "assignment_type": row.assignment_type,
             "created_at": row.created_at.isoformat() if row.created_at else "",
             "org_role": row.org_role or OrgRole.org_member,

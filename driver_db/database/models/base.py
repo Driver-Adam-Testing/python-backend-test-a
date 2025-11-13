@@ -135,6 +135,16 @@ class DocumentSource(SQLModel, table=True):
         nullable=True,
         ondelete="CASCADE",
     )
+    source_version_node: "VersionNode" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={
+            "foreign_keys": "DocumentSource.source_version_node_id"
+        },
+    )
+    page_version_node: "VersionNode" = Relationship(
+        back_populates="page_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_version_node_id"},
+    )
 
 
 # TODO add indexes back
@@ -805,6 +815,17 @@ class VersionNode(SQLModel, table=True):
     )
     version: "Version" = Relationship(back_populates="version_nodes")
     node: "Node" = Relationship(back_populates="version_nodes")
+
+    document_sources: list["DocumentSource"] = Relationship(
+        back_populates="source_version_node",
+        sa_relationship_kwargs={
+            "foreign_keys": "DocumentSource.source_version_node_id"
+        },
+    )
+    page_sources: list["DocumentSource"] = Relationship(
+        back_populates="page_version_node",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_version_node_id"},
+    )
 
 
 class Node(SQLModel, table=True):  # type: ignore

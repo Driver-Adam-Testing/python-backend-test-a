@@ -4,7 +4,7 @@ from typing import Literal
 from uuid import UUID
 
 from app.schemas.user_schema import AssignmentType
-from database.models_enums import PrimaryAssetRole
+from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
 from pydantic import BaseModel, Field
 
 # ===== Common Types =====
@@ -183,7 +183,7 @@ class TeamMembershipInfo(BaseModel):
 
     team_id: UUID = Field(..., description="Team ID")
     display_name: str = Field(..., description="Team name")
-    team_role: str = Field(..., description="User's role in the team")
+    team_role: TeamRole = Field(..., description="User's role in the team")
     source_role: PrimaryAssetRole = Field(
         ..., description="Role the team has to the source/asset"
     )
@@ -205,19 +205,19 @@ class SourceUserResponse(BaseModel):
     )
 
     # Granular role breakdown - shows exactly how user has access
-    user_org_role: str | None = Field(
+    user_org_role: OrgRole | None = Field(
         None,
         description="User's role in the organization (org_super_admin, org_admin, org_member)",
     )
-    asset_org_role: str | None = Field(
+    asset_org_role: PrimaryAssetRole | None = Field(
         None,
         description="Organization-wide grant role for this asset (if org has blanket access)",
     )
-    team_source_role: str | None = Field(
+    team_source_role: PrimaryAssetRole | None = Field(
         None,
         description="Highest role from team grants (max across all teams user belongs to)",
     )
-    effective_role: str | None = Field(
+    effective_role: PrimaryAssetRole | None = Field(
         None,
         description="Final effective role after hierarchy resolution (highest of all grants)",
     )

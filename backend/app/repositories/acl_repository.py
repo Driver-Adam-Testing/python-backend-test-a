@@ -482,3 +482,46 @@ def create_default_visibility_grants(
         grants.append(public_grant)
 
     return grants
+
+
+def update_asset_visibility(
+    session: Session,
+    primary_asset_id: UUID,
+    organization_id: str,
+    visibility: SourceVisibility,
+) -> None:
+    """
+    Update asset visibility by managing org and public grants.
+    Preserves all user and team grants. Only modifies org/public grants.
+    """
+    existing_grants = session.exec(
+        select(PrimaryAssetRoleGrant).where(
+            PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind.in_(
+                [PrincipalKind.org, PrincipalKind.public]
+            ),
+        )
+    ).all()
+
+    for grant in existing_grants:
+        session.delete(grant)
+
+    if visibility == SourceVisibility.INTERNAL:
+        org_grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(org_grant)
+    elif visibility == SourceVisibility.PUBLIC:
+        public_grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.public,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(public_grant)
+
+    session.commit()

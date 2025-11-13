@@ -32,7 +32,11 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.schemas import ListWithCount, TagRead
 from app.api.session import CurrentSession  # noqa: TCH001
-from app.authorization.query_filters import primary_asset_grant_filter
+from app.authorization.query_filters import (
+    asset_visibility_expr,
+    primary_asset_grant_filter,
+)
+from app.schemas.common import SourceVisibility  # noqa: TCH001
 
 
 class CommitAuthor(BaseModel):
@@ -105,6 +109,7 @@ class CodebaseCard(BaseModel):
     tags: list[TagRead]
     most_recent_metadata: MostRecentMetadata
     most_recent_version_content: MostRecentVersionContent | None = None
+    visibility: SourceVisibility
 
     model_config = {"populate_by_name": True}
 
@@ -275,6 +280,11 @@ def codebase_card(
     latest_version = aliased(Version)
     latest_version_root_node = aliased(Node)
     latest_complete_version_root_node = aliased(Node)
+
+    visibility_expr, org_grant_subquery, public_grant_subquery = asset_visibility_expr(
+        user.organization_id, PrimaryAsset.id
+    )
+
     assets_stmt = (
         select(
             PrimaryAsset,
@@ -282,6 +292,15 @@ def codebase_card(
             latest_complete_version,
             latest_version_root_node,
             latest_complete_version_root_node,
+            visibility_expr.label("visibility"),
+        )
+        .outerjoin(
+            org_grant_subquery,
+            PrimaryAsset.id == org_grant_subquery.c.primary_asset_id,
+        )
+        .outerjoin(
+            public_grant_subquery,
+            PrimaryAsset.id == public_grant_subquery.c.primary_asset_id,
         )
         .outerjoin(
             latest_complete_versions_subq,
@@ -349,24 +368,24 @@ def codebase_card(
     if apply_pagination:
         assets_stmt = assets_stmt.offset(pagination.offset).limit(pagination.limit)
 
-    assets_with_versions: list[tuple[PrimaryAsset, Version, Version, Node, Node]] = (
-        session.exec(assets_stmt).unique().all()
-    )
+    assets_with_versions: list[
+        tuple[PrimaryAsset, Version, Version, Node, Node, str]
+    ] = session.exec(assets_stmt).unique().all()
 
     complete_root_ids: list[UUID] = [
         latest_complete_version_root_node.id
-        for _, _, _, latest_version_root_node, _ in assets_with_versions
+        for _, _, _, latest_version_root_node, _, _ in assets_with_versions
         if latest_version_root_node
     ]
     recent_root_ids: list[UUID] = [
         latest_version_root_node.id
-        for _, _, _, latest_version_root_node, _ in assets_with_versions
+        for _, _, _, latest_version_root_node, _, _ in assets_with_versions
         if latest_version_root_node
     ]
     if not recent_root_ids:
         # Only codebases in Connecting?
         connecting_cards = []
-        for pa_row, v_latest, _, _, _ in assets_with_versions:
+        for pa_row, v_latest, _, _, _, visibility in assets_with_versions:
             sha = _safe_commit_sha(v_latest)
             if (
                 pa_row.kind == PrimaryAssetKind.CODEBASE
@@ -445,6 +464,7 @@ def codebase_card(
                     tags=[TagRead.model_validate(t) for t in pa_row.tags],
                     most_recent_metadata=meta_block,
                     most_recent_version_content=mrv_content,
+                    visibility=visibility,
                 )
             )
         return ListWithCount(
@@ -504,6 +524,7 @@ def codebase_card(
         _,
         latest_version_root_node,
         latest_complete_version_root_node,
+        visibility,
     ) in enumerate(assets_with_versions):  # type: ignore[arg-type]
         if v_latest is None:
             continue
@@ -643,6 +664,7 @@ def codebase_card(
                 tags=[TagRead.model_validate(t) for t in pa_row.tags],
                 most_recent_metadata=meta_block,
                 most_recent_version_content=mrv_content,
+                visibility=visibility,
             )
         )
 

@@ -1,7 +1,14 @@
 """Schemas for User-related API requests and responses."""
 
-from database.models_enums import PrimaryAssetRole, TeamRole
+from enum import Enum
+
+from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
 from pydantic import BaseModel, Field
+
+
+class AssignmentType(str, Enum):
+    DIRECT = "direct"
+    INHERITED = "inherited"
 
 
 # ===== User Search =====
@@ -135,6 +142,13 @@ class RemoveUserSourcesRequest(BaseModel):
 
 
 # ===== User Sources Response Schemas =====
+class UserSourceTeamInfo(BaseModel):
+    team_id: str = Field(..., description="Team ID")
+    display_name: str = Field(..., description="Team display name")
+    team_role: TeamRole = Field(..., description="User's role in this team")
+    source_role: PrimaryAssetRole = Field(..., description="Team's role on this asset")
+
+
 class UserSourceResponse(BaseModel):
     """Response for a single user source."""
 
@@ -145,8 +159,27 @@ class UserSourceResponse(BaseModel):
     provider: str | None = Field(None, description="Provider: GITHUB, GITLAB, etc.")
     created_at: str = Field(..., description="ISO datetime when asset was created")
     updated_at: str = Field(..., description="ISO datetime when asset was updated")
-    role: PrimaryAssetRole = Field(..., description="User's role for this source")
-    visibility: str = Field(..., description="Visibility: private, internal, or public")
+    effective_role: PrimaryAssetRole = Field(
+        ..., description="User's effective role for this source (highest priority)"
+    )
+    source_role: PrimaryAssetRole | None = Field(
+        None, description="Role directly granted to the user on this asset"
+    )
+    asset_org_role: PrimaryAssetRole | None = Field(
+        None, description="Role granted via org-level grant on this asset"
+    )
+    user_org_role: OrgRole = Field(..., description="User's organization role")
+    is_super_admin: bool = Field(
+        ..., description="Whether user is a super admin in the organization"
+    )
+    assignment_type: AssignmentType = Field(
+        ...,
+        description="Whether the effective role is 'direct' (from user grant) or 'inherited' (from org/team/super admin)",
+    )
+    teams: list[UserSourceTeamInfo] = Field(
+        default_factory=list,
+        description="Teams the user is on that have grants to this asset",
+    )
     user_id: str = Field(..., description="User ID")
     is_browsable: bool = Field(
         ..., description="Whether the source is browsable (has a completed version)"

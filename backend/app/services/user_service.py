@@ -5,7 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, TeamMembership
-from database.models_enums import PrimaryAssetRole, PrincipalKind, TeamRole
+from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, TeamRole
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
@@ -14,6 +14,7 @@ from app.repositories import team_repository, user_repository
 from app.schemas.user_schema import (
     AddUserSourcesRequest,
     AddUserTeamsRequest,
+    AssignmentType,
     OrganizationMembersResponse,
     RemoveUserSourcesRequest,
     RemoveUserTeamsRequest,
@@ -297,23 +298,10 @@ class UserService:
         user_id: str,
         roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
+        assignment_type: AssignmentType | None = None,
         limit: int = 30,
         offset: int = 0,
     ) -> UserSourcesResponse:
-        """
-        Get sources for a user.
-
-        Args:
-            user: Authenticated user making the request
-            user_id: User ID
-            roles: Optional list of roles to filter by
-            search: Optional search query for display name
-            limit: Maximum number of results
-            offset: Number of results to skip
-
-        Returns:
-            UserSourcesResponse with sources and total count
-        """
         organization_id = user.organization_id
         source_data = user_repository.get_user_sources_with_details(
             session=self.session,
@@ -321,6 +309,7 @@ class UserService:
             organization_id=organization_id,
             roles=roles,
             search=search,
+            assignment_type=assignment_type,
             limit=limit,
             offset=offset,
         )
@@ -331,16 +320,23 @@ class UserService:
             organization_id=organization_id,
             roles=roles,
             search=search,
+            assignment_type=assignment_type,
+        )
+
+        asset_ids = [data["asset"].id for data in source_data]
+        team_grants = user_repository.get_user_team_grants_for_assets(
+            session=self.session,
+            user_id=user_id,
+            organization_id=organization_id,
+            asset_ids=asset_ids,
         )
 
         sources = [
-            self._build_user_source_response(data, user_id) for data in source_data
+            self._build_user_source_response(data, user_id, team_grants)
+            for data in source_data
         ]
 
-        return UserSourcesResponse(
-            sources=sources,
-            total=total,
-        )
+        return UserSourcesResponse(sources=sources, total=total)
 
     def add_user_sources(
         self,
@@ -519,16 +515,35 @@ class UserService:
         )
 
     def _build_user_source_response(
-        self, data: dict, user_id: str
+        self, data: dict, user_id: str, team_grants: dict[UUID, list[dict]]
     ) -> UserSourceResponse:
         """Build UserSourceResponse from repository data."""
-        role = data["role"]
         asset = data["asset"]
+        effective_role = data["effective_role"]
+        asset_org_role = data["asset_org_role"]
+        source_role = data["source_role"]
+        user_org_role = data["user_org_role"]
 
-        # Compute is_browsable from most_recent_version
         is_browsable = (
             asset.most_recent_version.browsable if asset.most_recent_version else False
         )
+
+        is_super_admin = user_org_role == OrgRole.org_super_admin
+
+        # Determine assignment_type based on grant hierarchy
+        # Direct: if the effective role comes from a direct user grant
+        # Inherited: if it comes from super admin status, org grant, or team grant
+        if is_super_admin:
+            assignment_type = AssignmentType.INHERITED
+        elif source_role == effective_role:
+            # User has a direct grant that matches the effective role
+            assignment_type = AssignmentType.DIRECT
+        else:
+            # Effective role comes from org grant, team grant, or is higher than user grant
+            assignment_type = AssignmentType.INHERITED
+
+        # Get teams for this asset
+        teams = team_grants.get(asset.id, [])
 
         return UserSourceResponse(
             id=str(asset.id),
@@ -542,8 +557,21 @@ class UserService:
             ),
             created_at=asset.created_at.isoformat(),
             updated_at=asset.updated_at.isoformat(),
-            role=PrimaryAssetRole(role),
-            visibility="private",  # TODO: Add visibility field to PrimaryAssetRoleGrant
+            effective_role=PrimaryAssetRole(effective_role),
+            source_role=PrimaryAssetRole(source_role) if source_role else None,
+            asset_org_role=PrimaryAssetRole(asset_org_role) if asset_org_role else None,
+            user_org_role=OrgRole(user_org_role),
+            is_super_admin=is_super_admin,
+            assignment_type=assignment_type,
+            teams=[
+                {
+                    "team_id": str(t["team_id"]),
+                    "display_name": t["display_name"],
+                    "team_role": t["team_role"],
+                    "source_role": t["source_role"],
+                }
+                for t in teams
+            ],
             user_id=user_id,
             is_browsable=is_browsable,
         )

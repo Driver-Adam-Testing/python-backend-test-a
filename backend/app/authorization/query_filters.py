@@ -7,16 +7,18 @@ without loading all records into memory first.
 import uuid
 from typing import Any
 
+from app.schemas.user_schema import AssignmentType
 from database.models import (
     DerivedContent,
     DocumentSource,
     Node,
+    OrgMembership,
     PrimaryAsset,
     PrimaryAssetRoleGrant,
     Version,
 )
-from database.models_enums import PrimaryAssetKind, PrimaryAssetRole
-from sqlalchemy import and_, case, literal, true
+from database.models_enums import PrimaryAssetKind, PrimaryAssetRole, PrincipalKind
+from sqlalchemy import String, and_, case, cast, literal, true
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
@@ -48,6 +50,55 @@ def _grant_exists_subquery(
         )
         .exists()
     )
+
+
+def asset_visibility_expr(
+    organization_id: str, asset_id_column: Any
+) -> tuple[Any, Any, Any]:
+    """
+    Returns SQL expression for asset visibility based on grant type, plus subqueries for joining.
+
+    Visibility precedence: public > internal > private
+    - public: Has grant with principal_kind = 'public'
+    - internal: Has grant with principal_kind = 'org'
+    - private: No org or public grants
+
+    Returns:
+        Tuple of (visibility_expr, org_grant_subquery, public_grant_subquery)
+        The subqueries must be joined to the main query for the expression to work.
+    """
+    org_grant_subquery = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            literal(True).label("has_org_grant"),
+        )
+        .where(
+            and_(
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org,
+            )
+        )
+        .subquery()
+    )
+
+    public_grant_subquery = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            literal(True).label("has_public_grant"),
+        )
+        .where(
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.public,
+        )
+        .subquery()
+    )
+
+    visibility_case_expr = case(
+        (public_grant_subquery.c.has_public_grant.is_not(None), literal("public")),
+        (org_grant_subquery.c.has_org_grant.is_not(None), literal("internal")),
+        else_=literal("private"),
+    )
+
+    return visibility_case_expr, org_grant_subquery, public_grant_subquery
 
 
 def effective_asset_role_expr(
@@ -307,4 +358,81 @@ def page_content_grant_filter(db: Session, user_id: str, organization_id: str) -
                 )
             )
         )
+    )
+
+
+def asset_org_grant_role_expr(organization_id: str, asset_id_column: Any) -> Any:
+    """
+    Returns a SQL expression for the org-level grant role on an asset.
+    Returns the role if there's an org-wide grant (principal_kind = 'org'), else None.
+    """
+    return (
+        select(PrimaryAssetRoleGrant.role)
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == asset_id_column,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org,
+        )
+        .scalar_subquery()
+    )
+
+
+def user_direct_grant_role_expr(
+    user_id: str, organization_id: str, asset_id_column: Any
+) -> Any:
+    """
+    Returns a SQL expression for the direct user grant role on an asset.
+    Returns the role if there's a direct user grant (principal_kind = 'user'), else None.
+    """
+    return (
+        select(PrimaryAssetRoleGrant.role)
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == asset_id_column,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+            PrimaryAssetRoleGrant.user_id == user_id,
+        )
+        .scalar_subquery()
+    )
+
+
+def user_org_role_expr(user_id: str, organization_id: str) -> Any:
+    return (
+        select(OrgMembership.role)
+        .where(
+            OrgMembership.user_id == user_id,
+            OrgMembership.org_id == organization_id,
+        )
+        .scalar_subquery()
+    )
+
+
+def assignment_type_expr(
+    db: Session,
+    user_id: str,
+    organization_id: str,
+    effective_role_expr: Any,
+    source_role_expr: Any,
+) -> Any:
+    """
+    Returns a SQL expression that computes the assignment type.
+
+    Assignment type is 'direct' if the effective role comes from a direct user grant,
+    'inherited' if it comes from super admin, org grant, or team grant.
+    """
+    is_super = is_super_admin(db, user_id, organization_id)
+
+    if is_super:
+        return literal(AssignmentType.INHERITED.value)
+
+    # If source_role == effective_role AND source_role is not NULL, then 'direct', else 'inherited'
+    # We need to check for non-NULL source_role because NULL means no direct grant
+    # Cast enum values to text for comparison
+    return case(
+        (
+            (source_role_expr.isnot(None))
+            & (cast(source_role_expr, String) == cast(effective_role_expr, String)),
+            literal(AssignmentType.DIRECT.value),
+        ),
+        else_=literal(AssignmentType.INHERITED.value),
     )

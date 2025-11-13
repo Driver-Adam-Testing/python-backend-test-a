@@ -1,8 +1,10 @@
 """Repository functions for Admin Sources data access."""
 
+from typing import Any
 from uuid import UUID
 
 from app.authorization.query_filters import (
+    asset_visibility_expr,
     effective_asset_role_expr,
     exclude_page_assets_filter,
     primary_asset_grant_filter,
@@ -13,8 +15,40 @@ from database.models import (
     PrimaryAssetTag,
     Tag,
 )
-from database.models_enums import PrimaryAssetRole
+from database.models_enums import PrimaryAssetRole, SourceVisibility
 from sqlmodel import Session, and_, func, select
+
+
+def _apply_common_filters(
+    query: Any,
+    search: str | None,
+    kinds: list[str] | None,
+    tag_ids: list[str] | None,
+    visibility_expr: Any = None,
+    visibility: list[SourceVisibility] | None = None,
+) -> Any:
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.where(PrimaryAsset.display_name.ilike(search_pattern))
+
+    if kinds:
+        query = query.where(PrimaryAsset.kind.in_(kinds))
+
+    if visibility and visibility_expr is not None:
+        query = query.where(visibility_expr.in_(visibility))
+
+    if tag_ids:
+        tag_uuids = [UUID(tag_id) for tag_id in tag_ids]
+        query = (
+            query.join(
+                PrimaryAssetTag, PrimaryAssetTag.primary_asset_id == PrimaryAsset.id
+            )
+            .join(Tag, Tag.id == PrimaryAssetTag.tag_id)
+            .where(Tag.id.in_(tag_uuids))
+            .distinct()
+        )
+
+    return query
 
 
 def get_sources_with_counts(
@@ -24,31 +58,15 @@ def get_sources_with_counts(
     search: str | None = None,
     kinds: list[str] | None = None,
     tag_ids: list[str] | None = None,
+    visibility: list[SourceVisibility] | None = None,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
     limit: int = 20,
     offset: int = 0,
 ) -> list[dict]:
     """
-    Get sources with member and team counts for admin view.
-
-    Only returns sources where the user has effective admin role.
-    Excludes Pages from results (only returns Codebases and PDFs).
-
-    Args:
-        session: Database session
-        user_id: User ID for filtering by effective admin role
-        organization_id: Organization ID
-        search: Optional search query for display_name
-        kinds: Optional list of asset kinds to filter
-        tag_ids: Optional list of tag IDs to filter
-        sort_by: Field to sort by
-        sort_direction: Sort direction (ASC/DESC)
-        limit: Maximum number of results
-        offset: Number of results to skip
-
-    Returns:
-        List of dicts with asset, members_count, and teams_count
+    Only returns sources where user has effective admin role.
+    Excludes Pages (only Codebases and PDFs).
     """
     members_count_subquery = (
         select(
@@ -80,6 +98,10 @@ def get_sources_with_counts(
         .subquery()
     )
 
+    visibility_expr, org_grant_subquery, public_grant_subquery = asset_visibility_expr(
+        organization_id, PrimaryAsset.id
+    )
+
     role_expr = effective_asset_role_expr(
         session, user_id, organization_id, PrimaryAsset.id
     )
@@ -91,6 +113,7 @@ def get_sources_with_counts(
                 "members_count"
             ),
             func.coalesce(teams_count_subquery.c.teams_count, 0).label("teams_count"),
+            visibility_expr.label("visibility"),
         )
         .outerjoin(
             members_count_subquery,
@@ -99,6 +122,14 @@ def get_sources_with_counts(
         .outerjoin(
             teams_count_subquery,
             PrimaryAsset.id == teams_count_subquery.c.primary_asset_id,
+        )
+        .outerjoin(
+            org_grant_subquery,
+            PrimaryAsset.id == org_grant_subquery.c.primary_asset_id,
+        )
+        .outerjoin(
+            public_grant_subquery,
+            PrimaryAsset.id == public_grant_subquery.c.primary_asset_id,
         )
         .where(
             PrimaryAsset.organization_id == organization_id,
@@ -109,23 +140,9 @@ def get_sources_with_counts(
         )
     )
 
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.where(PrimaryAsset.display_name.ilike(search_pattern))
-
-    if kinds:
-        query = query.where(PrimaryAsset.kind.in_(kinds))
-
-    if tag_ids:
-        tag_uuids = [UUID(tag_id) for tag_id in tag_ids]
-        query = (
-            query.join(
-                PrimaryAssetTag, PrimaryAssetTag.primary_asset_id == PrimaryAsset.id
-            )
-            .join(Tag, Tag.id == PrimaryAssetTag.tag_id)
-            .where(Tag.id.in_(tag_uuids))
-            .distinct()
-        )
+    query = _apply_common_filters(
+        query, search, kinds, tag_ids, visibility_expr, visibility
+    )
 
     sort_column = getattr(PrimaryAsset, sort_by, PrimaryAsset.updated_at)
     if sort_direction.upper() == "ASC":
@@ -141,6 +158,7 @@ def get_sources_with_counts(
             "asset": row[0],
             "members_count": row[2],
             "teams_count": row[3],
+            "visibility": row[4],
         }
         for row in results
     ]
@@ -153,52 +171,37 @@ def count_sources(
     search: str | None = None,
     kinds: list[str] | None = None,
     tag_ids: list[str] | None = None,
+    visibility: list[SourceVisibility] | None = None,
 ) -> int:
     """
-    Count sources matching filters.
-
-    Only counts sources where the user has effective admin role.
-    Excludes Pages from results (only counts Codebases and PDFs).
-
-    Args:
-        session: Database session
-        user_id: User ID for filtering by effective admin role
-        organization_id: Organization ID
-        search: Optional search query
-        kinds: Optional list of asset kinds
-        tag_ids: Optional list of tag IDs
-
-    Returns:
-        Count of matching sources
+    Only counts sources where user has effective admin role.
+    Excludes Pages (only Codebases and PDFs).
     """
-    query = (
-        select(func.count())
-        .select_from(PrimaryAsset)
-        .where(
-            PrimaryAsset.organization_id == organization_id,
-            primary_asset_grant_filter(
-                session, user_id, organization_id, role=PrimaryAssetRole.asset_admin
-            ),
-            exclude_page_assets_filter(),
+    query = select(func.count()).select_from(PrimaryAsset)
+
+    visibility_expr = None
+    if visibility:
+        visibility_expr, org_grant_subquery, public_grant_subquery = (
+            asset_visibility_expr(organization_id, PrimaryAsset.id)
         )
+        query = query.outerjoin(
+            org_grant_subquery,
+            PrimaryAsset.id == org_grant_subquery.c.primary_asset_id,
+        ).outerjoin(
+            public_grant_subquery,
+            PrimaryAsset.id == public_grant_subquery.c.primary_asset_id,
+        )
+
+    query = query.where(
+        PrimaryAsset.organization_id == organization_id,
+        primary_asset_grant_filter(
+            session, user_id, organization_id, role=PrimaryAssetRole.asset_admin
+        ),
+        exclude_page_assets_filter(),
     )
 
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.where(PrimaryAsset.display_name.ilike(search_pattern))
-
-    if kinds:
-        query = query.where(PrimaryAsset.kind.in_(kinds))
-
-    if tag_ids:
-        tag_uuids = [UUID(tag_id) for tag_id in tag_ids]
-        query = (
-            query.join(
-                PrimaryAssetTag, PrimaryAssetTag.primary_asset_id == PrimaryAsset.id
-            )
-            .join(Tag, Tag.id == PrimaryAssetTag.tag_id)
-            .where(Tag.id.in_(tag_uuids))
-            .distinct()
-        )
+    query = _apply_common_filters(
+        query, search, kinds, tag_ids, visibility_expr, visibility
+    )
 
     return session.exec(query).one()

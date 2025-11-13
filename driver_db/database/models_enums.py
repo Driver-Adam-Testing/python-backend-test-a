@@ -300,3 +300,9 @@ class TeamRole(enum.StrEnum):
 class OrgRole(enum.StrEnum):
     org_super_admin = enum.auto()
     org_member = enum.auto()
+
+
+class SourceVisibility(enum.StrEnum):
+    private = "private"
+    internal = "internal"
+    public = "public"

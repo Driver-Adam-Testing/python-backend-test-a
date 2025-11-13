@@ -41,6 +41,7 @@ from ..models_enums import (
     OrgRole,
     PrimaryAssetKind,
     PrimaryAssetProvider,
+    SourceVisibility,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
@@ -1178,6 +1179,9 @@ class Organization(SQLModel, table=True):
     name: str = Field(index=True)  # Unique organization name
     display_name: str | None = Field(default=None)
     org_metadata: dict = Field(default={}, sa_column=Column(JSONB, nullable=False))
+    default_source_visibility: SourceVisibility = Field(
+        default=SourceVisibility.private
+    )
 
     created_at: datetime = Field(
         sa_column=Column(

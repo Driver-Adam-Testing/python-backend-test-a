@@ -4,12 +4,10 @@ import os
 import re
 from urllib.parse import unquote_plus
 
-from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Version
+from database.models import PrimaryAsset, Version
 from database.models_enums import (
     PrimaryAssetKind,
     PrimaryAssetProvider,
-    PrimaryAssetRole,
-    PrincipalKind,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
@@ -18,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.repositories import acl_repository, organization_repository
 from app.schemas.upload_schema import (
     UploadAutoDocConfigRequest,
     UploadAutoDocConfigResponse,
@@ -82,15 +81,16 @@ class UploadService:
             )
             self.session.add(new_version)
 
-            # create admin grant for the user uploading the asset
-            user_grant = PrimaryAssetRoleGrant(
-                primary_asset_id=new_asset.id,
-                organization_id=org_id,
-                principal_kind=PrincipalKind.user,
-                user_id=user.user_id,
-                role=PrimaryAssetRole.asset_admin,
+            default_visibility = organization_repository.get_default_source_visibility(
+                self.session, org_id
             )
-            self.session.add(user_grant)
+            acl_repository.create_default_visibility_grants(
+                self.session,
+                new_asset.id,
+                org_id,
+                user.user_id,
+                default_visibility,
+            )
             self.session.commit()
 
             version_id = new_version.id

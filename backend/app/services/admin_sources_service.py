@@ -9,6 +9,7 @@ from app.repositories import admin_sources_repository
 from app.schemas.admin_sources_schema import (
     AdminSourceRecord,
     AdminSourcesResponse,
+    SourceVisibility,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class AdminSourcesService:
         search: str | None = None,
         kinds: list[str] | None = None,
         tag_ids: list[str] | None = None,
+        visibility: list[SourceVisibility] | None = None,
         sort_by: str = "updated_at",
         sort_direction: str = "DESC",
         limit: int = 20,
@@ -39,6 +41,7 @@ class AdminSourcesService:
             search: Optional search query for display_name
             kinds: Optional list of asset kinds to filter
             tag_ids: Optional list of tag IDs to filter
+            visibility: Optional list of visibility levels to filter
             sort_by: Field to sort by
             sort_direction: Sort direction (ASC/DESC)
             limit: Maximum number of results
@@ -61,6 +64,7 @@ class AdminSourcesService:
             search=search,
             kinds=kinds,
             tag_ids=tag_ids,
+            visibility=visibility,
             sort_by=sort_by,
             sort_direction=sort_direction,
             limit=limit,
@@ -75,6 +79,7 @@ class AdminSourcesService:
             search=search,
             kinds=kinds,
             tag_ids=tag_ids,
+            visibility=visibility,
         )
 
         # Build response records
@@ -88,14 +93,10 @@ class AdminSourcesService:
         )
 
     def _build_admin_source_record(self, data: dict) -> AdminSourceRecord:
-        """Build AdminSourceRecord from repository data."""
         asset = data["asset"]
         members_count = data["members_count"]
         teams_count = data["teams_count"]
-
-        # Determine visibility (default to private for now)
-        # TODO: Get actual visibility from PrimaryAssetRoleGrant when field is added
-        visibility = "private"
+        visibility = data["visibility"]
 
         return AdminSourceRecord(
             id=str(asset.id),

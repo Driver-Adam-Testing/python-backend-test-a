@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from app.schemas.source_access_schema import AssignmentType
+from app.schemas.user_schema import AssignmentType
 from database.models import (
     OrgMembership,
     PrimaryAsset,

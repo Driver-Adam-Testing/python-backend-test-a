@@ -370,7 +370,9 @@ class TestOrganizationIsolation:
                 user=mock_user_org2,
                 team_id=team_org1.id,
                 request=AddTeamMembersRequest(
-                    members=[TeamMemberAddInput(user_id=user_org2.id, role="team_member")]
+                    members=[
+                        TeamMemberAddInput(user_id=user_org2.id, role="team_member")
+                    ]
                 ),
             )
         assert exc_info.value.status_code in [403, 404]
@@ -551,12 +553,12 @@ class TestGetSourceUsersEffectiveAccess:
         assert user_b_result is not None, "User B should appear in results"
 
         # Step 8: Verify user A has direct access
-        assert user_a_result.access_type == "direct"
+        assert user_a_result.assignment_type == "direct"
         assert user_a_result.source_role == PrimaryAssetRole.asset_member
         assert user_a_result.name == "User A"
 
         # Step 9: Verify user B has inherited access (via team)
-        assert user_b_result.access_type == "inherited"
+        assert user_b_result.assignment_type == "inherited"
         assert user_b_result.source_role == PrimaryAssetRole.asset_admin
         assert user_b_result.name == "User B"
         # Verify user B's team membership is shown with source_role
@@ -627,7 +629,7 @@ class TestGetSourceUsersEffectiveAccess:
         assert len(result.users) == 1
         user_result = result.users[0]
         assert user_result.user_id == user.id
-        assert user_result.access_type == "direct"
+        assert user_result.assignment_type == "direct"
         assert user_result.source_role == PrimaryAssetRole.asset_admin
         # User should still see their team membership
         assert len(user_result.teams) == 1
@@ -775,7 +777,7 @@ class TestGetSourceUsersEffectiveAccess:
         )
         assert result_direct.total == 1
         assert result_direct.users[0].user_id == user_a.id
-        assert result_direct.users[0].access_type == "direct"
+        assert result_direct.users[0].assignment_type == "direct"
 
         # Step 6: Filter by inherited access
         result_inherited = service.get_source_users(
@@ -787,4 +789,4 @@ class TestGetSourceUsersEffectiveAccess:
         )
         assert result_inherited.total == 1
         assert result_inherited.users[0].user_id == user_b.id
-        assert result_inherited.users[0].access_type == "inherited"
+        assert result_inherited.users[0].assignment_type == "inherited"

@@ -3,13 +3,13 @@
 from typing import Literal
 from uuid import UUID
 
+from app.schemas.user_schema import AssignmentType
 from database.models_enums import PrimaryAssetRole
 from pydantic import BaseModel, Field
 
 # ===== Common Types =====
 SourceVisibility = Literal["private", "internal", "public"]
 SourceUserKind = Literal["user", "team"]
-AssignmentType = Literal["direct", "inherited"]
 
 
 # ===== Team Sources Request Schemas =====

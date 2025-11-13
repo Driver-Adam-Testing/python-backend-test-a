@@ -15,7 +15,6 @@ from app.schemas.source_access_schema import (
     AddSourceTeamsRequest,
     AddSourceUsersRequest,
     AddTeamSourcesRequest,
-    AssignmentType,
     RemoveSourceTeamsRequest,
     RemoveSourceUsersRequest,
     RemoveTeamSourcesRequest,
@@ -33,6 +32,7 @@ from app.schemas.source_access_schema import (
     UpdateSourceUsersRequest,
     UpdateTeamSourcesRequest,
 )
+from app.schemas.user_schema import AssignmentType
 
 logger = logging.getLogger(__name__)
 

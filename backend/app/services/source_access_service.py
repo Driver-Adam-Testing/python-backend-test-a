@@ -4,7 +4,6 @@ import logging
 from uuid import UUID
 
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Team
-from database.models import User as DbUser
 from database.models_enums import PrimaryAssetRole, PrincipalKind
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -33,6 +32,7 @@ from app.schemas.source_access_schema import (
     UpdateSourceUsersRequest,
     UpdateTeamSourcesRequest,
 )
+from app.schemas.user_schema import AssignmentType
 
 logger = logging.getLogger(__name__)
 
@@ -101,105 +101,6 @@ def build_source_team_response(
         member_count=member_count,
         created_at=grant.created_at.isoformat() if grant.created_at else "",
     )
-
-
-def build_source_user_response(
-    session: Session,
-    grant: PrimaryAssetRoleGrant,
-    user_or_team: DbUser | Team,
-    kind: str,
-    organization_id: str,
-    source_id: UUID,
-) -> SourceUserResponse:
-    """
-    Build SourceUserResponse with full user profile information.
-
-    Args:
-        session: Database session for fetching additional data
-        grant: PrimaryAssetRoleGrant instance
-        user_or_team: DbUser or Team instance
-        kind: User kind ('user' or 'team')
-        organization_id: Organization ID
-        source_id: Source ID to filter teams by access
-
-    Returns:
-        SourceUserResponse object with user profile and team memberships
-    """
-    if kind == "user":
-        user = user_or_team
-
-        # Fetch user's org membership for role and super_admin status
-        org_membership = acl_repository.get_user_org_membership(
-            session=session,
-            user_id=user.id,
-            organization_id=organization_id,
-        )
-
-        is_super_admin = False
-        user_role = "org_member"
-        if org_membership:
-            from database.models_enums import OrgRole
-
-            is_super_admin = org_membership.role == OrgRole.org_super_admin
-            user_role = org_membership.role.value
-
-        # Fetch user's team memberships
-        team_memberships_data = acl_repository.get_user_team_memberships(
-            session=session,
-            user_id=user.id,
-            organization_id=organization_id,
-        )
-
-        # Get team IDs that have access to this source
-        from sqlmodel import select
-
-        team_ids_with_source_access = set(
-            session.exec(
-                select(PrimaryAssetRoleGrant.team_id).where(
-                    PrimaryAssetRoleGrant.primary_asset_id == source_id,
-                    PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
-                    PrimaryAssetRoleGrant.team_id.is_not(None),
-                    PrimaryAssetRoleGrant.organization_id == organization_id,
-                )
-            ).all()
-        )
-
-        # Build team membership list - only teams with access to this source
-        teams = [
-            TeamMembershipInfo(
-                team_id=item["team"].id,
-                display_name=item["team"].name,
-                team_role=item["membership"].role.value,
-            )
-            for item in team_memberships_data
-            if item["team"].id in team_ids_with_source_access
-        ]
-
-        return SourceUserResponse(
-            user_id=user.id,
-            name=user.name or "",
-            email=user.email or "",
-            picture="",  # TODO: Fetch from Auth0 or add to User model
-            visibility="private",  # TODO: Use actual visibility
-            created_at=grant.created_at.isoformat() if grant.created_at else "",
-            is_super_admin=is_super_admin,
-            role=user_role,
-            teams=teams,
-        )
-    else:  # team
-        team = user_or_team
-        # For teams, return minimal user-like response (since schema is user-only now)
-        return SourceUserResponse(
-            user_id=str(team.id),
-            name=team.name,
-            email=None,
-            picture=None,
-            visibility="private",  # TODO: Use actual visibility
-            created_at=grant.created_at.isoformat() if grant.created_at else "",
-            is_super_admin=False,
-            role="team_member",  # Indicate this is a team
-            teams=[],  # Teams don't have team memberships
-        )
 
 
 class SourceAccessService:
@@ -486,6 +387,7 @@ class SourceAccessService:
         source_id: UUID,
         roles: list[PrimaryAssetRole] | None = None,
         search: str | None = None,
+        assignment_type: AssignmentType | None = None,
         limit: int = 30,
         offset: int = 0,
     ) -> SourceUsersResponse:
@@ -497,6 +399,7 @@ class SourceAccessService:
             source_id: Source (primary asset) ID
             roles: Optional list of roles to filter by
             search: Optional search query
+            assignment_type: Optional assignment type filter ('direct' or 'inherited')
             limit: Maximum number of results
             offset: Number of results to skip
 
@@ -506,10 +409,10 @@ class SourceAccessService:
         Raises:
             HTTPException: If source not found
         """
-        user_kind = PrincipalKind.user.value
         organization_id = user.organization_id
         logger.info(
-            f"Getting users for source {source_id} by user {user.user_id} (roles={roles}, search={search})"
+            f"Getting users for source {source_id} by user {user.user_id} "
+            f"(roles={roles}, search={search}, assignment_type={assignment_type})"
         )
 
         # Verify source exists
@@ -526,36 +429,60 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
-        users_with_details = acl_repository.get_source_users_with_details(
+        # Get users with all details in single optimized query
+        users_data = acl_repository.get_source_users_with_details(
             session=self.session,
             primary_asset_id=source_id,
             organization_id=organization_id,
             roles=roles,
-            user_kind=user_kind,
             search=search,
+            assignment_type=assignment_type,
             limit=limit,
             offset=offset,
         )
 
+        # Get total count using optimized query
         total = acl_repository.count_source_users(
             session=self.session,
             primary_asset_id=source_id,
             organization_id=organization_id,
             roles=roles,
-            user_kind=user_kind,
             search=search,
+            assignment_type=assignment_type,
         )
 
+        # Batch fetch team memberships for all users
+        user_ids = [data["user_id"] for data in users_data]
+        teams_by_user = acl_repository.get_source_team_memberships_batch(
+            session=self.session,
+            source_id=source_id,
+            user_ids=user_ids,
+            organization_id=organization_id,
+        )
+
+        # Build response objects directly from repository data
         users = [
-            build_source_user_response(
-                session=self.session,
-                grant=item["grant"],
-                user_or_team=item["member"],
-                kind=item["kind"],
-                organization_id=organization_id,
-                source_id=source_id,
+            SourceUserResponse(
+                user_id=data["user_id"],
+                name=data["name"],
+                email=data["email"],
+                picture="",
+                created_at=data["created_at"],
+                is_super_admin=data["is_super_admin"],
+                # Granular role breakdown
+                user_org_role=data["user_org_role"],
+                asset_org_role=data["asset_org_role"],
+                team_source_role=data["team_source_role"],
+                effective_role=data["effective_role"],
+                # Existing fields (for backward compatibility)
+                source_role=data["effective_role"],
+                assignment_type=data["assignment_type"],
+                teams=[
+                    TeamMembershipInfo(**team_data)
+                    for team_data in teams_by_user.get(data["user_id"], [])
+                ],
             )
-            for item in users_with_details
+            for data in users_data
         ]
 
         logger.info(f"Found {len(users)} users (total: {total})")
@@ -587,7 +514,6 @@ class SourceAccessService:
         Raises:
             HTTPException: If source not found
         """
-        user_kind = PrincipalKind.team.value
         organization_id = user.organization_id
         logger.info(
             f"Getting teams for source {source_id} by user {user.user_id} (roles={roles}, search={search})"
@@ -607,24 +533,21 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
-        # TODO: andrew question - why are get calling "get source users" here for teams? very confusing
-        teams_with_details = acl_repository.get_source_users_with_details(
+        teams_with_details = acl_repository.get_source_teams_with_details(
             session=self.session,
             primary_asset_id=source_id,
             organization_id=organization_id,
             roles=roles,
-            user_kind=user_kind,
             search=search,
             limit=limit,
             offset=offset,
         )
 
-        total = acl_repository.count_source_users(
+        total = acl_repository.count_source_teams(
             session=self.session,
             primary_asset_id=source_id,
             organization_id=organization_id,
             roles=roles,
-            user_kind=user_kind,
             search=search,
         )
 

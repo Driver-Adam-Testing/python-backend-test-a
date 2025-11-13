@@ -18,6 +18,7 @@ from aws_cdk import (
     aws_events_targets as targets,
 )
 from constructs import Construct
+from cdk.settings import settings
 
 
 class Auth0EventLambda(Construct):
@@ -44,8 +45,9 @@ class Auth0EventLambda(Construct):
 
         vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_Auth0Events", vpc_id=vpc_id)
 
-        # Create secrets for sensitive data
-        modal_secrets = aws_secretsmanager.Secret(self, "Auth0EventLambdaModalSecret")
+        deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
+        )
 
         # Create Lambda function
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
@@ -60,7 +62,9 @@ class Auth0EventLambda(Construct):
             ),
             environment={
                 "LOG_LEVEL": "INFO",
-                "MODAL_SECRET_NAME": modal_secrets.secret_name,
+                "MODAL_TOKEN_ID": settings.MODAL_TOKEN_ID,
+                "MODAL_ENVIRONMENT": settings.MODAL_ENVIRONMENT,
+                "MODAL_SECRET_NAME": deployment_secrets.secret_name,
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
@@ -72,7 +76,7 @@ class Auth0EventLambda(Construct):
         )
 
         # Grant Lambda permissions to read secrets
-        modal_secrets.grant_read(self.lambda_function)
+        deployment_secrets.grant_read(self.lambda_function)
 
         # Configure CloudWatch Logs with retention
         aws_logs.LogGroup(

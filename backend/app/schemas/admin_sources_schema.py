@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from app.schemas.common import SourceVisibility
+from database.models_enums import SourceVisibility
 from pydantic import BaseModel, ConfigDict, Field
 
 

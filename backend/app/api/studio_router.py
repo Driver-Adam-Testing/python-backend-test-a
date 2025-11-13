@@ -8,6 +8,7 @@ from app.api.routes.v1 import (
     git_provider,
     members_search,
     organization,
+    organization_settings,
     source_teams,
     source_users,
     tags,
@@ -80,6 +81,11 @@ studio_router.include_router(about_you_survey.router, tags=["about_you_survey"])
 studio_router.include_router(onboarding_checklist.router, tags=["onboarding_checklist"])
 studio_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
+)
+studio_router.include_router(
+    organization_settings.router,
+    prefix="/organization/settings",
+    tags=["organization-settings"],
 )
 studio_router.include_router(v2_router.router, prefix="/node", tags=["node"])
 

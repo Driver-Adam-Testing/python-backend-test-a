@@ -8,12 +8,13 @@ from database.models_enums import (
     NodeKind,
     PrimaryAssetKind,
     PrimaryAssetRole,
+    SourceVisibility,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, field_validator
 
-from app.schemas.common import SourceVisibility
+from app.schemas.common import validate_visibility_not_public
 
 T = TypeVar("T")
 
@@ -234,6 +235,9 @@ class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
     codebase_settings_auto_commit_docs: bool | None = None
     vcs_auto_update_policy: VcsAutoUpdatePolicy | None = None
+    visibility: SourceVisibility | None = None
+
+    _validate_not_public = field_validator("visibility")(validate_visibility_not_public)
 
 
 class VersionUpdate(BaseModel):

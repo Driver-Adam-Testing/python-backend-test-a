@@ -898,7 +898,7 @@ def update_asset_visibility(
     for grant in existing_grants:
         session.delete(grant)
 
-    if visibility == SourceVisibility.INTERNAL:
+    if visibility == SourceVisibility.internal:
         org_grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
             organization_id=organization_id,
@@ -906,7 +906,7 @@ def update_asset_visibility(
             role=PrimaryAssetRole.asset_member,
         )
         session.add(org_grant)
-    elif visibility == SourceVisibility.PUBLIC:
+    elif visibility == SourceVisibility.public:
         public_grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
             organization_id=organization_id,

@@ -273,10 +273,10 @@ def update_primary_asset(
     if payload.vcs_auto_update_policy is not None:
         asset.vcs_auto_update_policy = payload.vcs_auto_update_policy
 
-    # TODO: update_asset_visibility commits internally, which also commits pending
-    # asset changes above. The second commit below becomes a no-op. Consider
-    # refactoring to use a single transaction for all changes. This is a problem
-    # with the repository doing commits
+    session.add(asset)
+    session.commit()
+    session.refresh(asset)
+    # ideally this would all happen in one transaction, but im following the repository pattern
     if payload.visibility is not None:
         acl_repository.update_asset_visibility(
             session=session,
@@ -285,9 +285,6 @@ def update_primary_asset(
             visibility=payload.visibility,
         )
 
-    session.add(asset)
-    session.commit()
-    session.refresh(asset)
     return asset
 
 

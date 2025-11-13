@@ -1034,10 +1034,17 @@ class RuntimeLlmMessage(SQLModel, table=True):
 class AutoDocStatusHistory(SQLModel, table=True):
     __tablename__ = "autodoc_status_history"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    # page_node_id will be deleted in a future migration
     page_node_id: UUID = Field(
         index=True,
-        nullable=False,
+        nullable=True,
         foreign_key="node.id",
+        ondelete="SET NULL",
+    )
+    source_version_node_id: UUID = Field(
+        index=True,
+        nullable=True,  # will be set to False in a future migration
+        foreign_key="version_node.id",
         ondelete="CASCADE",
     )
     status_kind: AutoDocStatusMessageKind = Field(

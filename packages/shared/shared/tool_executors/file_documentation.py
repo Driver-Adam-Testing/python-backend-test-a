@@ -1,5 +1,5 @@
 from database.db import get_session
-from database.models import DerivedContent, Node
+from database.models import DerivedContent, VersionNode
 from database.models_enums import ContentKind
 from pydantic import BaseModel
 from sqlmodel import select
@@ -31,20 +31,20 @@ def _get_long_description(
 
         full_path = f"{codebase_name}/{path.strip('/')}"
 
-        node = db.exec(
-            select(Node)
-            .where(Node.version_id == version.id)
-            .where(Node.relative_path == full_path)
+        version_node = db.exec(
+            select(VersionNode)
+            .where(VersionNode.version_id == version.id)
+            .where(VersionNode.relative_path == full_path)
         ).first()
 
-        if not node:
+        if not version_node:
             raise ToolUseError(
                 agent_message=f"File '{path}' not found in codebase '{codebase_name}' documentation. "
             )
 
         content = db.exec(
             select(DerivedContent)
-            .where(DerivedContent.node_id == node.id)
+            .where(DerivedContent.node_id == version_node.node_id)
             .where(DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
         ).first()
 
@@ -59,9 +59,7 @@ def _apply_file_doc_pagination(
     markdown_text: str, start_line: int, max_lines: int
 ) -> FileDocumentationPayload:
     if not markdown_text:
-        raise ToolUseError(
-            agent_message="No documentation available for the file."
-        )
+        raise ToolUseError(agent_message="No documentation available for the file.")
 
     if start_line < 1:
         raise ToolUseError(

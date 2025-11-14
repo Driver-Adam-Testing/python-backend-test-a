@@ -4,6 +4,7 @@ from database.models import (
     Node,
     PrimaryAsset,
     Version,
+    VersionNode,
 )
 from database.models_enums import ContentKind, PrimaryAssetKind, VersionStatus
 from sqlmodel import select
@@ -30,10 +31,11 @@ def _get_root_node_content(
         derived_content = db.exec(
             select(DerivedContent)
             .join(Node, Node.id == DerivedContent.node_id)
-            .join(Version, Version.id == Node.version_id)
+            .join(VersionNode, VersionNode.node_id == Node.id)
+            .join(Version, Version.id == VersionNode.version_id)
             .where(Version.primary_asset_id == primary_asset.id)
             .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-            .where(Node.depth == 0)
+            .where(VersionNode.depth == 0)
             .where(DerivedContent.content_kind == content_kind)
             .order_by(Version.updated_at.desc())
         ).first()

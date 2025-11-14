@@ -65,7 +65,9 @@ def sync_auth0_scheduled() -> dict:
 
 
 @app.function(**function_config)
-def sync_auth0(dry_run: bool = False, verbose: bool = False) -> dict:
+def sync_auth0(
+    dry_run: bool = False, verbose: bool = False, initial_run: bool = False
+) -> dict:
     import logging
 
     from auth0_sync.sync import Auth0Sync
@@ -73,7 +75,7 @@ def sync_auth0(dry_run: bool = False, verbose: bool = False) -> dict:
     logger = logging.getLogger(__name__)
 
     syncer = Auth0Sync(dry_run=dry_run, verbose=verbose)
-    stats = syncer.run()
+    stats = syncer.run(initial_run=initial_run)
 
     logger.info(f"Sync completed with stats: {stats}")
     return stats
@@ -94,11 +96,17 @@ def process_auth0_events(event: dict) -> dict:
 
 
 @app.local_entrypoint()
-def main(dry_run: bool = False, verbose: bool = False) -> None:
+def main(
+    dry_run: bool = False, verbose: bool = False, initial_run: bool = False
+) -> None:
     """CLI entrypoint for manual Auth0 sync.
 
     Usage:
         modal run src/modal_main.py --dry-run --verbose
     """
-    result = sync_auth0.remote(dry_run=dry_run, verbose=verbose)
+    print("Starting Auth0 sync...")
+    print(f"Dry run: {dry_run}, Verbose: {verbose}, Initial run: {initial_run}")
+    result = sync_auth0.remote(
+        dry_run=dry_run, verbose=verbose, initial_run=initial_run
+    )
     print(f"\nSync completed. Stats: {result}")

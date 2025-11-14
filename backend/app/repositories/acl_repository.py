@@ -17,7 +17,7 @@ from database.models_enums import (
     PrincipalKind,
     SourceVisibility,
 )
-from sqlalchemy import case, literal, union_all
+from sqlalchemy import case, literal, literal_column, union_all
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, select
 
@@ -262,6 +262,22 @@ def _build_source_users_base_ctes(
         .cte("public_grants")
     )
 
+    # CTE 5: Super admin grants (super admins have implicit asset_admin access)
+    super_admin_grants_cte = (
+        select(
+            OrgMembership.user_id,
+            literal_column("'asset_admin'::primaryassetrole").label("grant_role"),
+            literal("inherited").label("assignment_type"),
+            literal_column("NULL::timestamp").label("created_at"),
+        )
+        .select_from(OrgMembership)
+        .where(
+            OrgMembership.org_id == organization_id,
+            OrgMembership.role == OrgRole.org_super_admin,
+        )
+        .cte("super_admin_grants")
+    )
+
     # Build union based on assignment_type filter
     if assignment_type == "direct":
         all_grants = select(
@@ -290,6 +306,12 @@ def _build_source_users_base_ctes(
                 public_grants_cte.c.assignment_type,
                 public_grants_cte.c.created_at,
             ),
+            select(
+                super_admin_grants_cte.c.user_id,
+                super_admin_grants_cte.c.grant_role,
+                super_admin_grants_cte.c.assignment_type,
+                super_admin_grants_cte.c.created_at,
+            ),
         ).subquery("all_grants")
     else:
         all_grants = union_all(
@@ -316,6 +338,12 @@ def _build_source_users_base_ctes(
                 public_grants_cte.c.grant_role,
                 public_grants_cte.c.assignment_type,
                 public_grants_cte.c.created_at,
+            ),
+            select(
+                super_admin_grants_cte.c.user_id,
+                super_admin_grants_cte.c.grant_role,
+                super_admin_grants_cte.c.assignment_type,
+                super_admin_grants_cte.c.created_at,
             ),
         ).subquery("all_grants")
 

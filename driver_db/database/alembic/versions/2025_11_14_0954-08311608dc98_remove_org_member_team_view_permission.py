@@ -21,7 +21,7 @@ def upgrade() -> None:
     # org_super_admins retain this permission to view all teams
     op.execute("""
         DELETE FROM role_action_allow_org
-        WHERE role = 'member' AND action_key = 'team.view'
+        WHERE role = 'org_member' AND action_key = 'team.view'
         AND id = '1d5727d7-8cda-4b85-a7c4-8a181eecd7e5'
     """)
 
@@ -30,5 +30,5 @@ def downgrade() -> None:
     # Restore team.view permission for org_member at org level
     op.execute("""
         INSERT INTO role_action_allow_org (id, role, action_key) VALUES
-        ('1d5727d7-8cda-4b85-a7c4-8a181eecd7e5', 'member', 'team.view')
+        ('1d5727d7-8cda-4b85-a7c4-8a181eecd7e5', 'org_member', 'team.view')
     """)

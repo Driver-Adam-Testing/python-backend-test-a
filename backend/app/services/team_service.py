@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
 from database.models import User as DbUser
+from database.models_enums import TeamRole
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -15,6 +16,7 @@ from app.authorization.helpers import is_super_admin
 from app.repositories import org_membership_repository, team_repository
 from app.schemas.team_schema import (
     CreateTeamRequest,
+    TeamDetailResponse,
     TeamMemberInput,
     TeamResponse,
     TeamsResponse,
@@ -30,7 +32,7 @@ def get_user_by_id(session: Session, user_id: str) -> DbUser | None:
 
 
 def team_dict_to_response(team_dict: dict) -> TeamResponse:
-    """Expects dict with 'team', 'admins', 'members', 'sources' keys."""
+    """Expects dict with 'team', 'admins', 'members', 'sources' keys and the user's effective role."""
     team = team_dict["team"]
 
     # Handle created_at and updated_at
@@ -198,11 +200,12 @@ class TeamService:
         self,
         user: User,
         team_id: UUID,
-    ) -> TeamResponse:
+    ) -> TeamDetailResponse:
         """Raises HTTPException if team not found."""
         organization_id = user.organization_id
+        user_id = user.user_id
         logger.info(
-            f"Getting team {team_id} for organization {organization_id} by user {user.user_id}"
+            f"Getting team {team_id} for organization {organization_id} by user {user_id}"
         )
 
         team_with_counts = team_repository.get_team_with_counts(
@@ -218,7 +221,21 @@ class TeamService:
                 detail="Team not found",
             )
 
-        return team_dict_to_response(team_with_counts)
+        # Note: enforce_team_action already verified user is a member or super admin
+        if is_super_admin(self.session, user_id, organization_id):
+            effective_role: TeamRole = TeamRole.team_admin
+        else:
+            role = team_repository.get_user_team_role(
+                self.session, team_id, user_id, organization_id
+            )
+            effective_role = role
+
+        base_response = team_dict_to_response(team_with_counts)
+
+        return TeamDetailResponse(
+            **base_response.model_dump(),
+            effective_team_role=effective_role,
+        )
 
     def update_team(
         self,

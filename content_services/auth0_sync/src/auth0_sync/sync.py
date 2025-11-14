@@ -21,7 +21,7 @@ from typing import Any
 from auth0.management import Auth0
 from database.db import engine
 from database.models import Auth0SyncRun, Organization, OrgMembership, User
-from database.models_enums import OrgRole
+from database.models_enums import OrgRole, SourceVisibility
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
 
@@ -154,7 +154,9 @@ class Auth0Sync:
 
         return organizations
 
-    def sync_organization(self, session: Session, org_data: dict[str, Any]) -> bool:
+    def sync_organization(
+        self, session: Session, org_data: dict[str, Any], initial_run: bool = False
+    ) -> bool:
         """Sync a single organization to the database."""
         org_id = org_data.get("id")
         org_name = org_data.get("name")
@@ -200,10 +202,14 @@ class Auth0Sync:
                     org_metadata=org_data.get("metadata", {}),
                     auth0_updated_at=None,  # Auth0 doesn't provide updated_at for orgs
                 )
+                if initial_run:
+                    new_org.default_source_visibility = SourceVisibility.internal
                 session.add(new_org)
 
                 if self.verbose:
-                    logger.debug(f"Created organization: {org_name} ({org_id})")
+                    logger.debug(
+                        f"Created organization: {org_name} ({org_id}) ({new_org.default_source_visibility})"
+                    )
                 self.stats["orgs_created"] += 1
 
             return True
@@ -347,7 +353,7 @@ class Auth0Sync:
                     logger.debug(f"Deleted stale organization: {org.name} ({org.id})")
                 self.stats["orgs_deleted"] += 1
 
-    def run(self) -> dict[str, Any]:
+    def run(self, initial_run: bool = False) -> dict[str, Any]:
         logger.info("Starting Auth0 full reconciliation...")
 
         if self.dry_run:
@@ -365,7 +371,7 @@ class Auth0Sync:
                 logger.info(f"Created sync run record: {sync_run_id}")
 
         try:
-            self._run_reconciliation()
+            self._run_reconciliation(initial_run=initial_run)
 
             if sync_run_id:
                 with Session(engine) as session:
@@ -391,7 +397,7 @@ class Auth0Sync:
         self.print_summary()
         return self.stats
 
-    def _run_reconciliation(self) -> None:
+    def _run_reconciliation(self, initial_run: bool = False) -> None:
         """Execute the actual reconciliation logic."""
         auth0_client = self.get_auth0_client()
 
@@ -447,7 +453,7 @@ class Auth0Sync:
         with Session(engine) as session:
             logger.info("Syncing organizations...")
             for org in organizations:
-                self.sync_organization(session, org)
+                self.sync_organization(session, org, initial_run=initial_run)
 
             logger.info("Syncing users...")
             for user in users:

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
-from app.authorization.fastapi import enforce_super_admin
+from app.authorization.fastapi import enforce_org_action
 from app.repositories import organization_repository
 from app.schemas.common import validate_visibility_not_public
 
@@ -34,13 +34,13 @@ class UpdateDefaultSourceVisibilityRequest(BaseModel):
     "/default-source-visibility",
     response_model=DefaultSourceVisibilityResponse,
     summary="Get default source visibility",
-    description="Get the default visibility setting for new sources. Only accessible by org super admin.",
+    description="Get the default visibility setting for new sources.",
 )
 def get_default_source_visibility(
     session: CurrentSession,
     user: UserToken,
 ) -> DefaultSourceVisibilityResponse:
-    enforce_super_admin(session, user)
+    enforce_org_action(session, user, "org_settings.view")
     logger.info(
         f"User {user.user_id} getting default source visibility "
         f"for org {user.organization_id}"
@@ -63,7 +63,7 @@ def update_default_source_visibility(
     session: CurrentSession,
     user: UserToken,
 ) -> DefaultSourceVisibilityResponse:
-    enforce_super_admin(session, user)
+    enforce_org_action(session, user, "org_settings.manage")
     logger.info(
         f"User {user.user_id} updating default source visibility to "
         f"{request.default_source_visibility} for org {user.organization_id}"

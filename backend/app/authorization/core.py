@@ -149,7 +149,7 @@ def _effective_asset_role(
 ) -> PrimaryAssetRole | None:
     """Get the effective role for a user on an asset."""
     rows = _grant_rows(db, organization_id, asset_id, user_id)
-    roles = {r.role for r in rows}  # Keep as enum objects, not .value
+    roles = {r.role for r in rows}
 
     if PrimaryAssetRole.asset_admin in roles:
         return PrimaryAssetRole.asset_admin

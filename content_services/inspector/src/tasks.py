@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import uuid
+from enum import StrEnum
 from pathlib import Path
 from typing import Optional, Union
 
@@ -18,7 +19,6 @@ from modal_funcs import (
 )
 from sqlmodel import delete, select
 from utils.dag import LiteNode
-from utils.db import get_source_code_derived_content
 from utils.symbol_table import build_symbol_table
 from utils.task import SerializationMethod, Task, TaskResult, TaskWorkUnits
 
@@ -45,12 +45,12 @@ class FolderTechDocTask(Task):
         task_name: str,
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
-        db_node_id: uuid.UUID,  # TODO: this needs to be node_id
+        db_version_node_id: uuid.UUID,  # TODO: this needs to be node_id
         previous_content: dict[str, str] | None = None,
     ) -> None:
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
-        self.db_node_id = db_node_id
+        self.db_version_node_id = db_version_node_id
         self.previous_content = previous_content
         super().__init__(
             task_name=task_name,
@@ -79,21 +79,70 @@ class FolderTechDocTask(Task):
     def work_units(self) -> int:
         return TaskWorkUnits.FOLDER_TECH_DOC
 
+    def load_result(self) -> TaskResult | None:
+        from database.models_enums import ContentKind
+        from utils.db import sync_get_all_derived_content_by_version_node_id
+
+        required_content_kinds = {
+            ContentKind.SHORT_SENTENCE_DESCRIPTION,
+            ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
+            ContentKind.LONG_DESCRIPTION,
+        }
+        dc_list = sync_get_all_derived_content_by_version_node_id(
+            version_node_id=self.db_version_node_id,
+            content_kinds=required_content_kinds,
+        )
+        found_content_kinds = {dc.content_kind for dc in dc_list}
+        if found_content_kinds == required_content_kinds:
+            print(
+                f"Found all required derived contents for FOLDER_TECH_DOC task {self.task_name}"
+            )
+            short_sentence_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.SHORT_SENTENCE_DESCRIPTION
+            )
+            short_paragraph_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.SHORT_PARAGRAPH_DESCRIPTION
+            )
+            long_description_content = next(
+                dc for dc in dc_list if dc.content_kind == ContentKind.LONG_DESCRIPTION
+            )
+            return TaskResult(
+                data={
+                    "docs": {
+                        "short": {
+                            "single_sentence": short_sentence_content.content,
+                            "single_paragraph": short_paragraph_content.content,
+                        },
+                        "long": long_description_content.content,
+                    }
+                },
+                serialization=SerializationMethod.JSON,
+            )
+        else:
+            return None
+
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
+        from utils.db import (
+            get_node_from_version_node_id,
+        )
 
         docs = task_result.data["docs"]
 
         async with database_sem:
+            node = await get_node_from_version_node_id(self.db_version_node_id)
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION,
-                node_id=self.db_node_id,
+                node_id=node.id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
@@ -101,7 +150,7 @@ class FolderTechDocTask(Task):
             # Short Single Paragraph
             short_para_dc = DerivedContent(
                 content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
-                node_id=self.db_node_id,
+                node_id=node.id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
@@ -109,7 +158,7 @@ class FolderTechDocTask(Task):
             # Long File Description
             long_desc_dc = DerivedContent(
                 content_kind=ContentKind.LONG_DESCRIPTION,
-                node_id=self.db_node_id,
+                node_id=node.id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
@@ -117,7 +166,7 @@ class FolderTechDocTask(Task):
 
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = delete(DerivedContent).where(
-                    DerivedContent.node_id == self.db_node_id,
+                    DerivedContent.node_id == node.id,
                     DerivedContent.content_kind.in_(
                         [
                             ContentKind.SHORT_SENTENCE_DESCRIPTION,
@@ -148,14 +197,14 @@ class FileTechDocTask(Task):
         source_code: str,
         node: LiteNode,
         task_name: str,
-        db_node_id: uuid.UUID,
+        db_version_node_id: uuid.UUID,
         version_id: str,
         symbol_table_task: Optional["CSymbolTableTask"],
         thread_pool: concurrent.futures.ThreadPoolExecutor | None = None,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
-        self.db_node_id = db_node_id
+        self.db_version_node_id = db_version_node_id
         self.version_id = version_id
         self.symbol_table_task = symbol_table_task
         self.thread_pool = thread_pool
@@ -188,20 +237,81 @@ class FileTechDocTask(Task):
     def work_units(self) -> int:
         return TaskWorkUnits.FILE_TECH_DOC
 
+    def load_result(self) -> TaskResult | None:
+        from database.models_enums import ContentKind
+        from utils.db import sync_get_all_derived_content_by_version_node_id
+
+        required_content_kinds = {
+            ContentKind.SHORT_SENTENCE_DESCRIPTION,
+            ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
+            ContentKind.LONG_DESCRIPTION,
+        }
+        all_content_kinds = required_content_kinds.union(
+            {ContentKind.CHUNK_DESCRIPTIONS}
+        )
+        dc_list = sync_get_all_derived_content_by_version_node_id(
+            version_node_id=self.db_version_node_id,
+            content_kinds=all_content_kinds,
+        )
+        found_content_kinds = {dc.content_kind for dc in dc_list}
+        if all(ck in found_content_kinds for ck in required_content_kinds):
+            print(
+                f"Found all required derived contents for FILE_TECH_DOC task {self.task_name}"
+            )
+            short_sentence_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.SHORT_SENTENCE_DESCRIPTION
+            )
+            short_paragraph_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.SHORT_PARAGRAPH_DESCRIPTION
+            )
+            long_description_content = next(
+                dc for dc in dc_list if dc.content_kind == ContentKind.LONG_DESCRIPTION
+            )
+            chunk_descriptions_content = [
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.CHUNK_DESCRIPTIONS
+            ]
+            return TaskResult(
+                data={
+                    "success": True,
+                    "docs": {
+                        "short": {
+                            "single_sentence": short_sentence_content.content,
+                            "single_paragraph": short_paragraph_content.content,
+                        },
+                        "long": long_description_content.content,
+                        "chunk_descriptions": [
+                            dc.content for dc in chunk_descriptions_content
+                        ],
+                    },
+                },
+                serialization=SerializationMethod.JSON,
+            )
+        else:
+            return None
+
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
+        from utils.db import (
+            get_node_from_version_node_id,
+        )
 
         docs = task_result.data["docs"]
         async with database_sem:
+            node = await get_node_from_version_node_id(self.db_version_node_id)
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION,
-                node_id=self.db_node_id,
+                node_id=node.id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
@@ -209,7 +319,7 @@ class FileTechDocTask(Task):
             # Short Single Paragraph
             short_para_dc = DerivedContent(
                 content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
-                node_id=self.db_node_id,
+                node_id=node.id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
@@ -217,7 +327,7 @@ class FileTechDocTask(Task):
             # Long File Description
             long_desc_dc = DerivedContent(
                 content_kind=ContentKind.LONG_DESCRIPTION,
-                node_id=self.db_node_id,
+                node_id=node.id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
@@ -228,7 +338,7 @@ class FileTechDocTask(Task):
                 for i, chunk in enumerate(docs["chunk_descriptions"]):
                     chunk_dc = DerivedContent(
                         content_kind=ContentKind.CHUNK_DESCRIPTIONS,
-                        node_id=self.db_node_id,
+                        node_id=node.id,
                         relative_path=str(self.node.root_rel_path),
                         content=chunk,
                         misc_metadata=None,
@@ -238,7 +348,7 @@ class FileTechDocTask(Task):
 
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = delete(DerivedContent).where(
-                    DerivedContent.node_id == self.db_node_id,
+                    DerivedContent.node_id == node.id,
                     DerivedContent.content_kind.in_(
                         [
                             ContentKind.CHUNK_DESCRIPTIONS,
@@ -271,11 +381,11 @@ class SymbolsTask(Task):
         node: LiteNode,
         source_code: str,
         tech_docs_task: FileTechDocTask,
-        db_node_id: uuid.UUID,
+        db_version_node_id: uuid.UUID,
     ) -> None:
         self.source_code = source_code
         self.tech_docs_task = tech_docs_task
-        self.db_node_id = db_node_id
+        self.db_version_node_id = db_version_node_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -308,23 +418,48 @@ class SymbolsTask(Task):
     def work_units(self) -> int:
         return TaskWorkUnits.SYMBOLS
 
+    def load_result(self) -> TaskResult | None:
+        from database.models_enums import ContentKind
+        from utils.db import sync_get_all_derived_content_by_version_node_id
+
+        symbol_dcs = sync_get_all_derived_content_by_version_node_id(
+            version_node_id=self.db_version_node_id,
+            content_kinds={ContentKind.SYMBOL},
+        )
+        if symbol_dcs:
+            print(f"Found symbol derived contents for SYMBOLS task {self.task_name}")
+            symbols = []
+            for dc in symbol_dcs:
+                symbol = dc.misc_metadata if dc.misc_metadata else {}
+                if symbol:
+                    symbols.append(symbol)
+            return TaskResult(
+                data={"symbols": symbols},
+                serialization=SerializationMethod.JSON,
+            )
+        else:
+            return None
+
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
+        from utils.db import (
+            get_node_from_version_node_id,
+        )
 
         session_chunk_size = 25
         symbols = task_result.data["symbols"]
 
         async with database_sem:
+            node = await get_node_from_version_node_id(self.db_version_node_id)
             symbol_dcs = []
             for idx, symbol in enumerate(symbols):
                 symbol_dc = DerivedContent(
                     content_kind=ContentKind.SYMBOL,
-                    node_id=self.db_node_id,
+                    node_id=node.id,
                     relative_path=str(self.node.root_rel_path),
                     content=None,
                     misc_metadata=symbol,
@@ -335,7 +470,7 @@ class SymbolsTask(Task):
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = (
                     delete(DerivedContent)
-                    .where(DerivedContent.node_id == self.db_node_id)
+                    .where(DerivedContent.node_id == node.id)
                     .where(DerivedContent.content_kind == ContentKind.SYMBOL)
                 )
                 await session.exec(dc_delete_query)
@@ -359,10 +494,10 @@ class TopLevelDocsTask(Task):
         node: LiteNode,
         codebase_name: str,
         ordered_tech_docs_tasks: tuple[TechDocsTask],
-        db_node_id: uuid.UUID,
+        db_version_node_id: uuid.UUID,
     ) -> None:
         self.codebase_name = codebase_name
-        self.db_node_id = db_node_id
+        self.db_version_node_id = db_version_node_id
         super().__init__(
             task_name=f"TopLevelTechDocsTask of {codebase_name}",
             node=node,
@@ -388,10 +523,61 @@ class TopLevelDocsTask(Task):
     def work_units(self) -> int:
         return TaskWorkUnits.TOP_LEVEL_DOCS
 
+    def load_result(self) -> TaskResult | None:
+        from database.models_enums import ContentKind
+        from utils.db import sync_get_all_derived_content_by_version_node_id
+
+        required_content_kinds = {
+            ContentKind.TOP_LEVEL_SHORT_SENTENCE,
+            ContentKind.TOP_LEVEL_SHORT_PARAGRAPH,
+            ContentKind.TOP_LEVEL_TERSE_SENTENCE,
+            ContentKind.TOP_LEVEL_LONG_DESCRIPTION,
+        }
+        dc_list = sync_get_all_derived_content_by_version_node_id(
+            version_node_id=self.db_version_node_id,
+            content_kinds=required_content_kinds,
+        )
+        found_content_kinds = {dc.content_kind for dc in dc_list}
+        if found_content_kinds == required_content_kinds:
+            short_sentence_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.TOP_LEVEL_SHORT_SENTENCE
+            )
+            short_paragraph_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.TOP_LEVEL_SHORT_PARAGRAPH
+            )
+            terse_sentence_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.TOP_LEVEL_TERSE_SENTENCE
+            )
+            long_description_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.TOP_LEVEL_LONG_DESCRIPTION
+            )
+            return TaskResult(
+                data={
+                    "docs": {
+                        "short": {
+                            "terse_sentence": terse_sentence_content.content,
+                            "single_sentence": short_sentence_content.content,
+                            "single_paragraph": short_paragraph_content.content,
+                        },
+                        "long": long_description_content.content,
+                    }
+                },
+                serialization=SerializationMethod.JSON,
+            )
+        else:
+            return None
+
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         docs = task_result.data["docs"]
 
@@ -410,6 +596,13 @@ class TopLevelDocsTask(Task):
             # long_descrip_dc_id = await get_derived_content_type_uuid(
             #     DerivedContentTypeMap.LONG_DESCRIPTION
             # )
+            from database.db import async_engine
+            from sqlmodel.ext.asyncio.session import AsyncSession
+            from utils.db import (
+                get_node_from_version_node_id,
+            )
+
+            node = await get_node_from_version_node_id(self.db_version_node_id)
 
             top_level_tups = [
                 (
@@ -431,19 +624,16 @@ class TopLevelDocsTask(Task):
             for content_kind, dc_docs in top_level_tups:
                 dc = DerivedContent(
                     content_kind=content_kind,
-                    node_id=self.db_node_id,
+                    node_id=node.id,
                     relative_path=str(self.node.root_rel_path),
                     content=dc_docs,
                     misc_metadata=None,
                 )
                 dc_contents.append(dc)
 
-            from database.db import async_engine
-            from sqlmodel.ext.asyncio.session import AsyncSession
-
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = delete(DerivedContent).where(
-                    DerivedContent.node_id == self.db_node_id,
+                    DerivedContent.node_id == node.id,
                     DerivedContent.content_kind.in_(
                         [dc_slug for dc_slug, _ in top_level_tups]
                     ),
@@ -468,13 +658,13 @@ class CodebaseTaggingTask(Task):
         root_node: LiteNode,
         codebase_name: str,
         ordered_tech_docs_tasks: tuple[TechDocsTask],
-        db_root_node_id: uuid.UUID,
+        db_root_version_node_id: uuid.UUID,
         previous_root_node_metadata: dict[ContentKind, list[dict]] | None = None,
     ) -> None:
         # NOTE: since the root node is always marked as modified on a diff update, we know this code will
         # execute every time a codebase is updated.
         self.codebase_name = codebase_name
-        self.db_root_node_id = db_root_node_id
+        self.db_root_version_node_id = db_root_version_node_id
         self.previous_root_node_metadata = previous_root_node_metadata
         super().__init__(
             task_name=f"CodebaseTaggingTask of {codebase_name}",
@@ -532,14 +722,71 @@ class CodebaseTaggingTask(Task):
     def work_units(self) -> int:
         return TaskWorkUnits.TAGS
 
+    def load_result(self) -> TaskResult | None:
+        from database.models_enums import ContentKind
+        from utils.db import sync_get_all_derived_content_by_version_node_id
+
+        required_content_kinds = {
+            ContentKind.CODEBASE_AUDIENCES,
+            ContentKind.CODEBASE_DOMAINS,
+            ContentKind.CODEBASE_KINDS,
+            ContentKind.CODEBASE_ENTRY_POINTS,
+        }
+        dc_list = sync_get_all_derived_content_by_version_node_id(
+            version_node_id=self.db_root_version_node_id,
+            content_kinds=required_content_kinds,
+        )
+        found_content_kinds = {dc.content_kind for dc in dc_list}
+        if found_content_kinds == required_content_kinds:
+            audiences_content = next(
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.CODEBASE_AUDIENCES
+            )
+            domains_content = next(
+                dc for dc in dc_list if dc.content_kind == ContentKind.CODEBASE_DOMAINS
+            )
+            kinds_content = next(
+                dc for dc in dc_list if dc.content_kind == ContentKind.CODEBASE_KINDS
+            )
+            entry_points_content = [
+                dc
+                for dc in dc_list
+                if dc.content_kind == ContentKind.CODEBASE_ENTRY_POINTS
+            ]
+            print(
+                f"Found all required derived contents for CODEBASE_TAGGING task {self.task_name}"
+            )
+            return TaskResult(
+                data={
+                    "tags": {
+                        ContentKind.CODEBASE_AUDIENCES: audiences_content.content,
+                        ContentKind.CODEBASE_DOMAINS: domains_content.content,
+                        ContentKind.CODEBASE_KINDS: kinds_content.content,
+                        ContentKind.CODEBASE_ENTRY_POINTS: [
+                            ep.content for ep in entry_points_content
+                        ],
+                    }
+                },
+                serialization=SerializationMethod.JSON,
+            )
+        else:
+            return None
+
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
+        from database.db import async_engine
+        from sqlmodel.ext.asyncio.session import AsyncSession
+        from utils.db import (
+            get_node_from_version_node_id,
+        )
+
         tags = task_result.data
 
         async with database_sem:
+            node = await get_node_from_version_node_id(self.db_root_version_node_id)
             tag_tups = [
                 (
                     ContentKind.CODEBASE_AUDIENCES,
@@ -561,19 +808,16 @@ class CodebaseTaggingTask(Task):
                 for tag in dc_tags:
                     dc = DerivedContent(
                         content_kind=content_kind,
-                        node_id=self.db_root_node_id,
+                        node_id=node.id,
                         relative_path=str(self.node.root_rel_path),
                         content=None,
                         misc_metadata=tag,
                     )
                     dc_contents.append(dc)
 
-            from database.db import async_engine
-            from sqlmodel.ext.asyncio.session import AsyncSession
-
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = delete(DerivedContent).where(
-                    DerivedContent.node_id == self.db_root_node_id,
+                    DerivedContent.node_id == node.id,
                     DerivedContent.content_kind.in_(
                         [dc_slug for dc_slug, _ in tag_tups]
                     ),
@@ -592,20 +836,29 @@ class CodebaseTaggingTask(Task):
         return {"content_ids": content_ids}
 
 
+class EmbeddingTaskType(StrEnum):
+    SOURCE_CODE = "SOURCE_CODE"
+    FILE_TECH_DOC = "TECH_DOC"
+    FOLDER_TECH_DOC = "FOLDER_TECH_DOC"
+    SYMBOLS = "SYMBOLS"
+
+
 class EmbeddingTask(Task):
     def __init__(
         self,
         node: LiteNode,
         task_name: str,
+        embedding_task_type: EmbeddingTaskType,
         source_code: str | None = None,
-        db_node_id: uuid.UUID | None = None,
+        db_version_node_id: uuid.UUID | None = None,
         dependent_tasks: list[Task] | None = None,
     ) -> None:
-        if source_code and not all([source_code, db_node_id]):
+        if source_code and not all([source_code, db_version_node_id]):
             raise ValueError("If source_code is provided must also be provided")
 
         self.source_code = source_code
-        self.db_node_id = db_node_id
+        self.db_version_node_id = db_version_node_id
+        self.embedding_task_type = embedding_task_type
 
         dependent_tasks = dependent_tasks or []
         deduped_tasks = tuple(set(dependent_tasks))
@@ -627,62 +880,165 @@ class EmbeddingTask(Task):
     def work_units(self) -> int:
         return TaskWorkUnits.EMBEDDING
 
+    def load_result(self) -> TaskResult | None:
+        from database.db import Session, engine
+        from database.models import ChunkAndEmbedding, DerivedContent
+        from database.models_enums import ContentKind
+        from sqlmodel import select
+        from utils.db import sync_get_node_from_version_node_id
+
+        node = sync_get_node_from_version_node_id(self.db_version_node_id)
+        print(
+            f"Found node for EMBEDDING task {self.task_name}, checking for existing embeddings..."
+        )
+        with Session(engine) as session:
+            if self.embedding_task_type == EmbeddingTaskType.SOURCE_CODE:
+                statement = select(
+                    select(1)
+                    .select_from(ChunkAndEmbedding)
+                    .join(
+                        DerivedContent,
+                        ChunkAndEmbedding.content_id == DerivedContent.id,
+                    )
+                    .where(
+                        DerivedContent.node_id == node.id,
+                        DerivedContent.content_kind == ContentKind.CODEBASE_FILE,
+                    )
+                    .exists()
+                )
+                result = session.exec(statement).one_or_none()
+                if result:
+                    print(
+                        f"Found existing embedding for EMBEDDING task {self.task_name}"
+                    )
+                    return TaskResult(data={}, serialization=SerializationMethod.JSON)
+                else:
+                    return None
+            elif self.embedding_task_type == EmbeddingTaskType.SYMBOLS:
+                statement = select(
+                    select(1)
+                    .select_from(ChunkAndEmbedding)
+                    .join(
+                        DerivedContent,
+                        ChunkAndEmbedding.content_id == DerivedContent.id,
+                    )
+                    .where(
+                        DerivedContent.node_id == node.id,
+                        DerivedContent.content_kind == ContentKind.SYMBOL,
+                    )
+                    .exists()
+                )
+                result = session.exec(statement).one_or_none()
+                if result:
+                    print(
+                        f"Found existing embedding for EMBEDDING task {self.task_name}"
+                    )
+                    return TaskResult(data={}, serialization=SerializationMethod.JSON)
+                else:
+                    return None
+            elif self.embedding_task_type in {
+                EmbeddingTaskType.FILE_TECH_DOC,
+                EmbeddingTaskType.FOLDER_TECH_DOC,
+            }:
+                print("Looking for long description embeddings...")
+                statement = select(
+                    select(1)
+                    .select_from(ChunkAndEmbedding)
+                    .join(
+                        DerivedContent,
+                        ChunkAndEmbedding.content_id == DerivedContent.id,
+                    )
+                    .where(
+                        DerivedContent.node_id == node.id,
+                        DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
+                    )
+                    .exists()
+                )
+                result = session.exec(statement).one_or_none()
+                if result:
+                    print(
+                        f"Found existing embedding for EMBEDDING task {self.task_name}"
+                    )
+                    return TaskResult(data={}, serialization=SerializationMethod.JSON)
+                else:
+                    print(
+                        f"No existing embedding found for EMBEDDING task {self.task_name}"
+                    )
+                    return None
+        return None
+
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         from database.db import async_engine
         from database.models import ChunkAndEmbedding
         from sqlmodel.ext.asyncio.session import AsyncSession
+        from utils.db import (
+            get_all_derived_content_by_version_node_id,
+            get_source_code_derived_content,
+        )
 
-        if self.db_node_id:
+        content_ids_to_embed: list[uuid.UUID] = []
+        if self.embedding_task_type == EmbeddingTaskType.SOURCE_CODE:
             async with database_sem:
                 source_code_derived_content = await get_source_code_derived_content(
-                    self.db_node_id
+                    self.db_version_node_id
                 )
                 source_code_dc_id = source_code_derived_content.id
-        else:
-            source_code_dc_id = None
+        elif self.embedding_task_type == EmbeddingTaskType.SYMBOLS:
+            async with database_sem:
+                contents = await get_all_derived_content_by_version_node_id(
+                    version_node_id=self.db_version_node_id,
+                    content_kinds={ContentKind.SYMBOL},
+                )
+                content_ids_to_embed = [c.id for c in contents]
+        elif self.embedding_task_type in {
+            EmbeddingTaskType.FILE_TECH_DOC,
+            EmbeddingTaskType.FOLDER_TECH_DOC,
+        }:
+            async with database_sem:
+                contents = await get_all_derived_content_by_version_node_id(
+                    version_node_id=self.db_version_node_id,
+                    content_kinds={ContentKind.LONG_DESCRIPTION},
+                )
+                content_ids_to_embed = [c.id for c in contents]
 
-        content_kinds_to_embed = [
-            ContentKind.LONG_DESCRIPTION,
-            ContentKind.SYMBOL,
-        ]
+        # content_kinds_to_embed = [
+        #     ContentKind.LONG_DESCRIPTION,
+        #     ContentKind.SYMBOL,
+        # ]
         # TODO: type names are just strings now
 
-        for task, dr in dependent_io_results.items():
-            if isinstance(task, CSymbolTableTask):
-                continue
-            content_ids_to_embed = [
-                uuid.UUID(uid) for uid in dr["content_ids"]
-            ]  # TODO may not be needed
+        # content_ids_to_embed = [
+        #     uuid.UUID(uid) for uid in dr["content_ids"]
+        # ]  # TODO may not be needed
 
-            async with database_sem, AsyncSession(async_engine) as session:
-                # TODO: modify for (content_type) kind
-                contents_query = select(DerivedContent).where(
-                    DerivedContent.id.in_(content_ids_to_embed),
-                    DerivedContent.content_kind.in_(content_kinds_to_embed),
-                )
-                print(f"Querying '{task.task_name}' content to embed")
-                result = await session.exec(contents_query)
-                content_rows = result.all()
-                print(f"Queried {len(content_rows)} for '{task.task_name}'")
-                if not content_rows:
-                    continue
+        async with database_sem, AsyncSession(async_engine) as session:
+            # TODO: modify for (content_type) kind
+            contents_query = select(DerivedContent).where(
+                DerivedContent.id.in_(content_ids_to_embed),
+            )
+            print(f"Querying '{self.task_name}' content to embed")
+            result = await session.exec(contents_query)
+            content_rows = result.all()
+            print(f"Queried {len(content_rows)} for '{self.task_name}'")
+            contents = []
+            if content_rows:
                 body = [
                     (c.content, c.id, c.content_kind, c.misc_metadata)
                     for c in content_rows
                 ]
                 contents, ids, type_names, metadata = zip(*body, strict=False)
-            print(f"Chunking {len(contents)} contents for {task.task_name}")
+        print(f"Chunking {len(contents)} contents for {self.task_name}")
 
-            # Chunk, embed, and write the chunks based on source content ids
-            # TODO: modify type_names for kinds
+        # Chunk, embed, and write the chunks based on source content ids
+        # TODO: modify type_names for kinds
+        if contents:
             chunks = await self.chunk_embed_and_prep_for_db(
                 list(contents), list(ids), list(type_names), list(metadata)
             )
-            print(f"Embedded {len(chunks)} chunks for '{task.task_name}'")
+            print(f"Embedded {len(chunks)} chunks for '{self.task_name}'")
 
             async with database_sem, AsyncSession(async_engine) as session:  # noqa: SIM117
                 async with session.begin():
@@ -693,7 +1049,7 @@ class EmbeddingTask(Task):
                         await session.exec(delete_statement)
                     session.add_all(chunks)
                     await session.commit()
-            print(f"Saved {len(chunks)} for {task.task_name} to database")
+            print(f"Saved {len(chunks)} for {self.task_name} to database")
 
         # Chunk, embed, and write source code if provided
         # TODO it's super hacky to embed source code directly like this.
@@ -805,10 +1161,34 @@ class CSymbolTableTask(Task):
     def work_units(self) -> int:
         return TaskWorkUnits.SYMBOL_TABLE
 
+    def load_result(self) -> TaskResult | None:
+        import os
+
+        import boto3
+        from utils.io import download_symbol_table_from_s3_with_cache
+
+        s3_client = boto3.client(
+            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+        )
+        bucket_name = os.environ["BUCKET_NAME"]
+        try:
+            full_symbol_table = download_symbol_table_from_s3_with_cache(
+                s3_client=s3_client,
+                bucket_name=bucket_name,
+                version_id=self.version_id,
+            )
+        except Exception as e:
+            print(
+                f"Could not load existing symbol table for task {self.task_name}: {e}"
+            )
+            return None
+        return TaskResult(
+            data=full_symbol_table, serialization=SerializationMethod.PICKLE
+        )
+
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         import os
 

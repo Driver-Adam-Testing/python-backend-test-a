@@ -1072,6 +1072,7 @@ def run_codebase_connection(
                 relative_path=relative_path,
                 primary_asset_id=primary_asset_id,
                 node_id=node_id,
+                misc_metadata=file_stats,
             )
             session.add(version_node)
 
@@ -1119,6 +1120,7 @@ def run_codebase_connection(
                 relative_path=relative_path,
                 primary_asset_id=primary_asset_id,
                 node_id=node_id,
+                misc_metadata=directory_stats,
             )
             session.add(version_node)
 

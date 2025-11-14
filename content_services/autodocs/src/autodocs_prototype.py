@@ -230,7 +230,7 @@ def _get_codebase_name(path: str) -> str:
 
 
 async def update_autodocs_status(
-    page_id: str, status_kind: AutoDocStatusMessageKind, content: str
+    source_version_node_id: str, status_kind: AutoDocStatusMessageKind, content: str
 ) -> None:
     import modal
     from database.db import async_engine
@@ -241,7 +241,7 @@ async def update_autodocs_status(
 
     async with AsyncSession(async_engine) as session, session.begin():
         status_update = AutoDocStatusHistory(
-            page_node_id=page_id,
+            source_version_node_id=source_version_node_id,
             status_kind=status_kind,
             content=content,
             call_id=call_id,
@@ -250,7 +250,7 @@ async def update_autodocs_status(
         await session.commit()
 
 
-async def get_autodoc_elapsed_time(page_id: str) -> float:
+async def get_autodoc_elapsed_time(source_version_node_id: str) -> float:
     import modal
     from database.db import async_engine
     from database.models import AutoDocStatusHistory
@@ -264,7 +264,8 @@ async def get_autodoc_elapsed_time(page_id: str) -> float:
             await session.exec(
                 select(AutoDocStatusHistory)
                 .where(
-                    AutoDocStatusHistory.page_node_id == page_id,
+                    AutoDocStatusHistory.source_version_node_id
+                    == source_version_node_id,
                     AutoDocStatusHistory.call_id == call_id,
                 )
                 .order_by(AutoDocStatusHistory.created_at.asc())
@@ -412,16 +413,16 @@ def _get_derived_contents(
     version_id: str, relative_path: str, dc_kind: ContentKind
 ) -> dict[str, str]:
     from database.db import get_session
-    from database.models import DerivedContent, Node
+    from database.models import DerivedContent, VersionNode
     from sqlmodel import select
 
     with get_session() as session:
         dc_query = (
             select(DerivedContent)
-            .join(Node)
+            .join(VersionNode, DerivedContent.node_id == VersionNode.node_id)
             .where(
-                Node.version_id == version_id,
-                Node.relative_path.like(f"{relative_path}%"),
+                VersionNode.version_id == version_id,
+                VersionNode.relative_path.like(f"{relative_path}%"),
                 DerivedContent.content_kind.in_([dc_kind]),
             )
         )
@@ -453,7 +454,7 @@ def _get_source_from_s3(
 
 def _download_pdf_from_s3(version_id: str) -> str:
     from database.db import get_session
-    from database.models import Node, Version
+    from database.models import Version, VersionNode
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
 
@@ -466,14 +467,18 @@ def _download_pdf_from_s3(version_id: str) -> str:
         primary_asset_id = version.primary_asset_id
         pdf_name = version.primary_asset.display_name
         organization_id = version.primary_asset.organization_id
-        node = session.exec(select(Node).where(Node.version_id == version_id)).first()
+
+        version_node = session.exec(
+            select(VersionNode).where(VersionNode.version_id == version_id)
+        ).first()
+
     bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
     download_dir = Path(PDF_DOWNLOAD_DIR)
     download_dir.mkdir(exist_ok=True)
     local_download_path = download_dir / pdf_name
 
     s3_client = boto3.client("s3")
-    download_key = f"{primary_asset_id}/{version_id}/{node.relative_path}"
+    download_key = f"{primary_asset_id}/{version_id}/{version_node.relative_path}"
     s3_client.download_file(bucket, download_key, str(local_download_path))
 
 
@@ -1924,7 +1929,10 @@ Your output is the full content of the document with editing updates based on yo
 
     @classmethod
     async def from_cfg(
-        cls, cfg: AutoDocCfg, execution_mode: ExecutionMode, page_id: str = ""
+        cls,
+        cfg: AutoDocCfg,
+        execution_mode: ExecutionMode,
+        page_version_node_id: str = "",
     ) -> Self:
         preamble_content = (
             f"\nHere is further context about the document we are writing:\n\n{cfg.scope.preamble}"
@@ -1937,7 +1945,7 @@ Your output is the full content of the document with editing updates based on yo
         print(
             f"Configuration: {cfg.document.config_name} {cfg.document.config_version}"
         )
-        print(f"Page ID: {page_id}\n")
+        print(f"Page ID: {page_version_node_id}\n")
         match cfg.document.fmt:
             case DocKind.DEFINED_SECTIONS:
                 targets = [
@@ -2627,7 +2635,7 @@ Your output is the full content of the document with editing updates based on yo
         self,
         execution_mode: ExecutionMode,
         resume: bool = False,
-        page_id: str | None = None,
+        source_version_node_id: str | None = None,
     ) -> str:
         from shared.v3.utils.post_processing.mermaid import (
             fix_mermaid_syntax_in_response,
@@ -2739,7 +2747,7 @@ Your output is the full content of the document with editing updates based on yo
 
             if execution_mode == ExecutionMode.MODAL:
                 await update_autodocs_status(
-                    page_id=page_id,
+                    source_version_node_id=source_version_node_id,
                     status_kind=AutoDocStatusMessageKind.EVALUATING_SOURCES,
                     content="Evaluating sources for relevance...",
                 )
@@ -2763,7 +2771,7 @@ Your output is the full content of the document with editing updates based on yo
             # self.save_annotations(annotations=annotations)
             if execution_mode == ExecutionMode.MODAL:
                 await update_autodocs_status(
-                    page_id=page_id,
+                    source_version_node_id=source_version_node_id,
                     status_kind=AutoDocStatusMessageKind.GENERATING_SECTION_DRAFTS,
                     content="Generating initial section drafts...",
                 )
@@ -2855,7 +2863,7 @@ Your output is the full content of the document with editing updates based on yo
 
         if execution_mode == ExecutionMode.MODAL:
             await update_autodocs_status(
-                page_id=page_id,
+                source_version_node_id=source_version_node_id,
                 status_kind=AutoDocStatusMessageKind.OPTIMIZING_SECTION_STRUCTURE,
                 content="Optimizing content structure for each section...",
             )
@@ -2875,7 +2883,7 @@ Your output is the full content of the document with editing updates based on yo
         section_state = new_section_state
         if execution_mode == ExecutionMode.MODAL:
             await update_autodocs_status(
-                page_id=page_id,
+                source_version_node_id=source_version_node_id,
                 status_kind=AutoDocStatusMessageKind.ASSEMBLING_FINAL_DOCUMENT,
                 content="Assembling all sections into a single document...",
             )
@@ -2901,7 +2909,7 @@ Your output is the full content of the document with editing updates based on yo
 
         if execution_mode == ExecutionMode.MODAL:
             await update_autodocs_status(
-                page_id=page_id,
+                source_version_node_id=source_version_node_id,
                 status_kind=AutoDocStatusMessageKind.COPY_EDITING,
                 content="Copy editing and finalizing document...",
             )
@@ -2965,7 +2973,7 @@ async def main(args: argparse.Namespace) -> None:
         with open(args.config) as f:
             toml_content = f.read()
         doc = run_autodoc_cli.remote(
-            toml_content=toml_content, page_node_id=UUID(args.page_id)
+            toml_content=toml_content, page_version_node_id=UUID(args.page_id)
         )
         with open(args.output, "w") as f:
             f.write(doc)
@@ -3023,7 +3031,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--page-id",
-        help="page ID (required for --remote)",
+        help="page version node ID (required for --remote)",
         type=str,
     )
     parser.add_argument(

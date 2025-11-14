@@ -135,6 +135,16 @@ class DocumentSource(SQLModel, table=True):
         nullable=True,
         ondelete="CASCADE",
     )
+    source_version_node: "VersionNode" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={
+            "foreign_keys": "DocumentSource.source_version_node_id"
+        },
+    )
+    page_version_node: "VersionNode" = Relationship(
+        back_populates="page_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_version_node_id"},
+    )
 
 
 # TODO add indexes back
@@ -806,6 +816,17 @@ class VersionNode(SQLModel, table=True):
     version: "Version" = Relationship(back_populates="version_nodes")
     node: "Node" = Relationship(back_populates="version_nodes")
 
+    document_sources: list["DocumentSource"] = Relationship(
+        back_populates="source_version_node",
+        sa_relationship_kwargs={
+            "foreign_keys": "DocumentSource.source_version_node_id"
+        },
+    )
+    page_sources: list["DocumentSource"] = Relationship(
+        back_populates="page_version_node",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_version_node_id"},
+    )
+
 
 class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "node"
@@ -1034,10 +1055,17 @@ class RuntimeLlmMessage(SQLModel, table=True):
 class AutoDocStatusHistory(SQLModel, table=True):
     __tablename__ = "autodoc_status_history"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    # page_node_id will be deleted in a future migration
     page_node_id: UUID = Field(
         index=True,
-        nullable=False,
+        nullable=True,
         foreign_key="node.id",
+        ondelete="SET NULL",
+    )
+    source_version_node_id: UUID = Field(
+        index=True,
+        nullable=True,  # will be set to False in a future migration
+        foreign_key="version_node.id",
         ondelete="CASCADE",
     )
     status_kind: AutoDocStatusMessageKind = Field(

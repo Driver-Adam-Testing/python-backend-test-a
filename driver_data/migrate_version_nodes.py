@@ -6,6 +6,7 @@ from uuid import UUID
 import boto3
 from database.db import engine
 from database.models import (
+    AutoDocStatusHistory,
     DerivedContent,
     DocumentSource,
     Node,
@@ -132,6 +133,30 @@ def update_document_sources(
         doc_source.page_version_node_id = new_version_node_id
         logger.info(
             f"Updated DocumentSource {doc_source.id} page_version_node_id -> {new_version_node_id}"
+        )
+
+
+def update_autodoc_status_history(
+    session: Session, old_node_id: UUID, new_version_node_id: UUID
+) -> None:
+    """
+    Update AutoDocStatusHistory records to point to new VersionNode during deduplication.
+
+    When migrating a node, any AutoDocStatusHistory records that reference the old node
+    should be updated to point to the newly created VersionNode.
+    """
+    autodoc_records = session.exec(
+        select(AutoDocStatusHistory).where(
+            AutoDocStatusHistory.page_node_id == old_node_id
+        )
+    ).all()
+
+    logger.info(f"Found {len(autodoc_records)} AutoDocStatusHistory records to update")
+
+    for record in autodoc_records:
+        record.source_version_node_id = new_version_node_id
+        logger.info(
+            f"Updated AutoDocStatusHistory {record.id} source_version_node_id -> {new_version_node_id}"
         )
 
 
@@ -302,6 +327,9 @@ def migrate_directory_node(
         # Update DocumentSource records to point to new VersionNode
         update_document_sources(session, node.id, version_node.id)
 
+        # Update AutoDocStatusHistory records to point to new VersionNode
+        update_autodoc_status_history(session, node.id, version_node.id)
+
         # Delete old node (cascade deletes DerivedContent)
         session.delete(node)
         session.commit()
@@ -340,6 +368,9 @@ def migrate_directory_node(
         # Update DocumentSource records to point to new VersionNode
         update_document_sources(session, node.id, version_node.id)
 
+        # Update AutoDocStatusHistory records to point to new VersionNode
+        update_autodoc_status_history(session, node.id, version_node.id)
+
         # Delete old node (DerivedContent already moved, so no cascade delete)
         session.delete(node)
         session.commit()
@@ -370,6 +401,9 @@ def migrate_other_node(
 
     # Update DocumentSource records to point to new VersionNode
     update_document_sources(session, node.id, version_node.id)
+
+    # Update AutoDocStatusHistory records to point to new VersionNode
+    update_autodoc_status_history(session, node.id, version_node.id)
 
     session.commit()
 

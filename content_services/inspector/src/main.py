@@ -1098,15 +1098,15 @@ async def run_deep_context(
 
                 p_file_path.write_text(p.doc_content, encoding="utf-8")
                 n_file_path.write_text(n.doc_content, encoding="utf-8")
-        # else:
-        #     # Call the remote deep context docs function
-        #     _completed_docs = await deep_context_docs.remote.aio(
-        #         previous_version_id,
-        #         previous_version_content,
-        #         flat_topo_file_diff_dag,
-        #         current_version_id,
-        #         install_id,
-        #     )
+        else:
+            # Call the remote deep context docs function
+            _completed_docs = await deep_context_docs.remote.aio(
+                previous_version_id,
+                previous_version_content,
+                flat_topo_file_diff_dag,
+                current_version_id,
+                install_id,
+            )
         print(f"Deep context docs generation completed for version {version_id}")
     except Exception as e:
         print(f"Error while generating deep context docs for version {version_id}: {e}")

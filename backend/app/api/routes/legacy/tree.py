@@ -45,7 +45,7 @@ def get_codebase_tree(
     directories_map = {}
     files = []
 
-    for version_node, node, _, _ in results:
+    for version_node, _, _, _ in results:
         relative_path = version_node.relative_path
         # Determine if it's a directory or file
         if relative_path.endswith("/"):
@@ -56,7 +56,7 @@ def get_codebase_tree(
             name = relative_path.split("/")[-1] if relative_path else ""
 
         flat_node = FlatNode(
-            id=ID(str(node.id)),
+            id=ID(str(version_node.id)),
             name=name,
             path=relative_path,
             kind=kind,

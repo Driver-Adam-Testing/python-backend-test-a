@@ -392,6 +392,10 @@ async def inspect_db(
                 Path(db_node.relative_path): db_node.id
                 for db_node in db_all_codebase_version_nodes
             }
+            version_node_id_to_node_id = {
+                db_version_node.id: db_version_node.node_id
+                for db_version_node in db_all_codebase_version_nodes
+            }
             # changes_detected = False  # export tech docs only if changes detected
             # print("======= Nodes being processed  =======")
             # for node in sorted_nodes:
@@ -433,6 +437,7 @@ async def inspect_db(
                 run_id=run_id,
                 result_loading_config=result_loading_config,
                 rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
+                version_node_id_to_node_id=version_node_id_to_node_id,
             )
     except Exception as e:
         exception_type = type(e).__name__
@@ -529,6 +534,7 @@ async def inspect_files(
     run_id: UUID,
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
     rel_path_to_previous_version_db_node_ids: dict[Path, uuid.UUID],
+    version_node_id_to_node_id: dict[str, str],
 ) -> None:
     from utils.db import get_all_derived_content_by_version_node_id
 
@@ -571,6 +577,8 @@ async def inspect_files(
         version_id=str(version_id),
     )
     tasks.append(c_symbol_table_task)
+    node_id_to_file_task = {}
+    node_id_to_folder_task = {}
     for node, db_version_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
 
@@ -595,6 +603,19 @@ async def inspect_files(
                 }
             else:
                 previous_contents = None
+            node_id = version_node_id_to_node_id[db_version_node_id]
+            if node_id in node_id_to_folder_task:
+                folder_tech_docs_task = FolderTechDocTask(
+                    node=lite_node,
+                    task_name=f"FolderTechDoc {node.root_rel_path}",
+                    child_docs_tasks=child_doc_tasks,
+                    codebase_name=codebase_name,
+                    db_version_node_id=db_version_node_id,
+                    previous_content=previous_contents,
+                    deduped_node_task=node_id_to_folder_task[node_id],
+                )
+                tasks.append(folder_tech_docs_task)
+                continue
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
@@ -603,6 +624,7 @@ async def inspect_files(
                 db_version_node_id=db_version_node_id,
                 previous_content=previous_contents,
             )
+            node_id_to_folder_task[node_id] = folder_tech_docs_task
             folder_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (Folder) {node.root_rel_path}",
@@ -612,7 +634,23 @@ async def inspect_files(
             )
             tasks.extend([folder_tech_docs_task, folder_embedding_task])
         else:  # File
+            node_id = version_node_id_to_node_id[db_version_node_id]
             source_code = get_file_content(codebase_root / lite_node.root_rel_path)
+            if node_id in node_id_to_file_task:
+                file_tech_docs_task = FileTechDocTask(
+                    codebase_name=codebase_name,
+                    source_code=source_code,
+                    node=lite_node,
+                    task_name=f"TechDoc {node.root_rel_path}",
+                    db_version_node_id=db_version_node_id,
+                    version_id=str(version_id),
+                    symbol_table_task=c_symbol_table_task,
+                    deduped_node_task=node_id_to_file_task[node_id],
+                    thread_pool=TECH_DOC_THREAD_POOL,
+                )
+                tasks.append(file_tech_docs_task)
+                continue
+
             source_file_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding Source Code {node.root_rel_path}",
@@ -631,6 +669,7 @@ async def inspect_files(
                 symbol_table_task=c_symbol_table_task,
                 thread_pool=TECH_DOC_THREAD_POOL,
             )
+            node_id_to_file_task[node_id] = file_tech_docs_task
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (File) {node.root_rel_path}",

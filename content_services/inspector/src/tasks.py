@@ -46,16 +46,19 @@ class FolderTechDocTask(Task):
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
         db_version_node_id: uuid.UUID,  # TODO: this needs to be node_id
+        deduped_node_task: Optional["FolderTechDocTask"] = None,
         previous_content: dict[str, str] | None = None,
     ) -> None:
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
         self.db_version_node_id = db_version_node_id
         self.previous_content = previous_content
+        self.deduped_node_task = deduped_node_task
+        dependencies = [deduped_node_task] if deduped_node_task else child_docs_tasks
         super().__init__(
             task_name=task_name,
             node=node,
-            dependencies=child_docs_tasks,
+            dependencies=dependencies,
         )
 
     async def run_implementation(
@@ -63,6 +66,13 @@ class FolderTechDocTask(Task):
     ) -> TaskResult:
         # Here, we know we have results for all the child nodes, so processing can commence.
         # We only want to use the results that were successful to prevent folder docs failures due to files that failed to process
+        if self.deduped_node_task is not None:
+            # If we have a deduped node task, we can just reuse its results to pass forward
+            print(
+                f"Reusing deduped tech doc results for FOLDER_TECH_DOC task {self.task_name} from {self.deduped_node_task.task_name}"
+            )
+            deduped_result = dependent_results[self.deduped_node_task]
+            return deduped_result
         child_nodes_to_docs = {
             task.node: dr.data["docs"] for task, dr in dependent_results.items()
         }
@@ -129,6 +139,10 @@ class FolderTechDocTask(Task):
         self,
         task_result: TaskResult,
     ) -> dict[str, any]:
+        if self.deduped_node_task is not None:
+            # If we have a deduped node task, we skip post run IO since it was already done
+            return {}
+
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
         from utils.db import (
@@ -200,6 +214,7 @@ class FileTechDocTask(Task):
         db_version_node_id: uuid.UUID,
         version_id: str,
         symbol_table_task: Optional["CSymbolTableTask"],
+        deduped_node_task: Optional["FileTechDocTask"] = None,
         thread_pool: concurrent.futures.ThreadPoolExecutor | None = None,
     ) -> None:
         self.codebase_name = codebase_name
@@ -207,16 +222,31 @@ class FileTechDocTask(Task):
         self.db_version_node_id = db_version_node_id
         self.version_id = version_id
         self.symbol_table_task = symbol_table_task
+        self.deduped_node_task = deduped_node_task
         self.thread_pool = thread_pool
+
+        dependencies = []
+        if symbol_table_task:
+            dependencies.append(symbol_table_task)
+        if deduped_node_task:
+            dependencies.append(deduped_node_task)
         super().__init__(
             task_name=task_name,
             node=node,
-            dependencies=[symbol_table_task] if symbol_table_task else [],
+            dependencies=dependencies,
         )
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
     ) -> TaskResult:
+        if self.deduped_node_task is not None:
+            # If we have a deduped node task, we can just reuse its results to pass forward to FolderTechDocTask
+            print(
+                f"Reusing deduped tech doc results for FILE_TECH_DOC task {self.task_name} from {self.deduped_node_task.task_name}"
+            )
+            deduped_result = dependent_results[self.deduped_node_task]
+            return deduped_result
+
         async with tech_docs_sem:
             success, docs, node = await make_tech_doc.remote.aio(
                 node=self.node,
@@ -299,6 +329,10 @@ class FileTechDocTask(Task):
         self,
         task_result: TaskResult,
     ) -> dict[str, any]:
+        if self.deduped_node_task is not None:
+            # If we have a deduped node task, we skip post run IO since it was already done
+            return {}
+
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
         from utils.db import (
@@ -359,7 +393,7 @@ class FileTechDocTask(Task):
                     ),
                 )
                 await session.exec(dc_delete_query)
-                await session.commit()
+                # await session.commit() NOTE: this seems to be causing issues with db locks, so doing all in one commit
 
                 dc_records = [short_sent_dc, short_para_dc, long_desc_dc]
                 dc_records.extend(chunks_dc)
@@ -891,80 +925,37 @@ class EmbeddingTask(Task):
         print(
             f"Found node for EMBEDDING task {self.task_name}, checking for existing embeddings..."
         )
+        task_type_to_content_kind = {
+            EmbeddingTaskType.SOURCE_CODE: ContentKind.CODEBASE_FILE,
+            EmbeddingTaskType.SYMBOLS: ContentKind.SYMBOL,
+            EmbeddingTaskType.FILE_TECH_DOC: ContentKind.LONG_DESCRIPTION,
+            EmbeddingTaskType.FOLDER_TECH_DOC: ContentKind.LONG_DESCRIPTION,
+        }
+        content_kind = task_type_to_content_kind.get(self.embedding_task_type)
+
         with Session(engine) as session:
-            if self.embedding_task_type == EmbeddingTaskType.SOURCE_CODE:
-                statement = select(
-                    select(1)
-                    .select_from(ChunkAndEmbedding)
-                    .join(
-                        DerivedContent,
-                        ChunkAndEmbedding.content_id == DerivedContent.id,
-                    )
-                    .where(
-                        DerivedContent.node_id == node.id,
-                        DerivedContent.content_kind == ContentKind.CODEBASE_FILE,
-                    )
-                    .exists()
+            statement = select(
+                select(1)
+                .select_from(ChunkAndEmbedding)
+                .join(
+                    DerivedContent,
+                    ChunkAndEmbedding.content_id == DerivedContent.id,
                 )
-                result = session.exec(statement).one_or_none()
-                if result:
-                    print(
-                        f"Found existing embedding for EMBEDDING task {self.task_name}"
-                    )
-                    return TaskResult(data={}, serialization=SerializationMethod.JSON)
-                else:
-                    return None
-            elif self.embedding_task_type == EmbeddingTaskType.SYMBOLS:
-                statement = select(
-                    select(1)
-                    .select_from(ChunkAndEmbedding)
-                    .join(
-                        DerivedContent,
-                        ChunkAndEmbedding.content_id == DerivedContent.id,
-                    )
-                    .where(
-                        DerivedContent.node_id == node.id,
-                        DerivedContent.content_kind == ContentKind.SYMBOL,
-                    )
-                    .exists()
+                .where(
+                    DerivedContent.node_id == node.id,
+                    DerivedContent.content_kind == content_kind,
                 )
-                result = session.exec(statement).one_or_none()
-                if result:
-                    print(
-                        f"Found existing embedding for EMBEDDING task {self.task_name}"
-                    )
-                    return TaskResult(data={}, serialization=SerializationMethod.JSON)
-                else:
-                    return None
-            elif self.embedding_task_type in {
-                EmbeddingTaskType.FILE_TECH_DOC,
-                EmbeddingTaskType.FOLDER_TECH_DOC,
-            }:
-                print("Looking for long description embeddings...")
-                statement = select(
-                    select(1)
-                    .select_from(ChunkAndEmbedding)
-                    .join(
-                        DerivedContent,
-                        ChunkAndEmbedding.content_id == DerivedContent.id,
-                    )
-                    .where(
-                        DerivedContent.node_id == node.id,
-                        DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
-                    )
-                    .exists()
+                .exists()
+            )
+            result = session.exec(statement).one_or_none()
+            if result:
+                print(f"Found existing embedding for EMBEDDING task {self.task_name}")
+                return TaskResult(data={}, serialization=SerializationMethod.JSON)
+            else:
+                print(
+                    f"No existing embedding found for EMBEDDING task {self.task_name}"
                 )
-                result = session.exec(statement).one_or_none()
-                if result:
-                    print(
-                        f"Found existing embedding for EMBEDDING task {self.task_name}"
-                    )
-                    return TaskResult(data={}, serialization=SerializationMethod.JSON)
-                else:
-                    print(
-                        f"No existing embedding found for EMBEDDING task {self.task_name}"
-                    )
-                    return None
+                return None
         return None
 
     async def post_run_io(

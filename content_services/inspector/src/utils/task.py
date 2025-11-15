@@ -99,14 +99,12 @@ class TaskResultPersistence(ABC):
 
     @abstractmethod
     def save_task_result(
-        self, run_id: str, task_id: str, result: TaskResult, task: type["Task"]
+        self, run_id: str, result: TaskResult, task: type["Task"]
     ) -> None:
         pass
 
     @abstractmethod
-    def load_task_result(
-        self, run_id: str, task_id: str, task: type["Task"]
-    ) -> None | TaskResult:
+    def load_task_result(self, run_id: str, task: type["Task"]) -> None | TaskResult:
         pass
 
 
@@ -122,11 +120,11 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
         return self.base_dir / run_id
 
     def save_task_result(
-        self, run_id: str, task_id: str, result: TaskResult, task: type["Task"]
+        self, run_id: str, result: TaskResult, task: type["Task"]
     ) -> None:
         run_dir = self._get_run_dir(run_id)
         run_dir.mkdir(parents=True, exist_ok=True)
-        file_path = self._get_file_base_path(run_id, task_id)
+        file_path = self._get_file_base_path(run_id, task.hashed_stable_id)
         ext = self._extension_for_method[result.serialization]
         full_path = file_path.with_suffix(ext)
 
@@ -140,10 +138,8 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
                 f"Serialization must be either JSON or PICKLE, found {result.serialization}"
             )
 
-    def load_task_result(
-        self, run_id: str, task_id: str, task: type["Task"]
-    ) -> None | TaskResult:
-        base_path = self._get_file_base_path(run_id, task_id)
+    def load_task_result(self, run_id: str, task: type["Task"]) -> None | TaskResult:
+        base_path = self._get_file_base_path(run_id, task.hashed_stable_id)
 
         for serialization_method, ext in self._extension_for_method.items():
             file_path = base_path.with_suffix(ext)
@@ -163,14 +159,12 @@ class S3TaskResultPersistence(TaskResultPersistence):
         self.bucket_name = bucket_name
 
     def save_task_result(
-        self, run_id: str, task_id: str, result: TaskResult, task: type["Task"]
+        self, run_id: str, result: TaskResult, task: type["Task"]
     ) -> None:
         # Saving all tasks via database and existing flows
         pass
 
-    def load_task_result(
-        self, run_id: str, task_id: str, task: type["Task"]
-    ) -> None | TaskResult:
+    def load_task_result(self, run_id: str, task: type["Task"]) -> None | TaskResult:
         return task.load_result()
 
 
@@ -345,7 +339,7 @@ class TaskManager:
             with ThreadPoolExecutor(max_workers=25) as pool:
                 future_map = {
                     pool.submit(
-                        self.persistence.load_task_result, run_id, t.hashed_stable_id, t
+                        self.persistence.load_task_result, run_id, t
                     ): t.hashed_stable_id
                     for t in flattened_tasks
                 }
@@ -424,9 +418,7 @@ class TaskManager:
             ]
             await asyncio.gather(*dependent_tasks)
 
-        if self._can_skip_task(
-            task
-        ):  # TODO: this probably only works if we abandon the states other than success for a task result! Think about this.
+        if self._can_skip_task(task):
             print(f"Skipping task '{task.task_name}'...")
             result = self.task_results[task]
         else:
@@ -439,7 +431,6 @@ class TaskManager:
             )
             self.task_results[task] = result
 
-            # TODO consider dependency injection of a database session, if we are OK with that coupling!
             print(
                 f"Running post-run IO for task '{task.task_name}' since task was not skipped..."
             )
@@ -465,7 +456,6 @@ class TaskManager:
                 self.write_executor,
                 self.persistence.save_task_result,
                 run_id,
-                task_id,
                 result,
                 task,
             )

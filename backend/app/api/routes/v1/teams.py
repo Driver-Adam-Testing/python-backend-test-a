@@ -11,6 +11,7 @@ from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_org_action, enforce_team_action
 from app.schemas.team_schema import (
     CreateTeamRequest,
+    TeamDetailResponse,
     TeamResponse,
     TeamsResponse,
     UpdateTeamRequest,
@@ -105,7 +106,7 @@ def search_teams(
 
 @router.get(
     "/{team_id}",
-    response_model=TeamResponse,
+    response_model=TeamDetailResponse,
     summary="Get team by ID",
     description="Get details for a single team. User must be a member of the team.",
 )
@@ -113,7 +114,7 @@ def get_team(
     session: CurrentSession,
     user: UserToken,
     team_id: UUID,
-) -> TeamResponse:
+) -> TeamDetailResponse:
     enforce_team_action(session, user, team_id, "team.view")
     logger.info(f"User {user.user_id} getting team {team_id}")
     team_service = TeamService(session)

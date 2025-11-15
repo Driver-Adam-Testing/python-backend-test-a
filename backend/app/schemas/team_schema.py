@@ -53,6 +53,15 @@ class TeamResponse(BaseModel):
         from_attributes = True
 
 
+class TeamDetailResponse(TeamResponse):
+    """Response for team detail endpoint with user's effective role."""
+
+    effective_team_role: TeamRole = Field(
+        ...,
+        description="Current user's effective role in this team (team_admin for super admins)",
+    )
+
+
 class TeamsResponse(BaseModel):
     """Response for list of teams."""
 

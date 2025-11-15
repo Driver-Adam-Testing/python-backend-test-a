@@ -310,3 +310,22 @@ def delete_team(
 ) -> None:
     session.delete(team)
     session.commit()
+
+
+def get_user_team_role(
+    session: Session,
+    team_id: UUID,
+    user_id: str,
+    organization_id: str,
+) -> TeamRole | None:
+    """Get user's role in a specific team. Returns None if user is not a member."""
+    query = (
+        select(TeamMembership.role)
+        .join(Team, Team.id == TeamMembership.team_id)
+        .where(
+            TeamMembership.team_id == team_id,
+            TeamMembership.user_id == user_id,
+            Team.organization_id == organization_id,
+        )
+    )
+    return session.exec(query).first()

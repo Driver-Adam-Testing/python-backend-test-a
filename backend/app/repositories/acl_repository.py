@@ -550,6 +550,7 @@ def get_source_teams_with_details(
     session: Session,
     primary_asset_id: UUID,
     organization_id: str,
+    user_id: str,
     roles: list[PrimaryAssetRole] | None = None,
     search: str | None = None,
     limit: int = 30,
@@ -562,17 +563,22 @@ def get_source_teams_with_details(
         session: Database session
         primary_asset_id: Primary asset (source) ID
         organization_id: Organization ID
+        user_id: Current user's ID (to fetch their team membership role)
         roles: Optional list of roles to filter by
         search: Optional search query for team name
         limit: Maximum number of results
         offset: Number of results to skip
 
     Returns:
-        List of dictionaries with 'grant', 'asset', 'kind', and 'member' (Team) keys
+        List of dictionaries with 'grant', 'asset', 'kind', 'member' (Team), and 'user_team_role' keys
     """
     query = (
-        select(PrimaryAssetRoleGrant, Team)
+        select(PrimaryAssetRoleGrant, Team, TeamMembership.role)
         .join(Team, PrimaryAssetRoleGrant.team_id == Team.id)
+        .outerjoin(
+            TeamMembership,
+            (TeamMembership.team_id == Team.id) & (TeamMembership.user_id == user_id),
+        )
         .where(
             PrimaryAssetRoleGrant.primary_asset_id == primary_asset_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
@@ -594,8 +600,14 @@ def get_source_teams_with_details(
         select(PrimaryAsset).where(PrimaryAsset.id == primary_asset_id)
     ).first()
     return [
-        {"grant": grant, "asset": asset, "kind": "team", "member": team}
-        for grant, team in results
+        {
+            "grant": grant,
+            "asset": asset,
+            "kind": "team",
+            "member": team,
+            "user_team_role": user_team_role,
+        }
+        for grant, team, user_team_role in results
     ]
 
 

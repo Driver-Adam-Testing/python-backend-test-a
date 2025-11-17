@@ -1084,3 +1084,157 @@ class TestGetSourceUsersEffectiveAccess:
             offset=0,
         )
         assert result_member.total == 0
+
+
+@pytest.mark.integration
+class TestGetSourceTeamsEffectiveRole:
+    """Test that get_source_teams returns the user's effective role on each team."""
+
+    def test_get_source_teams_effective_role_scenarios(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test effective_team_role for various scenarios in a single test.
+
+        Scenarios:
+        1. User is team_member on Team A → effective_team_role = team_member
+        2. User is team_admin on Team B → effective_team_role = team_admin
+        3. User is NOT a member of Team C → effective_team_role = None
+        4. Super admin (not on any teams) → effective_team_role = team_admin for all teams
+        5. Super admin who IS a team_member on Team D → effective_team_role = team_admin (overrides member)
+        """
+        org_id = "test-org-id"
+        service = SourceAccessService(integration_db_session)
+        from database.models_enums import TeamRole
+
+        # Create source
+        source = PrimaryAssetFactory.create(integration_db_session)
+
+        # Create regular user
+        regular_user = Auth0UserFactory.create(
+            integration_db_session, organization_id=org_id
+        )
+
+        # Scenario 1: Team A with regular_user as team_member
+        team_a = TeamFactory.create(integration_db_session, name="Team A Member")
+        TeamMembershipFactory.create(
+            integration_db_session,
+            team_id=team_a.id,
+            user_id=regular_user.id,
+            role=TeamRole.team_member,
+        )
+
+        # Scenario 2: Team B with regular_user as team_admin
+        team_b = TeamFactory.create(integration_db_session, name="Team B Admin")
+        TeamMembershipFactory.create(
+            integration_db_session,
+            team_id=team_b.id,
+            user_id=regular_user.id,
+            role=TeamRole.team_admin,
+        )
+
+        # Scenario 3: Team C without regular_user
+        team_c = TeamFactory.create(integration_db_session, name="Team C Not Member")
+
+        # Grant all teams access to source
+        mock_admin = create_mock_user(org_id)
+        for team in [team_a, team_b, team_c]:
+            service.add_team_sources(
+                user=mock_admin,
+                team_id=team.id,
+                request=AddTeamSourcesRequest(
+                    sources=[
+                        TeamSourceInput(source_id=str(source.id), role="asset_admin")
+                    ]
+                ),
+            )
+
+        # Test as regular user
+        mock_regular_user = create_mock_user(org_id, regular_user.id)
+        result_regular = service.get_source_teams(
+            user=mock_regular_user,
+            source_id=source.id,
+            limit=10,
+            offset=0,
+        )
+
+        assert result_regular.total == 3
+        team_map = {t.team_name: t for t in result_regular.teams}
+
+        # Verify Scenario 1: team_member
+        assert team_map["Team A Member"].effective_team_role == TeamRole.team_member
+
+        # Verify Scenario 2: team_admin
+        assert team_map["Team B Admin"].effective_team_role == TeamRole.team_admin
+
+        # Verify Scenario 3: None (not a member)
+        assert team_map["Team C Not Member"].effective_team_role is None
+
+        # Scenario 4 & 5: Create super admin
+        from database.models import OrgMembership
+
+        super_admin = Auth0UserFactory.create(
+            integration_db_session, organization_id=org_id
+        )
+
+        # Scenario 5: Team D with super_admin as team_member (should still show team_admin)
+        team_d = TeamFactory.create(integration_db_session, name="Team D Super Member")
+        TeamMembershipFactory.create(
+            integration_db_session,
+            team_id=team_d.id,
+            user_id=super_admin.id,
+            role=TeamRole.team_member,
+        )
+        service.add_team_sources(
+            user=mock_admin,
+            team_id=team_d.id,
+            request=AddTeamSourcesRequest(
+                sources=[TeamSourceInput(source_id=str(source.id), role="asset_admin")]
+            ),
+        )
+
+        # Make user a super admin
+        org_membership = integration_db_session.exec(
+            select(OrgMembership).where(
+                OrgMembership.user_id == super_admin.id,
+                OrgMembership.org_id == org_id,
+            )
+        ).first()
+        if org_membership:
+            org_membership.role = OrgRole.org_super_admin
+            integration_db_session.add(org_membership)
+            integration_db_session.commit()
+        else:
+            org_membership = OrgMembership(
+                user_id=super_admin.id, org_id=org_id, role=OrgRole.org_super_admin
+            )
+            integration_db_session.add(org_membership)
+            integration_db_session.commit()
+
+        # Test as super admin
+        mock_super_admin = create_mock_user(org_id, super_admin.id)
+        result_super = service.get_source_teams(
+            user=mock_super_admin,
+            source_id=source.id,
+            limit=10,
+            offset=0,
+        )
+
+        assert result_super.total == 4
+        super_team_map = {t.team_name: t for t in result_super.teams}
+
+        # Verify Scenario 4: Super admin gets team_admin for all teams (even ones they're not on)
+        assert (
+            super_team_map["Team A Member"].effective_team_role == TeamRole.team_admin
+        )
+        assert super_team_map["Team B Admin"].effective_team_role == TeamRole.team_admin
+        assert (
+            super_team_map["Team C Not Member"].effective_team_role
+            == TeamRole.team_admin
+        )
+
+        # Verify Scenario 5: Super admin overrides team_member to team_admin
+        assert (
+            super_team_map["Team D Super Member"].effective_team_role
+            == TeamRole.team_admin
+        )

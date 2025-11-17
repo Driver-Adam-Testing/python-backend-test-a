@@ -474,8 +474,7 @@ class SourceAccessService:
                 asset_org_role=data["asset_org_role"],
                 team_source_role=data["team_source_role"],
                 effective_role=data["effective_role"],
-                # Existing fields (for backward compatibility)
-                source_role=data["effective_role"],
+                source_role=data["user_grant_role"],
                 assignment_type=data["assignment_type"],
                 teams=[
                     TeamMembershipInfo(**team_data)

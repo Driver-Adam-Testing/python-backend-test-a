@@ -221,11 +221,9 @@ class SourceUserResponse(BaseModel):
         None,
         description="Final effective role after hierarchy resolution (highest of all grants)",
     )
-
-    # Existing fields - kept for backward compatibility
-    source_role: PrimaryAssetRole = Field(
-        ...,
-        description="User's effective role on this source (from direct grant or team grant)",
+    source_role: PrimaryAssetRole | None = Field(
+        None,
+        description="Role directly granted to the user on this source (None if no direct grant)",
     )
     assignment_type: AssignmentType = Field(
         ...,

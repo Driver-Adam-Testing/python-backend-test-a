@@ -554,12 +554,16 @@ class TestGetSourceUsersEffectiveAccess:
 
         # Step 8: Verify user A has direct access
         assert user_a_result.assignment_type == "direct"
-        assert user_a_result.source_role == PrimaryAssetRole.asset_member
+        assert (
+            user_a_result.source_role == PrimaryAssetRole.asset_member
+        )  # Direct grant
+        assert user_a_result.effective_role == PrimaryAssetRole.asset_member
         assert user_a_result.name == "User A"
 
         # Step 9: Verify user B has inherited access (via team)
         assert user_b_result.assignment_type == "inherited"
-        assert user_b_result.source_role == PrimaryAssetRole.asset_admin
+        assert user_b_result.source_role is None  # No direct grant
+        assert user_b_result.effective_role == PrimaryAssetRole.asset_admin  # From team
         assert user_b_result.name == "User B"
         # Verify user B's team membership is shown with source_role
         assert len(user_b_result.teams) == 1
@@ -630,7 +634,10 @@ class TestGetSourceUsersEffectiveAccess:
         user_result = result.users[0]
         assert user_result.user_id == user.id
         assert user_result.assignment_type == "direct"
-        assert user_result.source_role == PrimaryAssetRole.asset_admin
+        assert user_result.source_role == PrimaryAssetRole.asset_admin  # Direct grant
+        assert (
+            user_result.effective_role == PrimaryAssetRole.asset_admin
+        )  # Same as direct
         # User should still see their team membership
         assert len(user_result.teams) == 1
         assert user_result.teams[0].team_id == team.id
@@ -689,7 +696,7 @@ class TestGetSourceUsersEffectiveAccess:
             ),
         )
 
-        # Step 4: Filter by admin role
+        # Step 4: Filter by admin role (effective_role)
         result_admin = service.get_source_users(
             user=mock_user,
             source_id=source.id,
@@ -699,9 +706,12 @@ class TestGetSourceUsersEffectiveAccess:
         )
         assert result_admin.total == 1
         assert result_admin.users[0].user_id == user_a.id
-        assert result_admin.users[0].source_role == PrimaryAssetRole.asset_admin
+        assert result_admin.users[0].effective_role == PrimaryAssetRole.asset_admin
+        assert (
+            result_admin.users[0].source_role == PrimaryAssetRole.asset_admin
+        )  # Direct grant
 
-        # Step 6: Filter by member role
+        # Step 6: Filter by member role (effective_role)
         result_member = service.get_source_users(
             user=mock_user,
             source_id=source.id,
@@ -711,7 +721,10 @@ class TestGetSourceUsersEffectiveAccess:
         )
         assert result_member.total == 1
         assert result_member.users[0].user_id == user_b.id
-        assert result_member.users[0].source_role == PrimaryAssetRole.asset_member
+        assert result_member.users[0].effective_role == PrimaryAssetRole.asset_member
+        assert (
+            result_member.users[0].source_role is None
+        )  # No direct grant (team-based)
 
     def test_get_source_users_filters_by_assignment_type(
         self, integration_db_session: Session

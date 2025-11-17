@@ -131,6 +131,7 @@ class TestTeamSourceAccessPropagation:
         assert len(team_sources.sources) == 1
         assert team_sources.sources[0].id == str(source.id)
         assert team_sources.sources[0].role == "asset_admin"
+        assert team_sources.sources[0].visibility == "private"  # No org/public grants
 
         # Step 6: Query source teams (teams with access to the source)
         source_teams = service.get_source_teams(
@@ -185,6 +186,84 @@ class TestTeamSourceAccessPropagation:
             )
         ).first()
         assert grant_after is None
+
+    def test_team_sources_returns_correct_visibility(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that get_team_sources returns correct visibility for each source.
+
+        Steps:
+        1. Create team
+        2. Create 3 sources with different visibility:
+           - Source A: private (team grant only)
+           - Source B: internal (team grant + org grant)
+           - Source C: public (team grant + public grant)
+        3. Add all sources to team
+        4. Query team sources
+        5. Verify each source has correct visibility
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        team = TeamFactory.create(integration_db_session, name="Test Team")
+
+        source_private = PrimaryAssetFactory.create(
+            integration_db_session, display_name="Private Source"
+        )
+        source_internal = PrimaryAssetFactory.create(
+            integration_db_session, display_name="Internal Source"
+        )
+        source_public = PrimaryAssetFactory.create(
+            integration_db_session, display_name="Public Source"
+        )
+
+        for source in [source_private, source_internal, source_public]:
+            PrimaryAssetRoleGrantFactory.create(
+                integration_db_session,
+                primary_asset_id=source.id,
+                principal_kind=PrincipalKind.team,
+                team_id=team.id,
+                role=PrimaryAssetRole.asset_member,
+                organization_id=org_id,
+            )
+
+        # Add org grant to make source_internal internal
+        PrimaryAssetRoleGrantFactory.create(
+            integration_db_session,
+            primary_asset_id=source_internal.id,
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+            organization_id=org_id,
+        )
+
+        # Add public grant to make source_public public
+        PrimaryAssetRoleGrantFactory.create(
+            integration_db_session,
+            primary_asset_id=source_public.id,
+            principal_kind=PrincipalKind.public,
+            role=PrimaryAssetRole.asset_member,
+            organization_id=org_id,
+        )
+
+        team_sources = service.get_team_sources(
+            user=mock_user, team_id=team.id, limit=10, offset=0
+        )
+
+        assert team_sources.total == 3
+        assert len(team_sources.sources) == 3
+
+        sources_by_id = {s.id: s for s in team_sources.sources}
+
+        assert str(source_private.id) in sources_by_id
+        assert sources_by_id[str(source_private.id)].visibility == "private"
+
+        assert str(source_internal.id) in sources_by_id
+        assert sources_by_id[str(source_internal.id)].visibility == "internal"
+
+        assert str(source_public.id) in sources_by_id
+        assert sources_by_id[str(source_public.id)].visibility == "public"
 
 
 @pytest.mark.integration

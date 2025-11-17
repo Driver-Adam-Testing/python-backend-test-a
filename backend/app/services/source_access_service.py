@@ -24,6 +24,7 @@ from app.schemas.source_access_schema import (
     SourceUserInput,
     SourceUserResponse,
     SourceUsersResponse,
+    SourceVisibility,
     TeamMembershipInfo,
     TeamSourceInput,
     TeamSourceResponse,
@@ -38,19 +39,8 @@ logger = logging.getLogger(__name__)
 
 
 def grant_to_team_source_response(
-    grant: PrimaryAssetRoleGrant, asset: PrimaryAsset
+    grant: PrimaryAssetRoleGrant, asset: PrimaryAsset, visibility: SourceVisibility
 ) -> TeamSourceResponse:
-    """
-    Convert grant and asset to TeamSourceResponse.
-
-    Args:
-        grant: PrimaryAssetRoleGrant instance
-        asset: PrimaryAsset instance
-
-    Returns:
-        TeamSourceResponse object
-    """
-    # Compute is_browsable from most_recent_version
     is_browsable = (
         asset.most_recent_version.browsable if asset.most_recent_version else False
     )
@@ -64,7 +54,7 @@ def grant_to_team_source_response(
         created_at=asset.created_at.isoformat() if asset.created_at else "",
         updated_at=asset.updated_at.isoformat() if asset.updated_at else "",
         role=grant.role,
-        visibility="private",  # TODO: Use actual visibility when field is added
+        visibility=visibility,
         team_id=grant.team_id,
         is_browsable=is_browsable,
     )
@@ -180,7 +170,9 @@ class SourceAccessService:
         )
 
         sources = [
-            grant_to_team_source_response(item["grant"], item["asset"])
+            grant_to_team_source_response(
+                item["grant"], item["asset"], item["visibility"]
+            )
             for item in sources_with_details
         ]
 

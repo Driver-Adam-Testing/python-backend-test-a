@@ -4,12 +4,13 @@ import logging
 from uuid import UUID
 
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Team
-from database.models_enums import PrimaryAssetRole, PrincipalKind
+from database.models_enums import PrimaryAssetRole, PrincipalKind, TeamRole
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from app.auth.models import User
+from app.authorization.helpers import is_super_admin
 from app.repositories import acl_repository, team_member_repository, team_repository
 from app.schemas.source_access_schema import (
     AddSourceTeamsRequest,
@@ -75,18 +76,22 @@ def build_source_team_response(
     grant: PrimaryAssetRoleGrant,
     team: Team,
     organization_id: str,
+    user_team_role: TeamRole | None,
+    is_user_super_admin: bool,
 ) -> SourceTeamResponse:
     """
-    Build SourceTeamResponse with team information.
+    Build SourceTeamResponse with team information and user's effective role.
 
     Args:
         session: Database session for fetching additional data
         grant: PrimaryAssetRoleGrant instance
         team: Team instance
         organization_id: Organization ID
+        user_team_role: User's role in the team (pre-fetched, None if not a member)
+        is_user_super_admin: Whether current user is a super admin
 
     Returns:
-        SourceTeamResponse object with team details
+        SourceTeamResponse object with team details and effective role
     """
     member_count = team_member_repository.count_team_members(
         session=session,
@@ -94,12 +99,15 @@ def build_source_team_response(
         organization_id=organization_id,
     )
 
+    effective_team_role = TeamRole.team_admin if is_user_super_admin else user_team_role
+
     return SourceTeamResponse(
         team_id=team.id,
         team_name=team.name,
         role=grant.role,
         member_count=member_count,
         created_at=grant.created_at.isoformat() if grant.created_at else "",
+        effective_team_role=effective_team_role,
     )
 
 
@@ -514,8 +522,9 @@ class SourceAccessService:
             HTTPException: If source not found
         """
         organization_id = user.organization_id
+        user_id = user.user_id
         logger.info(
-            f"Getting teams for source {source_id} by user {user.user_id} (roles={roles}, search={search})"
+            f"Getting teams for source {source_id} by user {user_id} (roles={roles}, search={search})"
         )
 
         # Verify source exists
@@ -532,10 +541,13 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
+        is_user_super_admin = is_super_admin(self.session, user_id, organization_id)
+
         teams_with_details = acl_repository.get_source_teams_with_details(
             session=self.session,
             primary_asset_id=source_id,
             organization_id=organization_id,
+            user_id=user_id,
             roles=roles,
             search=search,
             limit=limit,
@@ -556,6 +568,8 @@ class SourceAccessService:
                 grant=item["grant"],
                 team=item["member"],
                 organization_id=organization_id,
+                user_team_role=item["user_team_role"],
+                is_user_super_admin=is_user_super_admin,
             )
             for item in teams_with_details
         ]

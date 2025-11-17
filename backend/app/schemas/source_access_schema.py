@@ -165,6 +165,10 @@ class SourceTeamResponse(BaseModel):
     role: PrimaryAssetRole = Field(..., description="Team's role for this source")
     member_count: int = Field(..., description="Number of users in the team")
     created_at: str = Field(..., description="ISO datetime when access was granted")
+    effective_team_role: TeamRole | None = Field(
+        ...,
+        description="Current user's effective role in this team (team_admin for super admins, actual role for members, None if not a member)",
+    )
 
     class Config:
         from_attributes = True

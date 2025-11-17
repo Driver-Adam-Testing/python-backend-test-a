@@ -40,13 +40,17 @@ class PipelineRequest(BaseModel, ABC):
     ) -> None:
         super().__init__(**data)
         if node_ids is not None:
-            self._datasource = DataSource.from_node_ids(node_ids, organization_id)
+            self._datasource = DataSource.from_node_ids(
+                node_ids, organization_id, user_id
+            )
         elif relative_paths is not None:
             self._datasource = DataSource.from_relative_paths(
-                relative_paths, organization_id
+                relative_paths, organization_id, user_id
             )
         elif page_node_id is not None:
-            self._datasource = DataSource.from_page_id(page_node_id, organization_id)
+            self._datasource = DataSource.from_page_id(
+                page_node_id, organization_id, user_id
+            )
         else:
             self._datasource = None
 
@@ -63,6 +67,7 @@ class PipelineRequest(BaseModel, ABC):
                         self._datasource = DataSource.from_node_ids(
                             json.loads(self._llm_session.source_node_ids_str),
                             self._llm_session.organization_id,
+                            self._llm_session.user_id,
                         )
                     self._datasource_changed_since_llm_session = (
                         json.dumps(self._datasource.node_ids, cls=UUIDEncoder)
@@ -98,6 +103,7 @@ class PipelineRequest(BaseModel, ABC):
             self._datasource = DataSource.from_node_ids(
                 self.node_ids,
                 organization_id=self.organization_id,
+                user_id=self.user_id,
             )
         return self._datasource
 

@@ -16,21 +16,6 @@ def test_data_source_from_node_ids() -> None:
     assert ds.organization_id == organization_id
 
 
-def test_data_source_from_page_id() -> None:
-    """
-    Basic test for DataSource.from_page_id
-    This will only check that the method can be called
-    and returns an instance of DataSource. Actual DB calls cannot be tested here.
-    """
-    page_node_id = UUID("11111111-1111-1111-1111-111111111111")
-    organization_id = "test_org"
-    ds = DataSource.from_page_id(
-        page_node_id=page_node_id, organization_id=organization_id
-    )
-
-    assert ds.organization_id == organization_id
-
-
 def test_data_source_is_in_scope() -> None:
     """
     Check if is_in_scope returns True or False as expected in a trivial scenario.

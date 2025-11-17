@@ -8,11 +8,11 @@ from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
 from database.models import User as DbUser
 from database.models_enums import TeamRole
 from fastapi import HTTPException, status
+from shared.authorization.helpers import is_super_admin
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.auth.models import User
-from app.authorization.helpers import is_super_admin
 from app.repositories import org_membership_repository, team_repository
 from app.schemas.team_schema import (
     CreateTeamRequest,

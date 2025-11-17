@@ -35,7 +35,9 @@ class ChangelogTool(LlmTool):
     def _execute(self) -> None:
         try:
             changelog = get_changelog(
-                self.datasource.organization_id, self.codebase_name
+                self.datasource.organization_id,
+                self.codebase_name,
+                self.datasource.user_id,
             )
         except ToolUseError as e:
             self._error_message = e.agent_message

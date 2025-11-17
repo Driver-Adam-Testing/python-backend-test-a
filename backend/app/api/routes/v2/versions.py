@@ -1,5 +1,9 @@
 from database.models import PrimaryAsset, Version
 from fastapi import Request
+from shared.authorization.query_filters import (
+    exclude_page_assets_filter,
+    primary_asset_grant_filter,
+)
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
@@ -15,10 +19,6 @@ from app.api.routes.v2.schemas import (
     VersionDetailRead,
 )
 from app.api.session import CurrentSession
-from app.authorization.query_filters import (
-    exclude_page_assets_filter,
-    primary_asset_grant_filter,
-)
 
 
 @router.get("/versions", response_model=ListWithCount[VersionDetailRead])

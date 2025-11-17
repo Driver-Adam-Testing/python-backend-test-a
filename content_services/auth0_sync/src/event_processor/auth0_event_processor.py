@@ -168,7 +168,7 @@ def _handle_user_event(event: Auth0EventBridgeEvent) -> list[str]:
 
 def _process_user_update(user_id: str) -> list[str]:
     """Process a user update by fetching fresh data from Auth0."""
-    print(f"Processing user update: {user_id}")
+    logger.debug(f"Processing user update: {user_id}")
     try:
         user_data = auth0_service.get_user_profile(user_id)
     except requests.exceptions.HTTPError as e:
@@ -381,12 +381,13 @@ def _handle_api_event(event: Auth0EventBridgeEvent) -> list[str]:
             if normalized_user_id:
                 return _process_membership_change(normalized_user_id, org_id)
 
-    elif path.startswith("/api/v2/users/") and event.detail.data.user_id:
-        normalized_user_id = normalize_auth0_user_id(event.detail.data.user_id)
+    elif path.startswith("/api/v2/users/"):
+        user_id_from_path = _extract_user_from_path(path)
+        normalized_user_id = normalize_auth0_user_id(user_id_from_path)
         if request["method"] == "delete":
             logger.info("Detected user deletion event")
             return _handle_user_delete_event(event)
-        print(f"normalized_user_id:{normalized_user_id}")
+        logger.debug(f"Processing user update for: {normalized_user_id}")
         if normalized_user_id:
             return _process_user_update(normalized_user_id)
 

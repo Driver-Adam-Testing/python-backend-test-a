@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from app.authorization.query_filters import asset_visibility_expr
 from app.schemas.user_schema import AssignmentType
 from database.models import (
     OrgMembership,
@@ -92,12 +93,19 @@ def get_team_sources_with_details(
         offset: Number of results to skip
 
     Returns:
-        List of dictionaries with 'grant' and 'asset' keys
+        List of dictionaries with 'grant', 'asset', and 'visibility' keys
     """
+    visibility_expr, org_grant_sub, public_grant_sub = asset_visibility_expr(
+        organization_id, PrimaryAsset.id
+    )
 
     query = (
-        select(PrimaryAssetRoleGrant, PrimaryAsset)
+        select(PrimaryAssetRoleGrant, PrimaryAsset, visibility_expr.label("visibility"))
         .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        .outerjoin(org_grant_sub, PrimaryAsset.id == org_grant_sub.c.primary_asset_id)
+        .outerjoin(
+            public_grant_sub, PrimaryAsset.id == public_grant_sub.c.primary_asset_id
+        )
         .options(selectinload(PrimaryAsset.most_recent_version))
         .where(
             PrimaryAssetRoleGrant.team_id == team_id,
@@ -105,13 +113,9 @@ def get_team_sources_with_details(
         )
     )
 
-    # Filter by roles
     if roles:
         query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
-    # TODO: Add visibility filtering once visibility field is added to PrimaryAssetRoleGrant
-
-    # Search by display name
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
 
@@ -119,7 +123,10 @@ def get_team_sources_with_details(
 
     results = session.exec(query).all()
 
-    return [{"grant": grant, "asset": asset} for grant, asset in results]
+    return [
+        {"grant": grant, "asset": asset, "visibility": visibility}
+        for grant, asset, visibility in results
+    ]
 
 
 def count_team_sources(

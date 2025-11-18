@@ -30,7 +30,8 @@ import os
 from collections import defaultdict
 
 from database.db import async_engine
-from database.models import OrgMembership, OrgRole
+from database.models import OrgMembership
+from database.models_enums import OrgRole
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from shared.auth0.auth0_async import AsyncAuth0Service
@@ -48,7 +49,7 @@ async def fetch_org_memberships_from_db(
     return (await result).scalars().all()
 
 
-AUTH0_TO_ORG_ROLE = {"Admin": OrgRole.super_admin, "Editor": OrgRole.member}
+AUTH0_TO_ORG_ROLE = {"Admin": OrgRole.org_super_admin, "Editor": OrgRole.org_member}
 
 
 def _determine_role(auth0_roles: list[dict]) -> OrgRole:
@@ -58,7 +59,7 @@ def _determine_role(auth0_roles: list[dict]) -> OrgRole:
     ]
 
     if not mapped_roles:
-        return OrgRole.member  # Default
+        return OrgRole.org_member  # Default
 
     # Priority: Admin > Editor
     admin_role = next(
@@ -69,7 +70,7 @@ def _determine_role(auth0_roles: list[dict]) -> OrgRole:
         (AUTH0_TO_ORG_ROLE[r["name"]] for r in mapped_roles if r["name"] == "Editor"),
         None,
     )
-    return admin_role or editor_role or OrgRole.member
+    return admin_role or editor_role or OrgRole.org_member
 
 
 def print_summary(stats: dict, dry_run: bool) -> None:

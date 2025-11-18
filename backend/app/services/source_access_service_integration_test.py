@@ -289,6 +289,64 @@ class TestTeamSourceAccessPropagation:
             == PrimaryAssetRole.asset_member
         )
 
+    def test_team_sources_effective_role_respects_direct_grants(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that effective_role shows the highest role when user has both
+        direct and team-based access to a source.
+
+        Scenario:
+        - User has direct asset_admin grant on source
+        - Team has asset_member grant on same source
+        - effective_role should be asset_admin (not asset_member)
+        """
+        org_id = "test-org-id"
+        db_user = Auth0UserFactory.create(
+            integration_db_session, organization_id=org_id
+        )
+        mock_user = create_mock_user(org_id, user_id=db_user.id)
+        service = SourceAccessService(integration_db_session)
+
+        team = TeamFactory.create(integration_db_session, name="Test Team")
+        TeamMembershipFactory.create(
+            integration_db_session,
+            team_id=team.id,
+            user_id=db_user.id,
+        )
+
+        source = PrimaryAssetFactory.create(
+            integration_db_session, display_name="Test Source"
+        )
+
+        # Team has member access
+        PrimaryAssetRoleGrantFactory.create(
+            integration_db_session,
+            primary_asset_id=source.id,
+            principal_kind=PrincipalKind.team,
+            team_id=team.id,
+            role=PrimaryAssetRole.asset_member,
+            organization_id=org_id,
+        )
+
+        # User has direct admin access
+        PrimaryAssetRoleGrantFactory.create(
+            integration_db_session,
+            primary_asset_id=source.id,
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+            organization_id=org_id,
+        )
+
+        team_sources = service.get_team_sources(
+            user=mock_user, team_id=team.id, limit=10, offset=0
+        )
+
+        assert len(team_sources.sources) == 1
+        # User's direct admin grant should take precedence over team member grant
+        assert team_sources.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
 
 @pytest.mark.integration
 class TestUserDirectVsTeamAccess:

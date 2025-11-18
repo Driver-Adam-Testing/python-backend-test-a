@@ -157,20 +157,40 @@ def get_user_effective_roles_for_assets_batch(
     is_member = is_org_member(session, user_id, organization_id)
     grant_condition = build_grant_condition(user_id, team_ids, is_member)
 
-    # Use func.max to get highest role per asset (asset_admin > asset_member)
-    # This is equivalent to effective_asset_role_expr but batched
-    query = (
+    # Map roles to priority - same approach as _build_source_users_base_ctes
+    # Cannot use func.max directly on enum strings as lexicographic comparison
+    # would incorrectly rank "asset_member" > "asset_admin"
+    role_priority = case(
+        (PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_admin, 2),
+        (PrimaryAssetRoleGrant.role == PrimaryAssetRole.asset_member, 1),
+        else_=0,
+    )
+
+    # Use ROW_NUMBER to rank grants per asset by role priority
+    ranked_grants = (
         select(
             PrimaryAssetRoleGrant.primary_asset_id,
-            func.max(PrimaryAssetRoleGrant.role).label("max_role"),
+            PrimaryAssetRoleGrant.role,
+            func.row_number()
+            .over(
+                partition_by=PrimaryAssetRoleGrant.primary_asset_id,
+                order_by=role_priority.desc(),
+            )
+            .label("rn"),
         )
         .where(
             PrimaryAssetRoleGrant.primary_asset_id.in_(asset_ids),
             PrimaryAssetRoleGrant.organization_id == organization_id,
             grant_condition,
         )
-        .group_by(PrimaryAssetRoleGrant.primary_asset_id)
+        .subquery("ranked_grants")
     )
+
+    # Take only the top-ranked role per asset (rn=1)
+    query = select(
+        ranked_grants.c.primary_asset_id,
+        ranked_grants.c.role,
+    ).where(ranked_grants.c.rn == 1)
 
     results = session.exec(query).all()
     asset_roles = {asset_id: role for asset_id, role in results}  # noqa: C416

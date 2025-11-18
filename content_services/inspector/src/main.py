@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 import modal
+from deep_context_docs import deep_context_docs
 from onboarding.onboard import connect_unconnected_repos
 
 inspection_image = (
@@ -172,8 +173,9 @@ async def inspect_db(
     import tempfile
 
     import boto3
+    from database.models_enums import ContentKind, VersionStatus
     from database.models_enums import NodeKind as DbNodeKind
-    from database.models_enums import VersionStatus
+    from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
         set_codebase_status,
@@ -181,6 +183,7 @@ async def inspect_db(
     )
     from utils.db import (
         create_inspector_run,
+        get_all_derived_content_by_version_node_id,
         get_analyzable_version_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
@@ -193,6 +196,7 @@ async def inspect_db(
     from utils.io import (
         download_all_source_files_in_parallel,
     )
+    from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
 
     try:
         # Get the Version and check if it has previous_version_id
@@ -202,6 +206,9 @@ async def inspect_db(
 
         previous_version = await try_get_prev_version(version_id)
         previous_version_id = previous_version.id if previous_version else None
+        previous_version_root_version_node_id = (
+            previous_version.root_version_node.id if previous_version else None
+        )
         flat_topo_file_diff_dag = None
 
         codebase_name = version.primary_asset.display_name
@@ -382,11 +389,7 @@ async def inspect_db(
                     )
                     # I chose to return here vs re-raising the error because it will get caught and swalloed by the outer try/catch
                     return
-            # if previous_version is not None:
-            #     sorted_nodes = diff_dag.topological_sort()
-            # else:
-            #     sorted_nodes = codebase_dag.topological_sort()
-            #     db_all_codebase_prev_version_nodes = None
+
             sorted_nodes = codebase_dag.topological_sort()
             path_to_db_node_id = {
                 Path(db_node.relative_path): db_node.id
@@ -396,20 +399,6 @@ async def inspect_db(
                 db_version_node.id: db_version_node.node_id
                 for db_version_node in db_all_codebase_version_nodes
             }
-            # changes_detected = False  # export tech docs only if changes detected
-            # print("======= Nodes being processed  =======")
-            # for node in sorted_nodes:
-            #     if not changes_detected and node.status != NodeStatus.UNMODIFIED:
-            #         changes_detected = True
-            #     print(node.root_rel_path, node.status, node.kind)
-
-            # if previous_version is not None and not changes_detected:
-            #     # Delete the version and return
-            #     await delete_version_by_id(version_id)
-            #     print(
-            #         f"No modified nodes found for version {version_id}. Deleting version."
-            #     )
-            #     return
 
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])
@@ -456,51 +445,46 @@ async def inspect_db(
         # architecture, then uncomment the following line to represent completion of
         # stage 1.
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
-        # TODO: figure out export with this
-        # if previous_version is None or changes_detected:
-        #     print("Changes detected exporting tech docs to zip...")
-        #     export_tech_docs_to_zip.remote(version_id, install_id)
-        # else:
-        #     print("No changes detected skipping tech doc export.")
+        print("Changes detected exporting tech docs to zip...")
+        export_tech_docs_to_zip.remote(version_id, install_id)
 
-        # TODO: re-enable deep context docs generation
-        # print("Spawning off deep context docs generation...")
-        # # TODO: do deep context doc specific I/O or further analysis.
+        print("Spawning off deep context docs generation...")
 
-        # # TODO: Fetch old document content
-        # if previous_version_root_node_id is not None:
-        #     update_set = {
-        #         ContentKind.DEEP_CONTEXT_ARCHITECTURE,
-        #         ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
-        #     }
-        #     previous_version_root_content = await get_all_derived_content_by_version_node_id(
-        #         node_id=previous_version_root_node_id
-        #     )
-        #     previous_version_content = [
-        #         DeepContextDoc(
-        #             doc_kind=DeepContextDocKind.from_content_kind(
-        #                 content_kind=c.content_kind
-        #             ),
-        #             name=None,
-        #             user_context={"desired_length": "SHORT"},
-        #             sources=[],
-        #             config_content="",
-        #             doc_content=c.content,
-        #         )
-        #         for c in previous_version_root_content
-        #         if c.content_kind in update_set
-        #     ]
-        # else:
-        #     previous_version_root_content = None
-        #     previous_version_content = None
+        if previous_version_root_version_node_id is not None:
+            update_set = {
+                ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+                ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+            }
+            previous_version_root_content = (
+                await get_all_derived_content_by_version_node_id(
+                    version_node_id=previous_version_root_version_node_id
+                )
+            )
+            previous_version_content = [
+                DeepContextDoc(
+                    doc_kind=DeepContextDocKind.from_content_kind(
+                        content_kind=c.content_kind
+                    ),
+                    name=None,
+                    user_context={"desired_length": "SHORT"},
+                    sources=[],
+                    config_content="",
+                    doc_content=c.content,
+                )
+                for c in previous_version_root_content
+                if c.content_kind in update_set
+            ]
+        else:
+            previous_version_root_content = None
+            previous_version_content = None
 
-        # _completed_docs = await deep_context_docs.remote.aio(
-        #     previous_version_id,
-        #     previous_version_content,
-        #     flat_topo_file_diff_dag,
-        #     version_id,
-        #     install_id,
-        # )
+        _completed_docs = await deep_context_docs.remote.aio(
+            previous_version_id,
+            previous_version_content,
+            flat_topo_file_diff_dag,
+            version_id,
+            install_id,
+        )
 
         # try:
         #     cleanup_old_versions.remote(version_id)

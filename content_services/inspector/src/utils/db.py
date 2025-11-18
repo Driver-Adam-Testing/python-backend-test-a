@@ -22,7 +22,8 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
             select(Version)
             .where(Version.id == version_id)
             .options(
-                selectinload(Version.primary_asset), selectinload(Version.root_node)
+                selectinload(Version.primary_asset),
+                selectinload(Version.root_version_node).selectinload(VersionNode.node),
             )
         )
         return (await session.exec(statement)).one()
@@ -62,7 +63,8 @@ async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
             .where(Version.id == version.previous_version_id)
             .where(Version.status.in_([VersionStatus.GENERATION_COMPLETE]))
             .options(
-                selectinload(Version.primary_asset), selectinload(Version.root_node)
+                selectinload(Version.primary_asset),
+                selectinload(Version.root_version_node).selectinload(VersionNode.node),
             )
         )
         previous_version = (await session.exec(stmt)).first()

@@ -724,6 +724,13 @@ class Version(SQLModel, table=True):  # type: ignore
         back_populates="created_versions",
         sa_relationship_kwargs={"secondary": "version_creator"},
     )
+    root_version_node: Optional["VersionNode"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(Version.id == VersionNode.version_id, VersionNode.depth == 0)",
+            "uselist": False,
+            "viewonly": True,
+        }
+    )
     root_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
             "primaryjoin": "and_(Version.id == Node.version_id, Node.depth == 0)",

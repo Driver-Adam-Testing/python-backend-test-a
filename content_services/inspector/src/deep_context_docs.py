@@ -78,8 +78,8 @@ async def make_changelog(
     print(f"Making changelog for version {version_id}")
     content_kind = ContentKind.DEEP_CONTEXT_CHANGELOG
     version = await get_version_by_id(version_id)
-    root_node_id = version.root_node.id
-    root_node_relative_path = version.root_node.relative_path
+    root_node_id = version.root_version_node.node_id
+    root_node_relative_path = version.root_version_node.node.relative_path
     repo_id = version.primary_asset.repository_id
     if repo_id is None:
         print("No repo_id found, skipping changelog generation.")
@@ -92,7 +92,7 @@ async def make_changelog(
         if previous_version_id:
             # Fetch previous changelog content
             previous_version = await get_version_by_id(previous_version_id)
-            previous_root_node_id = previous_version.root_node.id
+            previous_root_node_id = previous_version.root_version_node.node_id
             previous_changelog = (
                 await session.exec(
                     select(DerivedContent).where(
@@ -193,7 +193,8 @@ async def deep_context_docs(
     )
 
     new_version = await get_version_by_id(new_version_id)
-    root_node_id = new_version.root_node.id
+    root_version_node_id = new_version.root_version_node.id
+    root_node_id = new_version.root_version_node.node_id
 
     if old_version_content and code_diff:
         print(
@@ -232,7 +233,7 @@ async def deep_context_docs(
                 await session.exec(dc_delete_query)
                 new_dc = DerivedContent(
                     node_id=root_node_id,
-                    relative_path=new_version.root_node.relative_path,
+                    relative_path=new_version.root_version_node.relative_path,
                     content_kind=content_kind,
                     content=doc.doc_content,
                     misc_metadata=None,
@@ -245,14 +246,14 @@ async def deep_context_docs(
         print("Creating deep context docs for version:", new_version_id)
         deep_context_doc_tasks = [
             run_autodoc.remote.aio(
-                page_node_id=str(root_node_id),
+                version_node_id=str(root_version_node_id),
                 config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
                 document_goal=ARCHITECTURE_OVERVIEW_INTENT,
                 user_context="SHORT",
                 content_kind=ContentKind.DEEP_CONTEXT_ARCHITECTURE,
             ),
             run_autodoc.remote.aio(
-                page_node_id=str(root_node_id),
+                version_node_id=str(root_version_node_id),
                 config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
                 document_goal=LLM_ONBOARDING_INTENT,
                 user_context="SHORT",

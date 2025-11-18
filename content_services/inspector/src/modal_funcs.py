@@ -251,7 +251,7 @@ def export_tech_docs_to_zip(
 
     import boto3
     from database.db import engine
-    from database.models import DerivedContent, Node, Version
+    from database.models import DerivedContent, Node, Version, VersionNode
     from database.models_enums import ContentKind, NodeKind
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
@@ -262,25 +262,29 @@ def export_tech_docs_to_zip(
     with Session(engine) as session:
         long_desc_query = (
             select(
+                VersionNode,
                 Node,
                 DerivedContent,
                 # Node.relative_path, DerivedContent.content, Node.kind, Node.depth
             )
-            .join(DerivedContent)
+            .join(Node, VersionNode.node_id == Node.id)
+            .join(DerivedContent, DerivedContent.node_id == Node.id)
             .where(
-                Node.version_id == version_id,
+                VersionNode.version_id == version_id,
                 DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
             )
         )
 
         short_desc_query = (
             select(
+                VersionNode,
                 Node,
                 DerivedContent,
             )
-            .join(DerivedContent)
+            .join(Node, VersionNode.node_id == Node.id)
+            .join(DerivedContent, DerivedContent.node_id == Node.id)
             .where(
-                Node.version_id == version_id,
+                VersionNode.version_id == version_id,
                 DerivedContent.content_kind == ContentKind.SHORT_SENTENCE_DESCRIPTION,
             )
         )
@@ -306,17 +310,18 @@ def export_tech_docs_to_zip(
         short_desc_rows = short_desc_result.all()
 
         node_to_short_desc = {
-            node.id: derived_content for node, derived_content in short_desc_rows
+            node.id: derived_content for _, node, derived_content in short_desc_rows
         }
 
         node_path_to_kind = {
-            Path(node.relative_path): node.kind for node, _ in long_desc_rows
+            Path(version_node.relative_path): node.kind
+            for version_node, node, _ in long_desc_rows
         }
     with (
         tempfile.TemporaryDirectory() as temp_dir,
     ):
-        for node, long_desc_dc in long_desc_rows:
-            node_path = Path(node.relative_path)
+        for version_node, node, long_desc_dc in long_desc_rows:
+            node_path = Path(version_node.relative_path)
             if node.kind == NodeKind.CODEBASE_FILE:
                 link_destination_path = node_path.with_suffix(node_path.suffix + ".md")
                 file_path = Path(temp_dir) / link_destination_path

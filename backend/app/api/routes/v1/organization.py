@@ -1,7 +1,8 @@
 import logging
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Header, HTTPException
+from database.models_enums import OrgRole
+from fastapi import APIRouter, Header, HTTPException, Query
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
@@ -40,13 +41,21 @@ def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
 def list_members(
     session: CurrentSession,
     user: UserToken,
-    page: int = 0,
-    per_page: int = 100,
+    limit: int = Query(
+        default=100, ge=1, le=100, description="Maximum number of results"
+    ),
+    offset: int = Query(default=0, ge=0, description="Number of results to skip"),
+    search: str | None = Query(default=None, description="Search by name or email"),
+    roles: list[OrgRole] | None = Query(
+        default=None, description="Filter by organization roles"
+    ),
 ) -> ListMembersResponse:
     enforce_org_action(session, user, "users.view")
     logger.info(f"Listing members of organization = {user.organization_id}")
     organizations_service = OrganizationsService(session)
-    return organizations_service.list_members(user, page=page, per_page=per_page)
+    return organizations_service.list_members(
+        user, limit=limit, offset=offset, search=search, roles=roles
+    )
 
 
 @router.delete("/users/{user_id}", status_code=204)

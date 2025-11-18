@@ -181,22 +181,18 @@ class OrganizationsService:
     def list_members(
         self,
         user: UserToken,
-        page: int = 0,
-        per_page: int = 100,
+        limit: int = 100,
+        offset: int = 0,
+        search: str | None = None,
+        roles: list[OrgRole] | None = None,
     ) -> ListMembersResponse:
-        """
-        List all members of an organization.
-
-        Args:
-            user: Authenticated user token (for organization context)
-            page: Page number (0-indexed)
-            per_page: Number of results per page
-
-        Returns:
-            ListMembersResponse with members list, pagination info, and total count
-        """
         members_data, total_count = list_organization_members(
-            self.session, user.organization_id, page=page, per_page=per_page
+            self.session,
+            user.organization_id,
+            limit=limit,
+            offset=offset,
+            search=search,
+            roles=roles,
         )
 
         # Transform members data to OrganizationMember objects
@@ -213,7 +209,7 @@ class OrganizationsService:
 
         return ListMembersResponse(
             members=members,
-            start=page * per_page,
-            limit=per_page,
+            offset=offset,
+            limit=limit,
             total=total_count,
         )

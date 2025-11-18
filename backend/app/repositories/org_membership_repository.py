@@ -114,35 +114,38 @@ def get_user_organization_role(
 def list_organization_members(
     session: Session,
     organization_id: str,
-    page: int = 0,
-    per_page: int = 100,
-) -> tuple[list[dict[str, str | None]], int]:
-    """
-    List all members of an organization with their user details and roles.
+    limit: int = 100,
+    offset: int = 0,
+    search: str | None = None,
+    roles: list[OrgRole] | None = None,
+) -> tuple[
+    list[dict[str, str | None]], int
+]:  # TODO: gross return type. use proper types
+    base_conditions = [OrgMembership.org_id == organization_id]
 
-    Args:
-        session: Database session
-        organization_id: Organization ID
-        page: Page number (0-indexed)
-        per_page: Number of results per page
+    if search:
+        search_term = f"%{search}%"
+        base_conditions.append(
+            (col(User.name).ilike(search_term)) | (col(User.email).ilike(search_term))
+        )
 
-    Returns:
-        Tuple of (members_list, total_count) where:
-        - members_list: List of dictionaries with user_id, email, name, and role
-        - total_count: Total number of members in the organization
-    """
-    # Get total count
-    count_query = select(OrgMembership).where(OrgMembership.org_id == organization_id)
+    if roles:
+        base_conditions.append(OrgMembership.role.in_(roles))
+
+    count_query = (
+        select(OrgMembership)
+        .join(User, User.id == OrgMembership.user_id)
+        .where(*base_conditions)
+    )
     total_count = len(session.exec(count_query).all())
 
-    # Get paginated results
     query = (
         select(User.id, User.email, User.name, OrgMembership.role)
         .join(OrgMembership, User.id == OrgMembership.user_id)
-        .where(OrgMembership.org_id == organization_id)
+        .where(*base_conditions)
         .order_by(col(User.name).nullslast())
-        .offset(page * per_page)
-        .limit(per_page)
+        .offset(offset)
+        .limit(limit)
     )
 
     results = session.exec(query).all()

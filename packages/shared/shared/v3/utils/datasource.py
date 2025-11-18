@@ -37,6 +37,7 @@ class DataSource(BaseModel):
             node_ids=node_ids, organization_id=organization_id, user_id=user_id
         )
 
+        node_list = []
         if self.node_ids:
             with get_session() as session:
                 # Validate nodes belong to org AND user has access
@@ -97,7 +98,7 @@ class DataSource(BaseModel):
 
     @classmethod
     def from_page_id(
-        cls, page_node_id: uuid.UUID, organization_id: str
+        cls, page_node_id: uuid.UUID, organization_id: str, user_id: str
     ) -> "DataSource":
         """
         Example of pulling node_ids from DocumentSource (legacy usage).
@@ -111,7 +112,9 @@ class DataSource(BaseModel):
 
             node_ids = [ds.source_node_id for ds in document_sources]
 
-            datasource = cls(node_ids=node_ids, organization_id=organization_id)
+            datasource = cls(
+                node_ids=node_ids, organization_id=organization_id, user_id=user_id
+            )
             return datasource
 
     @property

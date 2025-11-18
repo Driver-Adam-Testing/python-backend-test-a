@@ -168,7 +168,7 @@ def _handle_user_event(event: Auth0EventBridgeEvent) -> list[str]:
 
 def _process_user_update(user_id: str) -> list[str]:
     """Process a user update by fetching fresh data from Auth0."""
-    print(f"Processing user update: {user_id}")
+    logger.debug(f"Processing user update: {user_id}")
     try:
         user_data = auth0_service.get_user_profile(user_id)
     except requests.exceptions.HTTPError as e:
@@ -360,20 +360,22 @@ def _handle_api_event(event: Auth0EventBridgeEvent) -> list[str]:
     logger.info(f"Processing API event for path: {path}")
 
     if "/organizations/" in path and "/members" in path:
-        # this only works for organization_member_added
-        org_id, user_id = _extract_org_user_from_path(path)
-        if (
-            request["method"] == "delete"
-            and "/organizations/" in path
-            and "/members" in path
-        ):
+        org_id = _extract_org_from_path(path)
+        method = request.get("method", "").lower()
+        request_body = request.get("body", {})
+
+        user_id = None
+        if method == "delete":
             logger.info("Detected organization member deletion event")
-            org_id = _extract_org_from_path(path)
-            user_id = (
-                event.detail.data.details.get("request", {})
-                .get("body", {})
-                .get("members", [None])[0]
-            )
+            user_id = request_body.get("members", [None])[0]
+        elif method in ["post", "patch"]:
+            logger.info("Detected organization member addition/update event")
+            members = request_body.get("members", [])
+            if members:
+                user_id = members[0]
+        else:
+            # Try extracting from path (e.g., GET /organizations/{org}/members/{user})
+            _, user_id = _extract_org_user_from_path(path)
 
         logger.info(f"Processing Org {org_id} membership change for {user_id}")
         if org_id and user_id:
@@ -381,12 +383,13 @@ def _handle_api_event(event: Auth0EventBridgeEvent) -> list[str]:
             if normalized_user_id:
                 return _process_membership_change(normalized_user_id, org_id)
 
-    elif path.startswith("/api/v2/users/") and event.detail.data.user_id:
-        normalized_user_id = normalize_auth0_user_id(event.detail.data.user_id)
+    elif path.startswith("/api/v2/users/"):
+        user_id_from_path = _extract_user_from_path(path)
+        normalized_user_id = normalize_auth0_user_id(user_id_from_path)
         if request["method"] == "delete":
             logger.info("Detected user deletion event")
             return _handle_user_delete_event(event)
-        print(f"normalized_user_id:{normalized_user_id}")
+        logger.debug(f"Processing user update for: {normalized_user_id}")
         if normalized_user_id:
             return _process_user_update(normalized_user_id)
 

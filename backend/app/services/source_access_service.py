@@ -40,7 +40,10 @@ logger = logging.getLogger(__name__)
 
 
 def grant_to_team_source_response(
-    grant: PrimaryAssetRoleGrant, asset: PrimaryAsset, visibility: SourceVisibility
+    grant: PrimaryAssetRoleGrant,
+    asset: PrimaryAsset,
+    visibility: SourceVisibility,
+    effective_role: PrimaryAssetRole | None,
 ) -> TeamSourceResponse:
     is_browsable = (
         asset.most_recent_version.browsable if asset.most_recent_version else False
@@ -58,6 +61,7 @@ def grant_to_team_source_response(
         visibility=visibility,
         team_id=grant.team_id,
         is_browsable=is_browsable,
+        effective_role=effective_role,
     )
 
 
@@ -177,9 +181,20 @@ class SourceAccessService:
             search=search,
         )
 
+        asset_ids = [item["asset"].id for item in sources_with_details]
+        effective_roles = acl_repository.get_user_effective_roles_for_assets_batch(
+            session=self.session,
+            user_id=user.user_id,
+            organization_id=organization_id,
+            asset_ids=asset_ids,
+        )
+
         sources = [
             grant_to_team_source_response(
-                item["grant"], item["asset"], item["visibility"]
+                item["grant"],
+                item["asset"],
+                item["visibility"],
+                effective_roles.get(item["asset"].id),
             )
             for item in sources_with_details
         ]

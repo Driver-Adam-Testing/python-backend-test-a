@@ -35,7 +35,6 @@ class PipelineRequest(BaseModel, ABC):
         organization_id: str | None = None,
         user_id: str | None = None,
         node_ids: list[UUID] | None = None,
-        relative_paths: list[str] | None = None,
         **data,  # noqa: ANN003
     ) -> None:
         super().__init__(**data)
@@ -43,14 +42,8 @@ class PipelineRequest(BaseModel, ABC):
             self._datasource = DataSource.from_node_ids(
                 node_ids, organization_id, user_id
             )
-        elif relative_paths is not None:
-            self._datasource = DataSource.from_relative_paths(
-                relative_paths, organization_id, user_id
-            )
         elif page_node_id is not None:
-            self._datasource = DataSource.from_page_id(
-                page_node_id, organization_id, user_id
-            )
+            self._datasource = DataSource.from_page_id(page_node_id, organization_id)
         else:
             self._datasource = None
 

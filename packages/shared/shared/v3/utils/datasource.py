@@ -2,7 +2,7 @@ import uuid
 from collections import defaultdict
 
 from database.db import get_session
-from database.models import Node, PrimaryAsset, Version
+from database.models import DocumentSource, Node, PrimaryAsset, Version
 from database.models_enums import NodeKind
 from pydantic import BaseModel, Field, PrivateAttr
 from shared.authorization.query_filters import primary_asset_grant_filter
@@ -94,6 +94,25 @@ class DataSource(BaseModel):
             node_ids=node_ids, organization_id=organization_id, user_id=user_id
         )
         return datasource
+
+    @classmethod
+    def from_page_id(
+        cls, page_node_id: uuid.UUID, organization_id: str
+    ) -> "DataSource":
+        """
+        Example of pulling node_ids from DocumentSource (legacy usage).
+        """
+
+        with get_session() as session:
+            stmt = select(DocumentSource).where(
+                DocumentSource.page_node_id == page_node_id
+            )
+            document_sources = session.exec(stmt).all()
+
+            node_ids = [ds.source_node_id for ds in document_sources]
+
+            datasource = cls(node_ids=node_ids, organization_id=organization_id)
+            return datasource
 
     @property
     def nodes(self) -> list[Node]:

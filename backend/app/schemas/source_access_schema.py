@@ -144,6 +144,10 @@ class TeamSourceResponse(BaseModel):
     is_browsable: bool = Field(
         ..., description="Whether the source is browsable (has a completed version)"
     )
+    effective_role: PrimaryAssetRole | None = Field(
+        ...,
+        description="Current user's effective role on this source (highest of all grants: direct, team, org, public). None if user has no access.",
+    )
 
     class Config:
         from_attributes = True

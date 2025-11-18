@@ -360,20 +360,22 @@ def _handle_api_event(event: Auth0EventBridgeEvent) -> list[str]:
     logger.info(f"Processing API event for path: {path}")
 
     if "/organizations/" in path and "/members" in path:
-        # this only works for organization_member_added
-        org_id, user_id = _extract_org_user_from_path(path)
-        if (
-            request["method"] == "delete"
-            and "/organizations/" in path
-            and "/members" in path
-        ):
+        org_id = _extract_org_from_path(path)
+        method = request.get("method", "").lower()
+        request_body = request.get("body", {})
+
+        user_id = None
+        if method == "delete":
             logger.info("Detected organization member deletion event")
-            org_id = _extract_org_from_path(path)
-            user_id = (
-                event.detail.data.details.get("request", {})
-                .get("body", {})
-                .get("members", [None])[0]
-            )
+            user_id = request_body.get("members", [None])[0]
+        elif method in ["post", "patch"]:
+            logger.info("Detected organization member addition/update event")
+            members = request_body.get("members", [])
+            if members:
+                user_id = members[0]
+        else:
+            # Try extracting from path (e.g., GET /organizations/{org}/members/{user})
+            _, user_id = _extract_org_user_from_path(path)
 
         logger.info(f"Processing Org {org_id} membership change for {user_id}")
         if org_id and user_id:

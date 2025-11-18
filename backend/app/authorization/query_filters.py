@@ -111,6 +111,10 @@ def effective_asset_role_expr(
     - asset_admin (highest priority) - includes org super_admins
     - asset_member
 
+    Note: For batch processing multiple assets, use
+    acl_repository.get_user_effective_roles_for_assets_batch() instead,
+    which uses the same logic but is optimized for multiple assets.
+
     Args:
         db: Database session
         user_id: UUID of the user

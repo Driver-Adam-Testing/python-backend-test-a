@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
+from database.models import OrgMembership, PrimaryAssetRoleGrant, Team, TeamMembership
 from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -204,10 +204,22 @@ class TestTeamSourceAccessPropagation:
         5. Verify each source has correct visibility
         """
         org_id = "test-org-id"
-        mock_user = create_mock_user(org_id)
+        # Create a real DB user with org membership
+        db_user = Auth0UserFactory.create(
+            integration_db_session, organization_id=org_id
+        )
+        # Create mock JWT user matching the DB user
+        mock_user = create_mock_user(org_id, user_id=db_user.id)
         service = SourceAccessService(integration_db_session)
 
         team = TeamFactory.create(integration_db_session, name="Test Team")
+
+        # Add user to team so they have team-based access
+        TeamMembershipFactory.create(
+            integration_db_session,
+            team_id=team.id,
+            user_id=db_user.id,
+        )
 
         source_private = PrimaryAssetFactory.create(
             integration_db_session, display_name="Private Source"
@@ -258,12 +270,24 @@ class TestTeamSourceAccessPropagation:
 
         assert str(source_private.id) in sources_by_id
         assert sources_by_id[str(source_private.id)].visibility == "private"
+        assert (
+            sources_by_id[str(source_private.id)].effective_role
+            == PrimaryAssetRole.asset_member
+        )
 
         assert str(source_internal.id) in sources_by_id
         assert sources_by_id[str(source_internal.id)].visibility == "internal"
+        assert (
+            sources_by_id[str(source_internal.id)].effective_role
+            == PrimaryAssetRole.asset_member
+        )
 
         assert str(source_public.id) in sources_by_id
         assert sources_by_id[str(source_public.id)].visibility == "public"
+        assert (
+            sources_by_id[str(source_public.id)].effective_role
+            == PrimaryAssetRole.asset_member
+        )
 
 
 @pytest.mark.integration
@@ -923,7 +947,6 @@ class TestGetSourceUsersEffectiveAccess:
         )
 
         # Step 3: Create super admin user (with org membership but no direct source grant)
-        from database.models import OrgMembership
 
         super_admin = Auth0UserFactory.create(
             integration_db_session, name="Super Admin", organization_id=org_id
@@ -1015,7 +1038,6 @@ class TestGetSourceUsersEffectiveAccess:
         source = PrimaryAssetFactory.create(integration_db_session)
 
         # Step 2: Create super admin user
-        from database.models import OrgMembership
 
         super_admin = Auth0UserFactory.create(
             integration_db_session, name="Super Admin", organization_id=org_id
@@ -1171,7 +1193,6 @@ class TestGetSourceTeamsEffectiveRole:
         assert team_map["Team C Not Member"].effective_team_role is None
 
         # Scenario 4 & 5: Create super admin
-        from database.models import OrgMembership
 
         super_admin = Auth0UserFactory.create(
             integration_db_session, organization_id=org_id

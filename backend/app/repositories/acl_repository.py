@@ -129,6 +129,56 @@ def get_team_sources_with_details(
     ]
 
 
+def get_user_effective_roles_for_assets_batch(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+    asset_ids: list[UUID],
+) -> dict[UUID, PrimaryAssetRole | None]:
+    """
+    Calculate effective roles for a user on multiple assets using the same logic
+    as effective_asset_role_expr but optimized for batch processing.
+    """
+    from app.authorization.helpers import (
+        build_grant_condition,
+        get_user_team_ids,
+        is_org_member,
+        is_super_admin,
+    )
+
+    if not asset_ids:
+        return {}
+
+    # Super admins have asset_admin on everything
+    if is_super_admin(session, user_id, organization_id):
+        return {asset_id: PrimaryAssetRole.asset_admin for asset_id in asset_ids}
+
+    team_ids = get_user_team_ids(session, user_id, organization_id)
+    is_member = is_org_member(session, user_id, organization_id)
+    grant_condition = build_grant_condition(user_id, team_ids, is_member)
+
+    # Use func.max to get highest role per asset (asset_admin > asset_member)
+    # This is equivalent to effective_asset_role_expr but batched
+    query = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            func.max(PrimaryAssetRoleGrant.role).label("max_role"),
+        )
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id.in_(asset_ids),
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            grant_condition,
+        )
+        .group_by(PrimaryAssetRoleGrant.primary_asset_id)
+    )
+
+    results = session.exec(query).all()
+    asset_roles = {asset_id: role for asset_id, role in results}  # noqa: C416
+
+    # Note: returns None for assets with no access
+    return {asset_id: asset_roles.get(asset_id) for asset_id in asset_ids}
+
+
 def count_team_sources(
     session: Session,
     team_id: UUID,

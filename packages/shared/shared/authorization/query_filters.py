@@ -22,7 +22,7 @@ from sqlalchemy import String, and_, case, cast, literal, true
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
-from .helpers import (
+from shared.authorization.helpers import (
     build_grant_condition,
     get_user_team_ids,
     is_org_member,

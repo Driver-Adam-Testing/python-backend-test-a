@@ -19,9 +19,11 @@ class OrganizationMember(BaseModel):
 class ListMembersResponse(BaseModel):
     """Response for listing organization members with pagination."""
 
-    members: list[OrganizationMember] = Field(description="List of organization members")
-    start: int = Field(description="Pagination offset (page * per_page)")
-    limit: int = Field(description="Number of items per page")
+    members: list[OrganizationMember] = Field(
+        description="List of organization members"
+    )
+    offset: int = Field(description="Number of items skipped")
+    limit: int = Field(description="Maximum number of items returned")
     total: int = Field(description="Total number of members in organization")
 
 

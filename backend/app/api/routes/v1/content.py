@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models import Node
+from database.models import Version, VersionNode
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import selectinload
@@ -17,7 +17,7 @@ from app.services.content_service import ContentService
 
 router = APIRouter()
 
-
+# FURNISSJ: change node_id to version_node_id
 @router.get(
     "/{node_id}/download",
     summary="Get download URL from S3 by ID",
@@ -38,14 +38,21 @@ def get_download_content_by_id(
     Returns:
     - DerivedContent: Content details
     """
-    query = select(Node).where(Node.id == node_id).options(selectinload(Node.version))
-    node = session.exec(query).one()
-    primary_asset_id = node.version.primary_asset_id
+    query = (
+        select(VersionNode)
+        .where(VersionNode.id == node_id)
+        .options(selectinload(VersionNode.version))
+        .options(selectinload(Version.primary_asset))
+    )
+    version_node = session.exec(query).one()
+    primary_asset_id = version_node.version.primary_asset.id
     enforce_asset_action(
         db=session, user=user, asset_id=primary_asset_id, action_key="pdf.download"
     )
     content_service = ContentService(session)
-    return content_service.get_content_download_url(node_id, user.organization_id)
+    return content_service.get_content_download_url(
+        node_id, user.organization_id
+    )
 
 
 @router.post(

@@ -19,7 +19,7 @@ class SearchInput(DriverRequest):
     algorithm: SearchAlgorithm = SearchAlgorithm.HYBRID
     token_limit: int | None = None
     content_kinds: list[ContentKind] | None = None
-    node_ids: list[UUID] | None = None
+    version_node_ids: list[UUID] | None = None
     organization_id: str | None = None
 
 
@@ -29,7 +29,7 @@ class SearchResult(DriverResponse):
     version_display_name: str
     relative_path: str
     version_id: UUID
-    node_id: UUID
+    version_node_id: UUID
     metadata: dict
 
 

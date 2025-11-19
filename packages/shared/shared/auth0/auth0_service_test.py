@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import pytest
+from database.models_enums import OrgRole
 
 from shared.auth0.auth0_service import Auth0Service
 from shared.auth0.models import User as UserToken
@@ -389,10 +390,12 @@ class TestAuth0Service(unittest.TestCase):
             invitations=CreateInvitationInput(
                 invitations=[
                     Invitation(
-                        invitee=Invitee(email="mock@invitation.com"), roles=["r1", "r2"]
+                        invitee=Invitee(email="mock@invitation.com"),
+                        role=OrgRole.org_member,
                     ),
                     Invitation(
-                        invitee=Invitee(email="another@invitation.com"), roles=["r3"]
+                        invitee=Invitee(email="another@invitation.com"),
+                        role=OrgRole.org_super_admin,
                     ),
                 ]
             ),
@@ -405,8 +408,8 @@ class TestAuth0Service(unittest.TestCase):
             body={
                 "inviter": {"name": "Johnny Cache"},
                 "invitee": {"email": "mock@invitation.com"},
-                "roles": ["r1", "r2"],
                 "client_id": "mock_auth0_client_id",
+                "user_metadata": {"org_roles": {"mock_org_id": "org_member"}},
             },
         )
 
@@ -440,11 +443,11 @@ class TestAuth0Service(unittest.TestCase):
                     invitations=[
                         Invitation(
                             invitee=Invitee(email="mock@invitation.com"),
-                            roles=["r1", "r2"],
+                            role=OrgRole.org_member,
                         ),
                         Invitation(
                             invitee=Invitee(email="another@invitation.com"),
-                            roles=["r3"],
+                            role=OrgRole.org_super_admin,
                         ),
                     ]
                 ),

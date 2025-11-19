@@ -5,16 +5,15 @@ import pypandoc
 from botocore.exceptions import ClientError
 from database.models import (
     DerivedContent,
-    DocumentSource,
     Enum_Derived_Content_Status,
     Node,
     PrimaryAsset,
     PrimaryAssetTag,
     Tag,
     Version,
+    VersionNode,
 )
 from fastapi import HTTPException, status
-from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
@@ -38,8 +37,6 @@ class ContentService:
     def __init__(self: "ContentService", session: Session) -> None:
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
-        self.document_source_repository = BaseRepository(session, DocumentSource)
-        self.node_repository = BaseRepository(session, Node)
 
     def get_list_content(
         self: "ContentService", organization_id: str, search_input: ListContentInput
@@ -65,10 +62,10 @@ class ContentService:
                     organization_id=organization_id,
                     content_name=derived_content.content_kind,
                     codebase_name=None,
-                    relative_path=derived_content.relative_path,
+                    relative_path=None,  # derived contents can be associated with multiple relative paths
                     content=derived_content.content,
                     misc_metadata=derived_content.misc_metadata,
-                    status=derived_content.node.version.status,
+                    status=None,  # derived contents can be associated with multiple primary assets each with a different status
                     created_at=derived_content.created_at,
                     updated_at=derived_content.updated_at,
                     source_content=None,
@@ -96,14 +93,11 @@ class ContentService:
         # This is helpful when the list endpoint builds the results to return, and nested attributes are requested on each result
         query = self._build_base_query(organization_id)
         query = self._apply_filters(query, search_input)
+        query = query.distinct()
         total_count = self.session.exec(
             select(func.count()).select_from(query.subquery())
         ).one()
         query = self._apply_sorting(query, search_input)
-
-        query = query.options(
-            selectinload(DerivedContent.node),
-        )
 
         results = self.session.exec(
             query.offset(search_input.offset).limit(search_input.limit)
@@ -114,27 +108,15 @@ class ContentService:
     def _build_base_query(self: "ContentService", organization_id: str) -> Select:
         """
         Constructs the base SQL query for retrieving content-related data from the database.
-        It selects data from four tables: NodeRow, DerivedContent, VersionRow, and PrimaryAssetRow.
-        The function performs the following operations:
-        1. Selects columns from NodeRow, DerivedContent, VersionRow, and PrimaryAssetRow.
-        2. Joins the DerivedContent table with NodeRow using a left outer join on the node_id.
-           This ensures that all NodeRow entries are included, even if they don't have a
-           corresponding entry in DerivedContent.
-        3. Joins the VersionRow table with NodeRow on the version_id, ensuring that each
-           node is associated with its version.
-        4. Joins the PrimaryAssetRow table with VersionRow on the primary_asset_id, linking
-           each version to its primary asset.
-        5. Filters the results to include only those entries where the organization_id in
-           PrimaryAssetRow matches the provided organization_id parameter.
-
         The resulting query is used as a foundational query for further filtering and
         processing in other parts of the ContentService.
         """
         return (
             select(DerivedContent)
-            .join(Node)
-            .join(Version)
-            .join(PrimaryAsset)
+            .join(Node, DerivedContent.node_id == Node.id)
+            .join(VersionNode, VersionNode.node_id == Node.id)
+            .join(Version, VersionNode.version_id == Version.id)
+            .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
             .where(PrimaryAsset.organization_id == organization_id)
         )
 
@@ -169,7 +151,7 @@ class ContentService:
     ) -> Select:
         if search_input.text:
             clauses = [
-                Node.relative_path.icontains(search_input.text),
+                VersionNode.relative_path.icontains(search_input.text),
                 PrimaryAsset.display_name.icontains(search_input.text),
             ]
             statement = statement.where(or_(*clauses))
@@ -224,31 +206,29 @@ class ContentService:
         return statement
 
     def get_content_download_url(
-        self, node_id: UUID, organization_id: str
+        self, version_node_id: UUID, organization_id: str
     ) -> DownloadContentResponse:
         """
         Get a presigned URL for downloading this content from S3
         """
-        logger.info(f"Fetching content by ID {node_id}")
+        logger.info(f"Fetching content by ID {version_node_id}")
 
-        node: Node | None = self.node_repository.get_by_conditions(
-            [
-                Node.id == node_id,
-                PrimaryAsset.organization_id == organization_id,
-            ],
-            [Version, PrimaryAsset],
+        query = (
+            select(VersionNode)
+            .join(Version, VersionNode.version_id == Version.id)
+            .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
+            .where(VersionNode.id == version_node_id)
+            .where(PrimaryAsset.organization_id == organization_id)
         )
+        version_node = self.session.exec(query).one_or_none()
 
-        if not node or node.version.primary_asset.organization_id != organization_id:
-            logger.error(f"Content {node_id} not found or not downloadable")
+        if not version_node:
+            logger.error(f"Content {version_node_id} not found or not downloadable")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Content not found or not downloadable",
             )
-
-        download_key = (
-            f"{node.version.primary_asset_id}/{node.version_id}/{node.relative_path}"
-        )
+        download_key = f"{version_node.version.primary_asset_id}/{version_node.version_id}/{version_node.relative_path}"
         logger.info(f"Trying download_key={download_key}")
         try:
             if head_org_object(organization_id, download_key):
@@ -257,9 +237,9 @@ class ContentService:
                     download_url=generate_org_get_presigned_url(
                         organization_id, download_key
                     ),
-                    content_name=node.version.primary_asset.display_name,
-                    status=node.version.status,
-                    primary_asset_id=node.version.primary_asset.id,
+                    content_name=version_node.version.primary_asset.display_name,
+                    status=version_node.version.status,
+                    primary_asset_id=version_node.version.primary_asset.id,
                 )
         except ClientError:
             logger.exception("Content not found or not downloadable")

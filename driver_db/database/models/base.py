@@ -982,8 +982,10 @@ class RuntimeLlmSession(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: str = Field(index=True)
     organization_id: str = Field(index=True)
-    source_node_ids_str: str | None = Field(nullable=True, default=None)
-    page_node_id: UUID | None = Field(nullable=True, default=None)
+    source_node_ids_str: str | None = Field(nullable=True, default=None) # drop this column
+    page_node_id: UUID | None = Field(nullable=True, default=None) # drop this column
+    source_version_node_ids_str: str | None = Field(nullable=True, default=None)
+    page_version_node_id: UUID | None = Field(nullable=True, default=None)
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

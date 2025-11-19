@@ -270,6 +270,11 @@ class Auth0Service:
                     "roles": invitation.roles,
                     "client_id": self.auth0_client_id,
                 }
+                if invitation.app_metadata:
+                    payload["app_metadata"] = invitation.app_metadata
+                if invitation.user_metadata:
+                    payload["user_metadata"] = invitation.user_metadata
+
                 if (
                     "metadata" in organization_info
                     and "sso_connection_id" in organization_info["metadata"]

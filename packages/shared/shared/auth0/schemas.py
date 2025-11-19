@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -8,6 +10,8 @@ class Invitee(BaseModel):
 class Invitation(BaseModel):
     invitee: Invitee
     roles: list[str] = Field(title="List of Role IDs")
+    app_metadata: dict[str, Any] | None = None
+    user_metadata: dict[str, Any] | None = None
 
 
 class CreateInvitationInput(BaseModel):

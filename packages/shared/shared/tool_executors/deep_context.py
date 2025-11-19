@@ -35,6 +35,7 @@ def _get_root_node_content(
             has_grant = db.exec(
                 select(PrimaryAsset)
                 .where(PrimaryAsset.id == primary_asset.id)
+                .where(PrimaryAsset.organization_id == org_id)
                 .where(primary_asset_grant_filter(db, user_id, org_id))
             ).first()
 

@@ -3,12 +3,6 @@
 from typing import Any
 from uuid import UUID
 
-from app.authorization.query_filters import (
-    asset_visibility_expr,
-    effective_asset_role_expr,
-    exclude_page_assets_filter,
-    primary_asset_grant_filter,
-)
 from database.models import (
     PrimaryAsset,
     PrimaryAssetRoleGrant,
@@ -16,6 +10,12 @@ from database.models import (
     Tag,
 )
 from database.models_enums import PrimaryAssetRole, SourceVisibility
+from shared.authorization.query_filters import (
+    asset_visibility_expr,
+    effective_asset_role_expr,
+    exclude_page_assets_filter,
+    primary_asset_grant_filter,
+)
 from sqlmodel import Session, and_, func, select
 
 

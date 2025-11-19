@@ -27,7 +27,11 @@ from shared.tool_executors import (  # noqa: E402
     get_llm_onboarding_guide,
 )
 
-from .auth_middleware import McpAuthMiddleware, get_organization_id  # noqa: E402
+from .auth_middleware import (  # noqa: E402
+    McpAuthMiddleware,
+    get_organization_id,
+    get_user_id,
+)
 from .logging_middleware import (  # noqa: E402
     DriverMcpToolResponse,
     McpLoggingMiddleware,
@@ -101,7 +105,8 @@ def get_codebase_names_tool(
 ) -> DriverMcpToolResponse:
     try:
         org_id = get_organization_id(ctx)
-        payload = get_codebase_names(org_id=org_id)
+        user_id = get_user_id(ctx)
+        payload = get_codebase_names(org_id=org_id, user_id=user_id)
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:
         return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
@@ -121,7 +126,10 @@ def get_architecture_overview_tool(
 ) -> DriverMcpToolResponse:
     try:
         org_id = get_organization_id(ctx)
-        payload = get_architecture_overview(org_id=org_id, codebase_name=codebase_name)
+        user_id = get_user_id(ctx)
+        payload = get_architecture_overview(
+            org_id=org_id, codebase_name=codebase_name, user_id=user_id
+        )
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:
         return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
@@ -141,7 +149,10 @@ def get_llm_onboarding_guide_tool(
 ) -> DriverMcpToolResponse:
     try:
         org_id = get_organization_id(ctx)
-        payload = get_llm_onboarding_guide(org_id=org_id, codebase_name=codebase_name)
+        user_id = get_user_id(ctx)
+        payload = get_llm_onboarding_guide(
+            org_id=org_id, codebase_name=codebase_name, user_id=user_id
+        )
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:
         return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
@@ -165,7 +176,10 @@ def get_changelog_tool(
 ) -> DriverMcpToolResponse:
     try:
         org_id = get_organization_id(ctx)
-        payload = get_changelog(org_id=org_id, codebase_name=codebase_name)
+        user_id = get_user_id(ctx)
+        payload = get_changelog(
+            org_id=org_id, codebase_name=codebase_name, user_id=user_id
+        )
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:
         return DriverMcpToolResponse(payload=None, error_message=e.agent_message)
@@ -191,11 +205,13 @@ def get_detailed_changelog_tool(
 ) -> DriverMcpToolResponse:
     try:
         org_id = get_organization_id(ctx)
+        user_id = get_user_id(ctx)
         payload = get_detailed_changelog(
             org_id=org_id,
             codebase_name=codebase_name,
             year=year,
             month=month,
+            user_id=user_id,
         )
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:
@@ -257,12 +273,14 @@ def get_file_documentation_tool(
 ) -> DriverMcpToolResponse:
     try:
         org_id = get_organization_id(ctx)
+        user_id = get_user_id(ctx)
         payload = get_file_documentation(
             org_id=org_id,
             codebase_name=codebase_name,
             path=relative_file_path,
             start_line=start_line,
             max_lines=max_lines,
+            user_id=user_id,
         )
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:
@@ -359,6 +377,7 @@ def get_code_map_tool(
 ) -> DriverMcpToolResponse:
     try:
         org_id = get_organization_id(ctx)
+        user_id = get_user_id(ctx)
         payload = get_code_map(
             org_id=org_id,
             codebase_name=codebase_name,
@@ -366,6 +385,7 @@ def get_code_map_tool(
             max_depth=max_depth,
             start_node=start_node,
             max_nodes=max_nodes,
+            user_id=user_id,
         )
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:

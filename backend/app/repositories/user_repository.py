@@ -3,14 +3,6 @@
 from typing import Any
 from uuid import UUID
 
-from app.authorization.query_filters import (
-    asset_org_grant_role_expr,
-    assignment_type_expr,
-    effective_asset_role_expr,
-    primary_asset_grant_filter,
-    user_direct_grant_role_expr,
-    user_org_role_expr,
-)
 from app.schemas.user_schema import AssignmentType
 from database.models import (
     OrgMembership,
@@ -21,6 +13,14 @@ from database.models import (
     User,
 )
 from database.models_enums import OrgRole, PrimaryAssetKind, PrimaryAssetRole, TeamRole
+from shared.authorization.query_filters import (
+    asset_org_grant_role_expr,
+    assignment_type_expr,
+    effective_asset_role_expr,
+    primary_asset_grant_filter,
+    user_direct_grant_role_expr,
+    user_org_role_expr,
+)
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, or_, select
 

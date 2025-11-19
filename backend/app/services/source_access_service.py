@@ -6,11 +6,11 @@ from uuid import UUID
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Team
 from database.models_enums import PrimaryAssetRole, PrincipalKind, TeamRole
 from fastapi import HTTPException, status
+from shared.authorization.helpers import is_super_admin
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from app.auth.models import User
-from app.authorization.helpers import is_super_admin
 from app.repositories import acl_repository, team_member_repository, team_repository
 from app.schemas.source_access_schema import (
     AddSourceTeamsRequest,

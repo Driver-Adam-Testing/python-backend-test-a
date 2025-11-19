@@ -2,6 +2,7 @@ from uuid import UUID
 
 from database.models import DocumentSource, Node, PrimaryAsset, Version
 from fastapi import HTTPException, Query, Request
+from shared.authorization.query_filters import page_source_authorization_filter
 from sqlalchemy.orm import selectinload
 from sqlmodel import delete, func, select
 
@@ -20,7 +21,6 @@ from app.api.routes.v2.schemas import (
 )
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
-from app.authorization.query_filters import page_source_authorization_filter
 
 
 @router.get("/page_sources", response_model=ListWithCount[DocumentSourceDetailRead])

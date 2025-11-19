@@ -2,6 +2,11 @@ from typing import Any
 
 from database.models import DerivedContent, Node, PrimaryAsset, Version
 from fastapi import Request
+from shared.authorization.query_filters import (
+    content_grant_filter,
+    exclude_page_assets_filter,
+    page_content_grant_filter,
+)
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
@@ -19,11 +24,6 @@ from app.api.routes.v2.schemas import (
 )
 from app.api.session import CurrentSession
 from app.auth.models import User
-from app.authorization.query_filters import (
-    content_grant_filter,
-    exclude_page_assets_filter,
-    page_content_grant_filter,
-)
 
 
 @router.get("/contents")

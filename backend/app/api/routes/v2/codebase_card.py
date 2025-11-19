@@ -20,6 +20,10 @@ from database.models_enums import (
 )
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field, HttpUrl
+from shared.authorization.query_filters import (
+    asset_visibility_expr,
+    primary_asset_grant_filter,
+)
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import aliased, selectinload
 from sqlmodel import select
@@ -32,10 +36,6 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.schemas import ListWithCount, TagRead
 from app.api.session import CurrentSession  # noqa: TCH001
-from app.authorization.query_filters import (
-    asset_visibility_expr,
-    primary_asset_grant_filter,
-)
 from app.schemas.common import SourceVisibility  # noqa: TCH001
 
 

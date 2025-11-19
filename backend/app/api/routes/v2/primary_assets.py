@@ -18,6 +18,13 @@ from database.models_enums import (
     ContentKind,
 )
 from fastapi import Body, HTTPException, Path, Request
+from shared.authorization.query_filters import (
+    asset_visibility_expr,
+    effective_asset_role_expr,
+    exclude_page_assets_filter,
+    page_asset_grant_filter,
+    primary_asset_grant_filter,
+)
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlmodel import func, select
 
@@ -36,13 +43,6 @@ from app.api.routes.v2.schemas import (
 from app.api.session import CurrentSession
 from app.auth.models import User
 from app.authorization.fastapi import enforce_asset_action
-from app.authorization.query_filters import (
-    asset_visibility_expr,
-    effective_asset_role_expr,
-    exclude_page_assets_filter,
-    page_asset_grant_filter,
-    primary_asset_grant_filter,
-)
 from app.core.config import settings  # Assuming settings contains AWS credentials
 from app.repositories import acl_repository
 

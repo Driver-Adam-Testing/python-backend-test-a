@@ -89,6 +89,7 @@ def _build_flat_node_list(
 def get_code_map_simple(
     org_id: str,
     codebase_name: str,
+    user_id: str,
     path: str = "",
     max_depth: int = 5,
 ) -> _CodeMap:
@@ -98,10 +99,10 @@ def get_code_map_simple(
     )
 
     with get_session() as db:
-        version = get_latest_version_for_codebase(db, org_id, codebase_name)
+        version = get_latest_version_for_codebase(db, org_id, codebase_name, user_id)
         if not version:
             raise ToolUseError(
-                agent_message=f"No completed version found for codebase '{codebase_name}'. "
+                agent_message=f"No completed version found for codebase '{codebase_name}', or user is unauthorized. "
             )
 
         logger.info(f"Found version {version.id} for codebase '{codebase_name}'")
@@ -172,10 +173,12 @@ def get_code_map(
     max_depth: int,
     start_node: int,
     max_nodes: int,
+    user_id: str,
 ) -> CodeMapResponse:
     code_map = get_code_map_simple(
         org_id=org_id,
         codebase_name=codebase_name,
+        user_id=user_id,
         path=path,
         max_depth=max_depth,
     )

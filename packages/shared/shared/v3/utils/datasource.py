@@ -5,45 +5,58 @@ from database.db import get_session
 from database.models import DocumentSource, Node, PrimaryAsset, Version
 from database.models_enums import NodeKind
 from pydantic import BaseModel, Field, PrivateAttr
+from shared.authorization.query_filters import primary_asset_grant_filter
 from sqlalchemy.orm import selectinload
 from sqlmodel import and_, or_, select
 
 
 class DataSource(BaseModel):
     """
-    A DataSource represents a set of node_ids that belong to a single organization.
+    A DataSource represents a set of node_ids that belong to a single organization and are accessible by the user.
     It also provides an optional cache of the underlying Node objects.
     """
 
     node_ids: list[uuid.UUID] = Field(default_factory=list)
     organization_id: str
+    user_id: str
 
     # Cache for the Node objects so we don't re-fetch on every property access
     _cached_nodes: list[Node] | None = PrivateAttr(default=None)
 
-    def __init__(self, node_ids: list[uuid.UUID], organization_id: str) -> None:
+    def __init__(
+        self, node_ids: list[uuid.UUID], organization_id: str, user_id: str
+    ) -> None:
         """
         Initialize the DataSource.
 
-        Validates that all given node_ids belong to the specified organization_id.
+        Validates that all given node_ids belong to the specified organization_id and are accessible by the user.
         Raises:
             ValueError: If any node_id does not match the given organization_id.
         """
-        super().__init__(node_ids=node_ids, organization_id=organization_id)
+        super().__init__(
+            node_ids=node_ids, organization_id=organization_id, user_id=user_id
+        )
 
+        node_list = []
         if self.node_ids:
             with get_session() as session:
+                # Validate nodes belong to org AND user has access
                 stmt = (
                     select(Node.id)
                     .join(Version, Node.version_id == Version.id)
                     .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
                     .where(PrimaryAsset.organization_id == self.organization_id)
                     .where(Node.id.in_(self.node_ids))
+                    .where(
+                        primary_asset_grant_filter(
+                            session, self.user_id, self.organization_id
+                        )
+                    )
                 )
                 matching_ids = session.exec(stmt).all()
                 if len(matching_ids) != len(self.node_ids):
                     raise ValueError(
-                        "Some node_ids do not match the given organization_id."
+                        "Some node_ids do not match the given organization_id or user does not have access to all the associated assets."
                     )
                 node_list = session.exec(
                     select(Node).where(Node.id.in_(self.node_ids))
@@ -76,17 +89,16 @@ class DataSource(BaseModel):
 
     @classmethod
     def from_node_ids(
-        cls, node_ids: list[uuid.UUID], organization_id: str
+        cls, node_ids: list[uuid.UUID], organization_id: str, user_id: str
     ) -> "DataSource":
-        """
-        Factory that constructs a DataSource directly from node_ids & organization_id.
-        """
-        datasource = cls(node_ids=node_ids, organization_id=organization_id)
+        datasource = cls(
+            node_ids=node_ids, organization_id=organization_id, user_id=user_id
+        )
         return datasource
 
     @classmethod
     def from_page_id(
-        cls, page_node_id: uuid.UUID, organization_id: str
+        cls, page_node_id: uuid.UUID, organization_id: str, user_id: str
     ) -> "DataSource":
         """
         Example of pulling node_ids from DocumentSource (legacy usage).
@@ -97,60 +109,34 @@ class DataSource(BaseModel):
                 DocumentSource.page_node_id == page_node_id
             )
             document_sources = session.exec(stmt).all()
+
             node_ids = [ds.source_node_id for ds in document_sources]
 
-            datasource = cls(node_ids=node_ids, organization_id=organization_id)
-            return datasource
-
-    @classmethod
-    def from_relative_paths(
-        cls,
-        relative_paths: list[str],
-        organization_id: str,
-        version_id: str | None = None,
-    ) -> "DataSource":
-        """
-        Example of pulling node_ids from relative_paths.
-        """
-        with get_session() as session:
-            stmt = (
-                select(Node)
-                .join(Version, Node.version_id == Version.id)
-                .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
-                .where(
-                    Node.relative_path.in_(relative_paths),
-                    PrimaryAsset.organization_id == organization_id,
-                    or_(
-                        Node.version_id == version_id,
-                        and_(
-                            version_id is None,
-                            Node.version_id
-                            == select(Version.id)
-                            .where(Version.primary_asset_id == PrimaryAsset.id)
-                            .order_by(Version.updated_at.desc())
-                            .limit(1)
-                            .correlate(PrimaryAsset)
-                            .scalar_subquery(),
-                        ),
-                    ),
-                )
+            datasource = cls(
+                node_ids=node_ids, organization_id=organization_id, user_id=user_id
             )
-            nodes = session.exec(stmt).all()
-            node_ids = [node.id for node in nodes]
-            return cls(node_ids=node_ids, organization_id=organization_id)
+            return datasource
 
     @property
     def nodes(self) -> list[Node]:
         """
         Returns the list of cached Node objects, loading them if necessary.
+        Only returns nodes the user is authorized to access.
         """
         if self._cached_nodes is None:
             with get_session() as session:
-                # Load all ancestors in a single query
+                # Load all ancestors in a single query with authorization check
                 ancestors = session.exec(
                     select(Node)
                     .options(selectinload(Node.version))
+                    .join(Version, Node.version_id == Version.id)
+                    .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
                     .where(Node.id.in_(self.node_ids))
+                    .where(
+                        primary_asset_grant_filter(
+                            session, self.user_id, self.organization_id
+                        )
+                    )
                 ).all()
 
                 # Build a set of conditions for any ancestor's version/path
@@ -164,9 +150,19 @@ class DataSource(BaseModel):
                         )
                     )
 
-                # Query descendants in one shot using OR across all conditions
+                # Query descendants with authorization check
                 if conditions:
-                    descendants_stmt = select(Node).where(or_(*conditions))
+                    descendants_stmt = (
+                        select(Node)
+                        .join(Version, Node.version_id == Version.id)
+                        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
+                        .where(or_(*conditions))
+                        .where(
+                            primary_asset_grant_filter(
+                                session, self.user_id, self.organization_id
+                            )
+                        )
+                    )
                     descendants = session.exec(descendants_stmt).all()
                 else:
                     descendants = []

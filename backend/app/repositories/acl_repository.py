@@ -2,7 +2,6 @@
 
 from uuid import UUID
 
-from app.authorization.query_filters import asset_visibility_expr
 from app.schemas.user_schema import AssignmentType
 from database.models import (
     OrgMembership,
@@ -18,6 +17,7 @@ from database.models_enums import (
     PrincipalKind,
     SourceVisibility,
 )
+from shared.authorization.query_filters import asset_visibility_expr
 from sqlalchemy import case, literal, literal_column, union_all
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, func, select

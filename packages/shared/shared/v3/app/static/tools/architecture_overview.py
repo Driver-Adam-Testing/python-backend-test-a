@@ -30,7 +30,9 @@ class ArchitectureOverviewTool(LlmTool):
     def _execute(self) -> None:
         try:
             architecture_overview = get_architecture_overview(
-                self.datasource.organization_id, self.codebase_name
+                self.datasource.organization_id,
+                self.codebase_name,
+                self.datasource.user_id,
             )
         except ToolUseError as e:
             self._error_message = e.agent_message
@@ -71,7 +73,5 @@ class ArchitectureOverviewTool(LlmTool):
         if self._error_message:
             return f"{self.__class__.__name__} failed"
         if self._references:
-            return (
-                f"Executed {self.__class__.__name__}:\n\tcodebase_name={self.codebase_name}"
-        )
+            return f"Executed {self.__class__.__name__}:\n\tcodebase_name={self.codebase_name}"
         return ""

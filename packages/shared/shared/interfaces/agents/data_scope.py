@@ -1,13 +1,12 @@
 from uuid import UUID
 
 from database.db import get_session
-from database.models import Node, PrimaryAsset, Version
+from database.models import Node, PrimaryAsset, Version, VersionNode
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
 from sqlmodel import and_, or_, select
 
 
-# TODO: from_node_ids?
 # TODO: Validate organization_id
 class DataScope(BaseModel):
     """
@@ -23,25 +22,25 @@ class DataScope(BaseModel):
         Represents a node within the DataScope that is lazy-loaded from the database.
         """
 
-        def __init__(self, node: Node) -> None:
-            self._node = node
+        def __init__(self, version_node: VersionNode) -> None:
+            self._version_node = version_node
 
         @property
-        def node(self) -> Node:
-            return self._node
+        def version_node(self) -> VersionNode:
+            return self._version_node
 
         def get_identifier(self) -> str:
             """
             Returns a string identifier for the node in the format: {version_display_name}/{relative_path}.
             """
             version_display_name = (
-                self._node.version.vcs_hash
-                if self._node.version.vcs_hash
+                self._version_node.version.vcs_hash
+                if self._version_node.version.vcs_hash
                 else "Unversioned"
             )
-            return f"{version_display_name}/{self._node.relative_path}"
+            return f"{version_display_name}/{self._version_node.relative_path}"
 
-    node_ids: list[UUID]
+    version_node_ids: list[UUID]
 
     # TODO: Move user_id somewhere else
     user_id: str
@@ -53,14 +52,18 @@ class DataScope(BaseModel):
         if self._cached_nodes is None:
             with get_session() as session:
                 stmt = (
-                    select(Node)
+                    select(VersionNode)
                     .options(
-                        selectinload(Node.version).selectinload(Version.primary_asset)
+                        selectinload(VersionNode.version).selectinload(
+                            Version.primary_asset
+                        )
                     )
-                    .where(Node.id.in_(self.node_ids))
+                    .where(VersionNode.id.in_(self.version_node_ids))
                 )
-                nodes = session.exec(stmt).all()
-            self._cached_nodes = [DataScope.DataScopeNode(node) for node in nodes]
+                version_nodes = session.exec(stmt).all()
+            self._cached_nodes = [
+                DataScope.DataScopeNode(version_node) for version_node in version_nodes
+            ]
         return list(self._cached_nodes)
 
     def get_node_by_identifier(self, identifier: str) -> DataScopeNode | None:
@@ -74,7 +77,7 @@ class DataScope(BaseModel):
 
     def to_child_datascope(self, identifiers: list[str]) -> "DataScope":
         """
-        This returns a DataScope that has node_ids of Nodes where the version display name and the relative_path are children of the in this datascope, and errors if false.
+        This returns a DataScope that has version_node_ids of VersionNodes where the version display name and the relative_path are children of the in this datascope, and errors if false.
         """
 
         # Ensure all identifiers start with an existing node identifier
@@ -88,30 +91,30 @@ class DataScope(BaseModel):
                     f"Identifier '{identifier}' does not start with any existing node identifier."
                 )
 
-        # Get node_ids that match a node on this datascope
+        # Get version_node_ids that match a version_node on this datascope
         matching_node_ids = []
         for identifier in identifiers:
             node = self.get_node_by_identifier(identifier)
             if node:
-                matching_node_ids.append(node.node.id)
+                matching_node_ids.append(node.version_node.id)
 
         if len(matching_node_ids) != len(identifiers):
             with get_session() as session:
                 stmt = (
-                    select(Node)
-                    .join(Version)
-                    .join(PrimaryAsset)
+                    select(VersionNode)
                     .options(
-                        selectinload(Node.version).selectinload(Version.primary_asset)
+                        selectinload(VersionNode.version).selectinload(
+                            Version.primary_asset
+                        )
                     )
                     .where(
                         or_(
                             *[
                                 and_(
                                     or_(
-                                        Node.relative_path
+                                        VersionNode.relative_path
                                         == identifier.split("/", 1)[1],
-                                        Node.relative_path
+                                        VersionNode.relative_path
                                         == identifier.split("/", 1)[1] + "/",
                                     ),
                                     or_(
@@ -127,21 +130,23 @@ class DataScope(BaseModel):
                     )
                     .where(PrimaryAsset.organization_id == self.organization_id)
                 )
-                nodes = session.exec(stmt).all()
+                version_nodes = session.exec(stmt).all()
                 ds = DataScope(
-                    node_ids=[n.id for n in nodes],
+                    version_node_ids=[
+                        version_node.id for version_node in version_nodes
+                    ],
                     user_id=self.user_id,
                     organization_id=self.organization_id,
                 )
                 return ds
         else:
             ds = DataScope(
-                node_ids=matching_node_ids,
+                version_node_ids=matching_node_ids,
                 user_id=self.user_id,
                 organization_id=self.organization_id,
             )
             ds._cached_nodes = [
-                node for node in self.nodes if node.node.id in matching_node_ids
+                node for node in self.nodes if node.version_node.id in matching_node_ids
             ]
             return ds
 
@@ -150,13 +155,15 @@ class DataScope(BaseModel):
         grouped_identifiers = {}
 
         for node in self.nodes:
-            primary_asset_display_name = node.node.version.primary_asset.display_name
+            primary_asset_display_name = (
+                node.version_node.version.primary_asset.display_name
+            )
             version_display_name = (
-                node.node.version.vcs_hash
-                if node.node.version.vcs_hash
+                node.version_node.version.vcs_hash
+                if node.version_node.version.vcs_hash
                 else "Unversioned"
             )
-            identifier = f"{version_display_name}/{node.node.relative_path}"
+            identifier = f"{version_display_name}/{node.version_node.relative_path}"
 
             if primary_asset_display_name not in grouped_identifiers:
                 grouped_identifiers[primary_asset_display_name] = []

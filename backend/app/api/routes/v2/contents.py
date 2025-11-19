@@ -1,6 +1,6 @@
 from typing import Any
 
-from database.models import DerivedContent, Node, PrimaryAsset, Version
+from database.models import DerivedContent, Node, PrimaryAsset, Version, VersionNode
 from fastapi import Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
@@ -100,7 +100,8 @@ def _list_contents_with_filter(
         select(DerivedContent)
         .options(
             selectinload(DerivedContent.node)
-            .selectinload(Node.version)
+            .selectinload(Node.version_nodes)
+            .selectinload(VersionNode.version)
             .selectinload(Version.primary_asset)
             .selectinload(PrimaryAsset.tags)
         )
@@ -133,13 +134,21 @@ def _list_contents_with_filter(
 
 def _exclude_page_content() -> Any:
     return DerivedContent.node.has(
-        Node.version.has(Version.primary_asset.has(exclude_page_assets_filter()))
+        Node.version_nodes.any(
+            VersionNode.version.has(
+                Version.primary_asset.has(exclude_page_assets_filter())
+            )
+        )
     )
 
 
 def _org_filter(organization_id: str) -> Any:
     return DerivedContent.node.has(
-        Node.version.has(
-            Version.primary_asset.has(PrimaryAsset.organization_id == organization_id)
+        Node.version_nodes.any(
+            VersionNode.version.has(
+                Version.primary_asset.has(
+                    PrimaryAsset.organization_id == organization_id
+                )
+            )
         )
     )

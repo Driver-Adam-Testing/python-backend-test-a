@@ -31,22 +31,26 @@ class PipelineRequest(BaseModel, ABC):
     def __init__(
         self,
         llm_session_id: UUID | None = None,
-        page_node_id: UUID | None = None,
+        page_version_node_id: UUID | None = None,
         organization_id: str | None = None,
         user_id: str | None = None,
-        node_ids: list[UUID] | None = None,
+        version_node_ids: list[UUID] | None = None,
         relative_paths: list[str] | None = None,
         **data,  # noqa: ANN003
     ) -> None:
         super().__init__(**data)
-        if node_ids is not None:
-            self._datasource = DataSource.from_node_ids(node_ids, organization_id)
+        if version_node_ids is not None:
+            self._datasource = DataSource.from_version_node_ids(
+                version_node_ids, organization_id
+            )
         elif relative_paths is not None:
             self._datasource = DataSource.from_relative_paths(
                 relative_paths, organization_id
             )
-        elif page_node_id is not None:
-            self._datasource = DataSource.from_page_id(page_node_id, organization_id)
+        elif page_version_node_id is not None:
+            self._datasource = DataSource.from_page_id(
+                page_version_node_id, organization_id
+            )
         else:
             self._datasource = None
 
@@ -60,17 +64,17 @@ class PipelineRequest(BaseModel, ABC):
                 if self._llm_session is not None:
                     if self._datasource is None:
                         # If the datasource is not provided, use the datasource from the llm session
-                        self._datasource = DataSource.from_node_ids(
-                            json.loads(self._llm_session.source_node_ids_str),
+                        self._datasource = DataSource.from_version_node_ids(
+                            json.loads(self._llm_session.source_version_node_ids_str),
                             self._llm_session.organization_id,
                         )
                     self._datasource_changed_since_llm_session = (
-                        json.dumps(self._datasource.node_ids, cls=UUIDEncoder)
-                        != self._llm_session.source_node_ids_str
+                        json.dumps(self._datasource.version_node_ids, cls=UUIDEncoder)
+                        != self._llm_session.source_version_node_ids_str
                     )
                     if self._datasource_changed_since_llm_session:
-                        self._llm_session.source_node_ids_str = json.dumps(
-                            self._datasource.node_ids, cls=UUIDEncoder
+                        self._llm_session.source_version_node_ids_str = json.dumps(
+                            self._datasource.version_node_ids, cls=UUIDEncoder
                         )
                         session.add(self._llm_session)
                         session.commit()
@@ -83,10 +87,10 @@ class PipelineRequest(BaseModel, ABC):
                 self._llm_session = RuntimeLlmSession(
                     organization_id=organization_id,
                     user_id=user_id,
-                    source_node_ids_str=json.dumps(
-                        self._datasource.node_ids, cls=UUIDEncoder
+                    source_version_node_ids_str=json.dumps(
+                        self._datasource.version_node_ids, cls=UUIDEncoder
                     ),
-                    page_node_id=page_node_id,
+                    page_version_node_id=page_version_node_id,
                 )
                 session.add(self._llm_session)
                 session.commit()
@@ -95,8 +99,8 @@ class PipelineRequest(BaseModel, ABC):
     @property
     def datasource(self) -> DataSource:
         if not hasattr(self, "_datasource"):
-            self._datasource = DataSource.from_node_ids(
-                self.node_ids,
+            self._datasource = DataSource.from_version_node_ids(
+                self.version_node_ids,
                 organization_id=self.organization_id,
             )
         return self._datasource

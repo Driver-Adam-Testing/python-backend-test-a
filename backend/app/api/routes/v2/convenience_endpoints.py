@@ -8,6 +8,7 @@ from database.models import (
     UserCache,
     Version,
     VersionCreator,
+    VersionNode,
 )
 from database.models_enums import (
     NodeKind,
@@ -29,6 +30,7 @@ from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action, enforce_org_membership
 
 
+# FURNISSJ: change node_id to version_node_id
 @router.put("/edit_page/{node_id}", response_model=None)
 def edit_page_CONVENIENCE_METHOD(
     session: CurrentSession,
@@ -39,29 +41,32 @@ def edit_page_CONVENIENCE_METHOD(
     # Fetch the derived content and ensure it belongs to the user's organization
     query = (
         select(DocumentSource)
-        .join(DocumentSource.source_node)
-        .join(Node.version)
+        .join(DocumentSource.source_version_node)
+        .join(VersionNode.version)
         .join(Version.primary_asset)
         .options(
-            selectinload(DocumentSource.source_node).selectinload(Node.version),
+            selectinload(DocumentSource.source_version_node).selectinload(
+                VersionNode.version
+            ),
         )
         .where(PrimaryAsset.organization_id == user.organization_id)
-        .where(DocumentSource.page_node_id == node_id)
+        .where(DocumentSource.page_version_node_id == node_id)
     )
     doc_sources = session.exec(query).all()
     for doc_source in doc_sources:
         enforce_asset_action(
             db=session,
             user=user,
-            asset_id=doc_source.source_node.version.primary_asset_id,
+            asset_id=doc_source.source_version_node.version.primary_asset_id,
             action_key="asset.use_as_source",
         )
 
     derived_content = session.exec(
         select(DerivedContent)
         .join(Node)
-        .join(Version)
-        .join(PrimaryAsset)
+        .join(Node.version_nodes)
+        .join(VersionNode.version)
+        .join(Version.primary_asset)
         .where(Node.id == node_id)
         .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
@@ -77,8 +82,8 @@ def edit_page_CONVENIENCE_METHOD(
         derived_content.content_name = payload.content_name
         primary_asset = session.exec(
             select(PrimaryAsset)
-            .join(Version)
-            .join(Node)
+            .join(Version.version_nodes)
+            .join(VersionNode.node)
             .where(Node.id == derived_content.node_id)
             .where(
                 PrimaryAsset.kind.in_(
@@ -130,7 +135,6 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
         vcs_auto_update_policy=None,
     )
     session.add(new_primary_asset)
-    session.commit()
 
     creator = session.exec(
         select(UserCache).where(UserCache.id == user.user_id)
@@ -138,8 +142,7 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     if creator is None:
         creator = UserCache(id=user.user_id, full_name=user.full_name, email=user.email)
         session.add(creator)
-        session.commit()
-        session.refresh(creator)
+    session.flush()
 
     new_version = Version(
         primary_asset_id=new_primary_asset.id,
@@ -148,27 +151,34 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
         vcs_metadata=None,
     )
     session.add(new_version)
-    session.commit()
 
     new_version_creator = VersionCreator(version_id=new_version.id, user_id=creator.id)
     session.add(new_version_creator)
-    session.commit()
 
     new_node = Node(
-        version_id=new_version.id, relative_path="page", kind=NodeKind.OTHER
+        kind=NodeKind.OTHER,
+        primary_asset_id=new_primary_asset.id,
+        source_hash=None,
     )
     session.add(new_node)
-    session.commit()
+    session.flush()
+
+    new_version_node = VersionNode(
+        version_id=new_version.id,
+        node_id=new_node.id,
+        relative_path="NODE",
+    )
+    session.add(new_version_node)
 
     new_derived_content = DerivedContent(
         content_kind="application_note",
         node_id=new_node.id,
-        relative_path="page",
         content="",
         content_name=new_display_name,
         misc_metadata={},
     )
     session.add(new_derived_content)
+
     session.commit()
     session.refresh(new_derived_content)
 

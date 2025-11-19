@@ -17,6 +17,12 @@ from database.models_enums import (
     PrincipalKind,
     SourceVisibility,
 )
+from shared.authorization.helpers import (
+    build_grant_condition,
+    get_user_team_ids,
+    is_org_member,
+    is_super_admin,
+)
 from shared.authorization.query_filters import asset_visibility_expr
 from sqlalchemy import case, literal, literal_column, union_all
 from sqlalchemy.orm import selectinload
@@ -139,13 +145,6 @@ def get_user_effective_roles_for_assets_batch(
     Calculate effective roles for a user on multiple assets using the same logic
     as effective_asset_role_expr but optimized for batch processing.
     """
-    from app.authorization.helpers import (
-        build_grant_condition,
-        get_user_team_ids,
-        is_org_member,
-        is_super_admin,
-    )
-
     if not asset_ids:
         return {}
 

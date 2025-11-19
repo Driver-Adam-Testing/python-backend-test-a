@@ -2,7 +2,7 @@ import uuid
 from collections import defaultdict
 
 from database.db import get_session
-from database.models import DocumentSource, Node, PrimaryAsset, Version
+from database.models import DocumentSource, Node, PrimaryAsset, Version, VersionNode
 from database.models_enums import NodeKind
 from pydantic import BaseModel, Field, PrivateAttr
 from sqlalchemy.orm import selectinload
@@ -11,60 +11,65 @@ from sqlmodel import and_, or_, select
 
 class DataSource(BaseModel):
     """
-    A DataSource represents a set of node_ids that belong to a single organization.
-    It also provides an optional cache of the underlying Node objects.
+    A DataSource represents a set of version_node_ids that belong to a single organization.
+    It also provides an optional cache of the underlying VersionNode objects and their associated Nodes.
     """
 
-    node_ids: list[uuid.UUID] = Field(default_factory=list)
+    version_node_ids: list[uuid.UUID] = Field(default_factory=list)
     organization_id: str
 
-    # Cache for the Node objects so we don't re-fetch on every property access
-    _cached_nodes: list[Node] | None = PrivateAttr(default=None)
+    # Cache for the VersionNode objects so we don't re-fetch on every property access
+    _cached_version_nodes: list[VersionNode] | None = PrivateAttr(default=None)
 
-    def __init__(self, node_ids: list[uuid.UUID], organization_id: str) -> None:
+    def __init__(self, version_node_ids: list[uuid.UUID], organization_id: str) -> None:
         """
         Initialize the DataSource.
 
-        Validates that all given node_ids belong to the specified organization_id.
+        Validates that all given version_node_ids belong to the specified organization_id.
         Raises:
-            ValueError: If any node_id does not match the given organization_id.
+            ValueError: If any version_node_id does not match the given organization_id.
         """
-        super().__init__(node_ids=node_ids, organization_id=organization_id)
+        super().__init__(
+            version_node_ids=version_node_ids, organization_id=organization_id
+        )
 
-        if self.node_ids:
+        version_node_pairs = []
+        if self.version_node_ids:
             with get_session() as session:
                 stmt = (
-                    select(Node.id)
-                    .join(Version, Node.version_id == Version.id)
+                    select(VersionNode.id)
+                    .join(Version, VersionNode.version_id == Version.id)
                     .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
                     .where(PrimaryAsset.organization_id == self.organization_id)
-                    .where(Node.id.in_(self.node_ids))
+                    .where(VersionNode.id.in_(self.version_node_ids))
                 )
                 matching_ids = session.exec(stmt).all()
-                if len(matching_ids) != len(self.node_ids):
+                if len(matching_ids) != len(self.version_node_ids):
                     raise ValueError(
-                        "Some node_ids do not match the given organization_id."
+                        "Some version_node_ids do not match the given organization_id."
                     )
-                node_list = session.exec(
-                    select(Node).where(Node.id.in_(self.node_ids))
-                ).all()
 
-        self._cached_nodes = None
-        self._is_tuned = self._calculate_is_tuned(node_list)
+                # Get VersionNode and Node data for _calculate_is_tuned
+                stmt = (
+                    select(VersionNode, Node)
+                    .join(Node, VersionNode.node_id == Node.id)
+                    .where(VersionNode.id.in_(self.version_node_ids))
+                )
+                version_node_pairs = session.exec(stmt).all()
+
+        self._cached_version_nodes = None
+        self._is_tuned = self._calculate_is_tuned(version_node_pairs)
 
     @staticmethod
-    def _calculate_is_tuned(nodes: list[Node]) -> bool:
-        for node in nodes:
-            if (
-                node.kind == NodeKind.CODEBASE_DIRECTORY
-                and node.relative_path.endswith("/")
-                and node.relative_path.count("/") == 1
-            ):
-                # node is a root level directory
+    def _calculate_is_tuned(version_node_pairs: list[tuple[VersionNode, Node]]) -> bool:
+        for version_node, node in version_node_pairs:
+            if node.kind == NodeKind.CODEBASE_DIRECTORY and version_node.depth == 1:
+                # node is a root level directory (depth 1)
                 pass
 
-            elif node.kind == NodeKind.OTHER and node.relative_path.lower().endswith(
-                "pdf"
+            elif (
+                node.kind == NodeKind.OTHER
+                and version_node.relative_path.lower().endswith("pdf")
             ):
                 # node is a PDF file
                 pass
@@ -75,31 +80,35 @@ class DataSource(BaseModel):
         return False
 
     @classmethod
-    def from_node_ids(
-        cls, node_ids: list[uuid.UUID], organization_id: str
+    def from_version_node_ids(
+        cls, version_node_ids: list[uuid.UUID], organization_id: str
     ) -> "DataSource":
         """
-        Factory that constructs a DataSource directly from node_ids & organization_id.
+        Factory that constructs a DataSource directly from version_node_ids & organization_id.
         """
-        datasource = cls(node_ids=node_ids, organization_id=organization_id)
+        datasource = cls(
+            version_node_ids=version_node_ids, organization_id=organization_id
+        )
         return datasource
 
     @classmethod
     def from_page_id(
-        cls, page_node_id: uuid.UUID, organization_id: str
+        cls, page_version_node_id: uuid.UUID, organization_id: str
     ) -> "DataSource":
         """
-        Example of pulling node_ids from DocumentSource (legacy usage).
+        Factory that constructs a DataSource from DocumentSource entries linked to a page.
         """
 
         with get_session() as session:
             stmt = select(DocumentSource).where(
-                DocumentSource.page_node_id == page_node_id
+                DocumentSource.page_version_node_id == page_version_node_id
             )
             document_sources = session.exec(stmt).all()
-            node_ids = [ds.source_node_id for ds in document_sources]
+            version_node_ids = [ds.source_version_node_id for ds in document_sources]
 
-            datasource = cls(node_ids=node_ids, organization_id=organization_id)
+            datasource = cls(
+                version_node_ids=version_node_ids, organization_id=organization_id
+            )
             return datasource
 
     @classmethod
@@ -110,21 +119,21 @@ class DataSource(BaseModel):
         version_id: str | None = None,
     ) -> "DataSource":
         """
-        Example of pulling node_ids from relative_paths.
+        Factory that constructs a DataSource from relative paths, optionally within a specific version.
         """
         with get_session() as session:
             stmt = (
-                select(Node)
-                .join(Version, Node.version_id == Version.id)
+                select(VersionNode)
+                .join(Version, VersionNode.version_id == Version.id)
                 .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
                 .where(
-                    Node.relative_path.in_(relative_paths),
+                    VersionNode.relative_path.in_(relative_paths),
                     PrimaryAsset.organization_id == organization_id,
                     or_(
-                        Node.version_id == version_id,
+                        VersionNode.version_id == version_id,
                         and_(
                             version_id is None,
-                            Node.version_id
+                            VersionNode.version_id
                             == select(Version.id)
                             .where(Version.primary_asset_id == PrimaryAsset.id)
                             .order_by(Version.updated_at.desc())
@@ -135,47 +144,57 @@ class DataSource(BaseModel):
                     ),
                 )
             )
-            nodes = session.exec(stmt).all()
-            node_ids = [node.id for node in nodes]
-            return cls(node_ids=node_ids, organization_id=organization_id)
+            version_nodes = session.exec(stmt).all()
+            version_node_ids = [vn.id for vn in version_nodes]
+            return cls(
+                version_node_ids=version_node_ids, organization_id=organization_id
+            )
 
     @property
-    def nodes(self) -> list[Node]:
+    def version_nodes(self) -> list[VersionNode]:
         """
-        Returns the list of cached Node objects, loading them if necessary.
+        Returns the list of cached VersionNode objects plus all their descendants, loading them if necessary.
         """
-        if self._cached_nodes is None:
+        if self._cached_version_nodes is None:
             with get_session() as session:
-                # Load all ancestors in a single query
-                ancestors = session.exec(
-                    select(Node)
-                    .options(selectinload(Node.version))
-                    .where(Node.id.in_(self.node_ids))
+                # Load all ancestor VersionNodes
+                ancestor_version_nodes = session.exec(
+                    select(VersionNode)
+                    .options(selectinload(VersionNode.node))
+                    .where(VersionNode.id.in_(self.version_node_ids))
                 ).all()
 
                 # Build a set of conditions for any ancestor's version/path
                 conditions = []
-                for anc in ancestors:
+                for anc_vn in ancestor_version_nodes:
                     conditions.append(
                         and_(
-                            Node.version_id == anc.version_id,
-                            Node.depth > anc.depth,
-                            Node.relative_path.startswith(anc.relative_path),
+                            VersionNode.version_id == anc_vn.version_id,
+                            VersionNode.depth > anc_vn.depth,
+                            VersionNode.relative_path.startswith(anc_vn.relative_path),
                         )
                     )
 
-                # Query descendants in one shot using OR across all conditions
+                # Query descendant VersionNodes in one shot using OR across all conditions
                 if conditions:
-                    descendants_stmt = select(Node).where(or_(*conditions))
-                    descendants = session.exec(descendants_stmt).all()
+                    descendant_version_nodes_stmt = (
+                        select(VersionNode)
+                        .options(selectinload(VersionNode.node))
+                        .where(or_(*conditions))
+                    )
+                    descendant_version_nodes = session.exec(
+                        descendant_version_nodes_stmt
+                    ).all()
                 else:
-                    descendants = []
+                    descendant_version_nodes = []
 
-                id_to_node = {}
-                for node in ancestors + descendants:
-                    id_to_node[node.id] = node
-                self._cached_nodes = list(id_to_node.values())
-        return self._cached_nodes
+                # Combine and deduplicate VersionNodes
+                id_to_version_node = {
+                    vn.id: vn
+                    for vn in ancestor_version_nodes + descendant_version_nodes
+                }
+                self._cached_version_nodes = list(id_to_version_node.values())
+        return self._cached_version_nodes
 
     def describe_contents_char_limit(self, char_limit: int) -> str:
         """
@@ -204,25 +223,25 @@ class DataSource(BaseModel):
         """
         summary_lines = []
 
-        def build_tree(nodes: list[Node]) -> dict:
+        def build_tree(version_nodes: list[VersionNode]) -> dict:
             built_tree = {"children": {}, "files": []}
-            for node in nodes:
-                parts = node.relative_path.strip("/").split("/")
+            for vn in version_nodes:
+                parts = vn.relative_path.strip("/").split("/")
                 current = built_tree
                 for i, part in enumerate(parts):
                     if i == len(parts) - 1:
-                        if node.kind == NodeKind.CODEBASE_DIRECTORY:
+                        if vn.node and vn.node.kind == NodeKind.CODEBASE_DIRECTORY:
                             current.setdefault("children", {})
                             if part not in current["children"]:
                                 current["children"][part] = {
-                                    "node": node,
+                                    "node": vn.node,
                                     "children": {},
                                     "files": [],
                                 }
                             else:
-                                current["children"][part]["node"] = node
+                                current["children"][part]["node"] = vn.node
                         else:
-                            current.setdefault("files", []).append((part, node))
+                            current.setdefault("files", []).append((part, vn.node))
                     else:
                         current.setdefault("children", {})
                         if part not in current["children"]:
@@ -263,20 +282,20 @@ class DataSource(BaseModel):
                     # Recurse into the folder.
                     traverse_tree(folder_value, indent + 1)
 
-        # Group nodes by version to avoid mixing versions.
+        # Group version nodes by version to avoid mixing versions.
 
         version_groups = defaultdict(list)
-        for node in self.nodes:
-            version_groups[node.version_id].append(node)
+        for vn in self.version_nodes:
+            version_groups[vn.version_id].append(vn)
 
         # Build summary for each version.
-        for version_id, grouped_nodes in sorted(
+        for version_id, grouped_version_nodes in sorted(
             version_groups.items(), key=lambda x: str(x[0])
         ):
             summary_lines.append(
                 f"Tuned = {self._is_tuned}\nVersion: {str(version_id)[:8]} ..."
             )
-            built_tree = build_tree(grouped_nodes)
+            built_tree = build_tree(grouped_version_nodes)
             traverse_tree(built_tree, indent=1)
 
         return "\n".join(summary_lines)

@@ -154,6 +154,7 @@ def _list_assets_with_filter(
             selectinload(PrimaryAsset.most_recent_completed_version)
             .selectinload(Version.root_node)
             .selectinload(Node.contents),
+            selectinload(PrimaryAsset.tags),
             with_loader_criteria(
                 DerivedContent,
                 DerivedContent.content_kind == ContentKind.TOP_LEVEL_TERSE_SENTENCE,

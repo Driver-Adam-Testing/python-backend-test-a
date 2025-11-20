@@ -20,7 +20,13 @@ from typing import Any
 
 from auth0.management import Auth0
 from database.db import engine
-from database.models import Auth0SyncRun, Organization, OrgMembership, User
+from database.models import (
+    Auth0SyncRun,
+    Organization,
+    OrgMembership,
+    TeamMembership,
+    User,
+)
 from database.models_enums import OrgRole, SourceVisibility
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
@@ -355,6 +361,13 @@ class Auth0Sync:
 
         for user in db_users:
             if user.id not in auth0_user_ids:
+                # Delete team memberships first to avoid FK violation
+                team_memberships = session.exec(
+                    select(TeamMembership).where(TeamMembership.user_id == user.id)
+                ).all()
+                for membership in team_memberships:
+                    session.delete(membership)
+
                 session.delete(user)
                 if self.verbose:
                     logger.debug(f"Deleted stale user: {user.email} ({user.id})")

@@ -328,15 +328,22 @@ class TeamService:
 
         try:
             # Delete source grants for this team
-            acl_grants = (
-                self.session.query(PrimaryAssetRoleGrant)
-                .filter(PrimaryAssetRoleGrant.team_id == team_id)
-                .all()
-            )
+            acl_grants = self.session.exec(
+                select(PrimaryAssetRoleGrant).where(
+                    PrimaryAssetRoleGrant.team_id == team_id
+                )
+            ).all()
             for grant in acl_grants:
                 self.session.delete(grant)
 
-            # Delete team (cascade will handle TeamMembership)
+            # Delete team memberships
+            team_memberships = self.session.exec(
+                select(TeamMembership).where(TeamMembership.team_id == team_id)
+            ).all()
+            for membership in team_memberships:
+                self.session.delete(membership)
+
+            # Delete team
             team_repository.delete_team(self.session, team)
             logger.info(f"Team {team_id} deleted successfully")
         except Exception as e:

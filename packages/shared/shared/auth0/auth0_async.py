@@ -47,3 +47,27 @@ class AsyncAuth0Service(Auth0Service):
         except Exception as e:
             logger.error(f"Something went wrong listing organizations for {user_id}")
             raise e
+
+    async def list_user_organization_roles_async(
+        self, org_id: str, user_id: str
+    ) -> list[dict]:
+        """
+        Returns the same format as the sync version.
+        """
+        try:
+            mgmt_token = self.get_mgmt_api_token()
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"https://{self.auth0_mgmt_domain}/api/v2/organizations/{org_id}/members/{user_id}/roles",
+                    headers={"Authorization": f"Bearer {mgmt_token}"},
+                    params={"per_page": 100},
+                )
+                response.raise_for_status()
+
+                roles = response.json()
+                return roles
+
+        except Exception as e:
+            logger.error(f"Something went wrong listing organizations for {user_id}")
+            raise e

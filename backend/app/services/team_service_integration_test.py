@@ -67,6 +67,17 @@ class TestTeamLifecycleIntegration:
         """
         org_id = "test-org-id"
         mock_user = create_mock_user(org_id)
+
+        # Ensure mock_user exists in DB as super admin so they can access teams
+        Auth0UserFactory.create(
+            integration_db_session,
+            user_id=mock_user.user_id,
+            organization_id=org_id,
+            org_role=OrgRole.org_super_admin,
+            email="test-user@example.com",
+            name="Test User",
+        )
+
         service = TeamService(integration_db_session)
         member_service = TeamMemberService(integration_db_session)
 

@@ -199,7 +199,7 @@ def get_document_set(
             VersionNode.version_id == version.id,
             VersionNode.relative_path == relative_path,
         )
-        .options(selectinload(VersionNode.node, VersionNode.version))
+        .options(selectinload(VersionNode.node), selectinload(VersionNode.version))
     ).one_or_none()
 
     if not version_node:

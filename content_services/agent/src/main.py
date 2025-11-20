@@ -37,7 +37,7 @@ agent_model_config["proxy"] = (
 )
 
 
-@app.function(timeout=3600, **agent_model_config, min_containers=10)
+@app.function(timeout=3600, **agent_model_config, min_containers=0)
 def run(input: dict) -> any:
     from shared.interfaces.agents.pipeline_configuration import BlockKind, PipelineInput
     from shared.pipelines.agents.execute import execute_sequence

@@ -24,6 +24,7 @@ from database.models import (
     Auth0SyncRun,
     Organization,
     OrgMembership,
+    PrimaryAssetRoleGrant,
     TeamMembership,
     User,
 )
@@ -308,7 +309,7 @@ class Auth0Sync:
 
                 # Check app_metadata for initial role
                 app_metadata = user_data.get("app_metadata", {})
-                print(app_metadata)
+
                 if org_id in app_metadata:
                     role_str = app_metadata[org_id].get("initial_org_role")
                     if role_str:
@@ -367,6 +368,16 @@ class Auth0Sync:
                 ).all()
                 for membership in team_memberships:
                     session.delete(membership)
+
+                # Delete primary asset role grants to avoid FK violation
+                grants = session.exec(
+                    select(PrimaryAssetRoleGrant).where(
+                        PrimaryAssetRoleGrant.user_id == user.id
+                    )
+                ).all()
+                for grant in grants:
+                    session.delete(grant)
+
                 session.flush()
 
                 session.delete(user)

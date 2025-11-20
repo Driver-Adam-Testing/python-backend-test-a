@@ -826,12 +826,18 @@ class VersionNode(SQLModel, table=True):
     document_sources: list["DocumentSource"] = Relationship(
         back_populates="source_version_node",
         sa_relationship_kwargs={
-            "foreign_keys": "DocumentSource.source_version_node_id"
+            "foreign_keys": "DocumentSource.source_version_node_id",
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
         },
     )
     page_sources: list["DocumentSource"] = Relationship(
         back_populates="page_version_node",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_version_node_id"},
+        sa_relationship_kwargs={
+            "foreign_keys": "DocumentSource.page_version_node_id",
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
     )
 
 

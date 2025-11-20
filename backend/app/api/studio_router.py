@@ -6,7 +6,6 @@ from app.api.routes.v1 import (
     codebase,
     content,
     git_provider,
-    members_search,
     organization,
     organization_settings,
     source_teams,
@@ -73,7 +72,6 @@ studio_router.include_router(
 studio_router.include_router(
     user_sources.router, prefix="/admin/users", tags=["admin-users"]
 )
-studio_router.include_router(members_search.router, prefix="/members", tags=["members"])
 studio_router.include_router(
     admin_sources.router, prefix="/admin/sources", tags=["admin-sources"]
 )

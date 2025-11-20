@@ -335,7 +335,6 @@ class TeamService:
             ).all()
             for grant in acl_grants:
                 self.session.delete(grant)
-
             # Delete team memberships
             team_memberships = self.session.exec(
                 select(TeamMembership).where(TeamMembership.team_id == team_id)
@@ -343,8 +342,11 @@ class TeamService:
             for membership in team_memberships:
                 self.session.delete(membership)
 
+            self.session.flush()
+
             # Delete team
-            team_repository.delete_team(self.session, team)
+            self.session.delete(team)
+            self.session.commit()
             logger.info(f"Team {team_id} deleted successfully")
         except Exception as e:
             self.session.rollback()

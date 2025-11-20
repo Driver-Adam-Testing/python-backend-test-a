@@ -367,6 +367,7 @@ class Auth0Sync:
                 ).all()
                 for membership in team_memberships:
                     session.delete(membership)
+                session.flush()
 
                 session.delete(user)
                 if self.verbose:

@@ -2,7 +2,7 @@
 
 from database.models import OrgMembership, User
 from database.models_enums import OrgRole
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, func, select
 
 
 def check_user_in_organization(
@@ -133,11 +133,12 @@ def list_organization_members(
         base_conditions.append(OrgMembership.role.in_(roles))
 
     count_query = (
-        select(OrgMembership)
+        select(func.count())
+        .select_from(OrgMembership)
         .join(User, User.id == OrgMembership.user_id)
         .where(*base_conditions)
     )
-    total_count = len(session.exec(count_query).all())
+    total_count = session.exec(count_query).one()
 
     query = (
         select(User.id, User.email, User.name, OrgMembership.role)

@@ -15,12 +15,10 @@ from app.schemas.user_schema import (
     AddUserSourcesRequest,
     AddUserTeamsRequest,
     AssignmentType,
-    OrganizationMembersResponse,
     RemoveUserSourcesRequest,
     RemoveUserTeamsRequest,
     UpdateUserSourcesRequest,
     UpdateUserTeamsRequest,
-    UserResponse,
     UserSourceResponse,
     UserSourcesResponse,
     UserTeamResponse,
@@ -35,55 +33,6 @@ class UserService:
 
     def __init__(self, session: Session) -> None:
         self.session = session
-
-    def search_organization_users(
-        self,
-        user: User,
-        query: str,
-        limit: int = 30,
-        offset: int = 0,
-    ) -> OrganizationMembersResponse:
-        """
-        Search for users within an organization.
-
-        Args:
-            user: Authenticated user making the request
-            query: Search query for name or email
-            limit: Maximum number of results
-            offset: Number of results to skip
-
-        Returns:
-            OrganizationMembersResponse with users and total count
-        """
-        organization_id = user.organization_id
-        users = user_repository.search_organization_users(
-            session=self.session,
-            organization_id=organization_id,
-            query=query,
-            limit=limit,
-            offset=offset,
-        )
-
-        total = user_repository.count_organization_users(
-            session=self.session,
-            organization_id=organization_id,
-            query=query,
-        )
-
-        members = [
-            UserResponse(
-                user_id=user.id,
-                name=user.name or "",
-                email=user.email or "",
-                picture="",  # TODO: Fetch from Auth0 or add to User model
-            )
-            for user in users
-        ]
-
-        return OrganizationMembersResponse(
-            members=members,
-            total=total,
-        )
 
     def get_user_teams(
         self,

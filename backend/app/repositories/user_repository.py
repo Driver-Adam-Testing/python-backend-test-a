@@ -10,7 +10,6 @@ from database.models import (
     PrimaryAssetRoleGrant,
     Team,
     TeamMembership,
-    User,
 )
 from database.models_enums import OrgRole, PrimaryAssetKind, PrimaryAssetRole, TeamRole
 from shared.authorization.query_filters import (
@@ -22,79 +21,7 @@ from shared.authorization.query_filters import (
     user_org_role_expr,
 )
 from sqlalchemy.orm import selectinload
-from sqlmodel import Session, func, or_, select
-
-
-def search_organization_users(
-    session: Session,
-    organization_id: str,
-    query: str,
-    limit: int = 30,
-    offset: int = 0,
-) -> list[User]:
-    """
-    Search for users within an organization by name or email.
-
-    Args:
-        session: Database session
-        organization_id: Organization ID
-        query: Search query (case-insensitive)
-        limit: Maximum number of results
-        offset: Number of results to skip
-
-    Returns:
-        List of matching users
-    """
-    search_pattern = f"%{query}%"
-    search_query = (
-        select(User)
-        .join(OrgMembership, User.id == OrgMembership.user_id)
-        .where(
-            OrgMembership.org_id == organization_id,
-            or_(
-                User.name.ilike(search_pattern),
-                User.email.ilike(search_pattern),
-            ),
-        )
-        .order_by(User.name)
-        .offset(offset)
-        .limit(limit)
-    )
-
-    return list(session.exec(search_query).all())
-
-
-def count_organization_users(
-    session: Session,
-    organization_id: str,
-    query: str,
-) -> int:
-    """
-    Count users matching search query in an organization.
-
-    Args:
-        session: Database session
-        organization_id: Organization ID
-        query: Search query (case-insensitive)
-
-    Returns:
-        Count of matching users
-    """
-    search_pattern = f"%{query}%"
-    count_query = (
-        select(func.count())
-        .select_from(User)
-        .join(OrgMembership, User.id == OrgMembership.user_id)
-        .where(
-            OrgMembership.org_id == organization_id,
-            or_(
-                User.name.ilike(search_pattern),
-                User.email.ilike(search_pattern),
-            ),
-        )
-    )
-
-    return session.exec(count_query).one()
+from sqlmodel import Session, func, select
 
 
 def get_user_teams_with_details(

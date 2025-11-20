@@ -24,19 +24,6 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/roles", status_code=200)
-def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
-    session: CurrentSession,
-    user: UserToken,
-    page: int = 0,
-    per_page: int = 100,
-):
-    enforce_org_action(session, user, "users.view")
-    logger.info(f"Listing roles for organization = {user.organization_id}")
-    auth0_service = create_auth0_service()
-    return auth0_service.list_roles(page=page, per_page=per_page)
-
-
 @router.get("/users", status_code=200)
 def list_members(
     session: CurrentSession,

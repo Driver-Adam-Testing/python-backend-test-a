@@ -328,11 +328,37 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
         ).first()
 
         if is_member and not existing_membership:
-            new_membership = OrgMembership(
-                user_id=user_id, org_id=org_id, role=OrgRole.org_member
-            )
+            # Create new membership
+            # Default role
+            role = OrgRole.org_member
+
+            # Ensure we have user_data to check app_metadata
+            try:
+                user_data = auth0_service.get_user_profile(user_id)
+            except requests.exceptions.HTTPError as e:
+                if e.response is not None and e.response.status_code == 404:
+                    logger.info(
+                        f"User {user_id} not found in Auth0 when fetching role (deleted?), defaulting to member role"
+                    )
+                    user_data = {}
+                else:
+                    raise
+
+            # Check app_metadata for initial role
+            app_metadata = user_data.get("app_metadata", {})
+
+            if org_id in app_metadata:
+                role_str = app_metadata[org_id].get("initial_org_role")
+                if role_str:
+                    try:
+                        role = OrgRole(role_str)
+                    except ValueError:
+                        logger.warning(
+                            f"Invalid role '{role_str}' in app_metadata for user {user_id} org {org_id}. Using default."
+                        )
+            new_membership = OrgMembership(user_id=user_id, org_id=org_id, role=role)
             session.add(new_membership)
-            logger.info(f"Created membership: {user_id} in {org_id}")
+            logger.info(f"Created membership: {user_id} in {org_id} with role {role}")
             entities_updated.append("membership")
         elif not is_member and existing_membership:
             session.delete(existing_membership)

@@ -1,4 +1,4 @@
-from database.models import PrimaryAsset, Version
+from database.models import PrimaryAsset, Version, VersionNode
 from fastapi import Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
@@ -35,7 +35,7 @@ def list_versions(
         .where(exclude_page_assets_filter())
         .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
         .options(
-            selectinload(Version.root_node),
+            selectinload(Version.root_version_node).selectinload(VersionNode.node),
             selectinload(Version.primary_asset),
             selectinload(Version.creator),
         )

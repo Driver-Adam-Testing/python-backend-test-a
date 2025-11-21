@@ -120,24 +120,24 @@ def _list_assets_with_filter(
         .options(
             selectinload(PrimaryAsset.most_recent_version),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
-                Version.version_nodes
+                Version.root_version_node
             ),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.creator
             ),
             selectinload(PrimaryAsset.most_recent_version)
-            .selectinload(Version.version_nodes)
+            .selectinload(Version.root_version_node)
             .selectinload(VersionNode.node)
             .selectinload(Node.contents),
             selectinload(PrimaryAsset.most_recent_completed_version),
             selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
-                Version.version_nodes
+                Version.root_version_node
             ),
             selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
                 Version.creator
             ),
             selectinload(PrimaryAsset.most_recent_completed_version)
-            .selectinload(Version.version_nodes)
+            .selectinload(Version.root_version_node)
             .selectinload(VersionNode.node)
             .selectinload(Node.contents),
             with_loader_criteria(

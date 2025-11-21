@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models import DocumentSource, Node, VersionNode
+from database.models import DocumentSource, VersionNode
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -60,8 +60,8 @@ async def create_streaming_post(
         )
     request = ChatPipelineRequest(
         user_prompt=payload.user_prompt,
-        node_ids=payload.source_node_ids,
-        page_node_id=payload.page_node_id,
+        version_node_ids=payload.source_node_ids,
+        page_version_node_id=payload.page_node_id,
         organization_id=user.organization_id,
         user_id=user.user_id,
         relative_paths=payload.relative_paths,

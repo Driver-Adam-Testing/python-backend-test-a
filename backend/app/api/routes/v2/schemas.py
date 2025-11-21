@@ -56,14 +56,26 @@ class VersionRead(BaseModel):
 
 class NodeRead(BaseModel):
     id: UUID
-    version_id: UUID
-    relative_path: str
     kind: NodeKind
+    primary_asset_id: UUID | None
     created_at: datetime | None
     updated_at: datetime | None
-    depth: int
+
+    class Config:
+        from_attributes = True
+
+
+class VersionNodeRead(BaseModel):
+    id: UUID
+    version_id: UUID
+    relative_path: str
+    node_id: UUID
+    created_at: datetime | None
+    updated_at: datetime | None
     misc_metadata: dict | None
     total_files: int | None
+    depth: int
+    node: NodeRead | None
 
     class Config:
         from_attributes = True
@@ -78,7 +90,18 @@ class UserRead(BaseModel):
         from_attributes = True
 
 
-class NodeMetaReadWithTerseSentence(NodeRead):
+class NodeReadWithTerseSentence(NodeRead):
+    # NOTE: this is only used on the list_primary_assets endpoint
+    # With that endpoint, we want the terse sentence description
+    # DO NOT use this schema elsewhere without appropriate filters, otherwise it will
+    # load all contents for every node pulled.
+    contents: list["ContentRead"] | None
+
+    class Config:
+        from_attributes = True
+
+
+class VersionNodeMetaReadWithTerseSentence(NodeRead):
     # NOTE: this is only used on the list_primary_assets endpoint
     # With that endpoint, we want the terse sentence description
     # DO NOT use this schema elsewhere without appropriate filters, otherwise it will
@@ -86,13 +109,13 @@ class NodeMetaReadWithTerseSentence(NodeRead):
     id: UUID
     version_id: UUID
     relative_path: str
-    kind: NodeKind
+    node_id: UUID
     created_at: datetime | None
     updated_at: datetime | None
     misc_metadata: dict | None
     total_files: int | None
     depth: int
-    contents: list["ContentRead"] | None
+    node: NodeReadWithTerseSentence | None
 
     class Config:
         from_attributes = True
@@ -165,7 +188,7 @@ class NodeDetailRead(NodeRead):
 
 class VersionDetailRead(VersionRead):
     primary_asset: PrimaryAssetRead
-    root_node: NodeRead | None
+    root_version_node: VersionNodeRead | None
     creator: UserRead | None
 
     class Config:
@@ -179,7 +202,7 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
     # Do NOT use the schema elsewhere without appropriate filters, or it will fetch all contents
     # for every node pulled.
     class PrimaryAssetVersionRead(VersionRead):
-        root_node: NodeMetaReadWithTerseSentence | None
+        root_version_node: VersionNodeMetaReadWithTerseSentence | None
         creator: UserRead | None
 
     most_recent_version: PrimaryAssetVersionRead | None

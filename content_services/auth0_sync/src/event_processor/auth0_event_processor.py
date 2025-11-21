@@ -328,11 +328,29 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
         ).first()
 
         if is_member and not existing_membership:
-            new_membership = OrgMembership(
-                user_id=user_id, org_id=org_id, role=OrgRole.org_member
-            )
+            logger.info(f"Adding membership: {user_id} to {org_id}")
+            # Create new membership
+            # Default role
+            role = OrgRole.org_member
+
+            # Ensure we have user_data to check app_metadata
+            user_data = auth0_service.get_user_profile(user_id)
+
+            if not user_data:
+                raise ValueError(
+                    f"Failed to fetch user data for {user_id} during membership processing."
+                )
+
+            # Check app_metadata for initial role
+            app_metadata = user_data["app_metadata"]
+
+            if org_id in app_metadata:
+                role_str = app_metadata[org_id]["initial_org_role"]
+                role = OrgRole(role_str)
+
+            new_membership = OrgMembership(user_id=user_id, org_id=org_id, role=role)
             session.add(new_membership)
-            logger.info(f"Created membership: {user_id} in {org_id}")
+            logger.info(f"Created membership: {user_id} in {org_id} with role {role}")
             entities_updated.append("membership")
         elif not is_member and existing_membership:
             session.delete(existing_membership)

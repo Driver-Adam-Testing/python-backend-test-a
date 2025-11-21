@@ -328,11 +328,25 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
         ).first()
 
         if is_member and not existing_membership:
-            new_membership = OrgMembership(
-                user_id=user_id, org_id=org_id, role=OrgRole.org_member
-            )
+            # Create new membership
+            # Default role
+            role = OrgRole.org_member
+
+            # Check app_metadata for initial role
+            app_metadata = user_data.get("app_metadata", {})
+
+            if org_id in app_metadata:
+                role_str = app_metadata[org_id].get("initial_org_role")
+                if role_str:
+                    try:
+                        role = OrgRole(role_str)
+                    except ValueError:
+                        logger.warning(
+                            f"Invalid role '{role_str}' in app_metadata for user {user_id} org {org_id}. Using default."
+                        )
+            new_membership = OrgMembership(user_id=user_id, org_id=org_id, role=role)
             session.add(new_membership)
-            logger.info(f"Created membership: {user_id} in {org_id}")
+            logger.info(f"Created membership: {user_id} in {org_id} with role {role}")
             entities_updated.append("membership")
         elif not is_member and existing_membership:
             session.delete(existing_membership)

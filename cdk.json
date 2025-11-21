@@ -1,5 +1,5 @@
 {
-  "app": "python3 cdk_app.py",
+  "app": "poetry run python cdk_app.py",
   "watch": {
     "include": [
       "**"

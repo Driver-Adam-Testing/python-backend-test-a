@@ -69,9 +69,6 @@ else
   export HATCHET_WORKER_PUSHED=false
 fi
 
-npm install -g aws-cdk@latest
-pip install aws-cdk-lib
-pip install aws-cdk.aws-lambda-python-alpha
 set +e
 npx cdk deploy --require-approval never
 status=$?

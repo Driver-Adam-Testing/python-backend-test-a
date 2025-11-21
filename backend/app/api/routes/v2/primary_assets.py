@@ -199,7 +199,7 @@ def _list_assets_with_filter(
     count_query = select(func.count()).select_from(query.subquery())
     total_count = session.exec(count_query).one()
     # TODO: This is a hack to sort by total_files. We should use the query utils instead, but It's very problematic.
-    if pagination.sort_by == "most_recent_version.root_node.total_files":
+    if pagination.sort_by == "most_recent_version.root_version_node.total_files":
         results = session.exec(query).all()
         results = sorted(
             results,

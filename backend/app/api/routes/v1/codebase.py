@@ -120,7 +120,7 @@ def exec_codebase_generation(
             PrimaryAsset.organization_id == user.organization_id,
         )
         .options(
-            selectinload(Version.root_node),
+            selectinload(Version.root_version_node),
             selectinload(Version.primary_asset),
         )
     )
@@ -144,7 +144,7 @@ def exec_codebase_generation(
     total_codebase_size_in_bytes = 0
     for version in result:
         metadata = (
-            version.root_node.misc_metadata
+            version.root_version_node.misc_metadata
         )  # TODO: is this loaded as a dict? Or string?
         total_codebase_size_in_bytes += metadata["analyzable_bytes"]
     usage_balance = UsageService(session).get_usage_balance(user.organization_id)
@@ -161,7 +161,7 @@ def exec_codebase_generation(
             content_name=version.primary_asset.display_name,
             version_id=str(version.id),
         )
-        metadata = version.root_node.misc_metadata
+        metadata = version.root_version_node.misc_metadata
         codebase_size_in_bytes = metadata["analyzable_bytes"]
         with LLMUsageSession(
             user.organization_id, user.user_id, session_meta

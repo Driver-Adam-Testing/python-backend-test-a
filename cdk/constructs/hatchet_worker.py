@@ -153,7 +153,7 @@ class HatchetWorker(Construct):
             desired_count=2,  # Run 2 copies
             assign_public_ip=False,
             vpc_subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+                subnet_group_name="Private"
             ),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),
             min_healthy_percent=100,

@@ -53,42 +53,6 @@ class Backend(Construct):
         )
         self.vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC", vpc_id=vpc_id)
 
-        self.s3_vpc_endpoint = aws_ec2.GatewayVpcEndpoint(
-            self,
-            "S3VpcEndpoint",
-            vpc=self.vpc,
-            service=aws_ec2.GatewayVpcEndpointAwsService.S3,
-            subnets=[
-                aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_ISOLATED),
-                aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS),
-            ],
-        )
-
-        secrets_manager_endpoint_sg = aws_ec2.SecurityGroup(
-            self,
-            "SecretsManagerEndpointSecurityGroup",
-            vpc=self.vpc,
-            description="Security group for Secrets Manager VPC endpoint",
-            allow_all_outbound=False,
-        )
-        secrets_manager_endpoint_sg.add_ingress_rule(
-            peer=aws_ec2.Peer.ipv4(self.vpc.vpc_cidr_block),
-            connection=aws_ec2.Port.tcp(443),
-            description="Allow HTTPS from VPC (includes PRIVATE_ISOLATED and PRIVATE_WITH_EGRESS subnets)",
-        )
-
-        self.secrets_manager_vpc_endpoint = aws_ec2.InterfaceVpcEndpoint(
-            self,
-            "SecretsManagerVpcEndpoint",
-            vpc=self.vpc,
-            service=aws_ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-            private_dns_enabled=True,
-            subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
-            ),
-            security_groups=[secrets_manager_endpoint_sg],
-        )
-
         cluster_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/ecs/cluster/name"
         )
@@ -208,7 +172,7 @@ class Backend(Construct):
             domain_name=api_domain_name,
             task_image_options=task_options,
             task_subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+                subnet_group_name="Private"
             ),
             health_check_grace_period=Duration.seconds(120),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(

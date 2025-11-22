@@ -21,9 +21,8 @@ router = APIRouter()
 
 class ChatHttpRequest(BaseModel):
     user_prompt: str
-    # FURNISSJ: rename these variables
-    source_node_ids: list[UUID] | None = None
-    page_node_id: UUID | None = None
+    source_version_node_ids: list[UUID] | None = None
+    page_version_node_id: UUID | None = None
 
     llm_session_id: UUID | None = None
     relative_paths: list[str] | None = None
@@ -35,10 +34,10 @@ async def create_streaming_post(
     user: UserToken,
     payload: ChatHttpRequest,
 ) -> StreamingResponse:
-    source_ids = payload.source_node_ids or []
-    if payload.page_node_id:
+    source_ids = payload.source_version_node_ids or []
+    if payload.page_version_node_id:
         sources_query = select(DocumentSource).where(
-            DocumentSource.page_version_node_id == payload.page_node_id
+            DocumentSource.page_version_node_id == payload.page_version_node_id
         )
         sources = session.exec(sources_query).all()
         for source in sources:
@@ -60,8 +59,8 @@ async def create_streaming_post(
         )
     request = ChatPipelineRequest(
         user_prompt=payload.user_prompt,
-        version_node_ids=payload.source_node_ids,
-        page_version_node_id=payload.page_node_id,
+        version_node_ids=payload.source_version_node_ids,
+        page_version_node_id=payload.page_version_node_id,
         organization_id=user.organization_id,
         user_id=user.user_id,
         relative_paths=payload.relative_paths,

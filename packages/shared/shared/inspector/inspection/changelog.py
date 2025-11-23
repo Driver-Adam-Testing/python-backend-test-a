@@ -5,16 +5,21 @@ from enum import StrEnum
 from pathlib import Path
 
 from aiolimiter import AsyncLimiter
-from onboarding import azure_devops_ops, bitbucket_ops, gh_ops, gitlab_ops
 from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
+from shared.inspector.onboarding import (
+    azure_devops_ops,
+    bitbucket_ops,
+    gh_ops,
+    gitlab_ops,
+)
+from shared.inspector.utils.git_fetcher_pygit2 import CommitData, GitFetcher
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     Component,
     Prompt,
 )
 from tqdm.asyncio import tqdm_asyncio
-from utils.git_fetcher_pygit2 import CommitData, GitFetcher
 
 MAX_COMMITS_TO_PROCESS = 15000
 

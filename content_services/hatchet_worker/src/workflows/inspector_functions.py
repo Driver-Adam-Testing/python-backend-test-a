@@ -1,16 +1,20 @@
+import uuid
 from datetime import timedelta
 from pathlib import Path
 
 from hatchet_client import hatchet
 from hatchet_sdk import Context
+from inspector.src.deep_context_docs import deep_context_docs
 from inspector.src.modal_funcs import (
+    export_tech_docs_to_zip,
+    make_codebase_tags,
     make_folder_tech_doc,
     make_symbol_docs,
     make_tech_doc,
     make_toplevel_tech_docs,
 )
 from pydantic import BaseModel
-from shared.inspector.utils.dag import LiteNode, NodeKind
+from shared.inspector.utils.dag import FlatTopoFileDiffDag, LiteNode, NodeKind
 
 
 class TechDocInput(BaseModel):
@@ -37,6 +41,77 @@ class SymbolDocInput(BaseModel):
 class TopLevelDocInput(BaseModel):
     codebase_name: str
     nodes_to_docs: list[tuple[LiteNode, dict]]
+
+
+class DeepContextDocsInput(BaseModel):
+    old_version_id: uuid.UUID | None
+    old_version_content: list | None
+    code_diff: FlatTopoFileDiffDag | None
+    new_version_id: uuid.UUID
+    install_id: str | None
+
+
+class ExportDocsInput(BaseModel):
+    version_id: uuid.UUID
+    install_id: str | None
+
+
+class CodebaseTagsInput(BaseModel):
+    codebase_name: str
+    nodes_to_docs: list[tuple[LiteNode, dict]]
+    content_kinds: set
+
+
+@hatchet.task(name="codebase-tags-workflow", execution_timeout=timedelta(minutes=60))
+def codebase_tags_task(input: CodebaseTagsInput, ctx: Context) -> dict[str, str]:
+    print("starting codebase tags task")
+    nodes_to_docs = {}
+    for node, doc in input.nodes_to_docs:
+        node_kind = NodeKind(node["kind"])
+        node_root_rel_path = Path(node["root_rel_path"])
+        node_status = node["status"]
+        node = LiteNode(
+            kind=node_kind,
+            root_rel_path=node_root_rel_path,
+            status=node_status,
+        )
+        nodes_to_docs[node] = doc
+    tags = make_codebase_tags(
+        input.codebase_name,
+        nodes_to_docs,
+        input.content_kinds,
+    )
+    print("executed codebase tags task")
+    return tags
+
+
+@hatchet.task(name="export-tech-docs-workflow", execution_timeout=timedelta(minutes=60))
+def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str]:
+    print("starting export tech docs task")
+    # Call the function to export tech docs to zip
+    export_tech_docs_to_zip(
+        input.version_id,
+        input.install_id,
+    )
+    print("executed export tech docs task")
+    return {"status": "export complete"}
+
+
+@hatchet.task(
+    name="deep-context-docs-workflow", execution_timeout=timedelta(minutes=60)
+)
+async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> dict:
+    print("starting deep context docs task")
+    # Call the function to generate deep context docs
+    await deep_context_docs(
+        input.old_version_id,
+        input.old_version_content,
+        input.code_diff,
+        input.new_version_id,
+        input.install_id,
+    )
+    print("executed deep context docs task")
+    return {"status": "completed"}
 
 
 @hatchet.task(name="tech-doc-workflow", execution_timeout=timedelta(minutes=60))

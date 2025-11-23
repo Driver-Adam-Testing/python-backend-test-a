@@ -11,36 +11,12 @@ from concurrent.futures import (
 from pathlib import Path
 from uuid import uuid4
 
-import modal
-from common import app
 from database.models_enums import (
     ContentKind,
     NodeKind,
     VersionStatus,
 )
-
-image = (
-    modal.Image.debian_slim(python_version="3.12")
-    .apt_install("tree")
-    .apt_install("ripgrep")
-    .apt_install("git")  # need git for bitbucket_ops.py
-    .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
-    .add_local_dir(
-        local_path="../../packages/shared", remote_path="/packages/shared", copy=True
-    )
-    .poetry_install_from_file(
-        "pyproject.toml"
-    )  # TODO clean this up since inspector doesn't use pyproject install
-    .pip_install(
-        "requests"
-    )  # TODO shouldn't be needed... in pyproject.toml RESOLVE THIS
-    .add_local_python_source(
-        "common", "database", "main", copy=True, ignore=lambda p: False
-    )
-    .add_local_file(
-        "src/onboarding/languages.yml", "/linguist/languages.yml", copy=True
-    )
-)
+from workflows.inspector_workflow import InspectorInput, inspector_task
 
 
 def collect_file_paths(extracted_path: Path) -> tuple[list[Path], list[Path]]:
@@ -122,29 +98,13 @@ def collect_ignored_file_paths(extracted_path: Path) -> list[Path]:
 
 
 def process_file(local_path_and_extracted_path: tuple[Path, Path]) -> tuple[Path, dict]:
-    from onboarding.onboard_utils import run_file_stats_and_reencode
+    from shared.inspector.onboarding.onboard_utils import run_file_stats_and_reencode
 
     """Wrapper for multiprocessing, unpacks arguments."""
     local_path, extracted_path = local_path_and_extracted_path
     return local_path, run_file_stats_and_reencode(local_path, extracted_path)
 
 
-@app.function(
-    image=image,
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db"),
-        modal.Secret.from_name("github-app"),
-    ],
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-        else modal.Proxy.from_name("my-proxy", environment_name="prod")
-    ),
-    timeout=60 * 60,
-    region="us-east",
-    max_containers=5,
-)
 def handle_github_events(
     installation_id: str | None,
     org_id: str,
@@ -159,11 +119,11 @@ def handle_github_events(
         GithubAppInstallation,  # noqa: F401
         PrimaryAsset,
     )
-    from onboarding.gh_ops import (
+    from shared.inspector.onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
     )
-    from onboarding.onboard_utils import AccessTokenError
+    from shared.inspector.onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
@@ -245,24 +205,6 @@ def handle_github_events(
             errant_repos.append(repo_name_or_none)
 
 
-@app.function(
-    image=image,
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db"),
-        modal.Secret.from_name("github-app"),
-    ],
-    # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
-    # whitelist this IP with ScaleGrid for our DB.
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-        else modal.Proxy.from_name("my-proxy", environment_name="prod")
-    ),
-    timeout=60 * 60,
-    region="us-east",
-    max_containers=5,
-)
 def handle_gitlab_events(
     installation_id: str | None,
     org_id: str,
@@ -277,8 +219,8 @@ def handle_gitlab_events(
         GithubAppInstallation,  # noqa: F401
         PrimaryAsset,
     )
-    from onboarding import gitlab_ops
-    from onboarding.onboard_utils import AccessTokenError
+    from shared.inspector.onboarding import gitlab_ops
+    from shared.inspector.onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
@@ -353,22 +295,6 @@ def handle_gitlab_events(
             errant_repos.append(repo_name_or_none)
 
 
-@app.function(
-    image=image,
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db"),
-        modal.Secret.from_name("github-app"),
-    ],
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-        else modal.Proxy.from_name("my-proxy", environment_name="prod")
-    ),
-    timeout=60 * 60,
-    region="us-east",
-    max_containers=5,
-)
 def handle_bitbucket_events(
     installation_id: str | None,
     org_id: str,
@@ -383,8 +309,8 @@ def handle_bitbucket_events(
         GithubAppInstallation,  # noqa: F401
         PrimaryAsset,
     )
-    from onboarding import bitbucket_ops
-    from onboarding.onboard_utils import AccessTokenError
+    from shared.inspector.onboarding import bitbucket_ops
+    from shared.inspector.onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
@@ -469,22 +395,6 @@ def handle_bitbucket_events(
             errant_repos.append(repo_name_or_none)
 
 
-@app.function(
-    image=image,
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db"),
-        modal.Secret.from_name("github-app"),
-    ],
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-        else modal.Proxy.from_name("my-proxy", environment_name="prod")
-    ),
-    timeout=60 * 60,
-    region="us-east",
-    max_containers=5,
-)
 def handle_azure_devops_events(
     installation_id: str | None,
     org_id: str,
@@ -499,8 +409,8 @@ def handle_azure_devops_events(
         GithubAppInstallation,  # noqa: F401
         PrimaryAsset,
     )
-    from onboarding import azure_devops_ops
-    from onboarding.onboard_utils import AccessTokenError
+    from shared.inspector.onboarding import azure_devops_ops
+    from shared.inspector.onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
@@ -587,27 +497,14 @@ def handle_azure_devops_events(
             errant_repos.append(repo_name_or_none)
 
 
-@app.function(
-    image=image,
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db"),
-        modal.Secret.from_name("github-app"),
-    ],
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-        else modal.Proxy.from_name("my-proxy", environment_name="prod")
-    ),
-    timeout=60 * 60,
-    region="us-east",
-    max_containers=1,
-)
 def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
     from database.models import GithubAppInstallation
-    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
+    from shared.inspector.onboarding.gh_ops import (
+        AccessTokenError,
+        fetch_app_access_token,
+    )
     from sqlmodel import Session, select
 
     with Session(engine) as session:
@@ -694,22 +591,6 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
             print(f"=> Repo: {repo['full_name']}")
 
 
-@app.function(
-    image=image,
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db"),
-        modal.Secret.from_name("github-app"),
-    ],
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-        else modal.Proxy.from_name("my-proxy", environment_name="prod")
-    ),
-    timeout=60 * 60,
-    region="us-east",
-    max_containers=1,
-)
 def connect_unconnected_repos() -> None:
     """This is a migration script to connect unconnected repos
 
@@ -718,7 +599,10 @@ def connect_unconnected_repos() -> None:
     import requests
     from database.db import engine
     from database.models import GithubAppInstallation
-    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
+    from shared.inspector.onboarding.gh_ops import (
+        AccessTokenError,
+        fetch_app_access_token,
+    )
     from sqlmodel import Session, select
 
     with Session(engine) as session:
@@ -801,20 +685,6 @@ def connect_unconnected_repos() -> None:
                 print(f"=> Repo: {repo['full_name']}")
 
 
-@app.function(
-    image=image,
-    secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-        else modal.Proxy.from_name("my-proxy", environment_name="prod")
-    ),
-    timeout=int(60 * 60 * 12.5),  # longer than inspect db timeout
-    region="us-east",
-    max_containers=5,
-    memory=2048,
-    cpu=32.0,
-)
 def run_codebase_connection(
     presigned_url: str,
     provisional_codebase_name: str,
@@ -837,7 +707,7 @@ def run_codebase_connection(
         Version,
     )
     from database.models_enums import VersionStatus
-    from onboarding.onboard_utils import (
+    from shared.inspector.onboarding.onboard_utils import (
         calculate_directory_stats,
         create_bucket_if_dne,
         download_file_from_presigned_url,
@@ -1042,10 +912,11 @@ def run_codebase_connection(
                 session.add(version)
         # Do this check outside the DB session so that the nodes get committed
         if version_status == VersionStatus.GENERATING:
-            print("Inspecting...")
-            inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+            inspector_input = InspectorInput(
+                version_id=version_id,
+            )
             try:
-                inspect_db.remote(version_id)
+                inspector_task.run(inspector_input)
             except Exception as e:
                 print(f"Uncaught during inspection: {e}")
                 # Note: this is likely redundant setting of error state, but this allows us to handle modal timeout exceptions

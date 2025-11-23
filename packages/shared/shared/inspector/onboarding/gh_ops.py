@@ -8,9 +8,9 @@ from uuid import UUID
 import httpx
 import jwt
 import requests
-from database.models import VcsAutoUpdatePolicy
-from onboarding.onboard_utils import AccessTokenError
-from onboarding.vcs_utils import (
+from database.models_enums import VcsAutoUpdatePolicy
+from shared.inspector.onboarding.onboard_utils import AccessTokenError
+from shared.inspector.onboarding.vcs_utils import (
     AuthorInfo,
     BranchInfo,
     CommitInfo,

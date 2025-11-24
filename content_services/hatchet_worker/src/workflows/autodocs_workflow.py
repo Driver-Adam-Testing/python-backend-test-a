@@ -26,4 +26,4 @@ async def autodocs_task(input: AutodocInput, ctx: Context) -> dict[str, str]:
         content_kind=input.content_kind,
     )
     print("executed autodocs task")
-    return {"result": "to do"}
+    return {"result": "autodoc completed"}

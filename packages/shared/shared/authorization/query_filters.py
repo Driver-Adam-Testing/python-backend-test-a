@@ -7,7 +7,6 @@ without loading all records into memory first.
 import uuid
 from typing import Any
 
-from app.schemas.user_schema import AssignmentType
 from database.models import (
     DerivedContent,
     DocumentSource,
@@ -28,6 +27,7 @@ from shared.authorization.helpers import (
     is_org_member,
     is_super_admin,
 )
+from shared.authorization.types import AssignmentType
 
 
 def _grant_exists_subquery(

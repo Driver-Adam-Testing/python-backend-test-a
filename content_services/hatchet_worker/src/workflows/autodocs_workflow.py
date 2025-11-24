@@ -15,7 +15,7 @@ class AutodocInput(BaseModel):
     content_kind: ContentKind | None
 
 
-@hatchet.task(name="autodocs-workflow", execution_timeout=timedelta(minutes=300))
+@hatchet.task(name="autodocs-workflow", execution_timeout=timedelta(minutes=480))
 async def autodocs_task(input: AutodocInput, ctx: Context) -> dict[str, str]:
     print("starting autodocs task")
     await run_autodoc(

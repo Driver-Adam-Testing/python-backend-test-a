@@ -134,7 +134,7 @@ def connect_repos_for_installation_task(
 
 
 @hatchet.task(
-    name="run-codebase-connection-workflow", execution_timeout=timedelta(minutes=60)
+    name="run-codebase-connection-workflow", execution_timeout=timedelta(minutes=740)
 )
 def run_codebase_connection_task(
     input: RunCodebaseConnectionInput, ctx: Context

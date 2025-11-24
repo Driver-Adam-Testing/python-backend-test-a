@@ -15,7 +15,7 @@ class PDFProcessingInput(BaseModel):
     org_id: str
 
 
-@hatchet.task(name="pdf-processing-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(name="pdf-processing-workflow", execution_timeout=timedelta(minutes=240))
 def pdf_processing_task(input: PDFProcessingInput, ctx: Context) -> dict[str, str]:
     print("starting pdf processing task")
     create_and_embed_pdf_summaries(

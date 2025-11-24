@@ -85,7 +85,7 @@ def codebase_tags_task(input: CodebaseTagsInput, ctx: Context) -> dict[str, str]
     return tags
 
 
-@hatchet.task(name="export-tech-docs-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(name="export-tech-docs-workflow", execution_timeout=timedelta(minutes=15))
 def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str]:
     print("starting export tech docs task")
     # Call the function to export tech docs to zip
@@ -98,7 +98,7 @@ def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str
 
 
 @hatchet.task(
-    name="deep-context-docs-workflow", execution_timeout=timedelta(minutes=60)
+    name="deep-context-docs-workflow", execution_timeout=timedelta(minutes=480)
 )
 async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> dict:
     print("starting deep context docs task")
@@ -114,7 +114,7 @@ async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> d
     return {"status": "completed"}
 
 
-@hatchet.task(name="tech-doc-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(name="tech-doc-workflow", execution_timeout=timedelta(minutes=180))
 def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
     print("starting tech doc task")
     # Call the function to generate tech docs
@@ -136,7 +136,7 @@ def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
     return tech_docs
 
 
-@hatchet.task(name="folder-doc-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(name="folder-doc-workflow", execution_timeout=timedelta(minutes=30))
 def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
     print("starting folder doc task")
     # Call the function to generate folder docs
@@ -171,7 +171,7 @@ def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
     return folder_docs
 
 
-@hatchet.task(name="symbol-doc-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(name="symbol-doc-workflow", execution_timeout=timedelta(minutes=120))
 def symbol_doc_task(input: SymbolDocInput, ctx: Context) -> list[dict[str, any]]:
     print("starting symbol doc task")
     # Call the function to generate symbol docs

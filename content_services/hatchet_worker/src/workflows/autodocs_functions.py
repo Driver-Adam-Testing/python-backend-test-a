@@ -29,7 +29,7 @@ async def llm_generate_hatchet(model: str, system_prompt: str, user_prompt: str)
         return ""
 
 
-@hatchet.task(name="llm-generate-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(name="llm-generate-workflow", execution_timeout=timedelta(minutes=15))
 async def llm_generate_task(input: LLMGenerateInput, ctx: Context) -> dict:
     print("starting llm generate task")
     result = await llm_generate_hatchet(
@@ -41,9 +41,7 @@ async def llm_generate_task(input: LLMGenerateInput, ctx: Context) -> dict:
     return {"result": result}
 
 
-@hatchet.task(
-    name="write-autodoc-log-workflow", execution_timeout=timedelta(minutes=60)
-)
+@hatchet.task(name="write-autodoc-log-workflow", execution_timeout=timedelta(minutes=5))
 def write_autodoc_log_task(input: WriteAutoDocLogInput, ctx: Context) -> None:
     print("starting write autodoc log task")
     write_autodoc_log(input.log)

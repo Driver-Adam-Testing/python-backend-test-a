@@ -10,7 +10,7 @@ class InspectorInput(BaseModel):
     version_id: str
 
 
-@hatchet.task(name="inspector-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(name="inspector-workflow", execution_timeout=timedelta(minutes=720))
 async def inspector_task(input: InspectorInput, ctx: Context) -> dict[str, str]:
     print("starting inspector task")
     await inspect_db(input.version_id)

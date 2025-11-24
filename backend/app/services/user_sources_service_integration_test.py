@@ -456,3 +456,164 @@ class TestUserSourcesIntegration:
         assert source.teams[1].display_name == "Frontend Team"
         assert source.teams[1].team_role == TeamRole.team_admin
         assert source.teams[1].source_role == PrimaryAssetRole.asset_member
+
+    def test_filter_by_roles_asset_admin(self, integration_db_session: Session) -> None:
+        """Test filtering sources by roles=[asset_admin]."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|rolefilter1",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create source with asset_admin grant
+        admin_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Admin Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=admin_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Create source with asset_member grant
+        member_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Member Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=member_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Filter by asset_admin role
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            roles=[PrimaryAssetRole.asset_admin],
+        )
+
+        # Should only see admin source
+        assert result.total == 1
+        assert result.sources[0].display_name == "Admin Codebase"
+        assert result.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+    def test_filter_by_roles_asset_member(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test filtering sources by roles=[asset_member]."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|rolefilter2",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create source with asset_admin grant
+        admin_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Admin Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=admin_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Create source with asset_member grant
+        member_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Member Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=member_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Filter by asset_member role
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            roles=[PrimaryAssetRole.asset_member],
+        )
+
+        # Should only see member source
+        assert result.total == 1
+        assert result.sources[0].display_name == "Member Codebase"
+        assert result.sources[0].effective_role == PrimaryAssetRole.asset_member
+
+    def test_filter_by_multiple_roles(self, integration_db_session: Session) -> None:
+        """Test filtering sources by multiple roles."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|rolefilter3",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create source with asset_admin grant
+        admin_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Admin Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=admin_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Create source with asset_member grant
+        member_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Member Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=member_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Filter by both roles
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            roles=[PrimaryAssetRole.asset_admin, PrimaryAssetRole.asset_member],
+        )
+
+        # Should see both sources
+        assert result.total == 2
+        source_names = {s.display_name for s in result.sources}
+        assert source_names == {"Admin Codebase", "Member Codebase"}

@@ -34,6 +34,7 @@ class BackendParams:
         metrics_bus: aws_events.EventBus,
         aws_region: str,
         aws_account: str,
+        is_private_deploy: bool = False,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
@@ -42,6 +43,7 @@ class BackendParams:
         self.metrics_bus = metrics_bus
         self.aws_region = aws_region
         self.aws_account = aws_account
+        self.is_private_deploy = is_private_deploy
 
 
 class Backend(Construct):
@@ -164,7 +166,8 @@ class Backend(Construct):
             runtime_platform=aws_ecs.RuntimePlatform(
                 cpu_architecture=aws_ecs.CpuArchitecture.X86_64
             ),
-            redirect_http=True,
+            redirect_http=not params.is_private_deploy,
+            public_load_balancer=not params.is_private_deploy,
             assign_public_ip=False,
             desired_count=2,
             cluster=cluster,

@@ -554,7 +554,6 @@ def get_source_users_with_details(
             User.name,
             User.email,
             effective_roles.c.effective_role,
-            effective_roles.c.assignment_type,
             effective_roles.c.created_at,
             OrgMembership.role.label("org_role"),
             # Granular role fields
@@ -595,7 +594,6 @@ def get_source_users_with_details(
             "name": row.name or "",
             "email": row.email or "",
             "effective_role": row.effective_role,
-            "assignment_type": row.assignment_type,
             "created_at": row.created_at.isoformat() if row.created_at else "",
             "org_role": row.org_role or OrgRole.org_member,
             "is_super_admin": row.org_role == OrgRole.org_super_admin

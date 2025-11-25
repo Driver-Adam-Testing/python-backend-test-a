@@ -89,7 +89,6 @@ class TestUserSourcesIntegration:
         assert source.asset_org_role is None
         assert source.user_org_role == OrgRole.org_member
         assert source.is_super_admin is False
-        assert source.assignment_type == AssignmentType.DIRECT
         assert len(source.teams) == 0
 
     def test_get_user_sources_with_org_grant(
@@ -137,7 +136,6 @@ class TestUserSourcesIntegration:
         assert source.effective_role == PrimaryAssetRole.asset_member
         assert source.source_role is None
         assert source.asset_org_role == PrimaryAssetRole.asset_member
-        assert source.assignment_type == AssignmentType.INHERITED
 
     def test_get_user_sources_with_team_grant(
         self, integration_db_session: Session
@@ -200,7 +198,6 @@ class TestUserSourcesIntegration:
         assert source.display_name == "Team Codebase"
         assert source.effective_role == PrimaryAssetRole.asset_admin
         assert source.source_role is None
-        assert source.assignment_type == AssignmentType.INHERITED
         assert len(source.teams) == 1
         team_info = source.teams[0]
         assert team_info.display_name == "Engineering Team"
@@ -257,7 +254,6 @@ class TestUserSourcesIntegration:
         assert source.effective_role == PrimaryAssetRole.asset_admin
         assert source.is_super_admin is True
         assert source.user_org_role == OrgRole.org_super_admin
-        assert source.assignment_type == AssignmentType.INHERITED
 
     def test_filter_by_assignment_type_direct(
         self, integration_db_session: Session
@@ -312,7 +308,6 @@ class TestUserSourcesIntegration:
         # Should only see direct grant
         assert result.total == 1
         assert result.sources[0].display_name == "Direct Access"
-        assert result.sources[0].assignment_type == AssignmentType.DIRECT
 
     def test_filter_by_assignment_type_inherited(
         self, integration_db_session: Session
@@ -367,7 +362,6 @@ class TestUserSourcesIntegration:
         # Should only see inherited grant
         assert result.total == 1
         assert result.sources[0].display_name == "Org Access"
-        assert result.sources[0].assignment_type == AssignmentType.INHERITED
 
     def test_multiple_teams_on_same_asset(
         self, integration_db_session: Session

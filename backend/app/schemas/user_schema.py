@@ -168,10 +168,6 @@ class UserSourceResponse(BaseModel):
     is_super_admin: bool = Field(
         ..., description="Whether user is a super admin in the organization"
     )
-    assignment_type: AssignmentType = Field(
-        ...,
-        description="Whether the effective role is 'direct' (from user grant) or 'inherited' (from org/team/super admin)",
-    )
     teams: list[UserSourceTeamInfo] = Field(
         default_factory=list,
         description="Teams the user is on that have grants to this asset",

@@ -714,7 +714,6 @@ class TestGetSourceUsersEffectiveAccess:
         assert user_b_result is not None, "User B should appear in results"
 
         # Step 8: Verify user A has direct access
-        assert user_a_result.assignment_type == "direct"
         assert (
             user_a_result.source_role == PrimaryAssetRole.asset_member
         )  # Direct grant
@@ -722,7 +721,6 @@ class TestGetSourceUsersEffectiveAccess:
         assert user_a_result.name == "User A"
 
         # Step 9: Verify user B has inherited access (via team)
-        assert user_b_result.assignment_type == "inherited"
         assert user_b_result.source_role is None  # No direct grant
         assert user_b_result.effective_role == PrimaryAssetRole.asset_admin  # From team
         assert user_b_result.name == "User B"
@@ -794,7 +792,6 @@ class TestGetSourceUsersEffectiveAccess:
         assert len(result.users) == 1
         user_result = result.users[0]
         assert user_result.user_id == user.id
-        assert user_result.assignment_type == "direct"
         assert user_result.source_role == PrimaryAssetRole.asset_admin  # Direct grant
         assert (
             user_result.effective_role == PrimaryAssetRole.asset_admin
@@ -951,7 +948,6 @@ class TestGetSourceUsersEffectiveAccess:
         )
         assert result_direct.total == 1
         assert result_direct.users[0].user_id == user_a.id
-        assert result_direct.users[0].assignment_type == "direct"
 
         # Step 6: Filter by inherited access
         result_inherited = service.get_source_users(
@@ -963,7 +959,6 @@ class TestGetSourceUsersEffectiveAccess:
         )
         assert result_inherited.total == 1
         assert result_inherited.users[0].user_id == user_b.id
-        assert result_inherited.users[0].assignment_type == "inherited"
 
     def test_get_source_users_includes_super_admins(
         self, integration_db_session: Session
@@ -1042,11 +1037,9 @@ class TestGetSourceUsersEffectiveAccess:
 
         assert regular_user.id in user_map
         assert user_map[regular_user.id].effective_role == PrimaryAssetRole.asset_member
-        assert user_map[regular_user.id].assignment_type == "direct"
 
         assert super_admin.id in user_map
         assert user_map[super_admin.id].effective_role == PrimaryAssetRole.asset_admin
-        assert user_map[super_admin.id].assignment_type == "inherited"
         assert user_map[super_admin.id].is_super_admin is True
 
         # Step 7: Filter by asset_admin role

@@ -14,10 +14,12 @@ from database.models import (
     OrgMembership,
     PrimaryAsset,
     PrimaryAssetRoleGrant,
+    Team,
+    TeamMembership,
     Version,
 )
 from database.models_enums import PrimaryAssetKind, PrimaryAssetRole, PrincipalKind
-from sqlalchemy import String, and_, case, cast, literal, true
+from sqlalchemy import String, and_, case, cast, func, literal, true
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
@@ -417,26 +419,49 @@ def assignment_type_expr(
     organization_id: str,
     effective_role_expr: Any,
     source_role_expr: Any,
-) -> Any:
+    asset_org_role_expr: Any,
+    user_org_role_expr: Any,
+) -> tuple[Any, Any]:
     """
-    Returns a SQL expression that computes the assignment type.
+    Returns SQL expressions for assignment types as boolean values.
 
-    Assignment type is 'direct' if the effective role comes from a direct user grant,
-    'inherited' if it comes from super admin, org grant, or team grant.
+    Returns a tuple of (has_inherited, has_direct) where:
+    - has_inherited is True if asset_org_role exists, user_org_role exists, or user has team memberships
+    - has_direct is True if source_role exists
+
+    An asset can have both 'direct' and 'inherited' assignment types.
     """
     is_super = is_super_admin(db, user_id, organization_id)
 
     if is_super:
-        return literal(AssignmentType.INHERITED.value)
+        # Super admins always have inherited assignment type
+        return (literal(True), literal(False))
 
-    # If source_role == effective_role AND source_role is not NULL, then 'direct', else 'inherited'
-    # We need to check for non-NULL source_role because NULL means no direct grant
-    # Cast enum values to text for comparison
-    return case(
-        (
-            (source_role_expr.isnot(None))
-            & (cast(source_role_expr, String) == cast(effective_role_expr, String)),
-            literal(AssignmentType.DIRECT.value),
-        ),
-        else_=literal(AssignmentType.INHERITED.value),
+    # Check if user has team memberships (SQL expression)
+    has_team_memberships = (
+        select(TeamMembership.id)
+        .join(Team, Team.id == TeamMembership.team_id)
+        .where(
+            Team.organization_id == organization_id,
+            TeamMembership.user_id == user_id,
+        )
+        .exists()
     )
+
+    # Build conditions for 'inherited'
+    inherited_conditions = [
+        asset_org_role_expr.isnot(None),
+        user_org_role_expr.isnot(None),
+        has_team_memberships,
+    ]
+
+    # Build conditions for 'direct'
+    direct_condition = source_role_expr.isnot(None)
+
+    # Add 'inherited' if any inherited condition is true
+    any_inherited = inherited_conditions[0]
+    for condition in inherited_conditions[1:]:
+        any_inherited = any_inherited | condition
+
+    # Return boolean expressions
+    return (any_inherited, direct_condition)

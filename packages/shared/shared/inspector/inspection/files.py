@@ -6,6 +6,7 @@ from typing import Any, Self
 import modal
 import openai
 from pydantic import BaseModel, ValidationError
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.inspection.prompt_templates.files.templates.metadata_large_default import (
     METADATA_LARGE_TEMPLATE,
 )
@@ -144,7 +145,6 @@ from shared.inspector.utils.lang_specialization.symbol_common import (
     ReifiedSymbol,
     disambiguate_header,
 )
-from shared.inspector.utils.models import ChatOpenAI
 from shared.inspector.utils.templates import Template
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,

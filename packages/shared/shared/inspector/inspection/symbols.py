@@ -2,11 +2,11 @@ import copy
 import textwrap
 from pathlib import Path
 
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.codemap_ctags import extract_symbols_w_ctags
 from shared.inspector.utils.dag import LiteNode
 from shared.inspector.utils.io import get_prompt_template
 from shared.inspector.utils.llm import num_tokens_from_messages_open_ai
-from shared.inspector.utils.models import ChatOpenAI
 
 PARENT_PATH = Path(__file__).parent
 

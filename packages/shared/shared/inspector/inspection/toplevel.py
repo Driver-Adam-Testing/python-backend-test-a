@@ -4,13 +4,13 @@ from pathlib import Path
 from typing import Any
 
 from database.models_enums import ContentKind
+from shared.agent.chat_openai import ChatOpenAI
 from shared.agent.chat_openai_async import ChatOpenAI as AsyncChatOpenAI
 from shared.inspector.utils.dag import LiteNode, NodeKind
 from shared.inspector.utils.io import (
     get_prompt_template,
 )
 from shared.inspector.utils.llm import chunk_str
-from shared.inspector.utils.models import ChatOpenAI
 from shared.inspector.utils.tags.codebase_wide import (
     CodebaseAudienceScores,
     CodebaseDomainScores,

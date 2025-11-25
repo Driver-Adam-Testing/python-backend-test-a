@@ -7,8 +7,8 @@ from typing import Self
 
 from openai import OpenAIError
 from pydantic import BaseModel, Field
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.codemap_ctags import extract_symbols_w_ctags
-from shared.inspector.utils.models import ChatOpenAI
 
 CHUNK_SIZE = 64_000
 CHUNK_OVERLAP = 1_000

@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Any
 
 from database.models_enums import ContentKind
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.dag import LiteNode, NodeKind
 from shared.inspector.utils.io import get_prompt_template
-from shared.inspector.utils.models import ChatOpenAI
 from shared.inspector.utils.threadpool import FastShutdownThreadPoolExecutor
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,

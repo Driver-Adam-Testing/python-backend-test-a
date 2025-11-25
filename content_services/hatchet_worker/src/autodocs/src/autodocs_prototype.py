@@ -25,6 +25,7 @@ from google import genai
 from pydantic import BaseModel
 from rich.console import Console
 from rich.markdown import Markdown
+from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.chunking.text_splitter import get_num_tokens, split_text
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
@@ -35,8 +36,6 @@ from shared.prompts.structured_prompting import (
 )
 from tqdm.asyncio import tqdm_asyncio
 from workflows.autodocs_functions import LLMGenerateInput, llm_generate_task
-
-from .utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 try:
     with open("local_setup.json") as f:

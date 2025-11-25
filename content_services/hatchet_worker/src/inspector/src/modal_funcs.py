@@ -14,8 +14,8 @@ def make_tech_doc(
     import os
 
     import boto3
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.utils.io import download_symbol_table_from_s3_with_cache
-    from shared.inspector.utils.models import ChatOpenAI
 
     print(f"Processing tech docs ({node})")
 
@@ -84,8 +84,8 @@ def make_folder_tech_doc(
     child_nodes_to_docs: dict[LiteNode, dict],
     previous_content: dict[str, str] | None = None,
 ) -> dict[str, any]:
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.inspection.folders import comprehend_folder_top_down
-    from shared.inspector.utils.models import ChatOpenAI
 
     llm = ChatOpenAI(
         model="gpt-4o-2024-08-06",
@@ -112,8 +112,8 @@ def make_folder_tech_doc(
 def make_toplevel_tech_docs(
     codebase_name: str, nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.inspection.toplevel import comprehend_codebase_top_down
-    from shared.inspector.utils.models import ChatOpenAI
 
     llm = ChatOpenAI(
         model="gpt-4o-2024-08-06",
@@ -141,8 +141,8 @@ def make_codebase_tags(
     nodes_to_docs: dict[LiteNode, dict],
     content_kinds: set,
 ) -> dict[str, any]:
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.inspection.toplevel import tag_codebase
-    from shared.inspector.utils.models import ChatOpenAI
 
     llm = ChatOpenAI(
         model="gpt-4o-2024-08-06",

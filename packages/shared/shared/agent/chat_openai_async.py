@@ -45,6 +45,16 @@ class ChatOpenAI:
     def __post_init__(self) -> None:
         self.client = AsyncOpenAI(timeout=self.request_timeout)
 
+    @staticmethod
+    def get_token_limit(model: str) -> int:
+        TOKEN_LIMITS = {
+            "gpt-4.1": 1_000_000,
+            "o3-mini": 200_000,
+            "gpt-4o": 128_000,
+            "gpt-5": 272_000,
+        }
+        return TOKEN_LIMITS[model]
+
     @async_retry_with_exponential_backoff(
         initial_delay=10.0,
         exponential_base=1.0005,

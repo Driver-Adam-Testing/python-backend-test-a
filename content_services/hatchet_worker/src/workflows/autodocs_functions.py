@@ -2,10 +2,10 @@ from datetime import timedelta
 
 import openai
 from autodocs.src.autodoc_log import AutoDocLog, write_autodoc_log
-from autodocs.src.utils.models import ChatOpenAI
 from hatchet_client import hatchet
 from hatchet_sdk import Context
 from pydantic import BaseModel
+from shared.agent.chat_openai_async import ChatOpenAI
 
 
 class LLMGenerateInput(BaseModel):

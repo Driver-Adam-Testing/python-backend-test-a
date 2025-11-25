@@ -168,6 +168,9 @@ class Backend(Construct):
             ),
             redirect_http=not params.is_private_deploy,
             public_load_balancer=not params.is_private_deploy,
+            load_balancer_subnets=aws_ec2.SubnetSelection(
+                subnet_group_name="Private"
+            ) if params.is_private_deploy else None,
             assign_public_ip=False,
             desired_count=2,
             cluster=cluster,

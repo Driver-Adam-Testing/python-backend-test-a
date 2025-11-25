@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models import DocumentSource, Node, PrimaryAsset, Version, VersionNode
+from database.models import DocumentSource, PrimaryAsset, Version, VersionNode
 from fastapi import HTTPException, Query, Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import delete, func, select
@@ -23,14 +23,13 @@ from app.authorization.fastapi import enforce_asset_action
 from app.authorization.query_filters import page_source_authorization_filter
 
 
-# FURNISSJ: rename page_node_id to page_version_node_id
 @router.get("/page_sources", response_model=ListWithCount[DocumentSourceDetailRead])
 def list_page_sources(
     request: Request,
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
-    page_node_id: UUID = Query(..., description="Page node ID (required)"),
+    page_version_node_id: UUID = Query(..., description="Page node ID (required)"),
 ) -> ListWithCount[DocumentSourceRead]:
     """
     List sources for a specific page.
@@ -41,7 +40,7 @@ def list_page_sources(
     page_version_node = session.exec(
         select(VersionNode)
         .options(selectinload(VersionNode.version))
-        .where(VersionNode.id == page_node_id)
+        .where(VersionNode.id == page_version_node_id)
     ).one_or_none()
 
     if not page_version_node:
@@ -79,22 +78,22 @@ def list_page_sources(
 
     query = (
         select(DocumentSource)
-        .join(DocumentSource.source_version_node)
+        .join(DocumentSource.page_version_node)
         .join(VersionNode.version)
         .join(Version.primary_asset)
         .options(
             selectinload(DocumentSource.source_version_node)
             .selectinload(VersionNode.version)
             .selectinload(Version.primary_asset),
-            selectinload(DocumentSource.source_version_node)
-            .selectinload(VersionNode.version)
-            .selectinload(Version.creator),
         )
-        .where(DocumentSource.page_version_node_id == page_node_id)
+        .where(DocumentSource.page_version_node_id == page_version_node_id)
         .where(PrimaryAsset.organization_id == user.organization_id)
     )
 
     filters = dict(request.query_params)
+
+    print("HERE ARE THE FILTERS", filters)
+
     query = apply_filters_to_query(query, filters, DocumentSource)
     count_query = select(func.count()).select_from(query.subquery())
     total_count = session.exec(count_query).one()
@@ -112,13 +111,14 @@ def batch_create_document_sources(
     user: UserToken,
     payload: list[DocumentSourceCreate],
 ) -> list[DocumentSourceDetailRead]:
-    source_version_node_ids = {data.source_node_id for data in payload}
+    source_version_node_ids = {data.source_version_node_id for data in payload}
     query = (
         select(VersionNode)
         .where(VersionNode.id.in_(source_version_node_ids))
         .options(selectinload(VersionNode.version))
     )
     source_version_nodes = session.exec(query).all()
+
     for source_version_node in source_version_nodes:
         enforce_asset_action(
             db=session,
@@ -133,15 +133,15 @@ def batch_create_document_sources(
         # Delete existing sources with the same page_version_node_id
         session.exec(
             delete(DocumentSource).where(
-                DocumentSource.page_version_node_id == data.page_node_id
+                DocumentSource.page_version_node_id == data.page_version_node_id
             )
         )
 
     # Create new DocumentSource instances
     new_document_sources = [
         DocumentSource(
-            source_version_node_id=data.source_node_id,
-            page_version_node_id=data.page_node_id,
+            source_version_node_id=data.source_version_node_id,
+            page_version_node_id=data.page_version_node_id,
         )
         for data in payload
     ]
@@ -169,7 +169,7 @@ async def batch_delete_document_sources(
 
     # Verify user has access to all source nodes before deleting; probably not strictly necessary,
     # but it makes the authz test coverage happy!
-    source_version_node_ids = {data.source_node_id for data in payload}
+    source_version_node_ids = {data.source_version_node_id for data in payload}
     query = (
         select(VersionNode)
         .where(VersionNode.id.in_(source_version_node_ids))
@@ -190,8 +190,8 @@ async def batch_delete_document_sources(
         # Delete the document source with the specified source_node_id and page_node_id
         result = session.exec(
             delete(DocumentSource).where(
-                DocumentSource.source_version_node_id == data.source_node_id,
-                DocumentSource.page_version_node_id == data.page_node_id,
+                DocumentSource.source_version_node_id == data.source_version_node_id,
+                DocumentSource.page_version_node_id == data.page_version_node_id,
                 PrimaryAsset.organization_id == user.organization_id,
             )
         )

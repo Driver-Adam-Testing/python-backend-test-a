@@ -23,19 +23,18 @@ from sqlmodel import select
 from app.api.auth import UserToken
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
-    ContentDetailRead,
     DerivedContentUpdate,
+    NewPageResponse,
 )
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action, enforce_org_membership
 
 
-# FURNISSJ: change node_id to version_node_id
-@router.put("/edit_page/{node_id}", response_model=None)
+@router.put("/edit_page/{version_node_id}", response_model=None)
 def edit_page_CONVENIENCE_METHOD(
     session: CurrentSession,
     user: UserToken,
-    node_id: UUID = Path(...),
+    version_node_id: UUID = Path(...),
     payload: DerivedContentUpdate = Body(...),
 ) -> Response:
     # Fetch the derived content and ensure it belongs to the user's organization
@@ -50,7 +49,7 @@ def edit_page_CONVENIENCE_METHOD(
             ),
         )
         .where(PrimaryAsset.organization_id == user.organization_id)
-        .where(DocumentSource.page_version_node_id == node_id)
+        .where(DocumentSource.page_version_node_id == version_node_id)
     )
     doc_sources = session.exec(query).all()
     for doc_source in doc_sources:
@@ -61,36 +60,25 @@ def edit_page_CONVENIENCE_METHOD(
             action_key="asset.use_as_source",
         )
 
-    derived_content = session.exec(
-        select(DerivedContent)
-        .join(Node)
-        .join(Node.version_nodes)
-        .join(VersionNode.version)
-        .join(Version.primary_asset)
-        .where(Node.id == node_id)
-        .where(PrimaryAsset.organization_id == user.organization_id)
+    version_node = session.exec(
+        select(VersionNode)
+        .where(VersionNode.id == version_node_id)
+        .options(
+            selectinload(VersionNode.version).selectinload(Version.primary_asset),
+            selectinload(VersionNode.node).selectinload(Node.contents),
+        )
     ).one_or_none()
 
-    if not derived_content:
-        raise HTTPException(
-            status_code=404, detail="Content not found or not authorized"
-        )
+    if not version_node:
+        raise HTTPException(status_code=404, detail="Version node not found")
+
+    derived_content = version_node.node.contents[0]
 
     if payload.content is not None:
         derived_content.content = payload.content
     if payload.content_name is not None:
         derived_content.content_name = payload.content_name
-        primary_asset = session.exec(
-            select(PrimaryAsset)
-            .join(Version.version_nodes)
-            .join(VersionNode.node)
-            .where(Node.id == derived_content.node_id)
-            .where(
-                PrimaryAsset.kind.in_(
-                    [PrimaryAssetKind.PAGE, PrimaryAssetKind.PAGE_TEMPLATE]
-                )
-            )
-        ).one_or_none()
+        primary_asset = version_node.version.primary_asset
 
         if primary_asset:
             primary_asset.display_name = payload.content_name
@@ -103,8 +91,8 @@ def edit_page_CONVENIENCE_METHOD(
     return Response(status_code=202)
 
 
-@router.post("/new_page", response_model=ContentDetailRead)
-def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
+@router.post("/new_page", response_model=NewPageResponse)
+def new_page(session: CurrentSession, user: UserToken) -> NewPageResponse:
     enforce_org_membership(session, user)
 
     # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
@@ -158,6 +146,8 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     new_node = Node(
         kind=NodeKind.OTHER,
         primary_asset_id=new_primary_asset.id,
+        version_id=new_version.id,
+        relative_path="NODE",
         source_hash=None,
     )
     session.add(new_node)
@@ -173,6 +163,7 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     new_derived_content = DerivedContent(
         content_kind="application_note",
         node_id=new_node.id,
+        relative_path="NODE",
         content="",
         content_name=new_display_name,
         misc_metadata={},
@@ -182,7 +173,7 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     session.commit()
     session.refresh(new_derived_content)
 
-    # Ensure the node relationship is populated
-    new_derived_content.node = new_node
-
-    return ContentDetailRead.model_validate(new_derived_content)
+    return NewPageResponse(
+        version_node_id=new_version_node.id,
+        display_name=new_display_name,
+    )

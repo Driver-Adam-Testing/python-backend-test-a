@@ -163,8 +163,8 @@ class ContentRead(ContentReadBase):
 
 
 class DocumentSourceRead(BaseModel):
-    page_node_id: UUID | None
-    source_node_id: UUID | None
+    page_version_node_id: UUID | None
+    source_version_node_id: UUID | None
 
     class Config:
         from_attributes = True
@@ -190,6 +190,19 @@ class VersionDetailRead(VersionRead):
     primary_asset: PrimaryAssetRead
     root_version_node: VersionNodeRead | None
     creator: UserRead | None
+
+    class Config:
+        from_attributes = True
+
+
+class VersionNodeDetailRead(VersionNodeRead):
+    """VersionNode with detailed version and primary_asset information"""
+
+    class VersionNodeVersionRead(VersionRead):
+        primary_asset: PrimaryAssetRead
+        creator: UserRead | None
+
+    version: VersionNodeVersionRead
 
     class Config:
         from_attributes = True
@@ -222,25 +235,25 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
 
 
 class ContentDetailRead(ContentRead):
-    """Content with content field and node details"""
+    """Content with content field and version_node details"""
 
-    node: NodeDetailRead
+    version_node: VersionNodeDetailRead
 
     class Config:
         from_attributes = True
 
 
 class ContentDetailReadSkinny(ContentReadBase):
-    """Content without content field but with node details"""
+    """Content without content field but with version_node details"""
 
-    node: NodeDetailRead
+    version_node: VersionNodeDetailRead
 
     class Config:
         from_attributes = True
 
 
 class DocumentSourceDetailRead(DocumentSourceRead):
-    source_node: NodeDetailRead
+    source_version_node: VersionNodeDetailRead
 
 
 class TagDetailRead(TagRead):
@@ -272,10 +285,28 @@ class DerivedContentUpdate(BaseModel):
 
 
 class DocumentSourceCreate(BaseModel):
-    source_node_id: UUID
-    page_node_id: UUID
+    source_version_node_id: UUID
+    page_version_node_id: UUID
 
 
 class PrimaryAssetTagCreate(BaseModel):
     tag_id: UUID
     primary_asset_id: UUID
+
+
+class NewPageResponse(BaseModel):
+    version_node_id: UUID
+    display_name: str
+
+
+class ContentsResponse(BaseModel):
+    version_node_id: UUID
+    content_id: UUID
+    content: str | None
+    content_name: str | None
+    content_kind: ContentKind
+    version_status: VersionStatus
+    primary_asset_display_name: str | None
+    misc_metadata: dict | None
+    created_at: datetime | None
+    updated_at: datetime | None

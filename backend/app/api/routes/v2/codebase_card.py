@@ -15,6 +15,7 @@ from database.models_enums import (
     ContentKind,
     PrimaryAssetKind,
     PrimaryAssetProvider,
+    PrimaryAssetRole,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
@@ -22,6 +23,7 @@ from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field, HttpUrl
 from shared.authorization.query_filters import (
     asset_visibility_expr,
+    effective_asset_role_expr,
     primary_asset_grant_filter,
 )
 from sqlalchemy import and_, func, or_
@@ -110,6 +112,7 @@ class CodebaseCard(BaseModel):
     most_recent_metadata: MostRecentMetadata
     most_recent_version_content: MostRecentVersionContent | None = None
     visibility: SourceVisibility
+    effective_role: PrimaryAssetRole | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -281,6 +284,9 @@ def codebase_card(
     latest_version_root_node = aliased(Node)
     latest_complete_version_root_node = aliased(Node)
 
+    role_expr = effective_asset_role_expr(
+        session, user.user_id, user.organization_id, PrimaryAsset.id
+    )
     visibility_expr, org_grant_subquery, public_grant_subquery = asset_visibility_expr(
         user.organization_id, PrimaryAsset.id
     )
@@ -292,6 +298,7 @@ def codebase_card(
             latest_complete_version,
             latest_version_root_node,
             latest_complete_version_root_node,
+            role_expr.label("effective_role"),
             visibility_expr.label("visibility"),
         )
         .outerjoin(
@@ -369,23 +376,23 @@ def codebase_card(
         assets_stmt = assets_stmt.offset(pagination.offset).limit(pagination.limit)
 
     assets_with_versions: list[
-        tuple[PrimaryAsset, Version, Version, Node, Node, str]
+        tuple[PrimaryAsset, Version, Version, Node, Node, PrimaryAssetRole | None, str]
     ] = session.exec(assets_stmt).unique().all()
 
     complete_root_ids: list[UUID] = [
         latest_complete_version_root_node.id
-        for _, _, _, latest_version_root_node, _, _ in assets_with_versions
-        if latest_version_root_node
+        for _, _, _, _, latest_complete_version_root_node, _, _ in assets_with_versions
+        if latest_complete_version_root_node
     ]
     recent_root_ids: list[UUID] = [
         latest_version_root_node.id
-        for _, _, _, latest_version_root_node, _, _ in assets_with_versions
+        for _, _, _, latest_version_root_node, _, _, _ in assets_with_versions
         if latest_version_root_node
     ]
     if not recent_root_ids:
         # Only codebases in Connecting?
         connecting_cards = []
-        for pa_row, v_latest, _, _, _, visibility in assets_with_versions:
+        for pa_row, v_latest, _, _, _, effective_role, visibility in assets_with_versions:
             sha = _safe_commit_sha(v_latest)
             if (
                 pa_row.kind == PrimaryAssetKind.CODEBASE
@@ -465,6 +472,7 @@ def codebase_card(
                     most_recent_metadata=meta_block,
                     most_recent_version_content=mrv_content,
                     visibility=visibility,
+                    effective_role=effective_role,
                 )
             )
         return ListWithCount(
@@ -524,6 +532,7 @@ def codebase_card(
         _,
         latest_version_root_node,
         latest_complete_version_root_node,
+        effective_role,
         visibility,
     ) in enumerate(assets_with_versions):  # type: ignore[arg-type]
         if v_latest is None:
@@ -665,6 +674,7 @@ def codebase_card(
                 most_recent_metadata=meta_block,
                 most_recent_version_content=mrv_content,
                 visibility=visibility,
+                effective_role=effective_role,
             )
         )
 

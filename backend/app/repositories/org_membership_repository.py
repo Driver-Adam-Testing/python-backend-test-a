@@ -111,6 +111,44 @@ def get_user_organization_role(
     return membership.role.value if membership else None
 
 
+def get_organization_member(
+    session: Session,
+    user_id: str,
+    organization_id: str,
+) -> dict[str, str | None] | None:
+    """
+    Get a single organization member with user details.
+
+    Args:
+        session: Database session
+        user_id: User ID (Auth0 ID)
+        organization_id: Organization ID
+
+    Returns:
+        Dictionary with user_id, email, name, and role, or None if not found
+    """
+    query = (
+        select(User.id, User.email, User.name, OrgMembership.role)
+        .join(OrgMembership, User.id == OrgMembership.user_id)
+        .where(
+            OrgMembership.user_id == user_id,
+            OrgMembership.org_id == organization_id,
+        )
+    )
+
+    result = session.exec(query).first()
+
+    if not result:
+        return None
+
+    return {
+        "user_id": result.id,
+        "email": result.email,
+        "name": result.name,
+        "role": result.role.value,
+    }
+
+
 def list_organization_members(
     session: Session,
     organization_id: str,

@@ -9,6 +9,7 @@ from sqlmodel import Session
 from app.api.auth import UserToken
 from app.repositories.org_membership_repository import (
     bulk_update_organization_roles,
+    get_organization_member,
     list_organization_members,
 )
 from app.repositories.user_repository import (
@@ -177,6 +178,41 @@ class OrganizationsService:
         ]
 
         return BulkSetUserRoleResponse(updated=updated_users)
+
+    def get_member(
+        self,
+        user: UserToken,
+        member_user_id: str,
+    ) -> OrganizationMember:
+        """
+        Get a single organization member by user ID.
+
+        Args:
+            user: Authenticated user token (for organization context)
+            member_user_id: ID of the member to retrieve
+
+        Returns:
+            OrganizationMember with user details and role
+
+        Raises:
+            HTTPException: 404 if user not found in organization
+        """
+        member_data = get_organization_member(
+            self.session, member_user_id, user.organization_id
+        )
+
+        if not member_data:
+            raise HTTPException(
+                404, f"User {member_user_id} is not a member of this organization"
+            )
+
+        return OrganizationMember(
+            user_id=member_data["user_id"],
+            email=member_data["email"],
+            picture=None,  # Not stored in database
+            name=member_data["name"],
+            role=member_data["role"],  # Role enum value
+        )
 
     def list_members(
         self,

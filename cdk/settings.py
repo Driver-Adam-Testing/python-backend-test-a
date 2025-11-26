@@ -33,10 +33,10 @@ class Settings:
     AUTH0_MGMT_API_CLIENT_ID:str
     # AUTH0_MGMT_API_CLIENT_SECRET:str
     AUTH0_MGMT_API_AUDIENCE:str
-    MODAL_TOKEN_ID:str
+    # MODAL_TOKEN_ID:str
     # MODAL_TOKEN_SECRET:str
-    MODAL_ENVIRONMENT:str
-    S3ADMIN_AWS_ACCESS_KEY_ID:str
+    # MODAL_ENVIRONMENT:str
+    # S3ADMIN_AWS_ACCESS_KEY_ID:str
     # S3ADMIN_AWS_SECRET_ACCESS_KEY:str
     GH_CLIENT_ID:str
     # GH_CLIENT_SECRET:str
@@ -44,7 +44,7 @@ class Settings:
     # GH_WEBHOOK_SECRET:str
     # GH_CLIENT_PEM_SECRET:str
     # OPENAI_API_KEY:str
-    SENTRY_DSN:str
+    # SENTRY_DSN:str
     SECRECTS_KEYS:str
     # add more as needed...
     IS_PRIVATE_DEPLOY:bool

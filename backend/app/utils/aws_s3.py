@@ -13,8 +13,8 @@ s3_client = boto3.client(
     "s3",
     region_name=settings.AWS_REGION,
     # TODO: Ensure required IAM role permissions are given to the containers
-    # aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
-    # aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
+    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID if not settings.IS_PRIVATE_DEPLOY else None,
+    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY if not settings.IS_PRIVATE_DEPLOY else None,
     endpoint_url=settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None,
 )
 

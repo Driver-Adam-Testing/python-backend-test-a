@@ -9,8 +9,8 @@ def write_secret(secret_name, secret_value):
     client = session.client(
         service_name='secretsmanager',
         region_name=region_name,
-        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
-        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY if not settings.IS_PRIVATE_DEPLOY else None,
+        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID if not settings.IS_PRIVATE_DEPLOY else None,
     )
 
     try:
@@ -32,8 +32,8 @@ def read_secret(secret_name):
     client = session.client(
         service_name='secretsmanager',
         region_name=region_name,
-        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
-        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY if not settings.IS_PRIVATE_DEPLOY else None,
+        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID if not settings.IS_PRIVATE_DEPLOY else None,
     )
     try:
         response = client.get_secret_value(SecretId=secret_name)

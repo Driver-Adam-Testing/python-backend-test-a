@@ -10,16 +10,17 @@ from database.models import (
     PrimaryAssetTag,
     Tag,
     TeamMembership,
+    Version,
 )
 from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, SourceVisibility
+from sqlalchemy import and_, union_all
 from shared.authorization.query_filters import (
     asset_visibility_expr,
     effective_asset_role_expr,
     exclude_page_assets_filter,
     primary_asset_grant_filter,
 )
-from sqlalchemy import union_all
-from sqlmodel import Session, and_, func, select
+from sqlmodel import Session, func, select
 
 
 def _apply_common_filters(
@@ -211,6 +212,22 @@ def get_sources_with_counts(
     role_expr = effective_asset_role_expr(
         session, user_id, organization_id, PrimaryAsset.id
     )
+
+    # Get most recent version per primary asset for status
+    latest_versions_subq = (
+        select(
+            Version.id.label("v_id"),
+            Version.primary_asset_id,
+            Version.status.label("version_status"),
+            func.row_number()
+            .over(
+                partition_by=Version.primary_asset_id,
+                order_by=Version.created_at.desc(),
+            )
+            .label("rn"),
+        )
+    ).cte("most_recent_version_subq")
+
     query = (
         select(
             PrimaryAsset,
@@ -220,6 +237,7 @@ def get_sources_with_counts(
             ),
             func.coalesce(teams_count_subquery.c.teams_count, 0).label("teams_count"),
             visibility_expr.label("visibility"),
+            latest_versions_subq.c.version_status.label("status"),
         )
         .outerjoin(
             members_count_subquery,
@@ -236,6 +254,13 @@ def get_sources_with_counts(
         .outerjoin(
             public_grant_subquery,
             PrimaryAsset.id == public_grant_subquery.c.primary_asset_id,
+        )
+        .outerjoin(
+            latest_versions_subq,
+            and_(
+                PrimaryAsset.id == latest_versions_subq.c.primary_asset_id,
+                latest_versions_subq.c.rn == 1,
+            ),
         )
         .where(
             PrimaryAsset.organization_id == organization_id,
@@ -265,6 +290,7 @@ def get_sources_with_counts(
             "members_count": row[2],
             "teams_count": row[3],
             "visibility": row[4],
+            "status": row[5].value if row[5] else None,
         }
         for row in results
     ]

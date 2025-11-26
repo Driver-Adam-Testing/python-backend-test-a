@@ -36,6 +36,7 @@ class AdminSourceRecord(BaseModel):
     created_at: str = Field(..., description="ISO datetime when created")
     updated_at: str = Field(..., description="ISO datetime when updated")
     visibility: SourceVisibility = Field(..., description="Source visibility")
+    status: str | None = Field(None, description="Status of the most recent version")
     members_count: int = Field(..., description="Count of user grants")
     teams_count: int = Field(..., description="Count of team grants")
     tags: list[dict] | None = Field(None, description="Associated tags")

@@ -198,6 +198,12 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
         """A primary asset is browsable if any of its versions are browsable."""
         return self.most_recent_version.browsable if self.most_recent_version else False
 
+    @computed_field
+    @property
+    def status(self) -> str | None:
+        """Status of the most recent version."""
+        return self.most_recent_version.status if self.most_recent_version else None
+
     class Config:
         from_attributes = True
 

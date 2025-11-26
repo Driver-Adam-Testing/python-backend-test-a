@@ -62,8 +62,8 @@ class Auth0EventLambda(Construct):
             ),
             environment={
                 "LOG_LEVEL": "INFO",
-                "MODAL_TOKEN_ID": settings.MODAL_TOKEN_ID,
-                "MODAL_ENVIRONMENT": settings.MODAL_ENVIRONMENT,
+                "MODAL_TOKEN_ID": "FIXME",
+                "MODAL_ENVIRONMENT": "FIXME",
                 "MODAL_SECRET_NAME": deployment_secrets.secret_name,
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(

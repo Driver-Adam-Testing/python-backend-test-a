@@ -154,9 +154,22 @@ class Backend(Construct):
                 log_retention=aws_logs.RetentionDays.ONE_YEAR,
             ),
         )
+
+        # For private deploys, create ALB in private subnets
+        private_alb = None
+        if params.is_private_deploy:
+            private_alb = aws_elasticloadbalancingv2.ApplicationLoadBalancer(
+                self,
+                "PrivateALB",
+                vpc=self.vpc,
+                internet_facing=False,
+                vpc_subnets=aws_ec2.SubnetSelection(subnet_group_name="Private"),
+            )
+
         self.service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(
             self,
             "BackendApi",
+            load_balancer=private_alb,
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
             ssl_policy=aws_elasticloadbalancingv2.SslPolicy.FIPS_TLS13_12_RES,
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,
@@ -168,9 +181,6 @@ class Backend(Construct):
             ),
             redirect_http=not params.is_private_deploy,
             public_load_balancer=not params.is_private_deploy,
-            load_balancer_subnets=aws_ec2.SubnetSelection(
-                subnet_group_name="Private"
-            ) if params.is_private_deploy else None,
             assign_public_ip=False,
             desired_count=2,
             cluster=cluster,

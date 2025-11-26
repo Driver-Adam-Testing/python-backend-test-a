@@ -55,7 +55,7 @@ class AssetOnboardingLambda(Construct):
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
-                "SENTRY_DSN": settings.SENTRY_DSN,
+                "SENTRY_DSN": "FIXME" if params.is_private_deploy else settings.SENTRY_DSN,
                 "IS_PRIVATE_DEPLOY": str(params.is_private_deploy)
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
@@ -64,7 +64,7 @@ class AssetOnboardingLambda(Construct):
             timeout=Duration.seconds(15),
             vpc=params.vpc,
             vpc_subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+                subnet_group_name="Private"
             ),
         )
         deployment_secrets.grant_read(lambda_function)

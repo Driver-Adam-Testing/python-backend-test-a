@@ -19,7 +19,7 @@ from database.models import (
     Version,
 )
 from database.models_enums import PrimaryAssetKind, PrimaryAssetRole, PrincipalKind
-from sqlalchemy import String, and_, case, cast, func, literal, true
+from sqlalchemy import and_, case, literal, true
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
@@ -29,7 +29,6 @@ from shared.authorization.helpers import (
     is_org_member,
     is_super_admin,
 )
-from shared.authorization.types import AssignmentType
 
 
 def _grant_exists_subquery(
@@ -426,33 +425,36 @@ def assignment_type_expr(
     Returns SQL expressions for assignment types as boolean values.
 
     Returns a tuple of (has_inherited, has_direct) where:
-    - has_inherited is True if asset_org_role exists, user_org_role exists, or user has team memberships
+    - has_inherited is True if asset_org_role exists, user_org_role exists, user has team memberships, OR is super admin
     - has_direct is True if source_role exists
 
     An asset can have both 'direct' and 'inherited' assignment types.
+    Super admins always have inherited (implicit admin access) but may also have direct grants.
     """
     is_super = is_super_admin(db, user_id, organization_id)
 
     if is_super:
-        # Super admins always have inherited assignment type
-        return (literal(True), literal(False))
+        has_direct = source_role_expr.isnot(None)
+        return (literal(True), has_direct)
 
-    # Check if user has team memberships (SQL expression)
-    has_team_memberships = (
-        select(TeamMembership.id)
+    # Check if user has team grants to this specific asset
+    has_team_grant_to_asset = (
+        select(PrimaryAssetRoleGrant.id)
+        .join(TeamMembership, TeamMembership.team_id == PrimaryAssetRoleGrant.team_id)
         .join(Team, Team.id == TeamMembership.team_id)
         .where(
             Team.organization_id == organization_id,
             TeamMembership.user_id == user_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
         )
         .exists()
     )
 
-    # Build conditions for 'inherited'
+    # Inherited means: asset has org-wide grant OR user has team grant to this asset
+    # (Super admin case is already handled above with early return)
     inherited_conditions = [
-        asset_org_role_expr.isnot(None),
-        user_org_role_expr.isnot(None),
-        has_team_memberships,
+        asset_org_role_expr.isnot(None),  # Asset has org-wide grant
+        has_team_grant_to_asset,
     ]
 
     # Build conditions for 'direct'

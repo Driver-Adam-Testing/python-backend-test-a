@@ -1158,6 +1158,161 @@ class TestGetSourceUsersEffectiveAccess:
         )
         assert result_member.total == 0
 
+    def test_super_admin_with_direct_admin_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a super admin with a direct admin grant appears in both direct and inherited filters.
+
+        Since super admins have implicit admin access (inherited) AND can have direct grants,
+        they should appear when filtering by either assignment type.
+
+        Steps:
+        1. Create source
+        2. Create super admin user
+        3. Give super admin a direct asset_admin grant
+        4. Filter by assignment_type='direct' - super admin should appear
+        5. Filter by assignment_type='inherited' - super admin should appear
+        6. Verify effective_role is asset_admin in both cases
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        # Step 1: Create source
+        source = PrimaryAssetFactory.create(integration_db_session)
+
+        # Step 2: Create super admin user
+        super_admin = Auth0UserFactory.create(
+            integration_db_session, name="Super Admin", organization_id=org_id
+        )
+        org_membership = integration_db_session.exec(
+            select(OrgMembership).where(
+                OrgMembership.user_id == super_admin.id,
+                OrgMembership.org_id == org_id,
+            )
+        ).first()
+        if org_membership:
+            org_membership.role = OrgRole.org_super_admin
+            integration_db_session.add(org_membership)
+            integration_db_session.commit()
+
+        # Step 3: Give super admin a direct asset_admin grant
+        service.add_source_users(
+            user=mock_user,
+            source_id=source.id,
+            request=AddSourceUsersRequest(
+                users=[
+                    SourceUserInput(
+                        user_id=super_admin.id, role=PrimaryAssetRole.asset_admin
+                    )
+                ]
+            ),
+        )
+
+        # Step 4: Filter by direct - should appear
+        result_direct = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            assignment_type="direct",
+            limit=100,
+            offset=0,
+        )
+        assert result_direct.total == 1
+        assert result_direct.users[0].user_id == super_admin.id
+        assert result_direct.users[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Step 5: Filter by inherited - should also appear (from super admin status)
+        result_inherited = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            assignment_type="inherited",
+            limit=100,
+            offset=0,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.users[0].user_id == super_admin.id
+        assert result_inherited.users[0].effective_role == PrimaryAssetRole.asset_admin
+
+    def test_super_admin_with_direct_member_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a super admin with a direct member grant appears in both filters.
+
+        Even though the direct grant is lower privilege (member), the super admin
+        should still appear in both filters because they have:
+        - Direct grant (member role)
+        - Inherited grant (admin role from super admin status)
+
+        Steps:
+        1. Create source
+        2. Create super admin user
+        3. Give super admin a direct asset_member grant
+        4. Filter by assignment_type='direct' - super admin should appear
+        5. Filter by assignment_type='inherited' - super admin should appear
+        6. Verify effective_role is asset_admin (from super admin, not the direct member grant)
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        # Step 1: Create source
+        source = PrimaryAssetFactory.create(integration_db_session)
+
+        # Step 2: Create super admin user
+        super_admin = Auth0UserFactory.create(
+            integration_db_session, name="Super Admin", organization_id=org_id
+        )
+        org_membership = integration_db_session.exec(
+            select(OrgMembership).where(
+                OrgMembership.user_id == super_admin.id,
+                OrgMembership.org_id == org_id,
+            )
+        ).first()
+        if org_membership:
+            org_membership.role = OrgRole.org_super_admin
+            integration_db_session.add(org_membership)
+            integration_db_session.commit()
+
+        # Step 3: Give super admin a direct asset_member grant (lower than their implicit admin)
+        service.add_source_users(
+            user=mock_user,
+            source_id=source.id,
+            request=AddSourceUsersRequest(
+                users=[
+                    SourceUserInput(
+                        user_id=super_admin.id, role=PrimaryAssetRole.asset_member
+                    )
+                ]
+            ),
+        )
+
+        # Step 4: Filter by direct - should appear (because of direct member grant)
+        result_direct = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            assignment_type="direct",
+            limit=100,
+            offset=0,
+        )
+        assert result_direct.total == 1
+        assert result_direct.users[0].user_id == super_admin.id
+        # Effective role is admin (from super admin status, not the direct member grant)
+        assert result_direct.users[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Step 5: Filter by inherited - should also appear (from super admin status)
+        result_inherited = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            assignment_type="inherited",
+            limit=100,
+            offset=0,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.users[0].user_id == super_admin.id
+        assert result_inherited.users[0].effective_role == PrimaryAssetRole.asset_admin
+
 
 @pytest.mark.integration
 class TestGetSourceTeamsEffectiveRole:

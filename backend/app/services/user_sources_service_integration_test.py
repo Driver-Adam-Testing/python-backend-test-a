@@ -611,3 +611,119 @@ class TestUserSourcesIntegration:
         assert result.total == 2
         source_names = {s.display_name for s in result.sources}
         assert source_names == {"Admin Codebase", "Member Codebase"}
+
+    def test_super_admin_with_direct_admin_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a super admin with a direct admin grant appears in both assignment type filters.
+        """
+        # Create super admin user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|superadmin123",
+            email="superadmin@example.com",
+            name="Super Admin",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_super_admin,
+        )
+
+        # Create asset with direct admin grant to the super admin
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Test Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+
+        # Filter by direct - should appear
+        result_direct = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.DIRECT,
+        )
+        assert result_direct.total == 1
+        assert result_direct.sources[0].display_name == "Test Codebase"
+        assert result_direct.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Filter by inherited - should also appear (from super admin status)
+        result_inherited = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.INHERITED,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.sources[0].display_name == "Test Codebase"
+        assert (
+            result_inherited.sources[0].effective_role == PrimaryAssetRole.asset_admin
+        )
+
+    def test_super_admin_with_direct_member_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a super admin with a direct member grant appears in both filters.
+
+        Even though the direct grant is member level, they should appear in both filters
+        and have effective_role=admin (from super admin status).
+        """
+        # Create super admin user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|superadmin456",
+            email="superadmin2@example.com",
+            name="Super Admin 2",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_super_admin,
+        )
+
+        # Create asset with direct member grant to the super admin
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Another Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+
+        # Filter by direct - should appear (because of direct member grant)
+        result_direct = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.DIRECT,
+        )
+        assert result_direct.total == 1
+        assert result_direct.sources[0].display_name == "Another Codebase"
+        # Effective role is admin (from super admin status), not member (from direct grant)
+        assert result_direct.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Filter by inherited - should also appear (from super admin status)
+        result_inherited = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.INHERITED,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.sources[0].display_name == "Another Codebase"
+        assert (
+            result_inherited.sources[0].effective_role == PrimaryAssetRole.asset_admin
+        )

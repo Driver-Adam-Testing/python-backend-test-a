@@ -181,24 +181,11 @@ class OrganizationsService:
 
     def get_member(
         self,
-        user: UserToken,
+        organization_id: str,
         member_user_id: str,
     ) -> OrganizationMember:
-        """
-        Get a single organization member by user ID.
-
-        Args:
-            user: Authenticated user token (for organization context)
-            member_user_id: ID of the member to retrieve
-
-        Returns:
-            OrganizationMember with user details and role
-
-        Raises:
-            HTTPException: 404 if user not found in organization
-        """
         member_data = get_organization_member(
-            self.session, member_user_id, user.organization_id
+            self.session, member_user_id, organization_id
         )
 
         if not member_data:

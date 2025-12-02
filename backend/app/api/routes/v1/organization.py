@@ -55,7 +55,7 @@ def get_member(
     enforce_org_action(session, user, "users.view")
     logger.info(f"Getting member {user_id} from organization = {user.organization_id}")
     organizations_service = OrganizationsService(session)
-    return organizations_service.get_member(user, user_id)
+    return organizations_service.get_member(user.organization_id, user_id)
 
 
 @router.delete("/users/{user_id}", status_code=204)

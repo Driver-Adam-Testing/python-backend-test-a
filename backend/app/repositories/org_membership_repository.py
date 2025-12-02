@@ -116,17 +116,6 @@ def get_organization_member(
     user_id: str,
     organization_id: str,
 ) -> dict[str, str | None] | None:
-    """
-    Get a single organization member with user details.
-
-    Args:
-        session: Database session
-        user_id: User ID (Auth0 ID)
-        organization_id: Organization ID
-
-    Returns:
-        Dictionary with user_id, email, name, and role, or None if not found
-    """
     query = (
         select(User.id, User.email, User.name, OrgMembership.role)
         .join(OrgMembership, User.id == OrgMembership.user_id)

@@ -27,10 +27,12 @@ class MetricsLambdaParams:
         environment: str,
         database_url: str | None = None,
         cloudwatch_alarm_arn: str | None = None,
+        is_private_deploy: bool = False,
     ) -> None:
         self.environment = environment
         self.database_url = database_url
         self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
+        self.is_private_deploy = is_private_deploy
 
 
 class MetricsLambda(Construct):
@@ -59,16 +61,27 @@ class MetricsLambda(Construct):
                 "LOG_LEVEL": "INFO",
                 "DATABASE_URL": params.database_url or "",
                 "DATABASE_URL_SECRET_NAME": database_url_secret.secret_name,
+                "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"],
-                volumes=[{"containerPath": "/driver_db", "hostPath": driver_db_path}],
+                volumes=[
+                    {"containerPath": "/driver_db", "hostPath": driver_db_path},
+                ],
             ),
             reserved_concurrent_executions=10,
             timeout=Duration.seconds(60),
         )
         database_url_secret.grant_read(self.lambda_function)
+
+        # Grant permission to read firewall certificate for private deployments
+        if params.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.lambda_function)
+
         event_target = targets.LambdaFunction(
             self.lambda_function,
         )

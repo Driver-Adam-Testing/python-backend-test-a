@@ -123,8 +123,9 @@ class Backend(Construct):
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "OPENAI_URL": openai_url
-            #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
+            "OPENAI_URL": openai_url,
+            "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
+            #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.
         }
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
@@ -229,6 +230,13 @@ class Backend(Construct):
                 ),
             )
         )
+
+        # Grant permission to read firewall certificate for private deployments
+        if params.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.service.task_definition.task_role)
 
         # Output ECS Cluster ARN
         CfnOutput(

@@ -28,7 +28,9 @@ class Auth0EventLambda(Construct):
         id: str,
         environment: str,
         cloudwatch_alarm_arn: str | None = None,
+        is_private_deploy: bool = False,
     ) -> None:
+        self.is_private_deploy = is_private_deploy
         super().__init__(scope, id)
 
         auth0_eventbridge_bus_name = aws_ssm.StringParameter.value_from_lookup(
@@ -65,6 +67,7 @@ class Auth0EventLambda(Construct):
                 "MODAL_TOKEN_ID": "FIXME",
                 "MODAL_ENVIRONMENT": "FIXME",
                 "MODAL_SECRET_NAME": deployment_secrets.secret_name,
+                "IS_PRIVATE_DEPLOY": "true" if self.is_private_deploy else "false",
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
@@ -77,6 +80,13 @@ class Auth0EventLambda(Construct):
 
         # Grant Lambda permissions to read secrets
         deployment_secrets.grant_read(self.lambda_function)
+
+        # Grant permission to read firewall certificate for private deployments
+        if self.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.lambda_function)
 
         # Configure CloudWatch Logs with retention
         aws_logs.LogGroup(

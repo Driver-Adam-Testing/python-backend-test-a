@@ -26,8 +26,9 @@ class OpenAiChatClient(LlmClient):
 
     def __init__(self, config: LlmConfig) -> None:
         super().__init__(config)
-        self.client = openai.OpenAI()
-        self.async_client = openai.AsyncOpenAI()
+        # TODO: Fixme
+        # self.client = openai.OpenAI()
+        # self.async_client = openai.AsyncOpenAI()
 
     def _make_kwargs(
         self,

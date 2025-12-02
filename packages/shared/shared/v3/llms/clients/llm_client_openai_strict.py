@@ -18,8 +18,9 @@ if TYPE_CHECKING:
 class OpenAiStrictWithSystemClient(LlmClient):
     def __init__(self, config: LlmConfig) -> None:
         super().__init__(config)
-        self.client = openai.OpenAI()
-        self.async_client = openai.AsyncOpenAI()
+        # TODO: Fixme
+        # self.client = openai.OpenAI()
+        # self.async_client = openai.AsyncOpenAI()
 
     def _generate(
         self,

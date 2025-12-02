@@ -12,6 +12,7 @@ from app.schemas.organization_schema import (
     BulkSetUserRoleInput,
     BulkSetUserRoleResponse,
     ListMembersResponse,
+    OrganizationMember,
     SetUserRoleInput,
     SetUserRoleResponse,
 )
@@ -43,6 +44,18 @@ def list_members(
     return organizations_service.list_members(
         user, limit=limit, offset=offset, search=search, roles=roles
     )
+
+
+@router.get("/users/{user_id}", status_code=200)
+def get_member(
+    session: CurrentSession,
+    user: UserToken,
+    user_id: str,
+) -> OrganizationMember:
+    enforce_org_action(session, user, "users.view")
+    logger.info(f"Getting member {user_id} from organization = {user.organization_id}")
+    organizations_service = OrganizationsService(session)
+    return organizations_service.get_member(user.organization_id, user_id)
 
 
 @router.delete("/users/{user_id}", status_code=204)

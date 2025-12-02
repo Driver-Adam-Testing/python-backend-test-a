@@ -4,19 +4,23 @@ from typing import Any
 from uuid import UUID
 
 from database.models import (
+    OrgMembership,
     PrimaryAsset,
     PrimaryAssetRoleGrant,
     PrimaryAssetTag,
     Tag,
+    TeamMembership,
+    Version,
 )
-from database.models_enums import PrimaryAssetRole, SourceVisibility
+from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, SourceVisibility
+from sqlalchemy import and_, union_all
 from shared.authorization.query_filters import (
     asset_visibility_expr,
     effective_asset_role_expr,
     exclude_page_assets_filter,
     primary_asset_grant_filter,
 )
-from sqlmodel import Session, and_, func, select
+from sqlmodel import Session, func, select
 
 
 def _apply_common_filters(
@@ -68,18 +72,121 @@ def get_sources_with_counts(
     Only returns sources where user has effective admin role.
     Excludes Pages (only Codebases and PDFs).
     """
-    members_count_subquery = (
+    # Build members count including inherited access (direct + team + org + public + super admin)
+    # CTE 1: Direct user grants
+    direct_grants_subq = (
         select(
             PrimaryAssetRoleGrant.primary_asset_id,
-            func.count(PrimaryAssetRoleGrant.id).label("members_count"),
+            PrimaryAssetRoleGrant.user_id,
         )
         .where(
             and_(
                 PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
                 PrimaryAssetRoleGrant.user_id.is_not(None),
             )
         )
-        .group_by(PrimaryAssetRoleGrant.primary_asset_id)
+    )
+
+    # CTE 2: Team-based grants (users inherit access through team membership)
+    team_grants_subq = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            TeamMembership.user_id,
+        )
+        .select_from(PrimaryAssetRoleGrant)
+        .join(TeamMembership, TeamMembership.team_id == PrimaryAssetRoleGrant.team_id)
+        .where(
+            and_(
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+                PrimaryAssetRoleGrant.team_id.is_not(None),
+            )
+        )
+    )
+
+    # CTE 3: Org-wide grants (users inherit access through org membership)
+    org_grants_subq = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            OrgMembership.user_id,
+        )
+        .select_from(PrimaryAssetRoleGrant)
+        .join(
+            OrgMembership,
+            OrgMembership.org_id == PrimaryAssetRoleGrant.organization_id,
+        )
+        .where(
+            and_(
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org,
+            )
+        )
+    )
+
+    # CTE 4: Public grants (users inherit access through org membership)
+    public_grants_subq = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            OrgMembership.user_id,
+        )
+        .select_from(PrimaryAssetRoleGrant)
+        .join(
+            OrgMembership,
+            OrgMembership.org_id == PrimaryAssetRoleGrant.organization_id,
+        )
+        .where(
+            and_(
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.public,
+            )
+        )
+    )
+
+    # CTE 5: Super admin grants (super admins have implicit asset_admin access to all assets)
+    super_admin_grants_subq = (
+        select(
+            PrimaryAsset.id.label("primary_asset_id"),
+            OrgMembership.user_id,
+        )
+        .select_from(PrimaryAsset)
+        .join(
+            OrgMembership,
+            OrgMembership.org_id == PrimaryAsset.organization_id,
+        )
+        .where(
+            and_(
+                PrimaryAsset.organization_id == organization_id,
+                OrgMembership.role == OrgRole.org_super_admin,
+            )
+        )
+    )
+
+    # Union all grant types and count distinct users per asset
+    all_user_grants = union_all(
+        direct_grants_subq,
+        team_grants_subq,
+        org_grants_subq,
+        public_grants_subq,
+        super_admin_grants_subq,
+    ).subquery("all_user_grants")
+
+    # Get distinct user-asset pairs, then count users per asset
+    distinct_user_grants = (
+        select(
+            all_user_grants.c.primary_asset_id,
+            all_user_grants.c.user_id,
+        )
+        .distinct()
+        .subquery("distinct_user_grants")
+    )
+
+    members_count_subquery = (
+        select(
+            distinct_user_grants.c.primary_asset_id,
+            func.count(distinct_user_grants.c.user_id).label("members_count"),
+        )
+        .group_by(distinct_user_grants.c.primary_asset_id)
         .subquery()
     )
 
@@ -105,6 +212,22 @@ def get_sources_with_counts(
     role_expr = effective_asset_role_expr(
         session, user_id, organization_id, PrimaryAsset.id
     )
+
+    # Get most recent version per primary asset for status
+    latest_versions_subq = (
+        select(
+            Version.id.label("v_id"),
+            Version.primary_asset_id,
+            Version.status.label("version_status"),
+            func.row_number()
+            .over(
+                partition_by=Version.primary_asset_id,
+                order_by=Version.created_at.desc(),
+            )
+            .label("rn"),
+        )
+    ).cte("most_recent_version_subq")
+
     query = (
         select(
             PrimaryAsset,
@@ -114,6 +237,7 @@ def get_sources_with_counts(
             ),
             func.coalesce(teams_count_subquery.c.teams_count, 0).label("teams_count"),
             visibility_expr.label("visibility"),
+            latest_versions_subq.c.version_status.label("status"),
         )
         .outerjoin(
             members_count_subquery,
@@ -130,6 +254,13 @@ def get_sources_with_counts(
         .outerjoin(
             public_grant_subquery,
             PrimaryAsset.id == public_grant_subquery.c.primary_asset_id,
+        )
+        .outerjoin(
+            latest_versions_subq,
+            and_(
+                PrimaryAsset.id == latest_versions_subq.c.primary_asset_id,
+                latest_versions_subq.c.rn == 1,
+            ),
         )
         .where(
             PrimaryAsset.organization_id == organization_id,
@@ -159,6 +290,7 @@ def get_sources_with_counts(
             "members_count": row[2],
             "teams_count": row[3],
             "visibility": row[4],
+            "status": row[5].value if row[5] else None,
         }
         for row in results
     ]

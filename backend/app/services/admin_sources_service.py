@@ -97,6 +97,7 @@ class AdminSourcesService:
         members_count = data["members_count"]
         teams_count = data["teams_count"]
         visibility = data["visibility"]
+        status = data.get("status")
 
         return AdminSourceRecord(
             id=str(asset.id),
@@ -111,6 +112,7 @@ class AdminSourcesService:
             created_at=asset.created_at.isoformat(),
             updated_at=asset.updated_at.isoformat(),
             visibility=visibility,
+            status=status,
             members_count=members_count,
             teams_count=teams_count,
             tags=None,  # TODO: Add tags if needed

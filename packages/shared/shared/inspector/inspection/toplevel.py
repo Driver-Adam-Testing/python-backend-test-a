@@ -505,9 +505,7 @@ def tag_codebase(
     if ContentKind.CODEBASE_ENTRY_POINTS in content_kinds:
         entry_points = asyncio.run(
             EntryPoints.from_llm(
-                llm=AsyncChatOpenAI(
-                    model="gpt-4o-2024-08-06", temperature=0, request_timeout=500
-                ),
+                llm=AsyncChatOpenAI(model="gpt-4o", temperature=0, request_timeout=500),
                 docs=docs,
                 n=3,
             )

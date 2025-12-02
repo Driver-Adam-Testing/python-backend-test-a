@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Self
@@ -44,7 +45,14 @@ class ChatOpenAI:
     session_id: str = ""
 
     def __post_init__(self) -> None:
-        self.client = OpenAI(timeout=self.request_timeout)
+        if os.environ.get("AZURE_BASE_URL"):
+            base_url = os.environ["AZURE_BASE_URL"]
+            api_key = os.environ["AZURE_OPENAI_API_KEY"]
+            self.client = OpenAI(
+                api_key=api_key, base_url=base_url, timeout=self.request_timeout
+            )
+        else:
+            self.client = OpenAI(timeout=self.request_timeout)
 
     @retry_with_exponential_backoff(
         initial_delay=10.0,
@@ -67,6 +75,7 @@ class ChatOpenAI:
         # TODO: relax when `gpt-4o` or similar defaults support JSON strict mode.
         if output_cfg.kind == OutputConfigKind.JSON_STRICT and self.model not in [
             "gpt-4o-2024-08-06",
+            "gpt-4o",
             "gpt-4o-mini",
         ]:
             raise ValueError(f"Model ({self.model}) does not support JSON strict mode")

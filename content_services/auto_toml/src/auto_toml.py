@@ -60,6 +60,7 @@ class AutoToml:
     LLM_SCATTER_MODEL: ClassVar[str] = (
         "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
     )
+    # LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
     LLM_TOML_MODEL: ClassVar[str] = "gpt-4.1"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300

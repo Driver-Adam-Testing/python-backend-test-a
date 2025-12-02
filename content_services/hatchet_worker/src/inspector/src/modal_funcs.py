@@ -21,7 +21,7 @@ def make_tech_doc(
 
     raise_hard_errors = False
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
@@ -88,7 +88,7 @@ def make_folder_tech_doc(
     from shared.inspector.inspection.folders import comprehend_folder_top_down
 
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=FOLDER_TECH_DOC_LLM_TIMEOUT,
     )
@@ -116,7 +116,7 @@ def make_toplevel_tech_docs(
     from shared.inspector.inspection.toplevel import comprehend_codebase_top_down
 
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=TOP_LEVEL_DOC_LLM_TIMEOUT,
     )
@@ -145,7 +145,7 @@ def make_codebase_tags(
     from shared.inspector.inspection.toplevel import tag_codebase
 
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=TOP_LEVEL_DOC_LLM_TIMEOUT,
     )

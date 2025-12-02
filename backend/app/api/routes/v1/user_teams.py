@@ -2,7 +2,7 @@
 
 import logging
 
-from database.models_enums import PrimaryAssetRole
+from database.models_enums import TeamRole
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
@@ -36,7 +36,7 @@ def get_user_teams(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    roles: list[PrimaryAssetRole] | None = Query(
+    roles: list[TeamRole] | None = Query(
         default=None, description="Filter by roles: asset_admin, asset_member"
     ),
     search: str | None = Query(default=None, description="Search by team name"),

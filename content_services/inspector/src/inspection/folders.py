@@ -174,7 +174,6 @@ def folder_single_sentence_from_chunk_descriptions(
             )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str()
     )
     if previous_content is not None:
         system_prompt_structured.append(
@@ -184,7 +183,7 @@ def folder_single_sentence_from_chunk_descriptions(
                 string=f"Previous single sentence description:\n\n{previous_content}"
             )
         )
-    system_prompt = system_prompt_structured
+    system_prompt = system_prompt_structured.into_str()
     user_prompt = (
         Prompt.empty()
         .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)

@@ -251,7 +251,8 @@ def _user_sources_base_query(
 
     # Apply filters
     if roles:
-        query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
+        role_values = [role.value for role in roles]
+        query = query.where(effective_role.in_(role_values))
 
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))

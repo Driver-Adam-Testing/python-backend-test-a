@@ -1,14 +1,10 @@
 """Schemas for User-related API requests and responses."""
 
-from enum import Enum
-
 from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
 from pydantic import BaseModel, Field
 
-
-class AssignmentType(str, Enum):
-    DIRECT = "direct"
-    INHERITED = "inherited"
+# Re-exported from shared.authorization.types to avoid updating existing imports
+from shared.authorization.types import AssignmentType
 
 
 # ===== User Search =====

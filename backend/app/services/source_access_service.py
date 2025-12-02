@@ -490,7 +490,6 @@ class SourceAccessService:
                 team_source_role=data["team_source_role"],
                 effective_role=data["effective_role"],
                 source_role=data["user_grant_role"],
-                assignment_type=data["assignment_type"],
                 teams=[
                     TeamMembershipInfo(**team_data)
                     for team_data in teams_by_user.get(data["user_id"], [])

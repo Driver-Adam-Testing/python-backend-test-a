@@ -233,10 +233,6 @@ class SourceUserResponse(BaseModel):
         None,
         description="Role directly granted to the user on this source (None if no direct grant)",
     )
-    assignment_type: AssignmentType = Field(
-        ...,
-        description="How user has access: 'direct' for direct grants, 'inherited' for team or org-based access",
-    )
     teams: list[TeamMembershipInfo] = Field(
         ...,
         description="List of teams the user belongs to that have access to this source",

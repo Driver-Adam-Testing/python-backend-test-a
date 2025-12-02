@@ -229,8 +229,8 @@ def _user_sources_base_query(
     asset_org_role = asset_org_grant_role_expr(organization_id, PrimaryAsset.id)
     source_role = user_direct_grant_role_expr(user_id, organization_id, PrimaryAsset.id)
     user_org_role = user_org_role_expr(user_id, organization_id)
-    computed_assignment_type = assignment_type_expr(
-        session, user_id, organization_id, effective_role, source_role
+    has_inherited, has_direct = assignment_type_expr(
+        session, user_id, organization_id, effective_role, source_role, asset_org_role, user_org_role
     )
 
     query = (
@@ -258,7 +258,11 @@ def _user_sources_base_query(
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
 
     if assignment_type:
-        query = query.where(computed_assignment_type == assignment_type.value)
+        # Check the appropriate boolean expression based on assignment_type
+        if assignment_type == AssignmentType.INHERITED:
+            query = query.where(has_inherited)
+        elif assignment_type == AssignmentType.DIRECT:
+            query = query.where(has_direct)
 
     return query.order_by(PrimaryAsset.display_name)
 

@@ -479,18 +479,6 @@ class UserService:
 
         is_super_admin = user_org_role == OrgRole.org_super_admin
 
-        # Determine assignment_type based on grant hierarchy
-        # Direct: if the effective role comes from a direct user grant
-        # Inherited: if it comes from super admin status, org grant, or team grant
-        if is_super_admin:
-            assignment_type = AssignmentType.INHERITED
-        elif source_role == effective_role:
-            # User has a direct grant that matches the effective role
-            assignment_type = AssignmentType.DIRECT
-        else:
-            # Effective role comes from org grant, team grant, or is higher than user grant
-            assignment_type = AssignmentType.INHERITED
-
         # Get teams for this asset
         teams = team_grants.get(asset.id, [])
 
@@ -511,7 +499,6 @@ class UserService:
             asset_org_role=PrimaryAssetRole(asset_org_role) if asset_org_role else None,
             user_org_role=OrgRole(user_org_role),
             is_super_admin=is_super_admin,
-            assignment_type=assignment_type,
             teams=[
                 {
                     "team_id": str(t["team_id"]),

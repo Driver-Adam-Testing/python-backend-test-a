@@ -354,117 +354,81 @@ def _build_source_users_base_ctes(
         .cte("super_admin_grants")
     )
 
-    # Build union based on assignment_type filter
-    if assignment_type == "direct":
-        all_grants = select(
+    # Build ALL grants for calculating effective_role (always includes all grant types)
+    all_grants_for_role = union_all(
+        select(
             direct_grants_cte.c.user_id,
             direct_grants_cte.c.grant_role,
             direct_grants_cte.c.assignment_type,
             direct_grants_cte.c.created_at,
-        ).subquery("all_grants")
-    elif assignment_type == "inherited":
-        all_grants = union_all(
-            select(
-                team_grants_cte.c.user_id,
-                team_grants_cte.c.grant_role,
-                team_grants_cte.c.assignment_type,
-                team_grants_cte.c.created_at,
-            ),
-            select(
-                org_grants_cte.c.user_id,
-                org_grants_cte.c.grant_role,
-                org_grants_cte.c.assignment_type,
-                org_grants_cte.c.created_at,
-            ),
-            select(
-                public_grants_cte.c.user_id,
-                public_grants_cte.c.grant_role,
-                public_grants_cte.c.assignment_type,
-                public_grants_cte.c.created_at,
-            ),
-            select(
-                super_admin_grants_cte.c.user_id,
-                super_admin_grants_cte.c.grant_role,
-                super_admin_grants_cte.c.assignment_type,
-                super_admin_grants_cte.c.created_at,
-            ),
-        ).subquery("all_grants")
-    else:
-        all_grants = union_all(
-            select(
-                direct_grants_cte.c.user_id,
-                direct_grants_cte.c.grant_role,
-                direct_grants_cte.c.assignment_type,
-                direct_grants_cte.c.created_at,
-            ),
-            select(
-                team_grants_cte.c.user_id,
-                team_grants_cte.c.grant_role,
-                team_grants_cte.c.assignment_type,
-                team_grants_cte.c.created_at,
-            ),
-            select(
-                org_grants_cte.c.user_id,
-                org_grants_cte.c.grant_role,
-                org_grants_cte.c.assignment_type,
-                org_grants_cte.c.created_at,
-            ),
-            select(
-                public_grants_cte.c.user_id,
-                public_grants_cte.c.grant_role,
-                public_grants_cte.c.assignment_type,
-                public_grants_cte.c.created_at,
-            ),
-            select(
-                super_admin_grants_cte.c.user_id,
-                super_admin_grants_cte.c.grant_role,
-                super_admin_grants_cte.c.assignment_type,
-                super_admin_grants_cte.c.created_at,
-            ),
-        ).subquery("all_grants")
+        ),
+        select(
+            team_grants_cte.c.user_id,
+            team_grants_cte.c.grant_role,
+            team_grants_cte.c.assignment_type,
+            team_grants_cte.c.created_at,
+        ),
+        select(
+            org_grants_cte.c.user_id,
+            org_grants_cte.c.grant_role,
+            org_grants_cte.c.assignment_type,
+            org_grants_cte.c.created_at,
+        ),
+        select(
+            public_grants_cte.c.user_id,
+            public_grants_cte.c.grant_role,
+            public_grants_cte.c.assignment_type,
+            public_grants_cte.c.created_at,
+        ),
+        select(
+            super_admin_grants_cte.c.user_id,
+            super_admin_grants_cte.c.grant_role,
+            super_admin_grants_cte.c.assignment_type,
+            super_admin_grants_cte.c.created_at,
+        ),
+    ).subquery("all_grants_for_role")
 
-    # Use ROW_NUMBER to find the winning grant per user while maintaining
-    # the relationship between role and assignment_type.
+    # Use ROW_NUMBER to find the winning grant per user
     # Priority order:
     # 1. Highest role (asset_admin > asset_member)
     # 2. Prefer direct over inherited for same role
     # 3. Earliest created_at as tiebreaker
     role_priority = case(
-        (all_grants.c.grant_role == PrimaryAssetRole.asset_admin, 2),
-        (all_grants.c.grant_role == PrimaryAssetRole.asset_member, 1),
+        (all_grants_for_role.c.grant_role == PrimaryAssetRole.asset_admin, 2),
+        (all_grants_for_role.c.grant_role == PrimaryAssetRole.asset_member, 1),
         else_=0,
     )
 
     assignment_priority = case(
-        (all_grants.c.assignment_type == "direct", 2),
-        (all_grants.c.assignment_type == "inherited", 1),
+        (all_grants_for_role.c.assignment_type == "direct", 2),
+        (all_grants_for_role.c.assignment_type == "inherited", 1),
         else_=0,
     )
 
-    # Rank grants per user, maintaining the relationship between role and assignment_type
+    # Rank grants per user to find effective role
     ranked_grants = (
         select(
-            all_grants.c.user_id,
-            all_grants.c.grant_role,
-            all_grants.c.assignment_type,
-            all_grants.c.created_at,
+            all_grants_for_role.c.user_id,
+            all_grants_for_role.c.grant_role,
+            all_grants_for_role.c.assignment_type,
+            all_grants_for_role.c.created_at,
             func.row_number()
             .over(
-                partition_by=all_grants.c.user_id,
+                partition_by=all_grants_for_role.c.user_id,
                 order_by=[
                     role_priority.desc(),
                     assignment_priority.desc(),
-                    all_grants.c.created_at,
+                    all_grants_for_role.c.created_at,
                 ],
             )
             .label("rn"),
         )
-        .select_from(all_grants)
+        .select_from(all_grants_for_role)
         .subquery("ranked_grants")
     )
 
-    # Take only the top-ranked grant per user (rn=1)
-    effective_roles = (
+    # Effective roles subquery with all users and their best role
+    effective_roles_all = (
         select(
             ranked_grants.c.user_id,
             ranked_grants.c.grant_role.label("effective_role"),
@@ -472,8 +436,56 @@ def _build_source_users_base_ctes(
             ranked_grants.c.created_at,
         )
         .where(ranked_grants.c.rn == 1)
-        .subquery("effective_roles")
+        .subquery("effective_roles_all")
     )
+
+    # Build filtered user list based on assignment_type parameter
+    # Note: assignment_type is for filtering which users to INCLUDE, not for calculating effective_role
+    if assignment_type == "direct":
+        # Only users with direct grants
+        filtered_users = (
+            select(direct_grants_cte.c.user_id.label("user_id"))
+            .distinct()
+            .subquery("filtered_users")
+        )
+    elif assignment_type == "inherited":
+        # Only users with inherited grants (team, org, public, or super admin)
+        filtered_users = (
+            select(
+                union_all(
+                    select(team_grants_cte.c.user_id),
+                    select(org_grants_cte.c.user_id),
+                    select(public_grants_cte.c.user_id),
+                    select(super_admin_grants_cte.c.user_id),
+                )
+                .subquery()
+                .c.user_id.label("user_id")
+            )
+            .distinct()
+            .subquery("filtered_users")
+        )
+    else:
+        # All users (no filtering)
+        filtered_users = None
+
+    # Join filtered users with their effective roles
+    if filtered_users is not None:
+        effective_roles = (
+            select(
+                effective_roles_all.c.user_id,
+                effective_roles_all.c.effective_role,
+                effective_roles_all.c.assignment_type,
+                effective_roles_all.c.created_at,
+            )
+            .select_from(effective_roles_all)
+            .join(
+                filtered_users,
+                effective_roles_all.c.user_id == filtered_users.c.user_id,
+            )
+            .subquery("effective_roles")
+        )
+    else:
+        effective_roles = effective_roles_all
 
     return direct_grants_cte, team_grants_cte, org_grants_cte, effective_roles
 
@@ -554,7 +566,6 @@ def get_source_users_with_details(
             User.name,
             User.email,
             effective_roles.c.effective_role,
-            effective_roles.c.assignment_type,
             effective_roles.c.created_at,
             OrgMembership.role.label("org_role"),
             # Granular role fields
@@ -595,7 +606,6 @@ def get_source_users_with_details(
             "name": row.name or "",
             "email": row.email or "",
             "effective_role": row.effective_role,
-            "assignment_type": row.assignment_type,
             "created_at": row.created_at.isoformat() if row.created_at else "",
             "org_role": row.org_role or OrgRole.org_member,
             "is_super_admin": row.org_role == OrgRole.org_super_admin

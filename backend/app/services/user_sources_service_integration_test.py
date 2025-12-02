@@ -727,3 +727,86 @@ class TestUserSourcesIntegration:
         assert (
             result_inherited.sources[0].effective_role == PrimaryAssetRole.asset_admin
         )
+
+    def test_regular_user_with_direct_and_org_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a regular user with both direct and org-wide grants appears in both filters.
+
+        A user with:
+        - Direct admin grant
+        - Org-wide member grant (inherited)
+
+        Should appear when filtering by both 'direct' and 'inherited', with effective_role=admin.
+        """
+        # Create a regular user (not super admin)
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|regular123",
+            email="regular@example.com",
+            name="Regular User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create a source with org-wide member grant (inherited)
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Test Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Grant the user direct admin access
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+
+        # Filter by direct - should appear (has direct grant)
+        result_direct = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.DIRECT,
+        )
+        assert result_direct.total == 1
+        assert result_direct.sources[0].display_name == "Test Codebase"
+        # Effective role is admin (from direct admin grant, higher than org member grant)
+        assert result_direct.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Filter by inherited - should also appear (has org grant)
+        result_inherited = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.INHERITED,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.sources[0].display_name == "Test Codebase"
+        # Effective role is still admin (from direct grant)
+        assert (
+            result_inherited.sources[0].effective_role == PrimaryAssetRole.asset_admin
+        )
+
+        # No filter - should appear once with effective role
+        result_all = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=None,
+        )
+        assert result_all.total == 1
+        assert result_all.sources[0].display_name == "Test Codebase"
+        assert result_all.sources[0].effective_role == PrimaryAssetRole.asset_admin

@@ -1313,6 +1313,103 @@ class TestGetSourceUsersEffectiveAccess:
         assert result_inherited.users[0].user_id == super_admin.id
         assert result_inherited.users[0].effective_role == PrimaryAssetRole.asset_admin
 
+    def test_regular_user_with_direct_and_team_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a regular user with both direct and team grants appears in both filters.
+
+        A user with:
+        - Direct member grant
+        - Team admin grant (inherited)
+
+        Should appear when filtering by both 'direct' and 'inherited', with effective_role=admin.
+        """
+        org_id = "test-org-id"
+        mock_user = create_mock_user(org_id)
+        service = SourceAccessService(integration_db_session)
+
+        # Create source
+        source = PrimaryAssetFactory.create(
+            integration_db_session, organization_id=org_id
+        )
+
+        # Create a regular user (not super admin)
+        regular_user = Auth0UserFactory.create(
+            integration_db_session, name="Regular User", organization_id=org_id
+        )
+
+        # Create a team and add the user
+        team = TeamFactory.create(integration_db_session, organization_id=org_id)
+        TeamMembershipFactory.create(
+            integration_db_session,
+            user_id=regular_user.id,
+            team_id=team.id,
+        )
+
+        # Grant the team admin access to the source (inherited grant)
+        service.add_team_sources(
+            user=mock_user,
+            team_id=team.id,
+            request=AddTeamSourcesRequest(
+                sources=[
+                    TeamSourceInput(
+                        source_id=str(source.id), role=PrimaryAssetRole.asset_admin
+                    )
+                ]
+            ),
+        )
+
+        # Grant the user direct member access to the source
+        service.add_source_users(
+            user=mock_user,
+            source_id=source.id,
+            request=AddSourceUsersRequest(
+                users=[
+                    SourceUserInput(
+                        user_id=str(regular_user.id), role=PrimaryAssetRole.asset_member
+                    )
+                ]
+            ),
+        )
+
+        # Filter by direct - should appear (has direct grant)
+        result_direct = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            assignment_type="direct",
+            limit=100,
+            offset=0,
+        )
+        assert result_direct.total == 1
+        assert result_direct.users[0].user_id == regular_user.id
+        # Effective role is admin (from team grant, higher than direct member grant)
+        assert result_direct.users[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Filter by inherited - should also appear (has team grant)
+        result_inherited = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            assignment_type="inherited",
+            limit=100,
+            offset=0,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.users[0].user_id == regular_user.id
+        assert result_inherited.users[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # No filter - should appear once with effective role
+        result_all = service.get_source_users(
+            user=mock_user,
+            source_id=source.id,
+            assignment_type=None,
+            limit=100,
+            offset=0,
+        )
+        assert result_all.total == 1
+        assert result_all.users[0].user_id == regular_user.id
+        assert result_all.users[0].effective_role == PrimaryAssetRole.asset_admin
+
 
 @pytest.mark.integration
 class TestGetSourceTeamsEffectiveRole:

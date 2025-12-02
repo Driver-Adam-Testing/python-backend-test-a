@@ -64,7 +64,7 @@ class HatchetWorker(Construct):
         )
 
         openai_url = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value=None
         )
 
         base_env = {
@@ -72,9 +72,11 @@ class HatchetWorker(Construct):
             "ENVIRONMENT": params.environment,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "OPENAI_URL": openai_url,
             "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077"
         }
+
+        if openai_url is not None:
+            base_env["AZURE_OPENAI_BASE_URL"] = openai_url
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME

@@ -81,7 +81,7 @@ class Backend(Construct):
         )
 
         openai_url = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value=None
         )
 
         self.dropzone_bucket = aws_s3.Bucket(
@@ -123,10 +123,12 @@ class Backend(Construct):
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "OPENAI_URL": openai_url,
             "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.
         }
+
+        if openai_url is not None:
+            container_environment_vars["AZURE_OPENAI_BASE_URL"] = openai_url
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME

@@ -1,5 +1,4 @@
 import enum
-import hashlib
 import secrets
 import string
 import uuid
@@ -102,37 +101,16 @@ class DocumentSource(SQLModel, table=True):
     __tablename__ = "document_source"
     """Link table between documents and their sources."""
 
-    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    source_node_id: None | uuid.UUID = Field(
-        default=None,
-        foreign_key="node.id",
-        nullable=True,
-        ondelete="SET NULL",
-    )
-    page_node_id: None | uuid.UUID = Field(
-        default=None,
-        foreign_key="node.id",
-        nullable=True,
-        ondelete="SET NULL",
-    )
-    source_node: "Node" = Relationship(
-        back_populates="document_sources",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_node_id"},
-    )
-    page_node: "Node" = Relationship(
-        back_populates="document_sources",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_node_id"},
-    )
-    source_version_node_id: None | uuid.UUID = Field(
-        default=None,
+    source_version_node_id: uuid.UUID = Field(
         foreign_key="version_node.id",
-        nullable=True,
+        nullable=False,
+        primary_key=True,
         ondelete="CASCADE",
     )
-    page_version_node_id: None | uuid.UUID = Field(
-        default=None,
+    page_version_node_id: uuid.UUID = Field(
         foreign_key="version_node.id",
-        nullable=True,
+        nullable=False,
+        primary_key=True,
         ondelete="CASCADE",
     )
     source_version_node: "VersionNode" = Relationship(
@@ -182,13 +160,10 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         default=None,
         foreign_key="node.id",
         ondelete="CASCADE",
-        nullable=True,
+        nullable=False,
         index=True,
     )
 
-    relative_path: str = Field(
-        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
-    )
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
@@ -287,7 +262,7 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-
+    organization_id: str = Field(sa_column=Column(String, nullable=True))
     __ts_vector__: any = Column(
         "__ts_vector__",
         TSVector(),
@@ -713,13 +688,6 @@ class Version(SQLModel, table=True):  # type: ignore
             "overlaps": "most_recent_version, most_recent_completed_version",
         },
     )
-    nodes: list["Node"] = Relationship(
-        back_populates="version",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-            "passive_deletes": True,
-        },
-    )
     creator: "UserCache" = Relationship(
         back_populates="created_versions",
         sa_relationship_kwargs={"secondary": "version_creator"},
@@ -727,13 +695,6 @@ class Version(SQLModel, table=True):  # type: ignore
     root_version_node: Optional["VersionNode"] = Relationship(
         sa_relationship_kwargs={
             "primaryjoin": "and_(Version.id == VersionNode.version_id, VersionNode.depth == 0)",
-            "uselist": False,
-            "viewonly": True,
-        }
-    )
-    root_node: Optional["Node"] = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": "and_(Version.id == Node.version_id, Node.depth == 0)",
             "uselist": False,
             "viewonly": True,
         }
@@ -772,16 +733,23 @@ class VersionNode(SQLModel, table=True):
             name="ix_version_node_version_id_relative_path",
             postgresql_nulls_not_distinct=True,
         ),
+        Index(
+            "ix_version_node_version_id_relative_path_length",
+            "version_id",
+            func.length("relative_path"),
+        ),
+        Index(
+            "ix_version_node_version_id_relative_path_pattern_ops",
+            "version_id",
+            postgresql_ops={"relative_path": "text_pattern_ops"},
+        ),
     )
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     version_id: uuid.UUID = Field(
         foreign_key="version.id", ondelete="CASCADE", index=True
     )
-    # Relative path here since Node represents just the raw content in the file
     relative_path: str = Field(index=True)
-    # If a duplicate file (same content hash) exists in a codebase, we would point to the same node, hence this isn't a PK or unique constraint
     node_id: uuid.UUID = Field(foreign_key="node.id", nullable=False)
-    # Depth here instead of the node since the same node can be at different depths in different commits
     depth: int = Field(
         sa_column=Column(
             Integer,
@@ -843,59 +811,14 @@ class VersionNode(SQLModel, table=True):
 
 class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "node"
-    __table_args__ = (
-        # Index for root_node on a version
-        Index(
-            "idx_node_version_id_relative_path_length",
-            "version_id",
-            func.length("relative_path"),
-        ),
-        # Index for node ancestor searching
-        Index(
-            "ix_node_version_id_relative_path_pattern_ops",
-            "version_id",
-            postgresql_ops={"relative_path": "text_pattern_ops"},
-        ),
-    )
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     source_hash: str | None
     kind: NodeKind
-    primary_asset_id: UUID = Field(  # Change to organization_id instead
+    primary_asset_id: UUID = Field(
         foreign_key="primary_asset.id",
         ondelete="CASCADE",
-        nullable=True,  # TODO: change after initial migration
+        nullable=True,  # TODO: set to false
         index=True,
-    )
-    version_id: UUID = Field(
-        foreign_key="version.id",
-        ondelete="CASCADE",
-        nullable=False,
-        index=True,
-    )
-    relative_path: str = Field(nullable=False, index=True)
-    depth: int = Field(
-        sa_column=Column(
-            Integer,
-            Computed(
-                "length(trim(trailing '/' from relative_path)) - length(replace(trim(trailing '/' from relative_path), '/', ''))",
-                persisted=True,
-            ),
-            index=True,
-        )
-    )
-
-    total_files: int | None = Field(
-        sa_column=Column(
-            Integer,
-            Computed("(misc_metadata->>'total_files')::INTEGER", persisted=True),
-            index=True,
-            nullable=True,
-        ),
-        default=None,
-    )
-
-    misc_metadata: dict | None = Field(  # type: ignore
-        sa_column=Column(JSONB, nullable=True), default=None
     )
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -913,7 +836,6 @@ class Node(SQLModel, table=True):  # type: ignore
         default=None,
     )
     primary_asset: "PrimaryAsset" = Relationship(back_populates="nodes")
-    version: "Version" = Relationship(back_populates="nodes")
     contents: list["DerivedContent"] = Relationship(
         back_populates="node",
         sa_relationship_kwargs={
@@ -921,32 +843,7 @@ class Node(SQLModel, table=True):  # type: ignore
             "passive_deletes": True,
         },
     )
-
-    document_sources: list["DocumentSource"] = Relationship(
-        back_populates="source_node",
-        sa_relationship_kwargs={
-            "foreign_keys": "DocumentSource.source_node_id",
-            "cascade": "all, delete-orphan",
-            "passive_deletes": True,
-        },
-    )
-    page_sources: list["DocumentSource"] = Relationship(
-        back_populates="page_node",
-        sa_relationship_kwargs={
-            "foreign_keys": "DocumentSource.page_node_id",
-            "cascade": "all, delete-orphan",
-            "passive_deletes": True,
-        },
-    )
-
     version_nodes: list["VersionNode"] = Relationship(back_populates="node")
-
-    @property
-    def s3_url(self) -> str:
-        org_id_hash = hashlib.sha256(
-            self.version.primary_asset.organization_id.encode()
-        ).hexdigest()[:63]
-        return f"https://{org_id_hash}.s3.amazonaws.com/{self.version.primary_asset_id}/{self.version_id}/{self.relative_path}"
 
 
 class PrimaryAssetTag(SQLModel, table=True):
@@ -988,8 +885,10 @@ class RuntimeLlmSession(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: str = Field(index=True)
     organization_id: str = Field(index=True)
-    source_node_ids_str: str | None = Field(nullable=True, default=None) # drop this column
-    page_node_id: UUID | None = Field(nullable=True, default=None) # drop this column
+    source_node_ids_str: str | None = Field(
+        nullable=True, default=None
+    )  # drop this column
+    page_node_id: UUID | None = Field(nullable=True, default=None)  # drop this column
     source_version_node_ids_str: str | None = Field(nullable=True, default=None)
     page_version_node_id: UUID | None = Field(nullable=True, default=None)
     created_at: None | datetime = Field(
@@ -1070,16 +969,9 @@ class RuntimeLlmMessage(SQLModel, table=True):
 class AutoDocStatusHistory(SQLModel, table=True):
     __tablename__ = "autodoc_status_history"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    # page_node_id will be deleted in a future migration
-    page_node_id: UUID = Field(
-        index=True,
-        nullable=True,
-        foreign_key="node.id",
-        ondelete="SET NULL",
-    )
     source_version_node_id: UUID = Field(
         index=True,
-        nullable=True,  # will be set to False in a future migration
+        nullable=False,
         foreign_key="version_node.id",
         ondelete="CASCADE",
     )

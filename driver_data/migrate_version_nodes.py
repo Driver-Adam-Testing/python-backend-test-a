@@ -1,27 +1,16 @@
+import asyncio
 import hashlib
 import logging
 import os
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 import boto3
-from database.db import engine
-from database.models import (
-    AutoDocStatusHistory,
-    DerivedContent,
-    DocumentSource,
-    Node,
-    PrimaryAsset,
-    Version,
-    VersionNode,
-)
-from database.models_enums import ContentKind, NodeKind, VersionStatus
+import modal
 from sqlmodel import Session, select
-
-# TODO: Delete all connected versions except the latest
-# TODO: handle connected codebases
 
 # Configuration flag: Set to True to use S3 content, False to use DerivedContent long description
 USE_S3 = True
@@ -30,6 +19,27 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Modal app setup
+app = modal.App("version-node-migration")
+
+# Modal image with dependencies
+migration_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .add_local_dir(local_path="../driver_db", remote_path="/driver_db", copy=True)
+    .pip_install(
+        [
+            "boto3",
+            "sqlmodel",
+            "/driver_db",
+        ]
+    )
+    .add_local_python_source(
+        "database",
+        copy=True,
+        ignore=lambda p: False,  # recent modal version only copy .py by default, but we have text files, for example, that we want
+    )
+)
 
 
 def setup_s3_client() -> boto3.client:
@@ -75,6 +85,9 @@ def fetch_s3_content(
 
 def fetch_long_description(session: Session, node_id: UUID) -> str | None:
     """Fetch long description content from DerivedContent for a node."""
+    from database.models import DerivedContent
+    from database.models_enums import ContentKind
+
     derived_content = session.exec(
         select(DerivedContent)
         .where(DerivedContent.node_id == node_id)
@@ -116,6 +129,8 @@ def update_document_sources(
     When migrating a node, any DocumentSource records that reference the old node
     should be updated to point to the newly created VersionNode.
     """
+    from database.models import DocumentSource
+
     # Update source_version_node_id for DocumentSources that reference this node as source
     source_docs = session.exec(
         select(DocumentSource).where(DocumentSource.source_node_id == old_node_id)
@@ -148,6 +163,8 @@ def update_autodoc_status_history(
     When migrating a node, any AutoDocStatusHistory records that reference the old node
     should be updated to point to the newly created VersionNode.
     """
+    from database.models import AutoDocStatusHistory
+
     autodoc_records = session.exec(
         select(AutoDocStatusHistory).where(
             AutoDocStatusHistory.page_node_id == old_node_id
@@ -167,6 +184,8 @@ def get_directory_children_hashes(
     session: Session, version_id: UUID, relative_path: str
 ) -> list[str]:
     """Get list of content hashes for direct children of a directory node."""
+    from database.models import Node, VersionNode
+
     # Add trailing slash to directory path if not present
     dir_path = relative_path if relative_path.endswith("/") else f"{relative_path}/"
 
@@ -188,8 +207,10 @@ def get_directory_children_hashes(
 
 def find_node_by_hash(
     session: Session, primary_asset_id: UUID, source_hash: str
-) -> Node | None:
+) -> Any | None:
     """Find existing Node with matching hash for the same PrimaryAsset."""
+    from database.models import Node
+
     return session.exec(
         select(Node)
         .where(Node.primary_asset_id == primary_asset_id)
@@ -201,10 +222,12 @@ def find_node_by_hash(
 def migrate_file_node(
     session: Session,
     s3_client: str | None,
-    version: Version,
-    node: Node,
+    version: Any,
+    node: Any,
 ) -> None:
     """Migrate a single file node with deduplication."""
+    from database.models import DerivedContent, Node, VersionNode
+
     print(f"Migrating file node: {node.relative_path} (version: {version.id})")
 
     # Fetch content based on USE_S3 flag
@@ -296,10 +319,12 @@ def migrate_file_node(
 
 def migrate_directory_node(
     session: Session,
-    version: Version,
-    node: Node,
+    version: Any,
+    node: Any,
 ) -> None:
     """Migrate a single directory node with content-based hashing."""
+    from database.models import DerivedContent, Node, VersionNode
+
     print(f"Migrating directory node: {node.relative_path} (version: {version.id})")
 
     # Get children content hashes for hashing
@@ -381,8 +406,8 @@ def migrate_directory_node(
 
 def migrate_other_node(
     session: Session,
-    version: Version,
-    node: Node,
+    version: Any,
+    node: Any,
 ) -> None:
     """
     Migrate nodes of other kinds by reusing existing node.
@@ -390,6 +415,8 @@ def migrate_other_node(
     Since we're not doing content-based hashing for these nodes,
     we simply create a VersionNode link to the existing node.
     """
+    from database.models import VersionNode
+
     print(f"Migrating other node: {node.relative_path} (version: {version.id})")
 
     # Create VersionNode link to existing node (no need to create new Node)
@@ -449,11 +476,13 @@ def download_and_extract_zip(
 
 def migrate_connected_file_node(
     session: Session,
-    version: Version,
-    node: Node,
+    version: Any,
+    node: Any,
     extracted_dir: Path,
 ) -> None:
     """Migrate a file node from extracted zip with deduplication."""
+    from database.models import DerivedContent, Node, VersionNode
+
     print(
         f"Migrating connected file node: {node.relative_path} (version: {version.id})"
     )
@@ -539,8 +568,11 @@ def migrate_connected_file_node(
         session.commit()
 
 
-def migrate_connected_version(session: Session, version: Version) -> None:
+def migrate_connected_version(session: Session, version: Any) -> None:
     """Migrate a connected version by downloading and extracting the zip file."""
+    from database.models import Node
+    from database.models_enums import NodeKind
+
     print(f"Migrating connected version {version.id}")
 
     s3_client = setup_s3_client()
@@ -591,12 +623,24 @@ def migrate_connected_version(session: Session, version: Version) -> None:
 def migrate_version(
     session: Session,
     s3_client: str | None,
-    version: Version,
+    version: Any,
 ) -> None:
     """Migrate all nodes for a specific version."""
+    from database.models import Node, VersionNode
+    from database.models_enums import NodeKind, VersionStatus
+
     print(
         f"Processing version {version.id} for primary asset {version.primary_asset_id}"
     )
+
+    # Check for existing VersionNodes - if they exist, this has already been migrated
+    existing_version_nodes = session.exec(
+        select(VersionNode).where(VersionNode.version_id == version.id)
+    ).all()
+
+    if existing_version_nodes:
+        print(f"Version {version.id} already migrated. Skipping.")
+        return
 
     if version.status == VersionStatus.CONNECTED:
         migrate_connected_version(session, version)
@@ -626,49 +670,179 @@ def migrate_version(
             # Continue with next node
 
 
-def migrate_all_versions() -> None:
-    """Main migration function - processes all versions in reverse chronological order."""
-    print("Starting VersionNode migration")
-    print(
-        f"Using {'S3 content' if USE_S3 else 'DerivedContent long description'} for hashing"
-    )
-    # TODO::
-    # * handling versions in states besides GENERATION_COMPLETE?
-    # * handling assets other than codebases?
+def cleanup_old_connected_versions(session: Session, primary_asset_id: UUID) -> int:
+    """
+    Delete all CONNECTED versions except the latest one for a primary asset.
+    Returns the number of versions deleted.
+    """
+    from database.models import Version
+    from database.models_enums import VersionStatus
+
+    # Get all CONNECTED versions ordered by updated_at descending
+    connected_versions = session.exec(
+        select(Version)
+        .where(Version.primary_asset_id == primary_asset_id)
+        .where(Version.status == VersionStatus.CONNECTED)
+        .order_by(Version.updated_at.desc())
+    ).all()
+
+    if len(connected_versions) <= 1:
+        # Nothing to clean up
+        return 0
+
+    # Keep the first (latest), delete the rest
+    versions_to_delete = connected_versions[1:]
+    deleted_count = 0
+
+    for version in versions_to_delete:
+        logger.info(
+            f"Deleting old CONNECTED version {version.id} (updated_at: {version.updated_at})"
+        )
+        session.delete(version)
+        deleted_count += 1
+
+    session.commit()
+    return deleted_count
+
+
+@app.function(
+    image=migration_image,
+    secrets=[
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("aws-inspector-s3"),
+    ],
+)
+def migrate_primary_asset(primary_asset_id: UUID) -> dict[str, Any]:
+    """
+    Process all versions for a single primary asset.
+    Returns summary statistics and any errors encountered.
+    """
+    from database.db import engine
+    from database.models import PrimaryAsset, Version
 
     s3_client = setup_s3_client() if USE_S3 else None
+    errors = []
+    versions_processed = 0
+    connected_versions_deleted = 0
 
     with Session(engine) as session:
-        # Get all codebase PrimaryAssets
-        primary_assets = session.exec(select(PrimaryAsset)).all()
+        # Fetch the primary asset
+        primary_asset = session.get(PrimaryAsset, primary_asset_id)
+        if not primary_asset:
+            error_msg = f"Primary asset {primary_asset_id} not found"
+            logger.error(error_msg)
+            return {
+                "primary_asset_id": str(primary_asset_id),
+                "success": False,
+                "error": error_msg,
+            }
 
-        print(f"Found {len(primary_assets)} codebase primary assets")
+        logger.info(
+            f"Processing primary asset: {primary_asset.display_name} ({primary_asset.id}). Kind: {primary_asset.kind}"
+        )
 
-        for primary_asset in primary_assets:
-            print(
-                f"Processing primary asset: {primary_asset.display_name} ({primary_asset.id}). Kind: {primary_asset.kind}"
+        # Clean up old CONNECTED versions
+        try:
+            connected_versions_deleted = cleanup_old_connected_versions(
+                session, primary_asset_id
             )
-            # Get all versions for this primary asset in reverse chronological order
-            versions = session.exec(
-                select(Version)
-                .where(Version.primary_asset_id == primary_asset.id)
-                .order_by(Version.updated_at.desc())
-            ).all()
+            if connected_versions_deleted > 0:
+                logger.info(
+                    f"Deleted {connected_versions_deleted} old CONNECTED versions for {primary_asset.display_name}"
+                )
+        except Exception as e:
+            error_msg = f"Error cleaning up CONNECTED versions: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+            session.rollback()
 
-            print(f"Found {len(versions)} versions for {primary_asset.display_name}")
+        # Get all versions for this primary asset in reverse chronological order
+        versions = session.exec(
+            select(Version)
+            .where(Version.primary_asset_id == primary_asset.id)
+            .order_by(Version.updated_at.desc())
+        ).all()
 
-            for version in versions:
-                try:
-                    migrate_version(session, s3_client, version)
-                except Exception as e:
-                    print("=========\n=========\n=========")
-                    logger.error(f"Error migrating version {version.id}: {e}")
-                    print("=========\n=========\n=========")
-                    session.rollback()
-                    # Continue with next version
+        logger.info(f"Found {len(versions)} versions for {primary_asset.display_name}")
 
-    print("Migration complete")
+        for version in versions:
+            try:
+                migrate_version(session, s3_client, version)
+                versions_processed += 1
+            except Exception as e:
+                error_msg = f"Error migrating version {version.id}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+                session.rollback()
+                # Continue with next version
+
+    return {
+        "primary_asset_id": str(primary_asset_id),
+        "primary_asset_name": primary_asset.display_name,
+        "success": True,
+        "versions_processed": versions_processed,
+        "connected_versions_deleted": connected_versions_deleted,
+        "errors": errors,
+    }
 
 
-if __name__ == "__main__":
-    migrate_all_versions()
+@app.function(
+    image=migration_image,
+    secrets=[
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("aws-inspector-s3"),
+    ],
+)
+async def migrate_all_versions(max_concurrent: int = 5) -> None:
+    """
+    Main migration function - processes all primary assets in parallel with throttling.
+    Uses semaphore to limit concurrent database connections.
+    """
+    from database.db import engine
+    from database.models import PrimaryAsset
+
+    logger.info("Starting VersionNode migration")
+    logger.info(
+        f"Using {'S3 content' if USE_S3 else 'DerivedContent long description'} for hashing"
+    )
+    logger.info(f"Max concurrent workers: {max_concurrent}")
+
+    # Get all primary asset IDs
+    with Session(engine) as session:
+        primary_assets = session.exec(select(PrimaryAsset)).all()
+        primary_asset_ids = [pa.id for pa in primary_assets]
+
+    logger.info(f"Found {len(primary_asset_ids)} primary assets to process")
+
+    # Semaphore to limit concurrent workers
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def throttled_migrate(pa_id: UUID) -> dict[str, Any]:
+        async with semaphore:
+            return await migrate_primary_asset.remote.aio(pa_id)
+
+    # Execute with throttling
+    results = await asyncio.gather(
+        *[throttled_migrate(pa_id) for pa_id in primary_asset_ids],
+        return_exceptions=True,
+    )
+
+    # Log summary
+    successful = sum(1 for r in results if isinstance(r, dict) and r.get("success"))
+    failed = len(results) - successful
+    logger.info(f"Migration complete: {successful} successful, {failed} failed")
+
+    # Log any errors
+    for result in results:
+        if isinstance(result, dict) and result.get("errors"):
+            logger.warning(
+                f"Primary asset {result['primary_asset_name']} had {len(result['errors'])} version errors"
+            )
+        elif isinstance(result, Exception):
+            logger.error(f"Primary asset migration failed with exception: {result}")
+
+
+@app.local_entrypoint()
+def main(max_concurrent: int = 5) -> None:
+    """Local entrypoint for running the migration via Modal."""
+    migrate_all_versions.remote(max_concurrent)

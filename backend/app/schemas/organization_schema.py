@@ -14,6 +14,14 @@ class OrganizationMember(BaseModel):
     )
     name: str | None = Field(description="User display name")
     role: OrgRole = Field(description="Organization role enum")
+    has_source_access: bool = Field(
+        default=False,
+        description="Whether user has direct access to the source (only populated when source_id query param is provided)",
+    )
+    has_team_access: bool = Field(
+        default=False,
+        description="Whether user is a member of the team (only populated when team_id query param is provided)",
+    )
 
 
 class ListMembersResponse(BaseModel):

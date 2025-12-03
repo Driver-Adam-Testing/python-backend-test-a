@@ -1,7 +1,10 @@
 """Repository functions for Organization Membership data access."""
 
-from database.models import OrgMembership, User
-from database.models_enums import OrgRole
+from uuid import UUID
+
+from database.models import OrgMembership, PrimaryAssetRoleGrant, TeamMembership, User
+from database.models_enums import OrgRole, PrincipalKind
+from sqlalchemy import literal
 from sqlmodel import Session, col, func, select
 
 
@@ -145,8 +148,10 @@ def list_organization_members(
     offset: int = 0,
     search: str | None = None,
     roles: list[OrgRole] | None = None,
+    source_id: UUID | None = None,
+    team_id: UUID | None = None,
 ) -> tuple[
-    list[dict[str, str | None]], int
+    list[dict[str, str | None | bool]], int
 ]:  # TODO: gross return type. use proper types
     base_conditions = [OrgMembership.org_id == organization_id]
 
@@ -176,6 +181,44 @@ def list_organization_members(
         .limit(limit)
     )
 
+    # If source_id provided, add subquery to check for direct source grants
+    if source_id:
+        has_source_access_subquery = (
+            select(func.count())
+            .select_from(PrimaryAssetRoleGrant)
+            .where(
+                PrimaryAssetRoleGrant.primary_asset_id == source_id,
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+                PrimaryAssetRoleGrant.user_id == User.id,
+            )
+            .scalar_subquery()
+        )
+        query = query.add_columns(
+            (has_source_access_subquery > 0).label("has_source_access")
+        )
+    else:
+        # Add False as default when source_id is not provided
+        query = query.add_columns(literal(False).label("has_source_access"))
+
+    # If team_id provided, add subquery to check for team membership
+    if team_id:
+        has_team_access_subquery = (
+            select(func.count())
+            .select_from(TeamMembership)
+            .where(
+                TeamMembership.team_id == team_id,
+                TeamMembership.user_id == User.id,
+            )
+            .scalar_subquery()
+        )
+        query = query.add_columns(
+            (has_team_access_subquery > 0).label("has_team_access")
+        )
+    else:
+        # Add False as default when team_id is not provided
+        query = query.add_columns(literal(False).label("has_team_access"))
+
     results = session.exec(query).all()
 
     members = [
@@ -184,6 +227,8 @@ def list_organization_members(
             "email": row.email,
             "name": row.name,
             "role": row.role.value,
+            "has_source_access": getattr(row, "has_source_access", False),
+            "has_team_access": getattr(row, "has_team_access", False),
         }
         for row in results
     ]

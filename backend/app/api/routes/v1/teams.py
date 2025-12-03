@@ -69,12 +69,29 @@ def list_teams(
     search: str | None = Query(
         default=None, description="Optional search query to filter teams by name"
     ),
+    user_id: str | None = Query(
+        default=None,
+        description="Optional user ID to check if each team has this user as a member",
+    ),
+    source_id: UUID | None = Query(
+        default=None,
+        description="Optional source ID to check if each team has access to this source",
+    ),
 ) -> TeamsResponse:
     """Super admins see all teams. Regular users only see teams they are members of."""
     enforce_org_action(session, user, "team.view")
-    logger.info(f"User {user.user_id} listing teams (limit={limit}, offset={offset})")
+    logger.info(
+        f"User {user.user_id} listing teams (limit={limit}, offset={offset}, user_id={user_id}, source_id={source_id})"
+    )
     team_service = TeamService(session)
-    return team_service.get_teams(user=user, limit=limit, offset=offset, search=search)
+    return team_service.get_teams(
+        user=user,
+        limit=limit,
+        offset=offset,
+        search=search,
+        check_user_id=user_id,
+        check_source_id=source_id,
+    )
 
 
 @router.get(
@@ -91,16 +108,28 @@ def search_teams(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
+    user_id: str | None = Query(
+        default=None,
+        description="Optional user ID to check if each team has this user as a member",
+    ),
+    source_id: UUID | None = Query(
+        default=None,
+        description="Optional source ID to check if each team has access to this source",
+    ),
 ) -> TeamsResponse:
     """Super admins see all teams. Regular users only see teams they are members of."""
     enforce_org_action(session, user, "team.view")
-    logger.info(f"User {user.user_id} searching teams with query '{query}'")
+    logger.info(
+        f"User {user.user_id} searching teams with query '{query}' (user_id={user_id}, source_id={source_id})"
+    )
     team_service = TeamService(session)
     return team_service.get_teams(
         user=user,
         limit=limit,
         offset=offset,
         search=query,
+        check_user_id=user_id,
+        check_source_id=source_id,
     )
 
 

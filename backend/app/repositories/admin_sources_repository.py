@@ -13,7 +13,7 @@ from database.models import (
     Version,
 )
 from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, SourceVisibility
-from sqlalchemy import and_, union_all
+from sqlalchemy import and_, literal, union_all
 from shared.authorization.query_filters import (
     asset_visibility_expr,
     effective_asset_role_expr,
@@ -67,6 +67,8 @@ def get_sources_with_counts(
     sort_direction: str = "DESC",
     limit: int = 20,
     offset: int = 0,
+    check_user_id: str | None = None,
+    check_team_id: UUID | None = None,
 ) -> list[dict]:
     """
     Only returns sources where user has effective admin role.
@@ -228,17 +230,58 @@ def get_sources_with_counts(
         )
     ).cte("most_recent_version_subq")
 
-    query = (
-        select(
-            PrimaryAsset,
-            role_expr.label("effective_role"),
-            func.coalesce(members_count_subquery.c.members_count, 0).label(
-                "members_count"
-            ),
-            func.coalesce(teams_count_subquery.c.teams_count, 0).label("teams_count"),
-            visibility_expr.label("visibility"),
-            latest_versions_subq.c.version_status.label("status"),
+    # Build subqueries for user and team access checks if requested
+    select_columns = [
+        PrimaryAsset,
+        role_expr.label("effective_role"),
+        func.coalesce(members_count_subquery.c.members_count, 0).label(
+            "members_count"
+        ),
+        func.coalesce(teams_count_subquery.c.teams_count, 0).label("teams_count"),
+        visibility_expr.label("visibility"),
+        latest_versions_subq.c.version_status.label("status"),
+    ]
+
+    # If check_user_id provided, add subquery to check for direct user grants
+    if check_user_id:
+        has_user_access_subquery = (
+            select(func.count())
+            .select_from(PrimaryAssetRoleGrant)
+            .where(
+                PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id,
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+                PrimaryAssetRoleGrant.user_id == check_user_id,
+            )
+            .scalar_subquery()
         )
+        select_columns.append(
+            (has_user_access_subquery > 0).label("has_user_access")
+        )
+    else:
+        select_columns.append(literal(False).label("has_user_access"))
+
+    # If check_team_id provided, add subquery to check for team grants
+    if check_team_id:
+        has_team_access_subquery = (
+            select(func.count())
+            .select_from(PrimaryAssetRoleGrant)
+            .where(
+                PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id,
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+                PrimaryAssetRoleGrant.team_id == check_team_id,
+            )
+            .scalar_subquery()
+        )
+        select_columns.append(
+            (has_team_access_subquery > 0).label("has_team_access")
+        )
+    else:
+        select_columns.append(literal(False).label("has_team_access"))
+
+    query = (
+        select(*select_columns)
         .outerjoin(
             members_count_subquery,
             PrimaryAsset.id == members_count_subquery.c.primary_asset_id,
@@ -291,6 +334,8 @@ def get_sources_with_counts(
             "teams_count": row[3],
             "visibility": row[4],
             "status": row[5].value if row[5] else None,
+            "has_user_access": getattr(row, "has_user_access", False),
+            "has_team_access": getattr(row, "has_team_access", False),
         }
         for row in results
     ]

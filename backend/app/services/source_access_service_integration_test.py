@@ -289,6 +289,37 @@ class TestTeamSourceAccessPropagation:
             == PrimaryAssetRole.asset_member
         )
 
+        # Test visibility filtering
+        private_only = service.get_team_sources(
+            user=mock_user, team_id=team.id, visibilities=["private"]
+        )
+        assert private_only.total == 1
+        assert len(private_only.sources) == 1
+        assert private_only.sources[0].visibility == "private"
+
+        internal_only = service.get_team_sources(
+            user=mock_user, team_id=team.id, visibilities=["internal"]
+        )
+        assert internal_only.total == 1
+        assert len(internal_only.sources) == 1
+        assert internal_only.sources[0].visibility == "internal"
+
+        public_only = service.get_team_sources(
+            user=mock_user, team_id=team.id, visibilities=["public"]
+        )
+        assert public_only.total == 1
+        assert len(public_only.sources) == 1
+        assert public_only.sources[0].visibility == "public"
+
+        # Test multiple visibility filter
+        private_and_public = service.get_team_sources(
+            user=mock_user, team_id=team.id, visibilities=["private", "public"]
+        )
+        assert private_and_public.total == 2
+        assert len(private_and_public.sources) == 2
+        visibilities = {s.visibility for s in private_and_public.sources}
+        assert visibilities == {"private", "public"}
+
     def test_team_sources_effective_role_respects_direct_grants(
         self, integration_db_session: Session
     ) -> None:

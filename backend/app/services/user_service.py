@@ -5,7 +5,13 @@ from datetime import datetime
 from uuid import UUID
 
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, TeamMembership
-from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, TeamRole
+from database.models_enums import (
+    OrgRole,
+    PrimaryAssetKind,
+    PrimaryAssetRole,
+    PrincipalKind,
+    TeamRole,
+)
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
@@ -314,6 +320,13 @@ class UserService:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Source {source_input.source_id} not found",
+                )
+
+            if asset.kind not in (PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Only codebases and files can have user/team grants. "
+                    f"Asset {source_input.source_id} is of type {asset.kind.value}.",
                 )
 
             # Check if grant already exists

@@ -13,6 +13,7 @@ from database.models import (
 )
 from database.models_enums import (
     OrgRole,
+    PrimaryAssetKind,
     PrimaryAssetRole,
     PrincipalKind,
     SourceVisibility,
@@ -116,6 +117,7 @@ def get_team_sources_with_details(
         .where(
             PrimaryAssetRoleGrant.team_id == team_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 
@@ -227,6 +229,7 @@ def count_team_sources(
         .where(
             PrimaryAssetRoleGrant.team_id == team_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 

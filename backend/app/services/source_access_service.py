@@ -4,7 +4,12 @@ import logging
 from uuid import UUID
 
 from database.models import PrimaryAsset, PrimaryAssetRoleGrant, Team
-from database.models_enums import PrimaryAssetRole, PrincipalKind, TeamRole
+from database.models_enums import (
+    PrimaryAssetKind,
+    PrimaryAssetRole,
+    PrincipalKind,
+    TeamRole,
+)
 from fastapi import HTTPException, status
 from shared.authorization.helpers import is_super_admin
 from sqlalchemy.exc import IntegrityError
@@ -588,6 +593,17 @@ class SourceAccessService:
                 detail="Source not found",
             )
 
+        if asset.kind not in (PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE):
+            logger.error(
+                f"Source {source_id} has invalid kind {asset.kind}. "
+                f"Only CODEBASE and FILE assets can have grants."
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Only codebases and files can have user/team grants. "
+                f"Asset {source_id} is of type {asset.kind.value}.",
+            )
+
         # Add users
         try:
             self._add_users_to_source(source_id, organization_id, request.users)
@@ -762,6 +778,17 @@ class SourceAccessService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Source not found",
+            )
+
+        if asset.kind not in (PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE):
+            logger.error(
+                f"Source {source_id} has invalid kind {asset.kind}. "
+                f"Only CODEBASE and FILE assets can have grants."
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Only codebases and files can have user/team grants. "
+                f"Asset {source_id} is of type {asset.kind.value}.",
             )
 
         # Add teams
@@ -951,6 +978,18 @@ class SourceAccessService:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Source {source.source_id} not found",
+                )
+
+            asset = existing_assets[source_id]
+            if asset.kind not in (PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE):
+                logger.error(
+                    f"Source {source.source_id} has invalid kind {asset.kind}. "
+                    f"Only CODEBASE and FILE assets can be assigned to teams."
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Only codebases and files can be assigned to teams. "
+                    f"Asset {source.source_id} is of type {asset.kind.value}.",
                 )
 
     def _upsert_team_source_grants(

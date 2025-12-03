@@ -88,7 +88,6 @@ def add_team_sources(
 
     - **sources**: List of sources with roles to grant/update
     """
-    enforce_team_action(session, user, team_id, "team.manage")
     for source in request.sources:
         enforce_asset_action(
             session,
@@ -124,7 +123,6 @@ def update_team_sources(
 
     - **sources**: List of sources with updated roles
     """
-    enforce_team_action(session, user, team_id, "team.manage")
     for source in request.sources:
         enforce_asset_action(
             session,
@@ -160,7 +158,6 @@ def remove_team_sources(
 
     - **source_ids**: List of source IDs to remove
     """
-    enforce_team_action(session, user, team_id, "team.manage")
     for source_id in request.source_ids:
         enforce_asset_action(
             session,

@@ -1,6 +1,9 @@
 import hashlib
 import logging
 import os
+import tempfile
+import zipfile
+from pathlib import Path
 from uuid import UUID
 
 import boto3
@@ -14,7 +17,7 @@ from database.models import (
     Version,
     VersionNode,
 )
-from database.models_enums import ContentKind, NodeKind
+from database.models_enums import ContentKind, NodeKind, VersionStatus
 from sqlmodel import Session, select
 
 # TODO: Delete all connected versions except the latest
@@ -396,6 +399,9 @@ def migrate_other_node(
         node_id=node.id,
         misc_metadata=node.misc_metadata,
     )
+    # Update Node with primary_asset_id
+    node.primary_asset_id = version.primary_asset_id
+    session.add(node)
     session.add(version_node)
     session.flush()  # Get the new version_node ID
 
@@ -408,6 +414,180 @@ def migrate_other_node(
     session.commit()
 
 
+def download_and_extract_zip(
+    s3_client: boto3.client,
+    organization_id: str,
+    primary_asset_id: UUID,
+    version_id: UUID,
+    temp_dir: str,
+) -> Path:
+    """Download and extract the source zip file for a connected version."""
+    bucket = hash_organization_id(organization_id)
+    key = f"{primary_asset_id}/{version_id}/{version_id}_source.zip"
+
+    zip_path = Path(temp_dir) / f"{version_id}_source.zip"
+
+    try:
+        logger.info(f"Downloading zip from s3://{bucket}/{key}")
+        s3_client.download_file(bucket, key, str(zip_path))
+
+        extract_dir = Path(temp_dir) / "extracted"
+        extract_dir.mkdir(exist_ok=True)
+
+        logger.info(f"Extracting zip to {extract_dir}")
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
+
+        return extract_dir
+    except s3_client.exceptions.NoSuchKey:
+        logger.error(f"Zip file not found: {bucket}/{key}")
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading/extracting zip for {key}: {e}")
+        raise
+
+
+def migrate_connected_file_node(
+    session: Session,
+    version: Version,
+    node: Node,
+    extracted_dir: Path,
+) -> None:
+    """Migrate a file node from extracted zip with deduplication."""
+    print(
+        f"Migrating connected file node: {node.relative_path} (version: {version.id})"
+    )
+
+    # Read content from extracted directory
+    file_path = extracted_dir / node.relative_path.lstrip("/")
+
+    if not file_path.exists():
+        logger.warning(
+            f"File not found in extracted zip: {file_path}, skipping node {node.id}"
+        )
+        return
+
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="replace")
+    except Exception as e:
+        logger.error(f"Error reading file {file_path}: {e}")
+        return
+
+    # Hash the content
+    source_hash = hash_file_content(content)
+
+    # Check for existing node with same hash
+    existing_node = find_node_by_hash(session, version.primary_asset_id, source_hash)
+
+    if existing_node:
+        print(
+            f"Found existing node with hash {source_hash}, reusing node {existing_node.id}"
+        )
+        # Create VersionNode link to existing node
+        version_node = VersionNode(
+            version_id=version.id,
+            relative_path=node.relative_path,
+            node_id=existing_node.id,
+            misc_metadata=node.misc_metadata,
+        )
+        session.add(version_node)
+        session.flush()
+
+        # Update DocumentSource records to point to new VersionNode
+        update_document_sources(session, node.id, version_node.id)
+
+        # Delete old node (cascade deletes DerivedContent)
+        session.delete(node)
+        session.commit()
+    else:
+        print(f"Creating new node with hash {source_hash}")
+        # Create new Node with hash
+        new_node = Node(
+            source_hash=source_hash,
+            kind=node.kind,
+            primary_asset_id=version.primary_asset_id,
+            version_id=version.id,
+            relative_path=node.relative_path,
+            misc_metadata=node.misc_metadata,
+        )
+        session.add(new_node)
+        session.flush()
+
+        # Move DerivedContent to new node
+        derived_contents = session.exec(
+            select(DerivedContent).where(DerivedContent.node_id == node.id)
+        ).all()
+
+        for dc in derived_contents:
+            dc.node_id = new_node.id
+
+        # Create VersionNode link
+        version_node = VersionNode(
+            version_id=version.id,
+            relative_path=node.relative_path,
+            node_id=new_node.id,
+            misc_metadata=node.misc_metadata,
+        )
+        session.add(version_node)
+        session.flush()
+
+        # Update DocumentSource records to point to new VersionNode
+        update_document_sources(session, node.id, version_node.id)
+
+        # Delete old node (DerivedContent already moved, so no cascade delete)
+        session.delete(node)
+        session.commit()
+
+
+def migrate_connected_version(session: Session, version: Version) -> None:
+    """Migrate a connected version by downloading and extracting the zip file."""
+    print(f"Migrating connected version {version.id}")
+
+    s3_client = setup_s3_client()
+
+    # Create temporary directory for zip extraction
+    with tempfile.TemporaryDirectory() as temp_dir:
+        try:
+            # Download and extract the zip file
+            extracted_dir = download_and_extract_zip(
+                s3_client,
+                version.primary_asset.organization_id,
+                version.primary_asset_id,
+                version.id,
+                temp_dir,
+            )
+
+            # Get all nodes for this version
+            nodes = session.exec(
+                select(Node)
+                .where(Node.version_id == version.id)
+                .order_by(Node.depth.desc())  # Process deepest nodes first
+            ).all()
+
+            print(f"Found {len(nodes)} nodes to migrate for connected version")
+
+            for node in nodes:
+                try:
+                    if node.kind == NodeKind.CODEBASE_FILE:
+                        migrate_connected_file_node(
+                            session, version, node, extracted_dir
+                        )
+                    elif node.kind == NodeKind.CODEBASE_DIRECTORY:
+                        migrate_directory_node(session, version, node)
+                    else:
+                        # NodeKind.OTHER
+                        migrate_other_node(session, version, node)
+                except Exception as e:
+                    logger.error(f"Error migrating connected node {node.id}: {e}")
+                    session.rollback()
+                    # Continue with next node
+
+        except Exception as e:
+            logger.error(f"Error processing connected version {version.id}: {e}")
+            session.rollback()
+            raise
+
+
 def migrate_version(
     session: Session,
     s3_client: str | None,
@@ -417,6 +597,10 @@ def migrate_version(
     print(
         f"Processing version {version.id} for primary asset {version.primary_asset_id}"
     )
+
+    if version.status == VersionStatus.CONNECTED:
+        migrate_connected_version(session, version)
+        return
 
     # Get all nodes for this version
     nodes = session.exec(

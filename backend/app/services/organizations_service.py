@@ -1,6 +1,7 @@
 """Service for Organization business logic."""
 
 import logging
+from uuid import UUID
 
 from database.models_enums import OrgRole
 from fastapi import HTTPException
@@ -208,6 +209,8 @@ class OrganizationsService:
         offset: int = 0,
         search: str | None = None,
         roles: list[OrgRole] | None = None,
+        source_id: UUID | None = None,
+        team_id: UUID | None = None,
     ) -> ListMembersResponse:
         members_data, total_count = list_organization_members(
             self.session,
@@ -216,6 +219,8 @@ class OrganizationsService:
             offset=offset,
             search=search,
             roles=roles,
+            source_id=source_id,
+            team_id=team_id,
         )
 
         # Transform members data to OrganizationMember objects
@@ -226,6 +231,8 @@ class OrganizationsService:
                 picture=None,  # Not stored in database
                 name=member["name"],
                 role=member["role"],  # Singular role as enum value
+                has_source_access=member.get("has_source_access", False),
+                has_team_access=member.get("has_team_access", False),
             )
             for member in members_data
         ]

@@ -1,6 +1,7 @@
 """Service for Admin Sources business logic."""
 
 import logging
+from uuid import UUID
 
 from sqlmodel import Session
 
@@ -32,6 +33,8 @@ class AdminSourcesService:
         sort_direction: str = "DESC",
         limit: int = 20,
         offset: int = 0,
+        check_user_id: str | None = None,
+        check_team_id: UUID | None = None,
     ) -> AdminSourcesResponse:
         """
         Get paginated list of sources with admin metadata.
@@ -69,6 +72,8 @@ class AdminSourcesService:
             sort_direction=sort_direction,
             limit=limit,
             offset=offset,
+            check_user_id=check_user_id,
+            check_team_id=check_team_id,
         )
 
         # Get total count
@@ -98,6 +103,8 @@ class AdminSourcesService:
         teams_count = data["teams_count"]
         visibility = data["visibility"]
         status = data.get("status")
+        has_user_access = data.get("has_user_access", False)
+        has_team_access = data.get("has_team_access", False)
 
         return AdminSourceRecord(
             id=str(asset.id),
@@ -116,4 +123,6 @@ class AdminSourcesService:
             members_count=members_count,
             teams_count=teams_count,
             tags=None,  # TODO: Add tags if needed
+            has_user_access=has_user_access,
+            has_team_access=has_team_access,
         )

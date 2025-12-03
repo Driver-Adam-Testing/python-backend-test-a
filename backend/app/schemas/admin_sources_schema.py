@@ -40,6 +40,14 @@ class AdminSourceRecord(BaseModel):
     members_count: int = Field(..., description="Count of user grants")
     teams_count: int = Field(..., description="Count of team grants")
     tags: list[dict] | None = Field(None, description="Associated tags")
+    has_user_access: bool = Field(
+        default=False,
+        description="Whether the specified user has direct access to this source (only populated when user_id query param is provided)",
+    )
+    has_team_access: bool = Field(
+        default=False,
+        description="Whether the specified team has access to this source (only populated when team_id query param is provided)",
+    )
 
 
 class AdminSourcesResponse(BaseModel):

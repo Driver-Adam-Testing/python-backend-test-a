@@ -15,6 +15,9 @@ from sqlmodel import Session, select
 # Configuration flag: Set to True to use S3 content, False to use DerivedContent long description
 USE_S3 = True
 
+# Configuration flag: Set to True to run in dry-run mode (no database changes)
+DRY_RUN = True
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -276,7 +279,10 @@ def migrate_file_node(
 
         # Delete old node (cascade deletes DerivedContent)
         session.delete(node)
-        session.commit()
+        if not DRY_RUN:
+            session.commit()
+        else:
+            logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
     else:
         print(f"Creating new node with hash {source_hash}")
         # Create new Node with hash
@@ -314,7 +320,10 @@ def migrate_file_node(
 
         # Delete old node (DerivedContent already moved, so no cascade delete)
         session.delete(node)
-        session.commit()
+        if not DRY_RUN:
+            session.commit()
+        else:
+            logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
 
 
 def migrate_directory_node(
@@ -360,7 +369,10 @@ def migrate_directory_node(
 
         # Delete old node (cascade deletes DerivedContent)
         session.delete(node)
-        session.commit()
+        if not DRY_RUN:
+            session.commit()
+        else:
+            logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
     else:
         print(f"Creating new directory node with hash {source_hash}")
         # Create new Node with hash
@@ -401,7 +413,10 @@ def migrate_directory_node(
 
         # Delete old node (DerivedContent already moved, so no cascade delete)
         session.delete(node)
-        session.commit()
+        if not DRY_RUN:
+            session.commit()
+        else:
+            logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
 
 
 def migrate_other_node(
@@ -438,7 +453,10 @@ def migrate_other_node(
     # Update AutoDocStatusHistory records to point to new VersionNode
     update_autodoc_status_history(session, node.id, version_node.id)
 
-    session.commit()
+    if not DRY_RUN:
+        session.commit()
+    else:
+        logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
 
 
 def download_and_extract_zip(
@@ -527,7 +545,10 @@ def migrate_connected_file_node(
 
         # Delete old node (cascade deletes DerivedContent)
         session.delete(node)
-        session.commit()
+        if not DRY_RUN:
+            session.commit()
+        else:
+            logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
     else:
         print(f"Creating new node with hash {source_hash}")
         # Create new Node with hash
@@ -565,7 +586,10 @@ def migrate_connected_file_node(
 
         # Delete old node (DerivedContent already moved, so no cascade delete)
         session.delete(node)
-        session.commit()
+        if not DRY_RUN:
+            session.commit()
+        else:
+            logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
 
 
 def migrate_connected_version(session: Session, version: Any) -> None:
@@ -701,7 +725,10 @@ def cleanup_old_connected_versions(session: Session, primary_asset_id: UUID) -> 
         session.delete(version)
         deleted_count += 1
 
-    session.commit()
+    if not DRY_RUN:
+        session.commit()
+    else:
+        logger.info("[DRY RUN] Skipping commit - changes will be rolled back")
     return deleted_count
 
 
@@ -806,6 +833,10 @@ async def migrate_all_versions(max_concurrent: int = 5) -> None:
         f"Using {'S3 content' if USE_S3 else 'DerivedContent long description'} for hashing"
     )
     logger.info(f"Max concurrent workers: {max_concurrent}")
+    if DRY_RUN:
+        logger.warning(
+            "*** DRY RUN MODE ENABLED - No changes will be committed to the database ***"
+        )
 
     # Get all primary asset IDs
     with Session(engine) as session:

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get(
-    "/{team_id}/sources",  # TODO this is listing pages!!!
+    "/{team_id}/sources",
     response_model=TeamSourcesResponse,
     summary="List team sources",
     description="Get paginated list of sources (codebases/files) that a team has access to",

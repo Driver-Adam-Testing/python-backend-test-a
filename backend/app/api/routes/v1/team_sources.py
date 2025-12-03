@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get(
-    "/{team_id}/sources",
+    "/{team_id}/sources",  # TODO this is listing pages!!!
     response_model=TeamSourcesResponse,
     summary="List team sources",
     description="Get paginated list of sources (codebases/files) that a team has access to",
@@ -69,8 +69,8 @@ def get_team_sources(
 @router.post(
     "/{team_id}/sources",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Add sources to team",
-    description="Grant team access to sources with specific roles",
+    summary="Add or update team sources",
+    description="Grant or update team access to sources with specific roles",
 )
 def add_team_sources(
     session: CurrentSession,
@@ -79,9 +79,14 @@ def add_team_sources(
     request: AddTeamSourcesRequest,
 ) -> None:
     """
-    Add sources to a team.
+    Add or update sources for a team.
 
-    - **sources**: List of sources with roles to grant
+    For each source:
+    - If not assigned: adds with specified role
+    - If already assigned with different role: updates to new role
+    - If already assigned with same role: no-op
+
+    - **sources**: List of sources with roles to grant/update
     """
     enforce_team_action(session, user, team_id, "team.manage")
     for source in request.sources:

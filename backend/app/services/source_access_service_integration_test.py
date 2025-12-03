@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from database.models import OrgMembership, PrimaryAssetRoleGrant, Team, TeamMembership
-from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind
+from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, TeamRole
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
@@ -1562,3 +1562,279 @@ class TestGetSourceTeamsEffectiveRole:
             super_team_map["Team D Super Member"].effective_team_role
             == TeamRole.team_admin
         )
+
+
+@pytest.mark.integration
+class TestAddTeamSourcesUpsert:
+    """Test upsert behavior of add_team_sources."""
+
+    def test_add_team_sources_new_sources(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test adding new sources to a team."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|test123",
+            email="test@example.com",
+            name="Test User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        team = TeamFactory.create(
+            session=integration_db_session,
+            name="Test Team",
+            organization_id="test-org-id",
+        )
+
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=team.id,
+            user_id=db_user.id,
+            role=TeamRole.team_admin,
+            organization_id="test-org-id",
+        )
+
+        asset1 = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Asset 1",
+            organization_id="test-org-id",
+        )
+        asset2 = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Asset 2",
+            organization_id="test-org-id",
+        )
+
+        request = AddTeamSourcesRequest(
+            sources=[
+                TeamSourceInput(
+                    source_id=str(asset1.id), role=PrimaryAssetRole.asset_admin
+                ),
+                TeamSourceInput(
+                    source_id=str(asset2.id), role=PrimaryAssetRole.asset_member
+                ),
+            ]
+        )
+
+        mock_user = create_mock_user("test-org-id", db_user.id)
+        service = SourceAccessService(integration_db_session)
+        service.add_team_sources(user=mock_user, team_id=team.id, request=request)
+
+        result = service.get_team_sources(user=mock_user, team_id=team.id)
+
+        assert result.total == 2
+        assert result.sources[0].display_name == "Asset 1"
+        assert result.sources[0].role == PrimaryAssetRole.asset_admin
+        assert result.sources[1].display_name == "Asset 2"
+        assert result.sources[1].role == PrimaryAssetRole.asset_member
+
+    def test_add_team_sources_update_existing_role(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test updating role of existing source assignment."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|test456",
+            email="test@example.com",
+            name="Test User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        team = TeamFactory.create(
+            session=integration_db_session,
+            name="Test Team",
+            organization_id="test-org-id",
+        )
+
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=team.id,
+            user_id=db_user.id,
+            role=TeamRole.team_admin,
+            organization_id="test-org-id",
+        )
+
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Test Asset",
+            organization_id="test-org-id",
+        )
+
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.team,
+            team_id=team.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        request = AddTeamSourcesRequest(
+            sources=[
+                TeamSourceInput(
+                    source_id=str(asset.id), role=PrimaryAssetRole.asset_admin
+                ),
+            ]
+        )
+
+        mock_user = create_mock_user("test-org-id", db_user.id)
+        service = SourceAccessService(integration_db_session)
+        service.add_team_sources(user=mock_user, team_id=team.id, request=request)
+
+        result = service.get_team_sources(user=mock_user, team_id=team.id)
+
+        assert result.total == 1
+        assert result.sources[0].role == PrimaryAssetRole.asset_admin
+
+    def test_add_team_sources_idempotent_same_role(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test adding source with same role is idempotent (no-op)."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|test789",
+            email="test@example.com",
+            name="Test User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        team = TeamFactory.create(
+            session=integration_db_session,
+            name="Test Team",
+            organization_id="test-org-id",
+        )
+
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=team.id,
+            user_id=db_user.id,
+            role=TeamRole.team_admin,
+            organization_id="test-org-id",
+        )
+
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Test Asset",
+            organization_id="test-org-id",
+        )
+
+        grant = PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.team,
+            team_id=team.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+        original_created_at = grant.created_at
+
+        request = AddTeamSourcesRequest(
+            sources=[
+                TeamSourceInput(
+                    source_id=str(asset.id), role=PrimaryAssetRole.asset_admin
+                ),
+            ]
+        )
+
+        mock_user = create_mock_user("test-org-id", db_user.id)
+        service = SourceAccessService(integration_db_session)
+        service.add_team_sources(user=mock_user, team_id=team.id, request=request)
+
+        result = service.get_team_sources(user=mock_user, team_id=team.id)
+
+        assert result.total == 1
+        assert result.sources[0].role == PrimaryAssetRole.asset_admin
+
+        integration_db_session.refresh(grant)
+        assert grant.created_at == original_created_at
+
+    def test_add_team_sources_mixed_operations(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test batch with mix of new, update, and unchanged sources."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|testmixed",
+            email="test@example.com",
+            name="Test User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        team = TeamFactory.create(
+            session=integration_db_session,
+            name="Test Team",
+            organization_id="test-org-id",
+        )
+
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=team.id,
+            user_id=db_user.id,
+            role=TeamRole.team_admin,
+            organization_id="test-org-id",
+        )
+
+        asset_new = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="New Asset",
+            organization_id="test-org-id",
+        )
+        asset_update = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Update Asset",
+            organization_id="test-org-id",
+        )
+        asset_unchanged = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Unchanged Asset",
+            organization_id="test-org-id",
+        )
+
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset_update.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.team,
+            team_id=team.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset_unchanged.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.team,
+            team_id=team.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        request = AddTeamSourcesRequest(
+            sources=[
+                TeamSourceInput(
+                    source_id=str(asset_new.id), role=PrimaryAssetRole.asset_member
+                ),
+                TeamSourceInput(
+                    source_id=str(asset_update.id), role=PrimaryAssetRole.asset_admin
+                ),
+                TeamSourceInput(
+                    source_id=str(asset_unchanged.id),
+                    role=PrimaryAssetRole.asset_admin,
+                ),
+            ]
+        )
+
+        mock_user = create_mock_user("test-org-id", db_user.id)
+        service = SourceAccessService(integration_db_session)
+        service.add_team_sources(user=mock_user, team_id=team.id, request=request)
+
+        result = service.get_team_sources(user=mock_user, team_id=team.id)
+
+        assert result.total == 3
+        sources_by_name = {s.display_name: s for s in result.sources}
+
+        assert sources_by_name["New Asset"].role == PrimaryAssetRole.asset_member
+        assert sources_by_name["Update Asset"].role == PrimaryAssetRole.asset_admin
+        assert sources_by_name["Unchanged Asset"].role == PrimaryAssetRole.asset_admin

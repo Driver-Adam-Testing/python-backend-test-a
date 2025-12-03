@@ -209,66 +209,37 @@ class SourceAccessService:
         request: AddTeamSourcesRequest,
     ) -> None:
         """
-        Add sources to a team.
+        Add or update sources for a team.
 
-        Args:
-            user: Authenticated user making the request
-            team_id: Team ID
-            request: Add team sources request
-
-        Raises:
-            HTTPException: If team or source not found, or grant already exists
+        For each source:
+        - If not assigned: add with specified role
+        - If already assigned with different role: update to new role
+        - If already assigned with same role: no-op
         """
         organization_id = user.organization_id
         logger.info(
-            f"Adding {len(request.sources)} sources to team {team_id} by user {user.user_id}"
+            f"Upserting {len(request.sources)} sources for team {team_id} by user {user.user_id}"
         )
 
-        # Verify team exists
-        team = team_repository.get_team_by_id(
-            session=self.session,
-            team_id=team_id,
-            organization_id=organization_id,
+        self._verify_team_exists(team_id, organization_id)
+        self._verify_sources_exist(request.sources, organization_id)
+
+        stats = self._upsert_team_source_grants(
+            team_id, organization_id, request.sources
         )
 
-        if not team:
-            logger.error(f"Team {team_id} not found")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Team not found",
-            )
-
-        # Verify all sources exist
-        for source in request.sources:
-            asset = acl_repository.get_primary_asset_by_id(
-                self.session,
-                UUID(source.source_id),
-                organization_id,
-            )
-            if not asset:
-                logger.error(f"Source {source.source_id} not found")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Source {source.source_id} not found",
-                )
-
-        # Add sources
         try:
-            self._add_sources_to_team(team_id, organization_id, request.sources)
             self.session.commit()
-            logger.info(f"Successfully added {len(request.sources)} sources to team")
-        except IntegrityError as e:
+            logger.info(
+                f"Processed {len(request.sources)} sources: "
+                f"{stats['added']} added, {stats['updated']} updated, {stats['unchanged']} unchanged"
+            )
+        except Exception as e:
             self.session.rollback()
-            if "duplicate key value violates unique constraint" in str(e.orig):
-                logger.error("One or more sources already assigned to team")
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="One or more sources are already assigned to this team",
-                )
-            logger.error(f"Unexpected error adding sources: {e}")
+            logger.error(f"Failed to upsert team sources: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to add sources to team",
+                detail="Failed to add/update team sources",
             )
 
     def update_team_sources(
@@ -951,30 +922,75 @@ class SourceAccessService:
 
     # ===== Private Helper Methods =====
 
-    def _add_sources_to_team(
+    def _verify_team_exists(self, team_id: UUID, organization_id: str) -> Team:
+        team = team_repository.get_team_by_id(
+            session=self.session,
+            team_id=team_id,
+            organization_id=organization_id,
+        )
+        if not team:
+            logger.error(f"Team {team_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team not found",
+            )
+        return team
+
+    def _verify_sources_exist(
+        self, sources: list[TeamSourceInput], organization_id: str
+    ) -> None:
+        asset_ids = [UUID(source.source_id) for source in sources]
+        existing_assets = acl_repository.get_primary_assets_by_ids(
+            self.session, asset_ids, organization_id
+        )
+
+        for source in sources:
+            source_id = UUID(source.source_id)
+            if source_id not in existing_assets:
+                logger.error(f"Source {source.source_id} not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Source {source.source_id} not found",
+                )
+
+    def _upsert_team_source_grants(
         self,
         team_id: UUID,
         organization_id: str,
         sources: list[TeamSourceInput],
-    ) -> None:
-        """
-        Add sources to a team (internal helper).
+    ) -> dict[str, int]:
+        asset_ids = [UUID(source.source_id) for source in sources]
+        existing_grants = acl_repository.get_grants_by_team_and_assets(
+            self.session, team_id, asset_ids
+        )
 
-        Args:
-            team_id: Team ID
-            organization_id: Organization ID
-            sources: List of sources to add
-        """
+        added = 0
+        updated = 0
+        unchanged = 0
+
         for source in sources:
-            grant = PrimaryAssetRoleGrant(
-                primary_asset_id=UUID(source.source_id),
-                organization_id=organization_id,
-                principal_kind=PrincipalKind.team,
-                team_id=team_id,
-                user_id=None,
-                role=source.role,
-            )
-            self.session.add(grant)
+            source_id = UUID(source.source_id)
+            existing_grant = existing_grants.get(source_id)
+
+            if not existing_grant:
+                grant = PrimaryAssetRoleGrant(
+                    primary_asset_id=source_id,
+                    organization_id=organization_id,
+                    principal_kind=PrincipalKind.team,
+                    team_id=team_id,
+                    user_id=None,
+                    role=source.role,
+                )
+                self.session.add(grant)
+                added += 1
+            elif existing_grant.role != source.role:
+                existing_grant.role = source.role
+                self.session.add(existing_grant)
+                updated += 1
+            else:
+                unchanged += 1
+
+        return {"added": added, "updated": updated, "unchanged": unchanged}
 
     def _add_users_to_source(
         self,

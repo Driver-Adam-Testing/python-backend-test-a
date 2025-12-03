@@ -124,6 +124,9 @@ def get_team_sources_with_details(
     if roles:
         query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
+    if visibilities:
+        query = query.where(visibility_expr.in_(visibilities))
+
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
 
@@ -222,10 +225,18 @@ def count_team_sources(
     Returns:
         Count of matching sources
     """
+    visibility_expr, org_grant_sub, public_grant_sub = asset_visibility_expr(
+        organization_id, PrimaryAsset.id
+    )
+
     query = (
         select(func.count())
         .select_from(PrimaryAssetRoleGrant)
         .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        .outerjoin(org_grant_sub, PrimaryAsset.id == org_grant_sub.c.primary_asset_id)
+        .outerjoin(
+            public_grant_sub, PrimaryAsset.id == public_grant_sub.c.primary_asset_id
+        )
         .where(
             PrimaryAssetRoleGrant.team_id == team_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
@@ -236,7 +247,8 @@ def count_team_sources(
     if roles:
         query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
-    # TODO: Add visibility filtering once visibility field is added
+    if visibilities:
+        query = query.where(visibility_expr.in_(visibilities))
 
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))

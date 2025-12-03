@@ -80,7 +80,7 @@ def upgrade() -> None:
     op.drop_column("document_source", "page_node_id")
 
     # Node
-    # op.alter_column("node", "primary_asset_id", existing_type=sa.UUID(), nullable=False)
+    op.alter_column("node", "primary_asset_id", existing_type=sa.UUID(), nullable=False)
     op.drop_index("idx_node_version_id_relative_path_length", table_name="node")
     op.drop_index("ix_node_version_id_relative_path_pattern_ops", table_name="node")
     op.drop_index("ix_v2_node_depth", table_name="node")
@@ -195,7 +195,7 @@ def downgrade() -> None:
         ["version_id", sa.literal_column("length('relative_path'::text)")],
         unique=False,
     )
-    # op.alter_column("node", "primary_asset_id", existing_type=sa.UUID(), nullable=True)
+    op.alter_column("node", "primary_asset_id", existing_type=sa.UUID(), nullable=True)
 
     # DocumentSource
     op.add_column(

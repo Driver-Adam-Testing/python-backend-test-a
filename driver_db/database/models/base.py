@@ -817,7 +817,7 @@ class Node(SQLModel, table=True):  # type: ignore
     primary_asset_id: UUID = Field(
         foreign_key="primary_asset.id",
         ondelete="CASCADE",
-        nullable=True,  # TODO: set to false
+        nullable=False,
         index=True,
     )
     created_at: None | datetime = Field(

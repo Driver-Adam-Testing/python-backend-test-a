@@ -1,49 +1,54 @@
-[llm]
-tag_model = "gpt-4o"
-section_init_model = "o3-mini"
-section_update_model = "gpt-4o"
-section_format_model = "o3-mini"
-assembly_model = "o3-mini"
-copy_editor_model = "gpt-4o"
-
 [document]
 goal = "Write a structured README for a project in the `no-OS` codebase by ADI."
-fmt = "defined_sections"
-use_tagging = true
-config_name = "ADI-project-README"
-config_version = "[V1]"
 
-[scope]
-preamble = ""
-
-# ADXRS290 ====================================================================
+# ADE7816 no-OS Example Project ===============================================
 
 [[substitutions]]
 key = "DEVICE"
-value = "adxrs290"
+value = "ADE7816"
 
 [[substitutions]]
 key = "DEVICE_EVAL_BOARD"
-value = "EVAL-ADXRS290-PMDZ"
+value = "EVAL-ADE7816EBZ"
 
 [[substitutions]]
 key = "ADUCM_EVAL_BOARD"
-value = "EVAL-ADICUP3029"
+value = ""
+
+[[substitutions]]
+key = "ADUCM_BUILD_TARGET"
+value = ""
 
 [[substitutions]]
 key = "MAXIM_EVAL_BOARD"
-value = "MAX32655EVKIT"
+value = "MAX32690EVKIT"
+
+[[substitutions]]
+key = "MAXIM_BUILD_TARGET"
+value = "max32690"
 
 [[substitutions]]
 key = "STM32_EVAL_BOARD"
-value = "EVAL-SDP-CK1Z"
+value = ""
+
+[[substitutions]]
+key = "STM32_BUILD_TARGET"
+value = ""
 
 [[substitutions]]
 key = "PICO_EVAL_BOARD"
-value = "Raspberry Pi Pico"
+value = ""
+
+[[substitutions]]
+key = "PICO_BUILD_TARGET"
+value = ""
 
 [[substitutions]]
 key = "XILINX_EVAL_BOARD"
+value = ""
+
+[[substitutions]]
+key = "XILINX_BUILD_TARGET"
 value = ""
 
 [[substitutions]]
@@ -51,90 +56,16 @@ key = "MBED_EVAL_BOARD"
 value = ""
 
 [[substitutions]]
+key = "MBED_BUILD_TARGET"
+value = ""
+
+[[substitutions]]
 key = "INTEL_EVAL_BOARD"
 value = ""
 
-[[scope.pdfs]]
-version_id = "N/A"
-pdf_name = "adxrs290.pdf"
-
-[[scope.pdfs]]
-version_id = "N/A"
-pdf_name = "ADXRS290 Gyroscope PMOD Demo.pdf"
-
-[[scope.pdfs]]
-version_id = "N/A"
-pdf_name = "EVAL-ADICUP3029.pdf"
-
-[[scope.pdfs]]
-version_id = "N/A"
-pdf_name = "MAX32655EVKIT.pdf"
-
-[[scope.pdfs]]
-version_id = "N/A"
-pdf_name = "EVAL-SDP-CK1Z-UG-1539.pdf"
-
-[[scope.pdfs]]
-version_id = "N/A"
-pdf_name = "pico-datasheet.pdf"
-
-[[scope.code]]
-version_id = "N/A"
-node_path = "no-OS/projects/adxrs290-pmdz"
-
-# AD74416H ====================================================================
-
-# [[substitutions]]
-# key = "DEVICE"
-# value = "ad74416h"
-
-# [[substitutions]]
-# key = "DEVICE_EVAL_BOARD"
-# value = "EVAL-AD74416H"
-
-# [[substitutions]]
-# key = "ADUCM_EVAL_BOARD"
-# value = ""
-
-# [[substitutions]]
-# key = "MAXIM_EVAL_BOARD"
-# value = ""
-
-# [[substitutions]]
-# key = "STM32_EVAL_BOARD"
-# value = "EVAL-SDP-CK1Z"
-
-# [[substitutions]]
-# key = "PICO_EVAL_BOARD"
-# value = ""
-
-# [[substitutions]]
-# key = "XILINX_EVAL_BOARD"
-# value = ""
-
-# [[substitutions]]
-# key = "MBED_EVAL_BOARD"
-# value = "EVAL-SDP-CK1Z"
-
-# [[substitutions]]
-# key = "INTEL_EVAL_BOARD"
-# value = ""
-
-# [[scope.code]]
-# version_id = "N/A"
-# node_path = "no-OS/projects/ad74416h"
-
-# [[scope.pdfs]]
-# version_id = "N/A"
-# pdf_name = "EVAL-SDP-CK1Z-UG-1539.pdf"
-
-# [[scope.pdfs]]
-# version_id = "N/A"
-# pdf_name = "ad74416h.pdf"
-
-# [[scope.pdfs]]
-# version_id = "N/A"
-# pdf_name = "eval-ad74416h-ug-2153.pdf"
+[[substitutions]]
+key = "INTEL_BUILD_TARGET"
+value = ""
 
 # =============================================================================
 
@@ -146,7 +77,6 @@ instruction = """List each of the following evaluation boards:
     {DEVICE_EVAL_BOARD}
 List each as a hyperlink to the corresponding product webpage if it can be found in the board user guide or data sheet.  Do not include a hyperlink if an exact web address can't be determined."""
 content_structure = "List each board as a bullet point list with a hyperlink to the corresponding product webpage if it can be found in the board user guide or data sheet.  Do not include a hyperlink if an exact web address can't be determined."
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Overview"
@@ -154,7 +84,6 @@ level = 1
 required = true
 instruction = "Summarize the 'GENERAL DESCRIPTION' section from the {DEVICE_EVAL_BOARD} user guide in a single paragraph."
 content_structure = "Summarize the 'GENERAL DESCRIPTION' section from the {DEVICE_EVAL_BOARD} user guide in a single paragraph."
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Applications"
@@ -162,7 +91,6 @@ level = 1
 required = true
 instruction = "Provide only a list of the applications supported by the {DEVICE} described in the data sheet. Exactly copy the content from any sections named 'Applications', if an 'Applications' section does not exist in the content provided, simply respond 'No applications found for this content'. The Applications section you copy will just be a list, if that doesn't exist just return 'No applications found for this content'.  Do not include content from sections that are not exactly titled 'Applications'"
 content_structure = "Provide only an unordered list of the applications supported by the {DEVICE}. Just the list with no descriptions. Do not edit the content in this section, beyond making sure the list is well formatted."
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Hardware Specifications"
@@ -170,39 +98,27 @@ level = 1
 required = true
 instruction = "This section should be empty"
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Power Supply Requirements"
 level = 2
 required = true
 instruction = "Detail the power supply requirements that apply to the {DEVICE_EVAL_BOARD} board. Include voltage ranges, current ratings, and any special considerations. This should focus on what's needed to power the board, not the internal power requirements of the {DEVICE}.  Mention the board by name.  This information should come from the {DEVICE_EVAL_BOARD} user manual or data sheet."
-content_structure = "A table of specific voltage/current requirements preceded by a single sentence introducing the table.  The introduction sentence should mention the {DEVICE_EVAL_BOARD} board by name.  Include no other content beyond the introductory sentence and the table(s)."
-section_creation_method = "scatter_gather"
+content_structure = "A single paragraph that mentions the {DEVICE_EVAL_BOARD} board by name."
 
 [[sections]]
-title = "Jumper Settings"
-level = 2
-required = false
-instruction = "Describe the jumper settings for the {DEVICE_EVAL_BOARD}.  Include information about default jumper positions, what they control, and any configuration options available through jumpers or switches.  Mention the board by name.  It is possible that the board doesn't use jumpers in which case this information can be omitted.  This information should come from the {DEVICE_EVAL_BOARD} user manual or data sheet and should not reference the source code."
-content_structure = "One or more tables showing jumper settings and their effects.  The table(s) should be preceded by a single sentence describing the purpose of the tables.  This sentence should mention the {DEVICE_EVAL_BOARD} by name.  Include no other content beyond the introductory sentence and the table(s)."
-section_creation_method = "scatter_gather"
-
-[[sections]]
-title = "Pin Description"
+title = "Connections"
 level = 2
 required = true
 instruction = "Provide detailed descriptions of the pins on key connectors of the {DEVICE_EVAL_BOARD}. Include pin numbers, names, and functions for each connector. Describe only the {DEVICE_EVAL_BOARD} board connectors that users will interact with, not the internal pins of the {DEVICE} itself.  Mention the {DEVICE_EVAL_BOARD} board by name.  Use only the {DEVICE_EVAL_BOARD} user guide as a source of information and do not include any platform specific details.  The description should be a short sentence or two describing the function of the pin."
-content_structure = "Organize the list of pins and related attributes in one or more tables.  The table(s) should include the following columns: Pin Number, Pin Name, Pin Function, and Description.  If a pin is not used, it should be marked as 'Not Used' in the table.  The table(s) should be preceded by a single sentence describing the purpose of the table(s).  This sentence should mention the {DEVICE_EVAL_BOARD} by name.  Include no other content beyond the introductory sentence and the table(s)."
-section_creation_method = "scatter_gather"
+content_structure = "Organize the list of pins and related attributes in a single table.  The table should include the following columns: Pin Number, Pin Name, Pin Function, and Description.  If a pin is not used, it should be marked as 'Not Used' in the table.  The table should be preceded by a single sentence describing the purpose of the table.  This sentence should mention the {DEVICE_EVAL_BOARD} by name.  Include no other content beyond the introductory sentence and the table."
 
 [[sections]]
 title = "No-OS Build Setup"
 level = 1
 required = true
-instruction = "Include only the exact text: 'Please see: https://wiki.analog.com/resources/no-os/build' for this section."
-content_structure = "A single line of text with a link to the No-OS build wiki page."
-section_creation_method = "scatter_gather"
+instruction = "Include only the EXACT text: 'Please see: https://wiki.analog.com/resources/no-os/build' for this section."
+content_structure = "Include only the EXACT text: 'Please see: https://wiki.analog.com/resources/no-os/build' for this section."
 
 [[sections]]
 title = "No-OS Supported Examples"
@@ -215,7 +131,26 @@ content_structure = """Start with an brief introductory paragraph about where ex
 The macros used in Common Data are defined in platform specific files found in: <Project Platform Configuration Path>'
 
 Then include subsections (level 2 headings) for each specific example found in the project's example directory. Each example subsection should have 1-2 sentences of description followed by a code block showing how to enable that example and disable the other examples."""
-section_creation_method = "sequential_edit"
+
+
+[[sections]]
+title = "Basic Example"
+level = 2
+required = true
+instruction = """Describe how the basic example works in a single short paragraph followed by the exact 'instructions' as shown below:
+
+<instructions>
+In order to build the basic example, make sure you have the following configuration in the Makefile:
+
+```
+# Select the example you want to enable by choosing y for enabling and n for disabling
+BASIC_EXAMPLE = y
+IIO_EXAMPLE = n
+```
+</instructions>
+
+"""
+content_structure = "A single, short paragraph describing how the basic example works, followed by the exact 'instructions' shown above."
 
 [[sections]]
 title = "No-OS Supported Platforms"
@@ -223,7 +158,6 @@ level = 1
 required = true
 instruction = "This section should be empty"
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 # ADuCM
 
@@ -233,14 +167,12 @@ level = 2
 required = false
 instruction = "This section should only be used to determine if the example project supports the ADuCM platform as determined by analyzing the 'builds.json' file."
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Used Hardware"
 level = 4
 instruction = "List the the {DEVICE_EVAL_BOARD} eval board and {ADUCM_EVAL_BOARD} eval board.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
 content_structure = "Nothing more than a bulleted list including each eval board and a link to the product webpage if available.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
-section_creation_method = "scatter_gather"
 committed_with = "ADuCM Platform"
 
 [[sections]]
@@ -248,15 +180,26 @@ title = "Connections"
 level = 4
 instruction = "Provide detailed connection information between the {DEVICE_EVAL_BOARD} board and the {ADUCM_EVAL_BOARD} evaluation board required to run the example project."
 content_structure = "A table showing connections between the {DEVICE_EVAL_BOARD} board and the {ADUCM_EVAL_BOARD} evaluation board, with pin numbers for each board, connection Mnemonic, and pin functions functions clearly indicated in separate columns."
-section_creation_method = "scatter_gather"
 committed_with = "ADuCM Platform"
 
 [[sections]]
 title = "Build Command"
 level = 4
-instruction = "Provide the specific build commands needed to compile the project for the ADUCM platform. Include commands for cleaning, building, flashing, and debugging."
-content_structure = "A code block with the exact commands to run, with brief explanations if necessary.  Use no more than a single code block"
-section_creation_method = "scatter_gather"
+instruction = """Provide the following 'codeblock' EXACTLY as shown below:
+
+<codeblock>
+```
+# to delete current build
+make reset
+# to build the project
+make PLATFORM=aducm TARGET={ADUCM_BUILD_TARGET}
+# to flash the code
+make run
+```
+</codeblock>
+
+"""
+content_structure = "Nothing more than the exact 'codeblock' shown above."
 committed_with = "ADuCM Platform"
 
 # MAXIM
@@ -267,14 +210,13 @@ level = 2
 required = false
 instruction = "This section should only be used to determine if the example project supports the MAXIM platform as determined by analyzing the 'builds.json' file."
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
+
 
 [[sections]]
 title = "Used Hardware"
 level = 4
 instruction = "List the the {DEVICE_EVAL_BOARD} eval board and {MAXIM_EVAL_BOARD} eval board.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
 content_structure = "Nothing more than a bulleted list including each eval board and a link to the product webpage if available.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
-section_creation_method = "scatter_gather"
 committed_with = "MAXIM Platform"
 
 [[sections]]
@@ -282,15 +224,26 @@ title = "Connections"
 level = 4
 instruction = "Provide detailed connection information between the {DEVICE_EVAL_BOARD} board and the {MAXIM_EVAL_BOARD} evaluation board required to run the example project."
 content_structure = "A table showing connections between the {DEVICE_EVAL_BOARD} board and the {MAXIM_EVAL_BOARD} evaluation board, with pin numbers for each board, connection Mnemonic, and pin functions functions clearly indicated in separate columns."
-section_creation_method = "scatter_gather"
 committed_with = "MAXIM Platform"
 
 [[sections]]
 title = "Build Command"
 level = 4
-instruction = "Provide the specific build commands needed to compile the project for the MAXIM platform. Include commands for cleaning, building, flashing, and debugging."
-content_structure = "A code block with the exact commands to run, with brief explanations if necessary.  Use no more than a single code block"
-section_creation_method = "scatter_gather"
+instruction = """Provide the following 'codeblock' EXACTLY as shown below:
+
+<codeblock>
+```
+# to delete current build
+make reset
+# to build the project
+make PLATFORM=maxim TARGET={MAXIM_BUILD_TARGET}
+# to flash the code
+make run
+```
+</codeblock>
+
+"""
+content_structure = "Nothing more than the exact 'codeblock' shown above."
 committed_with = "MAXIM Platform"
 
 # XILINX
@@ -301,14 +254,12 @@ level = 2
 required = false
 instruction = "This section should only be used to determine if the example project supports the XILINX platform as determined by analyzing the 'builds.json' file."
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Used Hardware"
 level = 4
 instruction = "List the the {DEVICE_EVAL_BOARD} eval board and {XILINX_EVAL_BOARD} eval board.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
 content_structure = "Nothing more than a bulleted list including each eval board and a link to the product webpage if available.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
-section_creation_method = "scatter_gather"
 committed_with = "XILINX Platform"
 
 [[sections]]
@@ -316,15 +267,26 @@ title = "Connections"
 level = 4
 instruction = "Provide detailed connection information between the {DEVICE_EVAL_BOARD} board and the {XILINX_EVAL_BOARD} evaluation board required to run the example project."
 content_structure = "A table showing connections between the {DEVICE_EVAL_BOARD} board and the {XILINX_EVAL_BOARD} evaluation board, with pin numbers for each board, connection Mnemonic, and pin functions functions clearly indicated in separate columns."
-section_creation_method = "scatter_gather"
 committed_with = "XILINX Platform"
 
 [[sections]]
 title = "Build Command"
 level = 4
-instruction = "Provide the specific build commands needed to compile the project for the XILINX platform. Include commands for cleaning, building, flashing, and debugging."
-content_structure = "A code block with the exact commands to run, with brief explanations if necessary.  Use no more than a single code block"
-section_creation_method = "scatter_gather"
+instruction = """Provide the following 'codeblock' EXACTLY as shown below:
+
+<codeblock>
+```
+# to delete current build
+make reset
+# to build the project
+make PLATFORM=xilinx TARGET={XILINX_BUILD_TARGET}
+# to flash the code
+make run
+```
+</codeblock>
+
+"""
+content_structure = "Nothing more than the exact 'codeblock' shown above."
 committed_with = "XILINX Platform"
 
 # PICO
@@ -335,14 +297,12 @@ level = 2
 required = false
 instruction = "This section should only be used to determine if the example project supports the PICO platform as determined by analyzing the 'builds.json' file."
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Used Hardware"
 level = 4
 instruction = "List the the {DEVICE_EVAL_BOARD} eval board and {PICO_EVAL_BOARD} eval board.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
 content_structure = "Nothing more than a bulleted list including each eval board and a link to the product webpage if available.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
-section_creation_method = "scatter_gather"
 committed_with = "PICO Platform"
 
 [[sections]]
@@ -350,15 +310,26 @@ title = "Connections"
 level = 4
 instruction = "Provide detailed connection information between the {DEVICE_EVAL_BOARD} board and the {PICO_EVAL_BOARD} evaluation board required to run the example project."
 content_structure = "A table showing connections between the {DEVICE_EVAL_BOARD} board and the {PICO_EVAL_BOARD} evaluation board, with pin numbers for each board, connection Mnemonic, and pin functions functions clearly indicated in separate columns."
-section_creation_method = "scatter_gather"
 committed_with = "PICO Platform"
 
 [[sections]]
 title = "Build Command"
 level = 4
-instruction = "Provide the specific build commands needed to compile the project for the PICO platform. Include commands for cleaning, building, flashing, and debugging."
-content_structure = "A code block with the exact commands to run, with brief explanations if necessary.  Use no more than a single code block"
-section_creation_method = "scatter_gather"
+instruction = """Provide the following 'codeblock' EXACTLY as shown below:
+
+<codeblock>
+```
+# to delete current build
+make reset
+# to build the project
+make PLATFORM=pico TARGET={PICO_BUILD_TARGET}
+# to flash the code
+make run
+```
+</codeblock>
+
+"""
+content_structure = "Nothing more than the exact 'codeblock' shown above."
 committed_with = "PICO Platform"
 
 # STM32
@@ -369,14 +340,12 @@ level = 2
 required = false
 instruction = "This section should only be used to determine if the example project supports the STM32 platform as determined by analyzing the 'builds.json' file."
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Used Hardware"
 level = 4
 instruction = "List the the {DEVICE_EVAL_BOARD} eval board and {STM32_EVAL_BOARD} eval board.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
 content_structure = "Nothing more than a bulleted list including each eval board and a link to the product webpage if available.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
-section_creation_method = "scatter_gather"
 committed_with = "STM32 Platform"
 
 [[sections]]
@@ -384,15 +353,26 @@ title = "Connections"
 level = 4
 instruction = "Provide detailed connection information between the {DEVICE_EVAL_BOARD} board and the {STM32_EVAL_BOARD} evaluation board required to run the example project."
 content_structure = "A table showing connections between the {DEVICE_EVAL_BOARD} board and the {STM32_EVAL_BOARD} evaluation board, with pin numbers for each board, connection Mnemonic, and pin functions functions clearly indicated in separate columns."
-section_creation_method = "scatter_gather"
 committed_with = "STM32 Platform"
 
 [[sections]]
 title = "Build Command"
 level = 4
-instruction = "Provide the specific build commands needed to compile the project for the STM32 platform. Include commands for cleaning, building, flashing, and debugging."
-content_structure = "A code block with the exact commands to run, with brief explanations if necessary.  Use no more than a single code block"
-section_creation_method = "scatter_gather"
+instruction = """Provide the following 'codeblock' EXACTLY as shown below:
+
+<codeblock>
+```
+# to delete current build
+make reset
+# to build the project
+make PLATFORM=stm32 TARGET={STM32_BUILD_TARGET}
+# to flash the code
+make run
+```
+</codeblock>
+
+"""
+content_structure = "Nothing more than the exact 'codeblock' shown above."
 committed_with = "STM32 Platform"
 
 # INTEL
@@ -403,14 +383,12 @@ level = 2
 required = false
 instruction = "This section should only be used to determine if the example project supports the INTEL platform as determined by analyzing the 'builds.json' file."
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Used Hardware"
 level = 4
 instruction = "List the the {DEVICE_EVAL_BOARD} eval board and {INTEL_EVAL_BOARD} eval board.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
 content_structure = "Nothing more than a bulleted list including each eval board and a link to the product webpage if available.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
-section_creation_method = "scatter_gather"
 committed_with = "INTEL Platform"
 
 [[sections]]
@@ -418,15 +396,26 @@ title = "Connections"
 level = 4
 instruction = "Provide detailed connection information between the {DEVICE_EVAL_BOARD} board and the {INTEL_EVAL_BOARD} evaluation board required to run the example project."
 content_structure = "A table showing connections between the {DEVICE_EVAL_BOARD} board and the {INTEL_EVAL_BOARD} evaluation board, with pin numbers for each board, connection Mnemonic, and pin functions functions clearly indicated in separate columns."
-section_creation_method = "scatter_gather"
 committed_with = "INTEL Platform"
 
 [[sections]]
 title = "Build Command"
 level = 4
-instruction = "Provide the specific build commands needed to compile the project for the INTEL platform. Include commands for cleaning, building, flashing, and debugging."
-content_structure = "A code block with the exact commands to run, with brief explanations if necessary.  Use no more than a single code block"
-section_creation_method = "scatter_gather"
+instruction = """Provide the following 'codeblock' EXACTLY as shown below:
+
+<codeblock>
+```
+# to delete current build
+make reset
+# to build the project
+make PLATFORM=intel TARGET={INTEL_BUILD_TARGET}
+# to flash the code
+make run
+```
+</codeblock>
+
+"""
+content_structure = "Nothing more than the exact 'codeblock' shown above."
 committed_with = "INTEL Platform"
 
 # MBED
@@ -437,14 +426,12 @@ level = 2
 required = false
 instruction = "This section should only be used to determine if the example project supports the MBED platform as determined by analyzing the 'builds.json' file."
 content_structure = "Only the section heading and no other content"
-section_creation_method = "scatter_gather"
 
 [[sections]]
 title = "Used Hardware"
 level = 4
 instruction = "List the the {DEVICE_EVAL_BOARD} eval board and {MBED_EVAL_BOARD} eval board.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
 content_structure = "Nothing more than a bulleted list including each eval board and a link to the product webpage if available.  The resulting list should show only the evaluation board model number and not include a description.  A correct example is as follows: EVAL-ABC-1234.  Do not include variations of the same model number."
-section_creation_method = "scatter_gather"
 committed_with = "MBED Platform"
 
 [[sections]]
@@ -452,13 +439,24 @@ title = "Connections"
 level = 4
 instruction = "Provide detailed connection information between the {DEVICE_EVAL_BOARD} board and the {MBED_EVAL_BOARD} evaluation board required to run the example project."
 content_structure = "A table showing connections between the {DEVICE_EVAL_BOARD} board and the {MBED_EVAL_BOARD} evaluation board, with pin numbers for each board, connection Mnemonic, and pin functions functions clearly indicated in separate columns."
-section_creation_method = "scatter_gather"
 committed_with = "MBED Platform"
 
 [[sections]]
 title = "Build Command"
 level = 4
-instruction = "Provide the specific build commands needed to compile the project for the MBED platform. Include commands for cleaning, building, flashing, and debugging."
-content_structure = "A code block with the exact commands to run, with brief explanations if necessary.  Use no more than a single code block"
-section_creation_method = "scatter_gather"
+instruction = """Provide the following 'codeblock' EXACTLY as shown below:
+
+<codeblock>
+```
+# to delete current build
+make reset
+# to build the project
+make PLATFORM=mbed TARGET={MBED_BUILD_TARGET}
+# to flash the code
+make run
+```
+</codeblock>
+
+"""
+content_structure = "Nothing more than the exact 'codeblock' shown above."
 committed_with = "MBED Platform"

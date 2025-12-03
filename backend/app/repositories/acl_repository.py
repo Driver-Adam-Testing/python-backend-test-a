@@ -834,6 +834,38 @@ def get_primary_asset_by_id(
     return session.exec(query).first()
 
 
+def get_primary_assets_by_ids(
+    session: Session,
+    asset_ids: list[UUID],
+    organization_id: str,
+) -> dict[UUID, PrimaryAsset]:
+    if not asset_ids:
+        return {}
+
+    query = select(PrimaryAsset).where(
+        PrimaryAsset.id.in_(asset_ids),
+        PrimaryAsset.organization_id == organization_id,
+    )
+    assets = session.exec(query).all()
+    return {asset.id: asset for asset in assets}
+
+
+def get_grants_by_team_and_assets(
+    session: Session,
+    team_id: UUID,
+    asset_ids: list[UUID],
+) -> dict[UUID, PrimaryAssetRoleGrant]:
+    if not asset_ids:
+        return {}
+
+    query = select(PrimaryAssetRoleGrant).where(
+        PrimaryAssetRoleGrant.team_id == team_id,
+        PrimaryAssetRoleGrant.primary_asset_id.in_(asset_ids),
+    )
+    grants = session.exec(query).all()
+    return {grant.primary_asset_id: grant for grant in grants}
+
+
 def get_user_org_membership(
     session: Session,
     user_id: str,

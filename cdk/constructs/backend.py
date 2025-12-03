@@ -35,6 +35,7 @@ class BackendParams:
         aws_region: str,
         aws_account: str,
         is_private_deploy: bool = False,
+        allowed_aws_account: str | None = None,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
@@ -44,6 +45,7 @@ class BackendParams:
         self.aws_region = aws_region
         self.aws_account = aws_account
         self.is_private_deploy = is_private_deploy
+        self.allowed_aws_account = allowed_aws_account
 
 
 class Backend(Construct):
@@ -239,6 +241,47 @@ class Backend(Construct):
                 self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
             )
             firewall_cert_secret.grant_read(self.service.task_definition.task_role)
+
+            # Create VPC Endpoint Service for PrivateLink access
+            allowed_principals = None
+            if params.allowed_aws_account:
+                allowed_principals = [
+                    aws_iam.ArnPrincipal(f"arn:aws:iam::{params.allowed_aws_account}:root")
+                ]
+
+            self.endpoint_service = aws_ec2.VpcEndpointService(
+                self,
+                "PrivateLinkApiEndpointService",
+                vpc_endpoint_service_load_balancers=[self.service.load_balancer],
+                acceptance_required=True,
+                allowed_principals=allowed_principals,
+            )
+            self.endpoint_service.node.default_child.private_dns_name = api_domain_name
+
+            CfnOutput(
+                self,
+                "PrivateLinkApiServiceName",
+                export_name="PrivateLinkApiServiceName",
+                value=self.endpoint_service.vpc_endpoint_service_name,
+                description="VPC Endpoint Service name for PrivateLink connections",
+            )
+
+            CfnOutput(
+                self,
+                "PrivateLinkApiServiceId",
+                export_name="PrivateLinkApiServiceId",
+                value=self.endpoint_service.vpc_endpoint_service_id,
+                description="VPC Endpoint Service ID - use with 'aws ec2 describe-vpc-endpoint-service-configurations --service-ids <id>' to get domain verification TXT record details",
+            )
+
+            private_subnets = self.vpc.select_subnets(subnet_group_name="Private")
+            CfnOutput(
+                self,
+                "PrivateLinkApiAvailabilityZones",
+                export_name="PrivateLinkApiAvailabilityZones",
+                value=",".join(private_subnets.availability_zones),
+                description="Availability zones where the VPC Endpoint Service is available",
+            )
 
         # Output ECS Cluster ARN
         CfnOutput(

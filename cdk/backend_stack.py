@@ -62,6 +62,7 @@ class BackendStack(Stack):
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY,
+                allowed_aws_account=settings.ALLOWED_AWS_ACCOUNT,
             ),
         )
         self.onboarding_lambda = AssetOnboardingLambda(

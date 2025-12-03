@@ -48,6 +48,7 @@ class Settings:
     SECRECTS_KEYS:str
     # add more as needed...
     IS_PRIVATE_DEPLOY:bool
+    ALLOWED_AWS_ACCOUNT: str | None = None
 
     def __init__(self, prefix: str = "") -> None:
         missing = []
@@ -57,7 +58,10 @@ class Settings:
             val = os.getenv(env_key)
 
             if val is None:
-                missing.append(env_key)
+                if hasattr(self.__class__, name):
+                    setattr(self, name, getattr(self.__class__, name))
+                else:
+                    missing.append(env_key)
             else:
                 setattr(self, name, val)
 

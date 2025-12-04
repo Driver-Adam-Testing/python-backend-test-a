@@ -32,7 +32,7 @@ def get_user_by_id(session: Session, user_id: str) -> DbUser | None:
 
 
 def team_dict_to_response(team_dict: dict) -> TeamResponse:
-    """Expects dict with 'team', 'admins', 'members', 'sources' keys and the user's effective role."""
+    """Expects dict with 'team', 'admins', 'members', 'sources' keys, the user's effective role, and optional access flags."""
     team = team_dict["team"]
 
     # Handle created_at and updated_at
@@ -57,6 +57,8 @@ def team_dict_to_response(team_dict: dict) -> TeamResponse:
         sources=team_dict["sources"],
         created_at=created_at,
         updated_at=updated_at,
+        has_user_access=team_dict.get("has_user_access", False),
+        has_source_access=team_dict.get("has_source_access", False),
     )
 
 
@@ -150,13 +152,15 @@ class TeamService:
         limit: int = 30,
         offset: int = 0,
         search: str | None = None,
+        check_user_id: str | None = None,
+        check_source_id: UUID | None = None,
     ) -> TeamsResponse:
         """Super admins see all teams. Regular users only see teams they are members of."""
         organization_id = user.organization_id
         user_id = user.user_id
         logger.info(
             f"Getting teams for organization {organization_id} by user {user_id} "
-            f"(limit={limit}, offset={offset}, search={search})"
+            f"(limit={limit}, offset={offset}, search={search}, check_user_id={check_user_id}, check_source_id={check_source_id})"
         )
         is_admin = is_super_admin(self.session, user_id, organization_id)
         filter_user_id = None if is_admin else user_id
@@ -170,6 +174,8 @@ class TeamService:
                 limit=limit,
                 offset=offset,
                 user_id=filter_user_id,
+                check_user_id=check_user_id,
+                check_source_id=check_source_id,
             )
             total = team_repository.count_teams_by_search(
                 session=self.session,
@@ -184,6 +190,8 @@ class TeamService:
                 limit=limit,
                 offset=offset,
                 user_id=filter_user_id,
+                check_user_id=check_user_id,
+                check_source_id=check_source_id,
             )
             total = team_repository.count_teams(
                 session=self.session,

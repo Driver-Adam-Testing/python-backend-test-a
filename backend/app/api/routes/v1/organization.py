@@ -1,5 +1,6 @@
 import logging
 from datetime import UTC, datetime
+from uuid import UUID
 
 from database.models_enums import OrgRole
 from fastapi import APIRouter, Header, HTTPException, Query
@@ -37,12 +38,28 @@ def list_members(
     roles: list[OrgRole] | None = Query(
         default=None, description="Filter by organization roles"
     ),
+    source_id: UUID | None = Query(
+        default=None,
+        description="Optional source ID to check if users have direct access to the source",
+    ),
+    team_id: UUID | None = Query(
+        default=None,
+        description="Optional team ID to check if users are members of the team",
+    ),
 ) -> ListMembersResponse:
     enforce_org_action(session, user, "users.view")
-    logger.info(f"Listing members of organization = {user.organization_id}")
+    logger.info(
+        f"Listing members of organization = {user.organization_id}, source_id = {source_id}, team_id = {team_id}"
+    )
     organizations_service = OrganizationsService(session)
     return organizations_service.list_members(
-        user, limit=limit, offset=offset, search=search, roles=roles
+        user,
+        limit=limit,
+        offset=offset,
+        search=search,
+        roles=roles,
+        source_id=source_id,
+        team_id=team_id,
     )
 
 

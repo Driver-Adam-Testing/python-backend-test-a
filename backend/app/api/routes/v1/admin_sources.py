@@ -1,6 +1,7 @@
 """API routes for Admin Sources management."""
 
 import logging
+from uuid import UUID
 
 from fastapi import APIRouter, Query
 
@@ -39,11 +40,19 @@ def get_admin_sources(
         description="Sort direction",
         pattern="^(ASC|DESC)$",
     ),
+    user_id: str | None = Query(
+        default=None,
+        description="Optional user ID to check if each source has direct access from this user",
+    ),
+    team_id: UUID | None = Query(
+        default=None,
+        description="Optional team ID to check if each source has access from this team",
+    ),
 ) -> AdminSourcesResponse:
     enforce_any_source_admin(session, user)
     logger.info(
         f"User {user.user_id} getting admin sources "
-        f"(limit={limit}, offset={offset}, search={search})"
+        f"(limit={limit}, offset={offset}, search={search}, user_id={user_id}, team_id={team_id})"
     )
     service = AdminSourcesService(session)
     return service.get_admin_sources(
@@ -56,4 +65,6 @@ def get_admin_sources(
         sort_direction=sort_direction,
         limit=limit,
         offset=offset,
+        check_user_id=user_id,
+        check_team_id=team_id,
     )

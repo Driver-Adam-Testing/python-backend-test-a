@@ -13,6 +13,7 @@ from database.models import (
 )
 from database.models_enums import (
     OrgRole,
+    PrimaryAssetKind,
     PrimaryAssetRole,
     PrincipalKind,
     SourceVisibility,
@@ -116,11 +117,15 @@ def get_team_sources_with_details(
         .where(
             PrimaryAssetRoleGrant.team_id == team_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 
     if roles:
         query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
+
+    if visibilities:
+        query = query.where(visibility_expr.in_(visibilities))
 
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
@@ -220,20 +225,30 @@ def count_team_sources(
     Returns:
         Count of matching sources
     """
+    visibility_expr, org_grant_sub, public_grant_sub = asset_visibility_expr(
+        organization_id, PrimaryAsset.id
+    )
+
     query = (
         select(func.count())
         .select_from(PrimaryAssetRoleGrant)
         .join(PrimaryAsset, PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id)
+        .outerjoin(org_grant_sub, PrimaryAsset.id == org_grant_sub.c.primary_asset_id)
+        .outerjoin(
+            public_grant_sub, PrimaryAsset.id == public_grant_sub.c.primary_asset_id
+        )
         .where(
             PrimaryAssetRoleGrant.team_id == team_id,
             PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAsset.kind.in_([PrimaryAssetKind.CODEBASE, PrimaryAssetKind.FILE]),
         )
     )
 
     if roles:
         query = query.where(PrimaryAssetRoleGrant.role.in_(roles))
 
-    # TODO: Add visibility filtering once visibility field is added
+    if visibilities:
+        query = query.where(visibility_expr.in_(visibilities))
 
     if search:
         query = query.where(PrimaryAsset.display_name.ilike(f"%{search}%"))
@@ -832,6 +847,38 @@ def get_primary_asset_by_id(
         PrimaryAsset.organization_id == organization_id,
     )
     return session.exec(query).first()
+
+
+def get_primary_assets_by_ids(
+    session: Session,
+    asset_ids: list[UUID],
+    organization_id: str,
+) -> dict[UUID, PrimaryAsset]:
+    if not asset_ids:
+        return {}
+
+    query = select(PrimaryAsset).where(
+        PrimaryAsset.id.in_(asset_ids),
+        PrimaryAsset.organization_id == organization_id,
+    )
+    assets = session.exec(query).all()
+    return {asset.id: asset for asset in assets}
+
+
+def get_grants_by_team_and_assets(
+    session: Session,
+    team_id: UUID,
+    asset_ids: list[UUID],
+) -> dict[UUID, PrimaryAssetRoleGrant]:
+    if not asset_ids:
+        return {}
+
+    query = select(PrimaryAssetRoleGrant).where(
+        PrimaryAssetRoleGrant.team_id == team_id,
+        PrimaryAssetRoleGrant.primary_asset_id.in_(asset_ids),
+    )
+    grants = session.exec(query).all()
+    return {grant.primary_asset_id: grant for grant in grants}
 
 
 def get_user_org_membership(

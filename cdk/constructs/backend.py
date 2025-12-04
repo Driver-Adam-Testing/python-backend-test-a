@@ -288,7 +288,7 @@ class Backend(Construct):
                 self,
                 "PrivateLinkApiEndpointService",
                 vpc_endpoint_service_load_balancers=[privatelink_nlb],
-                acceptance_required=True,
+                acceptance_required=False,
                 allowed_principals=allowed_principals,
             )
 

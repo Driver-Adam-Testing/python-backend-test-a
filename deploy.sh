@@ -69,6 +69,8 @@ else
   export HATCHET_WORKER_PUSHED=false
 fi
 
+poetry install --no-root
+
 set +e
 npx cdk deploy --require-approval never
 status=$?

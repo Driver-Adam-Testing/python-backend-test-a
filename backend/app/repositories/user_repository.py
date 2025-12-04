@@ -230,7 +230,13 @@ def _user_sources_base_query(
     source_role = user_direct_grant_role_expr(user_id, organization_id, PrimaryAsset.id)
     user_org_role = user_org_role_expr(user_id, organization_id)
     has_inherited, has_direct = assignment_type_expr(
-        session, user_id, organization_id, effective_role, source_role, asset_org_role, user_org_role
+        session,
+        user_id,
+        organization_id,
+        effective_role,
+        source_role,
+        asset_org_role,
+        user_org_role,
     )
 
     query = (
@@ -520,5 +526,28 @@ def delete_organization_membership(
         session: Database session
         membership: OrgMembership instance to delete
     """
+    team_memberships = session.exec(
+        select(TeamMembership)
+        .join(Team, TeamMembership.team_id == Team.id)
+        .where(
+            TeamMembership.user_id == membership.user_id,
+            Team.organization_id == membership.org_id,
+        )
+    ).all()
+    for team_membership in team_memberships:
+        session.delete(team_membership)
+
+    # Delete primary asset role grants to avoid FK violation
+    grants = session.exec(
+        select(PrimaryAssetRoleGrant).where(
+            PrimaryAssetRoleGrant.user_id == membership.user_id,
+            PrimaryAssetRoleGrant.organization_id == membership.org_id,
+        )
+    ).all()
+    for grant in grants:
+        session.delete(grant)
+
+    session.flush()
+
     session.delete(membership)
     session.commit()

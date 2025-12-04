@@ -76,7 +76,13 @@ from typing import Any
 import requests
 from config import settings
 from database.db import engine
-from database.models import Organization, OrgMembership, User
+from database.models import (
+    Organization,
+    OrgMembership,
+    PrimaryAssetRoleGrant,
+    TeamMembership,
+    User,
+)
 from database.models_enums import OrgRole
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
@@ -353,6 +359,23 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
             logger.info(f"Created membership: {user_id} in {org_id} with role {role}")
             entities_updated.append("membership")
         elif not is_member and existing_membership:
+            team_memberships = session.exec(
+                select(TeamMembership).where(TeamMembership.user_id == user_id)
+            ).all()
+            for membership in team_memberships:
+                session.delete(membership)
+
+            # Delete primary asset role grants to avoid FK violation
+            grants = session.exec(
+                select(PrimaryAssetRoleGrant).where(
+                    PrimaryAssetRoleGrant.user_id == user_id
+                )
+            ).all()
+            for grant in grants:
+                session.delete(grant)
+
+            session.flush()
+
             session.delete(existing_membership)
             logger.info(f"Removed membership: {user_id} from {org_id}")
             entities_updated.append("membership")

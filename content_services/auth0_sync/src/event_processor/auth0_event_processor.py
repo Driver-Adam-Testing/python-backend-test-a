@@ -360,7 +360,9 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
             entities_updated.append("membership")
         elif not is_member and existing_membership:
             team_memberships = session.exec(
-                select(TeamMembership).where(TeamMembership.user_id == user_id)
+                select(TeamMembership).where(
+                    TeamMembership.user_id == user_id, TeamMembership.org_id == org_id
+                )
             ).all()
             for membership in team_memberships:
                 session.delete(membership)
@@ -368,7 +370,8 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
             # Delete primary asset role grants to avoid FK violation
             grants = session.exec(
                 select(PrimaryAssetRoleGrant).where(
-                    PrimaryAssetRoleGrant.user_id == user_id
+                    PrimaryAssetRoleGrant.user_id == user_id,
+                    PrimaryAssetRoleGrant.org_id == org_id,
                 )
             ).all()
             for grant in grants:

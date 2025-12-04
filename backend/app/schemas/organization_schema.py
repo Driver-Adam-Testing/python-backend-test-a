@@ -14,14 +14,24 @@ class OrganizationMember(BaseModel):
     )
     name: str | None = Field(description="User display name")
     role: OrgRole = Field(description="Organization role enum")
+    has_source_access: bool = Field(
+        default=False,
+        description="Whether user has direct access to the source (only populated when source_id query param is provided)",
+    )
+    has_team_access: bool = Field(
+        default=False,
+        description="Whether user is a member of the team (only populated when team_id query param is provided)",
+    )
 
 
 class ListMembersResponse(BaseModel):
     """Response for listing organization members with pagination."""
 
-    members: list[OrganizationMember] = Field(description="List of organization members")
-    start: int = Field(description="Pagination offset (page * per_page)")
-    limit: int = Field(description="Number of items per page")
+    members: list[OrganizationMember] = Field(
+        description="List of organization members"
+    )
+    offset: int = Field(description="Number of items skipped")
+    limit: int = Field(description="Maximum number of items returned")
     total: int = Field(description="Total number of members in organization")
 
 

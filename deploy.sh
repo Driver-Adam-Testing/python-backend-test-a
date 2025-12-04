@@ -21,11 +21,11 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 
 #TODO convert all of this push logic to a function
 BACKEND_IMAGE_NAME=python-backend
-BACKEND_TAG=latest 
+BACKEND_TAG=latest
 BACKEND_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$BACKEND_IMAGE_NAME:$BACKEND_TAG
 
 HATCHET_WORKER_IMAGE_NAME=hatchet-worker
-HATCHET_WORKER_TAG=latest 
+HATCHET_WORKER_TAG=latest
 HATCHET_WORKER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$HATCHET_WORKER_IMAGE_NAME:$HATCHET_WORKER_TAG
 
 
@@ -50,7 +50,7 @@ HATCHET_WORKER_REMOTE_DIGEST=$(aws ecr describe-images \
   --region "$AWS_REGION" \
   --query 'imageDetails[0].imageDigest' \
   --output text 2>/dev/null || echo "NONE")
-  
+
 if [ "$BACKEND_LOCAL_DIGEST" != "$BACKEND_REMOTE_DIGEST" ]; then
   echo "Backend Image has changed. Pushing new image..."
   docker push "$BACKEND_REPO_URI"
@@ -69,9 +69,6 @@ else
   export HATCHET_WORKER_PUSHED=false
 fi
 
-npm install -g aws-cdk@latest
-pip install aws-cdk-lib
-pip install aws-cdk.aws-lambda-python-alpha
 set +e
 npx cdk deploy --require-approval never
 status=$?
@@ -98,7 +95,7 @@ fi
 
 # if [ "$HATCHET_WORKER_PUSHED" = "true" ]; then
 #     echo "Forcing hatchet worker redeploy..."
-# 
+#
 #     aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment
 # fi
 
@@ -113,7 +110,7 @@ set -e
 if [[ $status -eq 0 ]]; then
     echo "✅ Service became stable."
 
-    URL="https://api.${URL_PREFIX}.driverai.com/api/v1/healthcheck/" 
+    URL="https://api.${URL_PREFIX}.driverai.com/api/v1/healthcheck/"
     TIMEOUT=120   # 2 minutes in seconds
     INTERVAL=5    # seconds between retries
     START=$(date +%s)
@@ -184,7 +181,7 @@ set -euo pipefail
 SINCE_MIN="${SINCE_MIN:-2}"
 EXIT_ON_MATCH_CODE="${EXIT_ON_MATCH_CODE:-2}"
 START_MS=$(( ( $(date +%s) - SINCE_MIN*60 ) * 1000 ))
-MATCH_JSON='["error","fatal"]' 
+MATCH_JSON='["error","fatal"]'
 MATCH_CASE_INSENSITIVE=1
 
 # Build patterns JSON array

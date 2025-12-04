@@ -75,14 +75,9 @@ class AssetOnboardingLambda(Construct):
         lambda_function.role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
-        legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
-            scope,
-            "LegacyDropzoneBucket",
-            bucket_name=f"{params.environment}-codebase-dropzone",
-        )
-        legacy_dropzone_bucket.add_event_notification(
+        params.dropzone_bucket.add_event_notification(
             aws_s3.EventType.OBJECT_TAGGING_PUT,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="assets/"),
         )
-        legacy_dropzone_bucket.grant_read(lambda_function)
+        params.dropzone_bucket.grant_read(lambda_function)

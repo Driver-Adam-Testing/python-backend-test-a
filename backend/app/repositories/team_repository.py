@@ -3,7 +3,8 @@
 from uuid import UUID
 
 from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
-from database.models_enums import TeamRole
+from database.models_enums import PrincipalKind, TeamRole
+from sqlalchemy import literal
 from sqlmodel import Session, func, select
 
 
@@ -25,6 +26,8 @@ def get_teams_with_counts(
     limit: int = 30,
     offset: int = 0,
     user_id: str | None = None,
+    check_user_id: str | None = None,
+    check_source_id: UUID | None = None,
 ) -> list[dict]:
     """
     If user_id is provided, only returns teams where the user is a member.
@@ -59,13 +62,51 @@ def get_teams_with_counts(
         .subquery()
     )
 
-    query = (
-        select(
-            Team,
-            func.coalesce(admin_count_subq.c.admin_count, 0).label("admins"),
-            func.coalesce(member_count_subq.c.member_count, 0).label("members"),
-            func.coalesce(source_count_subq.c.source_count, 0).label("sources"),
+    # Build select columns
+    select_columns = [
+        Team,
+        func.coalesce(admin_count_subq.c.admin_count, 0).label("admins"),
+        func.coalesce(member_count_subq.c.member_count, 0).label("members"),
+        func.coalesce(source_count_subq.c.source_count, 0).label("sources"),
+    ]
+
+    # If check_user_id provided, add subquery to check for user membership
+    if check_user_id:
+        has_user_access_subquery = (
+            select(func.count())
+            .select_from(TeamMembership)
+            .where(
+                TeamMembership.team_id == Team.id,
+                TeamMembership.user_id == check_user_id,
+            )
+            .scalar_subquery()
         )
+        select_columns.append(
+            (has_user_access_subquery > 0).label("has_user_access")
+        )
+    else:
+        select_columns.append(literal(False).label("has_user_access"))
+
+    # If check_source_id provided, add subquery to check for team source grants
+    if check_source_id:
+        has_source_access_subquery = (
+            select(func.count())
+            .select_from(PrimaryAssetRoleGrant)
+            .where(
+                PrimaryAssetRoleGrant.team_id == Team.id,
+                PrimaryAssetRoleGrant.primary_asset_id == check_source_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+            )
+            .scalar_subquery()
+        )
+        select_columns.append(
+            (has_source_access_subquery > 0).label("has_source_access")
+        )
+    else:
+        select_columns.append(literal(False).label("has_source_access"))
+
+    query = (
+        select(*select_columns)
         .where(Team.organization_id == organization_id)
         .outerjoin(admin_count_subq, Team.id == admin_count_subq.c.team_id)
         .outerjoin(member_count_subq, Team.id == member_count_subq.c.team_id)
@@ -90,8 +131,10 @@ def get_teams_with_counts(
             "admins": admins,
             "members": members,
             "sources": sources,
+            "has_user_access": has_user_access,
+            "has_source_access": has_source_access,
         }
-        for team, admins, members, sources in results
+        for team, admins, members, sources, has_user_access, has_source_access in results
     ]
 
 
@@ -165,6 +208,8 @@ def search_teams_with_counts(
     limit: int = 30,
     offset: int = 0,
     user_id: str | None = None,
+    check_user_id: str | None = None,
+    check_source_id: UUID | None = None,
 ) -> list[dict]:
     """
     If user_id is provided, only returns teams where the user is a member.
@@ -199,13 +244,51 @@ def search_teams_with_counts(
         .subquery()
     )
 
-    search_query = (
-        select(
-            Team,
-            func.coalesce(admin_count_subq.c.admin_count, 0).label("admins"),
-            func.coalesce(member_count_subq.c.member_count, 0).label("members"),
-            func.coalesce(source_count_subq.c.source_count, 0).label("sources"),
+    # Build select columns
+    select_columns = [
+        Team,
+        func.coalesce(admin_count_subq.c.admin_count, 0).label("admins"),
+        func.coalesce(member_count_subq.c.member_count, 0).label("members"),
+        func.coalesce(source_count_subq.c.source_count, 0).label("sources"),
+    ]
+
+    # If check_user_id provided, add subquery to check for user membership
+    if check_user_id:
+        has_user_access_subquery = (
+            select(func.count())
+            .select_from(TeamMembership)
+            .where(
+                TeamMembership.team_id == Team.id,
+                TeamMembership.user_id == check_user_id,
+            )
+            .scalar_subquery()
         )
+        select_columns.append(
+            (has_user_access_subquery > 0).label("has_user_access")
+        )
+    else:
+        select_columns.append(literal(False).label("has_user_access"))
+
+    # If check_source_id provided, add subquery to check for team source grants
+    if check_source_id:
+        has_source_access_subquery = (
+            select(func.count())
+            .select_from(PrimaryAssetRoleGrant)
+            .where(
+                PrimaryAssetRoleGrant.team_id == Team.id,
+                PrimaryAssetRoleGrant.primary_asset_id == check_source_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+            )
+            .scalar_subquery()
+        )
+        select_columns.append(
+            (has_source_access_subquery > 0).label("has_source_access")
+        )
+    else:
+        select_columns.append(literal(False).label("has_source_access"))
+
+    search_query = (
+        select(*select_columns)
         .where(
             Team.organization_id == organization_id,
             Team.name.ilike(f"%{query}%"),
@@ -233,8 +316,10 @@ def search_teams_with_counts(
             "admins": admins,
             "members": members,
             "sources": sources,
+            "has_user_access": has_user_access,
+            "has_source_access": has_source_access,
         }
-        for team, admins, members, sources in results
+        for team, admins, members, sources, has_user_access, has_source_access in results
     ]
 
 
@@ -310,3 +395,22 @@ def delete_team(
 ) -> None:
     session.delete(team)
     session.commit()
+
+
+def get_user_team_role(
+    session: Session,
+    team_id: UUID,
+    user_id: str,
+    organization_id: str,
+) -> TeamRole | None:
+    """Get user's role in a specific team. Returns None if user is not a member."""
+    query = (
+        select(TeamMembership.role)
+        .join(Team, Team.id == TeamMembership.team_id)
+        .where(
+            TeamMembership.team_id == team_id,
+            TeamMembership.user_id == user_id,
+            Team.organization_id == organization_id,
+        )
+    )
+    return session.exec(query).first()

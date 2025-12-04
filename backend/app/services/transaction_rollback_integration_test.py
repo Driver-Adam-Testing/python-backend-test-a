@@ -174,7 +174,9 @@ class TestTransactionRollback:
                 team_id=team.id,
                 request=UpdateTeamMembersRequest(
                     members=[
-                        TeamMemberAddInput(user_id="invalid-user-id", role="team_admin"),
+                        TeamMemberAddInput(
+                            user_id="invalid-user-id", role="team_admin"
+                        ),
                     ]
                 ),
             )
@@ -305,7 +307,9 @@ class TestDuplicatePrevention:
                 user=mock_user,
                 team_id=team.id,
                 request=AddTeamSourcesRequest(
-                    sources=[TeamSourceInput(source_id=str(source.id), role="asset_member")]
+                    sources=[
+                        TeamSourceInput(source_id=str(source.id), role="asset_member")
+                    ]
                 ),
             )
         assert exc_info.value.status_code == 400  # Duplicate should be 400, not 409

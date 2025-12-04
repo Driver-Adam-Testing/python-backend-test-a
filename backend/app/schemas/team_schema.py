@@ -48,9 +48,26 @@ class TeamResponse(BaseModel):
     sources: int = Field(..., description="Count of sources accessible to team")
     created_at: str = Field(..., description="ISO datetime when created")
     updated_at: str = Field(..., description="ISO datetime when last updated")
+    has_user_access: bool = Field(
+        default=False,
+        description="Whether the specified user is a member of this team (only populated when user_id query param is provided)",
+    )
+    has_source_access: bool = Field(
+        default=False,
+        description="Whether this team has access to the specified source (only populated when source_id query param is provided)",
+    )
 
     class Config:
         from_attributes = True
+
+
+class TeamDetailResponse(TeamResponse):
+    """Response for team detail endpoint with user's effective role."""
+
+    effective_team_role: TeamRole = Field(
+        ...,
+        description="Current user's effective role in this team (team_admin for super admins)",
+    )
 
 
 class TeamsResponse(BaseModel):

@@ -2,57 +2,24 @@
 
 import logging
 
-from database.models_enums import PrimaryAssetRole
+from database.models_enums import TeamRole
 from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import (
+    enforce_super_admin,
+)
 from app.schemas.user_schema import (
     AddUserTeamsRequest,
-    OrganizationMembersResponse,
     RemoveUserTeamsRequest,
     UpdateUserTeamsRequest,
     UserTeamsResponse,
 )
 from app.services.user_service import UserService
-from app.authorization.fastapi import enforce_org_action, enforce_super_admin, enforce_team_action
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-@router.get(
-    "/search",
-    response_model=OrganizationMembersResponse,
-    summary="Search organization users",
-    description="Search for users within the organization by name or email",
-)
-def search_organization_users(
-    session: CurrentSession,
-    user: UserToken,
-    query: str = Query(..., min_length=1, description="Search query for name or email"),
-    limit: int = Query(
-        default=30, ge=1, le=100, description="Maximum number of results"
-    ),
-    offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-) -> OrganizationMembersResponse:
-    """
-    Search for users within the organization.
-
-    Returns users matching the search query by name or email.
-    """
-    enforce_org_action(session, user, "users.view")
-    logger.info(
-        f"User {user.user_id} searching for users with query '{query}' "
-        f"(limit={limit}, offset={offset})"
-    )
-    service = UserService(session)
-    return service.search_organization_users(
-        user=user,
-        query=query,
-        limit=limit,
-        offset=offset,
-    )
 
 
 @router.get(
@@ -69,7 +36,7 @@ def get_user_teams(
         default=30, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    roles: list[PrimaryAssetRole] | None = Query(
+    roles: list[TeamRole] | None = Query(
         default=None, description="Filter by roles: asset_admin, asset_member"
     ),
     search: str | None = Query(default=None, description="Search by team name"),

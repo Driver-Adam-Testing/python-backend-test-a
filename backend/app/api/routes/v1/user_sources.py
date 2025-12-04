@@ -8,9 +8,10 @@ from fastapi import APIRouter, Query, status
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
-from app.authorization.fastapi import enforce_asset_action, enforce_org_action
+from app.authorization.fastapi import enforce_asset_action, enforce_super_admin
 from app.schemas.user_schema import (
     AddUserSourcesRequest,
+    AssignmentType,
     RemoveUserSourcesRequest,
     UpdateUserSourcesRequest,
     UserSourcesResponse,
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
     "/{user_id}/sources",
     response_model=UserSourcesResponse,
     summary="Get user's sources",
-    description="Get paginated list of sources (codebases/files) that a user has direct access to",
+    description="Get paginated list of sources (codebases/files) that a user has access to",
 )
 def get_user_sources(
     session: CurrentSession,
@@ -39,19 +40,19 @@ def get_user_sources(
         default=None, description="Filter by roles: asset_admin, asset_member"
     ),
     search: str | None = Query(default=None, description="Search by display name"),
+    assignment_type: AssignmentType | None = Query(
+        default=None, description="Filter by assignment type: direct, inherited"
+    ),
 ) -> UserSourcesResponse:
     """
     Get paginated list of sources for a user.
 
     Returns sources with role and visibility information.
     """
-    # Assuming the service is doing its job and only fetching sources that
-    # this user has access to, the only enforcement is that the user is
-    # a member of the organization. Is this enough?
-    enforce_org_action(session, user, "users.view")
+    enforce_super_admin(session, user)
     logger.info(
         f"User {user.user_id} getting sources for user {user_id} "
-        f"(limit={limit}, offset={offset}, roles={roles}, search={search})"
+        f"(limit={limit}, offset={offset}, roles={roles}, search={search}, assignment_type={assignment_type})"
     )
     service = UserService(session)
     return service.get_user_sources(
@@ -59,6 +60,7 @@ def get_user_sources(
         user_id=user_id,
         roles=roles,
         search=search,
+        assignment_type=assignment_type,
         limit=limit,
         offset=offset,
     )

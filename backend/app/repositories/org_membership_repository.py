@@ -1,8 +1,11 @@
 """Repository functions for Organization Membership data access."""
 
-from database.models import OrgMembership, User
-from database.models_enums import OrgRole
-from sqlmodel import Session, col, select
+from uuid import UUID
+
+from database.models import OrgMembership, PrimaryAssetRoleGrant, TeamMembership, User
+from database.models_enums import OrgRole, PrincipalKind
+from sqlalchemy import literal
+from sqlmodel import Session, col, func, select
 
 
 def check_user_in_organization(
@@ -111,39 +114,110 @@ def get_user_organization_role(
     return membership.role.value if membership else None
 
 
-def list_organization_members(
+def get_organization_member(
     session: Session,
+    user_id: str,
     organization_id: str,
-    page: int = 0,
-    per_page: int = 100,
-) -> tuple[list[dict[str, str | None]], int]:
-    """
-    List all members of an organization with their user details and roles.
-
-    Args:
-        session: Database session
-        organization_id: Organization ID
-        page: Page number (0-indexed)
-        per_page: Number of results per page
-
-    Returns:
-        Tuple of (members_list, total_count) where:
-        - members_list: List of dictionaries with user_id, email, name, and role
-        - total_count: Total number of members in the organization
-    """
-    # Get total count
-    count_query = select(OrgMembership).where(OrgMembership.org_id == organization_id)
-    total_count = len(session.exec(count_query).all())
-
-    # Get paginated results
+) -> dict[str, str | None] | None:
     query = (
         select(User.id, User.email, User.name, OrgMembership.role)
         .join(OrgMembership, User.id == OrgMembership.user_id)
-        .where(OrgMembership.org_id == organization_id)
-        .order_by(col(User.name).nullslast())
-        .offset(page * per_page)
-        .limit(per_page)
+        .where(
+            OrgMembership.user_id == user_id,
+            OrgMembership.org_id == organization_id,
+        )
     )
+
+    result = session.exec(query).first()
+
+    if not result:
+        return None
+
+    return {
+        "user_id": result.id,
+        "email": result.email,
+        "name": result.name,
+        "role": result.role.value,
+    }
+
+
+def list_organization_members(
+    session: Session,
+    organization_id: str,
+    limit: int = 100,
+    offset: int = 0,
+    search: str | None = None,
+    roles: list[OrgRole] | None = None,
+    source_id: UUID | None = None,
+    team_id: UUID | None = None,
+) -> tuple[
+    list[dict[str, str | None | bool]], int
+]:  # TODO: gross return type. use proper types
+    base_conditions = [OrgMembership.org_id == organization_id]
+
+    if search:
+        search_term = f"%{search}%"
+        base_conditions.append(
+            (col(User.name).ilike(search_term)) | (col(User.email).ilike(search_term))
+        )
+
+    if roles:
+        base_conditions.append(OrgMembership.role.in_(roles))
+
+    count_query = (
+        select(func.count())
+        .select_from(OrgMembership)
+        .join(User, User.id == OrgMembership.user_id)
+        .where(*base_conditions)
+    )
+    total_count = session.exec(count_query).one()
+
+    query = (
+        select(User.id, User.email, User.name, OrgMembership.role)
+        .join(OrgMembership, User.id == OrgMembership.user_id)
+        .where(*base_conditions)
+        .order_by(col(User.name).nullslast())
+        .offset(offset)
+        .limit(limit)
+    )
+
+    # If source_id provided, add subquery to check for direct source grants
+    if source_id:
+        has_source_access_subquery = (
+            select(func.count())
+            .select_from(PrimaryAssetRoleGrant)
+            .where(
+                PrimaryAssetRoleGrant.primary_asset_id == source_id,
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+                PrimaryAssetRoleGrant.user_id == User.id,
+            )
+            .scalar_subquery()
+        )
+        query = query.add_columns(
+            (has_source_access_subquery > 0).label("has_source_access")
+        )
+    else:
+        # Add False as default when source_id is not provided
+        query = query.add_columns(literal(False).label("has_source_access"))
+
+    # If team_id provided, add subquery to check for team membership
+    if team_id:
+        has_team_access_subquery = (
+            select(func.count())
+            .select_from(TeamMembership)
+            .where(
+                TeamMembership.team_id == team_id,
+                TeamMembership.user_id == User.id,
+            )
+            .scalar_subquery()
+        )
+        query = query.add_columns(
+            (has_team_access_subquery > 0).label("has_team_access")
+        )
+    else:
+        # Add False as default when team_id is not provided
+        query = query.add_columns(literal(False).label("has_team_access"))
 
     results = session.exec(query).all()
 
@@ -153,6 +227,8 @@ def list_organization_members(
             "email": row.email,
             "name": row.name,
             "role": row.role.value,
+            "has_source_access": getattr(row, "has_source_access", False),
+            "has_team_access": getattr(row, "has_team_access", False),
         }
         for row in results
     ]

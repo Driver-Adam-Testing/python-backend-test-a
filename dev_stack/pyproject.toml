@@ -12,7 +12,7 @@ asyncio = "^3.4.3"
 httpx = "^0.28.1"
 pydantic-settings = "^2.8.1"
 click = "^8.1.8"
-fastapi = "^0.118.2"
+fastapi = "^0.122.0"
 markdown = "^3.7"
 
 aws-cdk-lib = ">=2.164.1"

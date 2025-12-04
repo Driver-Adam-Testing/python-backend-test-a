@@ -6,15 +6,17 @@ from uuid import UUID, uuid4
 
 from database.models import PrimaryAssetRoleGrant, Team, TeamMembership
 from database.models import User as DbUser
+from database.models_enums import TeamRole
 from fastapi import HTTPException, status
+from shared.authorization.helpers import is_super_admin
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.auth.models import User
-from app.authorization.helpers import is_super_admin
 from app.repositories import org_membership_repository, team_repository
 from app.schemas.team_schema import (
     CreateTeamRequest,
+    TeamDetailResponse,
     TeamMemberInput,
     TeamResponse,
     TeamsResponse,
@@ -30,7 +32,7 @@ def get_user_by_id(session: Session, user_id: str) -> DbUser | None:
 
 
 def team_dict_to_response(team_dict: dict) -> TeamResponse:
-    """Expects dict with 'team', 'admins', 'members', 'sources' keys."""
+    """Expects dict with 'team', 'admins', 'members', 'sources' keys, the user's effective role, and optional access flags."""
     team = team_dict["team"]
 
     # Handle created_at and updated_at
@@ -55,6 +57,8 @@ def team_dict_to_response(team_dict: dict) -> TeamResponse:
         sources=team_dict["sources"],
         created_at=created_at,
         updated_at=updated_at,
+        has_user_access=team_dict.get("has_user_access", False),
+        has_source_access=team_dict.get("has_source_access", False),
     )
 
 
@@ -148,13 +152,15 @@ class TeamService:
         limit: int = 30,
         offset: int = 0,
         search: str | None = None,
+        check_user_id: str | None = None,
+        check_source_id: UUID | None = None,
     ) -> TeamsResponse:
         """Super admins see all teams. Regular users only see teams they are members of."""
         organization_id = user.organization_id
         user_id = user.user_id
         logger.info(
             f"Getting teams for organization {organization_id} by user {user_id} "
-            f"(limit={limit}, offset={offset}, search={search})"
+            f"(limit={limit}, offset={offset}, search={search}, check_user_id={check_user_id}, check_source_id={check_source_id})"
         )
         is_admin = is_super_admin(self.session, user_id, organization_id)
         filter_user_id = None if is_admin else user_id
@@ -168,6 +174,8 @@ class TeamService:
                 limit=limit,
                 offset=offset,
                 user_id=filter_user_id,
+                check_user_id=check_user_id,
+                check_source_id=check_source_id,
             )
             total = team_repository.count_teams_by_search(
                 session=self.session,
@@ -182,6 +190,8 @@ class TeamService:
                 limit=limit,
                 offset=offset,
                 user_id=filter_user_id,
+                check_user_id=check_user_id,
+                check_source_id=check_source_id,
             )
             total = team_repository.count_teams(
                 session=self.session,
@@ -198,11 +208,12 @@ class TeamService:
         self,
         user: User,
         team_id: UUID,
-    ) -> TeamResponse:
+    ) -> TeamDetailResponse:
         """Raises HTTPException if team not found."""
         organization_id = user.organization_id
+        user_id = user.user_id
         logger.info(
-            f"Getting team {team_id} for organization {organization_id} by user {user.user_id}"
+            f"Getting team {team_id} for organization {organization_id} by user {user_id}"
         )
 
         team_with_counts = team_repository.get_team_with_counts(
@@ -218,7 +229,21 @@ class TeamService:
                 detail="Team not found",
             )
 
-        return team_dict_to_response(team_with_counts)
+        # Note: enforce_team_action already verified user is a member or super admin
+        if is_super_admin(self.session, user_id, organization_id):
+            effective_role: TeamRole = TeamRole.team_admin
+        else:
+            role = team_repository.get_user_team_role(
+                self.session, team_id, user_id, organization_id
+            )
+            effective_role = role
+
+        base_response = team_dict_to_response(team_with_counts)
+
+        return TeamDetailResponse(
+            **base_response.model_dump(),
+            effective_team_role=effective_role,
+        )
 
     def update_team(
         self,
@@ -311,16 +336,25 @@ class TeamService:
 
         try:
             # Delete source grants for this team
-            acl_grants = (
-                self.session.query(PrimaryAssetRoleGrant)
-                .filter(PrimaryAssetRoleGrant.team_id == team_id)
-                .all()
-            )
+            acl_grants = self.session.exec(
+                select(PrimaryAssetRoleGrant).where(
+                    PrimaryAssetRoleGrant.team_id == team_id
+                )
+            ).all()
             for grant in acl_grants:
                 self.session.delete(grant)
+            # Delete team memberships
+            team_memberships = self.session.exec(
+                select(TeamMembership).where(TeamMembership.team_id == team_id)
+            ).all()
+            for membership in team_memberships:
+                self.session.delete(membership)
 
-            # Delete team (cascade will handle TeamMembership)
-            team_repository.delete_team(self.session, team)
+            self.session.flush()
+
+            # Delete team
+            self.session.delete(team)
+            self.session.commit()
             logger.info(f"Team {team_id} deleted successfully")
         except Exception as e:
             self.session.rollback()

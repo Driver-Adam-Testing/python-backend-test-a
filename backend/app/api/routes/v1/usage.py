@@ -11,7 +11,7 @@ from shared.usage.usage_service import UsageService
 from app.api.auth import UserToken
 from app.api.routes.v2.query_utils import Pagination
 from app.api.session import CurrentSession
-from app.authorization.fastapi import enforce_super_admin
+from app.authorization.fastapi import enforce_org_action, enforce_super_admin
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ router = APIRouter()
     summary="Get Usage Balance Summary",
 )
 def get_usage_balance(session: CurrentSession, user: UserToken) -> UsageBalance:
-    enforce_super_admin(session, user)
+    enforce_org_action(session, user, "usage.view_balance")
     usage_service = UsageService(session)
     organization_id = user.organization_id
     usage_balance = usage_service.get_usage_balance(organization_id)

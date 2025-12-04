@@ -1,6 +1,7 @@
 """Service for Organization business logic."""
 
 import logging
+from uuid import UUID
 
 from database.models_enums import OrgRole
 from fastapi import HTTPException
@@ -9,6 +10,7 @@ from sqlmodel import Session
 from app.api.auth import UserToken
 from app.repositories.org_membership_repository import (
     bulk_update_organization_roles,
+    get_organization_member,
     list_organization_members,
 )
 from app.repositories.user_repository import (
@@ -178,25 +180,47 @@ class OrganizationsService:
 
         return BulkSetUserRoleResponse(updated=updated_users)
 
+    def get_member(
+        self,
+        organization_id: str,
+        member_user_id: str,
+    ) -> OrganizationMember:
+        member_data = get_organization_member(
+            self.session, member_user_id, organization_id
+        )
+
+        if not member_data:
+            raise HTTPException(
+                404, f"User {member_user_id} is not a member of this organization"
+            )
+
+        return OrganizationMember(
+            user_id=member_data["user_id"],
+            email=member_data["email"],
+            picture=None,  # Not stored in database
+            name=member_data["name"],
+            role=member_data["role"],  # Role enum value
+        )
+
     def list_members(
         self,
         user: UserToken,
-        page: int = 0,
-        per_page: int = 100,
+        limit: int = 100,
+        offset: int = 0,
+        search: str | None = None,
+        roles: list[OrgRole] | None = None,
+        source_id: UUID | None = None,
+        team_id: UUID | None = None,
     ) -> ListMembersResponse:
-        """
-        List all members of an organization.
-
-        Args:
-            user: Authenticated user token (for organization context)
-            page: Page number (0-indexed)
-            per_page: Number of results per page
-
-        Returns:
-            ListMembersResponse with members list, pagination info, and total count
-        """
         members_data, total_count = list_organization_members(
-            self.session, user.organization_id, page=page, per_page=per_page
+            self.session,
+            user.organization_id,
+            limit=limit,
+            offset=offset,
+            search=search,
+            roles=roles,
+            source_id=source_id,
+            team_id=team_id,
         )
 
         # Transform members data to OrganizationMember objects
@@ -207,13 +231,15 @@ class OrganizationsService:
                 picture=None,  # Not stored in database
                 name=member["name"],
                 role=member["role"],  # Singular role as enum value
+                has_source_access=member.get("has_source_access", False),
+                has_team_access=member.get("has_team_access", False),
             )
             for member in members_data
         ]
 
         return ListMembersResponse(
             members=members,
-            start=page * per_page,
-            limit=per_page,
+            offset=offset,
+            limit=limit,
             total=total_count,
         )

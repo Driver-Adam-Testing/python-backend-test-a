@@ -1,7 +1,9 @@
 import logging
 from datetime import UTC, datetime
+from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException
+from database.models_enums import OrgRole
+from fastapi import APIRouter, Header, HTTPException, Query
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
@@ -11,6 +13,7 @@ from app.schemas.organization_schema import (
     BulkSetUserRoleInput,
     BulkSetUserRoleResponse,
     ListMembersResponse,
+    OrganizationMember,
     SetUserRoleInput,
     SetUserRoleResponse,
 )
@@ -23,30 +26,53 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/roles", status_code=200)
-def list_roles(  # noqa: ANN201 disable to proxy Auth0 any typed responses
-    session: CurrentSession,
-    user: UserToken,
-    page: int = 0,
-    per_page: int = 100,
-):
-    enforce_org_action(session, user, "users.view")
-    logger.info(f"Listing roles for organization = {user.organization_id}")
-    auth0_service = create_auth0_service()
-    return auth0_service.list_roles(page=page, per_page=per_page)
-
-
 @router.get("/users", status_code=200)
 def list_members(
     session: CurrentSession,
     user: UserToken,
-    page: int = 0,
-    per_page: int = 100,
+    limit: int = Query(
+        default=100, ge=1, le=100, description="Maximum number of results"
+    ),
+    offset: int = Query(default=0, ge=0, description="Number of results to skip"),
+    search: str | None = Query(default=None, description="Search by name or email"),
+    roles: list[OrgRole] | None = Query(
+        default=None, description="Filter by organization roles"
+    ),
+    source_id: UUID | None = Query(
+        default=None,
+        description="Optional source ID to check if users have direct access to the source",
+    ),
+    team_id: UUID | None = Query(
+        default=None,
+        description="Optional team ID to check if users are members of the team",
+    ),
 ) -> ListMembersResponse:
     enforce_org_action(session, user, "users.view")
-    logger.info(f"Listing members of organization = {user.organization_id}")
+    logger.info(
+        f"Listing members of organization = {user.organization_id}, source_id = {source_id}, team_id = {team_id}"
+    )
     organizations_service = OrganizationsService(session)
-    return organizations_service.list_members(user, page=page, per_page=per_page)
+    return organizations_service.list_members(
+        user,
+        limit=limit,
+        offset=offset,
+        search=search,
+        roles=roles,
+        source_id=source_id,
+        team_id=team_id,
+    )
+
+
+@router.get("/users/{user_id}", status_code=200)
+def get_member(
+    session: CurrentSession,
+    user: UserToken,
+    user_id: str,
+) -> OrganizationMember:
+    enforce_org_action(session, user, "users.view")
+    logger.info(f"Getting member {user_id} from organization = {user.organization_id}")
+    organizations_service = OrganizationsService(session)
+    return organizations_service.get_member(user.organization_id, user_id)
 
 
 @router.delete("/users/{user_id}", status_code=204)

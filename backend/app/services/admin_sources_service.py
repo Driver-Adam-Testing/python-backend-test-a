@@ -1,6 +1,7 @@
 """Service for Admin Sources business logic."""
 
 import logging
+from uuid import UUID
 
 from sqlmodel import Session
 
@@ -9,6 +10,7 @@ from app.repositories import admin_sources_repository
 from app.schemas.admin_sources_schema import (
     AdminSourceRecord,
     AdminSourcesResponse,
+    SourceVisibility,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,10 +28,13 @@ class AdminSourcesService:
         search: str | None = None,
         kinds: list[str] | None = None,
         tag_ids: list[str] | None = None,
+        visibility: list[SourceVisibility] | None = None,
         sort_by: str = "updated_at",
         sort_direction: str = "DESC",
         limit: int = 20,
         offset: int = 0,
+        check_user_id: str | None = None,
+        check_team_id: UUID | None = None,
     ) -> AdminSourcesResponse:
         """
         Get paginated list of sources with admin metadata.
@@ -39,6 +44,7 @@ class AdminSourcesService:
             search: Optional search query for display_name
             kinds: Optional list of asset kinds to filter
             tag_ids: Optional list of tag IDs to filter
+            visibility: Optional list of visibility levels to filter
             sort_by: Field to sort by
             sort_direction: Sort direction (ASC/DESC)
             limit: Maximum number of results
@@ -61,10 +67,13 @@ class AdminSourcesService:
             search=search,
             kinds=kinds,
             tag_ids=tag_ids,
+            visibility=visibility,
             sort_by=sort_by,
             sort_direction=sort_direction,
             limit=limit,
             offset=offset,
+            check_user_id=check_user_id,
+            check_team_id=check_team_id,
         )
 
         # Get total count
@@ -75,6 +84,7 @@ class AdminSourcesService:
             search=search,
             kinds=kinds,
             tag_ids=tag_ids,
+            visibility=visibility,
         )
 
         # Build response records
@@ -88,14 +98,13 @@ class AdminSourcesService:
         )
 
     def _build_admin_source_record(self, data: dict) -> AdminSourceRecord:
-        """Build AdminSourceRecord from repository data."""
         asset = data["asset"]
         members_count = data["members_count"]
         teams_count = data["teams_count"]
-
-        # Determine visibility (default to private for now)
-        # TODO: Get actual visibility from PrimaryAssetRoleGrant when field is added
-        visibility = "private"
+        visibility = data["visibility"]
+        status = data.get("status")
+        has_user_access = data.get("has_user_access", False)
+        has_team_access = data.get("has_team_access", False)
 
         return AdminSourceRecord(
             id=str(asset.id),
@@ -110,7 +119,10 @@ class AdminSourcesService:
             created_at=asset.created_at.isoformat(),
             updated_at=asset.updated_at.isoformat(),
             visibility=visibility,
+            status=status,
             members_count=members_count,
             teams_count=teams_count,
             tags=None,  # TODO: Add tags if needed
+            has_user_access=has_user_access,
+            has_team_access=has_team_access,
         )

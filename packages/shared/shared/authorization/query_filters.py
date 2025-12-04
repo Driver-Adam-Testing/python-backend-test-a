@@ -11,17 +11,20 @@ from database.models import (
     DerivedContent,
     DocumentSource,
     Node,
+    OrgMembership,
     PrimaryAsset,
     PrimaryAssetRoleGrant,
+    Team,
+    TeamMembership,
     Version,
     VersionNode,
 )
-from database.models_enums import PrimaryAssetKind, PrimaryAssetRole
+from database.models_enums import PrimaryAssetKind, PrimaryAssetRole, PrincipalKind
 from sqlalchemy import and_, case, literal, true
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
-from .helpers import (
+from shared.authorization.helpers import (
     build_grant_condition,
     get_user_team_ids,
     is_org_member,
@@ -51,6 +54,55 @@ def _grant_exists_subquery(
     )
 
 
+def asset_visibility_expr(
+    organization_id: str, asset_id_column: Any
+) -> tuple[Any, Any, Any]:
+    """
+    Returns SQL expression for asset visibility based on grant type, plus subqueries for joining.
+
+    Visibility precedence: public > internal > private
+    - public: Has grant with principal_kind = 'public'
+    - internal: Has grant with principal_kind = 'org'
+    - private: No org or public grants
+
+    Returns:
+        Tuple of (visibility_expr, org_grant_subquery, public_grant_subquery)
+        The subqueries must be joined to the main query for the expression to work.
+    """
+    org_grant_subquery = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            literal(True).label("has_org_grant"),
+        )
+        .where(
+            and_(
+                PrimaryAssetRoleGrant.organization_id == organization_id,
+                PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org,
+            )
+        )
+        .subquery()
+    )
+
+    public_grant_subquery = (
+        select(
+            PrimaryAssetRoleGrant.primary_asset_id,
+            literal(True).label("has_public_grant"),
+        )
+        .where(
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.public,
+        )
+        .subquery()
+    )
+
+    visibility_case_expr = case(
+        (public_grant_subquery.c.has_public_grant.is_not(None), literal("public")),
+        (org_grant_subquery.c.has_org_grant.is_not(None), literal("internal")),
+        else_=literal("private"),
+    )
+
+    return visibility_case_expr, org_grant_subquery, public_grant_subquery
+
+
 def effective_asset_role_expr(
     db: Session, user_id: str, organization_id: str, asset_id_column: Any
 ) -> Any:
@@ -60,6 +112,10 @@ def effective_asset_role_expr(
     The effective role is the highest priority role among all applicable grants:
     - asset_admin (highest priority) - includes org super_admins
     - asset_member
+
+    Note: For batch processing multiple assets, use
+    acl_repository.get_user_effective_roles_for_assets_batch() instead,
+    which uses the same logic but is optimized for multiple assets.
 
     Args:
         db: Database session
@@ -323,3 +379,106 @@ def page_content_grant_filter(db: Session, user_id: str, organization_id: str) -
             )
         )
     )
+
+
+def asset_org_grant_role_expr(organization_id: str, asset_id_column: Any) -> Any:
+    """
+    Returns a SQL expression for the org-level grant role on an asset.
+    Returns the role if there's an org-wide grant (principal_kind = 'org'), else None.
+    """
+    return (
+        select(PrimaryAssetRoleGrant.role)
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == asset_id_column,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.org,
+        )
+        .scalar_subquery()
+    )
+
+
+def user_direct_grant_role_expr(
+    user_id: str, organization_id: str, asset_id_column: Any
+) -> Any:
+    """
+    Returns a SQL expression for the direct user grant role on an asset.
+    Returns the role if there's a direct user grant (principal_kind = 'user'), else None.
+    """
+    return (
+        select(PrimaryAssetRoleGrant.role)
+        .where(
+            PrimaryAssetRoleGrant.primary_asset_id == asset_id_column,
+            PrimaryAssetRoleGrant.organization_id == organization_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.user,
+            PrimaryAssetRoleGrant.user_id == user_id,
+        )
+        .scalar_subquery()
+    )
+
+
+def user_org_role_expr(user_id: str, organization_id: str) -> Any:
+    return (
+        select(OrgMembership.role)
+        .where(
+            OrgMembership.user_id == user_id,
+            OrgMembership.org_id == organization_id,
+        )
+        .scalar_subquery()
+    )
+
+
+def assignment_type_expr(
+    db: Session,
+    user_id: str,
+    organization_id: str,
+    effective_role_expr: Any,
+    source_role_expr: Any,
+    asset_org_role_expr: Any,
+    user_org_role_expr: Any,
+) -> tuple[Any, Any]:
+    """
+    Returns SQL expressions for assignment types as boolean values.
+
+    Returns a tuple of (has_inherited, has_direct) where:
+    - has_inherited is True if asset_org_role exists, user_org_role exists, user has team memberships, OR is super admin
+    - has_direct is True if source_role exists
+
+    An asset can have both 'direct' and 'inherited' assignment types.
+    Super admins always have inherited (implicit admin access) but may also have direct grants.
+    """
+    is_super = is_super_admin(db, user_id, organization_id)
+
+    if is_super:
+        has_direct = source_role_expr.isnot(None)
+        return (literal(True), has_direct)
+
+    # Check if user has team grants to this specific asset
+    has_team_grant_to_asset = (
+        select(PrimaryAssetRoleGrant.id)
+        .join(TeamMembership, TeamMembership.team_id == PrimaryAssetRoleGrant.team_id)
+        .join(Team, Team.id == TeamMembership.team_id)
+        .where(
+            Team.organization_id == organization_id,
+            TeamMembership.user_id == user_id,
+            PrimaryAssetRoleGrant.principal_kind == PrincipalKind.team,
+        )
+        .exists()
+    )
+
+    # Inherited means: asset has org-wide grant OR user has team grant to this asset
+    # (Super admin case is already handled above with early return)
+    inherited_conditions = [
+        asset_org_role_expr.isnot(None),  # Asset has org-wide grant
+        has_team_grant_to_asset,
+    ]
+
+    # Build conditions for 'direct'
+    direct_condition = source_role_expr.isnot(None)
+
+    # Add 'inherited' if any inherited condition is true
+    any_inherited = inherited_conditions[0]
+    for condition in inherited_conditions[1:]:
+        any_inherited = any_inherited | condition
+
+    # Return boolean expressions
+    return (any_inherited, direct_condition)

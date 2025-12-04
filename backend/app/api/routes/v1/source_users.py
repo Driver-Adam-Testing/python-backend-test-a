@@ -15,6 +15,7 @@ from app.schemas.source_access_schema import (
     SourceUsersResponse,
     UpdateSourceUsersRequest,
 )
+from app.schemas.user_schema import AssignmentType
 from app.services.source_access_service import SourceAccessService
 
 router = APIRouter()
@@ -24,8 +25,8 @@ logger = logging.getLogger(__name__)
 @router.get(
     "/sources/{source_id}/users",
     response_model=SourceUsersResponse,
-    summary="List source users",
-    description="Get paginated list of users (not teams) that have access to a source",
+    summary="List all effective users with source access",
+    description="Get paginated list of all users with effective access to a source (includes direct grants and team-based access)",
 )
 def get_source_users(
     session: CurrentSession,
@@ -36,9 +37,12 @@ def get_source_users(
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
     roles: list[PrimaryAssetRole] | None = Query(
-        default=None, description="Filter by roles"
+        default=None, description="Filter by source access roles"
     ),
     search: str | None = Query(default=None, description="Search by name or email"),
+    assignment_type: AssignmentType | None = Query(
+        default=None, description="Filter by assignment type: 'direct' or 'inherited'"
+    ),
 ) -> SourceUsersResponse:
     """
     Get paginated list of users for a source.
@@ -46,9 +50,10 @@ def get_source_users(
     Returns only users (not teams) with their roles and access details.
     """
     enforce_asset_action(session, user, source_id, "asset.manage")
+
     logger.info(
         f"User {user.user_id} getting users for source {source_id} "
-        f"(limit={limit}, offset={offset}, roles={roles}, search={search})"
+        f"(limit={limit}, offset={offset}, roles={roles}, search={search}, assignment_type={assignment_type})"
     )
     service = SourceAccessService(session)
     return service.get_source_users(
@@ -56,6 +61,7 @@ def get_source_users(
         source_id=source_id,
         roles=roles,
         search=search,
+        assignment_type=assignment_type,
         limit=limit,
         offset=offset,
     )
@@ -73,11 +79,6 @@ def add_source_users(
     source_id: UUID,
     request: AddSourceUsersRequest,
 ) -> None:
-    """
-    Add users to a source.
-
-    - **users**: List of users (not teams) with roles to grant
-    """
     enforce_asset_action(session, user, source_id, "asset.manage")
     logger.info(
         f"User {user.user_id} adding {len(request.users)} users to source {source_id}"

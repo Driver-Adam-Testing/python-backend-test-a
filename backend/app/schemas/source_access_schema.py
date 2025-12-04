@@ -3,7 +3,8 @@
 from typing import Literal
 from uuid import UUID
 
-from database.models_enums import PrimaryAssetRole
+from app.schemas.user_schema import AssignmentType
+from database.models_enums import OrgRole, PrimaryAssetRole, TeamRole
 from pydantic import BaseModel, Field
 
 # ===== Common Types =====
@@ -143,6 +144,10 @@ class TeamSourceResponse(BaseModel):
     is_browsable: bool = Field(
         ..., description="Whether the source is browsable (has a completed version)"
     )
+    effective_role: PrimaryAssetRole | None = Field(
+        ...,
+        description="Current user's effective role on this source (highest of all grants: direct, team, org, public). None if user has no access.",
+    )
 
     class Config:
         from_attributes = True
@@ -164,6 +169,10 @@ class SourceTeamResponse(BaseModel):
     role: PrimaryAssetRole = Field(..., description="Team's role for this source")
     member_count: int = Field(..., description="Number of users in the team")
     created_at: str = Field(..., description="ISO datetime when access was granted")
+    effective_team_role: TeamRole | None = Field(
+        ...,
+        description="Current user's effective role in this team (team_admin for super admins, actual role for members, None if not a member)",
+    )
 
     class Config:
         from_attributes = True
@@ -182,7 +191,10 @@ class TeamMembershipInfo(BaseModel):
 
     team_id: UUID = Field(..., description="Team ID")
     display_name: str = Field(..., description="Team name")
-    team_role: str = Field(..., description="User's role in the team")
+    team_role: TeamRole = Field(..., description="User's role in the team")
+    source_role: PrimaryAssetRole = Field(
+        ..., description="Role the team has to the source/asset"
+    )
 
     class Config:
         from_attributes = True
@@ -195,16 +207,35 @@ class SourceUserResponse(BaseModel):
     name: str = Field(..., description="User name")
     email: str | None = Field(None, description="Email address")
     picture: str | None = Field(None, description="Profile picture URL")
-    visibility: SourceVisibility = Field(
-        ..., description="Source visibility: private, internal, or public"
-    )
     created_at: str = Field(..., description="ISO datetime when access was granted")
     is_super_admin: bool = Field(
         ..., description="Whether user is a super admin in the organization"
     )
-    role: str = Field(..., description="User's role for this source")
+
+    # Granular role breakdown - shows exactly how user has access
+    user_org_role: OrgRole | None = Field(
+        None,
+        description="User's role in the organization (org_super_admin, org_admin, org_member)",
+    )
+    asset_org_role: PrimaryAssetRole | None = Field(
+        None,
+        description="Organization-wide grant role for this asset (if org has blanket access)",
+    )
+    team_source_role: PrimaryAssetRole | None = Field(
+        None,
+        description="Highest role from team grants (max across all teams user belongs to)",
+    )
+    effective_role: PrimaryAssetRole | None = Field(
+        None,
+        description="Final effective role after hierarchy resolution (highest of all grants)",
+    )
+    source_role: PrimaryAssetRole | None = Field(
+        None,
+        description="Role directly granted to the user on this source (None if no direct grant)",
+    )
     teams: list[TeamMembershipInfo] = Field(
-        ..., description="List of teams the user belongs to"
+        ...,
+        description="List of teams the user belongs to that have access to this source",
     )
 
     class Config:

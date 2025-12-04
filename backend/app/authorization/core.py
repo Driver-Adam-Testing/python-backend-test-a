@@ -17,18 +17,21 @@ from database.models import (
 )
 from database.models_enums import (
     OrgRole,
+    PrimaryAssetKind,
     PrimaryAssetRole,
     TeamRole,
 )
-from sqlmodel import Session, select
-
-from .helpers import (
+from shared.authorization.helpers import (
     build_grant_condition,
     get_user_team_ids,
     is_org_member,
     is_super_admin,
 )
-from .query_filters import primary_asset_grant_filter
+from shared.authorization.query_filters import (
+    page_source_authorization_filter,
+    primary_asset_grant_filter,
+)
+from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +152,7 @@ def _effective_asset_role(
 ) -> PrimaryAssetRole | None:
     """Get the effective role for a user on an asset."""
     rows = _grant_rows(db, organization_id, asset_id, user_id)
-    roles = {r.role for r in rows}  # Keep as enum objects, not .value
+    roles = {r.role for r in rows}
 
     if PrimaryAssetRole.asset_admin in roles:
         return PrimaryAssetRole.asset_admin
@@ -309,7 +312,45 @@ def authorize_asset_action(
         )
         return decision
 
-    # Check role-based access
+    # PAGE assets use source-based authorization instead of grants
+    if asset.kind in (PrimaryAssetKind.PAGE, PrimaryAssetKind.PAGE_TEMPLATE):
+        page_query = (
+            select(PrimaryAsset)
+            .where(PrimaryAsset.id == asset_id)
+            .where(
+                page_source_authorization_filter(
+                    ctx.db, ctx.user_id, ctx.organization_id
+                )
+            )
+        )
+        authorized_page = ctx.db.exec(page_query).one_or_none()
+
+        if authorized_page:
+            decision = AccessDecision(
+                True, PrimaryAssetRole.asset_member.value, ["page_source_access"], []
+            )
+            logger.info(
+                "Asset action allowed (page): user_id=%s, org_id=%s, asset_id=%s, action=%s, reasons=%s",
+                ctx.user_id,
+                ctx.organization_id,
+                asset_id,
+                action_key,
+                decision.reasons,
+            )
+            return decision
+        else:
+            decision = AccessDecision(False, None, ["page_source_access_denied"], [])
+            logger.warning(
+                "Asset action denied (page): user_id=%s, org_id=%s, asset_id=%s, action=%s, reasons=%s",
+                ctx.user_id,
+                ctx.organization_id,
+                asset_id,
+                action_key,
+                decision.reasons,
+            )
+            return decision
+
+    # Check role-based access for non-page assets
     role = _effective_asset_role(ctx.db, ctx.organization_id, asset_id, ctx.user_id)
     if _role_allows_asset_action(ctx.db, role, action_key):
         decision = AccessDecision(

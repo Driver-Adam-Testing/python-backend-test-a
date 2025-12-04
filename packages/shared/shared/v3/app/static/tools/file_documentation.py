@@ -54,6 +54,7 @@ class FileDocumentationTool(LlmTool):
                     path=self.path,
                     start_line=1,
                     max_lines=0,
+                    user_id=self.datasource.user_id,
                 )
             )
         except ToolUseError as e:

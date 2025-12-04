@@ -95,6 +95,7 @@ class CodeMapTool(LlmTool):
                 max_depth=self.max_depth,
                 start_node=0,
                 max_nodes=0,
+                user_id=self.datasource.user_id,
             )
         except ToolUseError as e:
             self._error_message = e.agent_message

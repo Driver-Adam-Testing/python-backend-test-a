@@ -80,22 +80,19 @@ def _build_flat_code_map_node_list(
         result.append(
             CodeMapNode(
                 absolute_path=version_node.relative_path,
-                type="file"
-                if node.kind == NodeKind.CODEBASE_FILE
-                else "directory",
+                type="file" if node.kind == NodeKind.CODEBASE_FILE else "directory",
                 description=content.content,
             )
         )
 
-    logger.info(
-        f"Built {len(result)} nodes from {len(code_map_data)} inputs"
-    )
+    logger.info(f"Built {len(result)} nodes from {len(code_map_data)} inputs")
     return result
 
 
 def get_code_map_simple(
     org_id: str,
     codebase_name: str,
+    user_id: str,
     path: str = "",
     max_depth: int = 5,
 ) -> _CodeMap:
@@ -105,17 +102,15 @@ def get_code_map_simple(
     )
 
     with get_session() as db:
-        version = get_latest_version_for_codebase(db, org_id, codebase_name)
+        version = get_latest_version_for_codebase(db, org_id, codebase_name, user_id)
         if not version:
             raise ToolUseError(
-                agent_message=f"No completed version found for codebase '{codebase_name}'. "
+                agent_message=f"No completed version found for codebase '{codebase_name}', or user is unauthorized. "
             )
 
         logger.info(f"Found version {version.id} for codebase '{codebase_name}'")
 
-        nodes_with_content = _fetch_code_map_data(
-            db, version.id, path, max_depth
-        )
+        nodes_with_content = _fetch_code_map_data(db, version.id, path, max_depth)
         logger.info(f"Fetched {len(nodes_with_content)} nodes with content")
 
         nodes = _build_flat_code_map_node_list(nodes_with_content)
@@ -179,10 +174,12 @@ def get_code_map(
     max_depth: int,
     start_node: int,
     max_nodes: int,
+    user_id: str,
 ) -> CodeMapResponse:
     code_map = get_code_map_simple(
         org_id=org_id,
         codebase_name=codebase_name,
+        user_id=user_id,
         path=path,
         max_depth=max_depth,
     )

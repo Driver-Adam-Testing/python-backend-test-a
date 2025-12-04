@@ -1,3 +1,4 @@
+from database.models_enums import OrgRole
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -7,7 +8,7 @@ class Invitee(BaseModel):
 
 class Invitation(BaseModel):
     invitee: Invitee
-    roles: list[str] = Field(title="List of Role IDs")
+    role: OrgRole = Field(title="Role name")
 
 
 class CreateInvitationInput(BaseModel):

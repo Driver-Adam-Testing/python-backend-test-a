@@ -25,7 +25,6 @@ class ChatHttpRequest(BaseModel):
     page_version_node_id: UUID | None = None
 
     llm_session_id: UUID | None = None
-    relative_paths: list[str] | None = None
 
 
 @router.post("/", response_class=StreamingResponse)
@@ -63,7 +62,6 @@ async def create_streaming_post(
         page_version_node_id=payload.page_version_node_id,
         organization_id=user.organization_id,
         user_id=user.user_id,
-        relative_paths=payload.relative_paths,
         llm_session_id=payload.llm_session_id,
     )
 

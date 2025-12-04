@@ -5,48 +5,60 @@ from database.db import get_session
 from database.models import DocumentSource, Node, PrimaryAsset, Version, VersionNode
 from database.models_enums import NodeKind
 from pydantic import BaseModel, Field, PrivateAttr
+from shared.authorization.query_filters import primary_asset_grant_filter
 from sqlalchemy.orm import selectinload
 from sqlmodel import and_, or_, select
 
 
 class DataSource(BaseModel):
     """
-    A DataSource represents a set of version_node_ids that belong to a single organization.
+    A DataSource represents a set of version_node_ids that belong to a single organization and are accessible by the user.
     It also provides an optional cache of the underlying VersionNode objects and their associated Nodes.
     """
 
     version_node_ids: list[uuid.UUID] = Field(default_factory=list)
     organization_id: str
+    user_id: str
 
     # Cache for the VersionNode objects so we don't re-fetch on every property access
     _cached_version_nodes: list[VersionNode] | None = PrivateAttr(default=None)
 
-    def __init__(self, version_node_ids: list[uuid.UUID], organization_id: str) -> None:
+    def __init__(
+        self, version_node_ids: list[uuid.UUID], organization_id: str, user_id: str
+    ) -> None:
         """
         Initialize the DataSource.
 
-        Validates that all given version_node_ids belong to the specified organization_id.
+        Validates that all given version_node_ids belong to the specified organization_id and are accessible by the user.
         Raises:
             ValueError: If any version_node_id does not match the given organization_id.
         """
         super().__init__(
-            version_node_ids=version_node_ids, organization_id=organization_id
+            version_node_ids=version_node_ids,
+            organization_id=organization_id,
+            user_id=user_id,
         )
 
         version_node_pairs = []
         if self.version_node_ids:
             with get_session() as session:
+                # Validate nodes belong to org AND user has access
                 stmt = (
                     select(VersionNode.id)
                     .join(Version, VersionNode.version_id == Version.id)
                     .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
                     .where(PrimaryAsset.organization_id == self.organization_id)
                     .where(VersionNode.id.in_(self.version_node_ids))
+                    .where(
+                        primary_asset_grant_filter(
+                            session, self.user_id, self.organization_id
+                        )
+                    )
                 )
                 matching_ids = session.exec(stmt).all()
                 if len(matching_ids) != len(self.version_node_ids):
                     raise ValueError(
-                        "Some version_node_ids do not match the given organization_id."
+                        "Some version_node_ids do not match the given organization_id or user does not have access to all the associated assets."
                     )
 
                 # Get VersionNode and Node data for _calculate_is_tuned
@@ -81,19 +93,21 @@ class DataSource(BaseModel):
 
     @classmethod
     def from_version_node_ids(
-        cls, version_node_ids: list[uuid.UUID], organization_id: str
+        cls, version_node_ids: list[uuid.UUID], organization_id: str, user_id: str
     ) -> "DataSource":
         """
-        Factory that constructs a DataSource directly from version_node_ids & organization_id.
+        Factory that constructs a DataSource directly from version_node_ids, organization_id and user_id.
         """
         datasource = cls(
-            version_node_ids=version_node_ids, organization_id=organization_id
+            version_node_ids=version_node_ids,
+            organization_id=organization_id,
+            user_id=user_id,
         )
         return datasource
 
     @classmethod
     def from_page_id(
-        cls, page_version_node_id: uuid.UUID, organization_id: str
+        cls, page_version_node_id: uuid.UUID, organization_id: str, user_id: str
     ) -> "DataSource":
         """
         Factory that constructs a DataSource from DocumentSource entries linked to a page.
@@ -107,61 +121,32 @@ class DataSource(BaseModel):
             version_node_ids = [ds.source_version_node_id for ds in document_sources]
 
             datasource = cls(
-                version_node_ids=version_node_ids, organization_id=organization_id
+                version_node_ids=version_node_ids,
+                organization_id=organization_id,
+                user_id=user_id,
             )
             return datasource
-
-    @classmethod
-    def from_relative_paths(
-        cls,
-        relative_paths: list[str],
-        organization_id: str,
-        version_id: str | None = None,
-    ) -> "DataSource":
-        """
-        Factory that constructs a DataSource from relative paths, optionally within a specific version.
-        """
-        with get_session() as session:
-            stmt = (
-                select(VersionNode)
-                .join(Version, VersionNode.version_id == Version.id)
-                .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
-                .where(
-                    VersionNode.relative_path.in_(relative_paths),
-                    PrimaryAsset.organization_id == organization_id,
-                    or_(
-                        VersionNode.version_id == version_id,
-                        and_(
-                            version_id is None,
-                            VersionNode.version_id
-                            == select(Version.id)
-                            .where(Version.primary_asset_id == PrimaryAsset.id)
-                            .order_by(Version.updated_at.desc())
-                            .limit(1)
-                            .correlate(PrimaryAsset)
-                            .scalar_subquery(),
-                        ),
-                    ),
-                )
-            )
-            version_nodes = session.exec(stmt).all()
-            version_node_ids = [vn.id for vn in version_nodes]
-            return cls(
-                version_node_ids=version_node_ids, organization_id=organization_id
-            )
 
     @property
     def version_nodes(self) -> list[VersionNode]:
         """
         Returns the list of cached VersionNode objects plus all their descendants, loading them if necessary.
+        Only returns version nodes the user is authorized to access.
         """
         if self._cached_version_nodes is None:
             with get_session() as session:
-                # Load all ancestor VersionNodes
+                # Load all ancestor VersionNodes with authorization check
                 ancestor_version_nodes = session.exec(
                     select(VersionNode)
                     .options(selectinload(VersionNode.node))
+                    .join(Version, VersionNode.version_id == Version.id)
+                    .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
                     .where(VersionNode.id.in_(self.version_node_ids))
+                    .where(
+                        primary_asset_grant_filter(
+                            session, self.user_id, self.organization_id
+                        )
+                    )
                 ).all()
 
                 # Build a set of conditions for any ancestor's version/path
@@ -175,12 +160,19 @@ class DataSource(BaseModel):
                         )
                     )
 
-                # Query descendant VersionNodes in one shot using OR across all conditions
+                # Query descendant VersionNodes with authorization check
                 if conditions:
                     descendant_version_nodes_stmt = (
                         select(VersionNode)
                         .options(selectinload(VersionNode.node))
+                        .join(Version, VersionNode.version_id == Version.id)
+                        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
                         .where(or_(*conditions))
+                        .where(
+                            primary_asset_grant_filter(
+                                session, self.user_id, self.organization_id
+                            )
+                        )
                     )
                     descendant_version_nodes = session.exec(
                         descendant_version_nodes_stmt

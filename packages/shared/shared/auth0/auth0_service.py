@@ -267,9 +267,14 @@ class Auth0Service:
                 payload = {
                     "inviter": {"name": userinfo.get("name")},
                     "invitee": invitation.invitee.model_dump(),
-                    "roles": invitation.roles,
                     "client_id": self.auth0_client_id,
+                    "app_metadata": {
+                        user.organization_id: {
+                            "initial_org_role": invitation.role.value
+                        }
+                    },
                 }
+
                 if (
                     "metadata" in organization_info
                     and "sso_connection_id" in organization_info["metadata"]

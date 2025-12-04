@@ -40,6 +40,7 @@ class DetailedChangelogTool(LlmTool):
                 self.codebase_name,
                 self.year,
                 self.month,
+                self.datasource.user_id,
             )
         except ToolUseError as e:
             self._error_message = e.agent_message

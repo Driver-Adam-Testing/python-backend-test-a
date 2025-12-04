@@ -2,7 +2,6 @@ from collections.abc import Generator
 from unittest.mock import Mock
 
 import pytest
-from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from testcontainers.postgres import PostgresContainer
@@ -43,6 +42,7 @@ def integration_db_engine() -> Generator[Engine, None, None]:
         Team,
         TeamMembership,
         User,
+        Version,
     )
 
     # Start PostgreSQL container
@@ -65,41 +65,10 @@ def integration_db_engine() -> Generator[Engine, None, None]:
         GitProviderApp.__table__,
         GitProviderAppInstallation.__table__,
         PrimaryAsset.__table__,
+        Version.__table__,
         PrimaryAssetRoleGrant.__table__,
     ]
     SQLModel.metadata.create_all(engine, tables=tables_to_create)
-
-    # Add CASCADE DELETE for TeamMembership and PrimaryAssetRoleGrant
-    with engine.begin() as conn:
-        # Drop existing foreign key constraints
-        conn.execute(
-            text("""
-            ALTER TABLE team_membership
-            DROP CONSTRAINT IF EXISTS team_membership_team_id_fkey CASCADE
-        """)
-        )
-        conn.execute(
-            text("""
-            ALTER TABLE primary_asset_role_grant
-            DROP CONSTRAINT IF EXISTS primary_asset_role_grant_team_id_fkey CASCADE
-        """)
-        )
-
-        # Re-add with CASCADE DELETE
-        conn.execute(
-            text("""
-            ALTER TABLE team_membership
-            ADD CONSTRAINT team_membership_team_id_fkey
-            FOREIGN KEY (team_id) REFERENCES team(id) ON DELETE CASCADE
-        """)
-        )
-        conn.execute(
-            text("""
-            ALTER TABLE primary_asset_role_grant
-            ADD CONSTRAINT primary_asset_role_grant_team_id_fkey
-            FOREIGN KEY (team_id) REFERENCES team(id) ON DELETE CASCADE
-        """)
-        )
 
     # Create test organizations
     with Session(engine) as session:

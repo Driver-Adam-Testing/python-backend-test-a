@@ -41,7 +41,7 @@ class PipelineRequest(BaseModel, ABC):
         super().__init__(**data)
         if version_node_ids is not None:
             self._datasource = DataSource.from_version_node_ids(
-                version_node_ids, organization_id
+                version_node_ids, organization_id, user_id
             )
         elif relative_paths is not None:
             self._datasource = DataSource.from_relative_paths(
@@ -49,7 +49,7 @@ class PipelineRequest(BaseModel, ABC):
             )
         elif page_version_node_id is not None:
             self._datasource = DataSource.from_page_id(
-                page_version_node_id, organization_id
+                page_version_node_id, organization_id, user_id
             )
         else:
             self._datasource = None
@@ -67,6 +67,7 @@ class PipelineRequest(BaseModel, ABC):
                         self._datasource = DataSource.from_version_node_ids(
                             json.loads(self._llm_session.source_version_node_ids_str),
                             self._llm_session.organization_id,
+                            self._llm_session.user_id,
                         )
                     self._datasource_changed_since_llm_session = (
                         json.dumps(self._datasource.version_node_ids, cls=UUIDEncoder)
@@ -102,6 +103,7 @@ class PipelineRequest(BaseModel, ABC):
             self._datasource = DataSource.from_version_node_ids(
                 self.version_node_ids,
                 organization_id=self.organization_id,
+                user_id=self.user_id,
             )
         return self._datasource
 

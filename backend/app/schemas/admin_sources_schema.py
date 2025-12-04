@@ -2,10 +2,8 @@
 
 from typing import Literal
 
+from database.models_enums import SourceVisibility
 from pydantic import BaseModel, ConfigDict, Field
-
-# ===== Common Types =====
-SourceVisibility = Literal["private", "internal", "public"]
 
 
 # ===== Admin Sources Request =====
@@ -38,9 +36,18 @@ class AdminSourceRecord(BaseModel):
     created_at: str = Field(..., description="ISO datetime when created")
     updated_at: str = Field(..., description="ISO datetime when updated")
     visibility: SourceVisibility = Field(..., description="Source visibility")
+    status: str | None = Field(None, description="Status of the most recent version")
     members_count: int = Field(..., description="Count of user grants")
     teams_count: int = Field(..., description="Count of team grants")
     tags: list[dict] | None = Field(None, description="Associated tags")
+    has_user_access: bool = Field(
+        default=False,
+        description="Whether the specified user has direct access to this source (only populated when user_id query param is provided)",
+    )
+    has_team_access: bool = Field(
+        default=False,
+        description="Whether the specified team has access to this source (only populated when team_id query param is provided)",
+    )
 
 
 class AdminSourcesResponse(BaseModel):

@@ -8,10 +8,13 @@ from database.models_enums import (
     NodeKind,
     PrimaryAssetKind,
     PrimaryAssetRole,
+    SourceVisibility,
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, field_validator
+
+from app.schemas.common import validate_visibility_not_public
 
 T = TypeVar("T")
 
@@ -223,12 +226,19 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
     tags: list[TagRead] | None
     codebase_settings_auto_commit_docs: bool | None = None
     effective_role: PrimaryAssetRole
+    visibility: SourceVisibility
 
     @computed_field
     @property
     def browsable(self) -> bool:
         """A primary asset is browsable if any of its versions are browsable."""
         return self.most_recent_version.browsable if self.most_recent_version else False
+
+    @computed_field
+    @property
+    def status(self) -> str | None:
+        """Status of the most recent version."""
+        return self.most_recent_version.status if self.most_recent_version else None
 
     class Config:
         from_attributes = True
@@ -267,6 +277,9 @@ class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
     codebase_settings_auto_commit_docs: bool | None = None
     vcs_auto_update_policy: VcsAutoUpdatePolicy | None = None
+    visibility: SourceVisibility | None = None
+
+    _validate_not_public = field_validator("visibility")(validate_visibility_not_public)
 
 
 class VersionUpdate(BaseModel):

@@ -72,7 +72,7 @@ class HatchetWorker(Construct):
             "ENVIRONMENT": params.environment,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077"
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077"
         }
 
         if openai_url is not None:

@@ -360,7 +360,7 @@ def codebase_card(
         .options(
             selectinload(PrimaryAsset.tags),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
-                Version.root_node
+                Version.root_version_node
             ),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.creator

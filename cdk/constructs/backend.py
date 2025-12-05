@@ -254,26 +254,33 @@ class Backend(Construct):
                 vpc_subnets=aws_ec2.SubnetSelection(subnets=private_subnets.subnets),
             )
 
+            privatelink_nlb_target_group = aws_elasticloadbalancingv2.NetworkTargetGroup(
+                self,
+                "PrivateLinkApiAlbTargetGroup",
+                vpc=self.vpc,
+                port=443,
+                protocol=aws_elasticloadbalancingv2.Protocol.TCP,
+                target_type=aws_elasticloadbalancingv2.TargetType.ALB,
+                targets=[
+                    aws_elasticloadbalancingv2_targets.AlbTarget(
+                        self.service.load_balancer, 443
+                    )
+                ],
+                health_check=aws_elasticloadbalancingv2.HealthCheck(
+                    protocol=aws_elasticloadbalancingv2.Protocol.HTTPS,
+                    path="/studio/v1/healthcheck/",
+                    healthy_threshold_count=2,
+                    unhealthy_threshold_count=2,
+                    interval=Duration.seconds(30),
+                ),
+            )
+
             privatelink_nlb.add_listener(
                 "PrivateLinkApiNlbListener",
                 port=443,
                 protocol=aws_elasticloadbalancingv2.Protocol.TCP,
                 default_action=aws_elasticloadbalancingv2.NetworkListenerAction.forward(
-                    target_groups=[
-                        aws_elasticloadbalancingv2.NetworkTargetGroup(
-                            self,
-                            "PrivateLinkApiAlbTargetGroup",
-                            vpc=self.vpc,
-                            port=443,
-                            protocol=aws_elasticloadbalancingv2.Protocol.TCP,
-                            target_type=aws_elasticloadbalancingv2.TargetType.ALB,
-                            targets=[
-                                aws_elasticloadbalancingv2_targets.AlbTarget(
-                                    self.service.load_balancer, 443
-                                )
-                            ],
-                        )
-                    ]
+                    target_groups=[privatelink_nlb_target_group]
                 ),
             )
 

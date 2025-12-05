@@ -1046,9 +1046,6 @@ def run_codebase_connection(
                     source_hash=source_hash,
                     kind=NodeKind.CODEBASE_FILE,
                     primary_asset_id=primary_asset_id,
-                    version_id=version_id,
-                    relative_path=relative_path,
-                    misc_metadata=file_stats,
                 )
                 session.add(new_node)
                 session.flush()
@@ -1105,9 +1102,6 @@ def run_codebase_connection(
                     source_hash=source_hash,
                     kind=NodeKind.CODEBASE_DIRECTORY,
                     primary_asset_id=primary_asset_id,
-                    version_id=version_id,
-                    relative_path=relative_path,
-                    misc_metadata=directory_stats,
                 )
                 node_id = new_node.id
                 session.add(new_node)

@@ -418,7 +418,7 @@ def _get_derived_contents(
 
     with get_session() as session:
         dc_query = (
-            select(DerivedContent)
+            select(DerivedContent, VersionNode)
             .join(VersionNode, DerivedContent.node_id == VersionNode.node_id)
             .where(
                 VersionNode.version_id == version_id,
@@ -426,8 +426,8 @@ def _get_derived_contents(
                 DerivedContent.content_kind.in_([dc_kind]),
             )
         )
-        derived_contents = session.exec(dc_query).all()
-        return {dc.relative_path: dc.content for dc in derived_contents}
+        rows = session.exec(dc_query).all()
+        return {vn.relative_path.rstrip("/"): dc.content for (dc, vn) in rows}
 
 
 def _get_source_from_s3(

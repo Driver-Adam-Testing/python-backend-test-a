@@ -12,6 +12,10 @@ class Auth0SyncInput(BaseModel):
     initial_run: bool = False
 
 
+class ProcessAuth0EventInput(BaseModel):
+    event: dict
+
+
 # TODO: scheduled auth0_sync
 
 
@@ -24,4 +28,16 @@ def auth0_sync_task(input: Auth0SyncInput, ctx: Context) -> dict:
         initial_run=input.initial_run,
     )
     print("executed auth0 sync task")
+    return result
+
+
+@hatchet.task(
+    name="process-auth0-event-workflow", execution_timeout=timedelta(minutes=15)
+)
+def process_auth0_event_task(input: ProcessAuth0EventInput, ctx: Context) -> dict:
+    print("starting process auth0 event task")
+    from auth0_sync.src.main import process_auth0_events
+
+    result = process_auth0_events(event=input.event)
+    print("executed process auth0 event task")
     return result

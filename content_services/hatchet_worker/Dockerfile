@@ -20,6 +20,7 @@ COPY driver_db /driver_db
 COPY packages /packages
 COPY content_services/auto_toml /auto_toml
 COPY content_services/hatchet_worker /app
+COPY backend/scripts/ /app/scripts/
  
 RUN poetry config virtualenvs.create false && \
  poetry install --no-root --no-interaction --no-ansi

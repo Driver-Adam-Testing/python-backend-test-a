@@ -131,6 +131,12 @@ class Backend(Construct):
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.
         }
 
+        if params.is_private_deploy:
+            # Point Python HTTP clients to the system CA bundle (updated by load_firewall_cert.py)
+            container_environment_vars["SSL_CERT_FILE"] = "/etc/ssl/certs/ca-certificates.crt"
+            container_environment_vars["REQUESTS_CA_BUNDLE"] = "/etc/ssl/certs/ca-certificates.crt"
+            container_environment_vars["CURL_CA_BUNDLE"] = "/etc/ssl/certs/ca-certificates.crt"
+
         if openai_url is not None:
             container_environment_vars["AZURE_OPENAI_BASE_URL"] = openai_url
 

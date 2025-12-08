@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Self
@@ -43,7 +44,24 @@ class ChatOpenAI:
     client: AsyncOpenAI = field(init=False)
 
     def __post_init__(self) -> None:
-        self.client = AsyncOpenAI(timeout=self.request_timeout)
+        if os.environ.get("AZURE_BASE_URL"):
+            base_url = os.environ["AZURE_BASE_URL"]
+            api_key = os.environ["AZURE_OPENAI_API_KEY"]
+            self.client = AsyncOpenAI(
+                api_key=api_key, base_url=base_url, timeout=self.request_timeout
+            )
+        else:
+            self.client = AsyncOpenAI(timeout=self.request_timeout)
+
+    @staticmethod
+    def get_token_limit(model: str) -> int:
+        TOKEN_LIMITS = {
+            "gpt-4.1": 1_000_000,
+            "o3-mini": 200_000,
+            "gpt-4o": 128_000,
+            "gpt-5": 272_000,
+        }
+        return TOKEN_LIMITS[model]
 
     @async_retry_with_exponential_backoff(
         initial_delay=10.0,

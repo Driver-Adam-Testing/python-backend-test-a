@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
-from shared.inspector.utils.models import ChatOpenAI
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.symbol_table.utils import get_fully_qualified_name
 from shared.inspector.utils.treesitter_drivers.csharp_driver import CSharpCallKind
 from shared.prompts.structured_prompting import (

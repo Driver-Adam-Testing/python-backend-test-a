@@ -14,20 +14,27 @@ def make_tech_doc(
     import os
 
     import boto3
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.utils.io import download_symbol_table_from_s3_with_cache
-    from shared.inspector.utils.models import ChatOpenAI
 
     print(f"Processing tech docs ({node})")
 
     raise_hard_errors = False
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
-    bucket_name = os.environ["BUCKET_NAME"]
+    print("Pre-bucket name fetch")
+    bucket_name = os.environ.get("BUCKET_NAME")
+    if bucket_name is None:
+        print("================================")
+        print(node.root_rel_path)
+        print(os.environ)
+        print("================================")
+        raise ValueError("BUCKET_NAME environment variable is not set")
 
     full_symbol_table = download_symbol_table_from_s3_with_cache(
         s3_client=s3_client,
@@ -77,11 +84,11 @@ def make_folder_tech_doc(
     child_nodes_to_docs: dict[LiteNode, dict],
     previous_content: dict[str, str] | None = None,
 ) -> dict[str, any]:
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.inspection.folders import comprehend_folder_top_down
-    from shared.inspector.utils.models import ChatOpenAI
 
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=FOLDER_TECH_DOC_LLM_TIMEOUT,
     )
@@ -105,11 +112,11 @@ def make_folder_tech_doc(
 def make_toplevel_tech_docs(
     codebase_name: str, nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.inspection.toplevel import comprehend_codebase_top_down
-    from shared.inspector.utils.models import ChatOpenAI
 
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=TOP_LEVEL_DOC_LLM_TIMEOUT,
     )
@@ -134,11 +141,11 @@ def make_codebase_tags(
     nodes_to_docs: dict[LiteNode, dict],
     content_kinds: set,
 ) -> dict[str, any]:
+    from shared.agent.chat_openai import ChatOpenAI
     from shared.inspector.inspection.toplevel import tag_codebase
-    from shared.inspector.utils.models import ChatOpenAI
 
     llm = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o",
         temperature=0,
         request_timeout=TOP_LEVEL_DOC_LLM_TIMEOUT,
     )
@@ -269,7 +276,7 @@ def export_tech_docs_to_zip(
             end_comment = "\n---\nMade with ❤️ by [Driver](https://www.driver.ai/)"
             content = comment + content + end_comment
             file_path.write_text(content)
-        make_archive("tech_docs", "zip", Path(temp_dir))
+        make_archive(f"{version_id}_tech_docs", "zip", Path(temp_dir))
 
         s3_resource = boto3.resource(
             "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
@@ -278,32 +285,29 @@ def export_tech_docs_to_zip(
         s3_bucket = s3_resource.Bucket(org_id_hash)
         if install_id is not None:
             s3_bucket.upload_file(
-                Path("tech_docs.zip"),
+                Path(f"{version_id}_tech_docs.zip"),
                 s3_dest,
                 ExtraArgs={"Metadata": {"install_id": install_id}},
             )
         else:
             s3_bucket.upload_file(
-                Path("tech_docs.zip"),
+                Path(f"{version_id}_tech_docs.zip"),
                 s3_dest,
             )
         print(f"Uploaded tech docs zip to S3: {s3_dest}")
         if auto_commit_docs:
             if install_id is not None:
                 print("PRing exported docs")
-                push_tech_docs.remote(version_id)
+                from shared.inspector.onboarding.push_bot import push_docs
+
+                push_docs(version_id)
             else:
                 # TODO: better handling of install_id rather than attaching to S3 metadata
                 print("Unable to PR - install id is not available")
         else:
             print("PR disabled for this codebase.")
-
-
-async def push_tech_docs(version_id: str) -> None:
-    """Push tech docs to s3"""
-    from shared.inspector.onboarding.push_bot import push_docs
-
-    await push_docs(version_id)
+        # Delete zip after upload
+        os.remove(f"{version_id}_tech_docs.zip")
 
 
 CHUNK_SIZE = 64_000

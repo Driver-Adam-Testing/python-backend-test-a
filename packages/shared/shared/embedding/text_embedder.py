@@ -62,7 +62,12 @@ async def async_batch_embed_text(
     if model not in SUPPORTED_OPENAI_MODELS:
         raise ValueError(f"Model {model} is not supported.")
 
-    openai_client = AsyncOpenAI()
+    if os.environ.get("AZURE_BASE_URL"):
+        base_url = os.environ["AZURE_BASE_URL"]
+        api_key = os.environ["AZURE_OPENAI_API_KEY"]
+        openai_client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+    else:
+        openai_client = AsyncOpenAI()
     prepared_chunks = _prepare_text_chunks(text_chunks)
     embeddings = []
     try:

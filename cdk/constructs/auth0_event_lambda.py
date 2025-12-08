@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_lambda,
     aws_lambda_python_alpha,
     aws_logs,
+    aws_route53,
     aws_secretsmanager,
     aws_sns,
     aws_ssm,
@@ -51,6 +52,14 @@ class Auth0EventLambda(Construct):
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
         )
 
+        hatchet_token_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
+        )
+
+        hosted_zone_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/hostedZoneName"
+        )
+
         # Create Lambda function
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -68,6 +77,8 @@ class Auth0EventLambda(Construct):
                 "MODAL_ENVIRONMENT": "FIXME",
                 "MODAL_SECRET_NAME": deployment_secrets.secret_name,
                 "IS_PRIVATE_DEPLOY": "true" if self.is_private_deploy else "false",
+                "HATCHET_CLIENT_HOST_PORT": f"hatchet.{hosted_zone_name}:7077",
+                "HATCHET_CLIENT_TOKEN_SECRET_NAME": hatchet_token_secret.secret_name,
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
@@ -80,6 +91,7 @@ class Auth0EventLambda(Construct):
 
         # Grant Lambda permissions to read secrets
         deployment_secrets.grant_read(self.lambda_function)
+        hatchet_token_secret.grant_read(self.lambda_function)
 
         # Grant permission to read firewall certificate for private deployments
         if self.is_private_deploy:

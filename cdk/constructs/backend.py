@@ -127,6 +127,7 @@ class Backend(Construct):
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077"
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.
         }
 
@@ -137,12 +138,17 @@ class Backend(Construct):
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
         )
 
+        hatchet_token_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
+        )
+
         secret_fields = settings.SECRECTS_KEYS.split(',')
 
         secrets_map = {
             k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
             for k in secret_fields
         }
+        secrets_map["HATCHET_CLIENT_TOKEN"] = aws_ecs.Secret.from_secrets_manager(hatchet_token_secret)
 
         container_environment_vars.update(settings.to_dict())
 

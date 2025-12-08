@@ -18,6 +18,10 @@ cache = SecretCache(config=cache_config, client=sm_client)
 modal_secrets = json.loads(cache.get_secret_string(os.getenv("MODAL_SECRET_NAME")))
 os.environ["MODAL_TOKEN_SECRET"] = modal_secrets["MODAL_TOKEN_SECRET"]
 
+# Load Hatchet token
+hatchet_secret = json.loads(cache.get_secret_string(os.getenv("HATCHET_CLIENT_TOKEN_SECRET_NAME")))
+os.environ["HATCHET_CLIENT_TOKEN"] = hatchet_secret["HATCHET_CLIENT_TOKEN"]
+
 # Import Modal SDK after setting environment variables
 import modal
 

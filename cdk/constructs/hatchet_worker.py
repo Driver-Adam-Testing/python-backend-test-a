@@ -180,6 +180,12 @@ class HatchetWorker(Construct):
         # Allow the worker to emit metrics/events
         params.metrics_bus.grant_all_put_events(worker_task_def.task_role)
 
+        if settings.IS_PRIVATE_DEPLOY == "true":
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.worker_service.task_definition.task_role)
+
         # Outputs
         CfnOutput(
             self,

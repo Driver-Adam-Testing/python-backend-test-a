@@ -242,6 +242,9 @@ class Backend(Construct):
             )
         )
 
+        self.backend_alb = self.service.load_balancer
+        self.backend_alb_listener = self.service.listener
+
         # Grant permission to read firewall certificate for private deployments
         if params.is_private_deploy:
             firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(

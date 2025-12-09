@@ -11,6 +11,7 @@ from cdk.constructs.auth0_event_lambda import Auth0EventLambda
 from cdk.constructs.backend import Backend, BackendParams
 from cdk.constructs.hatchet_worker import HatchetWorker, HatchetWorkerParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
+from cdk.constructs.scim_server import SCIMServer, SCIMServerParams
 from cdk.settings import settings
 
 
@@ -79,3 +80,17 @@ class BackendStack(Stack):
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY
             ),
         )
+
+        self.scimserver = SCIMServer(
+            self,
+            "SCIMServer",
+            SCIMServerParams(
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
+                metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account,
+                load_balancer=self.backend.backend_alb,
+                listener=self.backend.backend_alb_listener
+            ),
+        )
+

@@ -28,11 +28,18 @@ HATCHET_WORKER_IMAGE_NAME=hatchet-worker
 HATCHET_WORKER_TAG=latest 
 HATCHET_WORKER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$HATCHET_WORKER_IMAGE_NAME:$HATCHET_WORKER_TAG
 
+SCIM_SERVER_IMAGE_NAME=scim-server
+SCIM_SERVER_TAG=latest 
+SCIM_SERVER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$SCIM_SERVER_IMAGE_NAME:$SCIM_SERVER_TAG
+
 
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $BACKEND_REPO_URI .
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/hatchet_worker/Dockerfile .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $SCIM_SERVER_REPO_URI -f scim/Dockerfile .
+
 echo $BACKEND_REPO_URI
 echo $HATCHET_WORKER_REPO_URI
+echo $SCIM_SERVER_REPO_URI
 
 BACKEND_LOCAL_DIGEST=$(docker image inspect $BACKEND_REPO_URI --format '{{json .Id}}' | grep -o 'sha256:[0-9a-f]\{64\}' )
 HATCHET_WORKER_LOCAL_DIGEST=$(docker image inspect $HATCHET_WORKER_REPO_URI --format '{{json .Id}}' | grep -o 'sha256:[0-9a-f]\{64\}')
@@ -69,6 +76,8 @@ else
   export HATCHET_WORKER_PUSHED=false
 fi
 
+docker push "$SCIM_SERVER_REPO_URI"
+
 poetry install --no-root
 
 set +e
@@ -92,13 +101,13 @@ HATCHET_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --qu
 if [ "$BACKEND_PUSHED" = "true" ]; then
     echo "Forcing backend redeploy..."
 
-    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
+    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment > /dev/null
 fi
 
 if [ "$HATCHET_WORKER_PUSHED" = "true" ]; then
     echo "Forcing hatchet worker redeploy..."
 
-    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment
+    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment > /dev/null
 fi
 
 #TODO Also wait for hatchet worker service to stablize?

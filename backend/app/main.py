@@ -66,7 +66,7 @@ def _configure_sentry(env: str, is_private_deploy: bool, dsn: str) -> None:
     if is_private_deploy or env == "local":
         return
 
-    sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1}.get(env, 0.1)
+    sample_rate = {"development": 1.0, "staging": 0., "production": 0.1}.get(env, 0.1)
 
     sentry_sdk.init(
         dsn=dsn,

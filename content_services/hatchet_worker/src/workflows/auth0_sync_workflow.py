@@ -3,18 +3,10 @@ from datetime import timedelta
 from auth0_sync.src.main import sync_auth0
 from hatchet_client import hatchet
 from hatchet_sdk import Context
-from pydantic import BaseModel
-
-
-class Auth0SyncInput(BaseModel):
-    dry_run: bool = False
-    verbose: bool = False
-    initial_run: bool = False
-
-
-class ProcessAuth0EventInput(BaseModel):
-    event: dict
-
+from shared.interfaces.hatchet_interfaces import (
+    Auth0SyncInput,
+    ProcessAuth0EventInput,
+)
 
 # TODO: scheduled auth0_sync
 

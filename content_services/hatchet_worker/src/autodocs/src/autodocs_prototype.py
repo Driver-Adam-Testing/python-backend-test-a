@@ -12,7 +12,6 @@ from enum import IntEnum, StrEnum
 from graphlib import TopologicalSorter
 from pathlib import Path
 from typing import Any, Self
-from uuid import UUID
 
 import boto3
 import modal
@@ -2913,19 +2912,19 @@ async def main(args: argparse.Namespace) -> None:
         if not args.quiet:
             console = Console()
             console.print(Markdown(doc))
-    elif args.remote:
-        import modal
+    # elif args.remote:
+    #     import modal
 
-        run_autodoc_cli = modal.Function.from_name(
-            app_name="autodocs", name="run_autodoc_cli", environment_name=args.env
-        )
-        with open(args.config) as f:
-            toml_content = f.read()
-        doc = run_autodoc_cli.remote(
-            toml_content=toml_content, page_node_id=UUID(args.page_id)
-        )
-        with open(args.output, "w") as f:
-            f.write(doc)
+    #     run_autodoc_cli = modal.Function.from_name(
+    #         app_name="autodocs", name="run_autodoc_cli", environment_name=args.env
+    #     )
+    #     with open(args.config) as f:
+    #         toml_content = f.read()
+    #     doc = run_autodoc_cli.remote(
+    #         toml_content=toml_content, page_node_id=UUID(args.page_id)
+    #     )
+    #     with open(args.output, "w") as f:
+    #         f.write(doc)
     else:
         pass
 

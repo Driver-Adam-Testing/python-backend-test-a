@@ -1,18 +1,9 @@
 from datetime import timedelta
 
 from autodocs.src.main import run_autodoc
-from database.models_enums import AutoDocConfigKind, ContentKind
 from hatchet_client import hatchet
 from hatchet_sdk import Context
-from pydantic import BaseModel
-
-
-class AutodocInput(BaseModel):
-    page_node_id: str
-    config_kind: AutoDocConfigKind
-    document_goal: str | None
-    user_context: str | None
-    content_kind: ContentKind | None
+from shared.interfaces.hatchet_interfaces import AutodocInput
 
 
 @hatchet.task(name="autodocs-workflow", execution_timeout=timedelta(minutes=480))

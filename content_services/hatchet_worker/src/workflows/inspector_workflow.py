@@ -3,11 +3,7 @@ from datetime import timedelta
 from hatchet_client import hatchet
 from hatchet_sdk import Context
 from inspector.src.main import inspect_db
-from pydantic import BaseModel
-
-
-class InspectorInput(BaseModel):
-    version_id: str
+from shared.interfaces.hatchet_interfaces import InspectorInput
 
 
 @hatchet.task(name="inspector-workflow", execution_timeout=timedelta(minutes=720))

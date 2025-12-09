@@ -5,14 +5,7 @@ from pathlib import Path
 
 from hatchet_client import hatchet
 from hatchet_sdk import Context
-from pydantic import BaseModel
-
-
-class PDFProcessingInput(BaseModel):
-    presigned_url: str
-    version_id: str
-    asset_name: str
-    org_id: str
+from shared.interfaces.hatchet_interfaces import PDFProcessingInput
 
 
 @hatchet.task(name="pdf-processing-workflow", execution_timeout=timedelta(minutes=240))

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import truststore
 from datetime import datetime
 from logging import Formatter, LogRecord
 from typing import TYPE_CHECKING
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
     from fastapi.routing import APIRoute
 
 logger = logging.getLogger(__name__)
-
+truststore.inject_into_ssl()
 
 # ---------------------------------------------------------------------------
 #  Logging & Sentry

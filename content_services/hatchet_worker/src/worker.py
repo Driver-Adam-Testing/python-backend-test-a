@@ -1,3 +1,4 @@
+import truststore
 from hatchet_client import hatchet
 from workflows.auth0_sync_workflow import auth0_sync_task
 from workflows.autodocs_functions import llm_generate_task
@@ -16,7 +17,7 @@ from workflows.inspector_workflow import inspector_task
 from workflows.onboarding_workflows import run_codebase_connection_task
 from workflows.pdf_processing_workflow import pdf_processing_task
 
-
+truststore.inject_into_ssl()
 def main() -> None:
     worker = hatchet.worker(
         "test-worker",

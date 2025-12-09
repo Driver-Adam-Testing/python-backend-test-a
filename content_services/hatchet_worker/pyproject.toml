@@ -43,6 +43,7 @@ sentry-sdk = "^2.0.0"
 hatchet-sdk = "^1.20.0"
 greenlet = "^3.2.4"
 auth0-python = "^4.13.0"
+truststore = "^0.10.4"
 
 
 [tool.poetry.group.dev.dependencies]

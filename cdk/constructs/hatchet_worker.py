@@ -76,10 +76,6 @@ class HatchetWorker(Construct):
         }
 
         if settings.IS_PRIVATE_DEPLOY == "true":
-            # Point Python HTTP clients to the system CA bundle (updated by load_firewall_cert.py)
-            base_env["SSL_CERT_FILE"] = "/etc/ssl/certs/ca-certificates.crt"
-            base_env["REQUESTS_CA_BUNDLE"] = "/etc/ssl/certs/ca-certificates.crt"
-            base_env["CURL_CA_BUNDLE"] = "/etc/ssl/certs/ca-certificates.crt"
             base_env["IS_PRIVATE_DEPLOY"] = "true"
 
         if openai_url is not None:

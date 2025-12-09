@@ -359,6 +359,11 @@ class Backend(Construct):
 
         params.metrics_bus.grant_all_put_events(self.service.task_definition.task_role)
 
+        # Grant full S3 admin access. TODO: Scope this down?
+        self.service.task_definition.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+        )
+
         # Create private hosted zone entry for internal VPC routing
         private_hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/route53/privateHostedZoneId"

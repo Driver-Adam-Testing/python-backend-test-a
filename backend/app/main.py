@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import truststore
+import truststore._api
 from datetime import datetime
 from logging import Formatter, LogRecord
 from typing import TYPE_CHECKING
@@ -33,6 +34,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 truststore.inject_into_ssl()
+
+# Patch botocore to use truststore's SSLContext (see https://github.com/sethmlarson/truststore/pull/180)
+try:
+    import botocore.httpsession
+    botocore.httpsession.SSLContext = truststore._api.SSLContext
+except ImportError:
+    pass
 
 # ---------------------------------------------------------------------------
 #  Logging & Sentry

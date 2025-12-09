@@ -183,6 +183,11 @@ class HatchetWorker(Construct):
         # Allow the worker to emit metrics/events
         params.metrics_bus.grant_all_put_events(worker_task_def.task_role)
 
+        # Grant full S3 admin access. TODO: Scope this down?
+        worker_task_def.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+        )
+
         if settings.IS_PRIVATE_DEPLOY == "true":
             firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
                 self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"

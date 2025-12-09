@@ -1,5 +1,40 @@
 #!/usr/bin/env python3
 """
+
+ For org command (Auth0 operations)
+
+  | Variable                     | Required |
+  |------------------------------|----------|
+  | AUTH0_DOMAIN                 | Yes      |
+  | AUTH0_CLIENT_ID              | Yes      |
+  | AUTH0_MGMT_API_DOMAIN        | Yes      |
+  | AUTH0_MGMT_API_CLIENT_ID     | Yes      |
+  | AUTH0_MGMT_API_CLIENT_SECRET | Yes      |
+
+  For subscription and credits commands (Database operations)
+
+  Either set a full connection string:
+
+  | Variable     | Required                             |
+  |--------------|--------------------------------------|
+  | DATABASE_URL | Yes (or use individual params below) |
+
+  Or set individual params:
+
+  | Variable          | Required | Default |
+  |-------------------|----------|---------|
+  | POSTGRES_SERVER   | Yes      | —       |
+  | POSTGRES_USER     | Yes      | —       |
+  | POSTGRES_PASSWORD | Yes      | —       |
+  | POSTGRES_DB       | Yes      | ""      |
+  | POSTGRES_PORT     | No       | 5432    |
+
+  Optional
+
+  | Variable    | Purpose                            | Default |
+  |-------------|------------------------------------|---------|
+  | ENVIRONMENT | Controls SSL mode (local = no SSL) | local   |
+
 Auth0 Organization Admin CLI
 
 This script provides administrative commands for managing Auth0 organizations,

@@ -102,6 +102,7 @@ class SCIMServer(Construct):
                 log_retention=aws_logs.RetentionDays.ONE_YEAR,
             ),
         )
+        scim_container.add_port_mappings(aws_ecs.PortMapping(container_port=8880))
         # Optional: a port for metrics/debugging
         # worker_container.add_port_mappings(aws_ecs.PortMapping(container_port=9000))
 
@@ -144,6 +145,21 @@ class SCIMServer(Construct):
             max_healthy_percent=200,
         )
 
+        params.listener.add_targets(
+            "SCIMServerTarget",
+            priority=10,  # must be unique & < 50000
+            conditions=[
+                elbv2.ListenerCondition.path_patterns(["/scim/v2/*"])
+            ],
+            port=8880,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            targets=[self.scim_service],
+            health_check=elbv2.HealthCheck(
+                path="/ping",
+                healthy_http_codes="200",
+            )
+        )
+        
         # Allow the worker to emit metrics/events
         params.metrics_bus.grant_all_put_events(scim_task_def.task_role)
 

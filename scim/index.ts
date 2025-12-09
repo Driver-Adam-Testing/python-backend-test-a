@@ -22,4 +22,5 @@
 // import './lib/plugin-soap.ts'
 
 import './lib/plugin-loki.ts'
+import './lib/plugin-scim.ts'
 export {}

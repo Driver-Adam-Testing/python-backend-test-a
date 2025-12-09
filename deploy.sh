@@ -98,6 +98,8 @@ SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArn
 
 HATCHET_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetWorkerHatchetWorkerSvc')]" --output text)
 
+SCIM_SERVER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-SCIMServer')]" --output text)
+
 if [ "$BACKEND_PUSHED" = "true" ]; then
     echo "Forcing backend redeploy..."
 
@@ -110,6 +112,8 @@ if [ "$HATCHET_WORKER_PUSHED" = "true" ]; then
     aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment > /dev/null
 fi
 
+echo "Forcing SCIM server redeploy..."
+aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SCIM_SERVER_SERVICE_NAME --force-new-deployment > /dev/null
 #TODO Also wait for hatchet worker service to stablize?
 
 echo "Waiting up to 5 minutes for ECS service to stabilize..."

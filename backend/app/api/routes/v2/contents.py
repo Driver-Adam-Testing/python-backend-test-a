@@ -132,51 +132,53 @@ def list_page_contents(
     Authorization is source-based: user must have access to ALL sources
     referenced by the page to see its content.
     """
+
+    def _get_page_content(
+        session: CurrentSession,
+        user: User,
+        page_version_node_id: UUID,
+        include_content: bool,
+    ) -> ContentsResponse:
+        query = (
+            select(VersionNode)
+            .join(VersionNode.node)
+            .options(
+                selectinload(VersionNode.version).selectinload(Version.primary_asset)
+            )
+            .options(selectinload(VersionNode.node).selectinload(Node.contents))
+            .where(VersionNode.id == page_version_node_id)
+            .where(_org_filter(user.organization_id))
+        )
+
+        query = query.where(
+            page_content_grant_filter(session, user.user_id, user.organization_id)
+        )
+
+        version_node = session.exec(query).one_or_none()
+
+        if not version_node:
+            raise HTTPException(status_code=404, detail="Version node not found")
+
+        derived_content = version_node.node.contents[0]
+
+        return ContentsResponse(
+            version_node_id=version_node.id,
+            content=derived_content.content if include_content else None,
+            content_id=derived_content.id,
+            content_name=derived_content.content_name,
+            content_kind=derived_content.content_kind,
+            version_status=version_node.version.status,
+            primary_asset_display_name=version_node.version.primary_asset.display_name,
+            misc_metadata=version_node.misc_metadata,
+            created_at=derived_content.created_at,
+            updated_at=derived_content.updated_at,
+        )
+
     return _get_page_content(
         session,
         user,
         page_version_node_id,
         include_content,
-    )
-
-
-def _get_page_content(
-    session: CurrentSession,
-    user: User,
-    page_version_node_id: UUID,
-    include_content: bool,
-) -> ContentsResponse:
-    query = (
-        select(VersionNode)
-        .join(VersionNode.node)
-        .options(selectinload(VersionNode.version).selectinload(Version.primary_asset))
-        .options(selectinload(VersionNode.node).selectinload(Node.contents))
-        .where(VersionNode.id == page_version_node_id)
-        .where(_org_filter(user.organization_id))
-    )
-
-    query = query.where(
-        page_content_grant_filter(session, user.user_id, user.organization_id)
-    )
-
-    version_node = session.exec(query).one_or_none()
-
-    if not version_node:
-        raise HTTPException(status_code=404, detail="Version node not found")
-
-    derived_content = version_node.node.contents[0]
-
-    return ContentsResponse(
-        version_node_id=version_node.id,
-        content=derived_content.content if include_content else None,
-        content_id=derived_content.id,
-        content_name=derived_content.content_name,
-        content_kind=derived_content.content_kind,
-        version_status=version_node.version.status,
-        primary_asset_display_name=version_node.version.primary_asset.display_name,
-        misc_metadata=version_node.misc_metadata,
-        created_at=derived_content.created_at,
-        updated_at=derived_content.updated_at,
     )
 
 

@@ -32,7 +32,6 @@ class BackendStack(Stack):
             "MetricsLambda",
             MetricsLambdaParams(
                 environment=settings.DEPLOYMENT_ENVIRONMENT,
-                cloudwatch_alarm_arn=settings.METRICSLAMBDA_CW_ALARM,
             ),
         )
 

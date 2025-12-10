@@ -31,7 +31,6 @@ class MetricsLambdaParams:
     ) -> None:
         self.environment = environment
         self.database_url = database_url
-        self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
         self.is_private_deploy = is_private_deploy
 
 
@@ -45,6 +44,8 @@ class MetricsLambda(Construct):
         )
         vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
         driver_db_path = os.path.abspath("driver_db")
+        alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(self, '/infrastructure/alarms/topic-arn')
+        alarm_topic = aws_sns.Topic.from_topic_arn(self, 'InfrastructureAlarmsTopic', alarm_topic_arn)
 
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -132,13 +133,7 @@ class MetricsLambda(Construct):
         )
 
         if params.cloudwatch_alarm_arn:
-            notification_action = aws_cloudwatch_actions.SnsAction(
-                aws_sns.Topic.from_topic_arn(
-                    id="NotifySupportTopic",
-                    topic_arn=params.cloudwatch_alarm_arn,
-                    scope=self,
-                )
-            )
+            notification_action = aws_cloudwatch_actions.SnsAction(alarm_topic)
             self.metric_dlq_alarm.add_alarm_action(notification_action)
             self.metric_message_age_alarm.add_alarm_action(notification_action)
             self.lambda_error_rate_alarm.add_alarm_action(notification_action)

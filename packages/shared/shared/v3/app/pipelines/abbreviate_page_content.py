@@ -1,0 +1,152 @@
+import concurrent.futures
+
+from pydantic import BaseModel
+from shared.v3.app.static.messages.abbreviate_page_content_messages import (
+    AbbreviatePageContentSystemMessage,
+    AbbreviatePageContentUserMessage,
+)
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.interfaces.llm_parseable import LlmParseable
+from shared.v3.llms.clients.llm_client import LlmClient
+from shared.v3.llms.config.llm_config import LlmConfig
+
+TEXT_PADDING_WORD_SIZE = 50
+PAGE_CONTENT_CHUNK_WORD_SIZE = 256
+
+
+class AbbreviatedDocumentText(LlmParseable):
+    """
+    Attributes:
+        abbreviated_document_text (str): The summarized text from the document.
+    """
+
+    abbreviated_document_text: str
+
+
+class AbbreviatedPageContentPipelineResponse(LlmParseable):
+    """
+    Attributes:
+        abbreviated_before (str): The summarized text from the document before the cursor.
+        abbreviated_after (str): The summarized text from the document after the cursor.
+    """
+
+    abbreviated_before: str
+    abbreviated_after: str
+
+
+class SummarizedChunkResponse(BaseModel):
+    content: str
+    is_before: bool
+    index: int
+
+
+def abbreviate_page_content(
+    user_prompt: str,
+    page_content_before_cursor: str = "",
+    page_content_after_cursor: str = "",
+    selected_text: str = "\n",
+    client: LlmClient | None = None,
+) -> AbbreviatedPageContentPipelineResponse:
+    client = client or LlmClient.from_config(LlmConfig.gpt_4o_mini())
+
+    def summarize_chunk(
+        chunk: str, is_before: bool, index: int
+    ) -> SummarizedChunkResponse:
+        return SummarizedChunkResponse(
+            content=client.single_shot(
+                response_type=AbbreviatedDocumentText,
+                message_history=LlmMessageHistory(
+                    messages=[
+                        AbbreviatePageContentSystemMessage(),
+                        AbbreviatePageContentUserMessage.from_context(
+                            prompt=user_prompt,
+                            page_content=chunk,
+                            before=is_before,
+                            selected_text=selected_text,
+                        ),
+                    ]
+                ),
+            ).parsed_content.abbreviated_document_text,
+            is_before=is_before,
+            index=index,
+        )
+
+    def create_chunks(content: str | None, is_before: bool) -> tuple[list[str], str]:
+        if not content or not content.strip():
+            return ([], "")
+        words = content.split(" ")
+        if len(words) < TEXT_PADDING_WORD_SIZE * 2:
+            return ([], content)
+        untouched_words = (
+            words[-TEXT_PADDING_WORD_SIZE:]
+            if is_before
+            else words[:TEXT_PADDING_WORD_SIZE]
+        )
+        compress_words = (
+            words[:-TEXT_PADDING_WORD_SIZE]
+            if is_before
+            else words[TEXT_PADDING_WORD_SIZE:]
+        )
+
+        number_of_chunks = int(len(compress_words) / PAGE_CONTENT_CHUNK_WORD_SIZE) + 1
+        chunk_size = int(len(compress_words) / number_of_chunks) + 1
+
+        chunks = []
+        current_chunk = []
+        for word in compress_words:
+            current_chunk.append(word)
+            if len(current_chunk) == chunk_size:
+                chunks.append(" ".join(current_chunk))
+                current_chunk = []
+
+        if current_chunk:
+            chunks.append(" ".join(current_chunk))
+
+        return (chunks, " ".join(untouched_words))
+
+    abbreviated_before = ""
+    abbreviated_after = ""
+
+    before_chunks, before_untouched_words = create_chunks(
+        page_content_before_cursor, True
+    )
+    after_chunks, after_untouched_words = create_chunks(
+        page_content_after_cursor, False
+    )
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
+        if before_chunks:
+            futures.extend(
+                executor.submit(
+                    summarize_chunk,
+                    chunk,
+                    True,
+                    index,
+                )
+                for index, chunk in enumerate(before_chunks)
+            )
+        if after_chunks:
+            futures.extend(
+                executor.submit(
+                    summarize_chunk,
+                    chunk,
+                    False,
+                    index,
+                )
+                for index, chunk in enumerate(after_chunks)
+            )
+
+        results: list[SummarizedChunkResponse] = [
+            future.result() for future in concurrent.futures.as_completed(futures)
+        ]
+        results.sort(key=lambda x: x.index)
+        for result in results:
+            if result.is_before:
+                abbreviated_before += " " + result.content
+            else:
+                abbreviated_after += " " + result.content
+    return AbbreviatedPageContentPipelineResponse(
+        abbreviated_before=abbreviated_before + before_untouched_words,
+        abbreviated_after=after_untouched_words + abbreviated_after,
+    )

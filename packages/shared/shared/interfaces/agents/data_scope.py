@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from database.db import get_session
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models import Node, PrimaryAsset, Version
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
 from sqlmodel import and_, or_, select
@@ -34,7 +34,11 @@ class DataScope(BaseModel):
             """
             Returns a string identifier for the node in the format: {version_display_name}/{relative_path}.
             """
-            version_display_name = self._node.version.display_name
+            version_display_name = (
+                self._node.version.vcs_hash
+                if self._node.version.vcs_hash
+                else "Unversioned"
+            )
             return f"{version_display_name}/{self._node.relative_path}"
 
     node_ids: list[UUID]
@@ -110,7 +114,12 @@ class DataScope(BaseModel):
                                         Node.relative_path
                                         == identifier.split("/", 1)[1] + "/",
                                     ),
-                                    Version.display_name == identifier.split("/", 1)[0],
+                                    or_(
+                                        # TODO: are datascopes still needed?
+                                        # TODO: if so, unsure how to approach this query
+                                        Version.vcs_hash == identifier.split("/", 1)[0],
+                                        Version.vcs_hash == None,  # noqa: E711
+                                    ),
                                 )
                                 for identifier in identifiers
                             ]
@@ -142,7 +151,12 @@ class DataScope(BaseModel):
 
         for node in self.nodes:
             primary_asset_display_name = node.node.version.primary_asset.display_name
-            identifier = f"{node.node.version.display_name}/{node.node.relative_path}"
+            version_display_name = (
+                node.node.version.vcs_hash
+                if node.node.version.vcs_hash
+                else "Unversioned"
+            )
+            identifier = f"{version_display_name}/{node.node.relative_path}"
 
             if primary_asset_display_name not in grouped_identifiers:
                 grouped_identifiers[primary_asset_display_name] = []

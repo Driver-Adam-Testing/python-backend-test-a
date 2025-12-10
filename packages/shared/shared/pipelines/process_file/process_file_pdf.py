@@ -6,6 +6,7 @@ import time
 from io import BytesIO
 
 import fitz
+import modal
 from openai import OpenAI
 from PIL import Image
 from pydantic import BaseModel
@@ -59,7 +60,7 @@ For all images, include any text visible in the image verbatim. Point out any un
 assistant = client.beta.assistants.create(
     name="PDF Summarizer",
     instructions="You are an expert microprocessors and hardware engineer, as well as a technical writer.",
-    model="gpt-4o-mini-2024-07-18",
+    model="gpt-4o-mini",
     tools=[{"type": "file_search"}],
 )
 
@@ -75,7 +76,7 @@ class SummaryValidation(BaseModel):
 
 def validate_summary(summary: str) -> bool:
     agent = OpenAIStrictAgent(
-        model="gpt-4o-mini-2024-07-18",
+        model="gpt-4o-mini",
         response_format=SummaryValidation,
         scope=DataScope(organization_id="no-org", node_ids=[], user_id="pdf-inspector"),
         log=False,
@@ -125,7 +126,8 @@ def summarize_images(images: list[io.BytesIO], prompt: str | None) -> str:
         elif file_extension == "webp":
             image_media_type = "image/webp"
         else:
-            raise ValueError(f"Unsupported image type: {file_extension}")
+            print(f"Unsupported image type: {file_extension}")
+            continue
 
         encoded_images.append(
             {
@@ -214,9 +216,24 @@ def process_image(image: io.BytesIO, index: int) -> ProcessedPdfFileContent:
 
 def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
     processed_contents = []
-    whole_file_summary = summarize_pdf_with_retry(
-        file_content, SUMMARIZE_PDF_PROMPT, assistant.id
-    )
+    try:
+        whole_file_summary = summarize_pdf_with_retry(
+            file_content, SUMMARIZE_PDF_PROMPT, assistant.id
+        )
+    except Exception as e:
+        whole_file_summary = None
+        send_exception_email = modal.Function.lookup(
+            "pdf-summary-embedding", "send_exception_email"
+        )
+        exception_type = type(e).__name__
+        exc_tb = e.__traceback__
+        filename = exc_tb.tb_frame.f_code.co_filename
+        line_number = exc_tb.tb_lineno
+        exception_details = (
+            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+        )
+        print(exception_details)
+        send_exception_email.spawn(exception_details)
 
     if whole_file_summary is None:
         pages = split_pdf_into_pages(file_content=file_content)
@@ -238,7 +255,7 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
 
     pages = split_pdf_into_pages(file_content=file_content)
     print(f"PDF whole summary: {whole_file_summary}")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=150) as executor:
         futures = []
         for index, page_content in enumerate(pages):
             try:

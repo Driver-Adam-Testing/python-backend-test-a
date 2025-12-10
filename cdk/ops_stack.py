@@ -4,18 +4,14 @@ from aws_cdk import (
     Stack,
 )
 from constructs import Construct
-from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
-from cdk.constructs.backend import Backend, BackendParams
-from cdk.constructs.code_onboarding_lambda import (
-    CodeOnboardingLambda,
-    CodeOnboardingLambdaParams,
-)
-from cdk.constructs.document_onboarding_lambda import (
-    DocumentOnboardingLambda,
-    DocumentOnboardingLambdaParams,
-)
-from cdk.constructs.inspector import Inspector, InspectorParams
 
+from cdk.constructs.asset_onboarding_lambda import (
+    AssetOnboardingLambda,
+    AssetOnboardingLambdaParams,
+)
+from cdk.constructs.backend import Backend, BackendParams
+from cdk.constructs.inspector import Inspector, InspectorParams
+from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 
 
 class OpsStack(Stack):
@@ -23,7 +19,7 @@ class OpsStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         print(kwargs)
         cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
-        
+
         self.backend = Backend(
             self,
             "ApiBackend",
@@ -34,23 +30,13 @@ class OpsStack(Stack):
                 use_legacy_dropzone=False,
             ),
         )
-        self.onboarding_lambda = CodeOnboardingLambda(
+        self.onboarding_lambda = AssetOnboardingLambda(
             self,
-            "CodeOnboardingLambda",
-            CodeOnboardingLambdaParams(
+            "AssetOnboardingLambda",
+            AssetOnboardingLambdaParams(
                 environment="ops",
-                api_url="https://api.ops.driverai.com/api/v1",
-                auth0_url="https://auth.dev.driverai.com",
-                dropzone_bucket=self.backend.dropzone_bucket,
-                use_legacy_dropzone=False,
-            ),
-        )
-        self.document_onboarding_lambda = DocumentOnboardingLambda(
-            self,
-            "DocumentOnboardingLambda",
-            DocumentOnboardingLambdaParams(
-                environment="ops",
-                api_url="https://api.ops.driverai.com/api/v1",
+                api_url="https://api.ops.driverai.com/studio/v1",
+                auth0_audience="https://api.ops.driverai.com/api/v1",
                 auth0_url="https://auth.dev.driverai.com",
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=False,
@@ -59,11 +45,12 @@ class OpsStack(Stack):
         self.inspector = Inspector(
             self, "Inspector", InspectorParams(environment="ops")
         )
-        
+
         self.metrics_lambda = MetricsLambda(
             self,
             "MetricsLambda",
             MetricsLambdaParams(
-                environment=os.getenv("ENVIRONMENT","ops"), database_url=os.getenv("DATABASE_URL")
+                environment=os.getenv("ENVIRONMENT", "ops"),
+                database_url=os.getenv("DATABASE_URL"),
             ),
         )

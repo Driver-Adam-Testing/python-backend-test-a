@@ -1,20 +1,28 @@
-import base64
 import json
 import logging
+from typing import Any
 
+import modal
+from app.core.config import settings
 from app.git_providers.core.config import GitProviderConfig
-from app.git_providers.core.config_loader import load_provider_config
+from app.git_providers.interfaces.provider_interface import (
+    GitProviderInterface,
+    WebhookConfig,
+    WebhookEventContext,
+)
 from app.git_providers.oauth.gitlab_oauth_strategy import GitLabOAuthStrategy
 from app.git_providers.resources.gitlab_resources import GitLabAPIResources
-from app.git_providers.utils.errors import GitProviderAppRevokeError
-from app.schemas.git_provider_schema import GitRepository
+from app.git_providers.utils.vcs_auto_update import is_update_required
+from app.schemas.git_provider_schema import (
+    AccessTokenData,
+    GitProviderAppTokenSecret,
+    GitRepository,
+    TokenType,
+)
 from app.schemas.secret_management_schema import (
     APP_INSTALL_GAT_NAME_PREFIX,
-    APP_INSTALL_SECRET_NAME_PREFIX,
-    APP_SECRET_NAME_PREFIX,
 )
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
-from shared.file_storage.aws_s3_client import AWSS3Client, org_id_to_hash
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -24,209 +32,277 @@ from shared.secret_management.aws_secret_management import (
 logger = logging.getLogger(__name__)
 
 
-class GitLabProvider:
+class GitLabProvider(GitProviderInterface):
+    """GitLab provider implementation supporting Group Access Tokens only"""
+
     def __init__(
-        self: "GitLabProvider",
-        config: GitProviderConfig,
-        secrets_manager: AWSSecretManagementStrategy,
+        self, config: GitProviderConfig, secrets_manager: AWSSecretManagementStrategy
     ) -> None:
         self.config = config
         self.secrets_manager = secrets_manager
-        self.auth_strategy = GitLabOAuthStrategy(config)
-        self.api_strategy = GitLabAPIResources(
-            self.config.base_url, self.config.provider_kind
-        )
-
-    def authorize_provider(
-        self, organization_id: str, user_id: str, application_id: str
-    ) -> str:
-        logger.info(
-            f"Authorizing provider for organization {organization_id}, user {user_id}, and application {application_id}"
-        )
-        state = {
-            "organization_id": organization_id,
-            "user_id": user_id,
-            "application_id": application_id,
-        }
-
-        state_str = json.dumps(state)
-        state_bytes = base64.b64encode(state_str.encode("utf-8"))
-        state_str = state_bytes.decode("utf-8")
-        return self.auth_strategy.generate_authorization_url(state=state_str)
-
-    def handle_app_authorization_callback(
-        self, code: str, installation_id: str
-    ) -> None:
-        logger.info(
-            f"Handling app authorization callback for installation ID {installation_id}"
-        )
-        app_install_secret_key = format_secret_name(
-            APP_INSTALL_SECRET_NAME_PREFIX, str(installation_id)
-        )
-
-        access_token_data = self.auth_strategy.exchange_code_for_token(code)
-        app_install_secret_value = json.dumps(access_token_data)
-
-        self.secrets_manager.write_secret(
-            app_install_secret_key, app_install_secret_value
-        )
-
-    def fetch_access_token(self, install_id: str) -> str:
-        logger.info(f"Fetching access token for installation ID {install_id}")
-        install_key = format_secret_name(APP_INSTALL_SECRET_NAME_PREFIX, install_id)
-        secret_value = self.secrets_manager.read_secret(install_key)
-        if not secret_value:
-            raise ValueError("Access token not found")
-
-        access_token, refresh_token = (
-            secret_value["access_token"],
-            secret_value["refresh_token"],
-        )
-
-        if not self.auth_strategy.is_token_valid(access_token):
-            logger.info("Access token not valid, refreshing")
-            new_token = self.auth_strategy.refresh_access_token(refresh_token)
-            access_token = new_token["access_token"]
-            logger.info("New access token acquired")
-            if self.auth_strategy.is_token_valid(access_token):
-                logger.info("Writing new access token to secrets manager")
-                self.secrets_manager.write_secret(
-                    install_key,
-                    json.dumps(new_token),
-                )
-            else:
-                logger.error("New access token not valid")
-                raise GitProviderAppRevokeError("Access token revoked or expired")
-
-        return access_token
-
-    def fetch_group_access_token(self, install_id: str) -> str:
-        logger.info(f"Fetching group access token for installation ID {install_id}")
-        install_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, install_id)
-        secret_value = self.secrets_manager.read_secret(install_key)
-        if not secret_value:
-            raise ValueError("Access token not found")
-
-        group_access_token = secret_value["token"]
-
-        return group_access_token
-
-    def fetch_repos(
-        self, app_installation: GitProviderAppInstallation
-    ) -> list[GitRepository]:
-        logger.info(f"Fetching repositories for installation ID {app_installation.id}")
-        access_token = self.fetch_access_token(str(app_installation.id))
-        return self.api_strategy.fetch_repos(str(app_installation.id), access_token)
-
-    def fetch_group_repos(
-        self, app_installation: GitProviderAppInstallation
-    ) -> list[GitRepository]:
-        logger.info(f"Fetching repositories for installation ID {app_installation.id}")
-        access_token = self.fetch_group_access_token(str(app_installation.id))
-        return self.api_strategy.fetch_repos(str(app_installation.id), access_token)
-
-    def clone_repository(
-        self,
-        repo_info: GitRepository,
-        user_id: str,
-        org_id: str,
-        upload_key: str,
-        bucket_name: str,
-    ) -> str:
-        logger.info(
-            f"Cloning repository {repo_info.repo_name} for installation ID {repo_info.installation_id}"
-        )
-        installation_id = repo_info.installation_id
-        repo_id = repo_info.metadata["id"]
-        access_token = self.fetch_group_access_token(installation_id)
-
-        # find the GAT the repo belongs to
-        if not access_token:
-            logger.error(
-                f"Failed to find access token for repository {repo_info.repo_name}"
-            )
-            raise ValueError("Failed to find access token for repository")
-
-        latest_commit = repo_info.latest_commit["commit"]["id"]
-        logger.info(
-            f"Downloading repository {repo_info.repo_name} for installation ID {repo_info.installation_id}"
-        )
-        zip_content = self.api_strategy.download_repo(
-            repo_id, latest_commit, access_token
-        )
-        logger.info(
-            f"Generating codebase metadata for repository {repo_info.repo_name} for installation ID {repo_info.installation_id}"
-        )
-        # bind the repo_id to the installation_id to make it easy to identify which provider and repo they belong to
-        repo_identifier = f"DriverInstallId_{installation_id}:GitLabRepoId_{repo_id!s}"
-        metadata = generate_codebase_metadata(
-            org_id,
-            repo_info.org,
-            repo_info.repo_name,
-            repo_identifier,
-            user_id,
-            str(repo_info.provider_kind),
-            latest_commit,
-            upload_key,
-        )
-        logger.info(f"Uploading repository {repo_info.repo_name} to S3")
-        s3_client = AWSS3Client(self.secrets_manager.config)
-        success = s3_client.upload_to_s3(
-            zip_content=zip_content,
-            metadata=metadata,
-            upload_key=upload_key,
-            bucket=bucket_name,
-        )
-        if not success:
-            logger.error("Failed to upload to S3")
-            raise ValueError("Failed to upload to S3")
-
-        logger.info(
-            f"Generating presigned URL for repository {repo_info.repo_name} for installation ID {repo_info.installation_id}"
-        )
-        analysis_download_url = s3_client.generate_get_presigned_url(
-            key=upload_key, bucket=bucket_name
-        )
-        return analysis_download_url
+        self.auth_strategy = GitLabOAuthStrategy(
+            config
+        )  # Still used for token validation
+        self.api_strategy = GitLabAPIResources(config.base_url, config.provider_kind)
 
     @classmethod
     def from_config(
-        cls, git_provider_app: GitProviderApp, aws_config: AWSClientConfig
+        cls, app: GitProviderApp, aws_config: AWSClientConfig
     ) -> "GitLabProvider":
-        secrets_manager = AWSSecretManagementStrategy(config=aws_config)
-        app_secret_value = secrets_manager.read_secret(
-            format_secret_name(APP_SECRET_NAME_PREFIX, str(git_provider_app.id))
+        """Create GitLabProvider from app configuration"""
+        from app.git_providers.core.config_loader import load_provider_config
+
+        secrets_manager = AWSSecretManagementStrategy(aws_config)
+
+        # GitLab with GAT doesn't need app-level secrets
+        config = load_provider_config(app, client_secret=None)
+
+        return cls(config, secrets_manager)
+
+    # TODO: revisit this throw error vs return False
+    def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
+        """Validate GitLab Group Access Token"""
+        access_token = AccessTokenData(**token_data)
+
+        if access_token.token_type != TokenType.GROUP_ACCESS_TOKEN:
+            return False, "GitLab only supports Group Access Tokens"
+
+        # Validate GAT by attempting to get user info
+        try:
+            user = self.auth_strategy.token_user(access_token.token)
+            return (True, None) if user else (False, "Invalid token")
+        except Exception as e:
+            logger.error(f"GAT validation failed: {e}")
+            return False, str(e)
+
+    def create_installation(
+        self, organization_id: str, app_id: str, token_data: dict
+    ) -> GitProviderAppInstallation:
+        """Create GitLab installation record"""
+        access_token = AccessTokenData(**token_data)
+        return GitProviderAppInstallation(
+            git_provider_app_id=app_id,
+            organization_id=organization_id,
+            misc_metadata={
+                "kind": token_data["token_type"],
+                "name": access_token.name,
+            },
         )
 
-        git_provider_cfg = load_provider_config(
-            git_provider_app,
-            app_secret_value.get("client_secret", None) if app_secret_value else None,
+    def store_secrets(
+        self, installation: GitProviderAppInstallation, token_data: dict
+    ) -> None:
+        """Store GitLab GAT in AWS Secrets Manager"""
+        access_token = AccessTokenData(**token_data)
+
+        # Generate webhook secret
+        import secrets
+
+        webhook_secret = secrets.token_urlsafe(32)
+
+        secret_key = format_secret_name(
+            APP_INSTALL_GAT_NAME_PREFIX, str(installation.id)
+        )
+        secret_value = json.dumps(
+            GitProviderAppTokenSecret(
+                token=access_token.token, secret_token=webhook_secret
+            ).model_dump()
+        )
+        self.secrets_manager.write_secret(secret_key, secret_value)
+        logger.info(f"Stored GAT for GitLab installation {installation.id}")
+
+    def update_secrets(
+        self, installation: GitProviderAppInstallation, token_data: dict
+    ) -> None:
+        """Update GitLab GAT while preserving webhook secret"""
+        access_token = AccessTokenData(**token_data)
+
+        secret_key = format_secret_name(
+            APP_INSTALL_GAT_NAME_PREFIX, str(installation.id)
         )
 
-        return cls(git_provider_cfg, secrets_manager)
+        # Fetch existing secrets to preserve webhook secret
+        existing_secrets = self.secrets_manager.read_secret(secret_key)
+        if not existing_secrets or "secret_token" not in existing_secrets:
+            raise ValueError(
+                f"No existing webhook secret found for installation {installation.id}"
+            )
 
+        webhook_secret = existing_secrets["secret_token"]
 
-def generate_codebase_metadata(
-    org_id: str,
-    org_name: str,
-    repo: str,
-    repo_id: str,
-    owner: str,
-    provider: str,
-    commit: str,
-    upload_key: str,
-) -> dict:
-    org_id_hash = org_id_to_hash(org_id)
-    return {
-        "unhashed_organization_id": org_id,
-        "organization_id": org_id_hash,
-        "org_bucket": org_id_hash,
-        "org_name": org_name,
-        "creator_id": owner,
-        "file_path": upload_key,
-        "codebase_name": repo,
-        "content_type": "codebase",
-        "provider": provider.lower(),
-        "version": commit,
-        "repository_id": repo_id,
-    }
+        # Update only the token, preserve webhook secret
+        secret_value = json.dumps(
+            GitProviderAppTokenSecret(
+                token=access_token.token, secret_token=webhook_secret
+            ).model_dump()
+        )
+        self.secrets_manager.write_secret(secret_key, secret_value)
+        logger.info(
+            f"Updated GAT for GitLab installation {installation.id}, webhook secret preserved"
+        )
+
+    def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict:
+        secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, installation.id)
+        secret_value = self.secrets_manager.read_secret(secret_key)
+        if not secret_value:
+            raise ValueError(f"GAT not found for installation: {installation.id}")
+        return secret_value
+
+    def fetch_repositories(
+        self, installation: GitProviderAppInstallation
+    ) -> list[GitRepository]:
+        """Fetch GitLab repositories using GAT"""
+        logger.info(f"Fetching repositories for installation: {installation.id}")
+
+        try:
+            access_token = self._fetch_group_access_token(str(installation.id))
+
+            # Use the API strategy to fetch repos
+            repos = self.api_strategy.fetch_repos(str(installation.id), access_token)
+
+            return repos
+
+        except Exception as e:
+            logger.error(f"Failed to fetch repositories: {e}")
+            raise
+
+    def handle_webhook_event(
+        self,
+        headers: dict,
+        payload: dict,
+        webhook_event_ctx: WebhookEventContext,
+    ) -> dict:
+        """Handle GitLab webhook events"""
+        installation_id = webhook_event_ctx.installation_id
+
+        event_type = payload["object_kind"]
+        logger.info(
+            f"Handling GitLab webhook: {event_type} for installation {installation_id}"
+        )
+        incoming_secret_token = headers.get("x-gitlab-token")
+
+        # Validate secret
+        secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, installation_id)
+        secret = self.secrets_manager.read_secret(secret_key)
+
+        if not secret.get("secret_token"):
+            logger.error(f"Secret not found for installation ID {installation_id}")
+            raise PermissionError("Insufficient permissions")
+
+        secret_token = secret["secret_token"]
+        if secret_token != incoming_secret_token:
+            logger.error(f"Secret token mismatch for installation ID {installation_id}")
+            raise PermissionError("Insufficient permissions")
+
+        if event_type == "push":
+            logger.info("GitLab push event")
+            return self._handle_push_event(payload, webhook_event_ctx)
+        else:
+            logger.warning(
+                f"Unhandled GitLab event type: {event_type} for installation {installation_id}"
+            )
+        return {"message": "Event ignored"}
+
+    def revoke_access(self, installation: GitProviderAppInstallation) -> None:
+        """Revoke access for a GitLab installation"""
+        logger.info(f"Revoking access for GitLab installation {installation.id}")
+
+        # Delete GAT secret
+        secret_key = format_secret_name(
+            APP_INSTALL_GAT_NAME_PREFIX, str(installation.id)
+        )
+        self.secrets_manager.delete_secret(secret_key)
+        logger.info(f"Deleted GAT secret for installation {installation.id}")
+
+    def register_webhook(
+        self,
+        installation: GitProviderAppInstallation,
+        config: WebhookConfig,
+        scope: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Register webhook - not implemented for GitLab"""
+        raise NotImplementedError(
+            "Webhook registration is not yet implemented for GitLab. "
+            "Please create webhooks manually through the GitLab UI."
+        )
+
+    # Private helper methods
+
+    def _fetch_group_access_token(self, install_id: str) -> str:
+        """Fetch Group Access Token from secrets"""
+        secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, install_id)
+        secret_value = self.secrets_manager.read_secret(secret_key)
+
+        if not secret_value:
+            raise ValueError(f"GAT not found for installation: {install_id}")
+
+        return secret_value["token"]
+
+    def _handle_push_event(
+        self, body: dict, webhook_event_ctx: WebhookEventContext
+    ) -> dict:
+        """Handle GitLab push event - moved from routes"""
+
+        installation_id = webhook_event_ctx.installation_id
+        organization_id = webhook_event_ctx.organization_id
+
+        repository = body["repository"]
+        project = body["project"]
+        repo_name = repository["name"]
+        repo_id = str(project["id"])
+        full_name = project["path_with_namespace"]
+        default_branch = project["default_branch"]
+        pushed_ref = body["ref"]
+        commit_hash = body["after"]
+
+        if pushed_ref != f"refs/heads/{default_branch}":
+            logger.info(
+                "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+                organization_id,
+                repo_name,
+                pushed_ref,
+                installation_id,
+            )
+            return {"message": "Push event ignored: Not the default branch."}
+
+        logger.info(
+            "Push event on default branch. Org: %s, Repo: %s, Branch: %s, Install ID: %s",
+            organization_id,
+            repo_name,
+            default_branch,
+            installation_id,
+        )
+
+        process_update, message = is_update_required(
+            session=webhook_event_ctx.session,
+            org_id=organization_id,
+            repo_name=repo_name,
+        )
+
+        if process_update:
+            repos_pushed = [
+                {
+                    "id": repo_id,
+                    "name": repo_name,
+                    "repo_name": repo_name,
+                    "full_name": full_name,
+                    "commit": commit_hash,
+                    "metadata": project,
+                    "installation_id": installation_id,
+                    "latest_commit": {
+                        "commit": {
+                            "id": commit_hash,
+                        },
+                    },
+                }
+            ]
+            handle_gitlab_events = modal.Function.lookup(
+                "inspector-v2",
+                "handle_gitlab_events",
+                environment_name=settings.MODAL_ENVIRONMENT,
+            )
+            handle_gitlab_events.spawn(
+                installation_id, organization_id, [], [], repos_pushed
+            )
+
+        return message

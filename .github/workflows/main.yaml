@@ -35,10 +35,30 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_CICD_ROLE }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build, tag, and push python backend image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: python-backend
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: production
-        run: poetry run npx cdk deploy --require-approval never
+        run: poetry run npx cdk deploy --require-approval never --outputs-file ./cdk-outputs.json
+      - name: Parse CDK Outputs
+        id: parse_outputs
+        run: |
+          ECS_CLUSTER_ARN=$(jq -r '.. | objects | to_entries[] | select(.key | startswith("ApiBackendEcsClusterArn")) | .value' cdk-outputs.json)
+          echo "cluster_arn=$ECS_CLUSTER_ARN" >> $GITHUB_OUTPUT
+          ECS_SERVICE_ARN=$(jq -r '.. | objects | to_entries[] | select(.key | startswith("ApiBackendEcsServiceArn")) | .value' cdk-outputs.json)
+          echo "service_arn=$ECS_SERVICE_ARN" >> $GITHUB_OUTPUT
+      - name: Force new ECS deployment
+        run: aws ecs update-service --cluster ${{ steps.parse_outputs.outputs.cluster_arn }} --service ${{ steps.parse_outputs.outputs.service_arn }} --force-new-deployment
       - name: Deploy Inspector
         working-directory: content_services/inspector
         env:
@@ -60,3 +80,31 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Mermaid Validator
+        working-directory: content_services/mermaid_validator
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Autodocs
+        working-directory: content_services/autodocs
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Generation
+        working-directory: content_services/generation
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Auth0 Sync
+        working-directory: content_services/auth0_sync
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/modal_main.py

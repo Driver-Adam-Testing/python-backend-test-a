@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models_v1 import Tag
+from database.models import Tag
 from fastapi import Body, HTTPException, Path, Request
 from sqlmodel import func, select
 
@@ -13,6 +13,7 @@ from app.api.routes.v2.query_utils import (
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import ListWithCount, TagCreate, TagDetailRead, TagRead
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_membership
 
 
 @router.get("/tags", response_model=ListWithCount[TagDetailRead])
@@ -22,6 +23,7 @@ def list_tags(
     user: UserToken,
     pagination: Pagination,
 ) -> ListWithCount[TagDetailRead]:
+    enforce_org_membership(session, user)
     query = select(Tag).where(Tag.organization_id == user.organization_id)
 
     filters = dict(request.query_params)
@@ -43,6 +45,7 @@ def update_tag(
     tag_id: UUID = Path(...),
     payload: TagCreate = Body(...),
 ) -> TagRead:
+    enforce_org_membership(session, user)
     tag = session.exec(
         select(Tag)
         .where(Tag.id == tag_id)
@@ -73,6 +76,7 @@ def create_tag(
     user: UserToken,
     payload: TagCreate = Body(...),
 ) -> TagRead:
+    enforce_org_membership(session, user)
     # Create a new Tag
     new_tag = Tag(
         name=payload.name,

@@ -7,8 +7,7 @@ Create Date: 2024-02-16 09:11:29.781054
 """
 
 from collections.abc import Sequence
-
-import pgvector
+from pgvector.sqlalchemy import Vector
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
@@ -81,7 +80,7 @@ def upgrade() -> None:
         sa.Column("text", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
             "text_embedding_3_small",
-            pgvector.sqlalchemy.Vector(dim=1536),
+            Vector(dim=1536),
             nullable=True,
         ),
         sa.Column("chunk_number", sa.Integer(), nullable=True),

@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Callable
 from enum import IntEnum
 from inspect import signature
@@ -7,7 +8,9 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ValidationError
 
+from utils.lang_specialization.symbol_common import Lang, ReifiedSymbol, SymbolKind
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from utils.symbol_table.utils import get_fully_qualified_name
 
 
 def _arity(fn: Callable) -> int:
@@ -69,7 +72,10 @@ class Template(BaseModel):
         llm: ChatOpenAI,
         root_rel_path: Path,
         code: str,
+        language: Lang,
+        reified_symbols: list[ReifiedSymbol] | None,
         code_chunks: list[str] | None = None,
+        max_num_chunks_to_use: int | None = None,
     ) -> str:
         output = ""
         for tup in self.template:
@@ -88,6 +94,48 @@ class Template(BaseModel):
                         user_prompt=user_prompt,
                         output_cfg=output_cfg,
                     )
+                    if reified_symbols is not None:
+                        # find all backticked symbols in the content with re
+                        _re_backticked = re.compile(r"`[^`]+`")
+
+                        def _sub(m: re.Match[str]) -> str:
+                            found_name = m[0][1:-1]
+
+                            repl_text = m[0]
+                            for symbol in reified_symbols:
+                                if (
+                                    language == Lang.CPP
+                                    or language == Lang.PYTHON
+                                    or language == Lang.JAVA
+                                    or language == Lang.C_SHARP
+                                    or language == Lang.TYPESCRIPT
+                                    or language == Lang.JAVASCRIPT
+                                    or language == Lang.GO
+                                    or language == Lang.RUBY
+                                ):
+                                    linkable_symbol_kinds = {
+                                        SymbolKind.CALLABLE,
+                                    }
+                                elif language == Lang.C:
+                                    linkable_symbol_kinds = {
+                                        SymbolKind.CALLABLE,
+                                        SymbolKind.CALLABLE_DECLARATION,
+                                    }
+                                if (
+                                    found_name == symbol.raw.name
+                                    and symbol.raw.symbol_kind in linkable_symbol_kinds
+                                ):
+                                    name_part = symbol.raw.name
+                                    fqn = get_fully_qualified_name(symbol.raw)
+                                    kind_part = symbol.raw.symbol_kind.name.lower()
+                                    path_part = symbol.raw.file_path
+
+                                    repl_text = f"[`{name_part}`](<{path_part}#{kind_part}:{fqn}>)"
+                                    break
+                            return repl_text
+
+                        content = _re_backticked.sub(_sub, content)
+
                     # TODO: actually handle rendering JSON output.
                     output += f"{section_title}\n{content}\n"
                 case S.SINGLE_PROMPT_JSON:  # Simple section header, prompt, JSON structured output
@@ -129,9 +177,18 @@ class Template(BaseModel):
                     | S.FN_COND_JSON
                 ):  # Conditional construct using a function
                     section_title, conditional_fn, true_action, false_action = args
-                    fn_output: list[str] | str | None = conditional_fn(
-                        code, root_rel_path
-                    )
+
+                    match _arity(conditional_fn):
+                        case 2:
+                            fn_output = conditional_fn(code, root_rel_path)
+                        case 3:
+                            fn_output = conditional_fn(
+                                code, root_rel_path, reified_symbols
+                            )
+                        case _:
+                            raise TemplateError(
+                                "`FN_COND_*` expects conditional function with arity 2 or 3"
+                            )
                     action = false_action if fn_output is None else true_action
                     if (
                         action is None
@@ -167,7 +224,7 @@ class Template(BaseModel):
                         aggregate_prompt,
                     ) = args
                     chunk_paragraphs = ""
-                    for code_chunk in code_chunks:
+                    for code_chunk in code_chunks[:max_num_chunks_to_use]:
                         user_prompt = f"{section_prompt}\n\nCode:\n\n{code_chunk}"
                         content = llm.generate_response(
                             system_prompt=system_prompt,

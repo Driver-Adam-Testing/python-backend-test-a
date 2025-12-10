@@ -48,3 +48,16 @@ def split_text(
     raise NotImplementedError(
         "Splitting method not implemented for the given 'split_on' parameter"
     )
+
+
+def get_num_tokens(text: str, model: str = "gpt-4") -> int:
+    """
+    Returns the number of tokens in the input text based on the specified model.
+    """
+    encoder = tiktoken.encoding_for_model(model)
+    return len(encoder.encode(text, disallowed_special=()))
+
+
+def clip_prompt(p: str, chunk_size: int) -> str:
+    prompt_chunks = split_text(p, chunk_size=chunk_size, chunk_overlap=0)
+    return prompt_chunks[0].text if len(prompt_chunks) > 1 else p

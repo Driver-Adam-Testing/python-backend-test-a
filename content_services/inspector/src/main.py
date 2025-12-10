@@ -1,44 +1,72 @@
 import hashlib
 import os
-import pprint
 import uuid
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
 
 import modal
-from onboarding.onboard import (
-    connect_unconnected_repos,
-    handle_github_events,
-    handle_gitlab_events,
-    run_codebase_connection,
-)
+from deep_context_docs import deep_context_docs
+from onboarding.onboard import connect_unconnected_repos
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+    .apt_install("git")
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
+    )
     .pip_install(
         [
+            "aiolimiter==1.2.1",
             "boto3",
             "requests",
-            "openai>=1.40.2",
+            "openai==1.99.1",
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
-            "tree-sitter==0.24.0",
+            "tree-sitter==0.25.1",
             "tree-sitter-c==0.23.4",
-            "gitignore-parser",
+            "tree-sitter-cpp==0.23.2",
+            "tree-sitter-java==0.23.5",
+            "tree-sitter-python==0.25.0",
+            "tree-sitter-c-sharp==0.23.1",
+            "tree-sitter-typescript==0.23.2",
+            "tree-sitter-go==0.25.0",
+            "tree-sitter-ruby==0.23.1",
             "chardet",
         ]
+    )
+    .add_local_python_source(
+        "inspection",
+        "modal_funcs",
+        "deep_context_docs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        "common",
+        "database",
+        copy=True,
+        ignore=lambda p: False,  # recent modal version only copy .py by default, but we have text files, for example, that we want
     )
 )
 
 from common import app  # noqa: E402
-from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
+from utils.dag import (  # noqa: E402
+    FileTreeDag,
+    FlatTopoFileDiffDag,
+    Node,
+    NodeKind,
+    NodeStatus,
+)
 
 with inspection_image.imports():
     from tasks import (
+        CodebaseTaggingTask,
+        CSymbolTableTask,
         EmbeddingTask,
         FileTechDocTask,
         FolderTechDocTask,
@@ -47,8 +75,11 @@ with inspection_image.imports():
     )
     from utils.task import TaskManager
 
+
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
+
+TECH_DOC_THREAD_POOL = ThreadPoolExecutor(max_workers=2)
 
 
 class InspectionMode(Enum):
@@ -123,19 +154,16 @@ async def get_result_loading_config(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
-    mounts=[
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs",
-            remote_path="/root/data/",
-        ),
-    ],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    else None,
-    memory="2048",
-    timeout=3600 * 8,
+    proxy=(
+        modal.Proxy.from_name("my-proxy")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
+    ),
+    memory=4096,
+    timeout=3600 * 12,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
+    cpu=1.0,
 )
 async def inspect_db(
     version_id: uuid.UUID,
@@ -144,20 +172,31 @@ async def inspect_db(
     import tempfile
 
     import boto3
-    from database.models_v2_enums import NodeKind as DbNodeKind
-    from database.models_v2_enums import VersionStatus
+    from database.models_enums import ContentKind, VersionStatus
+    from database.models_enums import NodeKind as DbNodeKind
+    from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
-        reencode_file,
+        process_and_upload_all_files_in_parallel,
         set_codebase_status,
-        unpack_archive,
+        unpack_archive_to_finalized_path,
     )
     from utils.db import (
         create_inspector_run,
-        download_source_file,
+        delete_version_by_id,
+        get_all_derived_content_by_node_id,
         get_analyzable_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
     )
+    from utils.git_diff import (
+        CodeDiffParams,
+        InsufficientBalanceError,
+        compute_and_log_code_diff_size_in_bytes,
+    )
+    from utils.io import (
+        download_all_source_files_in_parallel,
+    )
+    from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
 
     try:
         # Get the Version and check if it has previous_version_id
@@ -167,6 +206,10 @@ async def inspect_db(
 
         previous_version = await try_get_prev_version(version_id)
         previous_version_id = previous_version.id if previous_version else None
+        previous_version_root_node_id = (
+            previous_version.root_node.id if previous_version else None
+        )
+        flat_topo_file_diff_dag = None
 
         codebase_name = version.primary_asset.display_name
 
@@ -200,7 +243,6 @@ async def inspect_db(
             tempfile.TemporaryDirectory() as previous_download_dir,
         ):
             download_root = Path(download_dir)
-            file_paths = []
             if (
                 version.status == VersionStatus.CONNECTED
                 or version.status == VersionStatus.GENERATING
@@ -212,48 +254,48 @@ async def inspect_db(
                 )
                 download_path = Path(download_dir) / f"{version_id}.zip"
                 print(f"downloading zip to {download_path}")
+                metadata = s3_client.head_object(
+                    Bucket=org_hashed_id, Key=download_archive_key
+                )
+                install_id = metadata["Metadata"].get("install_id")
                 s3_client.download_file(
                     org_hashed_id, download_archive_key, download_path
                 )
 
-                extracted_path = unpack_archive(
+                extracted_path = unpack_archive_to_finalized_path(
                     archive_path=download_path,
+                    extraction_root=Path(download_dir),
                     override_codebase_name=codebase_name,
-                    extraction_path=download_dir,
                 )
                 print(f"Extracted archive to {extracted_path}")
-                for root, _, files in os.walk(extracted_path):
-                    for filename in files:
-                        local_path = Path(root) / filename
-                        trimmed_path = local_path.relative_to(download_dir)
-                        for node in db_file_nodes:
-                            if node.relative_path == str(trimmed_path):
-                                reencode_file(local_path)
 
-                                s3_client.upload_file(
-                                    local_path,
-                                    org_hashed_id,
-                                    f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
-                                )
-                                print(
-                                    f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
-                                )
-                                file_paths.append(local_path)
+                db_node_paths = {node.relative_path for node in db_file_nodes}
+                file_paths = process_and_upload_all_files_in_parallel(
+                    s3_client=s3_client,
+                    org_hashed_id=org_hashed_id,
+                    primary_asset_id=version.primary_asset_id,
+                    version_id=version_id,
+                    extracted_path=extracted_path,
+                    download_dir=download_dir,
+                    db_node_paths=db_node_paths,
+                    max_workers=10,
+                )
+
                 if version.status == VersionStatus.CONNECTED:
                     set_codebase_status(version_id, VersionStatus.GENERATING)
-
             else:
                 print("Downloading all source files for codebase from s3...")
-                for db_file_node in db_file_nodes:
-                    download_abs_path = download_source_file(
-                        s3_client=s3_client,
-                        bucket_name=org_hashed_id,
-                        primary_asset_id=str(version.primary_asset.id),
-                        version_id=str(version_id),
-                        node_rel_path=db_file_node.relative_path,
-                        download_root=download_root,
-                    )
-                    file_paths.append(download_abs_path)
+                file_paths = download_all_source_files_in_parallel(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(version.primary_asset.id),
+                    version_id=str(version_id),
+                    node_rel_paths=[node.relative_path for node in db_file_nodes],
+                    download_root=download_root,
+                    max_workers=8,
+                )
+                install_id = None  # TODO: install id is attached to the zip, and is not available on rerun/resume
+                # NOTE: can still achieve PR of docs by running export_tech_docs_to_zip manually with install_id via local entrypoint
                 print("Download complete")
 
             codebase_dag: FileTreeDag = build_dag(
@@ -266,19 +308,25 @@ async def inspect_db(
 
             if previous_version is not None:
                 previous_download_root = Path(previous_download_dir)
-                previous_file_paths = []
                 print("Downloading all source files for previous codebase from s3...")
-                for db_previous_file_node in db_previous_file_nodes:
-                    download_abs_path = download_source_file(
-                        s3_client=s3_client,
-                        bucket_name=org_hashed_id,
-                        primary_asset_id=str(previous_version.primary_asset.id),
-                        version_id=str(previous_version.id),
-                        node_rel_path=db_previous_file_node.relative_path,
-                        download_root=previous_download_root,
+                previous_file_paths = download_all_source_files_in_parallel(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(previous_version.primary_asset.id),
+                    version_id=str(previous_version.id),
+                    node_rel_paths=[
+                        prev_node.relative_path for prev_node in db_previous_file_nodes
+                    ],
+                    download_root=previous_download_root,
+                    max_workers=8,
+                )
+                db_all_codebase_prev_version_nodes = (
+                    await get_analyzable_nodes_by_version_id(
+                        previous_version.id,
+                        {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY},
                     )
-                    previous_file_paths.append(download_abs_path)
-                print("Download complete for new version of code")
+                )
+                print("Download complete for previous version of code")
 
                 previous_codebase_dag: FileTreeDag = build_dag(
                     root_path=previous_download_root,
@@ -288,31 +336,83 @@ async def inspect_db(
                 for node in previous_codebase_dag.topological_sort():
                     print(node.root_rel_path, node.status)
 
-                diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
+                diff_dag = codebase_dag.compute_diff(
+                    previous_codebase_dag, delete_file_nodes=False
+                )
+
+                # TODO: this is effectively computing the diff dag twice (this calls `compute_diff` underneath the hood).
+                flat_topo_file_diff_dag = codebase_dag.into_flat_diff_dag(
+                    old=previous_codebase_dag
+                )
                 print("Diff dag computed")
 
                 print("======= Nodes from diff dag =======")
                 for node in diff_dag.topological_sort():
                     print(node.root_rel_path, node.status)
 
+                print("======= Computing diff size in bytes =======")
+                changed_nodes = diff_dag.topological_sort(
+                    changed_nodes_only=True, files_only=True
+                )
+                try:
+                    # @andrew: We calculate the diff size in bytes, log it while not turning on billing for code diffs
+                    compute_and_log_code_diff_size_in_bytes(
+                        CodeDiffParams(
+                            codebase_name=codebase_name,
+                            version_id=str(version.id),
+                            primary_asset_id=str(version.primary_asset_id),
+                            org_id=org_id,
+                            previous_download_root=previous_download_root,
+                            download_root=download_root,
+                            changed_nodes=changed_nodes,
+                        )
+                    )
+                except InsufficientBalanceError as ibe:
+                    print(
+                        f"Insufficient balance for org {org_id} to process codebase {codebase_name} {ibe}"
+                    )
+                    set_codebase_status_in_container.remote(
+                        version_id, VersionStatus.INSUFFICIENT_BALANCE.value
+                    )
+                    # I chose to return here vs re-raising the error because it will get caught and swalloed by the outer try/catch
+                    return
             if previous_version is not None:
                 sorted_nodes = diff_dag.topological_sort()
             else:
                 sorted_nodes = codebase_dag.topological_sort()
+                db_all_codebase_prev_version_nodes = None
             path_to_db_node_id = {
                 Path(db_node.relative_path): db_node.id
                 for db_node in db_all_codebase_nodes
             }
-
+            changes_detected = False  # export tech docs only if changes detected
             print("======= Nodes being processed  =======")
             for node in sorted_nodes:
+                if not changes_detected and node.status != NodeStatus.UNMODIFIED:
+                    changes_detected = True
                 print(node.root_rel_path, node.status, node.kind)
+
+            if previous_version is not None and not changes_detected:
+                # Delete the version and return
+                await delete_version_by_id(version_id)
+                print(
+                    f"No modified nodes found for version {version_id}. Deleting version."
+                )
+                return
 
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])
                 for node in sorted_nodes
-                if node.root_rel_path != Path(".")
+                if node.root_rel_path != Path(".") and node.status != NodeStatus.REMOVED
             ]
+            prev_version_path_to_db_node_id = (
+                {
+                    Path(db_node.relative_path): db_node.id
+                    for db_node in db_all_codebase_prev_version_nodes
+                }
+                if db_all_codebase_prev_version_nodes
+                else {}
+            )
 
             print("======= Nodes with source content id =======")
             for node, sc_id in nodes_with_id:
@@ -325,6 +425,7 @@ async def inspect_db(
                 codebase_name=codebase_name,
                 run_id=run_id,
                 result_loading_config=result_loading_config,
+                rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
             )
     except Exception as e:
         exception_type = type(e).__name__
@@ -334,12 +435,64 @@ async def inspect_db(
         exception_details = (
             f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
-        send_exception_email.remote(exception_details)
         print(f"Error while processing version {version_id}: {e}")
+        send_exception_email.remote(exception_details)
         set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
         raise
     else:
+        # TODO: Implement checkpoint-based statuses for formalized multi-stage compiler
+        # architecture, then uncomment the following line to represent completion of
+        # stage 1.
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        if previous_version is None or changes_detected:
+            print("Changes detected exporting tech docs to zip...")
+            export_tech_docs_to_zip.remote(version_id, install_id)
+        else:
+            print("No changes detected skipping tech doc export.")
+
+        print("Spawning off deep context docs generation...")
+        # TODO: do deep context doc specific I/O or further analysis.
+
+        # TODO: Fetch old document content
+        if previous_version_root_node_id is not None:
+            update_set = {
+                ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+                ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+            }
+            previous_version_root_content = await get_all_derived_content_by_node_id(
+                node_id=previous_version_root_node_id
+            )
+            previous_version_content = [
+                DeepContextDoc(
+                    doc_kind=DeepContextDocKind.from_content_kind(
+                        content_kind=c.content_kind
+                    ),
+                    name=None,
+                    user_context={"desired_length": "SHORT"},
+                    sources=[],
+                    config_content="",
+                    doc_content=c.content,
+                )
+                for c in previous_version_root_content
+                if c.content_kind in update_set
+            ]
+        else:
+            previous_version_root_content = None
+            previous_version_content = None
+
+        _completed_docs = await deep_context_docs.remote.aio(
+            previous_version_id,
+            previous_version_content,
+            flat_topo_file_diff_dag,
+            version_id,
+            install_id,
+        )
+
+        try:
+            cleanup_old_versions.remote(version_id)
+        except Exception as e:
+            print(f"Error while cleaning up old versions: {e}")
+            raise
 
 
 def hash_file(file_path: Path) -> str:
@@ -366,12 +519,49 @@ async def inspect_files(
     codebase_name: str,
     run_id: UUID,
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
+    rel_path_to_previous_version_db_node_ids: dict[Path, uuid.UUID],
 ) -> None:
+    from utils.db import get_all_derived_content_by_node_id
+
     print("---------- All nodes ----------")
+
     for node, _ in nodes_with_id:
         print(node)
 
+    # c_files = [
+    #     codebase_root / node.root_rel_path
+    #     for node, _ in nodes_with_id
+    #     if node.root_rel_path.suffix.lower() in [".c"]
+    # ]
+    # h_files = [
+    #     codebase_root / node.root_rel_path
+    #     for node, _ in nodes_with_id
+    #     if node.root_rel_path.suffix.lower() in [".h"]
+    # ]
+    # c_and_h_files = c_files + h_files
+
+    # if any(c_files):
+    #     index = build_c_project_index(c_and_h_files, codebase_root / codebase_name)
+    #     print("C symbol index built")
+    #     # Build index here put as single dict key. This is obviously not prod ready. We would ideally name the dict
+    #     # by unique id (or ephemeral) and pass in a dict handle  the downstream functions that need shared data
+    #     d = modal.Dict.from_name("temp", create_if_missing=True)
+    #     d["symbol_table"] = index
+
     tasks = []
+    c_symbol_table_task = CSymbolTableTask(
+        root_node=nodes_with_id[-1][0],
+        task_name="CSymbolTableTask",
+        codebase_name=codebase_name,
+        codebase_root=codebase_root,
+        nodes_relative_paths=[
+            node.root_rel_path
+            for node, _ in nodes_with_id
+            if node.kind == NodeKind.FILE
+        ],
+        version_id=str(version_id),
+    )
+    tasks.append(c_symbol_table_task)
     for node, db_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
 
@@ -384,12 +574,25 @@ async def inspect_files(
                     and t.node.root_rel_path.as_posix() in node.children
                 }
             )
+            if node.root_rel_path in rel_path_to_previous_version_db_node_ids:
+                prev_db_node_id = rel_path_to_previous_version_db_node_ids[
+                    node.root_rel_path
+                ]
+                prev_folder_derived_contents = await get_all_derived_content_by_node_id(
+                    prev_db_node_id
+                )
+                previous_contents = {
+                    dc.content_kind: dc.content for dc in prev_folder_derived_contents
+                }
+            else:
+                previous_contents = None
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
                 db_node_id=db_node_id,
+                previous_content=previous_contents,
             )
             folder_embedding_task = EmbeddingTask(
                 node=node,
@@ -404,7 +607,7 @@ async def inspect_files(
                 task_name=f"Embedding Source Code {node.root_rel_path}",
                 source_code=source_code,
                 db_node_id=db_node_id,
-                dependent_tasks=[],
+                dependent_tasks=[c_symbol_table_task],
             )
             file_tech_docs_task = FileTechDocTask(
                 codebase_name=codebase_name,
@@ -412,6 +615,9 @@ async def inspect_files(
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
+                version_id=str(version_id),
+                symbol_table_task=c_symbol_table_task,
+                thread_pool=TECH_DOC_THREAD_POOL,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
@@ -458,12 +664,37 @@ async def inspect_files(
         ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
         db_node_id=root_db_node_id,
     )
+
+    has_previous_version = (
+        root_node.root_rel_path in rel_path_to_previous_version_db_node_ids
+    )
+    if has_previous_version:
+        prev_db_root_node_id = rel_path_to_previous_version_db_node_ids[
+            root_node.root_rel_path
+        ]
+        prev_root_node_derived_contents = await get_all_derived_content_by_node_id(
+            prev_db_root_node_id
+        )
+        previous_root_node_metadata = defaultdict(list)
+        for dc in prev_root_node_derived_contents:
+            previous_root_node_metadata[dc.content_kind].append(dc.misc_metadata)
+    codebase_tagging_task = CodebaseTaggingTask(
+        root_node=root_node,
+        codebase_name=codebase_name,
+        ordered_tech_docs_tasks=all_tech_docs_tasks,
+        db_root_node_id=root_db_node_id,
+        previous_root_node_metadata=previous_root_node_metadata
+        if has_previous_version
+        else None,
+    )
     top_level_embedding_task = EmbeddingTask(
         node=root_node,
         task_name="Embedding TopLevelDocs",
         dependent_tasks=[top_level_tech_docs_task],
     )
-    tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
+    tasks.extend(
+        [top_level_tech_docs_task, top_level_embedding_task, codebase_tagging_task]
+    )
 
     print("\n---------- All tasks ----------")
     for t in tasks:
@@ -474,57 +705,299 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
-    task_results = await task_manager.run_tasks(
-        run_id, result_loading_config=result_loading_config
-    )
+    print(f"Starting inspection with {len(tasks)} tasks")
+    await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)
 
-    print("\n---------- Task results ----------")
-    pprinter = pprint.PrettyPrinter(indent=2)
-    for t, r in task_results.items():
-        print(f"\n==> Task: {t.task_name} Result")
-        match t:
-            case FileTechDocTask():
-                print(r.result)
-                print(r.result["docs"]["short"]["single_paragraph"])
-            case FolderTechDocTask():
-                print(r.result["docs"]["short"]["single_sentence"])
-            case SymbolsTask():
-                print(r.result)
-                pprinter.pprint(r.result["symbols"][:1])
-            case TopLevelDocsTask():
-                print(r.result["docs"]["short"])
-            case EmbeddingTask():
-                print("N/A")
-            case _:
-                raise ValueError(f"Unknown task type: {t}")
+    print(
+        f"Inspection completed! Final progress: {task_manager.progress_state.percent_complete:.1f}%"
+    )
 
 
 def get_file_content(path: Path) -> str:
     return Path(path).read_text()
 
 
+# TODO: Remove, rename, or refactor. Created for easy local testing.
+async def prepare_deep_context_args(
+    version_id: uuid.UUID,
+) -> tuple[
+    uuid.UUID | None,
+    list | None,
+    FlatTopoFileDiffDag | None,
+    uuid.UUID,
+    str | None,
+]:
+    """
+    Returns a tuple of (previous_version_id, previous_version_content, flat_topo_file_diff_dag, version_id, install_id)
+    """
+    import tempfile
+
+    import boto3
+    from database.models_enums import ContentKind, VersionStatus
+    from database.models_enums import NodeKind as DbNodeKind
+    from onboarding.onboard_utils import (
+        process_and_upload_all_files_in_parallel,
+        unpack_archive_to_finalized_path,
+    )
+    from utils.db import (
+        get_all_derived_content_by_node_id,
+        get_analyzable_nodes_by_version_id,
+        get_version_by_id,
+        try_get_prev_version,
+    )
+    from utils.io import download_all_source_files_in_parallel
+    from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
+
+    # Get the Version and check if it has previous_version_id
+    version = await get_version_by_id(version_id)
+    org_id = version.primary_asset.organization_id
+    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+
+    previous_version = await try_get_prev_version(version_id)
+    previous_version_id = previous_version.id if previous_version else None
+    codebase_name = version.primary_asset.display_name
+
+    # Get content records for version_id
+    db_file_nodes = await get_analyzable_nodes_by_version_id(
+        version_id, {DbNodeKind.CODEBASE_FILE}
+    )
+
+    flat_topo_file_diff_dag = None
+    previous_version_content = []
+    install_id = None  # We don't have install_id in this context, will need to be passed separately
+
+    if previous_version is not None:
+        previous_version_root_node_id = previous_version.root_node.id
+
+        # Get content records for previous_version_id
+        db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
+            previous_version_id, {DbNodeKind.CODEBASE_FILE}
+        )
+
+        # Download files for both versions to compute diff
+        s3_client = boto3.client(
+            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+        )
+
+        with (
+            tempfile.TemporaryDirectory() as download_dir,
+            tempfile.TemporaryDirectory() as previous_download_dir,
+        ):
+            download_root = Path(download_dir)
+            previous_download_root = Path(previous_download_dir)
+
+            # Download current version files
+            if (
+                version.status == VersionStatus.CONNECTED
+                or version.status == VersionStatus.GENERATING
+            ):
+                # Handle zip archive case
+                download_archive_key = (
+                    f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
+                )
+                download_path = Path(download_dir) / f"{version_id}.zip"
+                metadata = s3_client.head_object(
+                    Bucket=org_hashed_id, Key=download_archive_key
+                )
+                install_id = metadata["Metadata"].get("install_id")
+                s3_client.download_file(
+                    org_hashed_id, download_archive_key, download_path
+                )
+
+                extracted_path = unpack_archive_to_finalized_path(
+                    archive_path=download_path,
+                    extraction_root=Path(download_dir),
+                    override_codebase_name=codebase_name,
+                )
+
+                db_node_paths = {node.relative_path for node in db_file_nodes}
+                file_paths = process_and_upload_all_files_in_parallel(
+                    s3_client=s3_client,
+                    org_hashed_id=org_hashed_id,
+                    primary_asset_id=version.primary_asset_id,
+                    version_id=version_id,
+                    extracted_path=extracted_path,
+                    download_dir=download_dir,
+                    db_node_paths=db_node_paths,
+                    max_workers=10,
+                )
+            else:
+                # Download individual files
+                file_paths = download_all_source_files_in_parallel(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(version.primary_asset.id),
+                    version_id=str(version_id),
+                    node_rel_paths=[node.relative_path for node in db_file_nodes],
+                    download_root=download_root,
+                    max_workers=8,
+                )
+
+            # Download previous version files
+            previous_file_paths = download_all_source_files_in_parallel(
+                s3_client=s3_client,
+                bucket_name=org_hashed_id,
+                primary_asset_id=str(previous_version.primary_asset.id),
+                version_id=str(previous_version.id),
+                node_rel_paths=[
+                    prev_node.relative_path for prev_node in db_previous_file_nodes
+                ],
+                download_root=previous_download_root,
+                max_workers=8,
+            )
+
+            # Build DAGs and compute diff
+            codebase_dag: FileTreeDag = build_dag(
+                root_path=download_root, file_paths=file_paths
+            )
+
+            previous_codebase_dag: FileTreeDag = build_dag(
+                root_path=previous_download_root,
+                file_paths=previous_file_paths,
+            )
+
+            flat_topo_file_diff_dag = codebase_dag.into_flat_diff_dag(
+                old=previous_codebase_dag
+            )
+
+        # Prepare previous version content
+        previous_version_root_content = await get_all_derived_content_by_node_id(
+            node_id=previous_version_root_node_id
+        )
+        update_set = {
+            ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+            ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+        }
+        previous_version_content = [
+            DeepContextDoc(
+                doc_kind=DeepContextDocKind.from_content_kind(
+                    content_kind=c.content_kind
+                ),
+                name=None,
+                user_context={"desired_length": "SHORT"},
+                sources=[],
+                config_content="",
+                doc_content=c.content,
+            )
+            for c in previous_version_root_content
+            if c.content_kind in update_set
+        ]
+
+    return (
+        previous_version_id,
+        previous_version_content,
+        flat_topo_file_diff_dag,
+        version_id,
+        install_id,
+    )
+
+
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .pip_install("/driver_db"),
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .pip_install("/driver_db")
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "modal_funcs",
+        "deep_context_docs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        copy=True,
+        ignore=lambda p: False,
+    ),
     secrets=[
         modal.Secret.from_name("db"),
     ],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    else None,
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
+
     from database.db import engine
-    from database.models_v2 import Version
-    from database.models_v2_enums import VersionStatus
+    from database.models import Version
+    from database.models_enums import VersionStatus
     from sqlmodel import Session
 
     with Session(engine) as session, session.begin():
         version = session.get(Version, version_id)
         version.status = VersionStatus(status)
         session.add(version)
+
+
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12")
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .pip_install("/driver_db")
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "modal_funcs",
+        "deep_context_docs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        copy=True,
+        ignore=lambda p: False,
+    ),
+    secrets=[
+        modal.Secret.from_name("db"),
+    ],
+    timeout=3600 * 12,
+    proxy=(
+        modal.Proxy.from_name("my-proxy")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+        else modal.Proxy.from_name("my-proxy", environment_name="prod")
+    ),
+)
+def cleanup_old_versions(new_version_id: str) -> None:
+    from database.db import engine
+    from database.models import DocumentSource, Node, Version
+    from sqlmodel import Session, select
+
+    with Session(engine) as session, session.begin():
+        # Get all versions
+        primary_asset_id = session.get(Version, new_version_id).primary_asset_id
+        versions = session.exec(
+            select(Version).where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        versions_with_sources = session.exec(
+            select(Version)
+            .join(Node)
+            .join(DocumentSource, DocumentSource.source_node_id == Node.id)
+            .where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        # Sort versions by creation date or any other criteria if needed
+        versions_to_keep = sorted(versions, key=lambda v: v.created_at, reverse=True)[
+            :10
+        ]
+        versions_to_keep.extend(versions_with_sources)
+
+        # Remove duplicates from versions_to_keep
+        versions_to_keep = list({v.id: v for v in versions_to_keep}.values())
+
+        # Delete all versions except the 10 most recent
+        print(f"DEBUG: Keeping {len(versions_to_keep)} unique versions")
+        print(f"DEBUG: Deleting {len(versions) - len(versions_to_keep)} versions")
+
+        versions_to_delete = [v for v in versions if v not in versions_to_keep]
+        for version in versions_to_keep:
+            print(
+                f"DEBUG: KEEPING version: {version.id} which was created at {version.created_at}"
+            )
+        for version in versions_to_delete:
+            print(
+                f"DEBUG: DELETING version: {version.id} which was created at {version.created_at} (deletion is not implemented yet)"
+            )
+            session.delete(version)
+        session.commit()
 
 
 @app.local_entrypoint()
@@ -548,530 +1021,119 @@ def main(
 
 
 @app.local_entrypoint()
-def test_handle_github_events() -> None:
-    import json
+async def run_deep_context(
+    version_id: str,
+    local_update: bool = False,
+) -> None:
+    """Run deep context docs generation"""
+    import asyncio
+    from pathlib import Path
 
-    body = json.loads("""
-        {
-            "action": "created",
-            "installation": {
-                "id": 60598324,
-                "client_id": "Iv1.2cdbf00b132438f4",
-                "account": {
-                "login": "ghiotto1",
-                "id": 1228798,
-                "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-                "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-                "gravatar_id": "",
-                "url": "https://api.github.com/users/ghiotto1",
-                "html_url": "https://github.com/ghiotto1",
-                "followers_url": "https://api.github.com/users/ghiotto1/followers",
-                "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-                "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-                "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-                "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-                "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-                "repos_url": "https://api.github.com/users/ghiotto1/repos",
-                "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-                "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-                "type": "User",
-                "user_view_type": "public",
-                "site_admin": false
-                },
-                "repository_selection": "all",
-                "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-                "repositories_url": "https://api.github.com/installation/repositories",
-                "html_url": "https://github.com/settings/installations/60597730",
-                "app_id": 869041,
-                "app_slug": "driverai-gh-demo",
-                "target_id": 1228798,
-                "target_type": "User",
-                "permissions": {
-                "contents": "read",
-                "metadata": "read",
-                "pull_requests": "read",
-                "repository_hooks": "read"
-                },
-                "events": [
-                "create",
-                "delete",
-                "fork",
-                "membership",
-                "organization",
-                "pull_request",
-                "push",
-                "repository"
-                ],
-                "created_at": "2025-02-05T13:30:32.000-08:00",
-                "updated_at": "2025-02-05T13:30:33.000-08:00",
-                "single_file_name": null,
-                "has_multiple_single_files": false,
-                "single_file_paths": [
+    from utils.synthesis.deep_context import DeepContextDocKind
 
-                ],
-                "suspended_by": null,
-                "suspended_at": null
-            },
-            "repositories": [
-                {
-                "id": 10464543,
-                "node_id": "MDEwOlJlcG9zaXRvcnkxMDQ2NDU0Mw==",
-                "name": "dotfiles",
-                "full_name": "ghiotto1/dotfiles",
-                "private": false
-                },
-                {
-                "id": 116281345,
-                "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
-                "name": "spam-detection",
-                "full_name": "ghiotto1/spam-detection",
-                "private": false
-                }
-            ],
-            "requester": null,
-            "sender": {
-                "login": "ghiotto1",
-                "id": 1228798,
-                "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-                "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-                "gravatar_id": "",
-                "url": "https://api.github.com/users/ghiotto1",
-                "html_url": "https://github.com/ghiotto1",
-                "followers_url": "https://api.github.com/users/ghiotto1/followers",
-                "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-                "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-                "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-                "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-                "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-                "repos_url": "https://api.github.com/users/ghiotto1/repos",
-                "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-                "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-                "type": "User",
-                "user_view_type": "public",
-                "site_admin": false
+    try:
+        # Prepare all arguments needed for deep_context_docs.remote.aio
+        (
+            previous_version_id,
+            previous_version_content,
+            flat_topo_file_diff_dag,
+            current_version_id,
+            install_id,
+        ) = await prepare_deep_context_args(uuid.UUID(version_id))
+
+        # for idx, doc in enumerate(previous_version_content):
+        #     print(f"Doc Index {idx}\nDoc Contents:\n\n{doc.doc_content}")
+        if local_update:
+            assert previous_version_id is not None
+            update_set = {
+                DeepContextDocKind.ARCHITECTURE,
+                DeepContextDocKind.LLM_ONBOARDING,
             }
-            }
-    """)
 
-    installation_id = str(body["installation"]["id"])
-    repositories = body["repositories"]
-    repos_added = []
-    repos_deleted = []
-    repos_pushed = []
-    for repo in repositories:
-        repos_added.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
+            prev_docs = [
+                doc for doc in previous_version_content if doc.doc_kind in update_set
+            ]
 
-    org_id = "org_s76pU1v8LAYhTOWB"
+            # update_tasks = [
+            #     doc.update_from_diff(diff_collection=flat_topo_file_diff_dag)
+            #     for doc in previous_version_content
+            #     if doc.doc_kind in update_set
+            # ]
+            update_tasks = [
+                doc.update_from_diff(diff_collection=flat_topo_file_diff_dag)
+                for doc in prev_docs
+            ]
+            completed_docs = await asyncio.gather(*update_tasks)
 
-    handle_github_events.remote(
-        installation_id,
-        org_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
-    )
+            print(f"Completed Docs:\n\n{completed_docs}")
+
+            for idx, doc in enumerate(completed_docs):
+                print(f"\n\nDoc Index {idx}\nUpdated Doc Content:\n\n{doc.doc_content}")
+            outdir = Path("update_docs")
+            outdir.mkdir(exist_ok=True)
+
+            print("\n\nWriting out to disk...")
+
+            for p, n in zip(prev_docs, completed_docs):
+                if p.doc_kind == DeepContextDocKind.ARCHITECTURE:
+                    p_file_path = outdir / "architecture_previous.md"
+                    n_file_path = outdir / "architecture_new.md"
+                elif p.doc_kind == DeepContextDocKind.LLM_ONBOARDING:
+                    p_file_path = outdir / "onboarding_previous.md"
+                    n_file_path = outdir / "onboarding_new.md"
+
+                p_file_path.write_text(p.doc_content, encoding="utf-8")
+                n_file_path.write_text(n.doc_content, encoding="utf-8")
+        # else:
+        #     # Call the remote deep context docs function
+        #     _completed_docs = await deep_context_docs.remote.aio(
+        #         previous_version_id,
+        #         previous_version_content,
+        #         flat_topo_file_diff_dag,
+        #         current_version_id,
+        #         install_id,
+        #     )
+        print(f"Deep context docs generation completed for version {version_id}")
+    except Exception as e:
+        print(f"Error while generating deep context docs for version {version_id}: {e}")
+        raise
 
 
 @app.local_entrypoint()
-def test_handle_gitlab_events() -> None:
-    import json
+def test_connection() -> None:
+    from onboarding.onboard import run_codebase_connection
 
-    raw_body = """
-    {
-        "provider_name": "Gitlab Enterprise Self Managed", "provider_kind": "GITLAB_ENTERPRISE_SELF_MANAGED", "repo_name": "serverless-ness", "org": "onthebeach/sub-group", "last_updated": "2023-11-02T17:48:28.000+01:00", "metadata": {"id": 5, "description": null, "name": "serverless-ness", "name_with_namespace": "onthebeach / sub-group / serverless-ness", "path": "serverless-ness", "path_with_namespace": "onthebeach/sub-group/serverless-ness", "created_at": "2025-01-10T12:16:13.533Z", "default_branch": "master", "tag_list": [], "topics": [], "ssh_url_to_repo": "git@driver-gitlab.ngrok.io:onthebeach/sub-group/serverless-ness.git", "http_url_to_repo": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "web_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness", "readme_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness/-/blob/master/README.md", "forks_count": 0, "avatar_url": null, "star_count": 0, "last_activity_at": "2025-01-10T12:16:16.256Z", "namespace": {"id": 43, "name": "sub-group", "path": "sub-group", "kind": "group", "full_path": "onthebeach/sub-group", "parent_id": 36, "avatar_url": null, "web_url": "http://driver-gitlab.ngrok.io/groups/onthebeach/sub-group"}, "_links": {"self": "http://driver-gitlab.ngrok.io/api/v4/projects/5", "issues": "http://driver-gitlab.ngrok.io/api/v4/projects/5/issues", "merge_requests": "http://driver-gitlab.ngrok.io/api/v4/projects/5/merge_requests", "repo_branches": "http://driver-gitlab.ngrok.io/api/v4/projects/5/repository/branches", "labels": "http://driver-gitlab.ngrok.io/api/v4/projects/5/labels", "events": "http://driver-gitlab.ngrok.io/api/v4/projects/5/events", "members": "http://driver-gitlab.ngrok.io/api/v4/projects/5/members", "cluster_agents": "http://driver-gitlab.ngrok.io/api/v4/projects/5/cluster_agents"}, "packages_enabled": true, "empty_repo": false, "archived": false, "visibility": "private", "resolve_outdated_diff_discussions": false, "container_expiration_policy": {"cadence": "1d", "enabled": false, "keep_n": 10, "older_than": "90d", "name_regex": ".*", "name_regex_keep": null, "next_run_at": "2025-01-11T12:16:16.323Z"}, "repository_object_format": "sha1", "issues_enabled": true, "merge_requests_enabled": true, "wiki_enabled": true, "jobs_enabled": true, "snippets_enabled": true, "container_registry_enabled": true, "service_desk_enabled": false, "service_desk_address": null, "can_create_merge_request_in": true, "issues_access_level": "enabled", "repository_access_level": "enabled", "merge_requests_access_level": "enabled", "forking_access_level": "enabled", "wiki_access_level": "enabled", "builds_access_level": "enabled", "snippets_access_level": "enabled", "pages_access_level": "private", "analytics_access_level": "enabled", "container_registry_access_level": "enabled", "security_and_compliance_access_level": "private", "releases_access_level": "enabled", "environments_access_level": "enabled", "feature_flags_access_level": "enabled", "infrastructure_access_level": "enabled", "monitor_access_level": "enabled", "model_experiments_access_level": "enabled", "model_registry_access_level": "enabled", "emails_disabled": false, "emails_enabled": true, "shared_runners_enabled": true, "lfs_enabled": true, "creator_id": 35, "import_url": null, "import_type": "gitlab_project", "import_status": "finished", "import_error": null, "open_issues_count": 0, "description_html": "", "updated_at": "2025-01-10T12:16:18.425Z", "ci_default_git_depth": 20, "ci_forward_deployment_enabled": true, "ci_forward_deployment_rollback_allowed": true, "ci_job_token_scope_enabled": false, "ci_separated_caches": true, "ci_allow_fork_pipelines_to_run_in_parent_project": true, "ci_id_token_sub_claim_components": ["project_path", "ref_type", "ref"], "build_git_strategy": "fetch", "keep_latest_artifact": true, "restrict_user_defined_variables": false, "ci_pipeline_variables_minimum_override_role": "maintainer", "runners_token": "GR1348941ebgdPJxxkjPSppzdxZmP", "runner_token_expiration_interval": null, "group_runners_enabled": true, "auto_cancel_pending_pipelines": "enabled", "build_timeout": 3600, "auto_devops_enabled": true, "auto_devops_deploy_strategy": "continuous", "ci_push_repository_for_job_token_allowed": false, "ci_config_path": null, "public_jobs": true, "shared_with_groups": [], "only_allow_merge_if_pipeline_succeeds": false, "allow_merge_on_skipped_pipeline": null, "request_access_enabled": true, "only_allow_merge_if_all_discussions_are_resolved": false, "remove_source_branch_after_merge": true, "printing_merge_request_link_enabled": true, "merge_method": "merge", "squash_option": "default_off", "enforce_auth_checks_on_uploads": true, "suggestion_commit_message": null, "merge_commit_template": null, "squash_commit_template": null, "issue_branch_template": null, "warn_about_potentially_unwanted_characters": true, "autoclose_referenced_issues": true, "approvals_before_merge": 0, "mirror": false, "external_authorization_classification_label": null, "marked_for_deletion_at": null, "marked_for_deletion_on": null, "requirements_enabled": true, "requirements_access_level": "enabled", "security_and_compliance_enabled": true, "pre_receive_secret_detection_enabled": false, "compliance_frameworks": [], "issues_template": null, "merge_requests_template": null, "ci_restrict_pipeline_cancellation_role": "developer", "merge_pipelines_enabled": false, "merge_trains_enabled": false, "merge_trains_skip_train_allowed": false, "only_allow_merge_if_all_status_checks_passed": false, "allow_pipeline_trigger_approve_deployment": false, "prevent_merge_without_jira_issue": false, "permissions": {"project_access": null, "group_access": {"access_level": 40, "notification_level": 3}}}, "latest_commit": {"repository_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "default_branch": "master", "commit": {"id": "049dfd3cf98b69791c4b22a2438daf0a89a7e98f", "message": "Initialized from 'Serverless Framework/JS' project templateTemplate repository: https://gitlab.com/gitlab-org/project-templates/serverless-frameworkCommit SHA: a2a5b57371d276dcc6f529c71aa2e77d43b4db34", "author": "GitLab", "date": "2023-11-02T17:48:28.000+01:00"}}, "default_branch": "master", "installation_id": "1802a3a5-c387-4631-8710-dbc961f39d8c"
-    }
-    """
-    body = json.loads(raw_body)
-
-    installation_id = str(body["installation_id"])
-    repos_added = [body]
-    repos_deleted = []
-    repos_pushed = []
-
-    org_id = "org_s76pU1v8LAYhTOWB"
-
-    handle_gitlab_events.remote(
-        installation_id,
-        org_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
-    )
-
-
-@app.local_entrypoint()
-def local_connect() -> None:
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/spam-detection.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEDcaCXVzLWVhc3QtMSJHMEUCIDb4lgoSFbgsjOCrn8KqTgEvJCqneR7D%2FLoBicug%2FN8VAiEAxqEgXXbcUAx5QF1dgCBZKM%2Fn3sST6vJEQUpKoLTl%2BEsqtQQITxABGgw1NTAwODI3NjExMDkiDOCQGpznimsTef0tFyqSBLjkfZ44%2FFeWpkDD04jMWokfR1rBPrTU9dBLze%2FNIcI6uHp6Fw60wyQomXxV4Tb3dV7v9GHCRfr97N%2BzsnmxVNt%2FNCjx02HHGa7AiGFqr%2FcLyOWMDmT%2BB%2FXl3yEBwcv4zGeJtKgDt4q%2FnkS9v3PszUAvaBKO8XudD8JM6AaEL1W5LGQ1MQmIRn45gYI4RVA4sUqQOrEFWMgPPdOXoNH%2BDiOaqFdMdLpQuJNEcg7HNyLPb2%2BR6CdkxfYEAuoHXESy8gU4xNPm2ZsDRCsyDfyernHiEKHAY9e%2BxceWUonvhlHWZzdxWEW0djo2fSDO44Q6WvdqDGKFIfJt%2Bexn5dEfij5iScD4ZuKpQAsrxPA9NsUOf%2Fd17OqzTj7mSIchaUaNHpqYVDsFx%2B0ciBAL%2B224TbKZ5Wh3mQ1cCQPmI7YW9Ww7lKRoP44RJt4kZp38oT8sf4adigJ8ZfK%2FHk%2Fv%2BpPtIVA9T%2FQj1ghwXRnECI7ayWf2ttgR%2F3HMz6eDfYkjEiwiG1DLT%2FDUN56jK3srUDkZ2AxXM4eX%2BYBb5jjGc6Idn2zeS%2F%2FOhPoHW%2F%2Fd8g5ZlIjwTGH65CF4%2FHAUSfrn8sH%2B5BmVofxovg%2BQfnYIbsPh2RhaDBbMsBIwe%2FS7T3tOLqotrZZaHHC%2BiYS3e0h89qM99JtrdNaou%2FBpg1vH0h5KB1rucJVZGs%2FmUyDjGOSN4VZnASuXMP27j70GOsUCNX74rhYcMEGe2YvXpi0vfWVque7MXHUOVBHv2XIXsd2DFTxqpzdViHNiusKhpoLx6Pd1i1Z0p%2BPvafxwO3jboHkXf8j3lRpcYpO8A5jyxnXBOp0rkpMt12lm4kjQkk18GGP5klw6fEjnZIf3McPF4CUhX5LVJbwXhagg7f7Cfu6PT8qBkkhpqsMRCy6kqyL8yfaAKhKdg8JZCxFqdr6ZsBxgpNzq3uktJfzy8hgUATqGSsm7qBQUXJUy1hCJ%2B9OYWHlZaGvqxBd3bznWaGfV%2Bx4a95o7z0MRZyw0%2FP1Nzwj%2Fm0j6Q%2FFO9W81zA7T7dLNYP8kc5lp6YsaiX04C1PVeoeI38dcg9DMm71aYS56AVEPSb%2Bf5GmsQtsLt22KYIpI%2F6ph8S%2F9PsDkWsR5xTm1B7cnzKE7PB8bMNGx2zYE2q6v1qSosQ%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKXYB6FPCY%2F20250205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250205T220805Z&X-Amz-Expires=7200&X-Amz-SignedHeaders=host&X-Amz-Signature=942c1c5225bce1d7517927819c71a65dd46f8c48dba33239b12cd193937ca0a4"
-    archive_name = "spam-detection.zip"
-    org_id = "org_s76pU1v8LAYhTOWB"
-    provider = "github"
-    version_id = "db0b396f-8902-4325-98f4-b92dfb44b679"
+    presigned_url = "https://production-codebase-dropzone.s3.us-east-1.amazonaws.com/assets/7803d76b1b1ad91910acc568ecb0bdf8a17d320a8ef12161767147b0a492fb9/8b89be39-8889-4816-ab9e-8de28f3a26c4/cf79eed5-3d1d-4303-9860-18b276486e11/goat.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECIaCXVzLWVhc3QtMSJGMEQCIDSqOs1DOJ%2Ffb1rrTFFBlVBUY1yCuokz6NX2tQYuH95dAiBNBGbqDxAOf5ERXCVCjz3XKjxoy7yeONsmA%2FsAlRD6kSq%2BBAj7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAAaDDg5NjcyNDkwNzExNCIMaHA%2Ffn%2BoIjI0Hbh7KpIE0qbwQr73LuGUxiTopwUniQ3ZjzroZBoPZoWjMbMPneQrKec4eVkK3HrEqBOC6pGZx9J%2BE28UuOVJIlrPMWR5sz9ZFDJgP62%2Fo32zDy0%2FvYs%2F3oH22qUSqPJm6EAWsgvzlUG5fpymFmG2dsb%2BSy4jEoWNj32Ln9vs7VQiBfazk1KvKjdBwefTOTYXtHO0kMOiZnLkpCPI%2Fb2r406tPmC4OkyKWRQ58TjkZWl9HZz41r%2BhkdrjeFh6Zi3eoxHtK7h2kMf0DxGT7NedpmRnIGJaJGvppfTMCV%2B6iHVXmHdYDFWwwrSZB7cBas8liL7Y3XtHMGgVC54%2BpMD2qbnL6K%2F8LSAzSvdyRiFnavd5jlskB3%2FtxlkTELwns9X2ldTKSJvZ5niS%2B6nO7oYR%2BTNr6tnLIRtHgSnnuzjMWTfhFgrPDIcTenM47WkBor%2FU%2FT1UMs7Gnbz0cMA7gHcTb4ndqgI29vZOkoDSonNd5L%2Fk0AJCcEFP%2BmAi8xpSux1AiD3GNkZttyKdQ3kNbEUZ754wzzgOSsP2SNxqpu3rwBKhrCp65Rnsh6phgCtHYLoqExxiG9p3sNPFBdf3AOV3yaRcOolDilSO0yWUdpEtvAH80YniTSizeVTmhsHFTgoeE1Vpp4f%2F4Gc4Q2UzYBTJmU6IzddD0T6sPq1To%2B%2Bq74sTjSC7OHtzsil28vxWrCmLgIGqDN1%2FzzEw9%2FqtwgY6xgLXsz%2F3KY2IJxs3OOXS3DWdapj7ZFg9gAtyAVswuqxJDwTHYdYpNFElIA0AGJkN7n1ynb8%2BzYqUsvQ9Qur9TLV9APh5K%2FAXPIPm9PNC4tUSQSfj3El%2BTVVp4SHRtpKyI0E22KGmxQ2K7XcgS8OmvoCFPNTIZZotlYVZO1DZqsOwDrmrZ%2FGx%2FVUEiGg%2Fu08gJ0i9E6vAQk%2FWACksuXnxyuShMy1YaeCLH4PZ3RarEBKmIcBQ%2FbkQJHx3qFH%2BPsAl2apUY4ZKQcdC27L%2FwL7VuRwVBZenMfI0duU8UEf%2B8%2BqFvjwM5iTAE%2B1eUV6ZWcUShCqAzptYFKT4EbWeds1l5sJFYWGdil%2FoDh%2BqxQRf1R%2B3g8jKBovflY8t5GZjfNJ0arA%2FeIqk%2Fk9VNDwnvT874sfhYPMQZpjtgvSKMMTLVU7hDWPAfn%2BfcA%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIA5BSHYGRVOUWEEAZ7%2F20250613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250613T012353Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=87f9ec3051be00be6263a93e998f0e099bda48cb2101785dc52b477c5c220cd8"
+    provisional_codebase_name = "goat"
+    org_id = "org_1CupxiUE3hxtOMwB"
+    provider = "manual"
+    version_id = "cf79eed5-3d1d-4303-9860-18b276486e11"
 
     run_codebase_connection.remote(
-        presigned_url,
-        archive_name,
-        org_id,
-        version_id,
-        provider,
-    )
-    # inspect_db.remote(version_id = 'e308eccc-8105-4cd4-8163-c591b507057d')
-
-
-@app.local_entrypoint()
-def github_auth_change() -> None:
-    import json
-
-    org_id = "org_s76pU1v8LAYhTOWB"
-
-    remove_event = json.loads("""
-    {
-        "action": "removed",
-        "installation": {
-            "id": 60598324,
-            "client_id": "Iv1.2cdbf00b132438f4",
-            "account": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-            },
-            "repository_selection": "selected",
-            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-            "repositories_url": "https://api.github.com/installation/repositories",
-            "html_url": "https://github.com/settings/installations/60597730",
-            "app_id": 869041,
-            "app_slug": "driverai-gh-demo",
-            "target_id": 1228798,
-            "target_type": "User",
-            "permissions": {
-            "contents": "read",
-            "metadata": "read",
-            "pull_requests": "read",
-            "repository_hooks": "read"
-            },
-            "events": [
-            "create",
-            "delete",
-            "fork",
-            "membership",
-            "organization",
-            "pull_request",
-            "push",
-            "repository"
-            ],
-            "created_at": "2025-02-05T13:30:32.000-08:00",
-            "updated_at": "2025-02-05T13:35:25.000-08:00",
-            "single_file_name": null,
-            "has_multiple_single_files": false,
-            "single_file_paths": [
-
-            ],
-            "suspended_by": null,
-            "suspended_at": null
-        },
-        "repository_selection": "selected",
-        "repositories_added": [
-
-        ],
-        "repositories_removed": [
-            {
-            "id": 10464543,
-            "node_id": "MDEwOlJlcG9zaXRvcnkxMDQ2NDU0Mw==",
-            "name": "dotfiles",
-            "full_name": "ghiotto1/dotfiles",
-            "private": false
-            }
-        ],
-        "requester": null,
-        "sender": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-        }
-    }
-    """)
-    add_github_event = json.loads("""
-        {
-        "action": "added",
-        "installation": {
-            "id": 60598324,
-            "client_id": "Iv1.2cdbf00b132438f4",
-            "account": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-            },
-            "repository_selection": "selected",
-            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-            "repositories_url": "https://api.github.com/installation/repositories",
-            "html_url": "https://github.com/settings/installations/60597730",
-            "app_id": 869041,
-            "app_slug": "driverai-gh-demo",
-            "target_id": 1228798,
-            "target_type": "User",
-            "permissions": {
-            "contents": "read",
-            "metadata": "read",
-            "pull_requests": "read",
-            "repository_hooks": "read"
-            },
-            "events": [
-            "create",
-            "delete",
-            "fork",
-            "membership",
-            "organization",
-            "pull_request",
-            "push",
-            "repository"
-            ],
-            "created_at": "2025-02-05T13:30:32.000-08:00",
-            "updated_at": "2025-02-05T13:35:25.000-08:00",
-            "single_file_name": null,
-            "has_multiple_single_files": false,
-            "single_file_paths": [
-
-            ],
-            "suspended_by": null,
-            "suspended_at": null
-        },
-        "repository_selection": "selected",
-        "repositories_added": [
-            {
-            "id": 116281345,
-            "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
-            "name": "spam-detection",
-            "full_name": "ghiotto1/spam-detection",
-            "private": false
-            }
-        ],
-        "repositories_removed": [
-
-        ],
-        "requester": null,
-        "sender": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-        }
-    }
-    """)
-
-    installation_id = str(add_github_event["installation"]["id"])
-    org_id = "org_s76pU1v8LAYhTOWB"
-    repos_added = []
-    repos_removed = []
-    for repo in add_github_event["repositories_added"]:
-        repos_added.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
-    for repo in remove_event["repositories_removed"]:
-        repos_removed.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
-    handle_github_events.remote(
-        installation_id,
-        org_id,
-        repos_added,
-        repos_removed,
-        [],
+        presigned_url=presigned_url,
+        provisional_codebase_name=provisional_codebase_name,
+        org_id=org_id,
+        provider=provider,
+        version_id=version_id,
     )
 
 
 @app.local_entrypoint()
-def github_delete_test() -> None:
-    import json
+def test_cleanup_old_versions(
+    version_id: str,
+) -> None:
+    cleanup_old_versions.remote(version_id)
 
-    body = json.loads("""
-    {
-        "action": "deleted",
-        "installation": {
-            "id": 60598324,
-            "client_id": "Iv1.2cdbf00b132438f4",
-            "account": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-            },
-            "repository_selection": "selected",
-            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-            "repositories_url": "https://api.github.com/installation/repositories",
-            "html_url": "https://github.com/settings/installations/60597730",
-            "app_id": 869041,
-            "app_slug": "driverai-gh-demo",
-            "target_id": 1228798,
-            "target_type": "User",
-            "permissions": {
-            "contents": "read",
-            "metadata": "read",
-            "pull_requests": "read",
-            "repository_hooks": "read"
-            },
-            "events": [
-            "create",
-            "delete",
-            "fork",
-            "membership",
-            "organization",
-            "pull_request",
-            "push",
-            "repository"
-            ],
-            "created_at": "2025-02-05T13:30:32.000-08:00",
-            "updated_at": "2025-02-05T13:35:25.000-08:00",
-            "single_file_name": null,
-            "has_multiple_single_files": false,
-            "single_file_paths": [
 
-            ],
-            "suspended_by": null,
-            "suspended_at": null
-        },
-        "repositories": [
-            {
-            "id": 116281345,
-            "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
-            "name": "spam-detection",
-            "full_name": "ghiotto1/spam-detection",
-            "private": false
-            }
-        ],
-        "sender": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-        }
-    }
-    """)
-    installation_id = str(body["installation"]["id"])
-    org_id = "org_s76pU1v8LAYhTOWB"
-    # repos_added = []
-    repos_removed = []
-    for repo in body["repositories"]:
-        repos_removed.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
+@app.local_entrypoint()
+def test_export(
+    version_id: str,
+    install_id: str | None = None,
+) -> None:
+    """Export tech docs to zip"""
+    from modal_funcs import export_tech_docs_to_zip
 
-    handle_github_events.remote(
-        installation_id,
-        org_id,
-        [],
-        repos_removed,
-        [],
-    )
+    export_tech_docs_to_zip.remote(version_id, install_id)
 
 
 @app.local_entrypoint()
@@ -1086,8 +1148,20 @@ def run_connect_unconnected_repos() -> None:
 
 
 @app.function(
-    image=modal.Image.debian_slim(python_version="3.12").pip_install(
-        "sendgrid", "strawberry-graphql"
+    image=modal.Image.debian_slim(python_version="3.12")
+    .pip_install("sendgrid", "strawberry-graphql", "aiolimiter")
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "modal_funcs",
+        "deep_context_docs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        copy=True,
+        ignore=lambda p: False,
     ),
     secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
 )
@@ -1110,14 +1184,3 @@ def send_exception_email(exception_details: str) -> None:
         print(f"Email sent: {response.status_code}")
     except Exception as e:
         print(f"Error sending email: {e}")
-
-
-onboarding_and_inspect_image = (
-    modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .pip_install("/driver_db")
-    .pip_install("requests")
-    .pip_install("boto3")
-    .pip_install("gitignore-parser")
-    .pip_install("tree-sitter>=0.24.0", "tree-sitter-c>=0.23.4")
-)

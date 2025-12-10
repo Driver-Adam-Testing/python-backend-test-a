@@ -2,16 +2,13 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from database.models_v1 import Tag
+from database.models import Tag
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
-from app.api.auth import (
-    ContentEditorPermission,
-    ContentReadonlyPermission,
-    UserToken,
-)
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_org_membership
 from app.schemas.content_schema import ListContentInput
 from app.schemas.tag_schema import (
     EditTagInput,
@@ -28,22 +25,19 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post(
-    "/",
-    status_code=201,
-    dependencies=[ContentEditorPermission],
-)
+@router.post("/", status_code=201)
 def new_tag(
     session: CurrentSession,
     user: UserToken,
     new_tag: NewTagInput,
 ) -> Tag:
-    logging.info("Creating new tag")
+    enforce_org_membership(session, user)
+    logger.info("Creating new tag")
     tag_service = TagService(session)
     return tag_service.create_tag(user=user, lt_input=new_tag)
 
 
-@router.get("/", dependencies=[ContentReadonlyPermission])
+@router.get("/")
 def read_tags(
     session: CurrentSession,
     user: UserToken,
@@ -52,6 +46,7 @@ def read_tags(
     name: str | None = None,
     type: TagType | None = None,
 ) -> ListTagsResults:
+    enforce_org_membership(session, user)
     tag_service = TagService(session)
     return tag_service.list_tags(
         user=user,
@@ -59,22 +54,20 @@ def read_tags(
     )
 
 
-@router.put(
-    "/{tag_id}",
-    dependencies=[ContentEditorPermission],
-)
+@router.put("/{tag_id}")
 def update_tag(
     session: CurrentSession,
     user: UserToken,
     tag_id: str,
     updated_tag: EditTagInput,
 ) -> Tag:
+    enforce_org_membership(session, user)
     """Update a tag. All users in an organization can edit all tags in the organization currently."""
     tag_service = TagService(session)
     return tag_service.edit_tag(user=user, tag_id=tag_id, lt_input=updated_tag)
 
 
-@router.get("/{tag_id}/content", dependencies=[ContentReadonlyPermission])
+@router.get("/{tag_id}/content")
 def read_tag_contents(
     session: CurrentSession,
     user: UserToken,
@@ -88,6 +81,7 @@ def read_tag_contents(
     offset: int | None = 0,
     latest_version_only: bool = False,
 ) -> ListTagContentsResults:
+    enforce_org_membership(session, user)
     tag_service = TagService(session)
     return tag_service.list_tag_contents(
         user=user,
@@ -105,16 +99,17 @@ def read_tag_contents(
     )
 
 
-@router.delete("/{tag_id}", status_code=204, dependencies=[ContentEditorPermission])
+@router.delete("/{tag_id}", status_code=204)
 def delete_tag(
     session: CurrentSession,
     user: UserToken,
     tag_id: UUID,
 ) -> None:
     """Delete a tag by its ID."""
+    enforce_org_membership(session, user)
     tag_service = TagService(session)
     try:
         tag_service.delete_tag(user=user, tag_id=tag_id)
-        return  # No content should be returned for 204 status code
     except IntegrityError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Integrity error deleting tag {tag_id}: {e}")
+        raise HTTPException(400, "Cannot delete tag due to existing references.")

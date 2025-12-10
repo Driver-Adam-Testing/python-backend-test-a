@@ -1,8 +1,11 @@
-from app.core.logger import logger
+import logging
+
 from app.repositories.base_repository import BaseRepository
-from database.models_v1 import GithubAppInstallation
+from database.models import GithubAppInstallation
 from sqlalchemy import func
 from sqlmodel import Session, col, select
+
+logger = logging.getLogger(__name__)
 
 
 class GithubAppInstallationsRepository(BaseRepository[GithubAppInstallation]):

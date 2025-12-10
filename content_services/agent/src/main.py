@@ -11,32 +11,33 @@ app = modal.App("agent")
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .apt_install("nodejs", "npm")
+    .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/packages/shared", copy=True
+    )
     .poetry_install_from_file("pyproject.toml")
 )
 
 agent_model_config = {
     "image": image,
-    "mounts": [
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs",
-            remote_path="/root/data/",
-        ),
-    ],
     "secrets": [
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
     ],
-    "concurrency_limit": 36,
+    "max_containers": 36,
 }
 
-if os.environ["MODAL_ENVIRONMENT"] != "staging":
-    agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
+
+agent_model_config["proxy"] = (
+    modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod")
+)
 
 
-@app.function(timeout=3600, **agent_model_config, keep_warm=10)
+@app.function(timeout=3600, **agent_model_config, min_containers=0)
 def run(input: dict) -> any:
     from shared.interfaces.agents.pipeline_configuration import BlockKind, PipelineInput
     from shared.pipelines.agents.execute import execute_sequence

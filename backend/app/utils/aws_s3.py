@@ -1,17 +1,19 @@
 import hashlib
+import logging
 from urllib.parse import unquote_plus, urlparse
 
 import boto3
 
 from app.core.config import settings
-from app.core.logger import logger
+
+logger = logging.getLogger(__name__)
 
 # Initialize S3 client
 s3_client = boto3.client(
     "s3",
-    region_name="us-east-1",
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    region_name=settings.AWS_REGION,
+    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
     endpoint_url=settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None,
 )
 
@@ -46,15 +48,20 @@ def parse_presigned_url(url: str) -> tuple[str, str]:
 
 
 def generate_put_presigned_url(
-    key: str, content_type: str, metadata: dict | None = None, expires: int = 3600
+    key: str,
+    content_type: str,
+    metadata: dict | None = None,
+    expires: int = 3600,
+    bucket: str | None = None,
 ) -> str:
     if metadata is None:
         metadata = {}
-    bucket = (
-        settings.DROPZONE_BUCKET_NAME
-        if not settings.USE_LEGACY_DROPZONE
-        else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
-    )
+    if bucket is None:
+        bucket = (
+            settings.DROPZONE_BUCKET_NAME
+            if not settings.USE_LEGACY_DROPZONE
+            else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
+        )
     return s3_client.generate_presigned_url(
         ClientMethod="put_object",
         Params={

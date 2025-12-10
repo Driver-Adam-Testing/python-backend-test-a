@@ -1,6 +1,13 @@
 from pathlib import Path
 from typing import Self
 
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.models import ChatOpenAI
 
 from .ir_common import (
@@ -17,6 +24,7 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     SymbolKind,
     default_ctags_analysis,
 )
@@ -192,15 +200,31 @@ class VerilogModuleData(IrData):
     logic_and_control_flow: ListedRawContentWithNone
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return MODULES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=MODULES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{MODULES_FOUND_USER_PROMPT}{symbol.name}\n\nModule code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{MODULES_FOUND_USER_PROMPT}\n{symbol.name}\n\nModule code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"Full File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -211,7 +235,7 @@ class VerilogModuleData(IrData):
         raise NotImplementedError("Modules should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             constants=ListedBacktickNameRawContentWithNone(content=[]),
@@ -230,15 +254,31 @@ class VerilogModuleCollection(IrCollection):
 
 class VerilogFnTaskData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
-        return FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{FUNCTIONS_AND_TASKS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction or task code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{FUNCTIONS_AND_TASKS_FOUND_USER_PROMPT}\n{symbol.name}\n\nFunction or task code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"Full File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -259,15 +299,31 @@ class VerilogFnTaskCollection(IrCollection):
 
 class VerilogDataTypeData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
-        return DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{DATA_TYPES_FOUND_USER_PROMPT}{symbol.name}\n\nData type code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{DATA_TYPES_FOUND_USER_PROMPT}\n{symbol.name}\n\nData type code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"Full File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:

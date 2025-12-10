@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import Generic, Optional, TypeVar
 from uuid import UUID
 
-from database.models_v1 import (
+from database.models import (
     DerivedContent,
     DocumentSource,
     Tag,
 )
-from database.models_v2_enums import VersionStatus
+from database.models_enums import VersionStatus
 from pydantic import BaseModel
 from sqlmodel import SQLModel
 
@@ -129,6 +129,8 @@ class BatchDeleteTagsResponse(BaseModel):
 class DownloadContentResponse(BaseModel):
     download_url: str
     content_name: str
+    status: str
+    primary_asset_id: UUID
 
 
 class TagResult(BaseModel):

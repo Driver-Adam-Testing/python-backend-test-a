@@ -1,11 +1,17 @@
-from utils.lang_specialization.default import (
-    default_imports_checker,
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
 )
+from utils.lang_specialization.ir_common import ListData
 from utils.lang_specialization.java import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA,
     JavaClassCollection,
     JavaClassRawSymbolCollection,
+    JavaImportRawSymbolCollection,
     JavaInterfaceCollection,
     JavaInterfaceRawSymbolCollection,
 )
@@ -15,14 +21,21 @@ SOURCE_CODE_LARGE_TEMPLATE_JAVA = [
     (
         S.SINGLE_PROMPT_TEXT,
         "# Purpose",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA,
-        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA))
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+        .into_str(),
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT))
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE)
+        .into_str(),
     ),
     (
-        S.LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker,
-        lambda _llm, output, _code: output,
+        JavaImportRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (

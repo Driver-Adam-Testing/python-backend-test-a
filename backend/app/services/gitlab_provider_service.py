@@ -3,7 +3,7 @@ import json
 import logging
 import secrets
 
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -19,6 +19,7 @@ from app.git_providers.utils.errors import GitProviderAccessTokenError
 from app.repositories.git_provider_repository import (
     delete_git_provider_app_install,
     git_provider_app_by_id,
+    git_provider_app_installation_by_id,
     git_provider_app_installation_by_org_id,
     git_provider_app_installation_by_user_id,
     git_provider_apps_by_org_id,
@@ -37,6 +38,7 @@ from app.schemas.secret_management_schema import (
 logger = logging.getLogger(__name__)
 
 
+# TODO:
 def fetch_git_provider_apps_by_org_id(
     session: Session, organization_id: str
 ) -> list[GitProviderApp]:
@@ -141,6 +143,39 @@ def install_group_access_token(
     return app_install
 
 
+def update_group_access_token(
+    session: Session,
+    organization_id: str,
+    app_id: str,
+    installation_id: str,
+    gat: GroupAccessToken,
+    aws_config: AWSClientConfig,
+) -> None:
+    is_token_valid = validate_group_access_token(
+        session, organization_id, app_id, gat.token, aws_config
+    )
+    if not is_token_valid:
+        raise GitProviderAccessTokenError("Invalid group access token")
+
+    app_install = git_provider_app_installation_by_id(session, installation_id)
+    secrets_manager = AWSSecretManagementStrategy(config=aws_config)
+    app_secret_name = format_secret_name(
+        APP_INSTALL_GAT_NAME_PREFIX, str(app_install.id)
+    )
+
+    try:
+        secret_dict = secrets_manager.read_secret(app_secret_name)
+        app_token_secret = GitProviderAppTokenSecret(**secret_dict)
+        app_token_secret.token = gat.token
+        updated_secret_value = json.dumps(app_token_secret.model_dump())
+        secrets_manager.write_secret(app_secret_name, updated_secret_value)
+    except Exception as e:
+        logger.exception(
+            f"Error updating group access token secret for installation {app_install.id} owned by org {organization_id}. Aborting operation."
+        )
+        raise e
+
+
 def authorize_git_provider(
     session: Session,
     organization_id: str,
@@ -241,17 +276,40 @@ def fetch_group_repositories_by_app_id(
     group_app_installs = git_provider_app_installation_by_org_id(
         session, organization_id, app_id
     )
-    # try:
     repositories = []
     for group_app_install in group_app_installs:
         repositories.extend(git_provider.fetch_group_repos(group_app_install))
 
     return repositories
-    # except GitProviderAccessTokenError as e:
-    #     logger.error(
-    #         f"Group access token expired or was revoked for user {user_id} and app {app_id}"
-    #     )
-    #     raise e
+
+
+def fetch_group_repositories_by_installation_id(
+    session: Session,
+    organization_id: str,
+    user_id: str,
+    app_id: str,
+    installation_id: str,
+    aws_config: AWSClientConfig,
+) -> list[GitRepository]:
+    git_provider = GitLabProvider.from_config(
+        git_provider_app_by_id(session, organization_id, app_id), aws_config
+    )
+
+    group_app_installation = git_provider_app_installation_by_id(
+        session, installation_id
+    )
+    if (
+        not group_app_installation
+        or group_app_installation.organization_id != organization_id
+    ):
+        logger.error(
+            f"Group app installation not found for user {user_id} and app {app_id}"
+        )
+        raise ValueError("Group app installation not found for organization")
+    repositories = []
+    repositories.extend(git_provider.fetch_group_repos(group_app_installation))
+
+    return repositories
 
 
 def clone_git_repository(
@@ -349,7 +407,7 @@ def validate_group_access_token(
         token_user = git_provider.auth_strategy.token_user(access_token)
         return token_user is not None
     except Exception:
-        logger.error(
+        logger.exception(
             f"Error validating group access token for app {app_id} and org {organization_id}"
         )
         return False

@@ -41,6 +41,7 @@ class MetricsLambda(Construct):
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
+        print(vpc_id)
         vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
         driver_db_path = os.path.abspath("driver_db")
 
@@ -86,38 +87,37 @@ class MetricsLambda(Construct):
             targets=[event_target],
             event_pattern=aws_events.EventPattern(source=["metrics.client"]),
         )
-
-        if params.environment in ["development", "staging", "production"]:
-            self.metric_dlq_alarm = aws_cloudwatch.Alarm(
-                self,
-                "MetricDLQAlarm",
-                alarm_description=f"[{params.environment}] Metrics Undelivered In DLQ",
-                metric=self.metrics_dlq.metric_approximate_number_of_messages_visible(),
-                threshold=1,
-                evaluation_periods=1,
-                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-            )
-            self.metric_message_age_alarm = aws_cloudwatch.Alarm(
-                self,
-                "MetricMessageAgeAlarm",
-                alarm_description=f"[{params.environment}] Metrics DLQ Message Age > 2 hours Alarm",
-                metric=self.metrics_dlq.metric_approximate_age_of_oldest_message(),
-                threshold=7200,  # Seconds, = 2 hours
-                evaluation_periods=1,
-                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-            )
-            self.lambda_error_rate_alarm = aws_cloudwatch.Alarm(
-                self,
-                "MetricLambdaErrorAlarm",
-                alarm_description=f"[{params.environment}] Metrics Lambda Errors > 5 over last 5 minutes",
-                metric=self.lambda_function.metric_errors(),
-                threshold=5,
-                evaluation_periods=1,
-                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-            )
+        
+        self.metric_dlq_alarm = aws_cloudwatch.Alarm(
+            self,
+            "MetricDLQAlarm",
+            alarm_description=f"[{params.environment}] Metrics Undelivered In DLQ",
+            metric=self.metrics_dlq.metric_approximate_number_of_messages_visible(),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+        )
+        self.metric_message_age_alarm = aws_cloudwatch.Alarm(
+            self,
+            "MetricMessageAgeAlarm",
+            alarm_description=f"[{params.environment}] Metrics DLQ Message Age > 2 hours Alarm",
+            metric=self.metrics_dlq.metric_approximate_age_of_oldest_message(),
+            threshold=7200,  # Seconds, = 2 hours
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+        )
+        self.lambda_error_rate_alarm = aws_cloudwatch.Alarm(
+            self,
+            "MetricLambdaErrorAlarm",
+            alarm_description=f"[{params.environment}] Metrics Lambda Errors > 5 over last 5 minutes",
+            metric=self.lambda_function.metric_errors(),
+            threshold=5,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+        )
 
         if params.cloudwatch_alarm_arn:
             notification_action = aws_cloudwatch_actions.SnsAction(

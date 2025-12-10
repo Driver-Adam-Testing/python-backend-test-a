@@ -2,6 +2,14 @@ import os
 import subprocess
 import tempfile
 
+current_file_path = os.path.abspath(__file__)
+puppeteer_config_path = os.path.join(
+    os.path.dirname(current_file_path), "puppeteer-config.json"
+)
+
+print(f"Current file absolute path: {current_file_path}")
+print(f"Puppeteer config absolute path: {puppeteer_config_path}")
+
 
 def is_mermaid_renderable(mermaid_code: str) -> tuple:
     """
@@ -21,9 +29,22 @@ def is_mermaid_renderable(mermaid_code: str) -> tuple:
         output_path = output_file.name
 
     try:
+        print(f"Puppeteer config absolute path: {puppeteer_config_path}")
+        print(f"Mermaid filepath: {mermaid_filepath}")
+        print(f"Output path: {output_path}")
+        print(f"Puppeteer config absolute path: {puppeteer_config_path}")
+        print(f"Mermaid code: {mermaid_code}")
         # Try rendering. If mmdc cannot parse the file, it will raise CalledProcessError.
         subprocess.check_output(
-            ["mmdc", "-i", mermaid_filepath, "-o", output_path],
+            [
+                "mmdc",
+                "--puppeteerConfigFile",
+                puppeteer_config_path,
+                "-i",
+                mermaid_filepath,
+                "-o",
+                output_path,
+            ],
             stderr=subprocess.STDOUT,
         )
         # If successful, the code is valid

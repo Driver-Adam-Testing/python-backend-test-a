@@ -366,7 +366,7 @@ class HeaderVariableRawSymbolCollection(RawSymbolCollection):
 
 class HeaderDataStructureData(ClassData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -403,7 +403,7 @@ class HeaderDataStructureCollection(IrCollection):
 
 class HeaderFnData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -432,7 +432,7 @@ class HeaderFnCollection(IrCollection):
 
 class HeaderVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

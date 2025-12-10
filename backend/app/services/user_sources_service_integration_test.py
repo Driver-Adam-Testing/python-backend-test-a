@@ -1,0 +1,812 @@
+"""Integration tests for User Sources endpoint."""
+
+import pytest
+from database.models_enums import OrgRole, PrimaryAssetRole, PrincipalKind, TeamRole
+from sqlmodel import Session
+
+from app.auth.models import User
+from app.schemas.user_schema import AssignmentType
+from app.services.user_service import UserService
+from app.test_factories import (
+    Auth0UserFactory,
+    PrimaryAssetFactory,
+    PrimaryAssetRoleGrantFactory,
+    TeamFactory,
+    TeamMembershipFactory,
+)
+
+
+def create_mock_user(user_id: str, organization_id: str) -> User:
+    """Create a mock User from JWT token."""
+    return User.model_validate(
+        {
+            "sub": user_id,
+            "org_id": organization_id,
+            "org_name": "Test Org",
+            "iss": "https://test.auth0.com/",
+            "aud": ["api"],
+            "iat": 1234567890,
+            "exp": 9999999999,
+            "scope": "",
+            "azp": "test",
+            "permissions": [],
+            "user_email": "test@example.com",
+            "user_full_name": "Test User",
+        }
+    )
+
+
+@pytest.mark.integration
+class TestUserSourcesIntegration:
+    """Integration tests for user sources operations."""
+
+    def test_get_user_sources_with_direct_grant(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test getting user sources with direct user grant."""
+        # Create user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|test123",
+            email="test@example.com",
+            name="Test User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create asset
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Test Codebase",
+            organization_id="test-org-id",
+        )
+
+        # Create direct user grant
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Get sources
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+        )
+
+        # Assertions
+        assert result.total == 1
+        assert len(result.sources) == 1
+        source = result.sources[0]
+        assert source.display_name == "Test Codebase"
+        assert source.effective_role == PrimaryAssetRole.asset_member
+        assert source.source_role == PrimaryAssetRole.asset_member
+        assert source.asset_org_role is None
+        assert source.user_org_role == OrgRole.org_member
+        assert source.is_super_admin is False
+        assert len(source.teams) == 0
+
+    def test_get_user_sources_with_org_grant(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test getting user sources with org-wide grant."""
+        # Create user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|test456",
+            email="test@example.com",
+            name="Test User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create asset
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Org Shared Codebase",
+            organization_id="test-org-id",
+        )
+
+        # Create org-wide grant
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Get sources
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+        )
+
+        # Assertions
+        assert result.total == 1
+        source = result.sources[0]
+        assert source.display_name == "Org Shared Codebase"
+        assert source.effective_role == PrimaryAssetRole.asset_member
+        assert source.source_role is None
+        assert source.asset_org_role == PrimaryAssetRole.asset_member
+
+    def test_get_user_sources_with_team_grant(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test getting user sources with team grant."""
+        # Create user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|test789",
+            email="test@example.com",
+            name="Test User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create team
+        team = TeamFactory.create(
+            session=integration_db_session,
+            name="Engineering Team",
+            organization_id="test-org-id",
+        )
+
+        # Add user to team
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=team.id,
+            user_id=db_user.id,
+            role=TeamRole.team_member,
+            organization_id="test-org-id",
+        )
+
+        # Create asset
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Team Codebase",
+            organization_id="test-org-id",
+        )
+
+        # Create team grant
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.team,
+            team_id=team.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Get sources
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+        )
+
+        # Assertions
+        assert result.total == 1
+        source = result.sources[0]
+        assert source.display_name == "Team Codebase"
+        assert source.effective_role == PrimaryAssetRole.asset_admin
+        assert source.source_role is None
+        assert len(source.teams) == 1
+        team_info = source.teams[0]
+        assert team_info.display_name == "Engineering Team"
+        assert team_info.team_role == TeamRole.team_member
+        assert team_info.source_role == PrimaryAssetRole.asset_admin
+
+    def test_get_user_sources_with_super_admin(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test getting user sources as super admin."""
+        # Create super admin user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|admin123",
+            email="admin@example.com",
+            name="Admin User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_super_admin,
+        )
+
+        # Create asset (no explicit grant needed for super admin)
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Private Codebase",
+            organization_id="test-org-id",
+        )
+
+        # Create a grant for someone else so asset exists in DB
+        other_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|other",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=other_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Get sources as super admin
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+        )
+
+        # Super admin sees all assets in org
+        assert result.total == 1
+        source = result.sources[0]
+        assert source.effective_role == PrimaryAssetRole.asset_admin
+        assert source.is_super_admin is True
+        assert source.user_org_role == OrgRole.org_super_admin
+
+    def test_filter_by_assignment_type_direct(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test filtering sources by assignment_type=direct."""
+        # Create user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|filter123",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create asset with direct grant
+        direct_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Direct Access",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=direct_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Create asset with org grant (inherited)
+        org_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Org Access",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=org_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Get sources with direct filter
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.DIRECT,
+        )
+
+        # Should only see direct grant
+        assert result.total == 1
+        assert result.sources[0].display_name == "Direct Access"
+
+    def test_filter_by_assignment_type_inherited(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test filtering sources by assignment_type=inherited."""
+        # Create user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|filter456",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create asset with direct grant
+        direct_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Direct Access",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=direct_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Create asset with org grant (inherited)
+        org_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Org Access",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=org_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Get sources with inherited filter
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.INHERITED,
+        )
+
+        # Should only see inherited grant
+        assert result.total == 1
+        assert result.sources[0].display_name == "Org Access"
+
+    def test_multiple_teams_on_same_asset(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test user has access via multiple teams to same asset."""
+        # Create user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|multiteam",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create two teams
+        team1 = TeamFactory.create(
+            session=integration_db_session,
+            name="Frontend Team",
+            organization_id="test-org-id",
+        )
+        team2 = TeamFactory.create(
+            session=integration_db_session,
+            name="Backend Team",
+            organization_id="test-org-id",
+        )
+
+        # Add user to both teams with different roles
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=team1.id,
+            user_id=db_user.id,
+            role=TeamRole.team_admin,
+            organization_id="test-org-id",
+        )
+        TeamMembershipFactory.create(
+            session=integration_db_session,
+            team_id=team2.id,
+            user_id=db_user.id,
+            role=TeamRole.team_member,
+            organization_id="test-org-id",
+        )
+
+        # Create asset
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Shared Codebase",
+            organization_id="test-org-id",
+        )
+
+        # Both teams have grants with different roles
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.team,
+            team_id=team1.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.team,
+            team_id=team2.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Get sources
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+        )
+
+        # Should see both teams
+        assert result.total == 1
+        source = result.sources[0]
+        assert source.effective_role == PrimaryAssetRole.asset_admin  # Highest
+        assert len(source.teams) == 2
+
+        # Teams should be sorted by name
+        assert source.teams[0].display_name == "Backend Team"
+        assert source.teams[0].team_role == TeamRole.team_member
+        assert source.teams[0].source_role == PrimaryAssetRole.asset_admin
+
+        assert source.teams[1].display_name == "Frontend Team"
+        assert source.teams[1].team_role == TeamRole.team_admin
+        assert source.teams[1].source_role == PrimaryAssetRole.asset_member
+
+    def test_filter_by_roles_asset_admin(self, integration_db_session: Session) -> None:
+        """Test filtering sources by roles=[asset_admin]."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|rolefilter1",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create source with asset_admin grant
+        admin_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Admin Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=admin_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Create source with asset_member grant
+        member_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Member Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=member_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Filter by asset_admin role
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            roles=[PrimaryAssetRole.asset_admin],
+        )
+
+        # Should only see admin source
+        assert result.total == 1
+        assert result.sources[0].display_name == "Admin Codebase"
+        assert result.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+    def test_filter_by_roles_asset_member(
+        self, integration_db_session: Session
+    ) -> None:
+        """Test filtering sources by roles=[asset_member]."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|rolefilter2",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create source with asset_admin grant
+        admin_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Admin Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=admin_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Create source with asset_member grant
+        member_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Member Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=member_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Filter by asset_member role
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            roles=[PrimaryAssetRole.asset_member],
+        )
+
+        # Should only see member source
+        assert result.total == 1
+        assert result.sources[0].display_name == "Member Codebase"
+        assert result.sources[0].effective_role == PrimaryAssetRole.asset_member
+
+    def test_filter_by_multiple_roles(self, integration_db_session: Session) -> None:
+        """Test filtering sources by multiple roles."""
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|rolefilter3",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create source with asset_admin grant
+        admin_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Admin Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=admin_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        # Create source with asset_member grant
+        member_asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Member Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=member_asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Filter by both roles
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+        result = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            roles=[PrimaryAssetRole.asset_admin, PrimaryAssetRole.asset_member],
+        )
+
+        # Should see both sources
+        assert result.total == 2
+        source_names = {s.display_name for s in result.sources}
+        assert source_names == {"Admin Codebase", "Member Codebase"}
+
+    def test_super_admin_with_direct_admin_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a super admin with a direct admin grant appears in both assignment type filters.
+        """
+        # Create super admin user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|superadmin123",
+            email="superadmin@example.com",
+            name="Super Admin",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_super_admin,
+        )
+
+        # Create asset with direct admin grant to the super admin
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Test Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+
+        # Filter by direct - should appear
+        result_direct = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.DIRECT,
+        )
+        assert result_direct.total == 1
+        assert result_direct.sources[0].display_name == "Test Codebase"
+        assert result_direct.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Filter by inherited - should also appear (from super admin status)
+        result_inherited = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.INHERITED,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.sources[0].display_name == "Test Codebase"
+        assert (
+            result_inherited.sources[0].effective_role == PrimaryAssetRole.asset_admin
+        )
+
+    def test_super_admin_with_direct_member_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a super admin with a direct member grant appears in both filters.
+
+        Even though the direct grant is member level, they should appear in both filters
+        and have effective_role=admin (from super admin status).
+        """
+        # Create super admin user
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|superadmin456",
+            email="superadmin2@example.com",
+            name="Super Admin 2",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_super_admin,
+        )
+
+        # Create asset with direct member grant to the super admin
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Another Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+
+        # Filter by direct - should appear (because of direct member grant)
+        result_direct = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.DIRECT,
+        )
+        assert result_direct.total == 1
+        assert result_direct.sources[0].display_name == "Another Codebase"
+        # Effective role is admin (from super admin status), not member (from direct grant)
+        assert result_direct.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Filter by inherited - should also appear (from super admin status)
+        result_inherited = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.INHERITED,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.sources[0].display_name == "Another Codebase"
+        assert (
+            result_inherited.sources[0].effective_role == PrimaryAssetRole.asset_admin
+        )
+
+    def test_regular_user_with_direct_and_org_grant_appears_in_both_filters(
+        self, integration_db_session: Session
+    ) -> None:
+        """
+        Test that a regular user with both direct and org-wide grants appears in both filters.
+
+        A user with:
+        - Direct admin grant
+        - Org-wide member grant (inherited)
+
+        Should appear when filtering by both 'direct' and 'inherited', with effective_role=admin.
+        """
+        # Create a regular user (not super admin)
+        db_user = Auth0UserFactory.create(
+            session=integration_db_session,
+            user_id="auth0|regular123",
+            email="regular@example.com",
+            name="Regular User",
+            organization_id="test-org-id",
+            org_role=OrgRole.org_member,
+        )
+
+        # Create a source with org-wide member grant (inherited)
+        asset = PrimaryAssetFactory.create(
+            session=integration_db_session,
+            display_name="Test Codebase",
+            organization_id="test-org-id",
+        )
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+
+        # Grant the user direct admin access
+        PrimaryAssetRoleGrantFactory.create(
+            session=integration_db_session,
+            primary_asset_id=asset.id,
+            organization_id="test-org-id",
+            principal_kind=PrincipalKind.user,
+            user_id=db_user.id,
+            role=PrimaryAssetRole.asset_admin,
+        )
+
+        mock_user = create_mock_user(db_user.id, "test-org-id")
+        service = UserService(integration_db_session)
+
+        # Filter by direct - should appear (has direct grant)
+        result_direct = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.DIRECT,
+        )
+        assert result_direct.total == 1
+        assert result_direct.sources[0].display_name == "Test Codebase"
+        # Effective role is admin (from direct admin grant, higher than org member grant)
+        assert result_direct.sources[0].effective_role == PrimaryAssetRole.asset_admin
+
+        # Filter by inherited - should also appear (has org grant)
+        result_inherited = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=AssignmentType.INHERITED,
+        )
+        assert result_inherited.total == 1
+        assert result_inherited.sources[0].display_name == "Test Codebase"
+        # Effective role is still admin (from direct grant)
+        assert (
+            result_inherited.sources[0].effective_role == PrimaryAssetRole.asset_admin
+        )
+
+        # No filter - should appear once with effective role
+        result_all = service.get_user_sources(
+            user=mock_user,
+            user_id=db_user.id,
+            assignment_type=None,
+        )
+        assert result_all.total == 1
+        assert result_all.sources[0].display_name == "Test Codebase"
+        assert result_all.sources[0].effective_role == PrimaryAssetRole.asset_admin

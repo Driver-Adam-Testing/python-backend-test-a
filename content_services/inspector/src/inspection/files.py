@@ -6,11 +6,22 @@ from typing import Any, Self
 import modal
 import openai
 from pydantic import BaseModel, ValidationError
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.lang_specialization.symbol_common import Lang, disambiguate_header
+from utils.lang_specialization.symbol_common import (
+    Lang,
+    ReifiedSymbol,
+    disambiguate_header,
+)
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
@@ -53,6 +64,12 @@ from inspection.prompt_templates.files.templates.source_code_large_cs_multi_prom
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
 )
+from inspection.prompt_templates.files.templates.source_code_large_go import (
+    SOURCE_CODE_LARGE_TEMPLATE_GO,
+)
+from inspection.prompt_templates.files.templates.source_code_large_go_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_GO,
+)
 from inspection.prompt_templates.files.templates.source_code_large_header import (
     SOURCE_CODE_LARGE_TEMPLATE_HEADER,
 )
@@ -64,6 +81,12 @@ from inspection.prompt_templates.files.templates.source_code_large_java import (
 )
 from inspection.prompt_templates.files.templates.source_code_large_java_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA,
+)
+from inspection.prompt_templates.files.templates.source_code_large_js_ts import (
+    SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
+)
+from inspection.prompt_templates.files.templates.source_code_large_js_ts_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS,
 )
 from inspection.prompt_templates.files.templates.source_code_large_py import (
     SOURCE_CODE_LARGE_TEMPLATE_PY,
@@ -107,11 +130,17 @@ from inspection.prompt_templates.files.templates.source_code_small_cs import (
 from inspection.prompt_templates.files.templates.source_code_small_default import (
     SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
 )
+from inspection.prompt_templates.files.templates.source_code_small_go import (
+    SOURCE_CODE_SMALL_TEMPLATE_GO,
+)
 from inspection.prompt_templates.files.templates.source_code_small_header import (
     SOURCE_CODE_SMALL_TEMPLATE_HEADER,
 )
 from inspection.prompt_templates.files.templates.source_code_small_java import (
     SOURCE_CODE_SMALL_TEMPLATE_JAVA,
+)
+from inspection.prompt_templates.files.templates.source_code_small_js_ts import (
+    SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
 )
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
@@ -215,6 +244,9 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.JAVA: SOURCE_CODE_LARGE_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_LARGE_TEMPLATE_RUBY,
     Lang.C_SHARP: SOURCE_CODE_LARGE_TEMPLATE_CS,
+    Lang.TYPESCRIPT: SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
+    Lang.JAVASCRIPT: SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
+    Lang.GO: SOURCE_CODE_LARGE_TEMPLATE_GO,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -228,6 +260,9 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.JAVA: SOURCE_CODE_SMALL_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_SMALL_TEMPLATE_RUBY,
     Lang.C_SHARP: SOURCE_CODE_SMALL_TEMPLATE_CS,
+    Lang.TYPESCRIPT: SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
+    Lang.JAVASCRIPT: SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
+    Lang.GO: SOURCE_CODE_SMALL_TEMPLATE_GO,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -241,6 +276,9 @@ METADATA_SMALL_BY_LANG = {
     Lang.JAVA: METADATA_SMALL_TEMPLATE,
     Lang.RUBY: METADATA_SMALL_TEMPLATE,
     Lang.C_SHARP: METADATA_SMALL_TEMPLATE,
+    Lang.TYPESCRIPT: METADATA_SMALL_TEMPLATE,
+    Lang.JAVASCRIPT: METADATA_SMALL_TEMPLATE,
+    Lang.GO: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -254,6 +292,9 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.JAVA: METADATA_MEDIUM_TEMPLATE,
     Lang.RUBY: METADATA_MEDIUM_TEMPLATE,
     Lang.C_SHARP: METADATA_MEDIUM_TEMPLATE,
+    Lang.TYPESCRIPT: METADATA_MEDIUM_TEMPLATE,
+    Lang.JAVASCRIPT: METADATA_MEDIUM_TEMPLATE,
+    Lang.GO: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -267,6 +308,9 @@ METADATA_LARGE_BY_LANG = {
     Lang.JAVA: METADATA_LARGE_TEMPLATE,
     Lang.RUBY: METADATA_LARGE_TEMPLATE,
     Lang.C_SHARP: METADATA_LARGE_TEMPLATE,
+    Lang.TYPESCRIPT: METADATA_LARGE_TEMPLATE,
+    Lang.JAVASCRIPT: METADATA_LARGE_TEMPLATE,
+    Lang.GO: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
@@ -280,39 +324,82 @@ TEMPLATE_DATA = {
 def file_long_from_code(
     llm: ChatOpenAI, file_name: str, codebase_name: str, path: str | Path, code: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/long_from_code.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/long_from_code.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = (
+    user_prompt = (
         f"`{file_name}` in codebase `{codebase_name}` with path `{path!s}`:\n\n{code}"
     )
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_sentence_from_chunk_descriptions(
     llm: ChatOpenAI, chunks: list[str], file_name: str, codebase_name: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/files/single_sentence_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/single_sentence_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
+
+    user_prompt_structured = Prompt.empty()
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+    user_prompt_structured.append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
     for idx, chunk in enumerate(chunks, start=1):
-        human_prompt += f"\n\nDescription of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+        user_prompt_structured.append(
+            Component(
+                string=f"Description of piece {idx} in {file_name} of codebase {codebase_name}:\n\n{chunk}"
+            )
+        )
+    user_prompt = user_prompt_structured.into_str()
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_paragraph_from_chunk_descriptions(
     llm: ChatOpenAI, chunks: list[str], file_name: str, codebase_name: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/files/single_paragraph_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/single_paragraph_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
+    user_prompt_structured = Prompt.empty()
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
     for idx, chunk in enumerate(chunks, start=1):
-        human_prompt += f"\n\nDescription of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+        user_prompt_structured.append(
+            Component(
+                string=f"Description of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
+            )
+        )
+    user_prompt = user_prompt_structured.into_str()
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_long_from_chunk_descriptions(
@@ -321,13 +408,28 @@ def file_long_from_chunk_descriptions(
     file_name: str,
     codebase_name: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/long_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/long_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
+    user_prompt_structured = Prompt.empty()
     for idx, chunk in enumerate(chunks, start=1):
-        human_prompt += f"\n\nDescription of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}\n\n"
-    return llm.generate_response(system_prompt, human_prompt)
+        user_prompt_structured.append(
+            Component(
+                string=f"Description of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
+            )
+        )
+    user_prompt = user_prompt_structured.into_str()
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_compress_chunks(
@@ -335,11 +437,20 @@ def file_compress_chunks(
     file_name: str,
     description_chunk: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/compress_chunks.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/compress_chunks.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = f"Chunk of file chunk descriptions for file `{file_name}`:\n\n{description_chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = f"Chunk of file chunk descriptions for file `{file_name}`:\n\n{description_chunk}"
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_chunk_description(
@@ -349,11 +460,20 @@ def file_chunk_description(
     path: str | Path,
     code_chunk: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/chunk_description.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/chunk_description.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = f"Piece of code from `{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code_chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = f"Piece of code from `{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code_chunk}"
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_sentence_from_code(
@@ -363,25 +483,60 @@ def file_single_sentence_from_code(
     path: str | Path,
     code: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/single_sentence_from_code.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/single_sentence_from_code.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = (
-        f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
+        .append(
+            Component(
+                string=f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+            )
+        )
+        .into_str()
     )
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_paragraph_from_code(
     llm: ChatOpenAI, file_name: str, codebase_name: str, path: str | Path, code: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/single_paragraph_from_code.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/single_paragraph_from_code.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = (
-        f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(
+            Component(
+                string=f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+            )
+        )
+        .into_str()
     )
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def _return_with_simple_message(message: str) -> dict[str, Any]:
@@ -406,6 +561,7 @@ def comprehend_file_top_down(
     chunk_overlap: int,
     compression_loop_max_itr: int,
     max_num_chunks: int,
+    reified_symbols: None | list[ReifiedSymbol],
     raise_hard_errors: bool = True,
 ) -> tuple[bool, dict[str, Any]]:
     from shared.chunking.text_splitter import split_text
@@ -424,24 +580,6 @@ def comprehend_file_top_down(
         text=source_code, chunk_size=chunk_size, chunk_overlap=chunk_overlap
     )
 
-    if len(chunks) > max_num_chunks:
-        if raise_hard_errors:
-            raise ValueError(
-                f"File `{node.root_rel_path}` too large to process: {len(chunks)} chunks greater than max of {max_num_chunks} chunks."
-            )
-        else:
-            logging.warning(
-                f"File `{node.root_rel_path}` too large to process: {len(chunks)} chunks greater than max of {max_num_chunks} chunks."
-            )
-            print(
-                f"WARNING: File `{node.root_rel_path}` too large to process: {len(chunks)} chunks greater than max of {max_num_chunks} chunks."
-            )
-            description = "File too large to process."
-            success = False
-            results = _return_with_simple_message(
-                message=description,
-            )
-            return (success, results)
     if len(chunks) > 1:
         chunk_texts = [c.text for c in chunks]
 
@@ -464,12 +602,13 @@ def comprehend_file_top_down(
                         llm=llm,
                         root_rel_path=node.root_rel_path,
                         code=source_code,
+                        language=Lang.DEFAULT,
+                        reified_symbols=reified_symbols,
                         code_chunks=chunk_texts,
+                        max_num_chunks_to_use=max_num_chunks,
                     )
                 case _:
-                    language = Lang.from_ext_and_source(
-                        ext=node.root_rel_path.suffix, source=chunk_texts[0]
-                    )
+                    language = Lang.from_ext(ext=node.root_rel_path.suffix)
 
                     if language == Lang.C_OR_CPP_HEADER:
                         language = disambiguate_header(
@@ -478,10 +617,6 @@ def comprehend_file_top_down(
                         print(
                             f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
                         )
-                        if language == Lang.CPP:
-                            # We still defer to the generic header template if c++, but we use C language specialization
-                            # for C headers.
-                            language = Lang.C_OR_CPP_HEADER
 
                     match language:
                         case Lang.C:
@@ -504,6 +639,10 @@ def comprehend_file_top_down(
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG
                         case Lang.C_SHARP:
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS
+                        case Lang.TYPESCRIPT | Lang.JAVASCRIPT:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS
+                        case Lang.GO:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_GO
                         case _:
                             template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                     long_template = Template(template=template)
@@ -511,7 +650,10 @@ def comprehend_file_top_down(
                         llm=llm,
                         root_rel_path=node.root_rel_path,
                         code=source_code,
+                        language=language,
+                        reified_symbols=reified_symbols,
                         code_chunks=chunk_texts,
+                        max_num_chunks_to_use=max_num_chunks,
                     )
             # Now ready to generate final documentation content.
             description_chunks = split_text(
@@ -566,9 +708,7 @@ def comprehend_file_top_down(
             file_kind = FileKind.from_llm(
                 llm=llm, file_name=node.root_rel_path.name, code=source_code
             )
-            language = Lang.from_ext_and_source(
-                ext=node.root_rel_path.suffix, source=source_code
-            )
+            language = Lang.from_ext(ext=node.root_rel_path.suffix)
             if language == Lang.C_OR_CPP_HEADER:
                 language = disambiguate_header(
                     code=source_code, fallback=Lang.C_OR_CPP_HEADER
@@ -576,15 +716,16 @@ def comprehend_file_top_down(
                 print(
                     f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
                 )
-                if language == Lang.CPP:
-                    # We still defer to the generic header template if c++, but we use C language specialization
-                    # for C headers.
-                    language = Lang.C_OR_CPP_HEADER
 
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)
             file_description_long = long_template.run_with_code(
-                llm=llm, root_rel_path=node.root_rel_path, code=source_code
+                llm=llm,
+                root_rel_path=node.root_rel_path,
+                code=source_code,
+                language=language,
+                reified_symbols=reified_symbols,
+                max_num_chunks_to_use=max_num_chunks,
             )
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(
@@ -615,6 +756,13 @@ def comprehend_file_top_down(
             )
             return success, results
 
+    file_description_single_sentence = file_description_single_sentence.replace(
+        "\x00", ""
+    )
+    file_description_single_paragraph = file_description_single_paragraph.replace(
+        "\x00", ""
+    )
+    file_description_long = file_description_long.replace("\x00", "")
     short_descriptions = {
         "single_sentence": file_description_single_sentence,
         "single_paragraph": file_description_single_paragraph,

@@ -2,23 +2,34 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
-from utils.codemap_ctags import extract_symbols_w_ctags
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.models import ChatOpenAI
+from utils.symbol_table.utils import get_fully_qualified_name
+from utils.treesitter_drivers.csharp_driver import CSharpCallKind
 
 from .ir_common import (
     FieldNameWithRawContent,
-    FnData,
     IrCollection,
     IrData,
+    ListedBacktickNameRawContentWithNone,
+    ListedCommaCombinedBackTickRawContentNoNone,
     ListedRawContentNoNone,
+    ListedRawContentWithNone,
+    RawContent,
 )
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
-    create_raw_symbol_via_ctags,
 )
 
 C_SHARP_CLASSES = {"class"}
@@ -146,11 +157,11 @@ You focus on writing technical documentation for methods. You are skilled at exp
 You will be given the name of a method to document and the source code where the method is defined.
 
 Your job is to describe the method. **Always respond using exactly the following JSON schema**:
-{
-    "single_sentence": <terse single sentence description of the method>,
+{{
+    "single_sentence": <terse single sentence description of the method{kind_indicator}>,
     "inputs": [
-        {"name": <input_arg1>, "content": <description of input argument 1>},
-        {"name": <input_arg2>, "content": <description of input argument 2>},
+        {{"name": <input_arg1>, "content": <description of input argument 1>}},
+        {{"name": <input_arg2>, "content": <description of input argument 2>}},
         ...
     ],
     "control_flow": [
@@ -159,7 +170,7 @@ Your job is to describe the method. **Always respond using exactly the following
         ...
     ],
     "output": <description of output>,
-}
+}}
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -216,65 +227,32 @@ Enum to document:
 
 
 # Ir Data Classes
-class CsEnumData(IrData):
-    description: FieldNameWithRawContent
-    _supported_child_ordering: list[str] = PrivateAttr(
-        default=[
-            ScopeRelation.ENUMERATOR,
-        ]
-    )
-
-    @classmethod
-    def system_prompt(cls) -> str:
-        return ENUMS_FOUND_SYSTEM_PROMPT_JSON
-
-    @classmethod
-    def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{ENUMS_FOUND_USER_PROMPT}{symbol.name}\n\nEnum Code:\n\n{symbol.symbol_code}"
-        if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
-
-    @classmethod
-    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
-        mapping = {
-            SymbolKind.VARIABLE: None,
-        }
-        return mapping.get(symbol.symbol_kind)
-
-    @classmethod
-    def child_to_field_name(cls, child: RawSymbolData) -> str:
-        mapping = {
-            SymbolKind.VARIABLE: ScopeRelation.ENUMERATOR,
-        }
-        return mapping.get(child.symbol_kind)
-
-    @classmethod
-    def default_instance(cls) -> Self:
-        return cls(description=FieldNameWithRawContent(content=""))
-
-
-class CsEnumCollection(IrCollection):
-    data: dict[str, CsEnumData | list[CsEnumData]]
-
-    @classmethod
-    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls.from_llm_with_ir_data(CsEnumData, llm, symbols_list)
-
-
 class CsVariableData(IrData):
     description: FieldNameWithRawContent
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=VARIABLES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{VARIABLES_FOUND_USER_PROMPT}\n{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Variable Code:\n\n{symbol.symbol_code}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -285,21 +263,68 @@ class CsVariableData(IrData):
         raise NotImplementedError("Variables should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(description=FieldNameWithRawContent(content=""))
 
 
-class CsMethodData(FnData):
+class CsMethodData(IrData):
+    single_sentence: RawContent
+    _modifiers: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
+        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
+    )
+    inputs: ListedBacktickNameRawContentWithNone
+    control_flow: ListedRawContentWithNone
+    output: FieldNameWithRawContent
+
+    def _apply_bespoke_data(self) -> None:
+        modifiers = []
+
+        for modifier in self._reified_symbol.raw.bespoke_data.modifiers:
+            modifiers.append(modifier)
+        self._modifiers.content = modifiers
+
     @classmethod
-    def system_prompt(cls) -> str:
-        return METHODS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=METHODS_FOUND_SYSTEM_PROMPT_JSON.format(
+                        kind_indicator=f", mention that this a {symbol.reified_symbol.raw.bespoke_data.kind}"
+                        if symbol.reified_symbol.raw.bespoke_data.kind
+                        != CSharpCallKind.METHOD
+                        else ""
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Kind:\n\n{symbol.reified_symbol.raw.bespoke_data.kind}"
+                )
+            )
+        )
+        if symbol.reified_symbol.raw.bespoke_data.kind != CSharpCallKind.METHOD:
+            user_prompt.append(
+                Component(
+                    string=f" be sure to mention that this a {symbol.reified_symbol.raw.bespoke_data.kind} in the single sentence description."
+                )
+            )
+        user_prompt.append(Component(string=f"Method Code:\n\n{symbol.symbol_code}"))
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"Full File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -309,11 +334,27 @@ class CsMethodData(FnData):
     def child_to_field_name(cls, child: RawSymbolData) -> str:
         raise NotImplementedError("Methods should not have children")
 
+    @classmethod
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
+        return cls(
+            single_sentence=RawContent(content=""),
+            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            control_flow=ListedBacktickNameRawContentWithNone(content=[]),
+            output=FieldNameWithRawContent(content=""),
+        )
+
 
 class CsStructData(IrData):
+    _type: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
+        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
+    )
+    _modifiers: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
+        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
+    )
+    _partial_implementations: ListedRawContentNoNone = PrivateAttr(
+        default=ListedRawContentNoNone(content=[])
+    )
     description: FieldNameWithRawContent
-    implements: ListedRawContentNoNone
-    modifiers: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.FIELD,
@@ -322,16 +363,53 @@ class CsStructData(IrData):
         ]
     )
 
+    def _apply_bespoke_data(self) -> None:
+        partial_implementations = []
+        modifiers = []
+
+        for child in self._reified_symbol.children:
+            if child.raw.symbol_kind == SymbolKind.CLASS:
+                path_part = child.raw.file_path
+                kind_part = child.raw.symbol_kind.name.lower()
+                fqn = get_fully_qualified_name(child.raw)
+                partial_implementations.append(
+                    f"[`{path_part}`](<{path_part}#{kind_part}:{fqn}>)"
+                )
+
+        for modifier in self._reified_symbol.raw.bespoke_data.modifiers:
+            modifiers.append(modifier)
+        self._partial_implementations.content = partial_implementations
+        self._modifiers.content = modifiers
+        self._type.content = [
+            self._reified_symbol.raw.bespoke_data.kind.replace("_", " ")
+        ]
+
     @classmethod
-    def system_prompt(cls) -> str:
-        return STRUCTS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=STRUCTS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{STRUCTS_FOUND_USER_PROMPT}{symbol.name}\n\nStruct Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{STRUCTS_FOUND_USER_PROMPT}{symbol.name}\n\nStruct Code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"Full File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -354,7 +432,7 @@ class CsStructData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             implements=ListedRawContentNoNone(content=[]),
@@ -371,11 +449,16 @@ class CsStructCollection(IrCollection):
 
 
 class CsClassData(IrData):
+    _type: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
+        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
+    )
+    _modifiers: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
+        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
+    )
+    _partial_implementations: ListedRawContentNoNone = PrivateAttr(
+        default=ListedRawContentNoNone(content=[])
+    )
     description: FieldNameWithRawContent
-    inherits_from: ListedRawContentNoNone
-    implements: ListedRawContentNoNone
-    modifiers: ListedRawContentNoNone
-    # TODO: support for Fields/internal variables instead of the members field
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.FIELD,
@@ -384,16 +467,56 @@ class CsClassData(IrData):
         ]
     )
 
+    def _apply_bespoke_data(self) -> None:
+        partial_implementations = []
+        modifiers = []
+
+        for child in self._reified_symbol.children:
+            if child.raw.symbol_kind == SymbolKind.CLASS:
+                path_part = child.raw.file_path
+                kind_part = child.raw.symbol_kind.name.lower()
+                fqn = get_fully_qualified_name(child.raw)
+                partial_implementations.append(
+                    f"[`{path_part}`](<{path_part}#{kind_part}:{fqn}>)"
+                )
+
+        for modifier in self._reified_symbol.raw.bespoke_data.modifiers:
+            modifiers.append(modifier)
+        self._partial_implementations.content = partial_implementations
+        self._modifiers.content = modifiers
+        kind = (
+            "class"
+            if self._reified_symbol.raw.bespoke_data.kind == "standard"
+            else self._reified_symbol.raw.bespoke_data.kind
+        )
+        self._type.content = [kind]
+
     @classmethod
-    def system_prompt(cls) -> str:
-        return CLASSES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=CLASSES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{CLASSES_FOUND_USER_PROMPT}\n{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"Full File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -416,7 +539,7 @@ class CsClassData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             inherits_from=ListedRawContentNoNone(content=[]),
@@ -434,7 +557,12 @@ class CsClassCollection(IrCollection):
 
 
 class CsInterfaceData(IrData):
-    interfaces_inherited: ListedRawContentNoNone
+    _modifiers: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
+        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
+    )
+    _partial_implementations: ListedRawContentNoNone = PrivateAttr(
+        default=ListedRawContentNoNone(content=[])
+    )
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
@@ -443,16 +571,50 @@ class CsInterfaceData(IrData):
         ]
     )
 
+    def _apply_bespoke_data(self) -> None:
+        partial_implementations = []
+        modifiers = []
+
+        for child in self._reified_symbol.children:
+            if child.raw.symbol_kind == SymbolKind.CLASS:
+                path_part = child.raw.file_path
+                kind_part = child.raw.symbol_kind.name.lower()
+                fqn = get_fully_qualified_name(child.raw)
+                partial_implementations.append(
+                    f"[`{path_part}`](<{path_part}#{kind_part}:{fqn}>)"
+                )
+
+        for modifier in self._reified_symbol.raw.bespoke_data.modifiers:
+            modifiers.append(modifier)
+        self._partial_implementations.content = partial_implementations
+        self._modifiers.content = modifiers
+
     @classmethod
-    def system_prompt(cls) -> str:
-        return INTERFACES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=INTERFACES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{INTERFACES_FOUND_USER_PROMPT}{symbol.name}\n\nInterface Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{INTERFACES_FOUND_USER_PROMPT}{symbol.name}\n\nInterface Code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"Full File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -471,7 +633,7 @@ class CsInterfaceData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             interfaces_inherited=ListedRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content=""),
@@ -491,106 +653,73 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol]
+    ) -> Self | None:
+        class_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.CLASS and sym.is_definition
+        ]
+        class_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
         global_method_counts = {}
-        class_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_SHARP_FUNCTIONS and not s["name"].startswith("__anon"):
-                global_method_counts[s["name"]] = (
-                    global_method_counts.get(s["name"], 0) + 1
-                )
-            if s["kind"] in C_SHARP_CLASSES and not s["name"].startswith("__anon"):
-                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.CLASS,
-                    scope_relation=None,
-                    delimiter=".",
-                    is_multi_prompt=is_multi_prompt,
-                )
-
-        for s in symbols:
+        fn_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.is_definition
+        ]
+        for fn_symbol in fn_symbols:
             if (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_FUNCTIONS)
-                and s["scopeKind"] in C_SHARP_CLASSES
+                fn_symbol.raw.name is not None
+                and fn_symbol.raw.name not in global_method_counts
             ):
-                # TODO: is this needed for partial case?
-                # if s["scope"].split("::")[-1] not in class_raw_symbol_data:
-                #     # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
-                #     class_raw_symbol_data[s["scope"].split("::")[-1]] = RawSymbolData(
-                #         parser_kind=ParserKind.UCTAGS,
-                #         symbol_kind=SymbolKind.DATA_STRUCTURE,
-                #         name=s["scope"].split("::")[-1],
-                #         path=root_rel_path,
-                #         scope=None,
-                #         scope_relation=None,
-                #         children=[],
-                #         start_line=s["line"],
-                #         end_line=s["end"],
-                #         symbol_code=None,
-                #         file_code=None,
-                #         reference_code=None,
-                #         delimiter=".",
-                #     )
+                global_method_counts[fn_symbol.raw.name] = 0
+            global_method_counts[fn_symbol.raw.name] += 1
 
-                is_overloaded = global_method_counts[s["name"]] > 1
-                class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CALLABLE,
-                        scope_relation=ScopeRelation.METHOD,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                        is_overloaded=is_overloaded,
-                    )
+        for class_symbol in class_symbols:
+            if (
+                class_symbol.raw.name is not None
+                and class_symbol.raw.name not in class_raw_symbol_data
+            ):
+                # Do this check in case multiple partials of the same class are present in the same file
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=class_symbol.raw,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=".",
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=class_symbol,
                 )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_CLASSES)
-                or (s["kind"] in C_SHARP_DATA_STRUCTURES)
-                and (s["scopeKind"] in C_SHARP_CLASSES)
-            ):
-                if s["scope"].split(".")[-1] in class_raw_symbol_data:
-                    class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.CLASS,
-                            scope_relation=ScopeRelation.NESTED_CLASS,
+                class_raw_symbol_data[class_symbol.raw.name] = raw_symbol_data
+            for child in class_symbol.children:
+                if (
+                    child.raw.symbol_kind == SymbolKind.CALLABLE
+                    and child.raw.file_path
+                    == class_symbol.raw.file_path  # NOTE: we do this for partial classes, we only document methods that are in the file of THIS partial
+                ):
+                    is_overloaded = global_method_counts[child.raw.name] > 1
+                    class_raw_symbol_data[class_symbol.raw.name].children.append(
+                        RawSymbolData.from_tree_sitter_raw_symbol(
+                            ts_symbol=child.raw,
+                            path=root_rel_path,
+                            scope=class_symbol.raw.name,
+                            scope_relation=ScopeRelation.METHOD,
+                            children=[],
+                            reference_code=None,
                             delimiter=".",
-                            is_multi_prompt=is_multi_prompt,
-                        )
-                    )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_VARIABLES)
-                and (s["scopeKind"] in C_SHARP_CLASSES)
-            ):
-                if s["scope"].split(".")[-1] in class_raw_symbol_data:
-                    class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
+                            is_large_file=is_large_file,
+                            is_overloaded=is_overloaded,
+                            use_padding=False,
                             code=code,
-                            symbol_kind=SymbolKind.VARIABLE,
-                            scope_relation=ScopeRelation.FIELD,
-                            delimiter=".",
-                            is_multi_prompt=is_multi_prompt,
-                            use_padding=True,
+                            reified_symbol=child,
                         )
                     )
         output = (
@@ -610,115 +739,76 @@ class CsStructRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol]
+    ) -> Self | None:
+        ds_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE and sym.is_definition
+        ]
+        ds_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
         global_method_counts = {}
-        struct_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_SHARP_FUNCTIONS and not s["name"].startswith("__anon"):
-                global_method_counts[s["name"]] = (
-                    global_method_counts.get(s["name"], 0) + 1
-                )
-            if s["kind"] in C_SHARP_DATA_STRUCTURES and not s["name"].startswith(
-                "__anon"
-            ):
-                struct_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    scope_relation=None,
-                    delimiter=".",
-                    is_multi_prompt=is_multi_prompt,
-                )
-
-        for s in symbols:
+        fn_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.is_definition
+        ]
+        for fn_symbol in fn_symbols:
             if (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_FUNCTIONS)
-                and s["scopeKind"] in C_SHARP_DATA_STRUCTURES
+                fn_symbol.raw.name is not None
+                and fn_symbol.raw.name not in global_method_counts
             ):
-                # TODO: is this needed for partial case?
-                # if s["scope"].split("::")[-1] not in class_raw_symbol_data:
-                #     # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
-                #     class_raw_symbol_data[s["scope"].split("::")[-1]] = RawSymbolData(
-                #         parser_kind=ParserKind.UCTAGS,
-                #         symbol_kind=SymbolKind.DATA_STRUCTURE,
-                #         name=s["scope"].split("::")[-1],
-                #         path=root_rel_path,
-                #         scope=None,
-                #         scope_relation=None,
-                #         children=[],
-                #         start_line=s["line"],
-                #         end_line=s["end"],
-                #         symbol_code=None,
-                #         file_code=None,
-                #         reference_code=None,
-                #         delimiter=".",
-                #     )
+                global_method_counts[fn_symbol.raw.name] = 0
+            global_method_counts[fn_symbol.raw.name] += 1
 
-                is_overloaded = global_method_counts[s["name"]] > 1
-                struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CALLABLE,
-                        scope_relation=ScopeRelation.METHOD,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                        is_overloaded=is_overloaded,
-                    )
+        for ds_symbol in ds_symbols:
+            if (
+                ds_symbol.raw.name is not None
+                and ds_symbol.raw.name not in ds_raw_symbol_data
+            ):
+                # Do this check in case multiple partials of the same class are present in the same file
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ds_symbol.raw,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=".",
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=ds_symbol,
                 )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_CLASSES)
-                or (s["kind"] in C_SHARP_DATA_STRUCTURES)
-                and (s["scopeKind"] in C_SHARP_DATA_STRUCTURES)
-            ):
-                if s["scope"].split(".")[-1] in struct_raw_symbol_data:
-                    struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.CLASS,
-                            scope_relation=ScopeRelation.NESTED_CLASS,
+                ds_raw_symbol_data[ds_symbol.raw.name] = raw_symbol_data
+            for child in ds_symbol.children:
+                if (
+                    child.raw.symbol_kind == SymbolKind.CALLABLE
+                    and child.raw.file_path
+                    == ds_symbol.raw.file_path  # NOTE: we do this for partial classes, we only document methods that are in the file of THIS partial
+                ):
+                    is_overloaded = global_method_counts[child.raw.name] > 1
+                    ds_raw_symbol_data[ds_symbol.raw.name].children.append(
+                        RawSymbolData.from_tree_sitter_raw_symbol(
+                            ts_symbol=child.raw,
+                            path=root_rel_path,
+                            scope=ds_symbol.raw.name,
+                            scope_relation=ScopeRelation.METHOD,
+                            children=[],
+                            reference_code=None,
                             delimiter=".",
-                            is_multi_prompt=is_multi_prompt,
+                            is_large_file=is_large_file,
+                            is_overloaded=is_overloaded,
+                            use_padding=False,
+                            code=code,
+                            reified_symbol=child,
                         )
                     )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_VARIABLES)
-                and (s["scopeKind"] in C_SHARP_DATA_STRUCTURES)
-            ):
-                if s["scope"].split(".")[-1] in struct_raw_symbol_data:
-                    struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.VARIABLE,
-                            scope_relation=ScopeRelation.FIELD,
-                            delimiter=".",
-                            is_multi_prompt=is_multi_prompt,
-                            use_padding=True,
-                        )
-                    )
-        output = (
-            None
-            if len(struct_raw_symbol_data) == 0
-            else cls(data=struct_raw_symbol_data)
-        )
+        output = None if len(ds_raw_symbol_data) == 0 else cls(data=ds_raw_symbol_data)
         return output
 
     @classmethod
@@ -733,93 +823,81 @@ class CsInterfaceRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol]
+    ) -> Self | None:
+        interface_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.INTERFACE and sym.is_definition
+        ]
+        interface_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
         global_method_counts = {}
-        struct_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_SHARP_FUNCTIONS and not s["name"].startswith("__anon"):
-                global_method_counts[s["name"]] = (
-                    global_method_counts.get(s["name"], 0) + 1
-                )
-            if s["kind"] in C_SHARP_INTERFACES and not s["name"].startswith("__anon"):
-                struct_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.INTERFACE,
-                    scope_relation=None,
-                    delimiter=".",
-                    is_multi_prompt=is_multi_prompt,
-                )
-
-        for s in symbols:
+        fn_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.is_definition
+        ]
+        for fn_symbol in fn_symbols:
             if (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_FUNCTIONS)
-                and s["scopeKind"] in C_SHARP_INTERFACES
+                fn_symbol.raw.name is not None
+                and fn_symbol.raw.name not in global_method_counts
             ):
-                # TODO: is this needed for partial case?
-                # if s["scope"].split("::")[-1] not in class_raw_symbol_data:
-                #     # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
-                #     class_raw_symbol_data[s["scope"].split("::")[-1]] = RawSymbolData(
-                #         parser_kind=ParserKind.UCTAGS,
-                #         symbol_kind=SymbolKind.DATA_STRUCTURE,
-                #         name=s["scope"].split("::")[-1],
-                #         path=root_rel_path,
-                #         scope=None,
-                #         scope_relation=None,
-                #         children=[],
-                #         start_line=s["line"],
-                #         end_line=s["end"],
-                #         symbol_code=None,
-                #         file_code=None,
-                #         reference_code=None,
-                #         delimiter=".",
-                #     )
+                global_method_counts[fn_symbol.raw.name] = 0
+            global_method_counts[fn_symbol.raw.name] += 1
 
-                is_overloaded = global_method_counts[s["name"]] > 1
-                struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CALLABLE,
-                        scope_relation=ScopeRelation.METHOD,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                        is_overloaded=is_overloaded,
-                    )
-                )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_VARIABLES)
-                and (s["scopeKind"] in C_SHARP_DATA_STRUCTURES)
+        for interface_symbol in interface_symbols:
+            if (
+                interface_symbol.raw.name is not None
+                and interface_symbol.raw.name not in interface_raw_symbol_data
             ):
-                if s["scope"].split(".")[-1] in struct_raw_symbol_data:
-                    struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.VARIABLE,
-                            scope_relation=ScopeRelation.FIELD,
+                # Do this check in case multiple partials of the same class are present in the same file
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=interface_symbol.raw,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=".",
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=interface_symbol,
+                )
+                interface_raw_symbol_data[interface_symbol.raw.name] = raw_symbol_data
+            for child in interface_symbol.children:
+                if (
+                    child.raw.symbol_kind == SymbolKind.CALLABLE
+                    and child.raw.file_path
+                    == interface_symbol.raw.file_path  # NOTE: we do this for partial classes, we only document methods that are in the file of THIS partial
+                ):
+                    is_overloaded = global_method_counts[child.raw.name] > 1
+                    interface_raw_symbol_data[
+                        interface_symbol.raw.name
+                    ].children.append(
+                        RawSymbolData.from_tree_sitter_raw_symbol(
+                            ts_symbol=child.raw,
+                            path=root_rel_path,
+                            scope=interface_symbol.raw.name,
+                            scope_relation=ScopeRelation.METHOD,
+                            children=[],
+                            reference_code=None,
                             delimiter=".",
-                            is_multi_prompt=is_multi_prompt,
-                            use_padding=True,
+                            is_large_file=is_large_file,
+                            is_overloaded=is_overloaded,
+                            use_padding=False,
+                            code=code,
+                            reified_symbol=child,
                         )
                     )
         output = (
             None
-            if len(struct_raw_symbol_data) == 0
-            else cls(data=struct_raw_symbol_data)
+            if len(interface_raw_symbol_data) == 0
+            else cls(data=interface_raw_symbol_data)
         )
         return output
 
@@ -831,57 +909,59 @@ class CsInterfaceRawSymbolCollection(RawSymbolCollection):
         return self.data
 
 
-class CsEnumRawSymbolCollection(RawSymbolCollection):
-    data: dict[str, RawSymbolData]
-
-    @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
-
-        enum_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_SHARP_ENUMS and not s["name"].startswith("__anon"):
-                enum_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    scope_relation=None,
-                    delimiter=".",
-                    is_multi_prompt=is_multi_prompt,
-                )
-
-        for s in sorted(symbols, key=lambda d: d["line"]):
-            if (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_ENUM_VALS)
-                and s["scopeKind"] in C_SHARP_ENUMS
-            ):
-                # TODO: is this needed for partial case?
-                enum_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.VARIABLE,
-                        scope_relation=ScopeRelation.ENUMERATOR,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
-                )
-        output = (
-            None if len(enum_raw_symbol_data) == 0 else cls(data=enum_raw_symbol_data)
-        )
-        return output
-
-    @classmethod
-    def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for C# enums")
-
-    def to_dict(self) -> dict[str, RawSymbolData]:
-        return self.data
+# Covered by data structures?
+# class CsEnumRawSymbolCollection(RawSymbolCollection):
+#     data: dict[str, RawSymbolData]
+#
+#     @classmethod
+#     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+#         is_multi_prompt = code_requires_multi_prompt(code)
+#
+#         symbols = extract_symbols_w_ctags(
+#             root_rel_path=root_rel_path, file_content=code
+#         )
+#
+#         enum_raw_symbol_data = {}
+#         for s in symbols:
+#             if s["kind"] in C_SHARP_ENUMS and not s["name"].startswith("__anon"):
+#                 enum_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+#                     ctags_symbol=s,
+#                     root_rel_path=root_rel_path,
+#                     code=code,
+#                     symbol_kind=SymbolKind.DATA_STRUCTURE,
+#                     scope_relation=None,
+#                     delimiter=".",
+#                     is_multi_prompt=is_multi_prompt,
+#                 )
+#
+#         for s in sorted(symbols, key=lambda d: d["line"]):
+#             if (
+#                 (s.get("scope"))
+#                 and not s["name"].startswith("__anon")
+#                 and (s["kind"] in C_SHARP_ENUM_VALS)
+#                 and s["scopeKind"] in C_SHARP_ENUMS
+#             ):
+#                 # TODO: is this needed for partial case?
+#                 enum_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
+#                     create_raw_symbol_via_ctags(
+#                         ctags_symbol=s,
+#                         root_rel_path=root_rel_path,
+#                         code=code,
+#                         symbol_kind=SymbolKind.VARIABLE,
+#                         scope_relation=ScopeRelation.ENUMERATOR,
+#                         delimiter=".",
+#                         is_multi_prompt=is_multi_prompt,
+#                     )
+#                 )
+#         output = (
+#             None if len(enum_raw_symbol_data) == 0 else cls(data=enum_raw_symbol_data)
+#         )
+#         return output
+#
+#     @classmethod
+#     def from_llm(cls, code: str, root_rel_path: str) -> Self:
+#         raise NotImplementedError("Static analysis should be used for C# enums")
+#
+#     def to_dict(self) -> dict[str, RawSymbolData]:
+#         return self.data
+#

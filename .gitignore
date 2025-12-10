@@ -183,3 +183,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 
 /content_services/pdf_preprocessing/modal-secrets.sh
+
+
+/dev_stack/state/
+/dev_stack/static/gh.html

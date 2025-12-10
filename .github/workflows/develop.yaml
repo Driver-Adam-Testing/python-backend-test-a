@@ -20,7 +20,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event_name == 'workflow_run')
     name: Deploy to Dev Environment
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    #Use if self-hosted no longer is up
+    #runs-on: ubuntu-latest
     environment: development
     steps:
       - uses: actions/checkout@v4
@@ -43,10 +45,8 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_CICD_ROLE }}
-      - name: CDK Deploy
-        env:
-          DEPLOYMENT_ENVIRONMENT: development
-        run: poetry run npx cdk deploy --require-approval never
+      - name: Deploy
+        run: bash ./deploy.sh
       - id: InspectorModalDeploy
         name: Deploy Inspector
         uses: ./.github/actions/modal-deploy
@@ -70,3 +70,31 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Mermaid Validator
+        working-directory: content_services/mermaid_validator
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Autodocs
+        working-directory: content_services/autodocs
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Generation
+        working-directory: content_services/generation
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Auth0 Sync
+        working-directory: content_services/auth0_sync
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/modal_main.py

@@ -3,12 +3,18 @@ import re
 from uuid import UUID
 
 from database.db import get_session
-from database.models_v1 import ChunkAndEmbedding, ContentKind, DerivedContent
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models import (
+    ChunkAndEmbedding,
+    DerivedContent,
+    Node,
+    PrimaryAsset,
+    Version,
+)
+from database.models_enums import ContentKind
 from rank_bm25 import BM25Okapi
 from sqlalchemy import Select
 from sqlalchemy.orm import aliased, selectinload
-from sqlmodel import Session, and_, asc, select
+from sqlmodel import Session, and_, asc, select, text
 
 from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import (
@@ -198,7 +204,7 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
 
     if input.limit:
         stmt = stmt.limit(input.limit)
-
+    session.exec(text("SET hnsw.ef_search=400;"))
     results = session.exec(stmt).all()
     logger.debug("Raw semantic search results: %s", results)
 
@@ -211,13 +217,18 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
         metadata = {
             "chunk_number": chunk.chunk_number,
         }
+        version_display_name = (
+            chunk.content.node.version.vcs_hash
+            if chunk.content.node.version.vcs_hash
+            else "Unversioned"
+        )
         search_results.append(
             SearchResult(
                 content=chunk.text,
                 score=overall_score(semantic_score=score),
                 metadata=metadata,
                 relative_path=chunk.content.node.relative_path,
-                version_display_name=chunk.content.node.version.display_name,
+                version_display_name=version_display_name,
                 version_id=chunk.content.node.version_id,
                 node_id=chunk.content.node_id,
             )
@@ -248,7 +259,7 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
         node_ids=input.node_ids,
         content_kinds=input.content_kinds,
     ).where(ChunkAndEmbedding.__ts_vector__.match(input.query))
-
+    session.exec(text("SET hnsw.ef_search=400;"))
     db_results = session.exec(stmt).all()
     if not db_results:
         return SearchResults(results=[])
@@ -264,13 +275,18 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
             "version_id": chunk.content.node.version_id,
             "chunk_number": chunk.chunk_number,
         }
+        version_display_name = (
+            chunk.content.node.version.vcs_hash
+            if chunk.content.node.version.vcs_hash
+            else "Unversioned"
+        )
         search_results.append(
             SearchResult(
                 content=chunk.text,
                 score=overall_score(bm25_score=bm25_score),
                 metadata=metadata,
                 relative_path=chunk.content.node.relative_path,
-                version_display_name=chunk.content.node.version.display_name,
+                version_display_name=version_display_name,
                 version_id=chunk.content.node.version_id,
                 node_id=chunk.content.node_id,
             )
@@ -326,6 +342,7 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
         .where(ChunkAndEmbedding.__ts_vector__.match(input.query))
         .limit(2 * input.limit)
     )
+    session.exec(text("SET hnsw.ef_search=400;"))
     results_lexical = session.exec(stmt_lexical).all()
 
     # 3. Combine / deduplicate
@@ -371,12 +388,17 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
         hybrid_score = overall_score(
             semantic_score=sem_score, bm25_score=bm25_scores[i]
         )
+        version_display_name = (
+            chunk.content.node.version.vcs_hash
+            if chunk.content.node.version.vcs_hash
+            else "Unversioned"
+        )
         search_results.append(
             SearchResult(
                 content=chunk.text,
                 score=hybrid_score,
                 relative_path=chunk.content.node.relative_path,
-                version_display_name=chunk.content.node.version.display_name,
+                version_display_name=version_display_name,
                 version_id=chunk.content.node.version_id,
                 node_id=chunk.content.node_id,
                 metadata=metadata,

@@ -1,7 +1,7 @@
+import logging
 from datetime import UTC, datetime
 
-from app.core.logger import logger
-from database.models_v1 import (
+from database.models import (
     BillingFrequency,
     PlanType,
     Subscription,
@@ -11,6 +11,8 @@ from sqlmodel import Session
 
 from shared.interfaces.billing.subscription_schema import SubscriptionRecord
 from shared.repositories.base_repository import BaseRepository
+
+logger = logging.getLogger(__name__)
 
 
 class SubscriptionServiceError(Exception):

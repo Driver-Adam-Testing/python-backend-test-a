@@ -2,8 +2,15 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
-from utils.codemap_ctags import extract_symbols_w_ctags
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.models import ChatOpenAI
+from utils.treesitter_drivers.java_driver import JavaDriverTree
 
 from .ir_common import (
     FieldNameWithBackTickContent,
@@ -12,22 +19,37 @@ from .ir_common import (
     IrCollection,
     IrData,
     ListedBacktickNameRawContentWithNone,
+    ListedBacktickNameTypeRawContentNoNone,
+    ListedCommaCombinedBackTickRawContentNoNone,
     ListedRawContentNoNone,
     RawContent,
 )
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
-    create_raw_symbol_via_ctags,
 )
 
 JAVA_INTERFACES = {"interface"}
 JAVA_CLASSES = {"class", "enum"}
 JAVA_METHODS = {"method"}
 JAVA_FIELDS = {"field"}
+
+
+def _get_scope_relation_for_child(symbol_kind: SymbolKind) -> ScopeRelation:
+    """Map symbol kinds to their scope relations in Java."""
+    mapping = {
+        SymbolKind.CALLABLE: ScopeRelation.METHOD,
+        SymbolKind.CLASS: ScopeRelation.NESTED_CLASS,
+        SymbolKind.INTERFACE: ScopeRelation.NESTED_INTERFACE,
+        SymbolKind.VARIABLE: ScopeRelation.FIELD,
+        SymbolKind.DATA_STRUCTURE: ScopeRelation.NESTED_DATA_STRUCTURE,
+    }
+    return mapping.get(symbol_kind, ScopeRelation.METHOD)
+
 
 SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -97,10 +119,13 @@ You will be given the name of an class to document and the source code where the
 Your job is to describe the class. **Always respond using exactly the following JSON schema**:
 {
     "description": <one paragraph description of the class>,
-    "interfaces_implemented": [<list of interfaces this class implements if any>],
-    "classes_extended": [<list of classes this class extends if any>],
+    "fields": [
+        {"name": <field_name1>, "content": <Terse 1 sentence description of the first field>},
+        {"name": <field_name2>, "content": <Terse 1 sentence description of the second field>},
+    ]
     "modifiers": [<list of modifiers of the class, e.g. public, private, protected, abstract, or final. Can be an empty list.>],
 }
+IMPORTANT: Fields documented here are only variables in the class, NOT methods.
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -179,21 +204,34 @@ Field to document:
 
 class JavaMethodData(IrData):
     single_sentence: RawContent
-    modifiers: ListedRawContentNoNone
+    modifiers: ListedCommaCombinedBackTickRawContentNoNone
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentNoNone
     output: FieldNameWithBulletedContent
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return METHODS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=METHODS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{METHODS_FOUND_USER_PROMPT}\n{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Method Code:\n\n{symbol.symbol_code}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -204,13 +242,13 @@ class JavaMethodData(IrData):
         raise NotImplementedError("Methods should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
             control_flow=ListedRawContentNoNone(content=[]),
             output=FieldNameWithBulletedContent(content=""),
-            modifiers=ListedRawContentNoNone(content=[]),
+            modifiers=ListedCommaCombinedBackTickRawContentNoNone(content=[]),
         )
 
 
@@ -218,18 +256,31 @@ class JavaFieldData(IrData):
     type: FieldNameWithBackTickContent
     description: FieldNameWithRawContent
     use: FieldNameWithRawContent
-    modifiers: ListedRawContentNoNone
+    modifiers: ListedCommaCombinedBackTickRawContentNoNone
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return FIELDS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=FIELDS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{FIELDS_FOUND_USER_PROMPT}{symbol.name}\n\nField Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{FIELDS_FOUND_USER_PROMPT}\n{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Field Code:\n\n{symbol.symbol_code}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -240,20 +291,19 @@ class JavaFieldData(IrData):
         raise NotImplementedError("fields should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content=""),
             description=FieldNameWithRawContent(content=""),
             use=FieldNameWithRawContent(content=""),
-            modifiers=ListedRawContentNoNone(content=[]),
+            modifiers=ListedCommaCombinedBackTickRawContentNoNone(content=[]),
         )
 
 
 class JavaClassData(IrData):
-    modifiers: ListedRawContentNoNone
-    interfaces_implemented: ListedRawContentNoNone
-    classes_extended: ListedRawContentNoNone
+    modifiers: ListedCommaCombinedBackTickRawContentNoNone
     description: FieldNameWithRawContent
+    fields: ListedBacktickNameTypeRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.METHOD,
@@ -264,15 +314,28 @@ class JavaClassData(IrData):
     )
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return CLASSES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=CLASSES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Class Code:\n\n{symbol.symbol_code}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -295,9 +358,9 @@ class JavaClassData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
-            modifiers=ListedRawContentNoNone(content=[]),
+            modifiers=ListedCommaCombinedBackTickRawContentNoNone(content=[]),
             interfaces_implemented=ListedRawContentNoNone(content=[]),
             classes_extended=ListedRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content=""),
@@ -313,7 +376,6 @@ class JavaClassCollection(IrCollection):
 
 
 class JavaInterfaceData(IrData):
-    interfaces_extended: ListedRawContentNoNone
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
@@ -325,20 +387,33 @@ class JavaInterfaceData(IrData):
     )
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return INTERFACES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=INTERFACES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{INTERFACES_FOUND_USER_PROMPT}{symbol.name}\n\nInterface Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{INTERFACES_FOUND_USER_PROMPT}{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Interface Code:\n\n{symbol.symbol_code}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
         mapping = {
-            SymbolKind.CALLABLE: JavaMethodData,
+            SymbolKind.CALLABLE: None,  # Just list them
             SymbolKind.CLASS: None,  # for child classes just list them
             SymbolKind.INTERFACE: None,  # for child interfaces just list them
             SymbolKind.VARIABLE: JavaFieldData,
@@ -356,7 +431,7 @@ class JavaInterfaceData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             interfaces_extended=ListedRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content=""),
@@ -371,102 +446,107 @@ class JavaInterfaceCollection(IrCollection):
         return cls.from_llm_with_ir_data(JavaInterfaceData, llm, symbols_list)
 
 
-class JavaClassRawSymbolCollection(RawSymbolCollection):
+class JavaImportRawSymbolCollection(RawSymbolCollection):
+    """Collection for Java import statements using tree-sitter."""
+
     data: dict[str, RawSymbolData]
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
+        driver_tree = JavaDriverTree.from_code(code, root_rel_path)
+        is_large_file = code_requires_multi_prompt(code)
 
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
+        import_dict = {}
+        for ts_symbol in driver_tree.extract_imports():
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=".",
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                )
+                import_dict[ts_symbol.name] = raw_symbol_data
+        output = None if len(import_dict) == 0 else cls(data=import_dict)
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Java imports")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class JavaClassRawSymbolCollection(RawSymbolCollection):
+    """Collection for Java classes using tree-sitter with rich symbol linking."""
+
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(
+        cls,
+        code: str,
+        root_rel_path: Path,
+        reified_symbols: list[ReifiedSymbol] | None = None,
+    ) -> Self | None:
+        is_large_file = code_requires_multi_prompt(code)
+
+        # Filter for class symbols only
+        class_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind in {SymbolKind.CLASS, SymbolKind.DATA_STRUCTURE}
+            and sym.is_definition
+        ]
 
         class_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in JAVA_CLASSES:
-                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.CLASS,
-                    scope_relation=None,
-                    delimiter=".",
-                    is_multi_prompt=is_multi_prompt,
-                )
+        for reified_sym in class_symbols:
+            ts_symbol = reified_sym.raw
+            if ts_symbol.name is not None:
+                # Create child symbols from the reified symbol's children
+                children = []
+                for child in reified_sym.children:
+                    child_raw_symbol = RawSymbolData.from_tree_sitter_raw_symbol(
+                        ts_symbol=child.raw,
+                        path=root_rel_path,
+                        scope=ts_symbol.name,
+                        scope_relation=_get_scope_relation_for_child(
+                            child.raw.symbol_kind
+                        ),
+                        children=[],
+                        reference_code=None,
+                        delimiter=".",
+                        is_large_file=is_large_file,
+                        is_overloaded=False,
+                        use_padding=False,
+                        code=code,
+                        reified_symbol=child,
+                    )
+                    children.append(child_raw_symbol)
 
-        for s in symbols:
-            if (
-                (s.get("scope"))
-                and (s["kind"] in JAVA_METHODS)
-                and s["scopeKind"] in JAVA_CLASSES
-            ):
-                scope = s["scope"].split(".")[-1]
-                class_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CALLABLE,
-                        scope_relation=ScopeRelation.METHOD,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=children,
+                    reference_code=None,
+                    delimiter=".",
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=reified_sym,
                 )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in JAVA_CLASSES)
-                and (s["scopeKind"] in JAVA_CLASSES)
-            ):
-                scope = s["scope"].split(".")[-1]
-                # No docs generated, just listing this, so text field unnecessary.
-                class_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CLASS,
-                        scope_relation=ScopeRelation.NESTED_CLASS,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
-                )
-            elif (
-                (s.get("scope"))
-                and (s["kind"] in JAVA_INTERFACES)
-                and (s["scopeKind"] in JAVA_CLASSES)
-            ):
-                scope = s["scope"].split(".")[-1]
-                # No docs generated, just listing this, so text field unnecessary.
-                class_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.INTERFACE,
-                        scope_relation=ScopeRelation.NESTED_INTERFACE,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
-                )
-            elif (
-                (s.get("scope"))
-                and (s["kind"] in JAVA_FIELDS)
-                and (s["scopeKind"] in JAVA_CLASSES)
-            ):
-                scope = s["scope"].split(".")[-1]
-                class_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.VARIABLE,
-                        scope_relation=ScopeRelation.FIELD,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
-                )
+                class_raw_symbol_data[ts_symbol.name] = raw_symbol_data
+
         output = (
             None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
         )
@@ -481,101 +561,84 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
 
 
 class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
+    """Collection for Java interfaces using tree-sitter with rich symbol linking."""
+
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
+    def from_static_analysis(
+        cls,
+        code: str,
+        root_rel_path: Path,
+        reified_symbols: list[ReifiedSymbol] | None = None,
+    ) -> Self | None:
+        is_large_file = code_requires_multi_prompt(code)
 
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
+        # Filter for interface symbols only
+        interface_symbols = []
+        if reified_symbols:
+            interface_symbols = [
+                sym
+                for sym in reified_symbols
+                if sym.raw.symbol_kind == SymbolKind.INTERFACE and sym.is_definition
+            ]
+        else:
+            # Fallback to direct tree-sitter extraction
+            driver_tree = JavaDriverTree.from_code(code, root_rel_path)
+            for ts_symbol in driver_tree.extract_interface_definitions():
+                if ts_symbol.name is not None:
+                    # Create a minimal ReifiedSymbol for consistency
+                    from utils.lang_specialization.symbol_common import ReifiedSymbol
 
+                    reified = ReifiedSymbol(
+                        raw=ts_symbol,
+                        is_definition=True,
+                        is_declaration=False,
+                    )
+                    interface_symbols.append(reified)
+
+        # TODO:
         interface_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in JAVA_INTERFACES:
-                interface_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.INTERFACE,
-                    scope_relation=None,
-                    delimiter=".",
-                    is_multi_prompt=is_multi_prompt,
-                )
+        for reified_sym in interface_symbols:
+            ts_symbol = reified_sym.raw
+            if ts_symbol.name is not None:
+                # Create child symbols from the reified symbol's children
+                children = []
+                for child in reified_sym.children:
+                    child_raw_symbol = RawSymbolData.from_tree_sitter_raw_symbol(
+                        ts_symbol=child.raw,
+                        path=root_rel_path,
+                        scope=ts_symbol.name,
+                        scope_relation=_get_scope_relation_for_child(
+                            child.raw.symbol_kind
+                        ),
+                        children=[],
+                        reference_code=None,
+                        delimiter=".",
+                        is_large_file=is_large_file,
+                        is_overloaded=False,
+                        use_padding=False,
+                        code=code,
+                        reified_symbol=child,
+                    )
+                    children.append(child_raw_symbol)
 
-        for s in symbols:
-            if (
-                (s.get("scope"))
-                and (s["kind"] in JAVA_METHODS)
-                and s["scopeKind"] in JAVA_INTERFACES
-            ):
-                scope = s["scope"].split(".")[-1]
-                interface_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CALLABLE,
-                        scope_relation=ScopeRelation.METHOD,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=children,
+                    reference_code=None,
+                    delimiter=".",
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=reified_sym,
                 )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in JAVA_CLASSES)
-                and (s["scopeKind"] in JAVA_INTERFACES)
-            ):
-                scope = s["scope"].split(".")[-1]
-                # No docs generated, just listing this, so text field unnecessary.
-                interface_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CLASS,
-                        scope_relation=ScopeRelation.NESTED_CLASS,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
-                )
-            elif (
-                (s.get("scope"))
-                and (s["kind"] in JAVA_INTERFACES)
-                and (s["scopeKind"] in JAVA_INTERFACES)
-            ):
-                scope = s["scope"].split(".")[-1]
-                # No docs generated, just listing this, so text field unnecessary.
-                interface_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.INTERFACE,
-                        scope_relation=ScopeRelation.NESTED_INTERFACE,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
-                )
-            elif (
-                (s.get("scope"))
-                and (s["kind"] in JAVA_FIELDS)
-                and (s["scopeKind"] in JAVA_INTERFACES)
-            ):
-                scope = s["scope"].split(".")[-1]
-                interface_raw_symbol_data[scope].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.VARIABLE,
-                        scope_relation=ScopeRelation.FIELD,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
-                )
+                interface_raw_symbol_data[ts_symbol.name] = raw_symbol_data
+
         output = (
             None
             if len(interface_raw_symbol_data) == 0

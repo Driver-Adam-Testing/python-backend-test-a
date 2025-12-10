@@ -1,19 +1,23 @@
 import datetime
+import sys
 from logging.config import fileConfig
+from pathlib import Path
+
+from sqlmodel import SQLModel
+
+# Add parent directory to sys.path to enable 'import database.models'
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from alembic import context
 from database.config import settings
-from database.models_v1 import SQLModel as V1
-from database.models_v2 import SQLModel as V2
 from sqlalchemy import engine_from_config, inspect, pool, text
 from sqlalchemy.engine import Connection
-from sqlmodel import SQLModel  # Import SQLModel
 
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
 config = context.config
 fileConfig(str(config.config_file_name))
 
-print(V1)
-print(V2)
 
 target_metadata = SQLModel.metadata
 
@@ -31,10 +35,7 @@ def include_object(
         "ix_chunkandembedding___ts_vector__",
     ]:
         return False
-    if type_ == "column" and name == "__ts_vector__":
-        return False
-    # Otherwise, return True so Alembic processes it normally
-    return True
+    return not (type_ == "column" and name == "__ts_vector__")
 
 
 def run_migrations_offline() -> None:
@@ -85,11 +86,10 @@ def run_migrations_online() -> None:
                     text("LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE")
                 )
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.UTC)
             print("Running migrations at", now)
             context.run_migrations()
-            print("Migrations complete at", datetime.datetime.now())
-            # Lock is released when transaction ends
+            print("Migrations complete at", datetime.datetime.now(datetime.UTC))
 
 
 if context.is_offline_mode():

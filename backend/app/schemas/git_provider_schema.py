@@ -1,5 +1,36 @@
-from database.models_v1 import GitProviderKind
+from enum import Enum
+
+from database.models import GitProviderKind
 from pydantic import BaseModel, Field
+
+
+class TokenType(str, Enum):
+    # OAUTH = "oauth"
+    GROUP_ACCESS_TOKEN = "group_access_token"  # GitLab
+    WORKSPACE_ACCESS_TOKEN = "workspace_access_token"  # Bitbucket
+    PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket
+    REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket
+    PERSONAL_ACCESS_TOKEN = "personal_access_token"  # Azure DevOps
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class AccessTokenData(BaseModel):
+    """Unified access token model"""
+
+    token_type: TokenType = TokenType.GROUP_ACCESS_TOKEN
+    token: str
+    workspace_or_group: str | None = None
+    name: str | None = None
+    metadata: dict = {}
+
+    def is_access_token(self) -> bool:
+        return self.token_type in [
+            TokenType.GROUP_ACCESS_TOKEN,
+            TokenType.WORKSPACE_ACCESS_TOKEN,
+            TokenType.PERSONAL_ACCESS_TOKEN,
+        ]
 
 
 class GitProvider(BaseModel):
@@ -28,13 +59,14 @@ class GitProviderAppConfig(BaseModel):
     scope: str | None = None
 
 
-class GroupAccessToken(BaseModel):
-    name: str
+class GroupAccessToken(AccessTokenData):
+    name: str | None = None
     token: str
+    token_type: TokenType = TokenType.GROUP_ACCESS_TOKEN
 
 
 class CreateGitProviderAppRequest(BaseModel):
-    organization_id: str
+    organization_id: str = Field(serialization_alias="owner_organization_id")
     name: str
     provider_kind: GitProviderKind
     shared_provider: bool = False
@@ -56,7 +88,49 @@ class GitProviderAppTokenSecret(BaseModel):
 
 class WebhookInfo(BaseModel):
     callback_url: str
-    custom_headers: dict
+    custom_headers: dict | list[str]
     secret_token: str
     ssl_verification: bool
     triggers: list[str]
+
+
+# Azure DevOps specific models
+class AzureDevOpsProject(BaseModel):
+    """Azure DevOps project information"""
+
+    id: str
+    name: str
+    lastUpdateTime: str | None = None
+
+
+class AzureDevOpsRepository(BaseModel):
+    """Azure DevOps repository information"""
+
+    id: str
+    name: str
+    url: str | None = None
+    defaultBranch: str | None = None
+    creationDate: str | None = None
+    project: AzureDevOpsProject
+
+
+class AzureDevOpsTokenData(BaseModel):
+    """Azure DevOps Personal Access Token data structure"""
+
+    token: str
+    project: str
+    secret_token: str | None = None
+
+
+class AzureDevOpsWebhookResource(BaseModel):
+    """Azure DevOps webhook resource structure"""
+
+    repository: dict[str, str] | None = None
+    refUpdates: list[dict[str, str]] | None = None
+
+
+class AzureDevOpsWebhookPayload(BaseModel):
+    """Azure DevOps webhook payload structure"""
+
+    eventType: str
+    resource: AzureDevOpsWebhookResource | None = None

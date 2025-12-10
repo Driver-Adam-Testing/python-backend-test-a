@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models_v2 import PrimaryAsset, PrimaryAssetTag
+from database.models import PrimaryAsset, PrimaryAssetTag
 from fastapi import Body, HTTPException, Path, Response
 from sqlmodel import select
 
@@ -8,6 +8,7 @@ from app.api.auth import UserToken
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import PrimaryAssetTagCreate
 from app.api.session import CurrentSession
+from app.authorization.fastapi import enforce_asset_action
 
 
 @router.delete("/primary_asset_tags/{primary_asset_id}/{tag_id}", response_model=None)
@@ -17,6 +18,9 @@ def delete_primary_asset_tag(
     tag_id: UUID = Path(...),
     primary_asset_id: UUID = Path(...),
 ) -> Response:
+    enforce_asset_action(
+        db=session, user=user, asset_id=primary_asset_id, action_key="asset_tag.manage"
+    )
     primary_asset_tag = session.exec(
         select(PrimaryAssetTag)
         .join(PrimaryAsset)
@@ -41,6 +45,12 @@ def create_primary_asset_tag(
     user: UserToken,
     payload: PrimaryAssetTagCreate = Body(...),
 ) -> PrimaryAssetTag:
+    enforce_asset_action(
+        db=session,
+        user=user,
+        asset_id=payload.primary_asset_id,
+        action_key="asset_tag.manage",
+    )
     new_primary_asset_tag = PrimaryAssetTag(
         tag_id=payload.tag_id,
         primary_asset_id=payload.primary_asset_id,

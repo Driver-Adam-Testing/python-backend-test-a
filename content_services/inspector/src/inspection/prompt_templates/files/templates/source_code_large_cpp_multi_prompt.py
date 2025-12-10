@@ -1,33 +1,50 @@
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.lang_specialization.cpp import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
-    CppClassCollection,
-    CppClassRawSymbolCollection,
+    CppDataStructureCollection,
+    CppDataStructureRawSymbolCollection,
     CppFnCollection,
     CppFreeFnRawSymbolCollection,
+    CppIncludeRawSymbolCollection,
     CppVariableCollection,
     CppVariableRawSymbolCollection,
 )
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
-    default_imports_checker_multi_prompt,
 )
+from utils.lang_specialization.ir_common import ListData
 from utils.templates import S
 
 SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
     (
         S.MULTI_PROMPT_TEXT,
         "# Purpose",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
-        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
-        SOURCE_CODE_PURPOSE_FROM_CHUNKS,
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP))
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+        .into_str(),
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT))
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE)
+        .into_str(),
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_PURPOSE_FROM_CHUNKS))
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE)
+        .into_str(),
     ),
-    # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
     (
-        S.MULTI_LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker_multi_prompt,
-        lambda _llm, output, _code: output,
+        CppIncludeRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (
@@ -40,8 +57,8 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        CppClassRawSymbolCollection.from_static_analysis,
-        CppClassCollection.from_llm,
+        CppDataStructureRawSymbolCollection.from_static_analysis,
+        CppDataStructureCollection.from_llm,
         None,
     ),
     (

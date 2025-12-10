@@ -2,15 +2,15 @@ import boto3
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 from app.core.config import settings
 
-region_name = "us-east-1"
+region_name = settings.AWS_REGION
 
 def write_secret(secret_name, secret_value):
     session = boto3.session.Session()
     client = session.client(
         service_name='secretsmanager',
         region_name=region_name,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
     )
 
     try:
@@ -32,8 +32,8 @@ def read_secret(secret_name):
     client = session.client(
         service_name='secretsmanager',
         region_name=region_name,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
     )
     try:
         response = client.get_secret_value(SecretId=secret_name)

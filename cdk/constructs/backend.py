@@ -1,7 +1,10 @@
+import json
 from aws_cdk import (
+    CfnOutput,
     Duration,
     Stack,
     aws_ec2,
+    aws_ecr,
     aws_ecs,
     aws_ecs_patterns,
     aws_elasticloadbalancingv2,
@@ -12,31 +15,32 @@ from aws_cdk import (
     aws_s3,
     aws_secretsmanager,
     aws_ssm,
+    RemovalPolicy
 )
 from constructs import Construct
+from cdk.settings import settings
+from cdk.constructs.guard_duty_S3_malware_protection import GuardDutyS3MalwareProtection
 
 
 # TODO: parameterize task count and container size
 class BackendParams:
-    cors_origins: str
-    allowed_ips: list[str]
-    environment: str
-    use_legacy_dropzone: bool
-    metrics_bus: aws_events.EventBus
-
     def __init__(
         self,
-        cors_origins: list[str],
+        cors_origins: str,
         allowed_ips: list[str],
         environment: str,
         use_legacy_dropzone: bool,
         metrics_bus: aws_events.EventBus,
+        aws_region: str,
+        aws_account: str,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
         self.use_legacy_dropzone = use_legacy_dropzone
         self.metrics_bus = metrics_bus
+        self.aws_region = aws_region
+        self.aws_account = aws_account
 
 
 class Backend(Construct):
@@ -68,67 +72,20 @@ class Backend(Construct):
             hosted_zone_id=hosted_zone_id,
         )
 
-        postgres_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/pythonBackend/postgresCredentialsName",
-        )
-        postgres_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            self, "PostgresSecret", secret_name=postgres_secret_name
-        )
-
-        modal_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/pythonBackend/modalCredentialsName",
-        )
-        modal_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            self, "ModalSecret", secret_name=modal_secret_name
-        )
-
-        auth0_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/pythonBackend/auth0ConfigurationsName",
-        )
-        auth0_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            self, "Auth0Secret", secret_name=auth0_secret_name
-        )
-
-        s3_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/pythonBackend/s3CredentialsName"
-        )
-        s3_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            self, "S3Secret", secret_name=s3_secret_name
-        )
-
-        github_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/pythonBackend/githubConfigurationsName",
-        )
-        github_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            self, "GitHubCredentials", secret_name=github_secret_name
-        )
-        sentry_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/pythonBackend/sentryCredentialName",
-        )
-        sentry_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            self,
-            "SentryCredential",
-            secret_name=sentry_secret_name,
-        )
-        openai_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/pythonBackend/openAIApiKeyName"
-        )
-        openai_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            self, "OpenAIApiKeyCredentials", secret_name=openai_secret_name
-        )
-
         inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
+        )
+
+        openai_url = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
         )
 
         self.dropzone_bucket = aws_s3.Bucket(
             self,
             "DropzoneBucket",
+            removal_policy=RemovalPolicy.DESTROY, 
+            auto_delete_objects=True,       
+            bucket_name=f"{settings.DEPLOYMENT_ENVIRONMENT}-codebase-dropzone",
             cors=[
                 {
                     "allowedMethods": [
@@ -138,10 +95,18 @@ class Backend(Construct):
                     ],
                     "allowedOrigins": params.cors_origins.split(","),
                     "allowedHeaders": ["*"],
+                    "exposedHeaders":[
+                        "x-amz-server-side-encryption",
+                        "x-amz-request-id",
+                        "x-amz-id-2"    
+                    ]
                 }
             ],
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
+
+        guard_duty_mlp = GuardDutyS3MalwareProtection(self,"GuardDutyMP")
+        guard_duty_mlp.add_bucket(self.dropzone_bucket)
 
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
@@ -152,86 +117,32 @@ class Backend(Construct):
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
+            "AWS_REGION": params.aws_region,
+            "ECS_CONTAINER_STOP_TIMEOUT": "2s",
+            "OPENAI_URL": openai_url
+            #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }
 
-        container_secrets = {
-            "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(
-                postgres_secret, "SERVER"
-            ),
-            "POSTGRES_PORT": aws_ecs.Secret.from_secrets_manager(
-                postgres_secret, "PORT"
-            ),
-            "POSTGRES_DB": aws_ecs.Secret.from_secrets_manager(postgres_secret, "DB"),
-            "POSTGRES_USER": aws_ecs.Secret.from_secrets_manager(
-                postgres_secret, "USER"
-            ),
-            "POSTGRES_PASSWORD": aws_ecs.Secret.from_secrets_manager(
-                postgres_secret, "PASSWORD"
-            ),
-            "AUTH0_DOMAIN": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "AUTH0_DOMAIN"
-            ),
-            "AUTH0_MGMT_API_DOMAIN": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "AUTH0_MGMT_API_DOMAIN"
-            ),
-            "AUTH0_CLIENT_ID": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "AUTH0_CLIENT_ID"
-            ),
-            "AUTH0_AUDIENCE": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "AUTH0_AUDIENCE"
-            ),
-            "AUTH0_MGMT_API_CLIENT_ID": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "AUTH0_MGMT_API_CLIENT_ID"
-            ),
-            "AUTH0_MGMT_API_CLIENT_SECRET": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "AUTH0_MGMT_API_CLIENT_SECRET"
-            ),
-            "AUTH0_MGMT_API_AUDIENCE": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "AUTH0_MGMT_API_AUDIENCE"
-            ),
-            "MODAL_TOKEN_ID": aws_ecs.Secret.from_secrets_manager(
-                modal_secret, "MODAL_TOKEN_ID"
-            ),
-            "MODAL_TOKEN_SECRET": aws_ecs.Secret.from_secrets_manager(
-                modal_secret, "MODAL_TOKEN_SECRET"
-            ),
-            "MODAL_ENVIRONMENT": aws_ecs.Secret.from_secrets_manager(
-                modal_secret, "MODAL_ENVIRONMENT"
-            ),
-            "AWS_ACCESS_KEY_ID": aws_ecs.Secret.from_secrets_manager(
-                s3_secret, "AWS_ACCESS_KEY_ID"
-            ),
-            "AWS_SECRET_ACCESS_KEY": aws_ecs.Secret.from_secrets_manager(
-                s3_secret, "AWS_SECRET_ACCESS_KEY"
-            ),
-            "GH_CLIENT_ID": aws_ecs.Secret.from_secrets_manager(
-                github_secret, "GH_CLIENT_ID"
-            ),
-            "GH_CLIENT_SECRET": aws_ecs.Secret.from_secrets_manager(
-                github_secret, "GH_CLIENT_SECRET"
-            ),
-            "GH_REDIRECT_URI": aws_ecs.Secret.from_secrets_manager(
-                github_secret, "GH_REDIRECT_URI"
-            ),
-            "GH_WEBHOOK_SECRET": aws_ecs.Secret.from_secrets_manager(
-                github_secret, "GH_WEBHOOK_SECRET"
-            ),
-            "GH_CLIENT_PEM_SECRET": aws_ecs.Secret.from_secrets_manager(
-                github_secret, "GH_CLIENT_PEM_SECRET"
-            ),
-            "OPENAI_API_KEY": aws_ecs.Secret.from_secrets_manager(
-                openai_secret,
-                "OPENAI_API_KEY",  # TODO unused. can we remove from here without harm?
-            ),
-            "SENTRY_DSN": aws_ecs.Secret.from_secrets_manager(
-                sentry_secret, "SENTRY_DSN"
-            ),
+        deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
+        )
+
+        secret_fields = settings.SECRECTS_KEYS.split(',')
+
+        secrets_map = {
+            k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
+            for k in secret_fields
         }
 
-        task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
+        container_environment_vars.update(settings.to_dict())
+
+        repository = aws_ecr.Repository.from_repository_name(
+            self, "PythonBackendRepo", "python-backend"
+        )
+
         task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-            image=task_image,
-            secrets=container_secrets,
+            image=aws_ecs.ContainerImage.from_ecr_repository(repository, tag="latest"),
+            secrets=secrets_map,
             environment=container_environment_vars,
             container_port=8000,
             log_driver=aws_ecs.LogDrivers.aws_logs(
@@ -243,6 +154,7 @@ class Backend(Construct):
             self,
             "BackendApi",
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
+            ssl_policy=aws_elasticloadbalancingv2.SslPolicy.FIPS_TLS13_12_RES,
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,
             # Github Actions runners only provide x86 - we'd have to go to self-hosted to deploy ARM currently
             # There is a limited beta, so support for ARM is coming
@@ -260,18 +172,24 @@ class Backend(Construct):
             task_subnets=aws_ec2.SubnetSelection(
                 subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
-            health_check_grace_period=Duration.minutes(6),
+            health_check_grace_period=Duration.seconds(120),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(
-                enable=True, rollback=True
+                enable=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()), rollback=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower())
             ),
             min_healthy_percent=100,
-            max_healthy_percent=250,
+            max_healthy_percent=200,
             cpu=2048,
             memory_limit_mib=4096,
         )
         self.service.target_group.configure_health_check(
-            path="/api/v1/healthcheck/", port="8000"
+            path="/studio/v1/healthcheck/", port="8000",
+            interval=Duration.seconds(5),  
+            timeout=Duration.seconds(2),  
+            healthy_threshold_count=2,  
+            unhealthy_threshold_count=2,  
+            healthy_http_codes="200",  # 
         )
+        self.service.target_group.deregistration_delay = Duration.seconds(5)
         self.service.task_definition.task_role.attach_inline_policy(
             aws_iam.Policy(
                 self,
@@ -294,23 +212,22 @@ class Backend(Construct):
             )
         )
 
-        # In the service: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
-        # response = client.put_events(
-        #     Entries=[
-        #         {
-        #             'Time': datetime(2015, 1, 1),
-        #             'Source': 'string',
-        #             'Resources': [
-        #                 'string',
-        #             ],
-        #             'DetailType': 'string',
-        #             'Detail': 'string', JSON-stringified whatever. Max size for 1 entry is 256KB
-        #             'EventBusName': 'string',
-        #             'TraceHeader': 'string'
-        #         },
-        #     ],
-        #     EndpointId='string'
-        # )
+        # Output ECS Cluster ARN
+        CfnOutput(
+            self,
+            "EcsClusterArn",
+            export_name="EcsClusterArn",
+            value=cluster.cluster_arn,
+        )
+
+        # Output ECS Service ARN
+        CfnOutput(
+            self,
+            "EcsServiceArn",
+            export_name="EcsServiceArn",
+            value=self.service.service.service_arn,
+        )
+
         params.metrics_bus.grant_all_put_events(self.service.task_definition.task_role)
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes

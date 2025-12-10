@@ -3,12 +3,18 @@ from datetime import datetime
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from database.models_v2_enums import (
+from database.models_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,
+    PrimaryAssetRole,
+    SourceVisibility,
+    VcsAutoUpdatePolicy,
+    VersionStatus,
 )
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, field_validator
+
+from app.schemas.common import validate_visibility_not_public
 
 T = TypeVar("T")
 
@@ -30,6 +36,8 @@ class PrimaryAssetRead(BaseModel):
     display_name: str
     created_at: datetime | None
     updated_at: datetime | None
+    repository_id: str | None
+    provider: str | None
 
     class Config:
         from_attributes = True
@@ -38,11 +46,12 @@ class PrimaryAssetRead(BaseModel):
 class VersionRead(BaseModel):
     id: UUID
     primary_asset_id: UUID
-    display_name: str
+    vcs_hash: str | None
     created_at: datetime | None
     updated_at: datetime | None
     status: str | None
     browsable: bool
+    vcs_metadata: dict | None
 
     class Config:
         from_attributes = True
@@ -56,6 +65,8 @@ class NodeRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     depth: int
+    misc_metadata: dict | None
+    total_files: int | None
 
     class Config:
         from_attributes = True
@@ -70,7 +81,11 @@ class UserRead(BaseModel):
         from_attributes = True
 
 
-class NodeMetaRead(NodeRead):
+class NodeMetaReadWithTerseSentence(NodeRead):
+    # NOTE: this is only used on the list_primary_assets endpoint
+    # With that endpoint, we want the terse sentence description
+    # DO NOT use this schema elsewhere without appropriate filters, otherwise it will
+    # load all contents for every node pulled.
     id: UUID
     version_id: UUID
     relative_path: str
@@ -78,7 +93,9 @@ class NodeMetaRead(NodeRead):
     created_at: datetime | None
     updated_at: datetime | None
     misc_metadata: dict | None
+    total_files: int | None
     depth: int
+    contents: list["ContentRead"] | None
 
     class Config:
         from_attributes = True
@@ -107,10 +124,11 @@ class PrimaryAssetTagRead(BaseModel):
         from_attributes = True
 
 
-class ContentRead(BaseModel):
+class ContentReadBase(BaseModel):
+    """Base content fields without content field"""
+
     id: UUID | None
     node_id: UUID | None
-    content: str | None
     content_kind: ContentKind
     misc_metadata: dict | None
     created_at: datetime | None
@@ -118,6 +136,10 @@ class ContentRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ContentRead(ContentReadBase):
+    content: str | None
 
 
 class DocumentSourceRead(BaseModel):
@@ -154,12 +176,21 @@ class VersionDetailRead(VersionRead):
 
 
 class PrimaryAssetDetailRead(PrimaryAssetRead):
+    # NOTE: this is only used for the list_primary_assets endpoint right now.
+    # It includes the most recent version and its root node with terse sentence by
+    # including the contents on NodeMetaReadWithTerseSentence.
+    # Do NOT use the schema elsewhere without appropriate filters, or it will fetch all contents
+    # for every node pulled.
     class PrimaryAssetVersionRead(VersionRead):
-        root_node: NodeMetaRead | None
+        root_node: NodeMetaReadWithTerseSentence | None
         creator: UserRead | None
 
     most_recent_version: PrimaryAssetVersionRead | None
+    most_recent_completed_version: PrimaryAssetVersionRead | None
     tags: list[TagRead] | None
+    codebase_settings_auto_commit_docs: bool | None = None
+    effective_role: PrimaryAssetRole
+    visibility: SourceVisibility
 
     @computed_field
     @property
@@ -167,15 +198,28 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
         """A primary asset is browsable if any of its versions are browsable."""
         return self.most_recent_version.browsable if self.most_recent_version else False
 
+    @computed_field
+    @property
+    def status(self) -> str | None:
+        """Status of the most recent version."""
+        return self.most_recent_version.status if self.most_recent_version else None
+
     class Config:
         from_attributes = True
 
 
-class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):
-    primary_asset: PrimaryAssetRead
-
-
 class ContentDetailRead(ContentRead):
+    """Content with content field and node details"""
+
+    node: NodeDetailRead
+
+    class Config:
+        from_attributes = True
+
+
+class ContentDetailReadSkinny(ContentReadBase):
+    """Content without content field but with node details"""
+
     node: NodeDetailRead
 
     class Config:
@@ -193,44 +237,23 @@ class TagDetailRead(TagRead):
 # Create and Update Schemas
 
 
-class PrimaryAssetCreate(BaseModel):
-    display_name: str
-    kind: PrimaryAssetKind
-
-
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
+    codebase_settings_auto_commit_docs: bool | None = None
+    vcs_auto_update_policy: VcsAutoUpdatePolicy | None = None
+    visibility: SourceVisibility | None = None
 
-
-class VersionCreate(BaseModel):
-    primary_asset_id: UUID
-    display_name: str
+    _validate_not_public = field_validator("visibility")(validate_visibility_not_public)
 
 
 class VersionUpdate(BaseModel):
-    display_name: str | None = None
-
-
-class NodeCreate(BaseModel):
-    version_id: UUID
-    relative_path: str
-
-
-class NodeUpdate(BaseModel):
-    relative_path: str | None = None
+    status: VersionStatus | None = None
 
 
 class TagCreate(BaseModel):
     name: str
     hex_color: str
     type: str
-
-
-class ContentCreate(BaseModel):
-    node_id: UUID
-    content_kind: ContentKind
-    content: str | None = None
-    misc_metadata: dict | None = None
 
 
 class DerivedContentUpdate(BaseModel):

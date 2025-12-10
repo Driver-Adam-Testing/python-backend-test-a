@@ -4,7 +4,7 @@ from src.utils.config import settings
 # Initialize S3 client
 s3_client = boto3.client(
     "s3",
-    region_name="us-east-1",
+    region_name=settings.AWS_REGION,
     endpoint_url=settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None,
 )
 
@@ -24,7 +24,7 @@ def head_object(bucket: str, key: str) -> dict:
     return s3_client.head_object(Bucket=bucket, Key=key)
 
 
-def has_guard_duty_tag(bucket: str, key: str) -> bool:
+def has_allowed_guard_duty_tag(bucket: str, key: str) -> bool:
     """
     Check if the S3 object has the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
     """

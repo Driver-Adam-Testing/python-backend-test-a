@@ -11,7 +11,6 @@ from aws_cdk import (
     aws_s3_notifications,
     aws_secretsmanager,
     aws_sns,
-    aws_ssm,
 )
 from constructs import Construct
 from cdk.settings import settings
@@ -68,7 +67,13 @@ class AssetOnboardingLambda(Construct):
             ),
         )
         deployment_secrets.grant_read(lambda_function)
-       
+
+        if params.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(lambda_function)
+
         params.dropzone_bucket.grant_read(lambda_function)
 
         sns_topic = aws_sns.Topic(scope, "CodeOnboardingTopic")

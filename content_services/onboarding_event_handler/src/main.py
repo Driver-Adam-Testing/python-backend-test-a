@@ -4,6 +4,11 @@ import os
 from typing import Any
 from urllib.parse import unquote_plus
 
+from src.utils.firewall_cert import init_firewall_cert
+
+# Must be called before any HTTPS calls (httpx, boto3, etc.)
+init_firewall_cert()
+
 import botocore
 import httpx
 import sentry_sdk
@@ -27,7 +32,7 @@ else:
 logger = logging.getLogger()
 logger.info(f"Log level set to {log_level}")
 
-is_private_deploy = os.getenv("IS_PRIVATE_DEPLOY") and os.getenv("IS_PRIVATE_DEPLOY") == "True"
+is_private_deploy = os.getenv("IS_PRIVATE_DEPLOY") and os.getenv("IS_PRIVATE_DEPLOY") == "true"
 
 if(not is_private_deploy):
     sentry_sdk.init(

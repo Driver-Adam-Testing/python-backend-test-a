@@ -1,5 +1,7 @@
 #!/bin/bash
 set -euo pipefail
+PS4='[${BASH_SOURCE}:${LINENO}] '
+set -x
 
 echo "deploying backend..."
 

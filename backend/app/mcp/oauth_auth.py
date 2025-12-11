@@ -6,8 +6,8 @@ import logging
 
 from fastmcp.server.auth.providers.auth0 import Auth0Provider
 from fastmcp.server.dependencies import get_access_token
-from pydantic import BaseModel
 
+from app.auth.models import User
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -15,14 +15,6 @@ logger = logging.getLogger(__name__)
 
 class OAuthAuthenticationError(Exception):
     """Exception raised when OAuth authentication or authorization fails"""
-
-
-# TODO can we replace with User model?
-class TokenClaims(BaseModel):
-    orgId: str
-    org_name: str
-    userId: str
-    user_email: str
 
 
 def create_mcp_oauth_provider() -> Auth0Provider:
@@ -64,16 +56,16 @@ def create_mcp_oauth_provider() -> Auth0Provider:
     return auth
 
 
-def get_token_claims() -> TokenClaims:
+def get_user_from_token() -> User:
     token = get_access_token()
     if not token or not hasattr(token, "claims"):
         raise OAuthAuthenticationError("No access token available")
-    return TokenClaims.model_validate(token.claims)
+    return User.model_validate(token.claims)
 
 
 def get_organization_id_from_token() -> str:
-    return get_token_claims().orgId
+    return get_user_from_token().organization_id
 
 
 def get_user_id_from_token() -> str:
-    return get_token_claims().userId
+    return get_user_from_token().user_id

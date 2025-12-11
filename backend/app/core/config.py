@@ -1,5 +1,5 @@
 import warnings
-from typing import Annotated, Literal, Self
+from typing import Annotated, Self
 
 from pydantic import (
     AnyUrl,
@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     AUTH0_MGMT_API_CLIENT_ID: str = DEFAULT_SECRET
     AUTH0_MGMT_API_CLIENT_SECRET: str = DEFAULT_SECRET
     AUTH0_MGMT_API_AUDIENCE: str = DEFAULT_SECRET
+
+    MCP_AUTH0_CLIENT_ID: str = DEFAULT_SECRET
+    MCP_AUTH0_CLIENT_SECRET: str = DEFAULT_SECRET
+    MCP_AUTH0_AUDIENCE: str = DEFAULT_SECRET
+    # Public base URL where server is accessible (e.g., https://api.dev.driverai.com)
+    PUBLIC_BASE_URL: str = DEFAULT_SECRET
 
     S3ADMIN_AWS_ACCESS_KEY_ID: str = DEFAULT_SECRET
     S3ADMIN_AWS_SECRET_ACCESS_KEY: str = DEFAULT_SECRET

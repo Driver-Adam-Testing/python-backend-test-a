@@ -67,12 +67,17 @@ class HatchetWorker(Construct):
             scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value=None
         )
 
+        inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
+        )
+
         base_env = {
             "PROJECT_NAME": "DriverAI Hatchet Worker",
             "ENVIRONMENT": params.environment,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077"
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077",
+            "INSPECTOR_BUCKET_NAME": inspector_bucket_name
         }
 
         if settings.IS_PRIVATE_DEPLOY == "true":

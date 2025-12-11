@@ -27,6 +27,7 @@ from shared.tool_executors import (  # noqa: E402
     get_llm_onboarding_guide,
 )
 
+from .icons import driver_logo_svg  # noqa: E402
 from .logging_middleware import (  # noqa: E402
     DriverMcpToolResponse,
     McpLoggingMiddleware,
@@ -61,6 +62,9 @@ my_mcp = FastMCP(
     "Driver MCP Server",
     include_fastmcp_meta=False,
     instructions=MCP_INSTRUCTIONS,
+    icons=[
+        driver_logo_svg,
+    ],
 )
 assert (
     fastmcp.settings.stateless_http is True

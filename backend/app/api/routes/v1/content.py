@@ -17,15 +17,15 @@ from app.services.content_service import ContentService
 
 router = APIRouter()
 
-# FURNISSJ: change node_id to version_node_id
+
 @router.get(
-    "/{node_id}/download",
+    "/{version_node_id}/download",
     summary="Get download URL from S3 by ID",
 )
 def get_download_content_by_id(
     session: CurrentSession,
     user: UserToken,
-    node_id: UUID,
+    version_node_id: UUID,
 ) -> DownloadContentResponse:
     """
     Get download URL from S3 by ID
@@ -33,14 +33,14 @@ def get_download_content_by_id(
     Parameters:
     - session: Current session object
     - user: Current user object
-    - node_id: UUID of the node
+    - version_node_id: UUID of the version node
 
     Returns:
     - DerivedContent: Content details
     """
     query = (
         select(VersionNode)
-        .where(VersionNode.id == node_id)
+        .where(VersionNode.id == version_node_id)
         .options(selectinload(VersionNode.version))
         .options(selectinload(Version.primary_asset))
     )
@@ -51,7 +51,7 @@ def get_download_content_by_id(
     )
     content_service = ContentService(session)
     return content_service.get_content_download_url(
-        node_id, user.organization_id
+        version_node_id, user.organization_id
     )
 
 

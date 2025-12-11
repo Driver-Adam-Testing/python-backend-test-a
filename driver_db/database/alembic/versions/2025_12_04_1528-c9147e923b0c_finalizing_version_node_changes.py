@@ -81,6 +81,15 @@ def upgrade() -> None:
 
     # Node
     op.alter_column("node", "primary_asset_id", existing_type=sa.UUID(), nullable=False)
+    op.create_index(op.f("ix_node_source_hash"), "node", ["source_hash"], unique=False)
+    op.create_unique_constraint(
+        "unique_primary_asset_source_hash", "node", ["primary_asset_id", "source_hash"]
+    )
+    op.create_check_constraint(
+        "check_source_hash_not_null_for_codebase_kinds",
+        "node",
+        "NOT (kind IN ('CODEBASE_FILE', 'CODEBASE_DIRECTORY') AND source_hash IS NULL)",
+    )
     op.drop_index("idx_node_version_id_relative_path_length", table_name="node")
     op.drop_index("ix_node_version_id_relative_path_pattern_ops", table_name="node")
     op.drop_index("ix_v2_node_depth", table_name="node")
@@ -95,6 +104,9 @@ def upgrade() -> None:
     op.drop_column("node", "version_id")
 
     # VersionNode
+    op.create_index(
+        op.f("ix_version_node_node_id"), "version_node", ["node_id"], unique=False
+    )
     op.create_index(
         "ix_version_node_version_id_relative_path_length",
         "version_node",
@@ -128,6 +140,7 @@ def downgrade() -> None:
     op.drop_index(
         "ix_version_node_version_id_relative_path_length", table_name="version_node"
     )
+    op.drop_index(op.f("ix_version_node_node_id"), table_name="version_node")
 
     # Node
     op.add_column(
@@ -196,6 +209,9 @@ def downgrade() -> None:
         unique=False,
     )
     op.alter_column("node", "primary_asset_id", existing_type=sa.UUID(), nullable=True)
+    op.drop_check_constraint("check_source_hash_not_null_for_codebase_kinds", "node")
+    op.drop_constraint("unique_primary_asset_source_hash", "node", type_="unique")
+    op.drop_index(op.f("ix_node_source_hash"), table_name="node")
 
     # DocumentSource
     op.add_column(

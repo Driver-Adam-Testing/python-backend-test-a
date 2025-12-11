@@ -13,6 +13,7 @@ from sqlalchemy import (
     UUID as SaUuid,
 )
 from sqlalchemy import (
+    CheckConstraint,
     Column,
     Computed,
     Connection,
@@ -750,7 +751,7 @@ class VersionNode(SQLModel, table=True):
         foreign_key="version.id", ondelete="CASCADE", index=True
     )
     relative_path: str = Field(index=True)
-    node_id: uuid.UUID = Field(foreign_key="node.id", nullable=False)
+    node_id: uuid.UUID = Field(foreign_key="node.id", nullable=False, index=True)
     depth: int = Field(
         sa_column=Column(
             Integer,
@@ -812,8 +813,17 @@ class VersionNode(SQLModel, table=True):
 
 class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "node"
+    __table_args__ = (
+        UniqueConstraint(
+            "primary_asset_id", "source_hash", name="unique_primary_asset_source_hash"
+        ),
+        CheckConstraint(
+            "NOT (kind IN ('CODEBASE_FILE', 'CODEBASE_DIRECTORY') AND source_hash IS NULL)",
+            name="check_source_hash_not_null_for_codebase_kinds",
+        ),
+    )
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    source_hash: str | None
+    source_hash: str | None = Field(nullable=True, index=True)
     kind: NodeKind
     primary_asset_id: UUID = Field(
         foreign_key="primary_asset.id",

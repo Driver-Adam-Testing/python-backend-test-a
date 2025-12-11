@@ -18,7 +18,13 @@ from app.api.routes.v2.query_utils import (
     apply_sorting_to_query,
 )
 from app.api.routes.v2.router import router
-from app.api.routes.v2.schemas import ContentsResponse, ListWithCount
+from app.api.routes.v2.schemas import (
+    ContentsResponse,
+    ListWithCount,
+    PrimaryAssetRead,
+    VersionNodeRead,
+    VersionRead,
+)
 from app.api.session import CurrentSession
 from app.auth.models import User
 
@@ -68,16 +74,25 @@ def _list_contents_with_filter(
     auth_filter: callable,
     additional_filters: list[Any],
 ) -> ListWithCount[ContentsResponse]:
+    version_node_query = (
+        select(VersionNode)
+        .options(
+            selectinload(VersionNode.node),
+            selectinload(VersionNode.version).selectinload(Version.primary_asset),
+        )
+        .where(VersionNode.id == version_node_id)
+        .where(_org_filter(user.organization_id))
+    )
+
+    version_node = session.exec(version_node_query).one_or_none()
+
+    if not version_node:
+        raise HTTPException(status_code=404, detail="Version node not found")
+
     query = (
         select(DerivedContent)
         .join(DerivedContent.node)
         .join(Node.version_nodes)
-        .options(
-            selectinload(DerivedContent.node)
-            .selectinload(Node.version_nodes)
-            .selectinload(VersionNode.version)
-            .selectinload(Version.primary_asset),
-        )
         .where(VersionNode.id == version_node_id)
         .where(_org_filter(user.organization_id))
     )
@@ -97,18 +112,18 @@ def _list_contents_with_filter(
 
     results = [
         ContentsResponse(
-            version_node_id=content.node.version_nodes[0].id,
-            content_id=content.id,
-            content=content.content if include_content else None,
-            content_name=content.content_name,
+            id=content.id,
             content_kind=content.content_kind,
-            version_status=content.node.version_nodes[0].version.status,
-            primary_asset_display_name=content.node.version_nodes[
-                0
-            ].version.primary_asset.display_name,
-            misc_metadata=content.node.version_nodes[0].misc_metadata,
+            node_id=content.node_id,
+            content=content.content if include_content else None,
+            misc_metadata=content.misc_metadata,
             created_at=content.created_at,
             updated_at=content.updated_at,
+            version_node=VersionNodeRead.model_validate(version_node),
+            version=VersionRead.model_validate(version_node.version),
+            primary_asset=PrimaryAssetRead.model_validate(
+                version_node.version.primary_asset
+            ),
         )
         for content in contents
     ]
@@ -120,7 +135,7 @@ def _list_contents_with_filter(
 def list_page_contents(
     session: CurrentSession,
     user: UserToken,
-    page_version_node_id: UUID,
+    version_node_id: UUID,
     include_content: bool = False,
 ) -> ContentsResponse:
     """
@@ -162,22 +177,24 @@ def list_page_contents(
         derived_content = version_node.node.contents[0]
 
         return ContentsResponse(
-            version_node_id=version_node.id,
-            content=derived_content.content if include_content else None,
-            content_id=derived_content.id,
-            content_name=derived_content.content_name,
+            id=derived_content.id,
             content_kind=derived_content.content_kind,
-            version_status=version_node.version.status,
-            primary_asset_display_name=version_node.version.primary_asset.display_name,
-            misc_metadata=version_node.misc_metadata,
+            node_id=derived_content.node_id,
+            content=derived_content.content if include_content else None,
+            misc_metadata=derived_content.misc_metadata,
             created_at=derived_content.created_at,
             updated_at=derived_content.updated_at,
+            version_node=VersionNodeRead.model_validate(version_node),
+            version=VersionRead.model_validate(version_node.version),
+            primary_asset=PrimaryAssetRead.model_validate(
+                version_node.version.primary_asset
+            ),
         )
 
     return _get_page_content(
         session,
         user,
-        page_version_node_id,
+        version_node_id,
         include_content,
     )
 

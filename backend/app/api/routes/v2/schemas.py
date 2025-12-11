@@ -312,14 +312,28 @@ class NewPageResponse(BaseModel):
     display_name: str
 
 
+# class ContentsResponse(BaseModel):
+#     version_node_id: UUID
+#     content_id: UUID
+#     content: str | None
+#     content_name: str | None
+#     content_kind: ContentKind
+#     version_status: VersionStatus
+#     primary_asset_display_name: str | None
+#     misc_metadata: dict | None
+#     created_at: datetime | None
+#     updated_at: datetime | None
+
+
 class ContentsResponse(BaseModel):
-    version_node_id: UUID
-    content_id: UUID
-    content: str | None
-    content_name: str | None
+    id: UUID
     content_kind: ContentKind
-    version_status: VersionStatus
-    primary_asset_display_name: str | None
+    node_id: UUID | None
+    content: str | None
     misc_metadata: dict | None
-    created_at: datetime | None
-    updated_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+    version_node: VersionNodeRead
+    version: VersionRead
+    primary_asset: PrimaryAssetRead

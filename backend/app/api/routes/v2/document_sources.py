@@ -29,7 +29,7 @@ def list_page_sources(
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
-    page_version_node_id: UUID = Query(..., description="Page node ID (required)"),
+    version_node_id: UUID = Query(..., description="Page node ID (required)"),
 ) -> ListWithCount[DocumentSourceRead]:
     """
     List sources for a specific page.
@@ -40,7 +40,7 @@ def list_page_sources(
     page_version_node = session.exec(
         select(VersionNode)
         .options(selectinload(VersionNode.version))
-        .where(VersionNode.id == page_version_node_id)
+        .where(VersionNode.id == version_node_id)
     ).one_or_none()
 
     if not page_version_node:
@@ -86,7 +86,7 @@ def list_page_sources(
             .selectinload(VersionNode.version)
             .selectinload(Version.primary_asset),
         )
-        .where(DocumentSource.page_version_node_id == page_version_node_id)
+        .where(DocumentSource.page_version_node_id == version_node_id)
         .where(PrimaryAsset.organization_id == user.organization_id)
     )
 

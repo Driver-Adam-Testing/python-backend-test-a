@@ -151,7 +151,7 @@ def list_page_contents(
     def _get_page_content(
         session: CurrentSession,
         user: User,
-        page_version_node_id: UUID,
+        version_node_id: UUID,
         include_content: bool,
     ) -> ContentsResponse:
         query = (
@@ -161,7 +161,7 @@ def list_page_contents(
                 selectinload(VersionNode.version).selectinload(Version.primary_asset)
             )
             .options(selectinload(VersionNode.node).selectinload(Node.contents))
-            .where(VersionNode.id == page_version_node_id)
+            .where(VersionNode.id == version_node_id)
             .where(_org_filter(user.organization_id))
         )
 

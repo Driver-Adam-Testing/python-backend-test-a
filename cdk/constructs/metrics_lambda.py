@@ -26,7 +26,6 @@ class MetricsLambdaParams:
         self,
         environment: str,
         database_url: str | None = None,
-        cloudwatch_alarm_arn: str | None = None,
         is_private_deploy: bool = False,
     ) -> None:
         self.environment = environment
@@ -131,13 +130,3 @@ class MetricsLambda(Construct):
             comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
             treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
         )
-
-        if params.cloudwatch_alarm_arn:
-            notification_action = aws_cloudwatch_actions.SnsAction(alarm_topic)
-            self.metric_dlq_alarm.add_alarm_action(notification_action)
-            self.metric_message_age_alarm.add_alarm_action(notification_action)
-            self.lambda_error_rate_alarm.add_alarm_action(notification_action)
-        else:
-            print(
-                f"*** NO CW DLQ ALARM CONFIGURED FOR MetricAlarm in {params.environment} ***"
-            )

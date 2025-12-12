@@ -21,6 +21,6 @@ class TeamMembership(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("team_id", "user_id", name="uq_team_member"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    team_id: uuid.UUID = Field(foreign_key="team.id", index=True)
-    user_id: str = Field(foreign_key="user.id", index=True)
+    team_id: uuid.UUID = Field(foreign_key="team.id", index=True, ondelete="CASCADE")
+    user_id: str = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
     role: TeamRole

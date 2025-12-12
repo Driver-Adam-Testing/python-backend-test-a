@@ -3,6 +3,8 @@ from aws_cdk import (
     CfnOutput,
     Duration,
     Stack,
+    aws_cloudwatch,
+    aws_cloudwatch_actions,
     aws_ec2,
     aws_ecr,
     aws_ecs,
@@ -14,6 +16,7 @@ from aws_cdk import (
     aws_route53,
     aws_s3,
     aws_secretsmanager,
+    aws_sns,
     aws_ssm,
     RemovalPolicy
 )
@@ -229,6 +232,58 @@ class Backend(Construct):
         )
 
         params.metrics_bus.grant_all_put_events(self.service.task_definition.task_role)
+
+        # ALB Alarms
+        alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(
+            self, '/infrastructure/alarms/topic-arn'
+        )
+        alarm_topic = aws_sns.Topic.from_topic_arn(
+            self, 'InfrastructureAlarmsTopic', alarm_topic_arn
+        )
+        alarm_action = aws_cloudwatch_actions.SnsAction(alarm_topic)
+
+        unhealthy_host_alarm = aws_cloudwatch.Alarm(
+            self,
+            "ALBUnhealthyHostCountAlarm",
+            alarm_description=f"[{params.environment}] Backend ALB has unhealthy hosts",
+            metric=self.service.target_group.metrics.unhealthy_host_count(),
+            threshold=1,
+            evaluation_periods=2,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.NOT_BREACHING,
+        )
+        unhealthy_host_alarm.add_alarm_action(alarm_action)
+
+        latency_alarm = aws_cloudwatch.Alarm(
+            self,
+            "ALBLatencyAlarm",
+            alarm_description=f"[{params.environment}] Backend ALB target response time > 5 seconds",
+            metric=self.service.target_group.metrics.target_response_time(
+                statistic="Average",
+                period=Duration.minutes(1),
+            ),
+            threshold=5,
+            evaluation_periods=3,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.NOT_BREACHING,
+        )
+        latency_alarm.add_alarm_action(alarm_action)
+
+        server_error_alarm = aws_cloudwatch.Alarm(
+            self,
+            "ALBServerErrorAlarm",
+            alarm_description=f"[{params.environment}] Backend ALB 5XX errors > 10 in 5 minutes",
+            metric=self.service.load_balancer.metrics.http_code_elb(
+                code=aws_elasticloadbalancingv2.HttpCodeElb.ELB_5XX_COUNT,
+                statistic="Sum",
+                period=Duration.minutes(5),
+            ),
+            threshold=10,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.NOT_BREACHING,
+        )
+        server_error_alarm.add_alarm_action(alarm_action)
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes
         # https://linear.app/driver-ai/issue/PE-1077/explore-options-for-allowing-app-notes-containing-httplocalhost-and

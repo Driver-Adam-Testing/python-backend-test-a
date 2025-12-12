@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from aws_cdk import (
     Duration,
+    aws_cloudwatch,
+    aws_cloudwatch_actions,
     aws_iam,
     aws_lambda,
     aws_lambda_event_sources,
@@ -81,3 +83,27 @@ class AssetOnboardingLambda(Construct):
             aws_s3.NotificationKeyFilter(prefix="assets/"),
         )
         params.dropzone_bucket.grant_read(lambda_function)
+
+        # Lambda Error Rate Alarm
+        alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(
+            self, '/infrastructure/alarms/topic-arn'
+        )
+        alarm_topic = aws_sns.Topic.from_topic_arn(
+            self, 'InfrastructureAlarmsTopic', alarm_topic_arn
+        )
+        alarm_action = aws_cloudwatch_actions.SnsAction(alarm_topic)
+
+        error_rate_alarm = aws_cloudwatch.Alarm(
+            self,
+            "AssetOnboardingLambdaErrorAlarm",
+            alarm_description=f"[{params.environment}] Asset Onboarding Lambda errors > 5 in 5 minutes",
+            metric=lambda_function.metric_errors(
+                statistic="Sum",
+                period=Duration.minutes(5),
+            ),
+            threshold=5,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.NOT_BREACHING,
+        )
+        error_rate_alarm.add_alarm_action(alarm_action)

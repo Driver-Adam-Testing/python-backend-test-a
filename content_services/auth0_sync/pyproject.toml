@@ -16,8 +16,6 @@ modal = "^1.0.4"
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
 testcontainers = "^4.13.3"
-alembic = "^1.17.2"
-psycopg2-binary = "^2.9.11"
 
 [tool.poetry]
 packages = [

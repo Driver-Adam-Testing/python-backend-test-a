@@ -19,11 +19,9 @@ from app.api.routes.v2.query_utils import (
 )
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
-    ContentsResponse,
+    ContentDetailRead,
     ListWithCount,
-    PrimaryAssetRead,
-    VersionNodeRead,
-    VersionRead,
+    VersionNodeDetailRead,
 )
 from app.api.session import CurrentSession
 from app.auth.models import User
@@ -37,7 +35,7 @@ def list_contents(
     pagination: Pagination,
     version_node_id: UUID,
     include_content: bool = False,
-) -> ListWithCount[ContentsResponse]:
+) -> ListWithCount[ContentDetailRead]:
     """
     List contents with optional content field loading.
 
@@ -73,12 +71,13 @@ def _list_contents_with_filter(
     version_node_id: UUID,
     auth_filter: callable,
     additional_filters: list[Any],
-) -> ListWithCount[ContentsResponse]:
+) -> ListWithCount[ContentDetailRead]:
     version_node_query = (
         select(VersionNode)
         .options(
             selectinload(VersionNode.node),
             selectinload(VersionNode.version).selectinload(Version.primary_asset),
+            selectinload(VersionNode.version).selectinload(Version.creator),
         )
         .where(VersionNode.id == version_node_id)
         .where(_org_filter(user.organization_id))
@@ -111,7 +110,7 @@ def _list_contents_with_filter(
     contents: list[DerivedContent] = session.exec(query).all()
 
     results = [
-        ContentsResponse(
+        ContentDetailRead(
             id=content.id,
             content_kind=content.content_kind,
             node_id=content.node_id,
@@ -119,16 +118,12 @@ def _list_contents_with_filter(
             misc_metadata=content.misc_metadata,
             created_at=content.created_at,
             updated_at=content.updated_at,
-            version_node=VersionNodeRead.model_validate(version_node),
-            version=VersionRead.model_validate(version_node.version),
-            primary_asset=PrimaryAssetRead.model_validate(
-                version_node.version.primary_asset
-            ),
+            version_node=VersionNodeDetailRead.model_validate(version_node),
         )
         for content in contents
     ]
 
-    return ListWithCount[ContentsResponse](results=results, total_count=total_count)
+    return ListWithCount[ContentDetailRead](results=results, total_count=total_count)
 
 
 @router.get("/page_contents")
@@ -137,7 +132,7 @@ def list_page_contents(
     user: UserToken,
     version_node_id: UUID,
     include_content: bool = False,
-) -> ContentsResponse:
+) -> ContentDetailRead:
     """
     Get contents for a specific page version node.
 
@@ -153,14 +148,14 @@ def list_page_contents(
         user: User,
         version_node_id: UUID,
         include_content: bool,
-    ) -> ContentsResponse:
+    ) -> ContentDetailRead:
         query = (
             select(VersionNode)
-            .join(VersionNode.node)
             .options(
-                selectinload(VersionNode.version).selectinload(Version.primary_asset)
+                selectinload(VersionNode.node),
+                selectinload(VersionNode.version).selectinload(Version.primary_asset),
+                selectinload(VersionNode.version).selectinload(Version.creator),
             )
-            .options(selectinload(VersionNode.node).selectinload(Node.contents))
             .where(VersionNode.id == version_node_id)
             .where(_org_filter(user.organization_id))
         )
@@ -176,7 +171,7 @@ def list_page_contents(
 
         derived_content = version_node.node.contents[0]
 
-        return ContentsResponse(
+        return ContentDetailRead(
             id=derived_content.id,
             content_kind=derived_content.content_kind,
             node_id=derived_content.node_id,
@@ -184,11 +179,7 @@ def list_page_contents(
             misc_metadata=derived_content.misc_metadata,
             created_at=derived_content.created_at,
             updated_at=derived_content.updated_at,
-            version_node=VersionNodeRead.model_validate(version_node),
-            version=VersionRead.model_validate(version_node.version),
-            primary_asset=PrimaryAssetRead.model_validate(
-                version_node.version.primary_asset
-            ),
+            version_node=VersionNodeDetailRead.model_validate(version_node),
         )
 
     return _get_page_content(

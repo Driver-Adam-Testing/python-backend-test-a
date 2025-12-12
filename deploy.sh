@@ -1,5 +1,7 @@
 #!/bin/bash
 set -euo pipefail
+PS4='[${BASH_SOURCE}:${LINENO}] '
+set -x
 
 echo "deploying backend..."
 
@@ -68,6 +70,8 @@ else
   echo "Image is up-to-date. No push needed."
   export HATCHET_WORKER_PUSHED=false
 fi
+
+poetry install --no-root
 
 set +e
 npx cdk deploy --require-approval never

@@ -13,6 +13,7 @@ from aws_cdk import (
     aws_s3_notifications,
     aws_secretsmanager,
     aws_sns,
+    aws_ssm
 )
 from constructs import Construct
 from cdk.settings import settings

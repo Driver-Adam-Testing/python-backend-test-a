@@ -1,5 +1,4 @@
 import concurrent.futures
-import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -39,7 +38,6 @@ def create_and_embed_pdf_summaries(
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
     from shared.file_storage.aws_s3_client import AWSS3Client
-    from shared.interfaces.aws_client_config import AWSClientConfig
     from shared.interfaces.file_content.pdf_file_content import ProcessedPdfFileContent
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
     from sqlalchemy.orm import selectinload
@@ -56,12 +54,12 @@ def create_and_embed_pdf_summaries(
         relative_path = asset_name
         with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file_path = Path(temp_file.name)
-            aws_config = AWSClientConfig(
-                aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-                aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-                region_name=os.environ["AWS_REGION"],
-            )
-            s3_client = AWSS3Client(aws_config=aws_config)
+            # aws_config = AWSClientConfig(
+            #     aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+            #     aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            #     region_name=os.environ["AWS_REGION"],
+            # )
+            s3_client = AWSS3Client()
 
             s3_client.download_file_from_presigned_url(
                 presigned_url=presigned_url,

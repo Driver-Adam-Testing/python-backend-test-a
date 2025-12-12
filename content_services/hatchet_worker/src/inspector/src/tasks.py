@@ -842,7 +842,7 @@ class CSymbolTableTask(Task):
         s3_client = boto3.client(
             "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
         )
-        bucket_name = os.environ["BUCKET_NAME"]
+        bucket_name = os.environ["INSPECTOR_BUCKET_NAME"]
 
         upload_symbol_table_to_s3(
             symbol_table=symbol_table,

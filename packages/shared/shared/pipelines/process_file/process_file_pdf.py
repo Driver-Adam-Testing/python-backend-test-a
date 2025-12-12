@@ -19,7 +19,16 @@ from shared.interfaces.file_content.pdf_file_content import (
 )
 from shared.utils.openai_file import upload_file_to_open_ai
 
-client = OpenAI()
+if os.environ.get("AZURE_OPENAI_BASE_URL"):
+    base_url = os.environ["AZURE_OPENAI_BASE_URL"]
+    base_url = f"https://{base_url}/openai/v1/"
+    api_key = os.environ["AZURE_OPENAI_KEY_1"]
+    client = OpenAI(
+        api_key=api_key,
+        base_url=base_url,
+    )
+else:
+    client = OpenAI()
 
 SUMMARIZE_PDF_PROMPT = """Analyze the provided PDF file and summarize its contents. The file may contain technical documentation, but it could also include other types of content. Your task is to perform an analysis and provide a summary.
 
@@ -56,12 +65,12 @@ Summarize the main information or process being conveyed
 
 For all images, include any text visible in the image verbatim. Point out any unusual or striking visual elements. Provide a comprehensive description without requesting clarification or additional information.
 """
-assistant = client.beta.assistants.create(
-    name="PDF Summarizer",
-    instructions="You are an expert microprocessors and hardware engineer, as well as a technical writer.",
-    model="gpt-4o-mini",
-    tools=[{"type": "file_search"}],
-)
+# assistant = client.beta.assistants.create(
+#     name="PDF Summarizer",
+#     instructions="You are an expert microprocessors and hardware engineer, as well as a technical writer.",
+#     model="gpt-4o-mini",
+#     tools=[{"type": "file_search"}],
+# )
 
 
 class SummaryValidation(BaseModel):
@@ -215,20 +224,21 @@ def process_image(image: io.BytesIO, index: int) -> ProcessedPdfFileContent:
 
 def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
     processed_contents = []
-    try:
-        whole_file_summary = summarize_pdf_with_retry(
-            file_content, SUMMARIZE_PDF_PROMPT, assistant.id
-        )
-    except Exception as e:
-        whole_file_summary = None
-        exception_type = type(e).__name__
-        exc_tb = e.__traceback__
-        filename = exc_tb.tb_frame.f_code.co_filename
-        line_number = exc_tb.tb_lineno
-        exception_details = (
-            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
-        )
-        print(exception_details)
+    whole_file_summary = None
+    # try:
+    #     whole_file_summary = summarize_pdf_with_retry(
+    #         file_content, SUMMARIZE_PDF_PROMPT, assistant.id
+    #     )
+    # except Exception as e:
+    #     whole_file_summary = None
+    #     exception_type = type(e).__name__
+    #     exc_tb = e.__traceback__
+    #     filename = exc_tb.tb_frame.f_code.co_filename
+    #     line_number = exc_tb.tb_lineno
+    #     exception_details = (
+    #         f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+    #     )
+    #     print(exception_details)
 
     if whole_file_summary is None:
         pages = split_pdf_into_pages(file_content=file_content)

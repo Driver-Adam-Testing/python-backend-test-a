@@ -57,7 +57,7 @@ def load_extension_and_name_mapping() -> dict:
 
     import yaml
 
-    with open("/linguist/languages.yml") as f:
+    with open("/packages/shared/shared/inspector/onboarding/languages.yml") as f:
         language_dict = yaml.safe_load(f)
     extension_map = defaultdict(list)
     name_map = defaultdict(list)

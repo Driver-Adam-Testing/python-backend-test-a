@@ -28,7 +28,7 @@ def make_tech_doc(
 
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     print("Pre-bucket name fetch")
-    bucket_name = os.environ.get("BUCKET_NAME")
+    bucket_name = os.environ.get("INSPECTOR_BUCKET_NAME")
     if bucket_name is None:
         print("================================")
         print(node.root_rel_path)

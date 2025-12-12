@@ -44,11 +44,14 @@ class ChatOpenAI:
     client: AsyncOpenAI = field(init=False)
 
     def __post_init__(self) -> None:
-        if os.environ.get("AZURE_BASE_URL"):
-            base_url = os.environ["AZURE_BASE_URL"]
-            api_key = os.environ["AZURE_OPENAI_API_KEY"]
+        if os.environ.get("AZURE_OPENAI_BASE_URL"):
+            base_url = os.environ["AZURE_OPENAI_BASE_URL"]
+            base_url = f"https://{base_url}/openai/v1/"
+            api_key = os.environ["AZURE_OPENAI_KEY_1"]
             self.client = AsyncOpenAI(
-                api_key=api_key, base_url=base_url, timeout=self.request_timeout
+                api_key=api_key,
+                base_url=base_url,
+                timeout=self.request_timeout,
             )
         else:
             self.client = AsyncOpenAI(timeout=self.request_timeout)

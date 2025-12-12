@@ -1,3 +1,4 @@
+import logging
 import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -8,6 +9,8 @@ from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 
 from shared.utils.decorators import retry_with_exponential_backoff
+
+logger = logging.getLogger(__name__)
 
 
 class OutputConfigKind(Enum):
@@ -45,11 +48,14 @@ class ChatOpenAI:
     session_id: str = ""
 
     def __post_init__(self) -> None:
-        if os.environ.get("AZURE_BASE_URL"):
-            base_url = os.environ["AZURE_BASE_URL"]
-            api_key = os.environ["AZURE_OPENAI_API_KEY"]
+        if os.environ.get("AZURE_OPENAI_BASE_URL"):
+            base_url = os.environ["AZURE_OPENAI_BASE_URL"]
+            base_url = f"https://{base_url}/openai/v1/"
+            api_key = os.environ["AZURE_OPENAI_KEY_1"]
             self.client = OpenAI(
-                api_key=api_key, base_url=base_url, timeout=self.request_timeout
+                api_key=api_key,
+                base_url=base_url,
+                timeout=self.request_timeout,
             )
         else:
             self.client = OpenAI(timeout=self.request_timeout)

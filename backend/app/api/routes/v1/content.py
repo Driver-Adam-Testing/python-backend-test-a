@@ -41,8 +41,7 @@ def get_download_content_by_id(
     query = (
         select(VersionNode)
         .where(VersionNode.id == version_node_id)
-        .options(selectinload(VersionNode.version))
-        .options(selectinload(Version.primary_asset))
+        .options(selectinload(VersionNode.version).selectinload(Version.primary_asset))
     )
     version_node = session.exec(query).one()
     primary_asset_id = version_node.version.primary_asset.id

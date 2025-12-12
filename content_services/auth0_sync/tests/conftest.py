@@ -3,6 +3,10 @@ Integration test fixtures for auth0_sync service.
 
 Uses Testcontainers to provision isolated PostgreSQL containers for real DB testing.
 Auth0 service is mocked since we can't call real Auth0 in tests.
+
+WARNING: This test setup needs review and cleanup.
+See https://linear.app/driver-ai/issue/PE-3183/clean-up-integration-test-db-setup-use-alembic-migrations
+This should be refactored to use a cleaner pattern for test DB setup.
 """
 
 import sys

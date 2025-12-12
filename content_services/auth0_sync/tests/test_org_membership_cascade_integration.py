@@ -7,6 +7,10 @@ These tests verify critical functionality with a real PostgreSQL database:
 - Data isolation between organizations
 
 Run with: cd content_services/auth0_sync && poetry run pytest tests/ -m integration -v
+
+WARNING: This test module needs review and cleanup.
+See https://linear.app/driver-ai/issue/PE-3183/clean-up-integration-test-db-setup-use-alembic-migrations
+The tests in this file need to be vetted further.
 """
 
 import sys

@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Self
 
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.codemap_ctags import extract_symbols_w_ctags
-from shared.inspector.utils.models import ChatOpenAI
 
 from .ir_common import (
     ClassData,

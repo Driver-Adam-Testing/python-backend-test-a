@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
-from shared.inspector.utils.models import ChatOpenAI
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.treesitter_drivers.js_ts_driver import JsTsDriverTree
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,

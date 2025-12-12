@@ -4,6 +4,7 @@ from aws_cdk import (
     Duration,
     aws_cloudwatch,
     aws_cloudwatch_actions,
+    aws_ec2,
     aws_iam,
     aws_lambda,
     aws_lambda_event_sources,
@@ -12,7 +13,6 @@ from aws_cdk import (
     aws_s3_notifications,
     aws_secretsmanager,
     aws_sns,
-    aws_ssm,
 )
 from constructs import Construct
 from cdk.settings import settings
@@ -26,6 +26,8 @@ class AssetOnboardingLambdaParams:
     auth0_audience: str
     dropzone_bucket: aws_s3.Bucket
     use_legacy_dropzone: bool
+    vpc: aws_ec2.IVpc
+    is_private_deploy: bool
 
 
 class AssetOnboardingLambda(Construct):
@@ -54,15 +56,26 @@ class AssetOnboardingLambda(Construct):
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
-                "SENTRY_DSN": settings.SENTRY_DSN,
+                "SENTRY_DSN": "FIXME" if params.is_private_deploy else settings.SENTRY_DSN,
+                "IS_PRIVATE_DEPLOY": str(params.is_private_deploy)
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]
             ),
             timeout=Duration.seconds(15),
+            vpc=params.vpc,
+            vpc_subnets=aws_ec2.SubnetSelection(
+                subnet_group_name="Private"
+            ),
         )
         deployment_secrets.grant_read(lambda_function)
-       
+
+        if params.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(lambda_function)
+
         params.dropzone_bucket.grant_read(lambda_function)
 
         sns_topic = aws_sns.Topic(scope, "CodeOnboardingTopic")

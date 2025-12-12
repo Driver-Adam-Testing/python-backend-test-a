@@ -10,7 +10,6 @@ from uuid import UUID
 import tiktoken
 import toml
 from aiolimiter import AsyncLimiter
-from chat_openai import ChatOpenAI
 from database.models_enums import ContentKind, NodeKind
 from logger import logger
 from prompts import (
@@ -24,6 +23,7 @@ from prompts import (
     summary_system_prompt,
     summary_user_prompt,
 )
+from shared.agent.chat_openai_async import ChatOpenAI
 from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     Prompt,
@@ -60,7 +60,8 @@ class AutoToml:
     LLM_SCATTER_MODEL: ClassVar[str] = (
         "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
     )
-    LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
+    # LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
+    LLM_TOML_MODEL: ClassVar[str] = "gpt-4.1"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
     OPENAI_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_SUMMARIES)

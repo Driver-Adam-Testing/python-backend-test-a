@@ -3,8 +3,6 @@ import logging
 from enum import Enum
 from typing import Any
 
-import modal
-from app.core.config import settings
 from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
@@ -21,7 +19,9 @@ from app.schemas.git_provider_schema import (
 )
 from app.schemas.secret_management_schema import APP_INSTALL_WAT_NAME_PREFIX
 from database.models import GitProviderApp, GitProviderAppInstallation
+from hatchet_sdk import Hatchet
 from shared.interfaces.aws_client_config import AWSClientConfig
+from shared.interfaces.hatchet_interfaces import HandleBitbucketEventsInput
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
     format_secret_name,
@@ -476,18 +476,20 @@ class BitbucketProvider(GitProviderInterface):
                             "tracked_branch": tracked_branch,
                         }
                     ]
-
-                    handle_bitbucket_events = modal.Function.lookup(
-                        "inspector-v2",
-                        "handle_bitbucket_events",
-                        environment_name=settings.MODAL_ENVIRONMENT,
+                    hatchet = Hatchet()
+                    handle_bitbucket_events_task = hatchet.stubs.task(
+                        name="handle-bitbucket-events-workflow",
+                        input_validator=HandleBitbucketEventsInput,
                     )
-                    handle_bitbucket_events.spawn(
-                        installation_id,
-                        organization_id,
-                        [],
-                        [],
-                        repos_pushed,
+
+                    handle_bitbucket_events_task.run_no_wait(
+                        HandleBitbucketEventsInput(
+                            installation_id=installation_id,
+                            org_id=organization_id,
+                            repos_added=[],
+                            repos_deleted=[],
+                            repos_pushed=repos_pushed,
+                        )
                     )
 
         # NOTE: This message will pertain only to the last 'change' processed

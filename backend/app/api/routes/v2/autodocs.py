@@ -3,7 +3,6 @@ from enum import StrEnum
 from logging import getLogger
 from uuid import UUID
 
-import modal
 from database.models import (
     AutoDocStatusHistory,
     DocumentSource,
@@ -18,7 +17,9 @@ from database.models_enums import (
     VersionStatus,
 )
 from fastapi import APIRouter, HTTPException
+from hatchet_sdk import Hatchet
 from pydantic import BaseModel, model_validator
+from shared.interfaces.hatchet_interfaces import AutodocInput
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
@@ -27,7 +28,6 @@ from app.api.auth import (
 )
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
-from app.core.config import settings
 from app.services.onboarding_checklist_service import OnboardingChecklistService
 
 router = APIRouter()
@@ -183,26 +183,31 @@ def run_autodoc(
                 status_code=400,
                 detail="Invalid config",
             )
-    run_autodoc = modal.Function.lookup(
-        "autodocs",
-        "run_autodoc",
-        environment_name=settings.MODAL_ENVIRONMENT,
+    hatchet = Hatchet()
+    autodocs_task = hatchet.stubs.task(
+        name="autodocs-workflow",
+        input_validator=AutodocInput,
     )
 
     node.version.status = VersionStatus.GENERATING
     session.add(node.version)
 
-    call = run_autodoc.spawn(
-        page_node_id=str(input.page_id),
-        config_kind=input.config_kind,
-        document_goal=input.document_goal,
-        user_context=input.autodoc_size.value if input.autodoc_size else None,
+    call = autodocs_task.run_no_wait(
+        AutodocInput(
+            page_node_id=str(input.page_id),
+            config_kind=input.config_kind,
+            document_goal=input.document_goal,
+            user_context=_autodoc_size_to_user_context(input.autodoc_size)
+            if input.autodoc_size
+            else None,
+            content_kind=None,
+        )
     )
     autodoc_status = AutoDocStatusHistory(
         page_node_id=input.page_id,
         status_kind=AutoDocStatusMessageKind.RETRIEVING_SOURCES,
         content="Retrieving sources for the page...",
-        call_id=call.object_id,
+        call_id=str(call.workflow_run_id),
     )
     session.add(autodoc_status)
     session.commit()
@@ -293,8 +298,7 @@ def cancel(
     ).first()
     if not autodoc_status:
         raise HTTPException(status_code=404, detail="No autodocs status found")
-    call_id = autodoc_status.call_id
-    call = modal.FunctionCall.from_id(call_id)
-    call.cancel()
+    hatchet = Hatchet()
+    hatchet.runs.cancel(autodoc_status.call_id)
 
     return AutoDocCancelResponse(status="Autodocs generation cancelled")

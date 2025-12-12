@@ -6,10 +6,13 @@ echo "Checking for setEnv script..."
 if [ -f '/setEnv.sh' ] ; then
     echo "Running script setEnv.sh"
     sh /setEnv.sh
-    echo "$(cat /setEnv.sh)"
 else
     echo "There is no script setEnv.sh"
 fi
+
+# Load firewall certificate if in private deployment
+echo "Loading firewall certificate..."
+python /app/scripts/load_firewall_cert.py || exit 1
 
 if [ -f /app/app/main.py ]; then
     DEFAULT_MODULE_NAME=app.main

@@ -12,19 +12,11 @@ from sqlmodel import Session, create_engine
 
 logger = logging.getLogger(__name__)
 
-external_ip = "nopublic"
-try:
-    with urllib.request.urlopen("https://ident.me") as response:
-        external_ip = response.read().decode("utf8")
-except Exception:
-    logger.info("Could not resolve public ip")
 
-app_name = "pback-" + external_ip
 engine = create_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),
     pool_size=20,
     pool_pre_ping=True,
-    connect_args={"application_name": app_name},
 )
 
 
@@ -83,7 +75,6 @@ if settings.ASYNC_DATABASE_URL:
             "statement_cache_size": 0,
             "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
             "prepared_statement_cache_size": 0,
-            "server_settings": {"application_name": "as" + app_name},
         },  # Disable prepared statements for PgBouncer compatibility,
         # Verify these below are good values
         future=True,

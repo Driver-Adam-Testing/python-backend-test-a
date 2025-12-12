@@ -1,11 +1,12 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-import modal
 from database.models import PrimaryAsset, UsageEventType, Version
 from database.models_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter, HTTPException, Query
+from hatchet_sdk import Hatchet
 from pydantic import BaseModel
+from shared.interfaces.hatchet_interfaces import InspectorInput
 from shared.interfaces.usage.event_metadata import (
     UsageEventMetadata,
     UsageMetric,
@@ -20,7 +21,6 @@ from sqlmodel import func, select
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
-from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseGenerationRequest,
     CodebaseGenerationResponse,
@@ -190,9 +190,12 @@ def exec_codebase_generation(
         session.add(version)
         session.commit()
 
-    inspect_db = modal.Function.lookup(
-        "inspector-v2", "inspect_db", environment_name=settings.MODAL_ENVIRONMENT
+    hatchet = Hatchet()
+    inspector_task = hatchet.stubs.task(
+        name="inspector-workflow",
+        input_validator=InspectorInput,
     )
+
     for version in result:
-        inspect_db.spawn(version.id)
+        inspector_task.run_no_wait(InspectorInput(version_id=str(version.id)))
     return CodebaseGenerationResponse(call_id="1234")

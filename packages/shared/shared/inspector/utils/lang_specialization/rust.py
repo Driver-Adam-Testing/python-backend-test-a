@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.codemap_ctags import extract_symbols_w_ctags
-from shared.inspector.utils.models import ChatOpenAI
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,

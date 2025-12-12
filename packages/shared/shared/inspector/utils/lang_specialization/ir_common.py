@@ -9,6 +9,7 @@ from typing import Self
 
 import openai
 from pydantic import BaseModel, PrivateAttr
+from shared.agent.chat_openai import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.lang_specialization.symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
@@ -16,7 +17,6 @@ from shared.inspector.utils.lang_specialization.symbol_common import (
     ScopeRelation,
     SymbolKind,
 )
-from shared.inspector.utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.symbol_table.utils import (
     get_fully_qualified_name,
     is_data_structure,

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import logging
+import truststore
+import truststore._api as tapi
 from datetime import datetime
 from logging import Formatter, LogRecord
 from typing import TYPE_CHECKING
@@ -31,7 +33,14 @@ if TYPE_CHECKING:
     from fastapi.routing import APIRoute
 
 logger = logging.getLogger(__name__)
+truststore.inject_into_ssl()
 
+# Patch botocore to use truststore's SSLContext (see https://github.com/sethmlarson/truststore/pull/180)
+try:
+    import botocore.httpsession
+    botocore.httpsession.SSLContext = tapi.SSLContext
+except ImportError:
+    pass
 
 # ---------------------------------------------------------------------------
 #  Logging & Sentry
@@ -61,11 +70,11 @@ def _configure_logging() -> None:
     logging.info("Log Level set to %s", log_level)
 
 
-def _configure_sentry(env: str, dsn: str) -> None:
-    if env == "local":
+def _configure_sentry(env: str, is_private_deploy: bool, dsn: str) -> None:
+    if is_private_deploy or env == "local":
         return
 
-    sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1}.get(env, 0.1)
+    sample_rate = {"development": 1.0, "staging": 0., "production": 0.1}.get(env, 0.1)
 
     sentry_sdk.init(
         dsn=dsn,
@@ -77,7 +86,7 @@ def _configure_sentry(env: str, dsn: str) -> None:
 
 
 _configure_logging()
-_configure_sentry(settings.ENVIRONMENT, settings.SENTRY_DSN)
+_configure_sentry(settings.ENVIRONMENT, settings.IS_PRIVATE_DEPLOY, settings.SENTRY_DSN)
 
 
 # ---------------------------------------------------------------------------

@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import Any, Self
 
 from pydantic import BaseModel, ValidationError
+from shared.agent.chat_openai import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.lang_specialization.symbol_common import (
     Lang,
     ReifiedSymbol,
     SymbolKind,
 )
-from shared.inspector.utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.symbol_table.utils import get_fully_qualified_name
 
 

@@ -20,18 +20,16 @@ from shared.inspector.utils.task import (
 )
 from sqlmodel import delete, select
 from workflows.inspector_functions import (
+    CodebaseTagsInput,
     FolderDocInput,
     SymbolDocInput,
     TechDocInput,
     TopLevelDocInput,
+    codebase_tags_task,
     folder_doc_task,
     symbol_doc_task,
     tech_doc_task,
     toplevel_doc_task,
-)
-
-from .modal_funcs import (
-    make_codebase_tags,
 )
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
@@ -541,10 +539,12 @@ class CodebaseTaggingTask(Task):
             children_nodes_to_docs = {
                 task.node: dr.data["docs"] for task, dr in dependent_results.items()
             }
-            tags = await make_codebase_tags.remote.aio(
-                codebase_name=self.codebase_name,
-                nodes_to_docs=children_nodes_to_docs,
-                content_kinds=content_kinds_to_compute,
+            tags = await codebase_tags_task.aio_run(
+                CodebaseTagsInput(
+                    codebase_name=self.codebase_name,
+                    nodes_to_docs=list(children_nodes_to_docs.items()),
+                    content_kinds=content_kinds_to_compute,
+                )
             )
 
         return TaskResult(
@@ -842,7 +842,7 @@ class CSymbolTableTask(Task):
         s3_client = boto3.client(
             "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
         )
-        bucket_name = os.environ["BUCKET_NAME"]
+        bucket_name = os.environ["INSPECTOR_BUCKET_NAME"]
 
         upload_symbol_table_to_s3(
             symbol_table=symbol_table,

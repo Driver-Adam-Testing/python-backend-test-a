@@ -10,10 +10,12 @@ from aws_cdk import (
     aws_ecs,
     aws_ecs_patterns,
     aws_elasticloadbalancingv2,
+    aws_elasticloadbalancingv2_targets,
     aws_events,
     aws_iam,
     aws_logs,
     aws_route53,
+    aws_route53_targets,
     aws_s3,
     aws_secretsmanager,
     aws_sns,
@@ -36,6 +38,8 @@ class BackendParams:
         metrics_bus: aws_events.EventBus,
         aws_region: str,
         aws_account: str,
+        is_private_deploy: bool = False,
+        allowed_aws_account: str | None = None,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
@@ -44,6 +48,8 @@ class BackendParams:
         self.metrics_bus = metrics_bus
         self.aws_region = aws_region
         self.aws_account = aws_account
+        self.is_private_deploy = is_private_deploy
+        self.allowed_aws_account = allowed_aws_account
 
 
 class Backend(Construct):
@@ -53,13 +59,13 @@ class Backend(Construct):
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
-        vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC", vpc_id=vpc_id)
+        self.vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC", vpc_id=vpc_id)
 
         cluster_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/ecs/cluster/name"
         )
         cluster = aws_ecs.Cluster.from_cluster_attributes(
-            self, id="BaselineCluster", cluster_name=cluster_name, vpc=vpc
+            self, id="BaselineCluster", cluster_name=cluster_name, vpc=self.vpc
         )
 
         hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(
@@ -74,13 +80,14 @@ class Backend(Construct):
             zone_name=hosted_zone_name,
             hosted_zone_id=hosted_zone_id,
         )
+        api_domain_name = "api." + hosted_zone.zone_name
 
         inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
         )
 
         openai_url = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value=None
         )
 
         self.dropzone_bucket = aws_s3.Bucket(
@@ -122,12 +129,21 @@ class Backend(Construct):
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "OPENAI_URL": openai_url
-            #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
+            "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077",
+            "HATCHET_CLIENT_TLS_STRATEGY": "none"
+            #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.
         }
+
+        if openai_url is not None:
+            container_environment_vars["AZURE_OPENAI_BASE_URL"] = openai_url
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
+        )
+
+        hatchet_token_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
         )
 
         secret_fields = settings.SECRECTS_KEYS.split(',')
@@ -136,6 +152,7 @@ class Backend(Construct):
             k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
             for k in secret_fields
         }
+        secrets_map["HATCHET_CLIENT_TOKEN"] = aws_ecs.Secret.from_secrets_manager(hatchet_token_secret)
 
         container_environment_vars.update(settings.to_dict())
 
@@ -153,9 +170,22 @@ class Backend(Construct):
                 log_retention=aws_logs.RetentionDays.ONE_YEAR,
             ),
         )
+
+        # For private deploys, create ALB in private subnets
+        private_alb = None
+        if params.is_private_deploy:
+            private_alb = aws_elasticloadbalancingv2.ApplicationLoadBalancer(
+                self,
+                "PrivateALB",
+                vpc=self.vpc,
+                internet_facing=False,
+                vpc_subnets=aws_ec2.SubnetSelection(subnet_group_name="Private"),
+            )
+
         self.service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(
             self,
             "BackendApi",
+            load_balancer=private_alb,
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
             ssl_policy=aws_elasticloadbalancingv2.SslPolicy.FIPS_TLS13_12_RES,
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,
@@ -165,15 +195,16 @@ class Backend(Construct):
             runtime_platform=aws_ecs.RuntimePlatform(
                 cpu_architecture=aws_ecs.CpuArchitecture.X86_64
             ),
-            redirect_http=True,
+            redirect_http=not params.is_private_deploy,
+            public_load_balancer=not params.is_private_deploy,
             assign_public_ip=False,
             desired_count=2,
             cluster=cluster,
             domain_zone=hosted_zone,
-            domain_name="api." + hosted_zone.zone_name,
+            domain_name=api_domain_name,
             task_image_options=task_options,
             task_subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+                subnet_group_name="Private"
             ),
             health_check_grace_period=Duration.seconds(120),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(
@@ -214,6 +245,105 @@ class Backend(Construct):
                 ),
             )
         )
+
+        self.backend_alb = self.service.load_balancer
+        self.backend_alb_listener = self.service.listener
+
+        # Grant permission to read firewall certificate for private deployments
+        if params.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.service.task_definition.task_role)
+
+            # Create NLB for PrivateLink (VPC Endpoint Services require NLB, not ALB)
+            private_subnets = self.vpc.select_subnets(subnet_group_name="Private")
+
+            privatelink_nlb = aws_elasticloadbalancingv2.NetworkLoadBalancer(
+                self,
+                "PrivateLinkApiNlb",
+                vpc=self.vpc,
+                internet_facing=False,
+                vpc_subnets=aws_ec2.SubnetSelection(subnets=private_subnets.subnets),
+            )
+
+            privatelink_nlb_target_group = aws_elasticloadbalancingv2.NetworkTargetGroup(
+                self,
+                "PrivateLinkApiAlbTargetGroup",
+                vpc=self.vpc,
+                port=443,
+                protocol=aws_elasticloadbalancingv2.Protocol.TCP,
+                target_type=aws_elasticloadbalancingv2.TargetType.ALB,
+                targets=[
+                    aws_elasticloadbalancingv2_targets.AlbTarget(
+                        self.service.load_balancer, 443
+                    )
+                ],
+                health_check=aws_elasticloadbalancingv2.HealthCheck(
+                    protocol=aws_elasticloadbalancingv2.Protocol.HTTPS,
+                    path="/studio/v1/healthcheck/",
+                    healthy_threshold_count=2,
+                    unhealthy_threshold_count=2,
+                    interval=Duration.seconds(30),
+                ),
+            )
+
+            privatelink_nlb.add_listener(
+                "PrivateLinkApiNlbListener",
+                port=443,
+                protocol=aws_elasticloadbalancingv2.Protocol.TCP,
+                default_action=aws_elasticloadbalancingv2.NetworkListenerAction.forward(
+                    target_groups=[privatelink_nlb_target_group]
+                ),
+            )
+
+            # Create VPC Endpoint Service for PrivateLink access
+            allowed_principals = None
+            if params.allowed_aws_account:
+                allowed_principals = [
+                    aws_iam.ArnPrincipal(f"arn:aws:iam::{params.allowed_aws_account}:root")
+                ]
+
+            self.endpoint_service = aws_ec2.VpcEndpointService(
+                self,
+                "PrivateLinkApiEndpointService",
+                vpc_endpoint_service_load_balancers=[privatelink_nlb],
+                acceptance_required=False,
+                allowed_principals=allowed_principals,
+            )
+
+            # Configure private DNS with automatic domain verification
+            aws_route53.VpcEndpointServiceDomainName(
+                self,
+                "PrivateLinkApiDomainName",
+                endpoint_service=self.endpoint_service,
+                domain_name=api_domain_name,
+                public_hosted_zone=hosted_zone,
+            )
+
+            CfnOutput(
+                self,
+                "PrivateLinkApiServiceName",
+                export_name="PrivateLinkApiServiceName",
+                value=self.endpoint_service.vpc_endpoint_service_name,
+                description="VPC Endpoint Service name for PrivateLink connections",
+            )
+
+            CfnOutput(
+                self,
+                "PrivateLinkApiServiceId",
+                export_name="PrivateLinkApiServiceId",
+                value=self.endpoint_service.vpc_endpoint_service_id,
+                description="VPC Endpoint Service ID for managing connections",
+            )
+
+            CfnOutput(
+                self,
+                "PrivateLinkApiAvailabilityZones",
+                export_name="PrivateLinkApiAvailabilityZones",
+                value=",".join(private_subnets.availability_zones),
+                description="Availability zones where the VPC Endpoint Service is available",
+            )
 
         # Output ECS Cluster ARN
         CfnOutput(
@@ -284,6 +414,38 @@ class Backend(Construct):
             treat_missing_data=aws_cloudwatch.TreatMissingData.NOT_BREACHING,
         )
         server_error_alarm.add_alarm_action(alarm_action)
+        # Grant full S3 admin access. TODO: Scope this down?
+        self.service.task_definition.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+        )
+
+        # Create private hosted zone entry for internal VPC routing
+        private_hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/privateHostedZoneId"
+        )
+        private_hosted_zone_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/privateHostedZoneName"
+        )
+        private_hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
+            self,
+            id="BaselinePrivateHostedZone",
+            zone_name=private_hosted_zone_name,
+            hosted_zone_id=private_hosted_zone_id,
+        )
+
+        # Create A record in private zone pointing to ALB's private IPs
+        # TODO: Manually added Auth0 auth.*.driverai.com record needs to exist in private hosted zone too
+        aws_route53.ARecord(
+            self,
+            "PrivateApiDnsRecord",
+            zone=private_hosted_zone,
+            record_name=api_domain_name,
+            target=aws_route53.RecordTarget.from_alias(
+                aws_route53_targets.LoadBalancerTarget(self.service.load_balancer)
+            ),
+        )
+        
+        self.api_url = f"https://{api_domain_name}"
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes
         # https://linear.app/driver-ai/issue/PE-1077/explore-options-for-allowing-app-notes-containing-httplocalhost-and

@@ -1231,8 +1231,8 @@ class OrgMembership(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("org_id", "user_id", name="uq_org_member"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    org_id: str = Field(foreign_key="organization.id", index=True)
-    user_id: str = Field(foreign_key="user.id", index=True)  # Auth0 user ID
+    org_id: str = Field(foreign_key="organization.id", index=True, ondelete="CASCADE")
+    user_id: str = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
     role: OrgRole
 
 

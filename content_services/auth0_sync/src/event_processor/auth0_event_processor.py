@@ -80,9 +80,13 @@ from database.models import (
     Organization,
     OrgMembership,
     PrimaryAssetRoleGrant,
+    Team,
     TeamMembership,
     User,
 )
+
+# Note: PrimaryAssetRoleGrant and TeamMembership are used in _process_membership_change
+# for removing org membership (not user deletion, which uses CASCADE)
 from database.models_enums import OrgRole
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
@@ -212,20 +216,15 @@ def _handle_user_delete_event(event: Auth0EventBridgeEvent) -> list[str]:
 
     with Session(engine) as session:
         user = session.get(User, user_id)
-        memberships = session.exec(
-            select(OrgMembership).where(OrgMembership.user_id == user_id)
-        ).all()
-
-        for membership in memberships:
-            session.delete(membership)
-
         if user:
+            # CASCADE DELETE handles TeamMembership, PrimaryAssetRoleGrant, OrgMembership
             session.delete(user)
+            session.commit()
+            logger.info(f"Deleted user and cascaded memberships: {user_id}")
+            return ["user", "membership"]
 
-        session.commit()
-
-    logger.info(f"Deleted user and memberships: {user_id}")
-    return ["user", "membership"]
+        logger.info(f"User {user_id} not found in DB, nothing to delete")
+        return []
 
 
 def _handle_membership_event(event: Auth0EventBridgeEvent) -> list[str]:
@@ -360,8 +359,10 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
             entities_updated.append("membership")
         elif not is_member and existing_membership:
             team_memberships = session.exec(
-                select(TeamMembership).where(
-                    TeamMembership.user_id == user_id, TeamMembership.org_id == org_id
+                select(TeamMembership)
+                .join(Team, TeamMembership.team_id == Team.id)
+                .where(
+                    TeamMembership.user_id == user_id, Team.organization_id == org_id
                 )
             ).all()
             for membership in team_memberships:
@@ -371,7 +372,7 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
             grants = session.exec(
                 select(PrimaryAssetRoleGrant).where(
                     PrimaryAssetRoleGrant.user_id == user_id,
-                    PrimaryAssetRoleGrant.org_id == org_id,
+                    PrimaryAssetRoleGrant.organization_id == org_id,
                 )
             ).all()
             for grant in grants:

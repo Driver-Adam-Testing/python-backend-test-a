@@ -4,10 +4,19 @@ from pathlib import Path
 
 from hatchet_client import hatchet
 from hatchet_sdk import Context
+from hatchet_sdk.runnables.types import ConcurrencyExpression, ConcurrencyLimitStrategy
 from shared.interfaces.hatchet_interfaces import PDFProcessingInput
 
 
-@hatchet.task(name="pdf-processing-workflow", execution_timeout=timedelta(minutes=240))
+@hatchet.task(
+    name="pdf-processing-workflow",
+    execution_timeout=timedelta(minutes=240),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'pdf-processing-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+)
 def pdf_processing_task(input: PDFProcessingInput, ctx: Context) -> dict[str, str]:
     print("starting pdf processing task")
     create_and_embed_pdf_summaries(
@@ -66,9 +75,9 @@ def create_and_embed_pdf_summaries(
                 download_destination=temp_file_path,
             )
         with NamedTemporaryFile(suffix=".pdf") as sanitized_pdf:
-            # sanitize_pdf_with_ghostscript(temp_file_path, Path(sanitized_pdf.name))
+            sanitize_pdf_with_ghostscript(temp_file_path, Path(sanitized_pdf.name))
             # just copy without sanitizing for now
-            Path(sanitized_pdf.name).write_bytes(temp_file_path.read_bytes())
+            # Path(sanitized_pdf.name).write_bytes(temp_file_path.read_bytes())
             # Upload sanitized PDF to the location that will be used for download
             s3_client.upload_file_to_s3(
                 file_path=Path(sanitized_pdf.name),

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from hatchet_client import hatchet
 from hatchet_sdk import Context
+from hatchet_sdk.runnables.types import ConcurrencyExpression, ConcurrencyLimitStrategy
 from inspector.src.deep_context_docs import deep_context_docs
 from inspector.src.modal_funcs import (
     export_tech_docs_to_zip,
@@ -62,7 +63,15 @@ class CodebaseTagsInput(BaseModel):
     content_kinds: set
 
 
-@hatchet.task(name="codebase-tags-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(
+    name="codebase-tags-workflow",
+    execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=1,
+        expression="'codebase-tags-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+)
 def codebase_tags_task(input: CodebaseTagsInput, ctx: Context) -> dict[str, str]:
     print("starting codebase tags task")
     nodes_to_docs = {}
@@ -85,7 +94,15 @@ def codebase_tags_task(input: CodebaseTagsInput, ctx: Context) -> dict[str, str]
     return tags
 
 
-@hatchet.task(name="export-tech-docs-workflow", execution_timeout=timedelta(minutes=15))
+@hatchet.task(
+    name="export-tech-docs-workflow",
+    execution_timeout=timedelta(minutes=15),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'export-tech-docs-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+)
 def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str]:
     print("starting export tech docs task")
     # Call the function to export tech docs to zip
@@ -98,7 +115,13 @@ def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str
 
 
 @hatchet.task(
-    name="deep-context-docs-workflow", execution_timeout=timedelta(minutes=480)
+    name="deep-context-docs-workflow",
+    execution_timeout=timedelta(minutes=480),
+    concurrency=ConcurrencyExpression(
+        max_runs=3,
+        expression="'deep-context-docs-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
 )
 async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> dict:
     print("starting deep context docs task")
@@ -114,7 +137,16 @@ async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> d
     return {"status": "completed"}
 
 
-@hatchet.task(name="tech-doc-workflow", execution_timeout=timedelta(minutes=180))
+@hatchet.task(
+    name="tech-doc-workflow",
+    execution_timeout=timedelta(minutes=180),
+    concurrency=ConcurrencyExpression(
+        max_runs=72,
+        expression="'tech-doc-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+    schedule_timeout=timedelta(minutes=60),
+)
 def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
     print("starting tech doc task")
     # Call the function to generate tech docs
@@ -136,7 +168,15 @@ def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
     return tech_docs
 
 
-@hatchet.task(name="folder-doc-workflow", execution_timeout=timedelta(minutes=30))
+@hatchet.task(
+    name="folder-doc-workflow",
+    execution_timeout=timedelta(minutes=30),
+    concurrency=ConcurrencyExpression(
+        max_runs=60,
+        expression="'folder-doc-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+)
 def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
     print("starting folder doc task")
     # Call the function to generate folder docs
@@ -171,7 +211,15 @@ def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
     return folder_docs
 
 
-@hatchet.task(name="symbol-doc-workflow", execution_timeout=timedelta(minutes=120))
+@hatchet.task(
+    name="symbol-doc-workflow",
+    execution_timeout=timedelta(minutes=120),
+    concurrency=ConcurrencyExpression(
+        max_runs=72,
+        expression="'symbol-doc-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+)
 def symbol_doc_task(input: SymbolDocInput, ctx: Context) -> list[dict[str, any]]:
     print("starting symbol doc task")
     # Call the function to generate symbol docs
@@ -193,7 +241,15 @@ def symbol_doc_task(input: SymbolDocInput, ctx: Context) -> list[dict[str, any]]
     return symbol_docs
 
 
-@hatchet.task(name="toplevel-doc-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(
+    name="toplevel-doc-workflow",
+    execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=3,
+        expression="'toplevel-doc-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+)
 def toplevel_doc_task(input: TopLevelDocInput, ctx: Context) -> dict[str, any]:
     print("starting toplevel doc task")
     # Call the function to generate toplevel docs

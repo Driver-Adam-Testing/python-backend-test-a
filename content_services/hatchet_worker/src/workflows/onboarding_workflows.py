@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from hatchet_client import hatchet
 from hatchet_sdk import Context
+from hatchet_sdk.runnables.types import ConcurrencyExpression, ConcurrencyLimitStrategy
 from onboarding.onboard import (
     connect_repos_for_installation,
     handle_azure_devops_events,
@@ -21,7 +22,13 @@ from shared.interfaces.hatchet_interfaces import (
 
 
 @hatchet.task(
-    name="handle-github-events-workflow", execution_timeout=timedelta(minutes=60)
+    name="handle-github-events-workflow",
+    execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'handle-github-events-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
 )
 def handle_github_events_task(input: HandleGithubEventsInput, ctx: Context) -> None:
     print("starting handle github events task")
@@ -36,7 +43,13 @@ def handle_github_events_task(input: HandleGithubEventsInput, ctx: Context) -> N
 
 
 @hatchet.task(
-    name="handle-gitlab-events-workflow", execution_timeout=timedelta(minutes=60)
+    name="handle-gitlab-events-workflow",
+    execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'handle-gitlab-events-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
 )
 def handle_gitlab_events_task(input: HandleGitlabEventsInput, ctx: Context) -> None:
     print("starting handle gitlab events task")
@@ -51,7 +64,13 @@ def handle_gitlab_events_task(input: HandleGitlabEventsInput, ctx: Context) -> N
 
 
 @hatchet.task(
-    name="handle-bitbucket-events-workflow", execution_timeout=timedelta(minutes=60)
+    name="handle-bitbucket-events-workflow",
+    execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'handle-bitbucket-events-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
 )
 def handle_bitbucket_events_task(
     input: HandleBitbucketEventsInput, ctx: Context
@@ -68,7 +87,13 @@ def handle_bitbucket_events_task(
 
 
 @hatchet.task(
-    name="handle-azure-devops-events-workflow", execution_timeout=timedelta(minutes=60)
+    name="handle-azure-devops-events-workflow",
+    execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'handle-azure-devops-events-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
 )
 def handle_azure_devops_events_task(
     input: HandleAzureDevopsEventsInput, ctx: Context
@@ -87,6 +112,11 @@ def handle_azure_devops_events_task(
 @hatchet.task(
     name="connect-repos-for-installation-workflow",
     execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=1,
+        expression="'connect-repos-for-installation-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
 )
 def connect_repos_for_installation_task(
     input: ConnectReposForInstallationInput, ctx: Context
@@ -97,7 +127,13 @@ def connect_repos_for_installation_task(
 
 
 @hatchet.task(
-    name="run-codebase-connection-workflow", execution_timeout=timedelta(minutes=740)
+    name="run-codebase-connection-workflow",
+    execution_timeout=timedelta(minutes=740),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'run-codebase-connection-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
 )
 def run_codebase_connection_task(
     input: RunCodebaseConnectionInput, ctx: Context

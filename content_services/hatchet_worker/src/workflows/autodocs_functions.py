@@ -4,6 +4,7 @@ import openai
 from autodocs.src.autodoc_log import AutoDocLog, write_autodoc_log
 from hatchet_client import hatchet
 from hatchet_sdk import Context
+from hatchet_sdk.runnables.types import ConcurrencyExpression, ConcurrencyLimitStrategy
 from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI
 
@@ -29,7 +30,16 @@ async def llm_generate_hatchet(model: str, system_prompt: str, user_prompt: str)
         return ""
 
 
-@hatchet.task(name="llm-generate-workflow", execution_timeout=timedelta(minutes=15))
+@hatchet.task(
+    name="llm-generate-workflow",
+    execution_timeout=timedelta(minutes=15),
+    concurrency=ConcurrencyExpression(
+        max_runs=200,
+        expression="'llm-generate-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+    schedule_timeout=timedelta(minutes=15),
+)
 async def llm_generate_task(input: LLMGenerateInput, ctx: Context) -> dict:
     print("starting llm generate task")
     result = await llm_generate_hatchet(

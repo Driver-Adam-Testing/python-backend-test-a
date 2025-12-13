@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from hatchet_client import hatchet
 from hatchet_sdk import Context
+from hatchet_sdk.runnables.types import ConcurrencyExpression, ConcurrencyLimitStrategy
 from pydantic import BaseModel
 
 
@@ -11,7 +12,15 @@ class MakeChangelogInput(BaseModel):
     previous_version_id: str | None
 
 
-@hatchet.task(name="make-changelog-workflow", execution_timeout=timedelta(minutes=60))
+@hatchet.task(
+    name="make-changelog-workflow",
+    execution_timeout=timedelta(minutes=60),
+    concurrency=ConcurrencyExpression(
+        max_runs=5,
+        expression="'make-changelog-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
+        limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    ),
+)
 async def make_changelog_task(input: MakeChangelogInput, ctx: Context) -> list:
     print("starting make changelog task")
     # Call the function to generate changelog

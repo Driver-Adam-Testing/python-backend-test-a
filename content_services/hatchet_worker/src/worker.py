@@ -1,7 +1,11 @@
 import truststore
 import truststore._api as tapi
 from hatchet_client import hatchet
-from workflows.auth0_sync_workflow import auth0_sync_task
+from workflows.auth0_sync_workflow import (
+    auth0_sync_task,
+    process_auth0_event_task,
+    scheduled_auth0_sync_task,
+)
 from workflows.autodocs_functions import llm_generate_task
 from workflows.autodocs_workflow import autodocs_task
 from workflows.deep_context_functions import make_changelog_task
@@ -22,14 +26,16 @@ truststore.inject_into_ssl()
 # Patch botocore to use truststore's SSLContext (see https://github.com/sethmlarson/truststore/pull/180)
 try:
     import botocore.httpsession
+
     botocore.httpsession.SSLContext = tapi.SSLContext
 except ImportError:
     pass
 
+
 def main() -> None:
     worker = hatchet.worker(
         "test-worker",
-        slots=20,
+        slots=250,
         workflows=[
             pdf_processing_task,
             inspector_task,
@@ -45,6 +51,8 @@ def main() -> None:
             export_tech_docs_task,
             codebase_tags_task,
             auth0_sync_task,
+            process_auth0_event_task,
+            scheduled_auth0_sync_task,
         ],
     )
     worker.start()

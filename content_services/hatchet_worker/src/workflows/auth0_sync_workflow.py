@@ -33,3 +33,19 @@ def process_auth0_event_task(input: ProcessAuth0EventInput, ctx: Context) -> dic
     result = process_auth0_events(event=input.event)
     print("executed process auth0 event task")
     return result
+
+
+@hatchet.task(
+    name="scheduled-auth0-sync-workflow",
+    execution_timeout=timedelta(minutes=60),
+    on_crons=["0 2 * * *"],
+)
+def scheduled_auth0_sync_task(ctx: Context) -> dict:
+    print("starting scheduled auth0 sync task")
+    result = sync_auth0(
+        dry_run=False,
+        verbose=False,
+        initial_run=False,
+    )
+    print("executed scheduled auth0 sync task")
+    return result

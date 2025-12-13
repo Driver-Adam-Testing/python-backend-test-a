@@ -21,6 +21,7 @@ from aiolimiter import AsyncLimiter
 from botocore.config import Config
 from database.models_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
+from hatchet_sdk.exceptions import FailedTaskRunExceptionGroup
 from pydantic import BaseModel
 from rich.console import Console
 from rich.markdown import Markdown
@@ -57,7 +58,9 @@ async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) ->
             )
             result = await llm_generate_task.aio_run(llm_generate_input)
             return result["result"]  # hatchet needs to return a dict
-    except modal.exception.FunctionTimeoutError as e:
+    except (
+        FailedTaskRunExceptionGroup
+    ) as e:  # This exception occurs as a result of a timeout
         token_ct = get_num_tokens(system_prompt + user_prompt)
         try:
             print(

@@ -103,6 +103,13 @@ def run_autodoc(
         .options(selectinload(VersionNode.version))
     ).one()
 
+    enforce_asset_action(
+        db=session,
+        user=user,
+        asset_id=version_node.version.primary_asset_id,
+        action_key="autodocs.generate",
+    )
+
     document_sources = session.exec(
         select(DocumentSource)
         .where(DocumentSource.page_version_node_id == input.page_id)
@@ -221,21 +228,22 @@ def get_autodoc_current_status(
     session: CurrentSession,
     page_id: UUID,
 ) -> AutoDocStatusHistory:
-    # TODO: enforce authorization check against the list of source assets
-    # node = session.exec(
-    #     select(Node)
-    #     .join(Version)
-    #     .join(PrimaryAsset)
-    #     .where(PrimaryAsset.organization_id == user.organization_id)
-    #     .where(Node.id == page_id)
-    #     .options(selectinload(Node.version))
-    # ).one()
-    # enforce_asset_action(
-    #     db=session,
-    #     user=user,
-    #     asset_id=node.version.primary_asset_id,
-    #     action_key="autodocs.manage"
-    # )
+    node = session.exec(
+        select(Node)
+        .join(Version)
+        .join(PrimaryAsset)
+        .where(PrimaryAsset.organization_id == user.organization_id)
+        .where(Node.id == page_id)
+        .options(selectinload(Node.version))
+    ).one()
+
+    enforce_asset_action(
+        db=session,
+        user=user,
+        asset_id=node.version.primary_asset_id,
+        action_key="autodocs.generate",
+    )
+
     autodoc_status = session.exec(
         select(AutoDocStatusHistory)
         .where(AutoDocStatusHistory.source_version_node_id == page_id)
@@ -266,13 +274,14 @@ def cancel(
         .where(VersionNode.id == input.page_id)
         .options(selectinload(VersionNode.version))
     ).one()
-    # TODO: enforce authorization check against the list of source assets
-    # enforce_asset_action(
-    #     db=session,
-    #     user=user,
-    #     asset_id=node.version.primary_asset_id,
-    #     action_key="autodocs.manage"
-    # )
+
+    enforce_asset_action(
+        db=session,
+        user=user,
+        asset_id=version_node.version.primary_asset_id,
+        action_key="autodocs.generate",
+    )
+
     if version_node.version.status != VersionStatus.GENERATING:
         raise HTTPException(
             status_code=400,

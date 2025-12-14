@@ -1,8 +1,8 @@
 """adds VersionNode table and associated changes
 
 Revision ID: 83650d298b58
-Revises: af9eadd3bb60
-Create Date: 2025-12-04 15:27:00.000000
+Revises: a03d3f6c9793
+Create Date: 2025-12-14 00:00:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "83650d298b58"
-down_revision = "af9eadd3bb60"
+down_revision = "a03d3f6c9793"
 branch_labels = None
 depends_on = None
 

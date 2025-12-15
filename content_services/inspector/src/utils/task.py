@@ -12,8 +12,6 @@ from pathlib import Path
 from typing import Any, ClassVar
 from uuid import UUID
 
-import boto3
-
 from utils.dag import LiteNode, NodeStatus
 
 TaskName = str
@@ -152,12 +150,7 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
         return None
 
 
-# TODO: rename
-class S3TaskResultPersistence(TaskResultPersistence):
-    def __init__(self, bucket_name: str) -> None:
-        self.s3_client = boto3.client("s3")
-        self.bucket_name = bucket_name
-
+class DbTaskResultPersistence(TaskResultPersistence):
     def save_task_result(
         self, run_id: str, result: TaskResult, task: type["Task"]
     ) -> None:
@@ -238,9 +231,7 @@ class TaskManager:
     task_io_results: dict[type[Task], dict[str, any]] = field(default_factory=dict)
     task_to_asynctask: dict[type[Task], asyncio.Task] = field(default_factory=dict)
     persistence: None | TaskResultPersistence = field(
-        default_factory=lambda: S3TaskResultPersistence(
-            "modal-dev-inspector-1234442"
-        )  # TODO make configurable!!
+        default_factory=lambda: DbTaskResultPersistence()  # TODO make configurable!!
     )
     write_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
     write_executor: ThreadPoolExecutor = field(
@@ -249,13 +240,12 @@ class TaskManager:
     progress_state: ProgressState = field(default_factory=ProgressState)
 
     @classmethod
-    def with_s3_persistence(
+    def with_db_persistence(
         cls,
-        bucket_name: str,
         *args: Any,
         **kwargs: Any,
     ) -> "TaskManager":
-        return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
+        return cls(*args, persistence=DbTaskResultPersistence(), **kwargs)
 
     def _initialize_progress(self) -> None:
         self.progress_state.total_work_units = sum(

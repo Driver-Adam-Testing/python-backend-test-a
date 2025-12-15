@@ -137,7 +137,7 @@ async def get_analyzable_version_nodes_by_version_id(
     for res in results.all():
         is_file = res.node.kind == NodeKind.CODEBASE_FILE
         is_directory = res.node.kind == NodeKind.CODEBASE_DIRECTORY
-        is_analyzable_file = is_file and res.misc_metadata["is_analyzable"] is True
+        is_analyzable_file = is_file and res.misc_metadata.get("is_analyzable") is True
         if is_directory or is_analyzable_file:
             res_list.append(res)
     return res_list

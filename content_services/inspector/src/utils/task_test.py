@@ -3,20 +3,43 @@ import time
 from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any
 
-import boto3
 import pytest
-from moto import mock_aws
 
 from utils.dag import LiteNode, NodeKind
 from utils.task import (
     LocalDiskTaskResultPersistence,
-    S3TaskResultPersistence,
     SerializationMethod,
     Task,
     TaskManager,
     TaskResult,
 )
+
+
+class MockTask(Task):
+    def __init__(self, task_name: str, test_data: dict[str, Any]) -> None:
+        super().__init__(
+            task_name=task_name,
+            node=LiteNode(kind=NodeKind.FILE, root_rel_path=Path(task_name)),
+            dependencies=tuple(),
+        )
+        self.test_data = test_data
+
+    async def run_implementation(
+        self, dependent_results: dict[Task, TaskResult]
+    ) -> TaskResult:
+        return TaskResult(data=self.test_data, serialization=SerializationMethod.JSON)
+
+    async def post_run_io(self, task_result: TaskResult) -> dict[str, Any]:
+        return {"io_completed": True}
+
+    def load_result(self) -> None | TaskResult:
+        return None
+
+    @property
+    def work_units(self) -> int:
+        return 1
 
 
 class TestLocalDiskTaskResultPersistence:
@@ -28,13 +51,13 @@ class TestLocalDiskTaskResultPersistence:
     def test_save_and_load_task_result_json(self, temp_dir: Path) -> None:
         persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
         run_id = "test_run"
-        task_id = "test_task"
+        task = MockTask(task_name="test_task", test_data={"key": "value"})
         result = TaskResult(
             data={"key": "value"}, serialization=SerializationMethod.JSON
         )
 
-        persistence.save_task_result(run_id, task_id, result)
-        loaded_result = persistence.load_task_result(run_id, task_id)
+        persistence.save_task_result(run_id, result, task)
+        loaded_result = persistence.load_task_result(run_id, task)
 
         assert loaded_result is not None
         assert loaded_result.data == result.data
@@ -42,13 +65,13 @@ class TestLocalDiskTaskResultPersistence:
     def test_save_and_load_task_result_pickle(self, temp_dir: Path) -> None:
         persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
         run_id = "test_run"
-        task_id = "test_task"
+        task = MockTask(task_name="test_task", test_data={"key": "value"})
         result = TaskResult(
             data={"key": "value"}, serialization=SerializationMethod.PICKLE
         )
 
-        persistence.save_task_result(run_id, task_id, result)
-        loaded_result = persistence.load_task_result(run_id, task_id)
+        persistence.save_task_result(run_id, result, task)
+        loaded_result = persistence.load_task_result(run_id, task)
 
         assert loaded_result is not None
         assert loaded_result.data == result.data
@@ -56,62 +79,9 @@ class TestLocalDiskTaskResultPersistence:
     def test_load_nonexistent_task_result(self, temp_dir: Path) -> None:
         persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
         run_id = "test_run"
-        task_id = "nonexistent_task"
+        task = MockTask(task_name="nonexistent_task", test_data={})
 
-        result = persistence.load_task_result(run_id, task_id)
-
-        assert result is None
-
-
-class TestS3TaskResultPersistence:
-    @pytest.fixture
-    def s3_bucket(self) -> Generator[str, None, None]:
-        with mock_aws():
-            s3_client = boto3.client("s3")
-            bucket_name = "test-bucket"
-            s3_client.create_bucket(Bucket=bucket_name)
-            yield bucket_name
-
-    def test_save_and_load_task_result_json(
-        self,
-        s3_bucket: str,
-    ) -> None:
-        persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
-        run_id = "test_run"
-        task_id = "test_task"
-        result = TaskResult(
-            data={"key": "value"}, serialization=SerializationMethod.JSON
-        )
-
-        persistence.save_task_result(run_id, task_id, result)
-        loaded_result = persistence.load_task_result(run_id, task_id)
-
-        assert loaded_result is not None
-        assert loaded_result.data == result.data
-
-    def test_save_and_load_task_result_pickle(
-        self,
-        s3_bucket: str,
-    ) -> None:
-        persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
-        run_id = "test_run"
-        task_id = "test_task"
-        result = TaskResult(
-            data={"key": "value"}, serialization=SerializationMethod.PICKLE
-        )
-
-        persistence.save_task_result(run_id, task_id, result)
-        loaded_result = persistence.load_task_result(run_id, task_id)
-
-        assert loaded_result is not None
-        assert loaded_result.data == result.data
-
-    def test_load_nonexistent_task_result(self, s3_bucket: str) -> None:
-        persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
-        run_id = "test_run"
-        task_id = "nonexistent_task"
-
-        result = persistence.load_task_result(run_id, task_id)
+        result = persistence.load_task_result(run_id, task)
 
         assert result is None
 
@@ -126,9 +96,9 @@ class SleepTask(Task):
     ) -> None:
         dependencies = dependencies or tuple()
 
-        # NOTE: we must give unique nodes to the tasks because our hasing scheme
+        # NOTE: we must give unique nodes to the tasks because our hashing scheme
         # assumes that nodes will not have multiple tasks of the same name with the same dependencies.
-        # TODO: revist in the future if needed.
+        # TODO: revisit in the future if needed.
         super().__init__(
             task_name=task_name,
             node=LiteNode(kind=NodeKind.FILE, root_rel_path=Path(task_name)),
@@ -137,7 +107,15 @@ class SleepTask(Task):
         self.sleep_time = sleep_time
         self._work_units = work_units
 
-        self.captured_io_results = None  # Captures `dependent_io_results` in `post_run_io` for assertions about what was injected
+        self.post_run_io_called = False
+        self.received_task_result = None
+        self.dependency_results_received = None
+
+    def recoverable_errors(self) -> set[type[Exception]]:
+        return set()
+
+    def load_result(self) -> None | TaskResult:
+        return None
 
     async def run_implementation(
         self, dependent_results: dict[Task, TaskResult]
@@ -145,22 +123,19 @@ class SleepTask(Task):
         start_time = time.time()
         await asyncio.sleep(self.sleep_time)
         end_time = time.time()
+
+        # Capture dependency results for testing
+        self.dependency_results_received = dependent_results.copy()
+
         return TaskResult(
             data={"start_time": start_time, "completed_at": end_time},
             serialization=SerializationMethod.JSON,
         )
 
-    def recoverable_errors(self) -> set[type[Exception]]:
-        return set()
-
-    async def post_run_io(
-        self,
-        task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
-    ) -> dict[str, any]:
-        # Store the dependent IO results for validation in the test
-        self.captured_io_results = dependent_io_results
-        return {"io_completed": True}
+    async def post_run_io(self, task_result: TaskResult) -> dict[str, Any]:
+        self.post_run_io_called = True
+        self.received_task_result = task_result
+        return {"io_completed": True, "task_data": task_result.data}
 
     @property
     def work_units(self) -> int:
@@ -220,25 +195,49 @@ class TestTaskManager:
         assert task3_completion_time >= global_start_time + 2
 
     @pytest.mark.asyncio
-    async def test_post_run_io_injection(
+    async def test_post_run_io_execution(
         self, setup_tasks: tuple[TaskManager, Task, Task, Task]
     ) -> None:
         """
-        Tests that `post_run_io` is called and IO results are injected correctly
-        from any dependencies that have completed.
+        Tests that post_run_io is called for each task after execution.
         """
         task_manager, task1, task2, task3 = setup_tasks
 
-        # Run the tasks to trigger `post_run_io`
         await task_manager.run_tasks(run_id="test_run_io")
 
-        print(f"Task 1 IO Result: {task1.captured_io_results}")
-        print(f"Task 2 IO Result: {task2.captured_io_results}")
-        print(f"Task 3 IO Result: {task3.captured_io_results}")
+        # Verify all tasks have IO results stored in TaskManager
+        assert task1 in task_manager.task_io_results
+        assert task2 in task_manager.task_io_results
+        assert task3 in task_manager.task_io_results
+        # Verify IO results contain expected data
+        assert task_manager.task_io_results[task1]["io_completed"] is True
+        assert task_manager.task_io_results[task2]["io_completed"] is True
+        assert task_manager.task_io_results[task3]["io_completed"] is True
 
-        # Ensure task1 has no captured IO results since it has no dependencies
-        assert task1.captured_io_results == dict()
+    @pytest.mark.asyncio
+    async def test_task_dependency_result_injection(
+        self, setup_tasks: tuple[TaskManager, Task, Task, Task]
+    ) -> None:
+        """
+        Tests that tasks receive results from their dependencies during execution.
+        """
+        task_manager, task1, task2, task3 = setup_tasks
 
-        # Validate that `post_run_io` was called and IO results were injected for dependencies
-        assert task2.captured_io_results == {task1: {"io_completed": True}}
-        assert task3.captured_io_results == {task1: {"io_completed": True}}
+        await task_manager.run_tasks(run_id="test_dependency_injection")
+
+        # task1 has no dependencies, should receive empty dict
+        assert task1.dependency_results_received == {}
+
+        # task2 depends on task1, should receive task1's result
+        assert task1 in task2.dependency_results_received
+        assert (
+            task2.dependency_results_received[task1].data
+            == task_manager.task_results[task1].data
+        )
+
+        # task3 depends on task1, should receive task1's result
+        assert task1 in task3.dependency_results_received
+        assert (
+            task3.dependency_results_received[task1].data
+            == task_manager.task_results[task1].data
+        )

@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from database.db import get_session
-from database.models import DerivedContent, Node
+from database.models import DerivedContent, Node, VersionNode
 from database.models_enums import ContentKind, NodeKind
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -30,9 +30,9 @@ class CodeMapResponse(BaseModel):
     nodes_remaining: int
 
 
-def _fetch_nodes_with_descriptions(
+def _fetch_code_map_data(
     db: Session, version_id: str, path: str, max_depth: int
-) -> list[tuple[Node, DerivedContent]]:
+) -> list[tuple[VersionNode, DerivedContent, Node]]:
     path_filter = _normalize_path_filter(path)
 
     # Calculate base depth: number of path components in the search path
@@ -44,16 +44,17 @@ def _fetch_nodes_with_descriptions(
     )
 
     result = db.exec(
-        select(Node, DerivedContent)
+        select(VersionNode, DerivedContent, Node)
+        .join(Node, Node.id == VersionNode.node_id)
         .join(DerivedContent, DerivedContent.node_id == Node.id)
-        .where(Node.version_id == version_id)
-        .where(Node.relative_path.like(path_filter))
-        .where(Node.depth <= base_depth + max_depth)
+        .where(VersionNode.version_id == version_id)
+        .where(VersionNode.relative_path.like(path_filter))
+        .where(VersionNode.depth <= base_depth + max_depth)
         .where(DerivedContent.content_kind == ContentKind.SHORT_SENTENCE_DESCRIPTION)
-        .order_by(Node.relative_path)
+        .order_by(VersionNode.relative_path)
     ).all()
 
-    logger.info(f"Query returned {len(result)} nodes")
+    logger.info(f"Query returned data for {len(result)} nodes")
     return result
 
 
@@ -66,23 +67,25 @@ def _normalize_path_filter(path: str) -> str:
     return normalized
 
 
-def _build_flat_node_list(
-    nodes_with_content: list[tuple[Node, DerivedContent]],
+def _build_flat_code_map_node_list(
+    code_map_data: list[tuple[VersionNode, DerivedContent, Node]],
 ) -> list[CodeMapNode]:
     result = []
 
-    for node, content in nodes_with_content:
-        logger.debug(f"Adding node: path='{node.relative_path}', kind='{node.kind}'")
+    for version_node, content, node in code_map_data:
+        logger.debug(
+            f"Adding code map node: path='{version_node.relative_path}', kind='{node.kind}'"
+        )
 
         result.append(
             CodeMapNode(
-                absolute_path=node.relative_path,
+                absolute_path=version_node.relative_path,
                 type="file" if node.kind == NodeKind.CODEBASE_FILE else "directory",
                 description=content.content,
             )
         )
 
-    logger.info(f"Built {len(result)} nodes from {len(nodes_with_content)} inputs")
+    logger.info(f"Built {len(result)} nodes from {len(code_map_data)} inputs")
     return result
 
 
@@ -107,12 +110,10 @@ def get_code_map_simple(
 
         logger.info(f"Found version {version.id} for codebase '{codebase_name}'")
 
-        nodes_with_content = _fetch_nodes_with_descriptions(
-            db, version.id, path, max_depth
-        )
+        nodes_with_content = _fetch_code_map_data(db, version.id, path, max_depth)
         logger.info(f"Fetched {len(nodes_with_content)} nodes with content")
 
-        nodes = _build_flat_node_list(nodes_with_content)
+        nodes = _build_flat_code_map_node_list(nodes_with_content)
         logger.info(f"Built {len(nodes)} nodes for response")
 
         if not nodes:

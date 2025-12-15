@@ -86,7 +86,7 @@ def validate_summary(summary: str) -> bool:
     agent = OpenAIStrictAgent(
         model="gpt-4o-mini",
         response_format=SummaryValidation,
-        scope=DataScope(organization_id="no-org", node_ids=[], user_id="pdf-inspector"),
+        scope=DataScope(organization_id="no-org", version_node_ids=[], user_id="pdf-inspector"),
         log=False,
     )
     response: SummaryValidation = agent.invoke(

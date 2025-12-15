@@ -1,12 +1,14 @@
 from uuid import UUID
 
-from database.models import DocumentSource, Node
+from database.models import DocumentSource, VersionNode
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from shared.v3.app.pipelines.chat import (
     ChatPipelineRequest,
-)  # local import after FastAPI deps
+)
+
+# local import after FastAPI deps
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
@@ -19,8 +21,9 @@ router = APIRouter()
 
 class ChatHttpRequest(BaseModel):
     user_prompt: str
-    source_node_ids: list[UUID] | None = None
-    page_node_id: UUID | None = None
+    source_version_node_ids: list[UUID] | None = None
+    page_version_node_id: UUID | None = None
+
     llm_session_id: UUID | None = None
 
 
@@ -30,31 +33,33 @@ async def create_streaming_post(
     user: UserToken,
     payload: ChatHttpRequest,
 ) -> StreamingResponse:
-    source_ids = payload.source_node_ids or []
-    if payload.page_node_id:
+    source_ids = payload.source_version_node_ids or []
+    if payload.page_version_node_id:
         sources_query = select(DocumentSource).where(
-            DocumentSource.page_node_id == payload.page_node_id
+            DocumentSource.page_version_node_id == payload.page_version_node_id
         )
         sources = session.exec(sources_query).all()
         for source in sources:
-            if source.source_node_id not in source_ids:
-                source_ids.append(source.source_node_id)
+            if source.source_version_node_id not in source_ids:
+                source_ids.append(source.source_version_node_id)
 
     query = (
-        select(Node).where(Node.id.in_(source_ids)).options(selectinload(Node.version))
+        select(VersionNode)
+        .where(VersionNode.id.in_(source_ids))
+        .options(selectinload(VersionNode.version))
     )
-    nodes = session.exec(query).all()
-    for node in nodes:
+    version_nodes = session.exec(query).all()
+    for version_node in version_nodes:
         enforce_asset_action(
             db=session,
             user=user,
-            asset_id=node.version.primary_asset_id,
+            asset_id=version_node.version.primary_asset_id,
             action_key="asset.use_as_source",
         )
     request = ChatPipelineRequest(
         user_prompt=payload.user_prompt,
-        node_ids=payload.source_node_ids,
-        page_node_id=payload.page_node_id,
+        version_node_ids=payload.source_version_node_ids,
+        page_version_node_id=payload.page_version_node_id,
         organization_id=user.organization_id,
         user_id=user.user_id,
         llm_session_id=payload.llm_session_id,

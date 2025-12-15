@@ -63,7 +63,7 @@ def run_and_time_pipeline() -> None:
             text_before_instruction=request["context"]["before_selected_text"],
             text_after_instruction=request["context"]["after_selected_text"],
             datascope=DataScope(
-                node_ids=request["node_ids"],
+                version_node_ids=request["node_ids"],
                 organization_id="org_s76pU1v8LAYhTOWB",
                 user_id="org_s76pU1v8LAYhTOWB",
             ),

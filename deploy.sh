@@ -1,5 +1,7 @@
 #!/bin/bash
 set -euo pipefail
+PS4='[${BASH_SOURCE}:${LINENO}] '
+set -x
 
 echo "deploying backend..."
 
@@ -21,11 +23,11 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 
 #TODO convert all of this push logic to a function
 BACKEND_IMAGE_NAME=python-backend
-BACKEND_TAG=latest 
+BACKEND_TAG=latest
 BACKEND_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$BACKEND_IMAGE_NAME:$BACKEND_TAG
 
 HATCHET_WORKER_IMAGE_NAME=hatchet-worker
-HATCHET_WORKER_TAG=latest 
+HATCHET_WORKER_TAG=latest
 HATCHET_WORKER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$HATCHET_WORKER_IMAGE_NAME:$HATCHET_WORKER_TAG
 
 SCIM_SERVER_IMAGE_NAME=scim-server
@@ -57,7 +59,7 @@ HATCHET_WORKER_REMOTE_DIGEST=$(aws ecr describe-images \
   --region "$AWS_REGION" \
   --query 'imageDetails[0].imageDigest' \
   --output text 2>/dev/null || echo "NONE")
-  
+
 if [ "$BACKEND_LOCAL_DIGEST" != "$BACKEND_REMOTE_DIGEST" ]; then
   echo "Backend Image has changed. Pushing new image..."
   docker push "$BACKEND_REPO_URI"
@@ -160,10 +162,33 @@ if [[ $status -eq 0 ]]; then
 elif [[ $status -eq 124 ]]; then
   echo "⏰ Timed out waiting for service to become stable."
   exit 1
-else
-  echo "❌ Waiter failed with exit code ${status}."
-  exit 1
 fi
+
+# Debug print (safe)
+# echo "Found tasks..."
+# for i in "${!TASKS[@]}"; do
+#   printf 'TASK[%d]=%s\n' "$i" "${TASKS[$i]}"
+# done
+
+# set -euo pipefail
+
+# # Minutes to go back (env override: SINCE_MIN=10)
+# SINCE_MIN="${SINCE_MIN:-2}"
+# EXIT_ON_MATCH_CODE="${EXIT_ON_MATCH_CODE:-2}"
+# START_MS=$(( ( $(date +%s) - SINCE_MIN*60 ) * 1000 ))
+# MATCH_JSON='["error","fatal"]'
+# MATCH_CASE_INSENSITIVE=1
+
+# # Build patterns JSON array
+# if [[ -n "${MATCH_JSON:-}" ]]; then
+#   PATS_JSON="$MATCH_JSON"
+# elif [[ -n "${MATCH:-}" ]]; then
+#   # Convert CSV -> JSON array (trim spaces, drop empties)
+#   PATS_JSON="$(jq -Rn --arg s "$MATCH" '($s|split(",")|map(gsub("^\\s+|\\s+$";""))|map(select(length>0)))')"
+# else
+#   echo "❌ Waiter failed with exit code ${status}."
+#   exit 1
+# fi
 
 # Disabling. See comment above. Was breaking running deployments
 # echo "checking server logs..."

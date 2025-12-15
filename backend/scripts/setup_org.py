@@ -1,204 +1,230 @@
 #!/usr/bin/env python3
 """
-
- For org command (Auth0 operations)
-
-  | Variable                     | Required |
-  |------------------------------|----------|
-  | AUTH0_DOMAIN                 | Yes      |
-  | AUTH0_CLIENT_ID              | Yes      |
-  | AUTH0_MGMT_API_DOMAIN        | Yes      |
-  | AUTH0_MGMT_API_CLIENT_ID     | Yes      |
-  | AUTH0_MGMT_API_CLIENT_SECRET | Yes      |
-
-  For subscription and credits commands (Database operations)
-
-  Either set a full connection string:
-
-  | Variable     | Required                             |
-  |--------------|--------------------------------------|
-  | DATABASE_URL | Yes (or use individual params below) |
-
-  Or set individual params:
-
-  | Variable          | Required | Default |
-  |-------------------|----------|---------|
-  | POSTGRES_SERVER   | Yes      | —       |
-  | POSTGRES_USER     | Yes      | —       |
-  | POSTGRES_PASSWORD | Yes      | —       |
-  | POSTGRES_DB       | Yes      | ""      |
-  | POSTGRES_PORT     | No       | 5432    |
-
-  Optional
-
-  | Variable    | Purpose                            | Default |
-  |-------------|------------------------------------|---------|
-  | ENVIRONMENT | Controls SSL mode (local = no SSL) | local   |
-
 Auth0 Organization Admin CLI
 
-This script provides administrative commands for managing Auth0 organizations,
-subscriptions, and usage credits.
+Creates and manages Auth0 organizations with all required components.
+
+Commands:
+    org      Create org with admins, subscription (Advanced), and 250k SLOC credits
+    credits  Issue additional SLOC credits to an existing organization
+
+Required Environment Variables:
+    AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_MGMT_API_DOMAIN,
+    AUTH0_MGMT_API_CLIENT_ID, AUTH0_MGMT_API_CLIENT_SECRET
+
+    DATABASE_URL (or individual: POSTGRES_SERVER, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB)
 
 Usage:
-    python scripts/setup_org.py org                    # Create a new organization
-    python scripts/setup_org.py subscription           # Create a subscription
-    python scripts/setup_org.py credits                # Issue usage credits
-
-    Add --dry-run to any command to simulate without making changes.
+    poetry run python scripts/setup_org.py org             # Create org
+    poetry run python scripts/setup_org.py credits         # Issue credits
+    poetry run python scripts/setup_org.py org --dry-run   # Simulate
 """
 
 import argparse
 import logging
 import os
+import re
 import sys
+from typing import Any
 
-# Add the project root to the python path so we can import app modules
-# Current file: backend/scripts/setup_org.py
-# We need to add 'backend' (parent dir) to path to import 'app'
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# Add backend dir to path so 'app' module is importable when running as script
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# We need to add 'packages/shared' to path to import 'shared'
-# backend/scripts/ -> ../../packages/shared
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../packages/shared"))
-
-# We need to add 'driver_db' to path to import 'database'
-# backend/scripts/ -> ../../driver_db
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../driver_db"))
-
-from app.services.auth0_factory import create_auth0_service
+from app.services.auth0_factory import Auth0Service, create_auth0_service
+from auth0.exceptions import Auth0Error
 from database.db import get_session
 from database.models import BillingFrequency, PlanType, UsageEventType
 from shared.billing.billing_service import BillingService
 from shared.usage.usage_service import UsageService
 from shared.usage.utils import sloc_to_bytes
+from sqlalchemy.exc import SQLAlchemyError
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+SUPPORT_EMAIL = "support@driverai.com"
+INITIAL_SLOC_CREDITS = 250_000
+SYSTEM_USER_ID = "SYSTEM"
+ORG_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def validate_org_name(name: str) -> bool:
+    return bool(ORG_NAME_PATTERN.match(name))
+
+
+def _prompt_required(prompt: str, error_msg: str) -> str | None:
+    value = input(prompt).strip()
+    if not value:
+        logger.error(error_msg)
+        return None
+    return value
+
+
+def _prompt_positive_int(prompt: str, field_name: str) -> int | None:
+    value = input(prompt).strip()
+    if not value:
+        logger.error(f"{field_name} is required.")
+        return None
+    try:
+        num = int(value)
+        if num <= 0:
+            logger.error(f"{field_name} must be a positive integer.")
+            return None
+        return num
+    except ValueError:
+        logger.error(f"{field_name} must be a valid integer.")
+        return None
+
+
+def _cleanup_org(service: Auth0Service, org_id: str) -> None:
+    try:
+        logger.info(f"Cleaning up organization {org_id}...")
+        service.delete_organization(org_id)
+        logger.info("Cleanup successful.")
+    except Auth0Error as e:
+        logger.error(f"Cleanup failed: {e}")
+
+
+def _create_auth0_org(
+    service: Auth0Service, org_name: str, display_name: str
+) -> dict[str, Any] | None:
+    try:
+        org = service.create_organization(
+            name=org_name,
+            display_name=display_name,
+            metadata={"self_service": "false"},
+        )
+        logger.info(f"Created organization: {org['id']}")
+        return org
+    except Auth0Error as e:
+        logger.error(f"Failed to create organization: {e}")
+        return None
+
+
+def _enable_connection(service: Auth0Service, org_id: str) -> bool:
+    try:
+        conn_id = service.get_username_password_connection_id()
+        service.enable_connection_for_organization(org_id=org_id, connection_id=conn_id)
+        logger.info("Enabled Username-Password-Authentication connection")
+        return True
+    except Auth0Error as e:
+        logger.error(f"Failed to enable connection: {e}")
+        return False
+
+
+def _invite_admins(service: Auth0Service, org_id: str, admin_emails: list[str]) -> bool:
+    role_name = "org_super_admin"
+    for email in admin_emails:
+        try:
+            service.create_admin_invite(org_id=org_id, email=email, role_name=role_name)
+            logger.info(f"Invited {email} with role '{role_name}'")
+        except Auth0Error as e:
+            logger.error(f"Failed to invite {email}: {e}")
+            return False
+    return True
+
+
+def _create_subscription(org_id: str) -> bool:
+    try:
+        with get_session() as session:
+            subscription = BillingService(session).create_subscription(
+                organization_id=org_id,
+                plan_type=PlanType.ADVANCED,
+                billing_frequency=BillingFrequency.NEVER,
+            )
+            logger.info(f"Created subscription: {subscription.id}")
+            return True
+    except SQLAlchemyError as e:
+        logger.error(f"Failed to create subscription: {e}")
+        return False
+
+
+def _issue_initial_credits(org_id: str, sloc_amount: int) -> bool:
+    bytes_amount = sloc_to_bytes(sloc_amount)
+    try:
+        with get_session() as session:
+            UsageService(session).issue_usage_credits(
+                organization_id=org_id,
+                user_id=SYSTEM_USER_ID,
+                event_type=UsageEventType.BASE_PLATFORM_USAGE_CREDIT,
+                credit_amount=bytes_amount,
+            )
+            logger.info(f"Issued {sloc_amount:,} SLOC credits")
+            return True
+    except SQLAlchemyError as e:
+        logger.error(f"Failed to issue credits: {e}")
+        return False
+
+
+def _log_dry_run_steps(org_id: str, admin_emails: list[str]) -> None:
+    logger.info("[DRY RUN] Would initialize Auth0Service")
+    logger.info(f"[DRY RUN] Would enable connection for org {org_id}")
+    for email in admin_emails:
+        logger.info(f"[DRY RUN] Would invite '{email}' with role 'org_super_admin'")
+    logger.info(f"[DRY RUN] Would create Advanced subscription for org {org_id}")
+    bytes_amount = sloc_to_bytes(INITIAL_SLOC_CREDITS)
+    logger.info(
+        f"[DRY RUN] Would issue {INITIAL_SLOC_CREDITS:,} SLOC ({bytes_amount:,} bytes)"
+    )
+
 
 def setup_org(
-    org_name: str, display_name: str, admin_email: str, dry_run: bool = False
+    org_name: str, display_name: str, admin_emails: list[str], dry_run: bool = False
 ) -> None:
     """
-    Creates an Auth0 organization, enables the default connection, and invites the admin.
+    1. Create the organization
+    2. Enable Username-Password-Authentication connection
+    3. Invite all admin emails with org_super_admin role
+    4. Create Advanced subscription
+    5. Issue initial SLOC credits
     """
     logger.info(f"Starting organization setup for '{display_name}' ({org_name})")
-    logger.info(f"Admin Email: {admin_email}")
+    logger.info(f"Admin Emails: {', '.join(admin_emails)}")
 
-    if dry_run:
-        logger.info("[DRY RUN] Would initialize Auth0Service")
-    else:
-        try:
-            service = create_auth0_service()
-        except Exception as e:
-            logger.error(f"Failed to initialize Auth0Service: {e}")
-            return
-
-    # 1. Create Organization
-    if dry_run:
-        logger.info(
-            f"[DRY RUN] Would create organization: name='{org_name}', display_name='{display_name}'"
+    if not validate_org_name(org_name):
+        logger.error(
+            f"Invalid organization name '{org_name}'. "
+            "Must start with lowercase letter/digit and contain only lowercase letters, digits, hyphens, underscores."
         )
-        # Mock org object for subsequent steps in dry run
-        org = {"id": "org_mock_id"}
-    else:
-        try:
-            org = service.create_organization(
-                name=org_name,
-                display_name=display_name,
-                metadata={
-                    "self_service": "false"
-                },  # Created via CLI, so not self-service
-            )
-            logger.info(f"Successfully created organization: {org['id']}")
-        except Exception as e:
-            logger.error(f"Failed to create organization: {e}")
-            return
-
-    # 2. Enable Username-Password-Authentication connection
-    if dry_run:
-        logger.info(
-            f"[DRY RUN] Would enable 'Username-Password-Authentication' connection for org {org['id']}"
-        )
-    else:
-        try:
-            conn_id = service.get_username_password_connection_id()
-            service.enable_connection_for_organization(
-                org_id=org["id"], connection_id=conn_id
-            )
-            logger.info(
-                f"Enabled 'Username-Password-Authentication' connection for org {org['id']}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to enable connection: {e}")
-            # Attempt cleanup?
-            return
-
-    # 3. Invite Admin with org_super_admin role
-    role_name = "org_super_admin"
-    if dry_run:
-        logger.info(
-            f"[DRY RUN] Would invite '{admin_email}' to org {org['id']} with role '{role_name}' via create_admin_invite"
-        )
-    else:
-        try:
-            service.create_admin_invite(
-                org_id=org["id"],
-                email=admin_email,
-                role_name=role_name,
-            )
-            logger.info(
-                f"Invited {admin_email} to organization with role '{role_name}'"
-            )
-        except Exception as e:
-            logger.error(f"Failed to invite admin: {e}")
-            # Attempt cleanup
-            try:
-                logger.info(f"Attempting to cleanup organization {org['id']}...")
-                service.delete_organization(org["id"])
-                logger.info("Cleanup successful.")
-            except Exception as cleanup_error:
-                logger.error(f"Cleanup failed: {cleanup_error}")
-            return
-
-    logger.info("Organization setup completed successfully!")
-
-
-def setup_subscription(
-    organization_id: str,
-    plan_type: PlanType,
-    billing_frequency: BillingFrequency,
-    dry_run: bool = False,
-) -> None:
-    """
-    Creates a subscription for an organization.
-    """
-    logger.info(f"Starting subscription setup for organization '{organization_id}'")
-    logger.info(f"Plan Type: {plan_type.value}")
-    logger.info(f"Billing Frequency: {billing_frequency.value}")
+        return
 
     if dry_run:
-        logger.info(
-            f"[DRY RUN] Would create subscription: org='{organization_id}', "
-            f"plan='{plan_type.value}', frequency='{billing_frequency.value}'"
-        )
-        logger.info("Subscription setup simulation completed!")
+        _log_dry_run_steps("org_mock_id", admin_emails)
+        logger.info("Organization setup completed successfully!")
         return
 
     try:
-        with get_session() as session:
-            billing_service = BillingService(session)
-            subscription = billing_service.create_subscription(
-                organization_id=organization_id,
-                plan_type=plan_type,
-                billing_frequency=billing_frequency,
-            )
-            logger.info(f"Successfully created subscription: {subscription.id}")
-            logger.info("Subscription setup completed successfully!")
-    except Exception as e:
-        logger.error(f"Failed to create subscription: {e}")
+        service = create_auth0_service()
+    except Auth0Error as e:
+        logger.error(f"Failed to initialize Auth0Service: {e}")
+        return
+
+    org = _create_auth0_org(service, org_name, display_name)
+    if not org:
+        return
+
+    org_id = org["id"]
+
+    def cleanup() -> None:
+        _cleanup_org(service, org_id)
+
+    if not _enable_connection(service, org_id):
+        cleanup()
+        return
+
+    if not _invite_admins(service, org_id, admin_emails):
+        cleanup()
+        return
+
+    if not _create_subscription(org_id):
+        cleanup()
+        return
+
+    if not _issue_initial_credits(org_id, INITIAL_SLOC_CREDITS):
+        cleanup()
+        return
+
+    logger.info("Organization setup completed successfully!")
 
 
 def issue_credits(
@@ -207,10 +233,6 @@ def issue_credits(
     sloc_amount: int,
     dry_run: bool = False,
 ) -> None:
-    """
-    Issues usage credits to an organization.
-    Credits are entered in SLOC and converted to bytes internally (1 SLOC = 50 bytes).
-    """
     bytes_amount = sloc_to_bytes(sloc_amount)
 
     logger.info(f"Issuing credits to organization '{organization_id}'")
@@ -227,8 +249,7 @@ def issue_credits(
 
     try:
         with get_session() as session:
-            usage_service = UsageService(session)
-            usage_service.issue_usage_credits(
+            UsageService(session).issue_usage_credits(
                 organization_id=organization_id,
                 user_id=user_id,
                 event_type=UsageEventType.BASE_PLATFORM_USAGE_CREDIT,
@@ -238,82 +259,46 @@ def issue_credits(
                 f"Successfully issued {sloc_amount} SLOC ({bytes_amount} bytes)!"
             )
             logger.info("Credit issuance completed successfully!")
-    except Exception as e:
+    except SQLAlchemyError as e:
         logger.error(f"Failed to issue credits: {e}")
 
 
 def run_org_command(dry_run: bool) -> None:
-    """Interactive prompts for organization setup."""
     print("--- Auth0 Organization Setup ---")
+    print(f"Note: {SUPPORT_EMAIL} will be auto-included as admin.\n")
 
     try:
-        org_name = input("Organization Name (slug, e.g., my-org): ").strip()
+        org_name = _prompt_required(
+            "Organization Name (slug, e.g., my-org): ", "Organization Name is required."
+        )
         if not org_name:
-            logger.error("Organization Name is required.")
             return
 
-        display_name = input("Display Name (e.g., My Organization): ").strip()
+        if not validate_org_name(org_name):
+            logger.error(
+                "Invalid organization name. Must start with lowercase letter/digit "
+                "and contain only lowercase letters, digits, hyphens, underscores."
+            )
+            return
+
+        display_name = _prompt_required(
+            "Display Name (e.g., My Organization): ", "Display Name is required."
+        )
         if not display_name:
-            logger.error("Display Name is required.")
             return
 
-        admin_email = input("Admin Email: ").strip()
-        if not admin_email:
-            logger.error("Admin Email is required.")
-            return
+        admin_input = input(
+            "Admin Emails (comma-separated, or press Enter for support only): "
+        ).strip()
+        raw_emails = [e.strip().lower() for e in admin_input.split(",") if e.strip()]
+        admin_emails = list(dict.fromkeys([SUPPORT_EMAIL, *raw_emails]))
 
         print("\nReview Configuration:")
-        print(f"  Organization Name: {org_name}")
-        print(f"  Display Name:      {display_name}")
-        print(f"  Admin Email:       {admin_email}")
-        print(f"  Dry Run:           {dry_run}")
-
-        confirm = input("\nProceed? (y/N): ").strip().lower()
-        if confirm != "y":
-            print("Aborted.")
-            return
-
-        setup_org(org_name, display_name, admin_email, dry_run)
-
-    except KeyboardInterrupt:
-        print("\nOperation cancelled.")
-
-
-def run_subscription_command(dry_run: bool) -> None:
-    """Interactive prompts for subscription setup."""
-    print("--- Subscription Setup ---")
-
-    plan_options = [p.value for p in PlanType]
-    frequency_options = [f.value for f in BillingFrequency]
-
-    try:
-        organization_id = input("Organization ID (e.g., org_xxx): ").strip()
-        if not organization_id:
-            logger.error("Organization ID is required.")
-            return
-
-        print(f"\nAvailable Plan Types: {', '.join(plan_options)}")
-        plan_input = input("Plan Type: ").strip().lower()
-        if plan_input not in plan_options:
-            logger.error(
-                f"Invalid plan type. Must be one of: {', '.join(plan_options)}"
-            )
-            return
-        plan_type = PlanType(plan_input)
-
-        print(f"\nAvailable Billing Frequencies: {', '.join(frequency_options)}")
-        freq_input = input("Billing Frequency: ").strip().lower()
-        if freq_input not in frequency_options:
-            logger.error(
-                f"Invalid billing frequency. Must be one of: {', '.join(frequency_options)}"
-            )
-            return
-        billing_frequency = BillingFrequency(freq_input)
-
-        print("\nReview Configuration:")
-        print(f"  Organization ID:    {organization_id}")
-        print(f"  Plan Type:          {plan_type.value}")
-        print(f"  Billing Frequency:  {billing_frequency.value}")
+        print(f"  Organization Name:  {org_name}")
+        print(f"  Display Name:       {display_name}")
+        print(f"  Admin Emails:       {', '.join(admin_emails)}")
+        print("  Plan:               Advanced")
+        print(f"  Initial Credits:    {INITIAL_SLOC_CREDITS:,} SLOC")
         print(f"  Dry Run:            {dry_run}")
 
         confirm = input("\nProceed? (y/N): ").strip().lower()
@@ -321,47 +306,35 @@ def run_subscription_command(dry_run: bool) -> None:
             print("Aborted.")
             return
 
-        setup_subscription(organization_id, plan_type, billing_frequency, dry_run)
+        setup_org(org_name, display_name, admin_emails, dry_run)
 
     except KeyboardInterrupt:
         print("\nOperation cancelled.")
 
 
 def run_credits_command(dry_run: bool) -> None:
-    """Interactive prompts for issuing credits."""
     print("--- Issue Usage Credits ---")
-    print("Note: Credits are entered in SLOC (1 SLOC = 50 bytes)")
+    print("Note: Credits are entered in SLOC (1 SLOC = 50 bytes)\n")
 
     try:
-        organization_id = input("\nOrganization ID (e.g., org_xxx): ").strip()
+        organization_id = _prompt_required(
+            "Organization ID (e.g., org_xxx): ", "Organization ID is required."
+        )
         if not organization_id:
-            logger.error("Organization ID is required.")
             return
 
-        user_id = input("Admin User ID (performing this action): ").strip()
-        if not user_id:
-            logger.error("User ID is required.")
-            return
-
-        sloc_input = input("Credit Amount in SLOC (integer): ").strip()
-        if not sloc_input:
-            logger.error("Credit Amount is required.")
-            return
-        try:
-            sloc_amount = int(sloc_input)
-            if sloc_amount <= 0:
-                logger.error("Credit Amount must be a positive integer.")
-                return
-        except ValueError:
-            logger.error("Credit Amount must be a valid integer.")
+        sloc_amount = _prompt_positive_int(
+            "Credit Amount in SLOC (integer): ", "Credit Amount"
+        )
+        if not sloc_amount:
             return
 
         bytes_amount = sloc_to_bytes(sloc_amount)
 
         print("\nReview Configuration:")
         print(f"  Organization ID:  {organization_id}")
-        print(f"  User ID:          {user_id}")
-        print(f"  Credit Amount:    {sloc_amount} SLOC ({bytes_amount} bytes)")
+        print(f"  Issued By:        {SUPPORT_EMAIL}")
+        print(f"  Credit Amount:    {sloc_amount:,} SLOC ({bytes_amount:,} bytes)")
         print("  Credit Type:      BASE_PLATFORM_USAGE_CREDIT")
         print(f"  Dry Run:          {dry_run}")
 
@@ -370,7 +343,7 @@ def run_credits_command(dry_run: bool) -> None:
             print("Aborted.")
             return
 
-        issue_credits(organization_id, user_id, sloc_amount, dry_run)
+        issue_credits(organization_id, SUPPORT_EMAIL, sloc_amount, dry_run)
 
     except KeyboardInterrupt:
         print("\nOperation cancelled.")
@@ -382,34 +355,23 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python scripts/setup_org.py org                    # Create a new organization
-  python scripts/setup_org.py subscription           # Create a subscription
-  python scripts/setup_org.py credits                # Issue usage credits
-  python scripts/setup_org.py org --dry-run          # Dry run organization creation
+  python scripts/setup_org.py org             # Create org with subscription + credits
+  python scripts/setup_org.py credits         # Issue additional credits to existing org
+  python scripts/setup_org.py org --dry-run   # Dry run organization creation
         """,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # org subcommand
     org_parser = subparsers.add_parser(
-        "org", help="Create a new Auth0 organization with admin invite"
+        "org", help="Create Auth0 org with admins, subscription, and initial credits"
     )
     org_parser.add_argument(
         "--dry-run", action="store_true", help="Simulate actions without making changes"
     )
 
-    # subscription subcommand
-    sub_parser = subparsers.add_parser(
-        "subscription", help="Create a subscription for an organization"
-    )
-    sub_parser.add_argument(
-        "--dry-run", action="store_true", help="Simulate actions without making changes"
-    )
-
-    # credits subcommand
     credits_parser = subparsers.add_parser(
-        "credits", help="Issue usage credits to an organization"
+        "credits", help="Issue additional SLOC credits to an existing organization"
     )
     credits_parser.add_argument(
         "--dry-run", action="store_true", help="Simulate actions without making changes"
@@ -419,8 +381,6 @@ Examples:
 
     if args.command == "org":
         run_org_command(args.dry_run)
-    elif args.command == "subscription":
-        run_subscription_command(args.dry_run)
     elif args.command == "credits":
         run_credits_command(args.dry_run)
     else:

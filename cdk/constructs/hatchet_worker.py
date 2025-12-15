@@ -78,8 +78,8 @@ class HatchetWorker(Construct):
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
-            "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100MB",
-            "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100MB"
+            "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
+            "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000"
         }
 
         if settings.IS_PRIVATE_DEPLOY == "true":

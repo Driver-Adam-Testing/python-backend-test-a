@@ -22,13 +22,8 @@ Usage:
 
 import argparse
 import logging
-import os
 import re
-import sys
 from typing import Any
-
-# Add backend dir to path so 'app' module is importable when running as script
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.auth0_factory import Auth0Service, create_auth0_service
 from auth0.exceptions import Auth0Error
@@ -43,7 +38,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 SUPPORT_EMAIL = "support@driverai.com"
-INITIAL_SLOC_CREDITS = 250_000
+INITIAL_SLOC_CREDITS = 500_000
 SYSTEM_USER_ID = "SYSTEM"
 ORG_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 

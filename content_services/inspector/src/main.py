@@ -738,9 +738,7 @@ async def inspect_files(
         print("=> ", t)
 
     print("\n---------- Running tasks ----------")
-    task_manager = TaskManager.with_s3_persistence(
-        bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
-    )
+    task_manager = TaskManager.with_db_persistence(tasks=tasks, serial_exe=False)
 
     print(f"Starting inspection with {len(tasks)} tasks")
     await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)

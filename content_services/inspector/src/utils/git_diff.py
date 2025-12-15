@@ -159,7 +159,7 @@ def update_root_version_node_metadata(version_id: str, diff_size_in_bytes: int) 
         root_version_node_statement = (
             select(VersionNode)
             .where(VersionNode.version_id == version_id)
-            .where(Node.depth == 0)
+            .where(VersionNode.depth == 0)
         )
         root_version_node = session.exec(root_version_node_statement).one()
         if root_version_node is None:

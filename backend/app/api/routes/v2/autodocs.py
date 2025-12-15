@@ -10,6 +10,7 @@ from database.models import (
     Node,
     PrimaryAsset,
     Version,
+    VersionNode,
 )
 from database.models_enums import (
     AutoDocConfigKind,
@@ -96,25 +97,36 @@ def run_autodoc(
     session: CurrentSession,
     input: AutoDocRequest,
 ) -> AutoDocStatusHistory:
-    node = session.exec(
-        select(Node)
-        .join(Version)
-        .join(PrimaryAsset)
-        .where(PrimaryAsset.organization_id == user.organization_id)
-        .where(Node.id == input.page_id)
-        .options(selectinload(Node.version))
+    version_node = session.exec(
+        select(VersionNode)
+        .where(VersionNode.id == input.page_id)
+        .options(selectinload(VersionNode.version))
     ).one()
 
     enforce_asset_action(
         db=session,
         user=user,
-        asset_id=node.version.primary_asset_id,
+        asset_id=version_node.version.primary_asset_id,
         action_key="autodocs.generate",
     )
 
     document_sources = session.exec(
-        select(DocumentSource).where(DocumentSource.page_node_id == input.page_id)
+        select(DocumentSource)
+        .where(DocumentSource.page_version_node_id == input.page_id)
+        .options(
+            selectinload(DocumentSource.source_version_node)
+            .selectinload(VersionNode.version)
+            .selectinload(Version.primary_asset)
+        )
     ).all()
+
+    for source in document_sources:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=source.source_version_node.version.primary_asset_id,
+            action_key="asset.use_as_source",
+        )
 
     if not document_sources:
         raise HTTPException(
@@ -122,7 +134,7 @@ def run_autodoc(
             detail="No document sources found for the page",
         )
 
-    if node.version.status == VersionStatus.GENERATING:
+    if version_node.version.status == VersionStatus.GENERATING:
         raise HTTPException(
             status_code=400,
             detail="Autodoc is already generating for this page",
@@ -137,16 +149,16 @@ def run_autodoc(
             code_node_count = 0
             for document_source in document_sources:
                 if (
-                    document_source.source_node.version.primary_asset.kind
+                    document_source.source_version_node.version.primary_asset.kind
                     == PrimaryAssetKind.CODEBASE
                 ):
                     code_node_count += 1
                 if (
                     (
-                        document_source.source_node.version.primary_asset.kind
+                        document_source.source_version_node.version.primary_asset.kind
                         == PrimaryAssetKind.CODEBASE
                     )
-                    and document_source.source_node.depth <= 1
+                    and document_source.source_version_node.depth <= 1
                 ) or (code_node_count >= 4):
                     raise HTTPException(
                         status_code=400,
@@ -161,7 +173,7 @@ def run_autodoc(
             code_node_count = 0
             for document_source in document_sources:
                 if (
-                    document_source.source_node.version.primary_asset.kind
+                    document_source.source_version_node.version.primary_asset.kind
                     == PrimaryAssetKind.CODEBASE
                 ):
                     code_node_count += 1
@@ -182,17 +194,17 @@ def run_autodoc(
         environment_name=settings.MODAL_ENVIRONMENT,
     )
 
-    node.version.status = VersionStatus.GENERATING
-    session.add(node.version)
+    version_node.version.status = VersionStatus.GENERATING
+    session.add(version_node.version)
 
     call = run_autodoc.spawn(
-        page_node_id=str(input.page_id),
+        version_node_id=str(input.page_id),
         config_kind=input.config_kind,
         document_goal=input.document_goal,
         user_context=input.autodoc_size.value if input.autodoc_size else None,
     )
     autodoc_status = AutoDocStatusHistory(
-        page_node_id=input.page_id,
+        source_version_node_id=input.page_id,
         status_kind=AutoDocStatusMessageKind.RETRIEVING_SOURCES,
         content="Retrieving sources for the page...",
         call_id=call.object_id,
@@ -234,13 +246,13 @@ def get_autodoc_current_status(
 
     autodoc_status = session.exec(
         select(AutoDocStatusHistory)
-        .where(AutoDocStatusHistory.page_node_id == page_id)
+        .where(AutoDocStatusHistory.source_version_node_id == page_id)
         .order_by(AutoDocStatusHistory.created_at.desc())
     ).first()
 
     if not autodoc_status:
         return AutoDocStatusHistory(
-            page_node_id=page_id,
+            source_version_node_id=page_id,
             status_kind=AutoDocStatusMessageKind.NOT_STARTED,
             content="Autodoc generation has not started for this page",
         )
@@ -254,36 +266,36 @@ def cancel(
     session: CurrentSession,
     input: AutoDocCancelRequest,
 ) -> AutoDocCancelResponse:
-    node = session.exec(
-        select(Node)
-        .join(Version)
-        .join(PrimaryAsset)
+    version_node = session.exec(
+        select(VersionNode)
+        .join(Version, VersionNode.version_id == Version.id)
+        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
         .where(PrimaryAsset.organization_id == user.organization_id)
-        .where(Node.id == input.page_id)
-        .options(selectinload(Node.version))
+        .where(VersionNode.id == input.page_id)
+        .options(selectinload(VersionNode.version))
     ).one()
 
     enforce_asset_action(
         db=session,
         user=user,
-        asset_id=node.version.primary_asset_id,
+        asset_id=version_node.version.primary_asset_id,
         action_key="autodocs.generate",
     )
 
-    if node.version.status != VersionStatus.GENERATING:
+    if version_node.version.status != VersionStatus.GENERATING:
         raise HTTPException(
             status_code=400,
             detail="Autodocs is not currently generating",
         )
-    node.version.status = (
+    version_node.version.status = (
         VersionStatus.GENERATION_COMPLETE
     )  # This returns to the normal state of a page
-    session.add(node.version)
+    session.add(version_node.version)
     session.commit()
 
     autodoc_status = session.exec(
         select(AutoDocStatusHistory)
-        .where(AutoDocStatusHistory.page_node_id == input.page_id)
+        .where(AutoDocStatusHistory.source_version_node_id == input.page_id)
         .order_by(AutoDocStatusHistory.created_at.desc())
     ).first()
     if not autodoc_status:

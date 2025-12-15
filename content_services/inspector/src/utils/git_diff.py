@@ -82,7 +82,7 @@ def compute_and_log_code_diff_size_in_bytes(
 
     current_balance_in_bytes = get_usage_balance_in_bytes(org_id)
     print("Adding {code_diff_bytes} to root node metadata...")
-    update_root_node_metadata(
+    update_root_version_node_metadata(
         version_id=version_id, diff_size_in_bytes=diff_size_in_bytes
     )
     if current_balance_in_bytes < diff_size_in_bytes:
@@ -147,27 +147,27 @@ def log_code_diff_usage(
         llm_session.commit_event_now(usage_metric)
 
 
-def update_root_node_metadata(version_id: str, diff_size_in_bytes: int) -> None:
+def update_root_version_node_metadata(version_id: str, diff_size_in_bytes: int) -> None:
     # Without the line below. An error occurs because SQLAlchemy can't find the class `Tag`—ensure it's defined before referencing it in relationships.
     from database.db import engine
-    from database.models import Node
-    from database.models_enums import NodeKind
+    from database.models import VersionNode
     from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.orm.attributes import flag_modified
     from sqlmodel import Session, select
 
     with Session(engine) as session, session.begin():
-        root_node_statement = (
-            select(Node)
-            .where(Node.kind == NodeKind.CODEBASE_DIRECTORY.value)
-            .where(Node.version_id == version_id)
+        root_version_node_statement = (
+            select(VersionNode)
+            .where(VersionNode.version_id == version_id)
             .where(Node.depth == 0)
         )
-        root_node = session.exec(root_node_statement).one()
-        if root_node is None:
+        root_version_node = session.exec(root_version_node_statement).one()
+        if root_version_node is None:
             raise ValueError("Root node not found")
 
-        root_node.misc_metadata["code_diff_bytes"] = diff_size_in_bytes
-        root_node.misc_metadata["code_diff_sloc"] = bytes_to_sloc(diff_size_in_bytes)
-        flag_modified(root_node, "misc_metadata")
+        root_version_node.misc_metadata["code_diff_bytes"] = diff_size_in_bytes
+        root_version_node.misc_metadata["code_diff_sloc"] = bytes_to_sloc(
+            diff_size_in_bytes
+        )
+        flag_modified(root_version_node, "misc_metadata")
         session.commit()

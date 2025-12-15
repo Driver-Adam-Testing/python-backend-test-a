@@ -1,7 +1,8 @@
 from typing import Any
+from uuid import UUID
 
-from database.models import DerivedContent, Node, PrimaryAsset, Version
-from fastapi import Request
+from database.models import DerivedContent, Node, PrimaryAsset, Version, VersionNode
+from fastapi import HTTPException, Request
 from shared.authorization.query_filters import (
     content_grant_filter,
     exclude_page_assets_filter,
@@ -19,8 +20,8 @@ from app.api.routes.v2.query_utils import (
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
     ContentDetailRead,
-    ContentDetailReadSkinny,
     ListWithCount,
+    VersionNodeDetailRead,
 )
 from app.api.session import CurrentSession
 from app.auth.models import User
@@ -32,8 +33,9 @@ def list_contents(
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
+    version_node_id: UUID,
     include_content: bool = False,
-) -> ListWithCount[ContentDetailReadSkinny] | ListWithCount[ContentDetailRead]:
+) -> ListWithCount[ContentDetailRead]:
     """
     List contents with optional content field loading.
 
@@ -54,36 +56,9 @@ def list_contents(
         user,
         pagination,
         include_content,
+        version_node_id,
         auth_filter=lambda s, uid, oid: content_grant_filter(s, uid, oid),
         additional_filters=[_exclude_page_content()],
-    )
-
-
-@router.get("/page_contents")
-def list_page_contents(
-    request: Request,
-    session: CurrentSession,
-    user: UserToken,
-    pagination: Pagination,
-    include_content: bool = False,
-) -> ListWithCount[ContentDetailReadSkinny] | ListWithCount[ContentDetailRead]:
-    """
-    List contents from page assets with source-based authorization.
-
-    By default returns skinny response without content field for efficiency.
-
-    This endpoint only returns content from PAGE and PAGE_TEMPLATE assets.
-    Authorization is source-based: user must have access to ALL sources
-    referenced by each page to see its content.
-    """
-    return _list_contents_with_filter(
-        request,
-        session,
-        user,
-        pagination,
-        include_content,
-        auth_filter=lambda s, uid, oid: page_content_grant_filter(s, uid, oid),
-        additional_filters=[],
     )
 
 
@@ -93,17 +68,31 @@ def _list_contents_with_filter(
     user: User,
     pagination: Pagination,
     include_content: bool,
+    version_node_id: UUID,
     auth_filter: callable,
     additional_filters: list[Any],
-) -> ListWithCount[ContentDetailReadSkinny] | ListWithCount[ContentDetailRead]:
+) -> ListWithCount[ContentDetailRead]:
+    version_node_query = (
+        select(VersionNode)
+        .options(
+            selectinload(VersionNode.node),
+            selectinload(VersionNode.version).selectinload(Version.primary_asset),
+            selectinload(VersionNode.version).selectinload(Version.creator),
+        )
+        .where(VersionNode.id == version_node_id)
+        .where(_org_filter(user.organization_id))
+    )
+
+    version_node = session.exec(version_node_query).one_or_none()
+
+    if not version_node:
+        raise HTTPException(status_code=404, detail="Version node not found")
+
     query = (
         select(DerivedContent)
-        .options(
-            selectinload(DerivedContent.node)
-            .selectinload(Node.version)
-            .selectinload(Version.primary_asset)
-            .selectinload(PrimaryAsset.tags)
-        )
+        .join(DerivedContent.node)
+        .join(Node.version_nodes)
+        .where(VersionNode.id == version_node_id)
         .where(_org_filter(user.organization_id))
     )
 
@@ -118,28 +107,100 @@ def _list_contents_with_filter(
     total_count = session.exec(count_query).one()
 
     query = apply_sorting_to_query(query, pagination, DerivedContent)
-    result = session.exec(query)
-    contents = result.all()
+    contents: list[DerivedContent] = session.exec(query).all()
 
-    if include_content:
-        return ListWithCount[ContentDetailRead](
-            results=contents, total_count=total_count
+    results = [
+        ContentDetailRead(
+            id=content.id,
+            content_kind=content.content_kind,
+            node_id=content.node_id,
+            content=content.content if include_content else None,
+            misc_metadata=content.misc_metadata,
+            created_at=content.created_at,
+            updated_at=content.updated_at,
+            version_node=VersionNodeDetailRead.model_validate(version_node),
         )
-    else:
-        return ListWithCount[ContentDetailReadSkinny](
-            results=contents, total_count=total_count
+        for content in contents
+    ]
+
+    return ListWithCount[ContentDetailRead](results=results, total_count=total_count)
+
+
+@router.get("/page_contents")
+def list_page_contents(
+    session: CurrentSession,
+    user: UserToken,
+    version_node_id: UUID,
+    include_content: bool = False,
+) -> ContentDetailRead:
+    """
+    Get contents for a specific page version node.
+
+    By default returns response without content field for efficiency.
+
+    This endpoint returns content from PAGE and PAGE_TEMPLATE assets.
+    Authorization is source-based: user must have access to ALL sources
+    referenced by the page to see its content.
+    """
+
+    def _get_page_content(
+        session: CurrentSession,
+        user: User,
+        version_node_id: UUID,
+        include_content: bool,
+    ) -> ContentDetailRead:
+        query = (
+            select(VersionNode)
+            .options(
+                selectinload(VersionNode.node),
+                selectinload(VersionNode.version).selectinload(Version.primary_asset),
+                selectinload(VersionNode.version).selectinload(Version.creator),
+            )
+            .where(VersionNode.id == version_node_id)
+            .where(_org_filter(user.organization_id))
         )
+
+        query = query.where(
+            page_content_grant_filter(session, user.user_id, user.organization_id)
+        )
+
+        version_node = session.exec(query).one_or_none()
+
+        if not version_node:
+            raise HTTPException(status_code=404, detail="Version node not found")
+
+        derived_content = version_node.node.contents[0]
+
+        return ContentDetailRead(
+            id=derived_content.id,
+            content_kind=derived_content.content_kind,
+            node_id=derived_content.node_id,
+            content=derived_content.content if include_content else None,
+            misc_metadata=derived_content.misc_metadata,
+            created_at=derived_content.created_at,
+            updated_at=derived_content.updated_at,
+            version_node=VersionNodeDetailRead.model_validate(version_node),
+        )
+
+    return _get_page_content(
+        session,
+        user,
+        version_node_id,
+        include_content,
+    )
 
 
 def _exclude_page_content() -> Any:
     return DerivedContent.node.has(
-        Node.version.has(Version.primary_asset.has(exclude_page_assets_filter()))
+        Node.version_nodes.any(
+            VersionNode.version.has(
+                Version.primary_asset.has(exclude_page_assets_filter())
+            )
+        )
     )
 
 
 def _org_filter(organization_id: str) -> Any:
-    return DerivedContent.node.has(
-        Node.version.has(
-            Version.primary_asset.has(PrimaryAsset.organization_id == organization_id)
-        )
+    return VersionNode.version.has(
+        Version.primary_asset.has(PrimaryAsset.organization_id == organization_id)
     )

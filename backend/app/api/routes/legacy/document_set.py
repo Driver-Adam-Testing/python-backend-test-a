@@ -6,7 +6,7 @@ from uuid import UUID
 
 import strawberry
 from app.api.routes.legacy.s3 import S3BucketAccess
-from database.models import DerivedContent, Node, PrimaryAsset, Version
+from database.models import DerivedContent, PrimaryAsset, Version, VersionNode
 from database.models_enums import ContentKind, NodeKind
 from fastapi import HTTPException
 from sqlalchemy.orm import selectinload
@@ -129,27 +129,27 @@ def node_kind_map(node_kind: str) -> str:
         raise ValueError(f"Invalid node kind: {node_kind}")
 
 
-def fetch_code_metadata(node: Node) -> CodeMetadata | None:
-    if not node.misc_metadata:
+def fetch_code_metadata(version_node: VersionNode) -> CodeMetadata | None:
+    if not version_node.misc_metadata:
         return None
     return CodeMetadata(
-        size=node.misc_metadata.get("size"),
-        sloc=node.misc_metadata.get("sloc"),
-        extension=node.misc_metadata.get("extension"),
-        is_binary=node.misc_metadata.get("is_binary"),
-        is_hex=node.misc_metadata.get("is_hex"),
-        is_analyzable=node.misc_metadata.get("is_analyzable"),
-        is_blacklisted=node.misc_metadata.get("is_blacklisted"),
+        size=version_node.misc_metadata.get("size"),
+        sloc=version_node.misc_metadata.get("sloc"),
+        extension=version_node.misc_metadata.get("extension"),
+        is_binary=version_node.misc_metadata.get("is_binary"),
+        is_hex=version_node.misc_metadata.get("is_hex"),
+        is_analyzable=version_node.misc_metadata.get("is_analyzable"),
+        is_blacklisted=version_node.misc_metadata.get("is_blacklisted"),
     )
 
 
-def fetch_code_content_from_s3(node: Node) -> str:
+def fetch_code_content_from_s3(version_node: VersionNode) -> str:
     s3_access = S3BucketAccess(
-        organization_id=node.version.primary_asset.organization_id,
-        primary_asset_id=node.version.primary_asset_id,
-        version_id=node.version_id,
+        organization_id=version_node.version.primary_asset.organization_id,
+        primary_asset_id=version_node.version.primary_asset_id,
+        version_id=version_node.version.id,
     )
-    return s3_access.get_file_content(relative_path=node.relative_path)
+    return s3_access.get_file_content(relative_path=version_node.relative_path)
 
 
 def get_document_set(
@@ -193,22 +193,29 @@ def get_document_set(
     if not version:
         raise HTTPException(status_code=400, detail="No version found")
 
-    # Find the node
-    node = session.exec(
-        select(Node)
-        .where(Node.version_id == version.id, Node.relative_path == relative_path)
-        .options(selectinload(Node.version).selectinload(Version.primary_asset))
+    version_node = session.exec(
+        select(VersionNode)
+        .where(
+            VersionNode.version_id == version.id,
+            VersionNode.relative_path == relative_path,
+        )
+        .options(
+            selectinload(VersionNode.node),
+            selectinload(VersionNode.version).selectinload(Version.primary_asset),
+        )
     ).one_or_none()
 
-    if not node:
-        raise HTTPException(status_code=400, detail="No node found for given path")
+    if not version_node:
+        raise HTTPException(
+            status_code=400, detail="No version node found for given path"
+        )
 
     docs = session.exec(
-        select(DerivedContent).where(DerivedContent.node_id == node.id)
+        select(DerivedContent).where(DerivedContent.node_id == version_node.node_id)
     ).all()
 
     # NOTE: This needs to stay but is not actually source_content_id anymore
-    document_set = DocumentSet(source_content_id=str(node.id))  # type: ignore
+    document_set = DocumentSet(source_content_id=str(version_node.id))  # type: ignore
 
     for doc in docs:
         # Identify doc type by doc.content_kind
@@ -311,14 +318,14 @@ def get_document_set(
         else:
             logger.warning(f"no ContentKind documentSet match for {doc_type}")
 
-    if node.kind == NodeKind.CODEBASE_FILE:
-        code_metadata = fetch_code_metadata(node)
+    if version_node.node.kind == NodeKind.CODEBASE_FILE:
+        code_metadata = fetch_code_metadata(version_node)
         code_content = None
         if fetch_code_content:
-            code_content = fetch_code_content_from_s3(node)
+            code_content = fetch_code_content_from_s3(version_node)
         document_set.code = Code(  # type: ignore
-            file_name=node.relative_path.split("/")[-1],
-            extension=node.relative_path.split(".")[-1],
+            file_name=relative_path.split("/")[-1],
+            extension=relative_path.split(".")[-1],
             content=code_content,
             metadata=code_metadata,
         )

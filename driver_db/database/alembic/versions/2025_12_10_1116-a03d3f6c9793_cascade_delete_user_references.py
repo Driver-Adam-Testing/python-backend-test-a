@@ -1,7 +1,7 @@
 """cascade_delete_user_references
 
 Revision ID: a03d3f6c9793
-Revises: af9eadd3bb60
+Revises: d43723a6dc3c
 Create Date: 2025-12-10 11:16:12.260602
 
 """

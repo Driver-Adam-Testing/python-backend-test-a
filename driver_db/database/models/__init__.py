@@ -43,6 +43,7 @@ from .base import (
     UserCache,
     Version,
     VersionCreator,
+    VersionNode,
 )
 from .team import Team, TeamMembership
 
@@ -91,4 +92,5 @@ __all__ = [
     "UserCache",
     "Version",
     "VersionCreator",
+    "VersionNode",
 ]

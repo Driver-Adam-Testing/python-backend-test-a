@@ -11,6 +11,8 @@ import tiktoken
 import toml
 from aiolimiter import AsyncLimiter
 from chat_openai import ChatOpenAI
+from database.models import DocumentSource
+from database.models.base import DerivedContent, Node, VersionNode
 from database.models_enums import ContentKind, NodeKind
 from logger import logger
 from prompts import (
@@ -28,7 +30,7 @@ from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     Prompt,
 )
-from sqlalchemy import func
+from sqlalchemy import BinaryExpression, func
 from sqlmodel import or_, select
 from tqdm.asyncio import tqdm_asyncio
 
@@ -36,8 +38,8 @@ from tqdm.asyncio import tqdm_asyncio
 @dataclass
 class AutoToml:
     @dataclass
-    class NodeInfo:
-        id: str
+    class SourceInfo:
+        node_id: str
         relative_path: str
         version_id: str
 
@@ -46,9 +48,9 @@ class AutoToml:
         pdf_page_ct: int
         source_file_ct: int
         directory_ct: int
-        codebase_file_nodes: list["AutoToml.NodeInfo"]
-        pdf_nodes: list["AutoToml.NodeInfo"]
-        directory_nodes: list["AutoToml.NodeInfo"]
+        file_info_list: list["AutoToml.SourceInfo"]
+        pdf_info_list: list["AutoToml.SourceInfo"]
+        directory_info_list: list["AutoToml.SourceInfo"]
 
     class ScaleMode(Enum):
         NONE = 1
@@ -57,9 +59,9 @@ class AutoToml:
         SCALE_PDF_AND_USE_DIRS = 4
         FAIL = 5
 
-    LLM_SCATTER_MODEL: ClassVar[str] = (
-        "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
-    )
+    LLM_SCATTER_MODEL: ClassVar[
+        str
+    ] = "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
     LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
@@ -71,7 +73,7 @@ class AutoToml:
     PDF_SCALE_FACTOR: ClassVar[int] = 10
     MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS: ClassVar[int] = 30
 
-    node_ids: list[str]
+    version_node_ids: list[str]
     enable_auto_scaling: bool
     llm_scatter: ChatOpenAI
     llm_toml: ChatOpenAI
@@ -79,34 +81,47 @@ class AutoToml:
     pdf_contents: list[dict[str, str]]
 
     @classmethod
-    def from_node_ids(cls, node_ids: list[str], enable_auto_scaling: bool) -> Self:
+    def from_source_ids(
+        cls, source_version_node_ids: list[str], enable_auto_scaling: bool
+    ) -> Self:
         return cls._initialize(
-            node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
+            version_node_ids=source_version_node_ids,
+            enable_auto_scaling=enable_auto_scaling,
         )
 
     @classmethod
-    def from_page_id(cls, page_id: UUID, enable_auto_scaling: bool) -> Self:
+    def from_page_id(
+        cls, page_version_node_id: UUID, enable_auto_scaling: bool
+    ) -> Self:
         from database.db import get_session
-        from database.models import DocumentSource
 
-        logger.info(f"Fetching document sources for page ID: {page_id}\n")
+        logger.info(
+            f"Fetching document sources for page version node id: {page_version_node_id}\n"
+        )
         with get_session() as session:
             document_sources = session.exec(
-                select(DocumentSource).where(DocumentSource.page_node_id == page_id)
+                select(DocumentSource).where(
+                    DocumentSource.page_version_node_id == page_version_node_id
+                )
             ).all()
 
             if not document_sources:
-                raise ValueError(f"No document sources found for page ID: {page_id}")
-            node_ids = [str(source.source_node_id) for source in document_sources]
+                raise ValueError(
+                    f"No document sources found for page version node id: {page_version_node_id}"
+                )
+            source_version_node_ids = [
+                str(source.source_version_node_id) for source in document_sources
+            ]
 
         return cls._initialize(
-            node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
+            version_node_ids=source_version_node_ids,
+            enable_auto_scaling=enable_auto_scaling,
         )
 
     @classmethod
     def from_root_node_id(cls, root_node_id: UUID, enable_auto_scaling: bool) -> Self:
         return cls._initialize(
-            node_ids=[root_node_id], enable_auto_scaling=enable_auto_scaling
+            version_node_ids=[root_node_id], enable_auto_scaling=enable_auto_scaling
         )
 
     async def generate(self, document_goal: str, user_context: str = "") -> str:
@@ -313,7 +328,9 @@ class AutoToml:
         return toml.dumps({"sections": sections})
 
     @classmethod
-    def _initialize(cls, node_ids: list[str], enable_auto_scaling: bool) -> Self:
+    def _initialize(
+        cls, version_node_ids: list[str], enable_auto_scaling: bool
+    ) -> Self:
         llm_scatter = ChatOpenAI(
             model=cls.LLM_SCATTER_MODEL,
             temperature=0.0,
@@ -324,14 +341,16 @@ class AutoToml:
             temperature=0.0,
             request_timeout=60 * 5,
         )
-        stats = cls._get_source_stats(node_ids=node_ids)
+        stats = cls._get_source_stats(version_node_ids=version_node_ids)
         if enable_auto_scaling:
             scale_mode, code_scale_factor = cls._get_scale_mode_and_factor(stats=stats)
         else:
             scale_mode = cls.ScaleMode.NONE
             code_scale_factor = None
 
-        logger.info(f"Collecting content for nodes:\n{'\n'.join(node_ids)}\n")
+        logger.info(
+            f"Collecting content for version nodes:\n{'\n'.join(version_node_ids)}\n"
+        )
 
         code_content, pdf_content = cls._get_content_and_apply_scaling(
             stats=stats,
@@ -340,7 +359,7 @@ class AutoToml:
         )
 
         return cls(
-            node_ids=node_ids,
+            version_node_ids=version_node_ids,
             enable_auto_scaling=enable_auto_scaling,
             llm_scatter=llm_scatter,
             llm_toml=llm_toml,
@@ -451,34 +470,35 @@ class AutoToml:
         return mode, code_scale_factor
 
     @classmethod
-    def _get_source_stats(cls, node_ids: list[str]) -> SourceStats:
+    def _get_source_stats(cls, version_node_ids: list[str]) -> SourceStats:
         from database.db import get_session
-        from database.models import DerivedContent, Node
 
         with get_session() as session:
-            nodes_query = select(Node).where(Node.id.in_(node_ids))
-            nodes = session.exec(nodes_query).all()
+            version_nodes_query = select(VersionNode).where(
+                VersionNode.id.in_(version_node_ids)
+            )
+            version_nodes = session.exec(version_nodes_query).all()
 
-            codebase_file_nodes = []
-            pdf_nodes = []
-            directory_nodes = []
+            file_info_list: list[AutoToml.SourceInfo] = []
+            pdf_info_list: list[AutoToml.SourceInfo] = []
+            directory_info_list: list[AutoToml.SourceInfo] = []
 
-            for node in nodes:
-                node_info = cls.NodeInfo(
-                    id=node.id,
-                    relative_path=node.relative_path,
-                    version_id=node.version_id,
+            for version_node in version_nodes:
+                source_info = cls.SourceInfo(
+                    node_id=version_node.node_id,
+                    relative_path=version_node.relative_path,
+                    version_id=version_node.version_id,
                 )
-                if node.kind == NodeKind.CODEBASE_FILE:
-                    codebase_file_nodes.append(node_info)
-                elif node.kind == NodeKind.OTHER:
-                    pdf_nodes.append(node_info)
-                elif node.kind == NodeKind.CODEBASE_DIRECTORY:
-                    directory_nodes.append(node_info)
+                if version_node.node.kind == NodeKind.CODEBASE_FILE:
+                    file_info_list.append(source_info)
+                elif version_node.node.kind == NodeKind.OTHER:
+                    pdf_info_list.append(source_info)
+                elif version_node.node.kind == NodeKind.CODEBASE_DIRECTORY:
+                    directory_info_list.append(source_info)
 
             pdf_page_ct = 0
-            if pdf_nodes:
-                pdf_node_ids = [node.id for node in pdf_nodes]
+            if pdf_info_list:
+                pdf_node_ids = [pdf_info.node_id for pdf_info in pdf_info_list]
                 pdf_page_ct = (
                     session.scalar(
                         select(func.count(DerivedContent.id)).where(
@@ -493,25 +513,26 @@ class AutoToml:
             source_file_ct = 0
             directory_ct = 0
 
-            if codebase_file_nodes:
-                codebase_node_ids = [node.id for node in codebase_file_nodes]
+            if file_info_list:
+                file_node_ids = [file_info.node_id for file_info in file_info_list]
                 source_file_ct += (
                     session.scalar(
                         select(func.count(DerivedContent.id)).where(
-                            DerivedContent.node_id.in_(codebase_node_ids),
+                            DerivedContent.node_id.in_(file_node_ids),
                             DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
                         )
                     )
                     or 0
                 )
 
-            if directory_nodes:
-                path_conditions = cls._build_path_conditions(directory_nodes)
+            if directory_info_list:
+                path_conditions = cls._build_path_conditions(directory_info_list)
 
                 source_file_ct += (
                     session.scalar(
                         select(func.count(DerivedContent.id))
-                        .join(Node)
+                        .join(Node, DerivedContent.node_id == Node.id)
+                        .join(VersionNode, Node.id == VersionNode.node_id)
                         .where(
                             Node.kind == NodeKind.CODEBASE_FILE,
                             DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
@@ -524,7 +545,8 @@ class AutoToml:
                 directory_ct = (
                     session.scalar(
                         select(func.count(DerivedContent.id))
-                        .join(Node)
+                        .join(Node, DerivedContent.node_id == Node.id)
+                        .join(VersionNode, Node.id == VersionNode.node_id)
                         .where(
                             Node.kind == NodeKind.CODEBASE_DIRECTORY,
                             DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
@@ -535,23 +557,23 @@ class AutoToml:
                 )
 
         return cls.SourceStats(
-            pdf_page_ct=pdf_page_ct,
-            source_file_ct=source_file_ct,
-            directory_ct=directory_ct,
-            codebase_file_nodes=codebase_file_nodes,
-            pdf_nodes=pdf_nodes,
-            directory_nodes=directory_nodes,
+            pdf_page_ct,
+            source_file_ct,
+            directory_ct,
+            file_info_list,
+            pdf_info_list,
+            directory_info_list,
         )
 
     @classmethod
-    def _build_path_conditions(cls, directory_nodes: list["AutoToml.NodeInfo"]) -> list:
-        from database.models import Node
-
+    def _build_path_conditions(
+        cls, directory_info_list: list["AutoToml.SourceInfo"]
+    ) -> list[BinaryExpression]:
         path_conditions = []
-        for dir_node in directory_nodes:
+        for directory_info in directory_info_list:
             path_conditions.append(
-                (Node.version_id == dir_node.version_id)
-                & (Node.relative_path.like(f"{dir_node.relative_path}%"))
+                (VersionNode.version_id == directory_info.version_id)
+                & (VersionNode.relative_path.like(f"{directory_info.relative_path}%"))
             )
         return path_conditions
 
@@ -560,17 +582,16 @@ class AutoToml:
         cls, stats: SourceStats
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         from database.db import get_session
-        from database.models import DerivedContent, Node
 
         with get_session() as session:
             code_contents = []
             pdf_contents = []
 
-            if stats.codebase_file_nodes or stats.pdf_nodes:
+            if stats.file_info_list or stats.pdf_info_list:
                 all_direct_node_ids = [
-                    node.id
-                    for node in itertools.chain(
-                        stats.codebase_file_nodes, stats.pdf_nodes
+                    source_info.node_id
+                    for source_info in itertools.chain(
+                        stats.file_info_list, stats.pdf_info_list
                     )
                 ]
 
@@ -582,17 +603,23 @@ class AutoToml:
                 )
                 query_results = session.exec(query).all()
 
-                node_lookup = {}
-                for node in stats.codebase_file_nodes:
-                    node_lookup[node.id] = (node.relative_path, False)
-                for node in stats.pdf_nodes:
-                    node_lookup[node.id] = (node.relative_path, True)
+                source_info_lookup = {}
+                for file_info in stats.file_info_list:
+                    source_info_lookup[file_info.node_id] = (
+                        file_info.relative_path,
+                        False,
+                    )
+                for pdf_info in stats.pdf_info_list:
+                    source_info_lookup[pdf_info.node_id] = (
+                        pdf_info.relative_path,
+                        True,
+                    )
 
                 for dc in query_results:
                     if dc.content is None:
                         continue
 
-                    relative_path, is_pdf = node_lookup[dc.node_id]
+                    relative_path, is_pdf = source_info_lookup[dc.node_id]
                     content_dict = {relative_path: dc.content}
 
                     if is_pdf:
@@ -600,12 +627,13 @@ class AutoToml:
                     else:
                         code_contents.append(content_dict)
 
-            if stats.directory_nodes:
-                path_conditions = cls._build_path_conditions(stats.directory_nodes)
+            if stats.directory_info_list:
+                path_conditions = cls._build_path_conditions(stats.directory_info_list)
 
                 query = (
-                    select(DerivedContent, Node)
-                    .join(Node)
+                    select(DerivedContent, VersionNode)
+                    .join(Node, DerivedContent.node_id == Node.id)
+                    .join(VersionNode, Node.id == VersionNode.node_id)
                     .where(
                         Node.kind == NodeKind.CODEBASE_FILE,
                         DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
@@ -615,20 +643,29 @@ class AutoToml:
                 query_results = session.exec(query).all()
                 code_contents.extend(
                     [
-                        {node.relative_path: dc.content}
-                        for dc, node in query_results
+                        {version_node.relative_path: dc.content}
+                        for dc, version_node in query_results
                         if dc.content is not None
                     ]
                 )
 
             if not code_contents and not pdf_contents:
                 all_node_ids = []
-                if stats.codebase_file_nodes:
-                    all_node_ids.extend([n.id for n in stats.codebase_file_nodes])
-                if stats.pdf_nodes:
-                    all_node_ids.extend([n.id for n in stats.pdf_nodes])
-                if stats.directory_nodes:
-                    all_node_ids.extend([n.id for n in stats.directory_nodes])
+                if stats.file_info_list:
+                    all_node_ids.extend(
+                        [file_info.node_id for file_info in stats.file_info_list]
+                    )
+                if stats.pdf_info_list:
+                    all_node_ids.extend(
+                        [pdf_info.node_id for pdf_info in stats.pdf_info_list]
+                    )
+                if stats.directory_info_list:
+                    all_node_ids.extend(
+                        [
+                            directory_info.node_id
+                            for directory_info in stats.directory_info_list
+                        ]
+                    )
                 raise ValueError(
                     f"No content found for the provided nodes: {all_node_ids}"
                 )
@@ -640,36 +677,39 @@ class AutoToml:
         cls, stats: SourceStats
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         from database.db import get_session
-        from database.models import DerivedContent, Node
 
         with get_session() as session:
-            pdf_nodes = stats.pdf_nodes or []
-            directory_nodes = stats.directory_nodes or []
+            pdf_info_list = stats.pdf_info_list or []
+            directory_info_list = stats.directory_info_list or []
 
             directory_contents = []
             pdf_contents = []
 
-            if pdf_nodes:
-                pdf_node_ids = [node.id for node in pdf_nodes]
+            if pdf_info_list:
+                pdf_node_ids = [pdf_info.node_id for pdf_info in pdf_info_list]
                 query = select(DerivedContent).where(
                     DerivedContent.node_id.in_(pdf_node_ids),
                     DerivedContent.content_kind == ContentKind.PDF_EXTRACTED_TEXT,
                 )
                 query_results = session.exec(query).all()
 
-                pdf_path_lookup = {node.id: node.relative_path for node in pdf_nodes}
+                pdf_path_lookup = {
+                    pdf_info.node_id: pdf_info.relative_path
+                    for pdf_info in pdf_info_list
+                }
                 pdf_contents = [
                     {pdf_path_lookup[dc.node_id]: dc.content}
                     for dc in query_results
                     if dc.content is not None
                 ]
 
-            if directory_nodes:
-                path_conditions = cls._build_path_conditions(directory_nodes)
+            if directory_info_list:
+                path_conditions = cls._build_path_conditions(directory_info_list)
 
                 query = (
-                    select(DerivedContent, Node)
-                    .join(Node)
+                    select(DerivedContent, VersionNode)
+                    .join(Node, DerivedContent.node_id == Node.id)
+                    .join(VersionNode, Node.id == VersionNode.node_id)
                     .where(
                         Node.kind == NodeKind.CODEBASE_DIRECTORY,
                         DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
@@ -679,18 +719,25 @@ class AutoToml:
                 query_results = session.exec(query).all()
                 directory_contents.extend(
                     [
-                        {node.relative_path: dc.content}
-                        for dc, node in query_results
+                        {version_node.relative_path: dc.content}
+                        for dc, version_node in query_results
                         if dc.content is not None
                     ]
                 )
 
             if not directory_contents and not pdf_contents:
                 all_node_ids = []
-                if stats.pdf_nodes:
-                    all_node_ids.extend([n.id for n in stats.pdf_nodes])
-                if stats.directory_nodes:
-                    all_node_ids.extend([n.id for n in stats.directory_nodes])
+                if stats.pdf_info_list:
+                    all_node_ids.extend(
+                        [pdf_info.node_id for pdf_info in stats.pdf_info_list]
+                    )
+                if stats.directory_info_list:
+                    all_node_ids.extend(
+                        [
+                            directory_info.node_id
+                            for directory_info in stats.directory_info_list
+                        ]
+                    )
                 raise ValueError(
                     f"No content found for the provided nodes: {all_node_ids}"
                 )
@@ -702,9 +749,7 @@ class AutoToml:
         cls, text: str, llm: ChatOpenAI | None, scale_factor: int = 1
     ) -> str:
         encoder = tiktoken.encoding_for_model(
-            "gpt-4o"
-            if llm and llm.model in ["gpt-4.1", "o3-mini"]
-            else cls.LLM_SCATTER_MODEL
+            llm.model if llm else cls.LLM_SCATTER_MODEL
         )
         max_tokens = int(
             (

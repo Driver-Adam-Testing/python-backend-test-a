@@ -14,10 +14,10 @@ async def generate_command(args: argparse.Namespace) -> None:
         AutoTomlModal = Cls.from_name("auto_toml", "AutoTomlModal")
         auto_toml_modal = AutoTomlModal()
 
-        if args.node_ids:
-            node_ids = [node_id.strip() for node_id in args.node_ids.split(",")]
-            result = auto_toml_modal.generate_from_node_ids.remote(
-                node_ids=node_ids,
+        if args.source_ids:
+            source_ids = [source_id.strip() for source_id in args.source_ids.split(",")]
+            result = auto_toml_modal.generate_from_source_ids.remote(
+                source_ids=source_ids,
                 enable_auto_scaling=args.auto_scale,
                 document_goal=args.goal,
                 user_context=args.user_context,
@@ -31,17 +31,20 @@ async def generate_command(args: argparse.Namespace) -> None:
             )
 
     else:
-        if args.node_ids:
-            node_ids = [node_id.strip() for node_id in args.node_ids.split(",")]
-            auto_toml = AutoToml.from_node_ids(
-                node_ids=node_ids, enable_auto_scaling=args.auto_scale
+        if args.source_ids:
+            source_ids = [source_id.strip() for source_id in args.source_ids.split(",")]
+            auto_toml = AutoToml.from_source_ids(
+                source_version_node_ids=source_ids, enable_auto_scaling=args.auto_scale
             )
         else:
             auto_toml = AutoToml.from_page_id(
-                page_id=UUID(args.page_id), enable_auto_scaling=args.auto_scale
+                page_version_node_id=UUID(args.page_id),
+                enable_auto_scaling=args.auto_scale,
             )
 
-        result = await auto_toml.generate(document_goal=args.goal, user_context=args.user_context)
+        result = await auto_toml.generate(
+            document_goal=args.goal, user_context=args.user_context
+        )
 
     with open(args.output, "w") as f:
         f.write(result)
@@ -58,10 +61,10 @@ async def append_command(args: argparse.Namespace) -> None:
         AutoTomlModal = Cls.from_name("auto_toml", "AutoTomlModal")
         auto_toml_modal = AutoTomlModal()
 
-        if args.node_ids:
-            node_ids = [node_id.strip() for node_id in args.node_ids.split(",")]
-            result = auto_toml_modal.append_from_node_ids.remote(
-                node_ids=node_ids,
+        if args.source_ids:
+            source_ids = [source_id.strip() for source_id in args.source_ids.split(",")]
+            result = auto_toml_modal.append_from_source_ids.remote(
+                source_ids=source_ids,
                 enable_auto_scaling=args.auto_scale,
                 user_toml=user_toml,
                 user_context=args.user_context,
@@ -75,17 +78,20 @@ async def append_command(args: argparse.Namespace) -> None:
             )
     else:
         # Use local execution
-        if args.node_ids:
-            node_ids = [node_id.strip() for node_id in args.node_ids.split(",")]
-            auto_toml = AutoToml.from_node_ids(
-                node_ids=node_ids, enable_auto_scaling=args.auto_scale
+        if args.source_ids:
+            source_ids = [source_id.strip() for source_id in args.source_ids.split(",")]
+            auto_toml = AutoToml.from_source_ids(
+                source_version_node_ids=source_ids, enable_auto_scaling=args.auto_scale
             )
         else:
             auto_toml = AutoToml.from_page_id(
-                page_id=UUID(args.page_id), enable_auto_scaling=args.auto_scale
+                page_version_node_id=UUID(args.page_id),
+                enable_auto_scaling=args.auto_scale,
             )
 
-        result = await auto_toml.append(user_toml=user_toml, user_context=args.user_context)
+        result = await auto_toml.append(
+            user_toml=user_toml, user_context=args.user_context
+        )
 
     with open(args.output, "w") as f:
         f.write(result)
@@ -124,9 +130,9 @@ def main() -> None:
 
     generate_source_group = generate_parser.add_mutually_exclusive_group(required=True)
     generate_source_group.add_argument(
-        "--node-ids", help="Comma-separated list of node IDs"
+        "--source-ids", help="Comma-separated list of source version node IDs"
     )
-    generate_source_group.add_argument("--page-id", help="Page ID (UUID)")
+    generate_source_group.add_argument("--page-id", help="Page version node ID")
 
     append_parser = subparsers.add_parser("append", help="Append to existing TOML file")
     append_parser.add_argument(
@@ -155,9 +161,9 @@ def main() -> None:
 
     append_source_group = append_parser.add_mutually_exclusive_group(required=True)
     append_source_group.add_argument(
-        "--node-ids", help="Comma-separated list of node IDs"
+        "--source-ids", help="Comma-separated list of source version node IDs"
     )
-    append_source_group.add_argument("--page-id", help="Page ID (UUID)")
+    append_source_group.add_argument("--page-id", help="Page version node ID")
 
     args = parser.parse_args()
 

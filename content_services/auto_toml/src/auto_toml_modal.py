@@ -55,24 +55,24 @@ class AutoTomlModal:
         from auto_toml import AutoToml
 
         auto_toml = AutoToml.from_page_id(
-            page_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
+            page_version_node_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
         )
         return await auto_toml.generate(
             document_goal=document_goal, user_context=user_context
         )
 
     @modal.method()
-    async def generate_from_node_ids(
+    async def generate_from_source_ids(
         self,
-        node_ids: list[str],
+        source_ids: list[str],
         enable_auto_scaling: bool,
         document_goal: str,
         user_context: str = "",
     ) -> str:
         from auto_toml import AutoToml
 
-        auto_toml = AutoToml.from_node_ids(
-            node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
+        auto_toml = AutoToml.from_source_ids(
+            source_version_node_ids=source_ids, enable_auto_scaling=enable_auto_scaling
         )
         return await auto_toml.generate(
             document_goal=document_goal, user_context=user_context
@@ -89,22 +89,22 @@ class AutoTomlModal:
         from auto_toml import AutoToml
 
         auto_toml = AutoToml.from_page_id(
-            page_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
+            page_version_node_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
         )
         return await auto_toml.append(user_toml=user_toml, user_context=user_context)
 
     @modal.method()
-    async def append_from_node_ids(
+    async def append_from_source_ids(
         self,
-        node_ids: list[str],
+        source_ids: list[str],
         enable_auto_scaling: bool,
         user_toml: str,
         user_context: str = "",
     ) -> str:
         from auto_toml import AutoToml
 
-        auto_toml = AutoToml.from_node_ids(
-            node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
+        auto_toml = AutoToml.from_source_ids(
+            source_version_node_ids=source_ids, enable_auto_scaling=enable_auto_scaling
         )
         return await auto_toml.append(user_toml=user_toml, user_context=user_context)
 

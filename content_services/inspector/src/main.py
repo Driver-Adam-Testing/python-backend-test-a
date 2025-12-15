@@ -68,6 +68,7 @@ with inspection_image.imports():
         CodebaseTaggingTask,
         CSymbolTableTask,
         EmbeddingTask,
+        EmbeddingTaskType,
         FileTechDocTask,
         FolderTechDocTask,
         SymbolsTask,
@@ -182,9 +183,8 @@ async def inspect_db(
     )
     from utils.db import (
         create_inspector_run,
-        delete_version_by_id,
-        get_all_derived_content_by_node_id,
-        get_analyzable_nodes_by_version_id,
+        get_all_derived_content_by_version_node_id,
+        get_analyzable_version_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
     )
@@ -206,13 +206,14 @@ async def inspect_db(
 
         previous_version = await try_get_prev_version(version_id)
         previous_version_id = previous_version.id if previous_version else None
-        previous_version_root_node_id = (
-            previous_version.root_node.id if previous_version else None
+        previous_version_root_version_node_id = (
+            previous_version.root_version_node.id if previous_version else None
         )
         flat_topo_file_diff_dag = None
 
         codebase_name = version.primary_asset.display_name
 
+        # TODO: rethink result loading config, may end up only persisting the symbol table task to S3
         result_loading_config = await get_result_loading_config(
             inspection_mode, version_id, previous_version_id
         )
@@ -221,18 +222,22 @@ async def inspect_db(
         run_id = await create_inspector_run(version_id)
 
         # Get content records for version_id
-        db_file_nodes = await get_analyzable_nodes_by_version_id(
+        db_file_version_nodes = await get_analyzable_version_nodes_by_version_id(
             version_id, {DbNodeKind.CODEBASE_FILE}
         )
 
-        db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
-            version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
+        db_all_codebase_version_nodes = (
+            await get_analyzable_version_nodes_by_version_id(
+                version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
+            )
         )
 
         # Get content records for previous_version_id if available
         if previous_version is not None:
-            db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
-                previous_version_id, {DbNodeKind.CODEBASE_FILE}
+            db_previous_file_version_nodes = (
+                await get_analyzable_version_nodes_by_version_id(
+                    previous_version_id, {DbNodeKind.CODEBASE_FILE}
+                )
             )
         # Download s3 for version_id (and previous if available)
         s3_client = boto3.client(
@@ -269,7 +274,9 @@ async def inspect_db(
                 )
                 print(f"Extracted archive to {extracted_path}")
 
-                db_node_paths = {node.relative_path for node in db_file_nodes}
+                db_version_node_paths = {
+                    version_node.relative_path for version_node in db_file_version_nodes
+                }
                 file_paths = process_and_upload_all_files_in_parallel(
                     s3_client=s3_client,
                     org_hashed_id=org_hashed_id,
@@ -277,7 +284,7 @@ async def inspect_db(
                     version_id=version_id,
                     extracted_path=extracted_path,
                     download_dir=download_dir,
-                    db_node_paths=db_node_paths,
+                    db_node_paths=db_version_node_paths,
                     max_workers=10,
                 )
 
@@ -290,7 +297,9 @@ async def inspect_db(
                     bucket_name=org_hashed_id,
                     primary_asset_id=str(version.primary_asset.id),
                     version_id=str(version_id),
-                    node_rel_paths=[node.relative_path for node in db_file_nodes],
+                    node_rel_paths=[
+                        node.relative_path for node in db_file_version_nodes
+                    ],
                     download_root=download_root,
                     max_workers=8,
                 )
@@ -306,7 +315,10 @@ async def inspect_db(
             for node in codebase_dag.topological_sort():
                 print(node.root_rel_path, node.status)
 
+            db_all_codebase_prev_version_nodes = None
             if previous_version is not None:
+                # TODO: given new snapshot model, is this how we still want to charge for bytes used?
+                # If so - we still need to do all of this stuff
                 previous_download_root = Path(previous_download_dir)
                 print("Downloading all source files for previous codebase from s3...")
                 previous_file_paths = download_all_source_files_in_parallel(
@@ -315,13 +327,14 @@ async def inspect_db(
                     primary_asset_id=str(previous_version.primary_asset.id),
                     version_id=str(previous_version.id),
                     node_rel_paths=[
-                        prev_node.relative_path for prev_node in db_previous_file_nodes
+                        prev_node.relative_path
+                        for prev_node in db_previous_file_version_nodes
                     ],
                     download_root=previous_download_root,
                     max_workers=8,
                 )
                 db_all_codebase_prev_version_nodes = (
-                    await get_analyzable_nodes_by_version_id(
+                    await get_analyzable_version_nodes_by_version_id(
                         previous_version.id,
                         {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY},
                     )
@@ -376,29 +389,16 @@ async def inspect_db(
                     )
                     # I chose to return here vs re-raising the error because it will get caught and swalloed by the outer try/catch
                     return
-            if previous_version is not None:
-                sorted_nodes = diff_dag.topological_sort()
-            else:
-                sorted_nodes = codebase_dag.topological_sort()
-                db_all_codebase_prev_version_nodes = None
+
+            sorted_nodes = codebase_dag.topological_sort()
             path_to_db_node_id = {
                 Path(db_node.relative_path): db_node.id
-                for db_node in db_all_codebase_nodes
+                for db_node in db_all_codebase_version_nodes
             }
-            changes_detected = False  # export tech docs only if changes detected
-            print("======= Nodes being processed  =======")
-            for node in sorted_nodes:
-                if not changes_detected and node.status != NodeStatus.UNMODIFIED:
-                    changes_detected = True
-                print(node.root_rel_path, node.status, node.kind)
-
-            if previous_version is not None and not changes_detected:
-                # Delete the version and return
-                await delete_version_by_id(version_id)
-                print(
-                    f"No modified nodes found for version {version_id}. Deleting version."
-                )
-                return
+            version_node_id_to_node_id = {
+                db_version_node.id: db_version_node.node_id
+                for db_version_node in db_all_codebase_version_nodes
+            }
 
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])
@@ -426,6 +426,7 @@ async def inspect_db(
                 run_id=run_id,
                 result_loading_config=result_loading_config,
                 rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
+                version_node_id_to_node_id=version_node_id_to_node_id,
             )
     except Exception as e:
         exception_type = type(e).__name__
@@ -444,23 +445,20 @@ async def inspect_db(
         # architecture, then uncomment the following line to represent completion of
         # stage 1.
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
-        if previous_version is None or changes_detected:
-            print("Changes detected exporting tech docs to zip...")
-            export_tech_docs_to_zip.remote(version_id, install_id)
-        else:
-            print("No changes detected skipping tech doc export.")
+        print("Changes detected exporting tech docs to zip...")
+        export_tech_docs_to_zip.remote(version_id, install_id)
 
         print("Spawning off deep context docs generation...")
-        # TODO: do deep context doc specific I/O or further analysis.
 
-        # TODO: Fetch old document content
-        if previous_version_root_node_id is not None:
+        if previous_version_root_version_node_id is not None:
             update_set = {
                 ContentKind.DEEP_CONTEXT_ARCHITECTURE,
                 ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
             }
-            previous_version_root_content = await get_all_derived_content_by_node_id(
-                node_id=previous_version_root_node_id
+            previous_version_root_content = (
+                await get_all_derived_content_by_version_node_id(
+                    version_node_id=previous_version_root_version_node_id
+                )
             )
             previous_version_content = [
                 DeepContextDoc(
@@ -488,11 +486,11 @@ async def inspect_db(
             install_id,
         )
 
-        try:
-            cleanup_old_versions.remote(version_id)
-        except Exception as e:
-            print(f"Error while cleaning up old versions: {e}")
-            raise
+        # try:
+        #     cleanup_old_versions.remote(version_id)
+        # except Exception as e:
+        #     print(f"Error while cleaning up old versions: {e}")
+        #     raise
 
 
 def hash_file(file_path: Path) -> str:
@@ -520,8 +518,9 @@ async def inspect_files(
     run_id: UUID,
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
     rel_path_to_previous_version_db_node_ids: dict[Path, uuid.UUID],
+    version_node_id_to_node_id: dict[str, str],
 ) -> None:
-    from utils.db import get_all_derived_content_by_node_id
+    from utils.db import get_all_derived_content_by_version_node_id
 
     print("---------- All nodes ----------")
 
@@ -562,7 +561,9 @@ async def inspect_files(
         version_id=str(version_id),
     )
     tasks.append(c_symbol_table_task)
-    for node, db_node_id in nodes_with_id:
+    node_id_to_file_task = {}
+    node_id_to_folder_task = {}
+    for node, db_version_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
 
         if node.kind in {NodeKind.SUB_FOLDER, NodeKind.ROOT_FOLDER}:
@@ -578,35 +579,68 @@ async def inspect_files(
                 prev_db_node_id = rel_path_to_previous_version_db_node_ids[
                     node.root_rel_path
                 ]
-                prev_folder_derived_contents = await get_all_derived_content_by_node_id(
-                    prev_db_node_id
+                prev_folder_derived_contents = (
+                    await get_all_derived_content_by_version_node_id(prev_db_node_id)
                 )
                 previous_contents = {
                     dc.content_kind: dc.content for dc in prev_folder_derived_contents
                 }
             else:
                 previous_contents = None
+            node_id = version_node_id_to_node_id[db_version_node_id]
+            if node_id in node_id_to_folder_task:
+                folder_tech_docs_task = FolderTechDocTask(
+                    node=lite_node,
+                    task_name=f"FolderTechDoc {node.root_rel_path}",
+                    child_docs_tasks=child_doc_tasks,
+                    codebase_name=codebase_name,
+                    db_version_node_id=db_version_node_id,
+                    previous_content=previous_contents,
+                    deduped_node_task=node_id_to_folder_task[node_id],
+                )
+                tasks.append(folder_tech_docs_task)
+                continue
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
-                db_node_id=db_node_id,
+                db_version_node_id=db_version_node_id,
                 previous_content=previous_contents,
             )
+            node_id_to_folder_task[node_id] = folder_tech_docs_task
             folder_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (Folder) {node.root_rel_path}",
+                embedding_task_type=EmbeddingTaskType.FOLDER_TECH_DOC,
                 dependent_tasks=[folder_tech_docs_task],
+                db_version_node_id=db_version_node_id,
             )
             tasks.extend([folder_tech_docs_task, folder_embedding_task])
         else:  # File
+            node_id = version_node_id_to_node_id[db_version_node_id]
             source_code = get_file_content(codebase_root / lite_node.root_rel_path)
+            if node_id in node_id_to_file_task:
+                file_tech_docs_task = FileTechDocTask(
+                    codebase_name=codebase_name,
+                    source_code=source_code,
+                    node=lite_node,
+                    task_name=f"TechDoc {node.root_rel_path}",
+                    db_version_node_id=db_version_node_id,
+                    version_id=str(version_id),
+                    symbol_table_task=c_symbol_table_task,
+                    deduped_node_task=node_id_to_file_task[node_id],
+                    thread_pool=TECH_DOC_THREAD_POOL,
+                )
+                tasks.append(file_tech_docs_task)
+                continue
+
             source_file_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding Source Code {node.root_rel_path}",
+                embedding_task_type=EmbeddingTaskType.SOURCE_CODE,
                 source_code=source_code,
-                db_node_id=db_node_id,
+                db_version_node_id=db_version_node_id,
                 dependent_tasks=[c_symbol_table_task],
             )
             file_tech_docs_task = FileTechDocTask(
@@ -614,16 +648,18 @@ async def inspect_files(
                 source_code=source_code,
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
-                db_node_id=db_node_id,
+                db_version_node_id=db_version_node_id,
                 version_id=str(version_id),
                 symbol_table_task=c_symbol_table_task,
                 thread_pool=TECH_DOC_THREAD_POOL,
             )
+            node_id_to_file_task[node_id] = file_tech_docs_task
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (File) {node.root_rel_path}",
+                embedding_task_type=EmbeddingTaskType.FILE_TECH_DOC,
                 source_code=None,
-                db_node_id=None,
+                db_version_node_id=db_version_node_id,
                 dependent_tasks=[file_tech_docs_task],
             )
             symbols_task = SymbolsTask(
@@ -631,13 +667,14 @@ async def inspect_files(
                 node=lite_node,
                 source_code=source_code,
                 tech_docs_task=file_tech_docs_task,
-                db_node_id=db_node_id,
+                db_version_node_id=db_version_node_id,
             )
             symbols_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding Symbols {node.root_rel_path}",
+                embedding_task_type=EmbeddingTaskType.SYMBOLS,
                 source_code=None,
-                db_node_id=None,
+                db_version_node_id=db_version_node_id,
                 dependent_tasks=[symbols_task],
             )
             tasks.extend(
@@ -662,7 +699,7 @@ async def inspect_files(
         node=root_node,
         codebase_name=codebase_name,
         ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
-        db_node_id=root_db_node_id,
+        db_version_node_id=root_db_node_id,
     )
 
     has_previous_version = (
@@ -672,8 +709,8 @@ async def inspect_files(
         prev_db_root_node_id = rel_path_to_previous_version_db_node_ids[
             root_node.root_rel_path
         ]
-        prev_root_node_derived_contents = await get_all_derived_content_by_node_id(
-            prev_db_root_node_id
+        prev_root_node_derived_contents = (
+            await get_all_derived_content_by_version_node_id(prev_db_root_node_id)
         )
         previous_root_node_metadata = defaultdict(list)
         for dc in prev_root_node_derived_contents:
@@ -682,28 +719,26 @@ async def inspect_files(
         root_node=root_node,
         codebase_name=codebase_name,
         ordered_tech_docs_tasks=all_tech_docs_tasks,
-        db_root_node_id=root_db_node_id,
+        db_root_version_node_id=root_db_node_id,
         previous_root_node_metadata=previous_root_node_metadata
         if has_previous_version
         else None,
     )
-    top_level_embedding_task = EmbeddingTask(
-        node=root_node,
-        task_name="Embedding TopLevelDocs",
-        dependent_tasks=[top_level_tech_docs_task],
-    )
-    tasks.extend(
-        [top_level_tech_docs_task, top_level_embedding_task, codebase_tagging_task]
-    )
+    # TODO: this currently does nothing
+    # top_level_embedding_task = EmbeddingTask(
+    #     node=root_node,
+    #     task_name="Embedding TopLevelDocs",
+    #     dependent_tasks=[top_level_tech_docs_task],
+    #     db_version_node_id=root_db_node_id,
+    # )
+    tasks.extend([top_level_tech_docs_task, codebase_tagging_task])
 
     print("\n---------- All tasks ----------")
     for t in tasks:
         print("=> ", t)
 
     print("\n---------- Running tasks ----------")
-    task_manager = TaskManager.with_s3_persistence(
-        bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
-    )
+    task_manager = TaskManager.with_db_persistence(tasks=tasks, serial_exe=False)
 
     print(f"Starting inspection with {len(tasks)} tasks")
     await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)
@@ -1084,15 +1119,15 @@ async def run_deep_context(
 
                 p_file_path.write_text(p.doc_content, encoding="utf-8")
                 n_file_path.write_text(n.doc_content, encoding="utf-8")
-        # else:
-        #     # Call the remote deep context docs function
-        #     _completed_docs = await deep_context_docs.remote.aio(
-        #         previous_version_id,
-        #         previous_version_content,
-        #         flat_topo_file_diff_dag,
-        #         current_version_id,
-        #         install_id,
-        #     )
+        else:
+            # Call the remote deep context docs function
+            _completed_docs = await deep_context_docs.remote.aio(
+                previous_version_id,
+                previous_version_content,
+                flat_topo_file_diff_dag,
+                current_version_id,
+                install_id,
+            )
         print(f"Deep context docs generation completed for version {version_id}")
     except Exception as e:
         print(f"Error while generating deep context docs for version {version_id}: {e}")

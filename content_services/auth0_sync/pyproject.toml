@@ -13,6 +13,10 @@ database = {path = "../../driver_db", develop = true}
 shared = {path = "../../packages/shared", develop = true}
 modal = "^1.0.4"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+testcontainers = "^4.13.3"
+
 [tool.poetry]
 packages = [
     {include = "auth0_sync", from = "src"},

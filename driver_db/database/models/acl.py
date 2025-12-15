@@ -67,8 +67,12 @@ class PrimaryAssetRoleGrant(SQLModel, table=True):
         foreign_key="organization.id", index=True
     )  # TODO: is this duplicative? Can it be removed?
     principal_kind: PrincipalKind
-    user_id: str | None = Field(default=None, foreign_key="user.id", index=True)
-    team_id: uuid.UUID | None = Field(default=None, foreign_key="team.id", index=True)
+    user_id: str | None = Field(
+        default=None, foreign_key="user.id", index=True, ondelete="CASCADE"
+    )
+    team_id: uuid.UUID | None = Field(
+        default=None, foreign_key="team.id", index=True, ondelete="CASCADE"
+    )
     role: PrimaryAssetRole
     # created_by: uuid.UUID = Field(foreign_key="user.id") # TODO: want this for audit logging
     created_at: None | datetime = Field(

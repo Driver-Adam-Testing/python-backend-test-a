@@ -104,13 +104,13 @@ class SearchTool(ToolStrict):
     def execute(self, agent: AgentBase) -> str:
         # Ensure relative paths are subfolders or files within agent.paths
         if self.search_subfolder_with_version_paths:
-            node_ids = agent.scope.to_child_datascope(
+            version_node_ids = agent.scope.to_child_datascope(
                 self.search_subfolder_with_version_paths
-            ).node_ids
+            ).version_node_ids
         else:
-            node_ids = agent.scope.node_ids
+            version_node_ids = agent.scope.version_node_ids
 
-        if agent.scope.node_ids and not node_ids:
+        if agent.scope.version_node_ids and not version_node_ids:
             raise ValueError(
                 f"Search path {self.search_subfolder_with_version_paths} isn't in scope. Please try again."
             )
@@ -120,7 +120,7 @@ class SearchTool(ToolStrict):
             algorithm=self.search_algorithm.value,
             content_kinds=self.derived_content_types,
             organization_id=agent.scope.organization_id,
-            node_ids=node_ids,
+            version_node_ids=version_node_ids,
             limit=15,
         )
         results = search_content_without_session(search_input)

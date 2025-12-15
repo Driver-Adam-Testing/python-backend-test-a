@@ -17,6 +17,7 @@ from database.models import (
     Team,
     TeamMembership,
     Version,
+    VersionNode,
 )
 from database.models_enums import PrimaryAssetKind, PrimaryAssetRole, PrincipalKind
 from sqlalchemy import and_, case, literal, true
@@ -234,7 +235,7 @@ def content_grant_filter(db: Session, user_id: str, organization_id: str) -> Any
     selecting DerivedContent rows.
 
     This traverses the relationship chain:
-    DerivedContent → Node → Version → PrimaryAsset → PrimaryAssetRoleGrant
+    DerivedContent → Node → VersionNode → Version → PrimaryAsset → PrimaryAssetRoleGrant
 
     Users can access content if:
     1. They are a super_admin in the organization (bypass all checks)
@@ -267,15 +268,17 @@ def content_grant_filter(db: Session, user_id: str, organization_id: str) -> Any
 
     # Filter: Content's PrimaryAsset must have a grant matching our conditions
     return DerivedContent.node.has(
-        Node.version.has(
-            Version.primary_asset.has(
-                select(PrimaryAssetRoleGrant)
-                .where(
-                    PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id,
-                    PrimaryAssetRoleGrant.organization_id == organization_id,
-                    grant_condition,
+        Node.version_nodes.any(
+            VersionNode.version.has(
+                Version.primary_asset.has(
+                    select(PrimaryAssetRoleGrant)
+                    .where(
+                        PrimaryAssetRoleGrant.primary_asset_id == PrimaryAsset.id,
+                        PrimaryAssetRoleGrant.organization_id == organization_id,
+                        grant_condition,
+                    )
+                    .exists()
                 )
-                .exists()
             )
         )
     )
@@ -312,16 +315,22 @@ def page_source_authorization_filter(
     is_member = is_org_member(db, user_id, organization_id)
     grant_condition = build_grant_condition(user_id, team_ids, is_member)
 
-    SourceNode = aliased(Node)
     SourceVersion = aliased(Version)
+    SourceVersionNode = aliased(VersionNode)
+    PageVersionNode = aliased(VersionNode)
 
     unauthorized_source_exists = (
         select(DocumentSource)
-        .join(Node, DocumentSource.page_node_id == Node.id)
-        .join(Version, Node.version_id == Version.id)
+        .join(
+            PageVersionNode, DocumentSource.page_version_node_id == PageVersionNode.id
+        )
+        .join(Version, PageVersionNode.version_id == Version.id)
         .where(Version.primary_asset_id == PrimaryAsset.id)
-        .join(SourceNode, DocumentSource.source_node_id == SourceNode.id)
-        .join(SourceVersion, SourceNode.version_id == SourceVersion.id)
+        .join(
+            SourceVersionNode,
+            DocumentSource.source_version_node_id == SourceVersionNode.id,
+        )
+        .join(SourceVersion, SourceVersionNode.version_id == SourceVersion.id)
         .where(
             ~select(PrimaryAssetRoleGrant)
             .where(
@@ -351,15 +360,21 @@ def page_asset_grant_filter(db: Session, user_id: str, organization_id: str) -> 
 def page_content_grant_filter(db: Session, user_id: str, organization_id: str) -> Any:
     if is_super_admin(db, user_id, organization_id):
         return DerivedContent.node.has(
-            Node.version.has(Version.primary_asset.has(only_page_assets_filter()))
+            Node.version_nodes.any(
+                VersionNode.version.has(
+                    Version.primary_asset.has(only_page_assets_filter())
+                )
+            )
         )
 
     return DerivedContent.node.has(
-        Node.version.has(
-            Version.primary_asset.has(
-                and_(
-                    only_page_assets_filter(),
-                    page_source_authorization_filter(db, user_id, organization_id),
+        Node.version_nodes.any(
+            VersionNode.version.has(
+                Version.primary_asset.has(
+                    and_(
+                        only_page_assets_filter(),
+                        page_source_authorization_filter(db, user_id, organization_id),
+                    )
                 )
             )
         )

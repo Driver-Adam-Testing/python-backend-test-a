@@ -6,10 +6,10 @@ from uuid import UUID  # noqa: TCH003
 
 from database.models import (
     DerivedContent,
-    Node,
     PrimaryAsset,
     PrimaryAssetTag,
     Version,
+    VersionNode,
 )
 from database.models_enums import (
     ContentKind,
@@ -77,6 +77,7 @@ class VersionControlInfo(BaseModel):
 class MostRecentMetadata(BaseModel):
     id: UUID
     root_node_id: UUID | None = None
+    root_version_node_id: UUID | None = None
     total_files: int
     driver_ignored_files: int | None = None
     status: str
@@ -195,7 +196,7 @@ def codebase_card(
     - Public grants
     """
 
-    root = aliased(Node)
+    root_version_node = aliased(VersionNode)
 
     completed_ver_id_subq = (
         select(Version.id)
@@ -212,7 +213,11 @@ def codebase_card(
         select(PrimaryAsset.id)
         .where(PrimaryAsset.organization_id == user.organization_id)
         .where(primary_asset_grant_filter(session, user.user_id, user.organization_id))
-        .outerjoin(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
+        .outerjoin(
+            root_version_node,
+            (root_version_node.version_id == completed_ver_id_subq)
+            & (root_version_node.depth == 0),
+        )
     )
 
     kinds = _parse_asset_kinds(primary_asset_kind) or [
@@ -227,8 +232,10 @@ def codebase_card(
     if top_language:
         tl = [t.lower() for t in top_language.split(",")]
         base_subq = base_subq.where(
-            func.lower(root.misc_metadata["top_language_by_file_count"].astext).in_(tl)
-            | func.lower(root.misc_metadata["top_language"].astext).in_(tl)
+            func.lower(
+                root_version_node.misc_metadata["top_language_by_file_count"].astext
+            ).in_(tl)
+            | func.lower(root_version_node.misc_metadata["top_language"].astext).in_(tl)
         )
 
     def _add_dc_filter(
@@ -240,7 +247,8 @@ def codebase_card(
         cond = or_(dc_alias.misc_metadata.has_key(key))
         return q.join(
             dc_alias,
-            (dc_alias.node_id == root.id) & (dc_alias.content_kind == dc_kind),
+            (dc_alias.node_id == root_version_node.node_id)
+            & (dc_alias.content_kind == dc_kind),
         ).where(cond)
 
     base_subq = _add_dc_filter(
@@ -281,8 +289,8 @@ def codebase_card(
 
     latest_complete_version = aliased(Version)
     latest_version = aliased(Version)
-    latest_version_root_node = aliased(Node)
-    latest_complete_version_root_node = aliased(Node)
+    latest_version_root_node = aliased(VersionNode)
+    latest_complete_version_root_node = aliased(VersionNode)
 
     role_expr = effective_asset_role_expr(
         session, user.user_id, user.organization_id, PrimaryAsset.id
@@ -353,7 +361,7 @@ def codebase_card(
         .options(
             selectinload(PrimaryAsset.tags),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
-                Version.root_node
+                Version.root_version_node
             ),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.creator
@@ -376,23 +384,39 @@ def codebase_card(
         assets_stmt = assets_stmt.offset(pagination.offset).limit(pagination.limit)
 
     assets_with_versions: list[
-        tuple[PrimaryAsset, Version, Version, Node, Node, PrimaryAssetRole | None, str]
+        tuple[
+            PrimaryAsset,
+            Version,
+            Version,
+            VersionNode,
+            VersionNode,
+            PrimaryAssetRole | None,
+            str,
+        ]
     ] = session.exec(assets_stmt).unique().all()
 
     complete_root_ids: list[UUID] = [
-        latest_complete_version_root_node.id
+        latest_complete_version_root_node.node_id
         for _, _, _, _, latest_complete_version_root_node, _, _ in assets_with_versions
         if latest_complete_version_root_node
     ]
     recent_root_ids: list[UUID] = [
-        latest_version_root_node.id
+        latest_version_root_node.node_id
         for _, _, _, latest_version_root_node, _, _, _ in assets_with_versions
         if latest_version_root_node
     ]
     if not recent_root_ids:
         # Only codebases in Connecting?
         connecting_cards = []
-        for pa_row, v_latest, _, _, _, effective_role, visibility in assets_with_versions:
+        for (
+            pa_row,
+            v_latest,
+            _,
+            _,
+            _,
+            effective_role,
+            visibility,
+        ) in assets_with_versions:
             sha = _safe_commit_sha(v_latest)
             if (
                 pa_row.kind == PrimaryAssetKind.CODEBASE
@@ -437,6 +461,7 @@ def codebase_card(
             meta_block = MostRecentMetadata(
                 id=v_latest.id,
                 root_node_id=None,  # No root id in Connecting
+                root_version_node_id=None,  # No root version node id in Connecting
                 total_files=0,
                 driver_ignored_files=0,
                 status=v_latest.status.value,
@@ -538,13 +563,13 @@ def codebase_card(
         if v_latest is None:
             continue
 
-        root_node_complete: Node | None = latest_complete_version_root_node
-        root_node_latest: Node | None = latest_version_root_node
+        root_node_complete: VersionNode | None = latest_complete_version_root_node
+        root_node_latest: VersionNode | None = latest_version_root_node
 
         def _dc(kind: ContentKind) -> DerivedContent | None:
             if root_node_complete is None:  # noqa: B023
                 return {}
-            return latest_dc.get((root_node_complete.id, kind))  # noqa: B023
+            return latest_dc.get((root_node_complete.node_id, kind))  # noqa: B023
 
         dc_kinds = _dc(ContentKind.CODEBASE_KINDS)
         dc_domains = _dc(ContentKind.CODEBASE_DOMAINS)
@@ -632,7 +657,8 @@ def codebase_card(
 
         meta_block = MostRecentMetadata(
             id=v_latest.id,
-            root_node_id=root_node_latest.id if root_node_latest else None,
+            root_node_id=root_node_latest.node_id if root_node_latest else None,
+            root_version_node_id=root_node_latest.id if root_node_latest else None,
             total_files=(
                 root_node_latest.total_files
                 if root_node_latest and root_node_latest.total_files
@@ -649,7 +675,7 @@ def codebase_card(
         )
 
         mrv_content = MostRecentVersionContent(
-            root_node_id=root_node_complete.id if root_node_complete else None,
+            root_node_id=root_node_complete.node_id if root_node_complete else None,
             kind=kind_list,
             domain=domain_list,
             audience=audience_list,

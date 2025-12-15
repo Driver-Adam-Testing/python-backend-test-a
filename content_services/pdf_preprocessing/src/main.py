@@ -20,11 +20,9 @@ image_jve = (
 pdf_preprocessing_modal_config = {
     "image": image_jve,
     "secrets": [
-        modal.Secret.from_name("driver-api-credentials"),
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("anthropic"),
     ],
     "proxy": (
         modal.Proxy.from_name("my-proxy")
@@ -76,7 +74,13 @@ def create_and_embed_pdf_summaries(
     from tempfile import NamedTemporaryFile
 
     from database.db import engine
-    from database.models import ChunkAndEmbedding, DerivedContent, Node, Version
+    from database.models import (
+        ChunkAndEmbedding,
+        DerivedContent,
+        Node,
+        Version,
+        VersionNode,
+    )
     from database.models_enums import ContentKind, NodeKind, VersionStatus
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
@@ -84,7 +88,6 @@ def create_and_embed_pdf_summaries(
     from shared.interfaces.aws_client_config import AWSClientConfig
     from shared.interfaces.file_content.pdf_file_content import ProcessedPdfFileContent
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
-    from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
     hashed_org_id = sha256(org_id.encode()).hexdigest()[:63]
@@ -135,12 +138,18 @@ def create_and_embed_pdf_summaries(
             version.status = VersionStatus.GENERATING
             session.add(version)
             node = Node(
+                source_hash=None,
                 kind=NodeKind.OTHER,
-                version_id=version_id,
-                relative_path=relative_path,
+                primary_asset_id=primary_asset_id,
             )
             node_id = node.id
             session.add(node)
+            version_node = VersionNode(
+                version_id=version_id,
+                node_id=node_id,
+                relative_path=relative_path,
+            )
+            session.add(version_node)
 
         with open(temp_file_path, "rb") as f:
             pdf_bytes = f.read()
@@ -234,12 +243,8 @@ def create_and_embed_pdf_summaries(
 
         # Re-query the content object and update its status
         with Session(engine) as session:
-            node = session.exec(
-                select(Node)
-                .where(Node.id == node_id)
-                .options(selectinload(Node.version))
-            ).one()
-            node.version.status = VersionStatus.GENERATION_COMPLETE
+            version = session.get(Version, version_id)
+            version.status = VersionStatus.GENERATION_COMPLETE
             session.commit()
 
     except Exception as e:
@@ -253,12 +258,8 @@ def create_and_embed_pdf_summaries(
         print(exception_details)
         send_exception_email.remote(exception_details)
         with Session(engine) as session:
-            node = session.exec(
-                select(Node)
-                .where(Node.id == node_id)
-                .options(selectinload(Node.version))
-            ).one()
-            node.version.status = VersionStatus.GENERATION_ERROR
+            version = session.get(Version, version_id)
+            version.status = VersionStatus.GENERATION_ERROR
             session.commit()
         raise e
 

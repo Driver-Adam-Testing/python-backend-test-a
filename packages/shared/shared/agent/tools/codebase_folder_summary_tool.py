@@ -1,6 +1,7 @@
 from database.db import get_session
-from database.models import DerivedContent, Node
+from database.models import DerivedContent, Node, Version, VersionNode
 from database.models_enums import ContentKind
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from shared.agent.agent_base import AgentBase
@@ -24,11 +25,24 @@ class CodebaseFolderSummaryTool(ToolStrict):
     def execute(self, agent: AgentBase) -> str:
         scope = agent.scope.to_child_datascope([self.codebase_directory_path])
 
+        if not scope.version_node_ids:
+            return f"No content found for file path: {self.codebase_directory_path}"
+
         with get_session() as session:
+            # First get the VersionNode to access version information
+            version_node_stmt = (
+                select(VersionNode)
+                .options(selectinload(VersionNode.version))
+                .where(VersionNode.id == scope.version_node_ids[0])
+            )
+            version_node = session.exec(version_node_stmt).first()
+
             stmt = (
                 select(DerivedContent)
-                .join(Node)
-                .where(Node.id == scope.node_ids[0])
+                .join(Node, DerivedContent.node_id == Node.id)
+                .join(VersionNode, VersionNode.node_id == Node.id)
+                .options(selectinload(DerivedContent.node))
+                .where(VersionNode.id == scope.version_node_ids[0])
                 .where(
                     (DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
                     | (
@@ -41,34 +55,31 @@ class CodebaseFolderSummaryTool(ToolStrict):
             # Fetch all matching rows
             derived_contents = session.exec(stmt).all()
 
-            # If none are found, return the 'not found' message
-            if not derived_contents:
-                return f"No content found for file path: {self.codebase_directory_path}"
-
             search_results = []
             formatted_results = []
 
             # Iterate over all results
+            version_display_name = (
+                version_node.version.vcs_hash
+                if version_node.version.vcs_hash
+                else "Unversioned"
+            )
+
             for content in derived_contents:
-                version_display_name = (
-                    content.node.version.vcs_hash
-                    if content.node.version.vcs_hash
-                    else "Unversioned"
-                )
                 formatted_result = f"""<result>
         <content>{content.content}</content>
         <content_type>long_description</content_type>
-        <path>{version_display_name}/{content.node.relative_path}</path>
+        <path>{version_display_name}/{version_node.relative_path}</path>
     </result>""".strip()
                 formatted_results.append(formatted_result)
 
                 search_result = SearchResult(
                     content=content.content,
                     score=0.0,
-                    relative_path=content.node.relative_path,
+                    relative_path=version_node.relative_path,
                     version_display_name=version_display_name,
-                    node_id=content.node.id,
-                    version_id=content.node.version_id,
+                    version_node_id=content.node.id,
+                    version_id=version_node.version_id,
                     metadata={"content_type": content.content_kind},
                 )
                 search_results.append(search_result)

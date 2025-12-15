@@ -79,7 +79,7 @@ async def make_changelog(
     content_kind = ContentKind.DEEP_CONTEXT_CHANGELOG
     version = await get_version_by_id(version_id)
     root_node_id = version.root_version_node.node_id
-    root_node_relative_path = version.root_version_node.node.relative_path
+    root_node_relative_path = version.root_version_node.relative_path
     repo_id = version.primary_asset.repository_id
     if repo_id is None:
         print("No repo_id found, skipping changelog generation.")

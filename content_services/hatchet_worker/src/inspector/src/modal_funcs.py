@@ -1,8 +1,45 @@
 import os
+import threading
+import time
 import uuid
 
 from shared.inspector.inspection.files import comprehend_file_top_down
 from shared.inspector.utils.dag import LiteNode
+
+_SYMBOL_TABLE_CACHE = {}
+_CACHE_LOCK = threading.Lock()
+
+
+def put_symbol_table_cache(
+    key: str, value: dict, ttl_seconds: int = 28800
+) -> str:  # 8 Hours expiration
+    # Evict expired entries
+    now = time.time()
+    with _CACHE_LOCK:
+        keys_to_delete = [
+            k for k, (_, expires) in _SYMBOL_TABLE_CACHE.items() if expires < now
+        ]
+        for k in keys_to_delete:
+            del _SYMBOL_TABLE_CACHE[k]
+    expires = time.time() + ttl_seconds
+    with _CACHE_LOCK:
+        _SYMBOL_TABLE_CACHE[key] = (value, expires)
+    return key
+
+
+def get_symbol_table_cache(key: str) -> dict:
+    now = time.time()
+    with _CACHE_LOCK:
+        value, expires = _SYMBOL_TABLE_CACHE[key]  # KeyError if missing
+        if expires < now:
+            del _SYMBOL_TABLE_CACHE[key]
+            raise KeyError(key)
+        return value
+
+
+def delete_symbol_table_cache(key: str) -> None:
+    with _CACHE_LOCK:
+        _SYMBOL_TABLE_CACHE.pop(key, None)
 
 
 def make_tech_doc(
@@ -15,7 +52,6 @@ def make_tech_doc(
 
     import boto3
     from shared.agent.chat_openai import ChatOpenAI
-    from shared.inspector.utils.io import download_symbol_table_from_s3_with_cache
 
     print(f"Processing tech docs ({node})")
 
@@ -36,11 +72,12 @@ def make_tech_doc(
         print("================================")
         raise ValueError("BUCKET_NAME environment variable is not set")
 
-    full_symbol_table = download_symbol_table_from_s3_with_cache(
-        s3_client=s3_client,
-        bucket_name=bucket_name,
-        version_id=version_id,
-    )
+    # full_symbol_table = download_symbol_table_from_s3_with_cache(
+    #     s3_client=s3_client,
+    #     bucket_name=bucket_name,
+    #     version_id=version_id,
+    # )
+    full_symbol_table = get_symbol_table_cache(version_id)
     reified_symbols = full_symbol_table.get(node.root_rel_path, None)
 
     file_docs_successful, file_doc = comprehend_file_top_down(

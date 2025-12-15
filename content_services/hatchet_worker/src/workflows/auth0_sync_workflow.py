@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from auth0_sync.src.main import sync_auth0
 from hatchet_client import hatchet
-from hatchet_sdk import Context
+from hatchet_sdk import Context, EmptyModel
 from shared.interfaces.hatchet_interfaces import (
     Auth0SyncInput,
     ProcessAuth0EventInput,
@@ -40,7 +40,7 @@ def process_auth0_event_task(input: ProcessAuth0EventInput, ctx: Context) -> dic
     execution_timeout=timedelta(minutes=60),
     on_crons=["0 2 * * *"],
 )
-def scheduled_auth0_sync_task(ctx: Context) -> dict:
+def scheduled_auth0_sync_task(input: EmptyModel, ctx: Context) -> dict:
     print("starting scheduled auth0 sync task")
     result = sync_auth0(
         dry_run=False,

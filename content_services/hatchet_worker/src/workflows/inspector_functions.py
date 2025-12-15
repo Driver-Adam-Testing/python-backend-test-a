@@ -3,8 +3,12 @@ from datetime import timedelta
 from pathlib import Path
 
 from hatchet_client import hatchet
-from hatchet_sdk import Context
-from hatchet_sdk.runnables.types import ConcurrencyExpression, ConcurrencyLimitStrategy
+from hatchet_sdk import Context, remove_null_unicode_character
+from hatchet_sdk.runnables.types import (
+    ConcurrencyExpression,
+    ConcurrencyLimitStrategy,
+    StickyStrategy,
+)
 from inspector.src.deep_context_docs import deep_context_docs
 from inspector.src.modal_funcs import (
     export_tech_docs_to_zip,
@@ -146,6 +150,7 @@ async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> d
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
     schedule_timeout=timedelta(minutes=60),
+    sticky=StickyStrategy.HARD,
 )
 def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
     print("starting tech doc task")
@@ -164,8 +169,9 @@ def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
         input.source_code,
         input.version_id,
     )
+    cleaned_tech_docs = remove_null_unicode_character(data=tech_docs)
     print("executed tech doc task")
-    return tech_docs
+    return cleaned_tech_docs
 
 
 @hatchet.task(

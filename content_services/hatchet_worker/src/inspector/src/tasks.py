@@ -9,6 +9,7 @@ from database.models import (
     DerivedContent,
 )
 from database.models_enums import ContentKind
+from hatchet_sdk import TriggerWorkflowOptions
 from shared.inspector.utils.dag import LiteNode
 from shared.inspector.utils.db import get_source_code_derived_content
 from shared.inspector.utils.symbol_table import build_symbol_table
@@ -31,6 +32,8 @@ from workflows.inspector_functions import (
     tech_doc_task,
     toplevel_doc_task,
 )
+
+from .modal_funcs import put_symbol_table_cache
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
@@ -188,7 +191,7 @@ class FileTechDocTask(Task):
                 version_id=self.version_id,
             )
             task_result = await tech_doc_task.aio_run(
-                tech_doc_input,
+                tech_doc_input, options=TriggerWorkflowOptions(sticky=True)
             )
             success = task_result["success"]
             docs = task_result["file_doc"]
@@ -844,10 +847,11 @@ class CSymbolTableTask(Task):
         )
         bucket_name = os.environ["INSPECTOR_BUCKET_NAME"]
 
-        upload_symbol_table_to_s3(
+        upload_symbol_table_to_s3(  # still upload to S3 for future resumption, if needed
             symbol_table=symbol_table,
             s3_client=s3_client,
             bucket_name=bucket_name,
             version_id=self.version_id,
         )
+        put_symbol_table_cache(self.version_id, symbol_table)
         return {}

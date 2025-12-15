@@ -15,6 +15,7 @@ from shared.inspector.utils.dag import (
 )
 from shared.inspector.utils.task import TaskManager
 
+from .modal_funcs import delete_symbol_table_cache
 from .tasks import (
     CodebaseTaggingTask,
     CSymbolTableTask,
@@ -384,8 +385,10 @@ async def inspect_db(
         print(f"Error while processing version {version_id}: {e}")
         send_exception_email(exception_details)
         set_codebase_status(version_id, VersionStatus.GENERATION_ERROR)
+        delete_symbol_table_cache(version_id)
         raise
     else:
+        delete_symbol_table_cache(version_id)
         from database.models_enums import ContentKind
         from shared.inspector.utils.db import get_all_derived_content_by_node_id
         from shared.inspector.utils.synthesis.deep_context import (

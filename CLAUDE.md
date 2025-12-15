@@ -1,102 +1,53 @@
-# Project Standards for Claude Code
+# Claude Code Assistant Guidelines
 
-## Code Generation Standards
+## Clean Code Principles
 
-When writing or modifying Python code in this project, always follow these standards:
+### 1. Self-Documenting Code
+- Use descriptive function and variable names instead of verbose comments
+- Break complex logic into small, well-named helper functions
+- Each function should do one thing well, making it easily testable
+- Avoid self-evident comments and docstrings that just restate what the code does
+- Comments should explain *why*, not *what* - if the code is clear, no comment is needed
+- Example of bad docstring: `"""Get user by ID."""` for a function named `get_user_by_id`
+- Example of good comment: Explaining business rules like "public visibility takes precedence over internal"
 
-### Self-Documenting Code
+### 2. Function Naming
+- Use clear, action-oriented names for functions (e.g., `fetch_nodes_with_descriptions`, `_build_tree_from_nodes`)
+- Private functions should start with underscore
+- Function names should describe what they do, not how they do it
 
-- Use descriptive function and variable names—no `data`, `result`, `temp`, `process`
-- Break complex logic into small, well-named helper functions (under 15 lines each)
-- Each function does ONE thing
-- NO docstrings that restate function names (e.g., `"""Get user by ID."""` on `get_user_by_id`)
-- Comments explain WHY, never WHAT—if code is clear, no comment needed
-- Good comment example: `# Public visibility takes precedence per product spec v2.3`
+### 3. Avoid Code Smells
+- Replace inline comments with well-named functions
+- Avoid deeply nested logic - extract to helper functions
+- Keep functions small (typically under 10-15 lines)
+- Don't repeat yourself (DRY principle)
+- Extract duplicated logic into helper functions
+- When refactoring, look for opportunities to consolidate similar code patterns
 
-### Function Naming
+### 4. Type Hints
+- Always include type hints for function parameters and return values
+- Use specific types over generic ones (e.g., `dict[str, Any]` instead of just `dict`)
+- Use `Literal` or enum types for constrained string values (e.g., `Literal["private", "internal", "public"]`)
+- Prefer defined types/schemas over raw strings for API parameters
 
-- Action-oriented: `fetch_nodes_with_descriptions`, `validate_user_permissions`
-- Private functions start with underscore: `_build_tree_from_nodes`
-- Describe WHAT it does, not HOW: `notify_all_users` not `loop_through_users`
+### 5. Error Handling
+- try/except blocks should be as narrow as possible.
+- Huge try/except blocks that catch all exceptions are bad practice.
+- Use descriptive error messages
+- Handle edge cases explicitly
 
-### Type Hints (Required)
+### 6. Testing
+- Write unit tests when possible
+- Write integration tests but only if they *really* test functionality. I.e. they don't just use mocks for *everything* and are therefore hard to maintain
+- DO NOT write tests that are a huge maintenance burden unless they are high value
 
-- ALL function parameters must have type hints
-- ALL functions must have return type hints
-- Use specific types: `dict[str, Any]` not `dict`
-- Use `Literal["a", "b"]` or Enum for constrained string values
-- Use defined schemas over raw strings for API parameters
+### 7. Misc
+- For all application-critical network requests, use a retry mechanism, such as retry_with_exponential_backoff with appropriate parameters. Use discresion.
 
-```python
-# CORRECT
-def set_visibility(node_id: str, vis: Literal["private", "internal", "public"]) -> None:
-    ...
+## Development Workflow
 
-# WRONG
-def set_visibility(node_id, vis):
-    ...
-```
-
-### Error Handling
-
-- Try/except blocks must be NARROW—wrap only the specific operation that can fail
-- Never use bare `except:` or `except Exception:`
-- Use descriptive error messages with context
-- Never swallow exceptions silently
-
-```python
-# CORRECT
-try:
-    user = db.users.find_one({"_id": user_id})
-except DocumentNotFoundError:
-    raise UserNotFoundError(f"No user found with ID: {user_id}")
-
-# WRONG
-try:
-    user = db.users.find_one({"_id": user_id})
-    process(user)
-    save(user)
-except Exception:
-    pass
-```
-
-### Code Smells to Avoid
-
-- Functions over 15 lines → extract helpers
-- Nesting over 3 levels → use early returns
-- Duplicated logic → extract to shared utility
-- Inline comments as section dividers → extract to named functions
-
-### Network Requests
-
-- Use `retry_with_exponential_backoff` for critical external API calls
-- Always include timeout parameters
-- Handle network failures explicitly
-
-### Testing
-
-- Unit tests for business logic
-- Integration tests should test REAL behavior, not just mock verification
-- Don't write tests that are pure maintenance burden with no value
-
-## Running Commands
-
-Always use Poetry for Python commands:
-
-```bash
-# CORRECT
-cd backend && poetry run python -m pytest tests/
-cd backend && poetry run python scripts/my_script.py
-
-# WRONG
-python -m pytest tests/
-python scripts/my_script.py
-```
-
-## Code Review Mode
-
-When asked to review code, use the `/review` command format and check against all standards above. Report issues with severity levels:
-
-- **blocker**: Must fix (missing types, broad exception handling, duplicated logic)
-- **warning**: Should fix (long functions, deep nesting, missing retries on network calls)
-- **nit**: Optional improvement (naming could be clearer, minor style)
+### Running Python Commands
+- **Always use Poetry** to run Python commands in the backend
+- Use `cd backend && poetry run python -m pytest ...` instead of `python -m pytest ...`
+- Use `cd backend && poetry run python ...` instead of `python ...`
+- This ensures you're using the correct virtual environment with all dependencies

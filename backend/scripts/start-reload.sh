@@ -5,7 +5,7 @@ set -e
 echo "Checking for setEnv script..."
 if [ -f '/setEnv.sh' ] ; then
     echo "Running script setEnv.sh"
-    sh /setEnv.sh
+    . /setEnv.sh
     echo "$(cat /setEnv.sh)"
 else
     echo "There is no script setEnv.sh"

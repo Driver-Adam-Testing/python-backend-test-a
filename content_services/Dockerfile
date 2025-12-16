@@ -18,14 +18,14 @@ WORKDIR /app
 
 COPY driver_db /driver_db
 COPY packages /packages
-COPY content_services/hatchet_worker /app
+COPY content_services /app
 COPY backend/scripts/ /app/scripts/
-COPY content_services/hatchet_worker/src/inspector/uctags-2024.10.02-linux-x86_64/bin/ctags /ctags
+COPY content_services/src/inspector/uctags-2024.10.02-linux-x86_64/bin/ctags /ctags
 
 RUN poetry config virtualenvs.create false && \
  poetry install --no-root --no-interaction --no-ansi
 
-COPY content_services/hatchet_worker/start.sh /start.sh
+COPY content_services/start.sh /start.sh
 RUN chmod +x /start.sh
 
 # Copy the setEnv.sh if using the deployment repo

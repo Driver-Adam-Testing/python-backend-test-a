@@ -20,10 +20,10 @@ fi
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
 
 HATCHET_WORKER_IMAGE_NAME=hatchet-worker
-HATCHET_WORKER_TAG=latest 
+HATCHET_WORKER_TAG=latest
 HATCHET_WORKER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$HATCHET_WORKER_IMAGE_NAME:$HATCHET_WORKER_TAG
 
-DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/hatchet_worker/Dockerfile .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/Dockerfile .
 echo $HATCHET_WORKER_REPO_URI
 
 docker push "$HATCHET_WORKER_REPO_URI"

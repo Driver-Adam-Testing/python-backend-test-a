@@ -823,7 +823,7 @@ strawberry-graphql = {version = "^0.262.6", extras = ["fastapi"]}
 
 [package.source]
 type = "directory"
-url = "../../driver_db"
+url = "../driver_db"
 
 [[package]]
 name = "decorator"
@@ -4247,7 +4247,7 @@ tiktoken = "^0.12.0"
 
 [package.source]
 type = "directory"
-url = "../../packages/shared"
+url = "../packages/shared"
 
 [[package]]
 name = "shellingham"
@@ -5517,4 +5517,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "6765e9468dfa62e6a4a1a841a65ed7b39aaa3d430be01a1b73c5db1def37d60b"
+content-hash = "9ffea889dd7c4335941416e0bcea7f35a9ad3c79c8d9ac460aa25c9adcee8a3a"

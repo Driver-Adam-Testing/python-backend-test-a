@@ -50,7 +50,6 @@ def make_tech_doc(
 ) -> tuple[bool, dict, LiteNode]:
     import os
 
-    import boto3
     from shared.agent.chat_openai import ChatOpenAI
 
     print(f"Processing tech docs ({node})")

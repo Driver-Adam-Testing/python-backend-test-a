@@ -31,12 +31,12 @@ HATCHET_WORKER_TAG=latest
 HATCHET_WORKER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$HATCHET_WORKER_IMAGE_NAME:$HATCHET_WORKER_TAG
 
 SCIM_SERVER_IMAGE_NAME=scim-server
-SCIM_SERVER_TAG=latest 
+SCIM_SERVER_TAG=latest
 SCIM_SERVER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$SCIM_SERVER_IMAGE_NAME:$SCIM_SERVER_TAG
 
 
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $BACKEND_REPO_URI .
-DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/hatchet_worker/Dockerfile .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/Dockerfile .
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $SCIM_SERVER_REPO_URI -f scim/Dockerfile .
 
 echo $BACKEND_REPO_URI
@@ -128,15 +128,15 @@ if [[ $status -eq 0 ]]; then
     echo "✅ Service became stable."
 
     # This doesn't work for single tenant deployments where these APIs
-    # aren't reachable. It's also redundant since the ALB is already 
+    # aren't reachable. It's also redundant since the ALB is already
     # checking this very endpoint - the service wouldn't become stable
     # if these weren't succeeding, so I'm not seeing
     # the value of having our own redundant "health checks". The later log checking
     # was also causing running deployments to fail for unknown reasons.
     # Disabling.
-    # 
-    # 
-    # URL="https://api.${URL_PREFIX}.driverai.com/api/v1/healthcheck/" 
+    #
+    #
+    # URL="https://api.${URL_PREFIX}.driverai.com/api/v1/healthcheck/"
     # TIMEOUT=120   # 2 minutes in seconds
     # INTERVAL=5    # seconds between retries
     # START=$(date +%s)
@@ -233,7 +233,7 @@ fi
 # SINCE_MIN="${SINCE_MIN:-2}"
 # EXIT_ON_MATCH_CODE="${EXIT_ON_MATCH_CODE:-2}"
 # START_MS=$(( ( $(date +%s) - SINCE_MIN*60 ) * 1000 ))
-# MATCH_JSON='["error","fatal"]' 
+# MATCH_JSON='["error","fatal"]'
 # MATCH_CASE_INSENSITIVE=1
 
 # # Build patterns JSON array

@@ -33,7 +33,6 @@ tree-sitter-typescript = "^0.23.2"
 pillow = "^10.4.0"
 modal = "^1.0.4"
 aiolimiter = "^1.2.1"
-auto-toml = {path = "../auto_toml", develop = true}
 tree-sitter = "^0.25.1"
 tree-sitter-go = "^0.25.0"
 tree-sitter-python = "^0.25.0"

@@ -14,7 +14,16 @@ from database.models import DocumentSource
 from database.models.base import DerivedContent, Node, VersionNode
 from database.models_enums import ContentKind, NodeKind
 from logger import logger
-from prompts import (
+from shared.agent.chat_openai_async import ChatOpenAI
+from shared.chunking.text_splitter import split_text
+from shared.prompts.structured_prompting import (
+    Prompt,
+)
+from sqlalchemy import BinaryExpression, func
+from sqlmodel import or_, select
+from tqdm.asyncio import tqdm_asyncio
+
+from .prompts import (
     _USER_CONTEXT_SIZE_MAP,
     NO_CONTENT_FOUND_RESPONSE,
     USER_CONTEXT_BASE,
@@ -25,14 +34,6 @@ from prompts import (
     summary_system_prompt,
     summary_user_prompt,
 )
-from shared.agent.chat_openai_async import ChatOpenAI
-from shared.chunking.text_splitter import split_text
-from shared.prompts.structured_prompting import (
-    Prompt,
-)
-from sqlalchemy import BinaryExpression, func
-from sqlmodel import or_, select
-from tqdm.asyncio import tqdm_asyncio
 
 
 @dataclass

@@ -355,28 +355,6 @@ requests = ">=2.32.3"
 urllib3 = ">=2.2.3"
 
 [[package]]
-name = "auto-toml"
-version = "0.1.0"
-description = ""
-optional = false
-python-versions = ">=3.12,<3.13"
-groups = ["main"]
-files = []
-develop = true
-
-[package.dependencies]
-aiolimiter = ">=1.2.1,<2.0.0"
-database = {path = "../../driver_db"}
-openai = ">=1.86.0,<2.0.0"
-pydantic = ">=2.11.7,<3.0.0"
-shared = {path = "../../packages/shared"}
-tiktoken = ">=0.12.0,<0.13.0"
-
-[package.source]
-type = "directory"
-url = "../auto_toml"
-
-[[package]]
 name = "aws-sam-translator"
 version = "1.100.0"
 description = "AWS SAM Translator is a library that transform SAM templates into AWS CloudFormation templates"
@@ -5539,4 +5517,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "abf35e568a75fa57782fee9d09045784a775b82e9eba4a1a0d12e943d9f8364b"
+content-hash = "6765e9468dfa62e6a4a1a841a65ed7b39aaa3d430be01a1b73c5db1def37d60b"

@@ -18,7 +18,6 @@ WORKDIR /app
 
 COPY driver_db /driver_db
 COPY packages /packages
-COPY content_services/auto_toml /auto_toml
 COPY content_services/hatchet_worker /app
 COPY backend/scripts/ /app/scripts/
 COPY content_services/hatchet_worker/src/inspector/uctags-2024.10.02-linux-x86_64/bin/ctags /ctags

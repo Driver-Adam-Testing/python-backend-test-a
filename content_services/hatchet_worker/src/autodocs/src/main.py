@@ -3,10 +3,10 @@ import uuid
 from math import ceil
 from typing import Any
 
-from auto_toml import AutoToml
 from database.models_enums import ContentKind
 from workflows.autodocs_functions import WriteAutoDocLogInput, write_autodoc_log_task
 
+from .auto_toml.auto_toml import AutoToml
 from .autodoc_log import AutoDocLog
 from .autodocs_prototype import (
     AutoDocCfg,

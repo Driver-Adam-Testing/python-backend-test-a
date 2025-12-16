@@ -37,7 +37,7 @@ def _create_storage_backend() -> MemoryStore | RedisStore | FernetEncryptionWrap
             db=0,
         )
 
-        fernet = Fernet(settings.MCP_STORAGE_ENCRYPTION_KEY.encode())
+        fernet = Fernet(settings.mcp_fernet_key)
         return FernetEncryptionWrapper(key_value=store, fernet=fernet)
 
     elif backend == "memory":

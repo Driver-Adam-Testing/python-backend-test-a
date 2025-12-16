@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import warnings
 from typing import Annotated, Self
 
@@ -95,6 +97,17 @@ class Settings(BaseSettings):
 
     # Feature flags
     ENABLE_SIGNUP: bool = False
+
+    @property
+    def mcp_fernet_key(self) -> bytes:
+        """
+        Derive a valid Fernet key from MCP_STORAGE_ENCRYPTION_KEY.
+
+        Fernet requires exactly 32 bytes, URL-safe base64-encoded.
+        This property deterministically converts any secret string into a valid key.
+        """
+        key_bytes = hashlib.sha256(self.MCP_STORAGE_ENCRYPTION_KEY.encode()).digest()
+        return base64.urlsafe_b64encode(key_bytes)
 
     @model_validator(mode="after")
     def _check_non_default_secrets(self) -> Self:

@@ -119,9 +119,39 @@ class Backend(Construct):
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "OPENAI_URL": openai_url
+            "OPENAI_URL": openai_url,
+            "REDIS_HOST": "hatchet." + hosted_zone.zone_name,
+            "MCP_STORAGE_BACKEND": "redis"
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }
+
+        mcp_jwt_signing_key = aws_secretsmanager.Secret(
+        self,
+            "McpJwtSigningKey",
+            secret_name=f"backend/mcp-jwt-signing-key",
+            description="MCP JWT signing key (256-bit random)",
+            generate_secret_string=aws_secretsmanager.SecretStringGenerator(
+                # 32 bytes → 44 chars in base64; we just match that length
+                password_length=44,
+                exclude_punctuation=True,  # letters+digits only; URL-safe enough for most uses
+            ),
+        )
+
+        mcp_storage_encryption_key = aws_secretsmanager.Secret(
+            self,
+            "McpStorageEncryptionKey",
+            secret_name=f"backend/mcp-storage-encryption-key",
+            description="MCP storage encryption key (256-bit random)",
+            generate_secret_string=aws_secretsmanager.SecretStringGenerator(
+                password_length=44,
+                exclude_punctuation=True,
+            ),
+        )
+
+
+        redis_secrect = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "redis_secret", secret_name="hatchet/appliance/redis"
+        )
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
@@ -133,6 +163,10 @@ class Backend(Construct):
             k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
             for k in secret_fields
         }
+
+        secrets_map["REDIS_PASSWORD"] = aws_ecs.Secret.from_secrets_manager(redis_secrect)
+        secrets_map["MCP_JWT_SIGNING_KEY"] = aws_ecs.Secret.from_secrets_manager(mcp_jwt_signing_key)
+        secrets_map["MCP_STORAGE_ENCRYPTION_KEY"] = aws_ecs.Secret.from_secrets_manager(mcp_storage_encryption_key)
 
         container_environment_vars.update(settings.to_dict())
 

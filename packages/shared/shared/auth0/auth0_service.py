@@ -575,3 +575,77 @@ class Auth0Service:
             logger.info("Cached Admin role ID")
 
         return Auth0Service._cached_admin_role_id
+
+    def create_user(
+        self,
+        email: str,
+        password: str,
+        name: str | None = None,
+        connection: str = "Username-Password-Authentication",
+    ) -> dict[str, Any]:
+        """Password must meet Auth0 password policy. User email is marked as verified."""
+        try:
+            mgmt_token = self.get_mgmt_api_token()
+            url = f"https://{self.auth0_mgmt_domain}/api/v2/users"
+            body = {
+                "email": email,
+                "password": password,
+                "connection": connection,
+                "email_verified": True,
+            }
+            if name:
+                body["name"] = name
+            headers = {
+                "Authorization": f"Bearer {mgmt_token}",
+                "Content-Type": "application/json",
+            }
+
+            resp = httpx.post(url, json=body, headers=headers, timeout=15)
+            resp.raise_for_status()
+            return resp.json()
+
+        except Exception as e:
+            logger.error(f"Error creating user '{email}': {e!s}")
+            raise
+
+    def add_organization_members(self, org_id: str, user_ids: list[str]) -> None:
+        try:
+            mgmt_token = self.get_mgmt_api_token()
+            url = f"https://{self.auth0_mgmt_domain}/api/v2/organizations/{org_id}/members"
+            body = {"members": user_ids}
+            headers = {
+                "Authorization": f"Bearer {mgmt_token}",
+                "Content-Type": "application/json",
+            }
+
+            resp = httpx.post(url, json=body, headers=headers, timeout=15)
+            if resp.status_code == 204:
+                return
+            resp.raise_for_status()
+
+        except Exception as e:
+            logger.error(f"Error adding members to organization {org_id}: {e!s}")
+            raise
+
+    def assign_organization_member_roles(
+        self, org_id: str, user_id: str, role_ids: list[str]
+    ) -> None:
+        try:
+            mgmt_token = self.get_mgmt_api_token()
+            url = f"https://{self.auth0_mgmt_domain}/api/v2/organizations/{org_id}/members/{user_id}/roles"
+            body = {"roles": role_ids}
+            headers = {
+                "Authorization": f"Bearer {mgmt_token}",
+                "Content-Type": "application/json",
+            }
+
+            resp = httpx.post(url, json=body, headers=headers, timeout=15)
+            if resp.status_code == 204:
+                return
+            resp.raise_for_status()
+
+        except Exception as e:
+            logger.error(
+                f"Error assigning roles to user {user_id} in organization {org_id}: {e!s}"
+            )
+            raise

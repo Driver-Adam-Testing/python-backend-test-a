@@ -780,7 +780,9 @@ class AutoToml:
             values = [next(iter(content.values())) for content in sub_contents]
 
             for idx, value in enumerate(values):
-                new_value = cls._truncate_text(text=value, scale_factor=scale_factor)
+                new_value = cls._truncate_text(
+                    text=value, llm=None, scale_factor=scale_factor
+                )
                 if new_value is not value:
                     values[idx] = new_value
                     logger.warning(f"Truncated content for: {keys[idx]}\n")

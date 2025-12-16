@@ -59,9 +59,9 @@ class AutoToml:
         SCALE_PDF_AND_USE_DIRS = 4
         FAIL = 5
 
-    LLM_SCATTER_MODEL: ClassVar[
-        str
-    ] = "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
+    LLM_SCATTER_MODEL: ClassVar[str] = (
+        "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
+    )
     LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
@@ -778,7 +778,9 @@ class AutoToml:
             values = [next(iter(content.values())) for content in sub_contents]
 
             for idx, value in enumerate(values):
-                new_value = cls._truncate_text(text=value, scale_factor=scale_factor)
+                new_value = cls._truncate_text(
+                    text=value, llm=None, scale_factor=scale_factor
+                )
                 if new_value is not value:
                     values[idx] = new_value
                     logger.warning(f"Truncated content for: {keys[idx]}\n")

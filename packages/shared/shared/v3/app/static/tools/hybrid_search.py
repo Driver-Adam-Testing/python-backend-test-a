@@ -53,7 +53,10 @@ class HybridSearchTool(LlmTool):
                 .options(selectinload(ChunkAndEmbedding.content))
                 .where(
                     DerivedContent.node_id.in_(
-                        [node.id for node in self.datasource.nodes]
+                        [
+                            version_node.node_id
+                            for version_node in self.datasource.version_nodes
+                        ]
                     )
                 )
                 .order_by("semantic_score")
@@ -89,14 +92,19 @@ class HybridSearchTool(LlmTool):
 
             for chunk, combo_score, node_id in top_results:
                 # Safely extract metadata from chunk's related objects
-                node = next(
-                    (node for node in self.datasource.nodes if node.id == node_id), None
+                version_node = next(
+                    (
+                        version_node
+                        for version_node in self.datasource.version_nodes
+                        if version_node.node_id == node_id
+                    ),
+                    None,
                 )
-                if not node:
+                if not version_node:
                     continue
 
-                rel_path = node.relative_path
-                ver_id = node.version_id
+                rel_path = version_node.relative_path
+                ver_id = version_node.version_id
 
                 # Create a Reference object for each chunk
                 ref = Reference(

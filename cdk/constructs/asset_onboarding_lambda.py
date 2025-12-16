@@ -13,9 +13,10 @@ from aws_cdk import (
     aws_s3_notifications,
     aws_secretsmanager,
     aws_sns,
-    aws_ssm
+    aws_ssm,
 )
 from constructs import Construct
+
 from cdk.settings import settings
 
 
@@ -44,7 +45,7 @@ class AssetOnboardingLambda(Construct):
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "AssetOnboardingLambdaPy",
-            entry="content_services/onboarding_event_handler",
+            entry="lambdas/onboarding_event_handler",
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             index="src/main.py",
             environment={
@@ -57,23 +58,25 @@ class AssetOnboardingLambda(Construct):
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
-                "SENTRY_DSN": "FIXME" if params.is_private_deploy else settings.SENTRY_DSN,
-                "IS_PRIVATE_DEPLOY": str(params.is_private_deploy)
+                "SENTRY_DSN": "FIXME"
+                if params.is_private_deploy
+                else settings.SENTRY_DSN,
+                "IS_PRIVATE_DEPLOY": str(params.is_private_deploy),
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]
             ),
             timeout=Duration.seconds(15),
             vpc=params.vpc,
-            vpc_subnets=aws_ec2.SubnetSelection(
-                subnet_group_name="Private"
-            ),
+            vpc_subnets=aws_ec2.SubnetSelection(subnet_group_name="Private"),
         )
         deployment_secrets.grant_read(lambda_function)
 
         if params.is_private_deploy:
             firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+                self,
+                "FirewallCertSecret",
+                secret_name="/network-firewall/ca-certificate",
             )
             firewall_cert_secret.grant_read(lambda_function)
 
@@ -100,10 +103,10 @@ class AssetOnboardingLambda(Construct):
 
         # Lambda Error Rate Alarm
         alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(
-            self, '/infrastructure/alarms/topic-arn'
+            self, "/infrastructure/alarms/topic-arn"
         )
         alarm_topic = aws_sns.Topic.from_topic_arn(
-            self, 'InfrastructureAlarmsTopic', alarm_topic_arn
+            self, "InfrastructureAlarmsTopic", alarm_topic_arn
         )
         alarm_action = aws_cloudwatch_actions.SnsAction(alarm_topic)
 

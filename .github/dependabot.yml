@@ -29,7 +29,7 @@ updates:
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
-    directory: "/content_services/onboarding_event_handler"
+    directory: "/lambdas/onboarding_event_handler"
     schedule:
       interval: "weekly"
       day: "wednesday"

@@ -32,9 +32,11 @@ else:
 logger = logging.getLogger()
 logger.info(f"Log level set to {log_level}")
 
-is_private_deploy = os.getenv("IS_PRIVATE_DEPLOY") and os.getenv("IS_PRIVATE_DEPLOY") == "true"
+is_private_deploy = (
+    os.getenv("IS_PRIVATE_DEPLOY") and os.getenv("IS_PRIVATE_DEPLOY") == "true"
+)
 
-if(not is_private_deploy):
+if not is_private_deploy:
     sentry_sdk.init(
         dsn=os.environ["SENTRY_DSN"],
         integrations=[AwsLambdaIntegration(timeout_warning=True)],
@@ -42,21 +44,22 @@ if(not is_private_deploy):
         environment=settings.ENVIRONMENT,
     )
 
+
 def handler(
     event: dict,
-    context: Any,  # noqa: ANN401
+    context: Any,
 ) -> str:
     try:
         return _process_handler(event, context)
     except Exception as e:
         logger.exception("Unhandled error in Lambda handler")
-        if(not is_private_deploy):
+        if not is_private_deploy:
             sentry_sdk.capture_exception(e)
 
 
 def _process_handler(
     event: dict,
-    context: Any,  # noqa: ANN401
+    context: Any,
 ) -> str:
     # Parse the SNS message
     for record in event["Records"]:
@@ -106,10 +109,9 @@ def _process_handler(
             real_object_key = unquote_plus(object_key)
             logger.info("key = " + real_object_key)
             logger.info("bucket = " + bucket_name)
-            should_process = (
-                has_allowed_guard_duty_tag(bucket=bucket_name, key=real_object_key)
-                or settings.ENVIRONMENT in ["cloud-local","pms"]
-            )
+            should_process = has_allowed_guard_duty_tag(
+                bucket=bucket_name, key=real_object_key
+            ) or settings.ENVIRONMENT in ["cloud-local", "pms"]
             try:
                 if should_process:
                     metadata = head_object(bucket=bucket_name, key=real_object_key)
@@ -142,7 +144,7 @@ def _process_handler(
                 onboarded.append(onboarding_result)
             except Exception as e:
                 logger.error(f"Failed to process S3 record {real_object_key}: {e}")
-                if(not is_private_deploy):
+                if not is_private_deploy:
                     sentry_sdk.capture_exception(e)
                 # Continue processing other records instead of failing the entire batch
     return onboarded

@@ -45,6 +45,19 @@ class Settings(BaseSettings):
     # Public base URL where server is accessible (e.g., https://api.dev.driverai.com)
     PUBLIC_BASE_URL: str = DEFAULT_SECRET
 
+    MCP_JWT_SIGNING_KEY: str = DEFAULT_SECRET
+    # To generate a new key, run:
+    # python3 -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+    MCP_STORAGE_ENCRYPTION_KEY: str = DEFAULT_SECRET
+
+    # MCP Storage Configuration
+    # Options: "redis" (production), "memory" (local dev/testing)
+    MCP_STORAGE_BACKEND: str = DEFAULT_SECRET
+
+    REDIS_HOST: str = DEFAULT_SECRET
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = DEFAULT_SECRET
+
     S3ADMIN_AWS_ACCESS_KEY_ID: str = DEFAULT_SECRET
     S3ADMIN_AWS_SECRET_ACCESS_KEY: str = DEFAULT_SECRET
     AWS_REGION: str = DEFAULT_SECRET

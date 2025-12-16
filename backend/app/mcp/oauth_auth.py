@@ -4,8 +4,12 @@ OAuth authentication configuration for MCP server using Auth0.
 
 import logging
 
+from cryptography.fernet import Fernet
 from fastmcp.server.auth.providers.auth0 import Auth0Provider
 from fastmcp.server.dependencies import get_access_token
+from key_value.aio.stores.memory import MemoryStore
+from key_value.aio.stores.redis import RedisStore
+from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
 
 from app.auth.models import User
 from app.core.config import settings
@@ -15,6 +19,36 @@ logger = logging.getLogger(__name__)
 
 class OAuthAuthenticationError(Exception):
     """Exception raised when OAuth authentication or authorization fails"""
+
+
+def _create_storage_backend() -> MemoryStore | RedisStore | FernetEncryptionWrapper:
+    backend = settings.MCP_STORAGE_BACKEND.lower()
+
+    if backend == "redis":
+        # Required for multi-node env
+        # Also adds at-rest encryption for prod use
+        logger.info(
+            f"Using Redis storage backend: {settings.REDIS_HOST}:{settings.REDIS_PORT}"
+        )
+        store = RedisStore(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            password=settings.REDIS_PASSWORD,
+            db=0,
+        )
+
+        fernet = Fernet(settings.MCP_STORAGE_ENCRYPTION_KEY.encode())
+        return FernetEncryptionWrapper(key_value=store, fernet=fernet)
+
+    elif backend == "memory":
+        # Memory store used for local dev only
+        logger.info("Using in-memory storage backend (not suitable for production)")
+        return MemoryStore()
+
+    else:
+        raise ValueError(
+            f"Invalid MCP_STORAGE_BACKEND: {backend}. Must be 'redis' or 'memory'"
+        )
 
 
 def create_mcp_oauth_provider() -> Auth0Provider:
@@ -34,6 +68,11 @@ def create_mcp_oauth_provider() -> Auth0Provider:
     2. Client fetches /.well-known/oauth-protected-resource/mcp/v1
     3. Client discovers OAuth server at /.well-known/oauth-authorization-server
     4. Client completes OAuth flow and retries /mcp/v1 with token
+
+    Security Configuration:
+    - JWT signing key: Signs FastMCP-issued tokens
+    - Storage encryption: Encrypts OAuth tokens at rest using Fernet
+    - Client storage: Persists OAuth state (memory for dev, Redis for prod)
     """
     config_url = f"https://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration"
     mcp_full_url = f"{settings.PUBLIC_BASE_URL}/mcp"
@@ -41,6 +80,9 @@ def create_mcp_oauth_provider() -> Auth0Provider:
     logger.info(f"Configuring MCP OAuth with Auth0 domain: {settings.AUTH0_DOMAIN}")
     logger.info(f"Public base URL: {settings.PUBLIC_BASE_URL}")
     logger.info(f"MCP mounted at: {mcp_full_url}")
+    logger.info(f"Storage backend: {settings.MCP_STORAGE_BACKEND}")
+
+    storage = _create_storage_backend()
 
     auth = Auth0Provider(
         config_url=config_url,
@@ -49,9 +91,9 @@ def create_mcp_oauth_provider() -> Auth0Provider:
         audience=settings.MCP_AUTH0_AUDIENCE,
         issuer_url=settings.PUBLIC_BASE_URL,
         base_url=mcp_full_url,
+        client_storage=storage,
+        jwt_signing_key=settings.MCP_JWT_SIGNING_KEY,
     )
-
-    # TODO for prod!!! Must configure redis credential store here! Ideally don't merge into devlop till redis ready!
 
     return auth
 

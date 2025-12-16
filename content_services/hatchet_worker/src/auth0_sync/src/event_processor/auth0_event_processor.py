@@ -76,7 +76,17 @@ from typing import Any
 import requests
 from config import settings
 from database.db import engine
-from database.models import Organization, OrgMembership, User
+from database.models import (
+    Organization,
+    OrgMembership,
+    PrimaryAssetRoleGrant,
+    Team,
+    TeamMembership,
+    User,
+)
+
+# Note: PrimaryAssetRoleGrant and TeamMembership are used in _process_membership_change
+# for removing org membership (not user deletion, which uses CASCADE)
 from database.models_enums import OrgRole
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
@@ -206,20 +216,15 @@ def _handle_user_delete_event(event: Auth0EventBridgeEvent) -> list[str]:
 
     with Session(engine) as session:
         user = session.get(User, user_id)
-        memberships = session.exec(
-            select(OrgMembership).where(OrgMembership.user_id == user_id)
-        ).all()
-
-        for membership in memberships:
-            session.delete(membership)
-
         if user:
+            # CASCADE DELETE handles TeamMembership, PrimaryAssetRoleGrant, OrgMembership
             session.delete(user)
+            session.commit()
+            logger.info(f"Deleted user and cascaded memberships: {user_id}")
+            return ["user", "membership"]
 
-        session.commit()
-
-    logger.info(f"Deleted user and memberships: {user_id}")
-    return ["user", "membership"]
+        logger.info(f"User {user_id} not found in DB, nothing to delete")
+        return []
 
 
 def _handle_membership_event(event: Auth0EventBridgeEvent) -> list[str]:
@@ -328,13 +333,53 @@ def _process_membership_change(user_id: str, org_id: str) -> list[str]:
         ).first()
 
         if is_member and not existing_membership:
-            new_membership = OrgMembership(
-                user_id=user_id, org_id=org_id, role=OrgRole.org_member
-            )
+            logger.info(f"Adding membership: {user_id} to {org_id}")
+            # Create new membership
+            # Default role
+            role = OrgRole.org_member
+
+            # Ensure we have user_data to check app_metadata
+            user_data = auth0_service.get_user_profile(user_id)
+
+            if not user_data:
+                raise ValueError(
+                    f"Failed to fetch user data for {user_id} during membership processing."
+                )
+
+            # Check app_metadata for initial role
+            app_metadata = user_data["app_metadata"]
+
+            if org_id in app_metadata:
+                role_str = app_metadata[org_id]["initial_org_role"]
+                role = OrgRole(role_str)
+
+            new_membership = OrgMembership(user_id=user_id, org_id=org_id, role=role)
             session.add(new_membership)
-            logger.info(f"Created membership: {user_id} in {org_id}")
+            logger.info(f"Created membership: {user_id} in {org_id} with role {role}")
             entities_updated.append("membership")
         elif not is_member and existing_membership:
+            team_memberships = session.exec(
+                select(TeamMembership)
+                .join(Team, TeamMembership.team_id == Team.id)
+                .where(
+                    TeamMembership.user_id == user_id, Team.organization_id == org_id
+                )
+            ).all()
+            for membership in team_memberships:
+                session.delete(membership)
+
+            # Delete primary asset role grants to avoid FK violation
+            grants = session.exec(
+                select(PrimaryAssetRoleGrant).where(
+                    PrimaryAssetRoleGrant.user_id == user_id,
+                    PrimaryAssetRoleGrant.organization_id == org_id,
+                )
+            ).all()
+            for grant in grants:
+                session.delete(grant)
+
+            session.flush()
+
             session.delete(existing_membership)
             logger.info(f"Removed membership: {user_id} from {org_id}")
             entities_updated.append("membership")
@@ -360,20 +405,22 @@ def _handle_api_event(event: Auth0EventBridgeEvent) -> list[str]:
     logger.info(f"Processing API event for path: {path}")
 
     if "/organizations/" in path and "/members" in path:
-        # this only works for organization_member_added
-        org_id, user_id = _extract_org_user_from_path(path)
-        if (
-            request["method"] == "delete"
-            and "/organizations/" in path
-            and "/members" in path
-        ):
+        org_id = _extract_org_from_path(path)
+        method = request.get("method", "").lower()
+        request_body = request.get("body", {})
+
+        user_id = None
+        if method == "delete":
             logger.info("Detected organization member deletion event")
-            org_id = _extract_org_from_path(path)
-            user_id = (
-                event.detail.data.details.get("request", {})
-                .get("body", {})
-                .get("members", [None])[0]
-            )
+            user_id = request_body.get("members", [None])[0]
+        elif method in ["post", "patch"]:
+            logger.info("Detected organization member addition/update event")
+            members = request_body.get("members", [])
+            if members:
+                user_id = members[0]
+        else:
+            # Try extracting from path (e.g., GET /organizations/{org}/members/{user})
+            _, user_id = _extract_org_user_from_path(path)
 
         logger.info(f"Processing Org {org_id} membership change for {user_id}")
         if org_id and user_id:

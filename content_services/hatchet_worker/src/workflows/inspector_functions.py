@@ -10,7 +10,7 @@ from hatchet_sdk.runnables.types import (
     StickyStrategy,
 )
 from inspector.src.deep_context_docs import deep_context_docs
-from inspector.src.modal_funcs import (
+from inspector.src.hatchet_funcs import (
     export_tech_docs_to_zip,
     make_codebase_tags,
     make_folder_tech_doc,

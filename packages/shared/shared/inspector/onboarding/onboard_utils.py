@@ -800,7 +800,5 @@ def calculate_directory_stats(
                 else f"{directory_path}/"
             )
             results.append((final_stats, relative_path))
-        else:
-            results.append((None, None))
 
     return results

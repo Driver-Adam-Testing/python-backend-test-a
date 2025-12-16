@@ -20,7 +20,14 @@ from typing import Any
 
 from auth0.management import Auth0
 from database.db import engine
-from database.models import Auth0SyncRun, Organization, OrgMembership, User
+from database.models import (
+    Auth0SyncRun,
+    Organization,
+    OrgMembership,
+    PrimaryAssetRoleGrant,
+    TeamMembership,
+    User,
+)
 from database.models_enums import OrgRole, SourceVisibility
 from shared.auth0.auth0_service import Auth0Service
 from sqlmodel import Session, select
@@ -279,7 +286,9 @@ class Auth0Sync:
             self.stats["errors"].append(f"Failed to sync user {user_id}: {e!s}")
             return False
 
-    def sync_membership(self, session: Session, org_id: str, user_id: str) -> bool:
+    def sync_membership(
+        self, session: Session, org_id: str, user_id: str, user_data: dict[str, Any]
+    ) -> bool:
         """Create or update organization membership."""
         try:
             # Check if membership already exists
@@ -295,13 +304,31 @@ class Auth0Sync:
                 self.stats["memberships_skipped"] += 1
             else:
                 # Create new membership
+                # Default role
+                role = OrgRole.org_member
+
+                # Check app_metadata for initial role
+                app_metadata = user_data.get("app_metadata", {})
+
+                if org_id in app_metadata:
+                    role_str = app_metadata[org_id].get("initial_org_role")
+                    if role_str:
+                        try:
+                            role = OrgRole(role_str)
+                        except ValueError:
+                            logger.warning(
+                                f"Invalid role '{role_str}' in app_metadata for user {user_id} org {org_id}. Using default."
+                            )
+
                 new_membership = OrgMembership(
-                    org_id=org_id, user_id=user_id, role=OrgRole.org_member
+                    org_id=org_id, user_id=user_id, role=role
                 )
                 session.add(new_membership)
 
                 if self.verbose:
-                    logger.debug(f"Created membership: {user_id} in {org_id}")
+                    logger.debug(
+                        f"Created membership: {user_id} in {org_id} with role {role}"
+                    )
                 self.stats["memberships_created"] += 1
 
             return True
@@ -335,6 +362,24 @@ class Auth0Sync:
 
         for user in db_users:
             if user.id not in auth0_user_ids:
+                # Delete team memberships first to avoid FK violation
+                team_memberships = session.exec(
+                    select(TeamMembership).where(TeamMembership.user_id == user.id)
+                ).all()
+                for membership in team_memberships:
+                    session.delete(membership)
+
+                # Delete primary asset role grants to avoid FK violation
+                grants = session.exec(
+                    select(PrimaryAssetRoleGrant).where(
+                        PrimaryAssetRoleGrant.user_id == user.id
+                    )
+                ).all()
+                for grant in grants:
+                    session.delete(grant)
+
+                session.flush()
+
                 session.delete(user)
                 if self.verbose:
                     logger.debug(f"Deleted stale user: {user.email} ({user.id})")
@@ -409,6 +454,9 @@ class Auth0Sync:
         logger.info("Fetching all users from Auth0...")
         users = self.fetch_all_users(auth0_client)
 
+        # Create user lookup for efficient access
+        user_lookup = {u["user_id"]: u for u in users if u.get("user_id")}
+
         logger.info("Fetching all user-org memberships from Auth0...")
         auth0_memberships: set[tuple[str, str]] = set()
         for user in users:
@@ -461,7 +509,8 @@ class Auth0Sync:
 
             logger.info("Syncing organization memberships...")
             for org_id, user_id in auth0_memberships:
-                self.sync_membership(session, org_id, user_id)
+                user_data = user_lookup.get(user_id, {})
+                self.sync_membership(session, org_id, user_id, user_data)
 
             logger.info("Deleting stale memberships...")
             self.delete_stale_memberships(session, auth0_memberships)

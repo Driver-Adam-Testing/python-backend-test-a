@@ -62,7 +62,7 @@ def make_tech_doc(
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
-    s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+    # s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     print("Pre-bucket name fetch")
     bucket_name = os.environ.get("INSPECTOR_BUCKET_NAME")
     if bucket_name is None:
@@ -208,7 +208,7 @@ def export_tech_docs_to_zip(
 
     import boto3
     from database.db import engine
-    from database.models import DerivedContent, Node, Version
+    from database.models import DerivedContent, Node, Version, VersionNode
     from database.models_enums import ContentKind, NodeKind
     from shared.inspector.utils.export_utils import (
         replace_driver_compatible_links_with_markdown_links,
@@ -219,25 +219,29 @@ def export_tech_docs_to_zip(
     with Session(engine) as session:
         long_desc_query = (
             select(
+                VersionNode,
                 Node,
                 DerivedContent,
                 # Node.relative_path, DerivedContent.content, Node.kind, Node.depth
             )
-            .join(DerivedContent)
+            .join(Node, VersionNode.node_id == Node.id)
+            .join(DerivedContent, DerivedContent.node_id == Node.id)
             .where(
-                Node.version_id == version_id,
+                VersionNode.version_id == version_id,
                 DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
             )
         )
 
         short_desc_query = (
             select(
+                VersionNode,
                 Node,
                 DerivedContent,
             )
-            .join(DerivedContent)
+            .join(Node, VersionNode.node_id == Node.id)
+            .join(DerivedContent, DerivedContent.node_id == Node.id)
             .where(
-                Node.version_id == version_id,
+                VersionNode.version_id == version_id,
                 DerivedContent.content_kind == ContentKind.SHORT_SENTENCE_DESCRIPTION,
             )
         )
@@ -263,17 +267,18 @@ def export_tech_docs_to_zip(
         short_desc_rows = short_desc_result.all()
 
         node_to_short_desc = {
-            node.id: derived_content for node, derived_content in short_desc_rows
+            node.id: derived_content for _, node, derived_content in short_desc_rows
         }
 
         node_path_to_kind = {
-            Path(node.relative_path): node.kind for node, _ in long_desc_rows
+            Path(version_node.relative_path): node.kind
+            for version_node, node, _ in long_desc_rows
         }
     with (
         tempfile.TemporaryDirectory() as temp_dir,
     ):
-        for node, long_desc_dc in long_desc_rows:
-            node_path = Path(node.relative_path)
+        for version_node, node, long_desc_dc in long_desc_rows:
+            node_path = Path(version_node.relative_path)
             if node.kind == NodeKind.CODEBASE_FILE:
                 link_destination_path = node_path.with_suffix(node_path.suffix + ".md")
                 file_path = Path(temp_dir) / link_destination_path

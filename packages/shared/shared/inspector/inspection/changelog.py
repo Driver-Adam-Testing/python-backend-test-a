@@ -408,8 +408,11 @@ async def _prepare_repo_for_changelog(
     from database.db import engine
     from database.models import GitProviderAppInstallation
     from database.models_enums import PrimaryAssetProvider
+    from shared.inspector.utils.db import (
+        get_version_by_id,
+        git_provider_app_installation_by_id,
+    )
     from sqlmodel import Session, select
-    from utils.db import get_version_by_id, git_provider_app_installation_by_id
 
     version = await get_version_by_id(version_id)
     repo_id = version.primary_asset.repository_id
@@ -477,8 +480,7 @@ async def _prepare_repo_for_changelog(
 
     repo_dir = Path(temp_dir) / full_name
     result = subprocess.run(
-        f"git clone {clone_url} {repo_dir}",
-        shell=True,
+        ["git", "clone", clone_url, str(repo_dir)],
         cwd=None,
         capture_output=True,
         text=True,

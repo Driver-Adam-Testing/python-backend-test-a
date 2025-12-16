@@ -22,11 +22,12 @@ from .common import wait_for_guard_duty_tag
 
 
 async def run_autodoc(
-    page_node_id: uuid.UUID,  # TODO: naming here
+    version_node_id: uuid.UUID,  # TODO: naming here
     config_kind: Any,  # TODO: the actual type is a deferred import here, not sure how to resolve?
     document_goal: str | None = None,
     user_context: str | None = None,
     content_kind: ContentKind | None = None,
+    hatchet_id: str | None = None,
 ) -> None:
     import hashlib
 
@@ -35,10 +36,10 @@ async def run_autodoc(
     from database.models import (
         DerivedContent,
         DocumentSource,
-        Node,
         UserCache,
         Version,
         VersionCreator,
+        VersionNode,
     )
     from database.models_enums import (
         AutoDocConfigKind,
@@ -65,10 +66,10 @@ async def run_autodoc(
             with get_session() as session, session.begin():
                 document_sources = session.exec(
                     select(DocumentSource)
-                    .where(DocumentSource.page_node_id == page_node_id)
+                    .where(DocumentSource.page_version_node_id == version_node_id)
                     .options(
-                        selectinload(DocumentSource.source_node)
-                        .selectinload(Node.version)
+                        selectinload(DocumentSource.source_version_node)
+                        .selectinload(VersionNode.version)
                         .selectinload(Version.primary_asset)
                     )
                 ).all()
@@ -82,25 +83,25 @@ async def run_autodoc(
                 org_id = None
                 for source in document_sources:
                     if not org_id:
-                        org_id = (
-                            source.source_node.version.primary_asset.organization_id
-                        )
+                        org_id = source.source_version_node.version.primary_asset.organization_id
                     if (
-                        source.source_node.version.primary_asset.kind
+                        source.source_version_node.version.primary_asset.kind
                         == PrimaryAssetKind.CODEBASE
                     ):
                         code_cfg = FullyQualifiedDriverPathCode(
-                            version_id=str(source.source_node.version_id),
-                            node_path=source.source_node.relative_path.rstrip("/"),
+                            version_id=str(source.source_version_node.version_id),
+                            node_path=source.source_version_node.relative_path.rstrip(
+                                "/"
+                            ),
                         )
                         scope.code.append(code_cfg)
                     elif (
-                        source.source_node.version.primary_asset.kind
+                        source.source_version_node.version.primary_asset.kind
                         == PrimaryAssetKind.FILE
                     ):
                         pdf_cfg = FullyQualifiedDriverPathPdf(
-                            version_id=str(source.source_node.version_id),
-                            pdf_name=source.source_node.version.primary_asset.display_name,
+                            version_id=str(source.source_version_node.version_id),
+                            pdf_name=source.source_version_node.version.primary_asset.display_name,
                         )
                         scope.pdfs.append(pdf_cfg)
         else:
@@ -110,10 +111,10 @@ async def run_autodoc(
                 pdfs=[],
             )
             with get_session() as session, session.begin():
-                node = session.get(Node, page_node_id)
+                source_version_node = session.get(VersionNode, version_node_id)
                 code_cfg = FullyQualifiedDriverPathCode(
-                    version_id=str(node.version_id),
-                    node_path=node.relative_path.rstrip("/"),
+                    version_id=str(source_version_node.version_id),
+                    node_path=source_version_node.relative_path.rstrip("/"),
                 )
                 scope.code.append(code_cfg)
 
@@ -128,7 +129,7 @@ async def run_autodoc(
                 if org_id:
                     bucket = os.environ.get("DROPZONE_BUCKET_NAME")
                     hashed_org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-                    key = f"assets/{hashed_org_id}/{page_node_id}/custom_config.toml"
+                    key = f"assets/{hashed_org_id}/{version_node_id}/custom_config.toml"
 
                     s3 = boto3.client("s3")
                     # download the file from S3
@@ -156,11 +157,11 @@ async def run_autodoc(
                 toml_file = f"config_{toml_uuid}.toml"
                 if is_page:
                     auto_toml = AutoToml.from_page_id(
-                        page_node_id, enable_auto_scaling=True
+                        version_node_id, enable_auto_scaling=True
                     )
                 else:
                     auto_toml = AutoToml.from_root_node_id(
-                        root_node_id=page_node_id, enable_auto_scaling=True
+                        root_node_id=version_node_id, enable_auto_scaling=True
                     )
                 toml_content = await auto_toml.generate(
                     document_goal=document_goal,
@@ -169,7 +170,6 @@ async def run_autodoc(
                 with open(toml_file, "w") as f:
                     f.write(toml_content)
                 config = AutoDocCfg.from_file(toml_file=toml_file)
-                os.remove(toml_file)
             case _:
                 raise ValueError(f"Unsupported config kind: {config_kind}")
 
@@ -178,13 +178,17 @@ async def run_autodoc(
         print(config.scope)
 
         init_state = await AutoDocInitState.from_cfg(
-            cfg=config, execution_mode=ExecutionMode.MODAL, page_id=page_node_id
+            cfg=config,
+            execution_mode=ExecutionMode.MODAL,
+            page_version_node_id=version_node_id,
         )
         doc = await init_state.generate(
-            execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
+            execution_mode=ExecutionMode.MODAL,
+            source_version_node_id=str(version_node_id),
+            hatchet_id=hatchet_id,
         )
         elapsed_time_s = await get_autodoc_elapsed_time(
-            page_id=str(page_node_id),
+            source_version_node_id=str(version_node_id), hatchet_id=hatchet_id
         )
         elapsed_time_min = ceil(elapsed_time_s / 60)
         if elapsed_time_min == 1:
@@ -192,9 +196,10 @@ async def run_autodoc(
         else:
             doc += f" in {elapsed_time_min} minutes"
         await update_autodocs_status(
-            page_id=str(page_node_id),
+            source_version_node_id=str(version_node_id),
             status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
             content=doc,
+            hatchet_id=hatchet_id,
         )
 
         sections = []
@@ -218,30 +223,34 @@ async def run_autodoc(
         if is_page:
             with get_session() as session, session.begin():
                 derived_content = session.exec(
-                    select(DerivedContent).where(
-                        DerivedContent.node_id == page_node_id,
+                    select(DerivedContent)
+                    .join(VersionNode, DerivedContent.node_id == VersionNode.node_id)
+                    .where(
+                        VersionNode.id == version_node_id,
                     )
                 ).first()
                 if not derived_content:
-                    print("No existing derived content found for this page node.")
+                    print("No existing derived content found for this page.")
                     return
                 else:
                     derived_content.content = doc
-                node = session.exec(
-                    select(Node)
-                    .where(Node.id == page_node_id)
+                page_version_node = session.exec(
+                    select(VersionNode)
+                    .where(VersionNode.id == version_node_id)
                     .options(
-                        selectinload(Node.version).selectinload(Version.primary_asset)
+                        selectinload(VersionNode.version).selectinload(
+                            Version.primary_asset
+                        )
                     )
                 ).one()
 
-                node.version.status = VersionStatus.GENERATION_COMPLETE
-                session.add(node.version)
+                page_version_node.version.status = VersionStatus.GENERATION_COMPLETE
+                session.add(page_version_node.version)
 
                 user_cache = session.exec(
                     select(UserCache)
                     .join(VersionCreator, UserCache.id == VersionCreator.user_id)
-                    .where(VersionCreator.version_id == node.version_id)
+                    .where(VersionCreator.version_id == page_version_node.version_id)
                 ).first()
 
                 env = os.environ.get("MODAL_ENVIRONMENT")
@@ -253,34 +262,34 @@ async def run_autodoc(
                     log = AutoDocLog(
                         title=name,
                         user_email=user_cache.email if user_cache else "UNKNOWN",
-                        organization_id=node.version.primary_asset.organization_id
-                        if node
+                        organization_id=page_version_node.version.primary_asset.organization_id
+                        if page_version_node
                         else "UNKNOWN",
                         sources=source_string,
                         toml_content=toml_content,
                         autodoc_content=doc,
                         user_context=user_context,
                         env=env,
-                        page_id=str(page_node_id),
+                        page_id=str(version_node_id),
                         config_kind=str(config_kind),
                     )
                     log_input = WriteAutoDocLogInput(log=log)
 
                     write_autodoc_log_task.aio_run(log_input)
 
-            print("Updated derived content for page node:", page_node_id)
+            print("Updated derived content for page version node:", version_node_id)
         else:
             with get_session() as session, session.begin():
-                node = session.get(Node, page_node_id)
+                source_version_node = session.get(VersionNode, version_node_id)
                 dc_delete_query = delete(DerivedContent).where(
-                    DerivedContent.node_id == page_node_id,
+                    DerivedContent.node_id == source_version_node.node_id,
                     DerivedContent.content_kind == content_kind,
                 )
                 session.exec(dc_delete_query)
 
                 derived_content = DerivedContent(
-                    node_id=page_node_id,
-                    relative_path=node.relative_path,
+                    node_id=source_version_node.node_id,
+                    relative_path=source_version_node.relative_path,
                     content_kind=content_kind,  # TODO: doc kind as input
                     content=doc,
                     misc_metadata=None,
@@ -299,92 +308,13 @@ async def run_autodoc(
     except Exception as e:
         print("Error:", e)
         await update_autodocs_status(
-            page_id=str(page_node_id),
+            source_version_node_id=str(version_node_id),
             status_kind=AutoDocStatusMessageKind.GENERATION_ERROR,
             content="An error as has occurred during generation.",
+            hatchet_id=hatchet_id,
         )
         with get_session() as session, session.begin():
-            node = session.get(Node, page_node_id)
-            node.version.status = VersionStatus.GENERATION_ERROR
-            session.add(node.version)
+            version_node = session.get(VersionNode, version_node_id)
+            version_node.version.status = VersionStatus.GENERATION_ERROR
+            session.add(version_node.version)
         raise e
-
-        raise
-
-
-def main(
-    page_node_id: str,
-    document_goal: str,
-    size: str,
-) -> None:
-    from database.models_enums import AutoDocConfigKind
-
-    run_autodoc.remote(
-        page_node_id=page_node_id,
-        config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-        document_goal=document_goal,
-        user_context=size,
-    )
-
-
-async def run_autodoc_cli(toml_content: str, page_node_id: str) -> None:
-    from database.db import get_session
-    from database.models import DocumentSource, Node, Version
-    from database.models_enums import (
-        PrimaryAssetKind,
-    )
-    from sqlalchemy.orm import selectinload
-    from sqlmodel import select
-
-    with get_session() as session, session.begin():
-        document_sources = session.exec(
-            select(DocumentSource)
-            .where(DocumentSource.page_node_id == page_node_id)
-            .options(
-                selectinload(DocumentSource.source_node)
-                .selectinload(Node.version)
-                .selectinload(Version.primary_asset)
-            )
-        ).all()
-
-        scope = Scope(
-            preamble="",
-            code=[],
-            pdfs=[],
-        )
-
-        org_id = None
-        for source in document_sources:
-            if not org_id:
-                org_id = source.source_node.version.primary_asset.organization_id
-            if (
-                source.source_node.version.primary_asset.kind
-                == PrimaryAssetKind.CODEBASE
-            ):
-                code_cfg = FullyQualifiedDriverPathCode(
-                    version_id=str(source.source_node.version_id),
-                    node_path=source.source_node.relative_path.rstrip("/"),
-                )
-                scope.code.append(code_cfg)
-            elif source.source_node.version.primary_asset.kind == PrimaryAssetKind.FILE:
-                pdf_cfg = FullyQualifiedDriverPathPdf(
-                    version_id=str(source.source_node.version_id),
-                    pdf_name=source.source_node.version.primary_asset.display_name,
-                )
-                scope.pdfs.append(pdf_cfg)
-
-        config_file = "config_file.toml"
-        with open(config_file, "w") as f:
-            f.write(toml_content)
-
-        config = AutoDocCfg.from_file(toml_file=config_file)
-        scope.preamble = config.scope.preamble
-        config.scope = scope
-
-        init_state = await AutoDocInitState.from_cfg(
-            cfg=config, execution_mode=ExecutionMode.MODAL, page_id=page_node_id
-        )
-        doc = await init_state.generate(
-            execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
-        )
-        return doc

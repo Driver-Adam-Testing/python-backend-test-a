@@ -44,6 +44,7 @@ hatchet-sdk = "^1.20.0"
 greenlet = "^3.2.4"
 auth0-python = "^4.13.0"
 truststore = "^0.10.4"
+tree-sitter-ruby = "^0.23.1"
 
 
 [tool.poetry.group.dev.dependencies]

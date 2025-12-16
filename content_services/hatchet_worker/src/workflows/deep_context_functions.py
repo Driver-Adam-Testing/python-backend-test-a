@@ -24,7 +24,7 @@ class MakeChangelogInput(BaseModel):
 async def make_changelog_task(input: MakeChangelogInput, ctx: Context) -> list:
     print("starting make changelog task")
     # Call the function to generate changelog
-    changelog = await make_changelog(
+    await make_changelog(
         input.version_id,
         input.install_id,
         input.previous_version_id,
@@ -49,8 +49,8 @@ async def make_changelog(
     print(f"Making changelog for version {version_id}")
     content_kind = ContentKind.DEEP_CONTEXT_CHANGELOG
     version = await get_version_by_id(version_id)
-    root_node_id = version.root_node.id
-    root_node_relative_path = version.root_node.relative_path
+    root_node_id = version.root_version_node.node_id
+    root_node_relative_path = version.root_version_node.relative_path
     repo_id = version.primary_asset.repository_id
     if repo_id is None:
         print("No repo_id found, skipping changelog generation.")
@@ -63,7 +63,7 @@ async def make_changelog(
         if previous_version_id:
             # Fetch previous changelog content
             previous_version = await get_version_by_id(previous_version_id)
-            previous_root_node_id = previous_version.root_node.id
+            previous_root_node_id = previous_version.root_version_node.node_id
             previous_changelog = (
                 await session.exec(
                     select(DerivedContent).where(

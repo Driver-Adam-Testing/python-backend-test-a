@@ -12,8 +12,6 @@ from pathlib import Path
 from typing import Any, ClassVar
 from uuid import UUID
 
-import boto3
-from botocore.exceptions import NoCredentialsError
 from shared.inspector.utils.dag import LiteNode, NodeStatus
 
 TaskName = str
@@ -98,11 +96,13 @@ class TaskResultPersistence(ABC):
     }
 
     @abstractmethod
-    def save_task_result(self, run_id: str, task_id: str, result: TaskResult) -> None:
+    def save_task_result(
+        self, run_id: str, result: TaskResult, task: type["Task"]
+    ) -> None:
         pass
 
     @abstractmethod
-    def load_task_result(self, run_id: str, task_id: str) -> None | TaskResult:
+    def load_task_result(self, run_id: str, task: type["Task"]) -> None | TaskResult:
         pass
 
 
@@ -117,10 +117,12 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
     def _get_run_dir(self, run_id: str) -> Path:
         return self.base_dir / run_id
 
-    def save_task_result(self, run_id: str, task_id: str, result: TaskResult) -> None:
+    def save_task_result(
+        self, run_id: str, result: TaskResult, task: type["Task"]
+    ) -> None:
         run_dir = self._get_run_dir(run_id)
         run_dir.mkdir(parents=True, exist_ok=True)
-        file_path = self._get_file_base_path(run_id, task_id)
+        file_path = self._get_file_base_path(run_id, task.hashed_stable_id)
         ext = self._extension_for_method[result.serialization]
         full_path = file_path.with_suffix(ext)
 
@@ -134,8 +136,8 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
                 f"Serialization must be either JSON or PICKLE, found {result.serialization}"
             )
 
-    def load_task_result(self, run_id: str, task_id: str) -> None | TaskResult:
-        base_path = self._get_file_base_path(run_id, task_id)
+    def load_task_result(self, run_id: str, task: type["Task"]) -> None | TaskResult:
+        base_path = self._get_file_base_path(run_id, task.hashed_stable_id)
 
         for serialization_method, ext in self._extension_for_method.items():
             file_path = base_path.with_suffix(ext)
@@ -148,48 +150,15 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
         return None
 
 
-class S3TaskResultPersistence(TaskResultPersistence):
-    def __init__(self, bucket_name: str) -> None:
-        self.s3_client = boto3.client("s3")
-        self.bucket_name = bucket_name
+class DbTaskResultPersistence(TaskResultPersistence):
+    def save_task_result(
+        self, run_id: str, result: TaskResult, task: type["Task"]
+    ) -> None:
+        # Saving all tasks via database and existing flows
+        pass
 
-    def save_task_result(self, run_id: str, task_id: str, result: TaskResult) -> None:
-        base_object_key = f"{run_id}/{task_id}"
-        ext = self._extension_for_method[result.serialization]
-        object_key = f"{base_object_key}{ext}"
-
-        self.s3_client.put_object(
-            Bucket=self.bucket_name, Key=object_key, Body=result.serialize()
-        )
-
-    def load_task_result(self, run_id: str, task_id: str) -> None | TaskResult:
-        base_object_key = f"{run_id}/{task_id}"
-        for serialization_method, ext in self._extension_for_method.items():
-            object_key = f"{base_object_key}{ext}"
-            try:
-                response = self.s3_client.get_object(
-                    Bucket=self.bucket_name, Key=object_key
-                )
-            except self.s3_client.exceptions.NoSuchKey:
-                continue
-            except NoCredentialsError:
-                raise Exception("AWS credentials not found.")
-            except Exception as e:
-                print(f"Error fetching data from S3: {e}")
-                return None
-            body = response["Body"].read()
-            if serialization_method is SerializationMethod.JSON:
-                result = TaskResult.deserialize(
-                    body.decode("utf-8"), serialization_method
-                )
-            elif serialization_method is SerializationMethod.PICKLE:
-                result = TaskResult.deserialize(body, serialization_method)
-            else:
-                raise ValueError(
-                    f"Unsupported serialization method: {serialization_method}"
-                )
-            return result
-        return None
+    def load_task_result(self, run_id: str, task: type["Task"]) -> None | TaskResult:
+        return task.load_result()
 
 
 @dataclass
@@ -214,8 +183,12 @@ class Task(abc.ABC):
     async def post_run_io(
         self,
         task_result: TaskResult,
-        dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_result(self) -> None | TaskResult:
+        """Load previously saved result for this task from storage/database."""
         raise NotImplementedError
 
     @property
@@ -258,9 +231,7 @@ class TaskManager:
     task_io_results: dict[type[Task], dict[str, any]] = field(default_factory=dict)
     task_to_asynctask: dict[type[Task], asyncio.Task] = field(default_factory=dict)
     persistence: None | TaskResultPersistence = field(
-        default_factory=lambda: S3TaskResultPersistence(
-            "modal-dev-inspector-1234442"
-        )  # TODO make configurable!!
+        default_factory=lambda: DbTaskResultPersistence()  # TODO make configurable!!
     )
     write_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
     write_executor: ThreadPoolExecutor = field(
@@ -269,13 +240,12 @@ class TaskManager:
     progress_state: ProgressState = field(default_factory=ProgressState)
 
     @classmethod
-    def with_s3_persistence(
+    def with_db_persistence(
         cls,
-        bucket_name: str,
         *args: Any,
         **kwargs: Any,
     ) -> "TaskManager":
-        return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
+        return cls(*args, persistence=DbTaskResultPersistence(), **kwargs)
 
     def _initialize_progress(self) -> None:
         self.progress_state.total_work_units = sum(
@@ -355,19 +325,13 @@ class TaskManager:
 
         loaded_results: dict[Task, TaskResult] = {}
 
-        for run_id, node_statuses in result_loading_config:
-            needed: list[str] = [
-                t.hashed_stable_id
-                for t in flattened_tasks
-                if t.node.status in node_statuses
-            ]
-
+        for run_id, _ in result_loading_config:
             with ThreadPoolExecutor(max_workers=25) as pool:
                 future_map = {
                     pool.submit(
-                        self.persistence.load_task_result, run_id, task_id
-                    ): task_id
-                    for task_id in needed
+                        self.persistence.load_task_result, run_id, t
+                    ): t.hashed_stable_id
+                    for t in flattened_tasks
                 }
 
                 for future in concurrent.futures.as_completed(future_map):
@@ -377,6 +341,11 @@ class TaskManager:
                         if result and task_id in task_by_id:
                             loaded_results[task_by_id[task_id]] = result
                     except Exception as e:
+                        for task in flattened_tasks:
+                            if task.hashed_stable_id == task_id:
+                                print(
+                                    f"Failed to load result for task '{task.task_name}' from storage: {e}"
+                                )
                         print(
                             f"Failed to load S3 result for {task_id} from run {run_id}: {e}"
                         )
@@ -439,9 +408,7 @@ class TaskManager:
             ]
             await asyncio.gather(*dependent_tasks)
 
-        if self._can_skip_task(
-            task
-        ):  # TODO: this probably only works if we abandon the states other than success for a task result! Think about this.
+        if self._can_skip_task(task):
             print(f"Skipping task '{task.task_name}'...")
             result = self.task_results[task]
         else:
@@ -454,19 +421,16 @@ class TaskManager:
             )
             self.task_results[task] = result
 
-        # TODO consider dependency injection of a database session, if we are OK with that coupling!
-        print(f"Unconditionally running post-run IO for task '{task.task_name}'...")
-        io_result = await task.post_run_io(
-            task_result=result,
-            dependent_io_results={
-                dep_task: self.task_io_results[dep_task]
-                for dep_task in task.dependencies
-            },
-        )
-        self.task_io_results[task] = io_result
+            print(
+                f"Running post-run IO for task '{task.task_name}' since task was not skipped..."
+            )
+            io_result = await task.post_run_io(
+                task_result=result,
+            )
+            self.task_io_results[task] = io_result
 
         task_hash_str = task.hashed_stable_id
-        await self.write_queue.put((task_hash_str, result))
+        await self.write_queue.put((task_hash_str, result, task))
 
         self._update_progress(task)
 
@@ -477,13 +441,13 @@ class TaskManager:
             item = await self.write_queue.get()
             if item is None:
                 break
-            task_id, result = item
+            task_id, result, task = item
             await asyncio.get_running_loop().run_in_executor(
                 self.write_executor,
                 self.persistence.save_task_result,
                 run_id,
-                task_id,
                 result,
+                task,
             )
         print("Writer task done")
 

@@ -47,7 +47,7 @@ def push_docs(version_id: uuid.UUID) -> None:
     import tempfile
 
     from database.db import engine
-    from database.models import GitProviderAppInstallation, Version
+    from database.models import GitProviderAppInstallation
     from database.models_enums import PrimaryAssetProvider
     from shared.inspector.onboarding import (
         azure_devops_ops,
@@ -59,19 +59,12 @@ def push_docs(version_id: uuid.UUID) -> None:
         unpack_archive_to_finalized_path,
     )
     from shared.inspector.utils.db import (
+        get_version_by_id,
         git_provider_app_installation_by_id,
     )
-    from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
-    with Session(engine) as session:
-        version = session.exec(
-            select(Version)
-            .where(Version.id == version_id)
-            .options(
-                selectinload(Version.primary_asset), selectinload(Version.root_node)
-            )
-        ).one()
+    version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
     tracked_branch = version.primary_asset.vcs_tracked_branch
     repo_id = version.primary_asset.repository_id
@@ -182,7 +175,7 @@ def push_docs(version_id: uuid.UUID) -> None:
             shutil.rmtree(driver_docs_path)
 
         dst_path = repo_dir / "driver_docs" / repo_name
-        COMMIT_MESSAGE = "Docs: update driver docs for commit: " + commit_slug
+        COMMIT_MESSAGE = "docs: update driver docs for commit: " + commit_slug
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)

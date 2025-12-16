@@ -9,7 +9,6 @@ from concurrent.futures import (
     wait,
 )
 from pathlib import Path
-from uuid import uuid4
 
 from database.models_enums import (
     ContentKind,
@@ -705,6 +704,7 @@ def run_codebase_connection(
         Node,
         PrimaryAsset,
         Version,
+        VersionNode,
     )
     from database.models_enums import VersionStatus
     from shared.inspector.onboarding.onboard_utils import (
@@ -847,64 +847,209 @@ def run_codebase_connection(
             )
         # s3_bucket.upload_file(Path(provisional_codebase_name), str(s3_dest))
         print(f"Uploaded {provisional_codebase_name} to {s3_dest}")
-        with Session(engine) as session, session.begin():
-            # Add directories source contents
-            for directory_stats, relative_path in folder_results:
-                if directory_stats is not None:
-                    if relative_path == codebase_name + "/":
-                        directory_stats["driver_ignored_files"] = len(ignored_files)
-                        dir_node = Node(
-                            version_id=version_id,
-                            relative_path=relative_path,
-                            kind=NodeKind.CODEBASE_DIRECTORY,
-                            misc_metadata=directory_stats,
-                        )
-                    else:
-                        dir_node = Node(
-                            version_id=version_id,
-                            relative_path=relative_path,
-                            kind=NodeKind.CODEBASE_DIRECTORY,
-                            misc_metadata=directory_stats,
-                        )
-                    session.add(dir_node)
-                    print(
-                        f"Created but not committed source content for: {relative_path}."
-                    )
 
-            # Add file source contents
-            for file_path in codebase_stats:
+        # Helper functions for content-based node deduplication
+        def _hash_file_content(file_path: Path) -> str:
+            """Hash file content using SHA256."""
+            with open(file_path, "rb") as f:
+                content = f.read()
+            return hashlib.sha256(content).hexdigest()
+
+        def _hash_directory_node(children_hashes: list[str]) -> str:
+            """Hash directory node based on sorted children content hashes."""
+            sorted_hashes = sorted(children_hashes)
+            hash_input = "|".join(sorted_hashes)
+            return hashlib.sha256(hash_input.encode("utf-8")).hexdigest()
+
+        def _find_node_by_hash(
+            session: Session, primary_asset_id: str, source_hash: str
+        ) -> Node | None:
+            """Find existing Node with matching hash for the same PrimaryAsset."""
+            return session.exec(
+                select(Node)
+                .where(Node.primary_asset_id == primary_asset_id)
+                .where(Node.source_hash == source_hash)
+                .limit(1)
+            ).first()
+
+        def _get_directory_children_hashes(
+            session: Session, version_id: str, relative_path: str
+        ) -> list[str]:
+            """Get content hashes for direct children of a directory node."""
+            dir_path = (
+                relative_path if relative_path.endswith("/") else f"{relative_path}/"
+            )
+            target_depth = dir_path.count("/") - 1
+
+            children_hashes = session.exec(
+                select(Node.source_hash)
+                .join(VersionNode, VersionNode.node_id == Node.id)
+                .where(VersionNode.version_id == version_id)
+                .where(VersionNode.relative_path.startswith(dir_path))
+                .where(VersionNode.depth == target_depth + 1)
+            ).all()
+
+            return list(children_hashes)
+
+        def _process_file_node(
+            session: Session,
+            version_id: str,
+            primary_asset_id: str,
+            file_path: Path,
+            relative_path: str,
+            file_stats: dict,
+        ) -> None:
+            """Process a file node: hash content, find/create Node, create VersionNode."""
+            # Hash the file content
+            source_hash = _hash_file_content(file_path)
+
+            # Check if node with this hash already exists
+            existing_node = _find_node_by_hash(session, primary_asset_id, source_hash)
+
+            if existing_node:
+                # Reuse existing node
+                node_id = existing_node.id
+                print(f"Reusing existing node {node_id} for {relative_path}")
+            else:
+                # Create new node
+                new_node = Node(
+                    source_hash=source_hash,
+                    kind=NodeKind.CODEBASE_FILE,
+                    primary_asset_id=primary_asset_id,
+                )
+                session.add(new_node)
+                session.flush()
+                node_id = new_node.id
+
+                # Create DerivedContent for this node
+                file_dc = DerivedContent(
+                    content_kind=ContentKind.CODEBASE_FILE,
+                    node_id=node_id,
+                    relative_path=relative_path,
+                    content=None,
+                    content_name=None,
+                    misc_metadata=None,
+                )
+                session.add(file_dc)
+                print(f"Created new node {node_id} for {relative_path}")
+
+            # Create VersionNode link
+            version_node = VersionNode(
+                version_id=version_id,
+                relative_path=relative_path,
+                primary_asset_id=primary_asset_id,
+                node_id=node_id,
+                misc_metadata=file_stats,
+            )
+            session.add(version_node)
+
+        def _process_directory_node(
+            session: Session,
+            version_id: str,
+            primary_asset_id: str,
+            relative_path: str,
+            directory_stats: dict,
+        ) -> None:
+            """Process a directory node: hash children, find/create Node, create VersionNode."""
+            # Get children hashes
+            children_hashes = _get_directory_children_hashes(
+                session, version_id, relative_path
+            )
+
+            # Hash directory based on children
+            source_hash = _hash_directory_node(children_hashes)
+
+            # Check if node with this hash already exists
+            existing_node = _find_node_by_hash(session, primary_asset_id, source_hash)
+
+            if existing_node:
+                # Reuse existing node
+                node_id = existing_node.id
+                print(f"Reusing existing directory node {node_id} for {relative_path}")
+            else:
+                # Create new node
+                new_node = Node(
+                    source_hash=source_hash,
+                    kind=NodeKind.CODEBASE_DIRECTORY,
+                    primary_asset_id=primary_asset_id,
+                )
+                node_id = new_node.id
+                session.add(new_node)
+                session.flush()
+                print(f"Created new directory node {new_node.id} for {relative_path}")
+
+            # Create VersionNode link
+            version_node = VersionNode(
+                version_id=version_id,
+                relative_path=relative_path,
+                primary_asset_id=primary_asset_id,
+                node_id=node_id,
+                misc_metadata=directory_stats,
+            )
+            session.add(version_node)
+
+        # Process files and directories with content-based deduplication
+        with Session(engine) as session, session.begin():
+            # Sort files by depth (deepest first) to ensure children are processed before parents
+            sorted_file_paths = sorted(
+                codebase_stats.keys(),
+                key=lambda p: p.as_posix().count("/"),
+                reverse=True,
+            )
+
+            # Process files first
+            file_count = 0
+            for file_path in sorted_file_paths:
                 if (
                     not codebase_stats[file_path]["is_blacklisted"]
                     and not codebase_stats[file_path]["is_ignored"]
                 ):
-                    node_id = uuid4()
-                    file_node = Node(
-                        id=node_id,
-                        version_id=version_id,
-                        relative_path=str(file_path.relative_to(temp_dir)),
-                        kind=NodeKind.CODEBASE_FILE,
-                        misc_metadata=codebase_stats[file_path],
+                    relative_path = str(file_path.relative_to(temp_dir))
+                    _process_file_node(
+                        session,
+                        version_id,
+                        primary_asset_id,
+                        file_path,
+                        relative_path,
+                        codebase_stats[file_path],
                     )
-                    # This is used to link the embeddings to the source code.
-                    # TODO: There should be a cleaner way to do this.
-                    file_dc = DerivedContent(
-                        content_type_id=None,
-                        content_kind=ContentKind.CODEBASE_FILE,
-                        node_id=node_id,
-                        relative_path=str(
-                            file_path.relative_to(temp_dir)
-                        ),  # TODO: this should be removed from the model
-                        content=None,
-                        content_name=None,
-                        misc_metadata=None,
-                        status=None,
-                    )
-                    session.add(file_node)
-                    session.add(file_dc)
+                    file_count += 1
+                    if file_count % 100 == 0:
+                        print(
+                            f"Processed {file_count}/{len(sorted_file_paths)} files..."
+                        )
 
-                    print(
-                        f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
+            print(f"Processed {file_count} file nodes")
+
+            # Sort directories by depth (deepest first) to ensure children are processed before parents
+            sorted_folder_results = sorted(
+                folder_results, key=lambda x: x[1].count("/"), reverse=True
+            )
+
+            # Process directories after files
+            dir_count = 0
+            for directory_stats, relative_path in sorted_folder_results:
+                if directory_stats is not None:
+                    # Add ignored files count to root directory metadata
+                    if relative_path == codebase_name + "/":
+                        directory_stats["driver_ignored_files"] = len(ignored_files)
+
+                    _process_directory_node(
+                        session,
+                        version_id,
+                        primary_asset_id,
+                        relative_path,
+                        directory_stats,
                     )
+                    dir_count += 1
+                    if dir_count % 100 == 0:
+                        print(
+                            f"Processed {dir_count}/{len(sorted_folder_results)} directories..."
+                        )
+
+            print(f"Processed {dir_count} directory nodes")
+
+            # Update version status
             version = session.get(Version, version_id)
             version_status = version.status
             if version_status != VersionStatus.GENERATING:

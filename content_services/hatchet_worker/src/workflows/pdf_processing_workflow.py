@@ -42,14 +42,19 @@ def create_and_embed_pdf_summaries(
     from tempfile import NamedTemporaryFile
 
     from database.db import engine
-    from database.models import ChunkAndEmbedding, DerivedContent, Node, Version
+    from database.models import (
+        ChunkAndEmbedding,
+        DerivedContent,
+        Node,
+        Version,
+        VersionNode,
+    )
     from database.models_enums import ContentKind, NodeKind, VersionStatus
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
     from shared.file_storage.aws_s3_client import AWSS3Client
     from shared.interfaces.file_content.pdf_file_content import ProcessedPdfFileContent
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
-    from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
     hashed_org_id = sha256(org_id.encode()).hexdigest()[:63]
@@ -63,11 +68,6 @@ def create_and_embed_pdf_summaries(
         relative_path = asset_name
         with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file_path = Path(temp_file.name)
-            # aws_config = AWSClientConfig(
-            #     aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            #     aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-            #     region_name=os.environ["AWS_REGION"],
-            # )
             s3_client = AWSS3Client()
 
             s3_client.download_file_from_presigned_url(
@@ -76,8 +76,6 @@ def create_and_embed_pdf_summaries(
             )
         with NamedTemporaryFile(suffix=".pdf") as sanitized_pdf:
             sanitize_pdf_with_ghostscript(temp_file_path, Path(sanitized_pdf.name))
-            # just copy without sanitizing for now
-            # Path(sanitized_pdf.name).write_bytes(temp_file_path.read_bytes())
             # Upload sanitized PDF to the location that will be used for download
             s3_client.upload_file_to_s3(
                 file_path=Path(sanitized_pdf.name),
@@ -102,12 +100,18 @@ def create_and_embed_pdf_summaries(
             version.status = VersionStatus.GENERATING
             session.add(version)
             node = Node(
+                source_hash=None,
                 kind=NodeKind.OTHER,
-                version_id=version_id,
-                relative_path=relative_path,
+                primary_asset_id=primary_asset_id,
             )
             node_id = node.id
             session.add(node)
+            version_node = VersionNode(
+                version_id=version_id,
+                node_id=node_id,
+                relative_path=relative_path,
+            )
+            session.add(version_node)
 
         with open(temp_file_path, "rb") as f:
             pdf_bytes = f.read()
@@ -201,12 +205,8 @@ def create_and_embed_pdf_summaries(
 
         # Re-query the content object and update its status
         with Session(engine) as session:
-            node = session.exec(
-                select(Node)
-                .where(Node.id == node_id)
-                .options(selectinload(Node.version))
-            ).one()
-            node.version.status = VersionStatus.GENERATION_COMPLETE
+            version = session.get(Version, version_id)
+            version.status = VersionStatus.GENERATION_COMPLETE
             session.commit()
 
     except Exception as e:
@@ -218,14 +218,10 @@ def create_and_embed_pdf_summaries(
             f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
         print(exception_details)
-        # with Session(engine) as session:
-        #     node = session.exec(
-        #         select(Node)
-        #         .where(Node.id == node_id)
-        #         .options(selectinload(Node.version))
-        #     ).one()
-        #     node.version.status = VersionStatus.GENERATION_ERROR
-        #     session.commit()
+        with Session(engine) as session:
+            version = session.get(Version, version_id)
+            version.status = VersionStatus.GENERATION_ERROR
+            session.commit()
         raise e
 
     return results

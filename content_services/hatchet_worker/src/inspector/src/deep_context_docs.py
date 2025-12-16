@@ -29,7 +29,8 @@ async def deep_context_docs(
     from sqlmodel.ext.asyncio.session import AsyncSession
 
     new_version = await get_version_by_id(new_version_id)
-    root_node_id = new_version.root_node.id
+    root_version_node_id = new_version.root_version_node.id
+    root_node_id = new_version.root_version_node.node_id
 
     if old_version_content and code_diff:
         print(
@@ -71,19 +72,18 @@ async def deep_context_docs(
                 await session.exec(dc_delete_query)
                 new_dc = DerivedContent(
                     node_id=root_node_id,
-                    relative_path=new_version.root_node.relative_path,
+                    relative_path=new_version.root_version_node.relative_path,
                     content_kind=content_kind,
                     content=doc.doc_content,
                     misc_metadata=None,
                 )
                 session.add(new_dc)
-        # TODO: Add functionality to update the change log.
     else:
         print("Creating deep context docs for version:", new_version_id)
         deep_context_doc_tasks = [
             autodocs_task.aio_run(
                 AutodocInput(
-                    page_node_id=str(root_node_id),
+                    version_node_id=str(root_version_node_id),
                     config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
                     document_goal=ARCHITECTURE_OVERVIEW_INTENT,
                     user_context="SHORT",
@@ -92,7 +92,7 @@ async def deep_context_docs(
             ),
             autodocs_task.aio_run(
                 AutodocInput(
-                    page_node_id=str(root_node_id),
+                    version_node_id=str(root_version_node_id),
                     config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
                     document_goal=LLM_ONBOARDING_INTENT,
                     user_context="SHORT",
@@ -114,39 +114,5 @@ async def deep_context_docs(
         completed_docs = []
 
         await asyncio.gather(*deep_context_doc_tasks)
-        # for (
-        #     content_kind,
-        #     title,
-        #     user_context_str,
-        #     sources,
-        #     config_content,
-        #     doc_content,
-        # ) in
-        # if content_kind == ContentKind.DEEP_CONTEXT_CHANGELOG:
-        #     # Skip changelog, it's handled separately
-        #     print(f"Skipping changelog for content kind: {content_kind}")
-        #     continue
-        # completed_docs.append(
-        #     DeepContextDoc(
-        #         doc_kind=DeepContextDocKind.from_content_kind(
-        #             content_kind=content_kind
-        #         ),
-        #         name=title,
-        #         user_context={"desired_length": user_context_str}
-        #         if user_context_str
-        #         else None,
-        #         sources=sources,
-        #         config_content=config_content,
-        #         doc_content=doc_content,
-        #     )
-        # )
-
-    # status_func = modal.Function.from_name(
-    #     app_name="inspector-v2", name="set_codebase_status_in_container"
-    # )
-    # await status_func.remote.aio(
-    #     version_id=new_version_id,
-    #     status=VersionStatus.GENERATION_COMPLETE,
-    # )
 
     return {"status": "completed"}  # TODO:

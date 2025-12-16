@@ -10,6 +10,7 @@ import tree_sitter_cpp
 import tree_sitter_go
 import tree_sitter_java
 import tree_sitter_python
+import tree_sitter_ruby
 import tree_sitter_typescript
 from shared.inspector.utils.lang_specialization.symbol_common import (
     RawTreeSitterSymbolData,
@@ -23,6 +24,7 @@ LANGUAGES = {
     "csharp": tree_sitter.Language(tree_sitter_c_sharp.language()),
     "js_ts": tree_sitter.Language(tree_sitter_typescript.language_typescript()),
     "go": tree_sitter.Language(tree_sitter_go.language()),
+    "ruby": tree_sitter.Language(tree_sitter_ruby.language()),
 }
 
 

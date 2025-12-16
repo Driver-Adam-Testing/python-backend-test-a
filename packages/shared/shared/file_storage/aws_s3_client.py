@@ -17,9 +17,6 @@ class AWSS3Client:
         self.aws_config = aws_config
         self.s3_client = boto3.client(
             "s3",
-            # region_name=self.aws_config.region_name,
-            # aws_access_key_id=self.aws_config.aws_access_key_id,
-            # aws_secret_access_key=self.aws_config.aws_secret_access_key,
         )
 
     def create_bucket_if_dne(self, bucket_name: str) -> None:

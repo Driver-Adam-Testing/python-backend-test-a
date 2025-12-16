@@ -114,6 +114,7 @@ class Template(BaseModel):
                                     or language == Lang.TYPESCRIPT
                                     or language == Lang.JAVASCRIPT
                                     or language == Lang.GO
+                                    or language == Lang.RUBY
                                 ):
                                     linkable_symbol_kinds = {
                                         SymbolKind.CALLABLE,

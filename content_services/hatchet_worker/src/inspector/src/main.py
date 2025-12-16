@@ -15,11 +15,12 @@ from shared.inspector.utils.dag import (
 )
 from shared.inspector.utils.task import TaskManager
 
-from .modal_funcs import delete_symbol_table_cache
+from .hatchet_funcs import delete_symbol_table_cache
 from .tasks import (
     CodebaseTaggingTask,
     CSymbolTableTask,
     EmbeddingTask,
+    EmbeddingTaskType,
     FileTechDocTask,
     FolderTechDocTask,
     TopLevelDocsTask,
@@ -96,24 +97,6 @@ async def get_result_loading_config(
     return result_loading_config
 
 
-# @app.function(
-#     image=inspection_image,
-#     secrets=[
-#         modal.Secret.from_name("db"),
-#         modal.Secret.from_name("aws-inspector-s3"),
-#         modal.Secret.from_name("open-ai"),
-#     ],
-#     proxy=(
-#         modal.Proxy.from_name("my-proxy")
-#         if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-#         else modal.Proxy.from_name("my-proxy", environment_name="prod")
-#     ),
-#     memory=4096,
-#     timeout=3600 * 12,
-#     region="us-east",
-#     max_containers=5,
-#     cpu=1.0,
-# )
 async def inspect_db(
     version_id: uuid.UUID,
     inspection_mode: InspectionMode = InspectionMode.NORMAL,
@@ -132,8 +115,7 @@ async def inspect_db(
     )
     from shared.inspector.utils.db import (
         create_inspector_run,
-        delete_version_by_id,
-        get_analyzable_nodes_by_version_id,
+        get_analyzable_version_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
     )
@@ -147,7 +129,6 @@ async def inspect_db(
     )
     # from .utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
 
-    print("here")
     try:
         # Get the Version and check if it has previous_version_id
         version = await get_version_by_id(version_id)
@@ -156,13 +137,14 @@ async def inspect_db(
 
         previous_version = await try_get_prev_version(version_id)
         previous_version_id = previous_version.id if previous_version else None
-        previous_version_root_node_id = (
-            previous_version.root_node.id if previous_version else None
+        previous_version_root_version_node_id = (
+            previous_version.root_version_node.id if previous_version else None
         )
         flat_topo_file_diff_dag = None
 
         codebase_name = version.primary_asset.display_name
 
+        # TODO: rethink result loading config, may end up only persisting the symbol table task to S3
         result_loading_config = await get_result_loading_config(
             inspection_mode, version_id, previous_version_id
         )
@@ -171,18 +153,22 @@ async def inspect_db(
         run_id = await create_inspector_run(version_id)
 
         # Get content records for version_id
-        db_file_nodes = await get_analyzable_nodes_by_version_id(
+        db_file_version_nodes = await get_analyzable_version_nodes_by_version_id(
             version_id, {DbNodeKind.CODEBASE_FILE}
         )
 
-        db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
-            version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
+        db_all_codebase_version_nodes = (
+            await get_analyzable_version_nodes_by_version_id(
+                version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
+            )
         )
 
         # Get content records for previous_version_id if available
         if previous_version is not None:
-            db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
-                previous_version_id, {DbNodeKind.CODEBASE_FILE}
+            db_previous_file_version_nodes = (
+                await get_analyzable_version_nodes_by_version_id(
+                    previous_version_id, {DbNodeKind.CODEBASE_FILE}
+                )
             )
         # Download s3 for version_id (and previous if available)
         s3_client = boto3.client(
@@ -219,7 +205,9 @@ async def inspect_db(
                 )
                 print(f"Extracted archive to {extracted_path}")
 
-                db_node_paths = {node.relative_path for node in db_file_nodes}
+                db_version_node_paths = {
+                    version_node.relative_path for version_node in db_file_version_nodes
+                }
                 file_paths = process_and_upload_all_files_in_parallel(
                     s3_client=s3_client,
                     org_hashed_id=org_hashed_id,
@@ -227,7 +215,7 @@ async def inspect_db(
                     version_id=version_id,
                     extracted_path=extracted_path,
                     download_dir=download_dir,
-                    db_node_paths=db_node_paths,
+                    db_node_paths=db_version_node_paths,
                     max_workers=10,
                 )
 
@@ -240,7 +228,9 @@ async def inspect_db(
                     bucket_name=org_hashed_id,
                     primary_asset_id=str(version.primary_asset.id),
                     version_id=str(version_id),
-                    node_rel_paths=[node.relative_path for node in db_file_nodes],
+                    node_rel_paths=[
+                        node.relative_path for node in db_file_version_nodes
+                    ],
                     download_root=download_root,
                     max_workers=8,
                 )
@@ -256,7 +246,10 @@ async def inspect_db(
             for node in codebase_dag.topological_sort():
                 print(node.root_rel_path, node.status)
 
+            db_all_codebase_prev_version_nodes = None
             if previous_version is not None:
+                # TODO: given new snapshot model, is this how we still want to charge for bytes used?
+                # If so - we still need to do all of this stuff
                 previous_download_root = Path(previous_download_dir)
                 print("Downloading all source files for previous codebase from s3...")
                 previous_file_paths = download_all_source_files_in_parallel(
@@ -265,13 +258,14 @@ async def inspect_db(
                     primary_asset_id=str(previous_version.primary_asset.id),
                     version_id=str(previous_version.id),
                     node_rel_paths=[
-                        prev_node.relative_path for prev_node in db_previous_file_nodes
+                        prev_node.relative_path
+                        for prev_node in db_previous_file_version_nodes
                     ],
                     download_root=previous_download_root,
                     max_workers=8,
                 )
                 db_all_codebase_prev_version_nodes = (
-                    await get_analyzable_nodes_by_version_id(
+                    await get_analyzable_version_nodes_by_version_id(
                         previous_version.id,
                         {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY},
                     )
@@ -322,30 +316,18 @@ async def inspect_db(
                         f"Insufficient balance for org {org_id} to process codebase {codebase_name} {ibe}"
                     )
                     set_codebase_status(version_id, VersionStatus.INSUFFICIENT_BALANCE)
+                    # I chose to return here vs re-raising the error because it will get caught and swalloed by the outer try/catch
                     return
-            if previous_version is not None:
-                sorted_nodes = diff_dag.topological_sort()
-            else:
-                sorted_nodes = codebase_dag.topological_sort()
-                db_all_codebase_prev_version_nodes = None
+
+            sorted_nodes = codebase_dag.topological_sort()
             path_to_db_node_id = {
                 Path(db_node.relative_path): db_node.id
-                for db_node in db_all_codebase_nodes
+                for db_node in db_all_codebase_version_nodes
             }
-            changes_detected = False  # export tech docs only if changes detected
-            print("======= Nodes being processed  =======")
-            for node in sorted_nodes:
-                if not changes_detected and node.status != NodeStatus.UNMODIFIED:
-                    changes_detected = True
-                print(node.root_rel_path, node.status, node.kind)
-
-            if previous_version is not None and not changes_detected:
-                # Delete the version and return
-                await delete_version_by_id(version_id)
-                print(
-                    f"No modified nodes found for version {version_id}. Deleting version."
-                )
-                return
+            version_node_id_to_node_id = {
+                db_version_node.id: db_version_node.node_id
+                for db_version_node in db_all_codebase_version_nodes
+            }
 
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])
@@ -373,6 +355,7 @@ async def inspect_db(
                 run_id=run_id,
                 result_loading_config=result_loading_config,
                 rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
+                version_node_id_to_node_id=version_node_id_to_node_id,
             )
     except Exception as e:
         exception_type = type(e).__name__
@@ -390,7 +373,7 @@ async def inspect_db(
     else:
         delete_symbol_table_cache(version_id)
         from database.models_enums import ContentKind
-        from shared.inspector.utils.db import get_all_derived_content_by_node_id
+        from shared.inspector.utils.db import get_all_derived_content_by_version_node_id
         from shared.inspector.utils.synthesis.deep_context import (
             DeepContextDoc,
             DeepContextDocKind,
@@ -406,27 +389,26 @@ async def inspect_db(
         # architecture, then uncomment the following line to represent completion of
         # stage 1.
         set_codebase_status(version_id, VersionStatus.GENERATION_COMPLETE)
-        if previous_version is None or changes_detected:
-            print("Changes detected exporting tech docs to zip...")
-            await export_tech_docs_task.aio_run(
-                ExportDocsInput(
-                    version_id=version_id,
-                    install_id=install_id,
-                )
+        print("Changes detected exporting tech docs to zip...")
+        await export_tech_docs_task.aio_run(
+            ExportDocsInput(
+                version_id=version_id,
+                install_id=install_id,
             )
-        else:
-            print("No changes detected skipping tech doc export.")
+        )
 
         print("Spawning off deep context docs generation...")
         # TODO: do deep context doc specific I/O or further analysis.
 
-        if previous_version_root_node_id is not None:
+        if previous_version_root_version_node_id is not None:
             update_set = {
                 ContentKind.DEEP_CONTEXT_ARCHITECTURE,
                 ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
             }
-            previous_version_root_content = await get_all_derived_content_by_node_id(
-                node_id=previous_version_root_node_id
+            previous_version_root_content = (
+                await get_all_derived_content_by_version_node_id(
+                    version_node_id=previous_version_root_version_node_id
+                )
             )
             previous_version_content = [
                 DeepContextDoc(
@@ -455,12 +437,6 @@ async def inspect_db(
         )
         await deep_context_docs_task.aio_run(deep_context_docs_input)
 
-    #     try:
-    #         cleanup_old_versions.remote(version_id)
-    #     except Exception as e:
-    #         print(f"Error while cleaning up old versions: {e}")
-    #         raise
-
 
 def hash_file(file_path: Path) -> str:
     hasher = hashlib.sha256()
@@ -487,8 +463,9 @@ async def inspect_files(
     run_id: UUID,
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
     rel_path_to_previous_version_db_node_ids: dict[Path, uuid.UUID],
+    version_node_id_to_node_id: dict[str, str],
 ) -> None:
-    from shared.inspector.utils.db import get_all_derived_content_by_node_id
+    from shared.inspector.utils.db import get_all_derived_content_by_version_node_id
 
     print("---------- All nodes ----------")
 
@@ -529,7 +506,9 @@ async def inspect_files(
         version_id=str(version_id),
     )
     tasks.append(c_symbol_table_task)
-    for node, db_node_id in nodes_with_id:
+    node_id_to_file_task = {}
+    node_id_to_folder_task = {}
+    for node, db_version_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
 
         if node.kind in {NodeKind.SUB_FOLDER, NodeKind.ROOT_FOLDER}:
@@ -545,35 +524,70 @@ async def inspect_files(
                 prev_db_node_id = rel_path_to_previous_version_db_node_ids[
                     node.root_rel_path
                 ]
-                prev_folder_derived_contents = await get_all_derived_content_by_node_id(
-                    prev_db_node_id
+                prev_folder_derived_contents = (
+                    await get_all_derived_content_by_version_node_id(prev_db_node_id)
                 )
                 previous_contents = {
                     dc.content_kind: dc.content for dc in prev_folder_derived_contents
                 }
             else:
                 previous_contents = None
+            node_id = version_node_id_to_node_id[db_version_node_id]
+            if node_id in node_id_to_folder_task:
+                # NOTE: this is a duplicate node, so we reference the existing task to avoid recomputation
+                folder_tech_docs_task = FolderTechDocTask(
+                    node=lite_node,
+                    task_name=f"FolderTechDoc {node.root_rel_path}",
+                    child_docs_tasks=child_doc_tasks,
+                    codebase_name=codebase_name,
+                    db_version_node_id=db_version_node_id,
+                    previous_content=previous_contents,
+                    deduped_node_task=node_id_to_folder_task[node_id],
+                )
+                tasks.append(folder_tech_docs_task)
+                continue
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
-                db_node_id=db_node_id,
+                db_version_node_id=db_version_node_id,
                 previous_content=previous_contents,
             )
+            node_id_to_folder_task[node_id] = folder_tech_docs_task
             folder_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (Folder) {node.root_rel_path}",
+                embedding_task_type=EmbeddingTaskType.FOLDER_TECH_DOC,
                 dependent_tasks=[folder_tech_docs_task],
+                db_version_node_id=db_version_node_id,
             )
             tasks.extend([folder_tech_docs_task, folder_embedding_task])
         else:  # File
+            node_id = version_node_id_to_node_id[db_version_node_id]
             source_code = get_file_content(codebase_root / lite_node.root_rel_path)
+            if node_id in node_id_to_file_task:
+                # NOTE: this is a duplicate node, so we reference the existing task to avoid recomputation
+                file_tech_docs_task = FileTechDocTask(
+                    codebase_name=codebase_name,
+                    source_code=source_code,
+                    node=lite_node,
+                    task_name=f"TechDoc {node.root_rel_path}",
+                    db_version_node_id=db_version_node_id,
+                    version_id=str(version_id),
+                    symbol_table_task=c_symbol_table_task,
+                    deduped_node_task=node_id_to_file_task[node_id],
+                    thread_pool=TECH_DOC_THREAD_POOL,
+                )
+                tasks.append(file_tech_docs_task)
+                continue
+
             source_file_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding Source Code {node.root_rel_path}",
+                embedding_task_type=EmbeddingTaskType.SOURCE_CODE,
                 source_code=source_code,
-                db_node_id=db_node_id,
+                db_version_node_id=db_version_node_id,
                 dependent_tasks=[c_symbol_table_task],
             )
             file_tech_docs_task = FileTechDocTask(
@@ -581,16 +595,18 @@ async def inspect_files(
                 source_code=source_code,
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
-                db_node_id=db_node_id,
+                db_version_node_id=db_version_node_id,
                 version_id=str(version_id),
                 symbol_table_task=c_symbol_table_task,
                 thread_pool=TECH_DOC_THREAD_POOL,
             )
+            node_id_to_file_task[node_id] = file_tech_docs_task
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (File) {node.root_rel_path}",
+                embedding_task_type=EmbeddingTaskType.FILE_TECH_DOC,
                 source_code=None,
-                db_node_id=None,
+                db_version_node_id=db_version_node_id,
                 dependent_tasks=[file_tech_docs_task],
             )
             tasks.extend(
@@ -613,7 +629,7 @@ async def inspect_files(
         node=root_node,
         codebase_name=codebase_name,
         ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
-        db_node_id=root_db_node_id,
+        db_version_node_id=root_db_node_id,
     )
 
     has_previous_version = (
@@ -623,8 +639,8 @@ async def inspect_files(
         prev_db_root_node_id = rel_path_to_previous_version_db_node_ids[
             root_node.root_rel_path
         ]
-        prev_root_node_derived_contents = await get_all_derived_content_by_node_id(
-            prev_db_root_node_id
+        prev_root_node_derived_contents = (
+            await get_all_derived_content_by_version_node_id(prev_db_root_node_id)
         )
         previous_root_node_metadata = defaultdict(list)
         for dc in prev_root_node_derived_contents:
@@ -633,28 +649,19 @@ async def inspect_files(
         root_node=root_node,
         codebase_name=codebase_name,
         ordered_tech_docs_tasks=all_tech_docs_tasks,
-        db_root_node_id=root_db_node_id,
+        db_root_version_node_id=root_db_node_id,
         previous_root_node_metadata=previous_root_node_metadata
         if has_previous_version
         else None,
     )
-    top_level_embedding_task = EmbeddingTask(
-        node=root_node,
-        task_name="Embedding TopLevelDocs",
-        dependent_tasks=[top_level_tech_docs_task],
-    )
-    tasks.extend(
-        [top_level_tech_docs_task, top_level_embedding_task, codebase_tagging_task]
-    )
+    tasks.extend([top_level_tech_docs_task, codebase_tagging_task])
 
     print("\n---------- All tasks ----------")
     for t in tasks:
         print("=> ", t)
 
     print("\n---------- Running tasks ----------")
-    task_manager = TaskManager.with_s3_persistence(
-        bucket_name=os.environ["INSPECTOR_BUCKET_NAME"], tasks=tasks, serial_exe=False
-    )
+    task_manager = TaskManager.with_db_persistence(tasks=tasks, serial_exe=False)
 
     print(f"Starting inspection with {len(tasks)} tasks")
     await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)
@@ -687,74 +694,3 @@ def send_exception_email(exception_details: str) -> None:
         print(f"Email sent: {response.status_code}")
     except Exception as e:
         print(f"Error sending email: {e}")
-
-
-# @app.function(
-#     image=modal.Image.debian_slim(python_version="3.12")
-#     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
-#     .pip_install("/driver_db")
-#     .add_local_python_source(
-#         "common",
-#         "database",
-#         "inspection",
-#         "modal_funcs",
-#         "deep_context_docs",
-#         "onboarding",
-#         "shared",
-#         "tasks",
-#         "utils",
-#         copy=True,
-#         ignore=lambda p: False,
-#     ),
-#     secrets=[
-#         modal.Secret.from_name("db"),
-#     ],
-#     timeout=3600 * 12,
-#     proxy=(
-#         modal.Proxy.from_name("my-proxy")
-#         if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
-#         else modal.Proxy.from_name("my-proxy", environment_name="prod")
-#     ),
-# )
-# def cleanup_old_versions(new_version_id: str) -> None:
-#     from database.db import engine
-#     from database.models import DocumentSource, Node, Version
-#     from sqlmodel import Session, select
-#
-#     with Session(engine) as session, session.begin():
-#         # Get all versions
-#         primary_asset_id = session.get(Version, new_version_id).primary_asset_id
-#         versions = session.exec(
-#             select(Version).where(Version.primary_asset_id == primary_asset_id)
-#         ).all()
-#         versions_with_sources = session.exec(
-#             select(Version)
-#             .join(Node)
-#             .join(DocumentSource, DocumentSource.source_node_id == Node.id)
-#             .where(Version.primary_asset_id == primary_asset_id)
-#         ).all()
-#         # Sort versions by creation date or any other criteria if needed
-#         versions_to_keep = sorted(versions, key=lambda v: v.created_at, reverse=True)[
-#             :10
-#         ]
-#         versions_to_keep.extend(versions_with_sources)
-#
-#         # Remove duplicates from versions_to_keep
-#         versions_to_keep = list({v.id: v for v in versions_to_keep}.values())
-#
-#         # Delete all versions except the 10 most recent
-#         print(f"DEBUG: Keeping {len(versions_to_keep)} unique versions")
-#         print(f"DEBUG: Deleting {len(versions) - len(versions_to_keep)} versions")
-#
-#         versions_to_delete = [v for v in versions if v not in versions_to_keep]
-#         for version in versions_to_keep:
-#             print(
-#                 f"DEBUG: KEEPING version: {version.id} which was created at {version.created_at}"
-#             )
-#         for version in versions_to_delete:
-#             print(
-#                 f"DEBUG: DELETING version: {version.id} which was created at {version.created_at} (deletion is not implemented yet)"
-#             )
-#             session.delete(version)
-#         session.commit()
-#

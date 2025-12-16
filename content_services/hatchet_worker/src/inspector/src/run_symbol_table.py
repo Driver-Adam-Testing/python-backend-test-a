@@ -1,14 +1,14 @@
 import argparse
 from pathlib import Path
 
-from utils.symbol_table.comparison import TimingInfo
+from shared.inspector.utils.symbol_table.comparison import TimingInfo
 
 
 def run_and_print_sym_table(
     project_abspath: Path,
     show_timing: bool = True,
 ) -> None:
-    from utils.symbol_table import build_symbol_table, print_summary
+    from shared.inspector.utils.symbol_table import build_symbol_table, print_summary
 
     files = list(project_abspath.rglob("*"))
     files = [f for f in files if f.is_file()]

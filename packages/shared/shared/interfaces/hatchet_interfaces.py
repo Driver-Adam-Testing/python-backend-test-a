@@ -17,7 +17,7 @@ class ProcessAuth0EventInput(BaseModel):
 
 
 class AutodocInput(BaseModel):
-    page_node_id: str
+    version_node_id: str
     config_kind: AutoDocConfigKind
     document_goal: str | None
     user_context: str | None

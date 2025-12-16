@@ -6,7 +6,6 @@ from uuid import UUID
 from database.models import (
     AutoDocStatusHistory,
     DocumentSource,
-    Node,
     PrimaryAsset,
     Version,
     VersionNode,
@@ -231,19 +230,19 @@ def get_autodoc_current_status(
     session: CurrentSession,
     page_id: UUID,
 ) -> AutoDocStatusHistory:
-    node = session.exec(
-        select(Node)
-        .join(Version)
-        .join(PrimaryAsset)
+    version_node = session.exec(
+        select(VersionNode)
+        .join(Version, VersionNode.version_id == Version.id)
+        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
         .where(PrimaryAsset.organization_id == user.organization_id)
-        .where(Node.id == page_id)
-        .options(selectinload(Node.version))
+        .where(VersionNode.id == page_id)
+        .options(selectinload(VersionNode.version))
     ).one()
 
     enforce_asset_action(
         db=session,
         user=user,
-        asset_id=node.version.primary_asset_id,
+        asset_id=version_node.version.primary_asset_id,
         action_key="autodocs.generate",
     )
 

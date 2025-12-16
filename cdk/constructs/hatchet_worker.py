@@ -168,7 +168,13 @@ class HatchetWorker(Construct):
         scalable.scale_on_cpu_utilization(
             "CpuScaling",
             target_utilization_percent=50,  # aim to keep avg CPU around 50%
-            scale_in_cooldown=Duration.seconds(120),
+            scale_in_cooldown=Duration.seconds(300),
+            scale_out_cooldown=Duration.seconds(60),
+        )
+        scalable.scale_on_memory_utilization(
+            "MemoryScaling",
+            target_utilization_percent=70,  # scale when memory hits ~70%
+            scale_in_cooldown=Duration.seconds(300),
             scale_out_cooldown=Duration.seconds(60),
         )
 

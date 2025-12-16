@@ -10,7 +10,6 @@ from uuid import UUID
 import tiktoken
 import toml
 from aiolimiter import AsyncLimiter
-from chat_openai import ChatOpenAI
 from database.models import DocumentSource
 from database.models.base import DerivedContent, Node, VersionNode
 from database.models_enums import ContentKind, NodeKind

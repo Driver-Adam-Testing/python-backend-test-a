@@ -33,7 +33,7 @@ from workflows.inspector_functions import (
     toplevel_doc_task,
 )
 
-from .hatchet_funcs import put_symbol_table_cache
+from .hatchet_funcs import put_symbol_table_cache, put_tags_cache, put_top_level_cache
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
@@ -87,8 +87,13 @@ class FolderTechDocTask(Task):
             deduped_result = dependent_results[self.deduped_node_task]
             return deduped_result
         child_nodes_to_docs = {
-            task.node: dr.data["docs"] for task, dr in dependent_results.items()
-        }
+            task.node: {
+                "short": {
+                    "single_sentence": dr.data["docs"]["short"]["single_sentence"]
+                }
+            }
+            for task, dr in dependent_results.items()
+        }  # NOTE: passing just the single sentence to reduce payload size (GRPC limit for hatchet)
         async with folder_tech_docs_sem:
             child_nodes_to_docs_list = list(child_nodes_to_docs.items())
             folder_doc_input = FolderDocInput(
@@ -575,11 +580,17 @@ class TopLevelDocsTask(Task):
         children_nodes_to_docs = {
             task.node: dr.data["docs"] for task, dr in dependent_results.items()
         }
+        put_top_level_cache(
+            str(self.db_version_node_id),
+            children_nodes_to_docs,
+        )
         toplevel_doc_input = TopLevelDocInput(
             codebase_name=self.codebase_name,
-            nodes_to_docs=list(children_nodes_to_docs.items()),
+            version_node_id=str(self.db_version_node_id),
         )
-        docs = await toplevel_doc_task.aio_run(toplevel_doc_input)
+        docs = await toplevel_doc_task.aio_run(
+            toplevel_doc_input, options=TriggerWorkflowOptions(sticky=True)
+        )
 
         return TaskResult(data={"docs": docs}, serialization=SerializationMethod.JSON)
 
@@ -774,12 +785,17 @@ class CodebaseTaggingTask(Task):
             children_nodes_to_docs = {
                 task.node: dr.data["docs"] for task, dr in dependent_results.items()
             }
+            put_tags_cache(
+                str(self.db_root_version_node_id),
+                children_nodes_to_docs,
+            )
             tags = await codebase_tags_task.aio_run(
                 CodebaseTagsInput(
                     codebase_name=self.codebase_name,
-                    nodes_to_docs=list(children_nodes_to_docs.items()),
+                    version_node_id=str(self.db_root_version_node_id),
                     content_kinds=content_kinds_to_compute,
-                )
+                ),
+                options=TriggerWorkflowOptions(sticky=True),
             )
 
         return TaskResult(

@@ -11,7 +11,11 @@ from hatchet_sdk.runnables.types import (
 )
 from inspector.src.deep_context_docs import deep_context_docs
 from inspector.src.hatchet_funcs import (
+    delete_tags_cache,
+    delete_top_level_cache,
     export_tech_docs_to_zip,
+    get_tags_cache,
+    get_top_level_cache,
     make_codebase_tags,
     make_folder_tech_doc,
     make_symbol_docs,
@@ -45,7 +49,8 @@ class SymbolDocInput(BaseModel):
 
 class TopLevelDocInput(BaseModel):
     codebase_name: str
-    nodes_to_docs: list[tuple[LiteNode, dict]]
+    version_node_id: str
+    # nodes_to_docs: list[tuple[LiteNode, dict]]
 
 
 class DeepContextDocsInput(BaseModel):
@@ -63,7 +68,8 @@ class ExportDocsInput(BaseModel):
 
 class CodebaseTagsInput(BaseModel):
     codebase_name: str
-    nodes_to_docs: list[tuple[LiteNode, dict]]
+    # nodes_to_docs: list[tuple[LiteNode, dict]]
+    version_node_id: str
     content_kinds: set
 
 
@@ -75,25 +81,28 @@ class CodebaseTagsInput(BaseModel):
         expression="'codebase-tags-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
+    sticky=StickyStrategy.HARD,
 )
 def codebase_tags_task(input: CodebaseTagsInput, ctx: Context) -> dict[str, str]:
     print("starting codebase tags task")
-    nodes_to_docs = {}
-    for node, doc in input.nodes_to_docs:
-        node_kind = NodeKind(node["kind"])
-        node_root_rel_path = Path(node["root_rel_path"])
-        node_status = node["status"]
-        node = LiteNode(
-            kind=node_kind,
-            root_rel_path=node_root_rel_path,
-            status=node_status,
-        )
-        nodes_to_docs[node] = doc
+    # nodes_to_docs = {}
+    # for node, doc in input.nodes_to_docs:
+    #     node_kind = NodeKind(node["kind"])
+    #     node_root_rel_path = Path(node["root_rel_path"])
+    #     node_status = node["status"]
+    #     node = LiteNode(
+    #         kind=node_kind,
+    #         root_rel_path=node_root_rel_path,
+    #         status=node_status,
+    #     )
+    #     nodes_to_docs[node] = doc
+    nodes_to_docs = get_tags_cache(input.version_node_id)
     tags = make_codebase_tags(
         input.codebase_name,
         nodes_to_docs,
         input.content_kinds,
     )
+    delete_tags_cache(input.version_node_id)
     print("executed codebase tags task")
     return tags
 
@@ -255,24 +264,27 @@ def symbol_doc_task(input: SymbolDocInput, ctx: Context) -> list[dict[str, any]]
         expression="'toplevel-doc-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
+    sticky=StickyStrategy.HARD,
 )
 def toplevel_doc_task(input: TopLevelDocInput, ctx: Context) -> dict[str, any]:
     print("starting toplevel doc task")
     # Call the function to generate toplevel docs
-    nodes_to_docs = {}
-    for node, doc in input.nodes_to_docs:
-        node_kind = NodeKind(node["kind"])
-        node_root_rel_path = Path(node["root_rel_path"])
-        node_status = node["status"]
-        node = LiteNode(
-            kind=node_kind,
-            root_rel_path=node_root_rel_path,
-            status=node_status,
-        )
-        nodes_to_docs[node] = doc
+    # nodes_to_docs = {}
+    # for node, doc in input.nodes_to_docs:
+    #     node_kind = NodeKind(node["kind"])
+    #     node_root_rel_path = Path(node["root_rel_path"])
+    #     node_status = node["status"]
+    #     node = LiteNode(
+    #         kind=node_kind,
+    #         root_rel_path=node_root_rel_path,
+    #         status=node_status,
+    #     )
+    #     nodes_to_docs[node] = doc
+    nodes_to_docs = get_top_level_cache(input.version_node_id)
     toplevel_docs = make_toplevel_tech_docs(
         input.codebase_name,
         nodes_to_docs,
     )
+    delete_top_level_cache(input.version_node_id)
     print("executed toplevel doc task")
     return toplevel_docs

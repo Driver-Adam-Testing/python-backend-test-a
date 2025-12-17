@@ -7,6 +7,8 @@ from shared.inspector.inspection.files import comprehend_file_top_down
 from shared.inspector.utils.dag import LiteNode
 
 _SYMBOL_TABLE_CACHE = {}
+_TOP_LEVEL_CACHE = {}
+_TAGS_CACHE = {}
 _CACHE_LOCK = threading.Lock()
 
 
@@ -40,6 +42,68 @@ def get_symbol_table_cache(key: str) -> dict:
 def delete_symbol_table_cache(key: str) -> None:
     with _CACHE_LOCK:
         _SYMBOL_TABLE_CACHE.pop(key, None)
+
+
+def put_top_level_cache(
+    key: str, value: dict, ttl_seconds: int = 28800
+) -> str:  # 8 Hours expiration
+    # Evict expired entries
+    now = time.time()
+    with _CACHE_LOCK:
+        keys_to_delete = [
+            k for k, (_, expires) in _TOP_LEVEL_CACHE.items() if expires < now
+        ]
+        for k in keys_to_delete:
+            del _TOP_LEVEL_CACHE[k]
+    expires = time.time() + ttl_seconds
+    with _CACHE_LOCK:
+        _TOP_LEVEL_CACHE[key] = (value, expires)
+    return key
+
+
+def get_top_level_cache(key: str) -> dict:
+    now = time.time()
+    with _CACHE_LOCK:
+        value, expires = _TOP_LEVEL_CACHE[key]  # KeyError if missing
+        if expires < now:
+            del _TOP_LEVEL_CACHE[key]
+            raise KeyError(key)
+        return value
+
+
+def delete_top_level_cache(key: str) -> None:
+    with _CACHE_LOCK:
+        _TOP_LEVEL_CACHE.pop(key, None)
+
+
+def put_tags_cache(
+    key: str, value: dict, ttl_seconds: int = 28800
+) -> str:  # 8 Hours expiration
+    # Evict expired entries
+    now = time.time()
+    with _CACHE_LOCK:
+        keys_to_delete = [k for k, (_, expires) in _TAGS_CACHE.items() if expires < now]
+        for k in keys_to_delete:
+            del _TAGS_CACHE[k]
+    expires = time.time() + ttl_seconds
+    with _CACHE_LOCK:
+        _TAGS_CACHE[key] = (value, expires)
+    return key
+
+
+def get_tags_cache(key: str) -> dict:
+    now = time.time()
+    with _CACHE_LOCK:
+        value, expires = _TAGS_CACHE[key]  # KeyError if missing
+        if expires < now:
+            del _TAGS_CACHE[key]
+            raise KeyError(key)
+        return value
+
+
+def delete_tags_cache(key: str) -> None:
+    with _CACHE_LOCK:
+        _TAGS_CACHE.pop(key, None)
 
 
 def make_tech_doc(

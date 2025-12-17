@@ -74,7 +74,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import requests
-from config import settings
+from ..config import settings
 from database.db import engine
 from database.models import (
     Organization,

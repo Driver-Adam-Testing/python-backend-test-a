@@ -1,7 +1,9 @@
 import json
+
 from aws_cdk import (
     CfnOutput,
     Duration,
+    RemovalPolicy,
     Stack,
     aws_cloudwatch,
     aws_cloudwatch_actions,
@@ -20,11 +22,11 @@ from aws_cdk import (
     aws_secretsmanager,
     aws_sns,
     aws_ssm,
-    RemovalPolicy
 )
 from constructs import Construct
-from cdk.settings import settings
+
 from cdk.constructs.guard_duty_S3_malware_protection import GuardDutyS3MalwareProtection
+from cdk.settings import settings
 
 
 # TODO: parameterize task count and container size
@@ -87,14 +89,16 @@ class Backend(Construct):
         )
 
         openai_url = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value=None
+            scope,
+            parameter_name="/baseline/infra/v2/azure/openai/url",
+            default_value=None,
         )
 
         self.dropzone_bucket = aws_s3.Bucket(
             self,
             "DropzoneBucket",
-            removal_policy=RemovalPolicy.DESTROY, 
-            auto_delete_objects=True,       
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
             bucket_name=f"{settings.DEPLOYMENT_ENVIRONMENT}-codebase-dropzone",
             cors=[
                 {
@@ -105,17 +109,17 @@ class Backend(Construct):
                     ],
                     "allowedOrigins": params.cors_origins.split(","),
                     "allowedHeaders": ["*"],
-                    "exposedHeaders":[
+                    "exposedHeaders": [
                         "x-amz-server-side-encryption",
                         "x-amz-request-id",
-                        "x-amz-id-2"    
-                    ]
+                        "x-amz-id-2",
+                    ],
                 }
             ],
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
 
-        guard_duty_mlp = GuardDutyS3MalwareProtection(self,"GuardDutyMP")
+        guard_duty_mlp = GuardDutyS3MalwareProtection(self, "GuardDutyMP")
         guard_duty_mlp.add_bucket(self.dropzone_bucket)
 
         container_environment_vars = {
@@ -130,13 +134,43 @@ class Backend(Construct):
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077",
-            "HATCHET_CLIENT_TLS_STRATEGY": "none"
-            #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.
+            "HATCHET_CLIENT_HOST_PORT": f"hatchet.{hosted_zone.zone_name}:7077",
+            "HATCHET_CLIENT_TLS_STRATEGY": "none",
+            "OPENAI_URL": openai_url,
+            "REDIS_HOST": "hatchet.private." + hosted_zone.zone_name,
+            "MCP_STORAGE_BACKEND": "redis",
+            # TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.
         }
 
         if openai_url is not None:
             container_environment_vars["AZURE_OPENAI_BASE_URL"] = openai_url
+
+        mcp_jwt_signing_key = aws_secretsmanager.Secret(
+            self,
+            "McpJwtSigningKey",
+            secret_name="backend/mcp-jwt-signing-key",
+            description="MCP JWT signing key (256-bit random)",
+            generate_secret_string=aws_secretsmanager.SecretStringGenerator(
+                # 32 bytes → 44 chars in base64; we just match that length
+                password_length=44,
+                exclude_punctuation=True,  # letters+digits only; URL-safe enough for most uses
+            ),
+        )
+
+        mcp_storage_encryption_key = aws_secretsmanager.Secret(
+            self,
+            "McpStorageEncryptionKey",
+            secret_name="backend/mcp-storage-encryption-key",
+            description="MCP storage encryption key (256-bit random)",
+            generate_secret_string=aws_secretsmanager.SecretStringGenerator(
+                password_length=44,
+                exclude_punctuation=True,
+            ),
+        )
+
+        redis_secrect = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "redis_secret", secret_name="hatchet/appliance/redis"
+        )
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
@@ -146,13 +180,25 @@ class Backend(Construct):
             self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
         )
 
-        secret_fields = settings.SECRECTS_KEYS.split(',')
+        secret_fields = settings.SECRECTS_KEYS.split(",")
 
         secrets_map = {
             k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
             for k in secret_fields
         }
-        secrets_map["HATCHET_CLIENT_TOKEN"] = aws_ecs.Secret.from_secrets_manager(hatchet_token_secret)
+        secrets_map["HATCHET_CLIENT_TOKEN"] = aws_ecs.Secret.from_secrets_manager(
+            hatchet_token_secret
+        )
+
+        secrets_map["REDIS_PASSWORD"] = aws_ecs.Secret.from_secrets_manager(
+            redis_secrect
+        )
+        secrets_map["MCP_JWT_SIGNING_KEY"] = aws_ecs.Secret.from_secrets_manager(
+            mcp_jwt_signing_key
+        )
+        secrets_map["MCP_STORAGE_ENCRYPTION_KEY"] = aws_ecs.Secret.from_secrets_manager(
+            mcp_storage_encryption_key
+        )
 
         container_environment_vars.update(settings.to_dict())
 
@@ -203,12 +249,11 @@ class Backend(Construct):
             domain_zone=hosted_zone,
             domain_name=api_domain_name,
             task_image_options=task_options,
-            task_subnets=aws_ec2.SubnetSelection(
-                subnet_group_name="Private"
-            ),
+            task_subnets=aws_ec2.SubnetSelection(subnet_group_name="Private"),
             health_check_grace_period=Duration.seconds(120),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(
-                enable=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()), rollback=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower())
+                enable=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()),
+                rollback=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()),
             ),
             min_healthy_percent=100,
             max_healthy_percent=200,
@@ -216,12 +261,13 @@ class Backend(Construct):
             memory_limit_mib=4096,
         )
         self.service.target_group.configure_health_check(
-            path="/studio/v1/healthcheck/", port="8000",
-            interval=Duration.seconds(5),  
-            timeout=Duration.seconds(2),  
-            healthy_threshold_count=2,  
-            unhealthy_threshold_count=2,  
-            healthy_http_codes="200",  # 
+            path="/studio/v1/healthcheck/",
+            port="8000",
+            interval=Duration.seconds(5),
+            timeout=Duration.seconds(2),
+            healthy_threshold_count=2,
+            unhealthy_threshold_count=2,
+            healthy_http_codes="200",  #
         )
         self.service.target_group.deregistration_delay = Duration.seconds(5)
         self.service.task_definition.task_role.attach_inline_policy(
@@ -252,7 +298,9 @@ class Backend(Construct):
         # Grant permission to read firewall certificate for private deployments
         if params.is_private_deploy:
             firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+                self,
+                "FirewallCertSecret",
+                secret_name="/network-firewall/ca-certificate",
             )
             firewall_cert_secret.grant_read(self.service.task_definition.task_role)
 
@@ -267,25 +315,27 @@ class Backend(Construct):
                 vpc_subnets=aws_ec2.SubnetSelection(subnets=private_subnets.subnets),
             )
 
-            privatelink_nlb_target_group = aws_elasticloadbalancingv2.NetworkTargetGroup(
-                self,
-                "PrivateLinkApiAlbTargetGroup",
-                vpc=self.vpc,
-                port=443,
-                protocol=aws_elasticloadbalancingv2.Protocol.TCP,
-                target_type=aws_elasticloadbalancingv2.TargetType.ALB,
-                targets=[
-                    aws_elasticloadbalancingv2_targets.AlbTarget(
-                        self.service.load_balancer, 443
-                    )
-                ],
-                health_check=aws_elasticloadbalancingv2.HealthCheck(
-                    protocol=aws_elasticloadbalancingv2.Protocol.HTTPS,
-                    path="/studio/v1/healthcheck/",
-                    healthy_threshold_count=2,
-                    unhealthy_threshold_count=2,
-                    interval=Duration.seconds(30),
-                ),
+            privatelink_nlb_target_group = (
+                aws_elasticloadbalancingv2.NetworkTargetGroup(
+                    self,
+                    "PrivateLinkApiAlbTargetGroup",
+                    vpc=self.vpc,
+                    port=443,
+                    protocol=aws_elasticloadbalancingv2.Protocol.TCP,
+                    target_type=aws_elasticloadbalancingv2.TargetType.ALB,
+                    targets=[
+                        aws_elasticloadbalancingv2_targets.AlbTarget(
+                            self.service.load_balancer, 443
+                        )
+                    ],
+                    health_check=aws_elasticloadbalancingv2.HealthCheck(
+                        protocol=aws_elasticloadbalancingv2.Protocol.HTTPS,
+                        path="/studio/v1/healthcheck/",
+                        healthy_threshold_count=2,
+                        unhealthy_threshold_count=2,
+                        interval=Duration.seconds(30),
+                    ),
+                )
             )
 
             privatelink_nlb.add_listener(
@@ -301,7 +351,9 @@ class Backend(Construct):
             allowed_principals = None
             if params.allowed_aws_account:
                 allowed_principals = [
-                    aws_iam.ArnPrincipal(f"arn:aws:iam::{params.allowed_aws_account}:root")
+                    aws_iam.ArnPrincipal(
+                        f"arn:aws:iam::{params.allowed_aws_account}:root"
+                    )
                 ]
 
             self.endpoint_service = aws_ec2.VpcEndpointService(
@@ -365,10 +417,10 @@ class Backend(Construct):
 
         # ALB Alarms
         alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(
-            self, '/infrastructure/alarms/topic-arn'
+            self, "/infrastructure/alarms/topic-arn"
         )
         alarm_topic = aws_sns.Topic.from_topic_arn(
-            self, 'InfrastructureAlarmsTopic', alarm_topic_arn
+            self, "InfrastructureAlarmsTopic", alarm_topic_arn
         )
         alarm_action = aws_cloudwatch_actions.SnsAction(alarm_topic)
 
@@ -444,7 +496,7 @@ class Backend(Construct):
                 aws_route53_targets.LoadBalancerTarget(self.service.load_balancer)
             ),
         )
-        
+
         self.api_url = f"https://{api_domain_name}"
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes

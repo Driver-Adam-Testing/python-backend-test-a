@@ -1,6 +1,5 @@
 import logging
 import ssl
-import urllib.request
 import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -11,7 +10,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import Session, create_engine
 
 logger = logging.getLogger(__name__)
-
 
 engine = create_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),

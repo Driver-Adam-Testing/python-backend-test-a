@@ -120,7 +120,7 @@ class Backend(Construct):
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "OPENAI_URL": openai_url,
-            "REDIS_HOST": "hatchet." + hosted_zone.zone_name,
+            "REDIS_HOST": "hatchet.private." + hosted_zone.zone_name,
             "MCP_STORAGE_BACKEND": "redis"
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }

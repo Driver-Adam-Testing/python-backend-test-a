@@ -1,5 +1,7 @@
+import base64
+import hashlib
 import warnings
-from typing import Annotated, Literal, Self
+from typing import Annotated, Self
 
 from pydantic import (
     AnyUrl,
@@ -39,6 +41,25 @@ class Settings(BaseSettings):
     AUTH0_MGMT_API_CLIENT_SECRET: str = DEFAULT_SECRET
     AUTH0_MGMT_API_AUDIENCE: str = DEFAULT_SECRET
 
+    MCP_AUTH0_CLIENT_ID: str = DEFAULT_SECRET
+    MCP_AUTH0_CLIENT_SECRET: str = DEFAULT_SECRET
+    MCP_AUTH0_AUDIENCE: str = DEFAULT_SECRET
+    # Public base URL where server is accessible (e.g., https://api.dev.driverai.com)
+    PUBLIC_BASE_URL: str = DEFAULT_SECRET
+
+    MCP_JWT_SIGNING_KEY: str = DEFAULT_SECRET
+    # To generate a new key, run:
+    # python3 -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+    MCP_STORAGE_ENCRYPTION_KEY: str = DEFAULT_SECRET
+
+    # MCP Storage Configuration
+    # Options: "redis" (production), "memory" (local dev/testing)
+    MCP_STORAGE_BACKEND: str = DEFAULT_SECRET
+
+    REDIS_HOST: str = DEFAULT_SECRET
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = DEFAULT_SECRET
+
     S3ADMIN_AWS_ACCESS_KEY_ID: str = DEFAULT_SECRET
     S3ADMIN_AWS_SECRET_ACCESS_KEY: str = DEFAULT_SECRET
     AWS_REGION: str = DEFAULT_SECRET
@@ -76,6 +97,17 @@ class Settings(BaseSettings):
 
     # Feature flags
     ENABLE_SIGNUP: bool = False
+
+    @property
+    def mcp_fernet_key(self) -> bytes:
+        """
+        Derive a valid Fernet key from MCP_STORAGE_ENCRYPTION_KEY.
+
+        Fernet requires exactly 32 bytes, URL-safe base64-encoded.
+        This property deterministically converts any secret string into a valid key.
+        """
+        key_bytes = hashlib.sha256(self.MCP_STORAGE_ENCRYPTION_KEY.encode()).digest()
+        return base64.urlsafe_b64encode(key_bytes)
 
     @model_validator(mode="after")
     def _check_non_default_secrets(self) -> Self:

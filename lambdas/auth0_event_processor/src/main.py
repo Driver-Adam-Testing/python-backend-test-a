@@ -1,6 +1,6 @@
-import json
 import os
 from typing import Any
+from pydantic import BaseModel
 
 from src.firewall_cert import init_firewall_cert
 
@@ -21,7 +21,7 @@ os.environ["HATCHET_CLIENT_TOKEN"] = cache.get_secret_string(os.getenv("HATCHET_
 from hatchet_sdk import Hatchet
 
 
-class ProcessAuth0EventInput:
+class ProcessAuth0EventInput(BaseModel):
     event: dict
 
 
@@ -29,7 +29,7 @@ def handler(event: dict, context: Any) -> dict[str, Any]:
     """Process Auth0 events by invoking Modal function."""
     hatchet = Hatchet()
     auth0_process_event_task = hatchet.stubs.task(
-        "process-auth0-event-workflow", input_validator=ProcessAuth0EventInput
+        name="process-auth0-event-workflow", input_validator=ProcessAuth0EventInput
     )
     result = auth0_process_event_task.run(ProcessAuth0EventInput(event=event))
 

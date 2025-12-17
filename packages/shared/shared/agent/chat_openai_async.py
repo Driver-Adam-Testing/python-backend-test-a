@@ -86,7 +86,6 @@ class ChatOpenAI:
             openai.RateLimitError,
             openai.InternalServerError,
             openai.APIConnectionError,
-            openai.BadRequestError,
             openai.PermissionDeniedError,
             ValidationError,
         ),

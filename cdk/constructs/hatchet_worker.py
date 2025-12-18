@@ -65,7 +65,7 @@ class HatchetWorker(Construct):
             hosted_zone_id=hosted_zone_id,
         )
 
-        openai_url = None if params.is_private_deploy is not "true" else aws_ssm.StringParameter.value_from_lookup(
+        openai_url = None if params.is_private_deploy != "true" else aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/azure/openai/url"
         )
 

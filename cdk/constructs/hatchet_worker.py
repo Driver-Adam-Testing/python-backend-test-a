@@ -78,7 +78,7 @@ class HatchetWorker(Construct):
             "ENVIRONMENT": params.environment,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077",
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
             "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000"

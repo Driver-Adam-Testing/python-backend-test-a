@@ -135,7 +135,6 @@ class Backend(Construct):
             "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
             "HATCHET_CLIENT_HOST_PORT": f"hatchet.{hosted_zone.zone_name}:7077",
             "HATCHET_CLIENT_TLS_STRATEGY": "none",
-            "OPENAI_URL": openai_url,
             "REDIS_HOST": "hatchet.private." + hosted_zone.zone_name,
             "MCP_STORAGE_BACKEND": "redis",
             # TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.

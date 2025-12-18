@@ -47,7 +47,7 @@ class BackendStack(Stack):
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
-                is_private_deploy=settings.IS_PRIVATE_DEPLOY
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
 
@@ -62,7 +62,7 @@ class BackendStack(Stack):
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
-                is_private_deploy=settings.IS_PRIVATE_DEPLOY,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
                 allowed_aws_account=settings.ALLOWED_AWS_ACCOUNT,
             ),
         )
@@ -77,7 +77,7 @@ class BackendStack(Stack):
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=True,
                 vpc=self.backend.vpc,
-                is_private_deploy=settings.IS_PRIVATE_DEPLOY
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
 

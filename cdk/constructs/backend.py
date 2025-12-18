@@ -88,7 +88,7 @@ class Backend(Construct):
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
         )
 
-        openai_url = None if params.is_private_deploy != "true" else aws_ssm.StringParameter.value_from_lookup(
+        openai_url = None if not params.is_private_deploy else aws_ssm.StringParameter.value_from_lookup(
             scope,
             parameter_name="/baseline/infra/v2/azure/openai/url"
         )
@@ -347,7 +347,7 @@ class Backend(Construct):
 
             # Create VPC Endpoint Service for PrivateLink access
             allowed_principals = None
-            if params.allowed_aws_account is not "":
+            if params.allowed_aws_account != "":
                 allowed_principals = [
                     aws_iam.ArnPrincipal(
                         f"arn:aws:iam::{params.allowed_aws_account}:root"

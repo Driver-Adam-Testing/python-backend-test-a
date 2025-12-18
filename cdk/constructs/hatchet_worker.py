@@ -26,11 +26,13 @@ class HatchetWorkerParams:
         aws_region: str,
         aws_account: str,
         metrics_bus: aws_events.EventBus,
+        is_private_deploy: str
     ) -> None:
         self.environment = environment
         self.aws_region = aws_region
         self.aws_account = aws_account
         self.metrics_bus = metrics_bus
+        self.is_private_deploy = is_private_deploy
 
 
 class HatchetWorker(Construct):
@@ -63,8 +65,8 @@ class HatchetWorker(Construct):
             hosted_zone_id=hosted_zone_id,
         )
 
-        openai_url = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value=None
+        openai_url = None if params.is_private_deploy is not "true" else aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url"
         )
 
         inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(

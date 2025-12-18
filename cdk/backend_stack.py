@@ -47,6 +47,7 @@ class BackendStack(Stack):
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY
             ),
         )
 

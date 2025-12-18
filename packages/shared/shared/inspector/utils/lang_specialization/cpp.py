@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
-from shared.inspector.utils.models import ChatOpenAI
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
@@ -316,6 +316,10 @@ class CppDataStructureData(IrData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
+        from shared.chunking.text_splitter import clip_prompt
+
+        from .symbol_common import CHUNK_SIZE
+
         user_prompt = (
             Prompt.empty()
             .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
@@ -325,6 +329,10 @@ class CppDataStructureData(IrData):
                 )
             )
         )
+        if symbol.file_code:
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
         if len(symbol.reified_symbol.children) > 0:
             user_prompt.append(
                 Component(
@@ -334,11 +342,7 @@ class CppDataStructureData(IrData):
             for child in symbol.reified_symbol.children:
                 if child.raw.file_path != symbol.reified_symbol.raw.file_path:
                     user_prompt.append(Component(string=f"{child.raw.symbol_code}"))
-        if symbol.file_code:
-            user_prompt.append(
-                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
-            )
-        return user_prompt.into_str()
+        return clip_prompt(user_prompt.into_str(), chunk_size=CHUNK_SIZE)
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:

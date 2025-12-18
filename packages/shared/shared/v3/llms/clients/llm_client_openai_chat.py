@@ -1,4 +1,5 @@
 import json
+import os
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any
 
@@ -26,8 +27,18 @@ class OpenAiChatClient(LlmClient):
 
     def __init__(self, config: LlmConfig) -> None:
         super().__init__(config)
-        self.client = openai.OpenAI()
-        self.async_client = openai.AsyncOpenAI()
+        # TODO: Fixme
+        # self.client = openai.OpenAI()
+        # self.async_client = openai.AsyncOpenAI()
+        if os.environ.get("AZURE_OPENAI_BASE_URL"):
+            base_url = os.environ["AZURE_OPENAI_BASE_URL"]
+            base_url = f"https://{base_url}/openai/v1/"
+            api_key = os.environ["AZURE_OPENAI_KEY_1"]
+            self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
+            self.async_client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+        else:
+            self.client = openai.OpenAI()
+            self.async_client = openai.AsyncOpenAI()
 
     def _make_kwargs(
         self,
@@ -87,6 +98,8 @@ class OpenAiChatClient(LlmClient):
         tool_calls: list[dict] = []
         final_content = ""
         async for chunk in stream:
+            if not chunk.choices:
+                continue
             delta = chunk.choices[0].delta
             if delta.content:
                 final_content += delta.content

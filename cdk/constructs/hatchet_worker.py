@@ -64,7 +64,11 @@ class HatchetWorker(Construct):
         )
 
         openai_url = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
+            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value=None
+        )
+
+        inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
         )
 
         base_env = {
@@ -72,9 +76,17 @@ class HatchetWorker(Construct):
             "ENVIRONMENT": params.environment,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "OPENAI_URL": openai_url,
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077"
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.{hosted_zone.zone_name}:7077",
+            "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
+            "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
+            "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000"
         }
+
+        if settings.IS_PRIVATE_DEPLOY == "true":
+            base_env["IS_PRIVATE_DEPLOY"] = "true"
+
+        if openai_url is not None:
+            base_env["AZURE_OPENAI_BASE_URL"] = openai_url
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
@@ -153,7 +165,7 @@ class HatchetWorker(Construct):
             desired_count=2,  # Run 2 copies
             assign_public_ip=False,
             vpc_subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+                subnet_group_name="Private"
             ),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),
             min_healthy_percent=100,
@@ -183,6 +195,17 @@ class HatchetWorker(Construct):
 
         # Allow the worker to emit metrics/events
         params.metrics_bus.grant_all_put_events(worker_task_def.task_role)
+
+        # Grant full S3 admin access. TODO: Scope this down?
+        worker_task_def.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+        )
+
+        if settings.IS_PRIVATE_DEPLOY == "true":
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.worker_service.task_definition.task_role)
 
         # Outputs
         CfnOutput(

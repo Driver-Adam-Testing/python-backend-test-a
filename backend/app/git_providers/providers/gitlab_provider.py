@@ -2,8 +2,6 @@ import json
 import logging
 from typing import Any
 
-import modal
-from app.core.config import settings
 from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
@@ -23,7 +21,9 @@ from app.schemas.secret_management_schema import (
     APP_INSTALL_GAT_NAME_PREFIX,
 )
 from database.models import GitProviderApp, GitProviderAppInstallation
+from hatchet_sdk import Hatchet
 from shared.interfaces.aws_client_config import AWSClientConfig
+from shared.interfaces.hatchet_interfaces import HandleGitlabEventsInput
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
     format_secret_name,
@@ -296,13 +296,19 @@ class GitLabProvider(GitProviderInterface):
                     },
                 }
             ]
-            handle_gitlab_events = modal.Function.lookup(
-                "inspector-v2",
-                "handle_gitlab_events",
-                environment_name=settings.MODAL_ENVIRONMENT,
+            hatchet = Hatchet()
+            handle_gitlab_events_task = hatchet.stubs.task(
+                name="handle-gitlab-events-workflow",
+                input_validator=HandleGitlabEventsInput,
             )
-            handle_gitlab_events.spawn(
-                installation_id, organization_id, [], [], repos_pushed
+            handle_gitlab_events_task.run_no_wait(
+                HandleGitlabEventsInput(
+                    installation_id=installation_id,
+                    org_id=organization_id,
+                    repos_added=[],
+                    repos_deleted=[],
+                    repos_pushed=repos_pushed,
+                )
             )
 
         return message

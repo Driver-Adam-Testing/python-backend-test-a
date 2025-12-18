@@ -1,0 +1,315 @@
+{
+  "scimgateway": {
+    "port": 8881,
+    "localhostonly": false,
+    "chainingBaseUrl": null,
+    "scim": {
+      "version": "2.0",
+      "customSchema": null,
+      "skipTypeConvert": false,
+      "groupMemberOfUser": false,
+      "usePutSoftSync": false
+    },
+    "log": {
+      "loglevel": {
+        "file": "debug",
+        "console": "error"
+      },
+      "customMasking": null
+    },
+    "auth": {
+      "basic": [
+        {
+          "username": "gwadmin",
+          "password": "password",
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "bearerToken": [
+        {
+          "token": null,
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "bearerJwt": [
+        {
+          "secret": null,
+          "publicKey": null,
+          "wellKnownUri": null,
+          "azureTenantId": null,
+          "options": {
+            "issuer": null
+          },
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "bearerOAuth": [
+        {
+          "clientId": null,
+          "clientSecret": null,
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "passThrough": {
+        "enabled": false,
+        "readOnly": false,
+        "baseEntities": []
+      }
+    },
+    "certificate": {
+      "key": null,
+      "cert": null,
+      "ca": null,
+      "pfx": {
+        "bundle": null,
+        "password": null
+      }
+    },
+    "ipAllowList": [],
+    "email": {
+      "auth": {
+        "type": "oauth",
+        "options": {
+          "azureTenantId": null,
+          "clientId": null,
+          "clientSecret": null
+        }
+      },
+      "emailOnError": {
+        "enabled": false,
+        "from": null,
+        "to": null
+      }
+    },
+    "azureRelay": {
+      "enabled": false,
+      "connectionUrl": null,
+      "apiKey": null
+    },
+    "stream": {
+      "baseUrls": [],
+      "certificate": {
+        "ca": null
+      },
+      "subscriber": {
+        "enabled": false,
+        "entity": {
+          "undefined": {
+            "nats": {
+              "tenant": null,
+              "subject": null,
+              "jwt": null,
+              "secret": null
+            },
+            "deleteUserOnLastGroupRoleRemoval": false,
+            "skipConvertRolesToGroups": false,
+            "generateUserPassword": false,
+            "modifyOnly": false,
+            "replaceDomains": []
+          }
+        }
+      },
+      "publisher": {
+        "enabled": false,
+        "entity": {
+          "undefined": {
+            "nats": {
+              "tenant": null,
+              "subject": null,
+              "jwt": null,
+              "secret": null
+            }
+          }
+        }
+      }
+    }
+  },
+  "endpoint": {
+    "entity": {
+      "undefined": {
+        "connection": {
+          "baseUrls": [],
+          "auth": {
+            "type": "oauth",
+            "options": {
+              "azureTenantId": "Entra ID Tenant ID (GUID)",
+              "clientId": "Entra ID Application ID",
+              "clientSecret": "Entra ID Application secret value"
+            }
+          },
+          "proxy": {
+            "host": null,
+            "username": null,
+            "password": null
+          }
+        }
+      }
+    },
+    "map": {
+      "user": {
+        "id": {
+          "mapTo": "id",
+          "type": "string"
+        },
+        "userPrincipalName": {
+          "mapTo": "userName,externalId",
+          "type": "string"
+        },
+        "userType": {
+          "mapTo": "userType",
+          "type": "string"
+        },
+        "accountEnabled": {
+          "mapTo": "active",
+          "type": "boolean"
+        },
+        "givenName": {
+          "mapTo": "name.givenName",
+          "type": "string"
+        },
+        "surname": {
+          "mapTo": "name.familyName",
+          "type": "string"
+        },
+        "displayName": {
+          "mapTo": "displayName",
+          "type": "string"
+        },
+        "jobTitle": {
+          "mapTo": "jobTitle",
+          "type": "string"
+        },
+        "employeeId": {
+          "mapTo": "employeeId",
+          "type": "string"
+        },
+        "employeeType": {
+          "mapTo": "employeeType",
+          "type": "string"
+        },
+        "companyName": {
+          "mapTo": "companyName",
+          "type": "string"
+        },
+        "employeeOrgData.costCenter": {
+          "mapTo": "employeeOrgData.costCenter",
+          "type": "string"
+        },
+        "employeeOrgData.division": {
+          "mapTo": "employeeOrgData.division",
+          "type": "string"
+        },
+        "officeLocation": {
+          "mapTo": "officeLocation",
+          "type": "string"
+        },
+        "department": {
+          "mapTo": "department",
+          "type": "string"
+        },
+        "manager": {
+          "mapTo": "manager.managerId",
+          "type": "string"
+        },
+        "mail": {
+          "mapTo": "mail",
+          "type": "string"
+        },
+        "mailNickname": {
+          "mapTo": "mailNickname",
+          "type": "string"
+        },
+        "proxyAddresses": {
+          "mapTo": "proxyAddresses.value",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mobilePhone": {
+          "mapTo": "mobilePhone",
+          "type": "string"
+        },
+        "businessPhones": {
+          "mapTo": "businessPhones",
+          "type": "array",
+          "typeInbound": "string"
+        },
+        "country": {
+          "mapTo": "country",
+          "type": "string"
+        },
+        "city": {
+          "mapTo": "city",
+          "type": "string"
+        },
+        "streetAddress": {
+          "mapTo": "streetAddress",
+          "type": "string"
+        },
+        "postalCode": {
+          "mapTo": "postalCode",
+          "type": "string"
+        },
+        "state": {
+          "mapTo": "state",
+          "type": "string"
+        },
+        "passwordPolicies": {
+          "mapTo": "passwordPolicies",
+          "type": "string"
+        },
+        "passwordProfile.forceChangePasswordNextSignIn": {
+          "mapTo": "passwordProfile.forceChangePasswordNextSignIn",
+          "type": "string"
+        },
+        "passwordProfile.password": {
+          "mapTo": "passwordProfile.password",
+          "type": "string"
+        },
+        "servicePlan": {
+          "mapTo": "servicePlan.value",
+          "type": "array"
+        },
+        "usageLocation": {
+          "mapTo": "usageLocation",
+          "type": "string"
+        },
+        "preferredLanguage": {
+          "mapTo": "preferredLanguage",
+          "type": "string"
+        },
+        "onPremisesSyncEnabled": {
+          "mapTo": "onPremisesSyncEnabled",
+          "type": "boolean"
+        },
+        "onPremisesImmutableId": {
+          "mapTo": "onPremisesImmutableId",
+          "type": "string"
+        }
+      },
+      "group": {
+        "id": {
+          "mapTo": "id",
+          "type": "string"
+        },
+        "displayName": {
+          "mapTo": "displayName,externalId",
+          "type": "string"
+        },
+        "securityEnabled": {
+          "mapTo": "securityEnabled",
+          "type": "boolean"
+        },
+        "mailEnabled": {
+          "mapTo": "mailEnabled",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

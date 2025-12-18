@@ -7,19 +7,19 @@ from database.models_enums import ContentKind
 from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.chunking.text_splitter import split_text
-from shared.prompts.structured_prompting import (
-    GENERAL_STE_STYLE_INSTRUCTION,
-    Component,
-    Prompt,
-)
-from utils.dag import FlatTopoFileDiffDag, LiteNode
-from utils.synthesis.deep_context_prompts import (
+from shared.inspector.utils.dag import FlatTopoFileDiffDag, LiteNode
+from shared.inspector.utils.synthesis.deep_context_prompts import (
     ARCHITECTURE_DOC_DESCRIPTION,
     DEEP_CONTEXT_DOCS_PREAMBLE,
     LLM_ONBOARDING_DOC_DESCRIPTION,
     UPDATER_IDENTITY_PREAMBLE,
 )
-from utils.update_flow import DiffUpdatable
+from shared.inspector.utils.update_flow import DiffUpdatable
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 
 TAG_MODEL = "gpt-4.1"
 UPDATE_EDITOR = "gpt-5"
@@ -461,7 +461,7 @@ In general, your edited output document should be about the same length as the o
         updated_document = self.doc_content
 
         for chunk in edit_chunks:
-            user_prompt = f"**Edit instructions:\n\n{chunk}\n\n**Previous document version:\n\n{updated_document}"
+            user_prompt = f"**Edit instructions:\n\n{chunk.text}\n\n**Previous document version:\n\n{updated_document}"
             updated_document = await bounded_llm_generate(
                 llm=gather_llm,
                 system_prompt=system_prompt,

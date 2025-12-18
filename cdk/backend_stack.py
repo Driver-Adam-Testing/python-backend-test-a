@@ -10,8 +10,8 @@ from cdk.constructs.asset_onboarding_lambda import (
 from cdk.constructs.auth0_event_lambda import Auth0EventLambda
 from cdk.constructs.backend import Backend, BackendParams
 from cdk.constructs.hatchet_worker import HatchetWorker, HatchetWorkerParams
-from cdk.constructs.inspector import Inspector, InspectorParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
+from cdk.constructs.scim_server import SCIMServer, SCIMServerParams
 from cdk.settings import settings
 
 
@@ -32,7 +32,6 @@ class BackendStack(Stack):
             "MetricsLambda",
             MetricsLambdaParams(
                 environment=settings.DEPLOYMENT_ENVIRONMENT,
-                cloudwatch_alarm_arn=settings.METRICSLAMBDA_CW_ALARM,
             ),
         )
 
@@ -62,6 +61,8 @@ class BackendStack(Stack):
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY,
+                allowed_aws_account=settings.ALLOWED_AWS_ACCOUNT,
             ),
         )
         self.onboarding_lambda = AssetOnboardingLambda(
@@ -69,15 +70,26 @@ class BackendStack(Stack):
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
                 environment=settings.DEPLOYMENT_ENVIRONMENT,
-                api_url=settings.ONBOARDING_LAMDBA_API_URL,
+                api_url=f"{self.backend.api_url}/studio/v1",
                 auth0_audience=settings.ONBOARDING_LAMDBA_AUTH0_AUDIENCE,
                 auth0_url=settings.ONBOARDING_LAMDBA_AUTH0_URL,
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=True,
+                vpc=self.backend.vpc,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY
             ),
         )
-        self.inspector = Inspector(
+
+        self.scimserver = SCIMServer(
             self,
-            "Inspector",
-            InspectorParams(environment=settings.DEPLOYMENT_ENVIRONMENT),
+            "SCIMServer",
+            SCIMServerParams(
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
+                metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account,
+                load_balancer=self.backend.backend_alb,
+                listener=self.backend.backend_alb_listener
+            ),
         )
+

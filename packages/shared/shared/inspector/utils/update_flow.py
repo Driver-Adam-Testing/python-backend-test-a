@@ -1,7 +1,7 @@
 import abc
 from typing import Self
 
-from utils.dag import FlatTopoFileDiffDag
+from shared.inspector.utils.dag import FlatTopoFileDiffDag
 
 
 class DiffUpdatable(abc.ABC):

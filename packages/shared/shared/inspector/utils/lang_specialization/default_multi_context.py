@@ -1,8 +1,8 @@
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.lang_specialization.default import (
     IMPORTS_SYSTEM_PROMPT_JSON,
     _default_checker,
 )
-from shared.inspector.utils.models import ChatOpenAI
 
 SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT_MULTI_CONTEXT = """
 You are a software engineering documentation expert. You write detailed documentation to explain software.

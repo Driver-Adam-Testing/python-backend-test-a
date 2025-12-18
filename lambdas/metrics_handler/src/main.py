@@ -1,6 +1,10 @@
 import logging
 import os
 
+from src.firewall_cert import init_firewall_cert
+
+init_firewall_cert()
+
 import botocore
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 

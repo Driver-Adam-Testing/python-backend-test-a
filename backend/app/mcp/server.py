@@ -1,6 +1,7 @@
 import os
 from inspect import cleandoc
 from typing import Annotated
+import truststore
 
 from pydantic import Field
 
@@ -39,6 +40,7 @@ from .oauth_auth import (  # noqa: E402
 )
 
 logger = logging.getLogger(__name__)
+truststore.inject_into_ssl()
 
 CODEBASE_NAME_PARAM_DESCRIPTION = """Name of the Driver supported codebase.  The 'get_codebase_names' tool can be used to generate a list of supported codebases.  Only codebase names returned by this tool are valid for this parameter.
 """

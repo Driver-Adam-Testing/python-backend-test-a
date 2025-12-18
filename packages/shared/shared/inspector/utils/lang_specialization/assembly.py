@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Self
 
-from shared.inspector.utils.models import ChatOpenAI
+from shared.agent.chat_openai import ChatOpenAI
 
 from .default import (
     default_llm_analysis,

@@ -5,16 +5,21 @@ from enum import StrEnum
 from pathlib import Path
 
 from aiolimiter import AsyncLimiter
-from onboarding import azure_devops_ops, bitbucket_ops, gh_ops, gitlab_ops
 from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
+from shared.inspector.onboarding import (
+    azure_devops_ops,
+    bitbucket_ops,
+    gh_ops,
+    gitlab_ops,
+)
+from shared.inspector.utils.git_fetcher_pygit2 import CommitData, GitFetcher
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     Component,
     Prompt,
 )
 from tqdm.asyncio import tqdm_asyncio
-from utils.git_fetcher_pygit2 import CommitData, GitFetcher
 
 MAX_COMMITS_TO_PROCESS = 15000
 
@@ -403,8 +408,11 @@ async def _prepare_repo_for_changelog(
     from database.db import engine
     from database.models import GitProviderAppInstallation
     from database.models_enums import PrimaryAssetProvider
+    from shared.inspector.utils.db import (
+        get_version_by_id,
+        git_provider_app_installation_by_id,
+    )
     from sqlmodel import Session, select
-    from utils.db import get_version_by_id, git_provider_app_installation_by_id
 
     version = await get_version_by_id(version_id)
     repo_id = version.primary_asset.repository_id
@@ -472,8 +480,7 @@ async def _prepare_repo_for_changelog(
 
     repo_dir = Path(temp_dir) / full_name
     result = subprocess.run(
-        f"git clone {clone_url} {repo_dir}",
-        shell=True,
+        ["git", "clone", clone_url, str(repo_dir)],
         cwd=None,
         capture_output=True,
         text=True,

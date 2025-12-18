@@ -5,6 +5,7 @@ WORKDIR /app/
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry

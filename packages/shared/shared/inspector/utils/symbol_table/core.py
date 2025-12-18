@@ -553,7 +553,10 @@ class ReifiedProjectIndex:
                             reified.parent = parent_sym
                             parent_sym.children.append(reified)
                         # Since we only pull globals, empty right now... TODO
-                        elif lsym.raw.symbol_kind == SymbolKind.VARIABLE:
+                        elif (
+                            lsym.raw.symbol_kind == SymbolKind.VARIABLE
+                            or lsym.raw.symbol_kind == SymbolKind.VARIABLE_DEFINITION
+                        ):
                             obj_members[parent_fqn]["variables"].append(reified)
                             parent_sym = obj_symbols[parent_fqn]
                             reified.parent = parent_sym

@@ -17,6 +17,7 @@ EXTENSION_TO_DELIMITER = {
     ".js": ".",
     ".tsx": ".",
     ".jsx": ".",
+    ".rb": "::",
 }
 
 UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS = ["~", "=", "!", "(", ")", "&", "|", "+"]

@@ -1,6 +1,7 @@
 import hashlib
 import logging
 from urllib.parse import unquote_plus, urlparse
+import truststore._api as tapi
 
 import boto3
 
@@ -8,12 +9,20 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Patch botocore to use truststore's SSLContext (see https://github.com/sethmlarson/truststore/pull/180)
+try:
+    import botocore.httpsession
+    botocore.httpsession.SSLContext = tapi.SSLContext
+except ImportError as e:
+    logger.error("!!! Unable to patch botocore", exc_info=e)
+    pass
+
 # Initialize S3 client
 s3_client = boto3.client(
     "s3",
     region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
+    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID if not settings.IS_PRIVATE_DEPLOY else None,
+    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY if not settings.IS_PRIVATE_DEPLOY else None,
     endpoint_url=settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None,
 )
 

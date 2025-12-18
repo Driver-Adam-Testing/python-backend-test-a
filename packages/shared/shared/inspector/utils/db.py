@@ -6,6 +6,7 @@ from database.models import (
     InspectorRun,
     Node,
     Version,
+    VersionNode,
 )
 from database.models_enums import ContentKind, NodeKind, VersionStatus
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -22,7 +23,7 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
             .where(Version.id == version_id)
             .options(
                 selectinload(Version.primary_asset),
-                selectinload(Version.root_version_node),
+                selectinload(Version.root_version_node).selectinload(VersionNode.node),
             )
         )
         return (await session.exec(statement)).one()
@@ -39,6 +40,16 @@ async def delete_version_by_id(version_id: uuid.UUID) -> None:
         await session.commit()
 
 
+async def get_version_nodes_by_version_id(version_id: uuid.UUID) -> list[VersionNode]:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = select(VersionNode).where(VersionNode.version_id == version_id)
+        results = await session.exec(statement)
+        return results.all()
+
+
 async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
     from database.db import async_engine
     from sqlalchemy.orm import selectinload
@@ -53,7 +64,7 @@ async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
             .where(Version.status.in_([VersionStatus.GENERATION_COMPLETE]))
             .options(
                 selectinload(Version.primary_asset),
-                selectinload(Version.root_version_node),
+                selectinload(Version.root_version_node).selectinload(VersionNode.node),
             )
         )
         previous_version = (await session.exec(stmt)).first()
@@ -102,53 +113,125 @@ async def try_get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID
 
 
 # TODO : get analyable nodes by version_id
-async def get_analyzable_nodes_by_version_id(
+async def get_analyzable_version_nodes_by_version_id(
     version_id: uuid.UUID, content_types: set[NodeKind]
 ) -> list[Node]:
     from database.db import async_engine
+    from sqlalchemy.orm import selectinload
     from sqlmodel import select
 
     async with AsyncSession(async_engine) as session:
-        statement = select(Node).where(
-            Node.version_id == version_id,
-            Node.kind.in_(content_types),
+        statement = (
+            select(VersionNode)
+            .join(VersionNode.node)
+            .where(
+                VersionNode.version_id == version_id,
+                Node.kind.in_(content_types),
+            )
+            .options(selectinload(VersionNode.node))
         )
 
         results = await session.exec(statement)
 
     res_list = []
     for res in results.all():
-        is_file = res.kind == NodeKind.CODEBASE_FILE
-        is_directory = res.kind == NodeKind.CODEBASE_DIRECTORY
-        is_analyzable_file = is_file and res.misc_metadata["is_analyzable"] is True
+        is_file = res.node.kind == NodeKind.CODEBASE_FILE
+        is_directory = res.node.kind == NodeKind.CODEBASE_DIRECTORY
+        is_analyzable_file = is_file and res.misc_metadata.get("is_analyzable") is True
         if is_directory or is_analyzable_file:
             res_list.append(res)
     return res_list
 
 
-async def get_source_code_derived_content(node_id: uuid.UUID) -> DerivedContent:
+async def get_source_code_derived_content(version_node_id: uuid.UUID) -> DerivedContent:
     from database.db import async_engine
     from sqlmodel import select
 
     async with AsyncSession(async_engine) as session:
-        statement = select(DerivedContent).where(
-            DerivedContent.node_id == node_id,
-            DerivedContent.content_kind == ContentKind.CODEBASE_FILE,
+        statement = (
+            select(DerivedContent)
+            .join(VersionNode, DerivedContent.node_id == VersionNode.node_id)
+            .where(
+                VersionNode.id == version_node_id,
+                DerivedContent.content_kind == ContentKind.CODEBASE_FILE,
+            )
         )
         return (await session.exec(statement)).one()
 
 
-async def get_all_derived_content_by_node_id(
-    node_id: uuid.UUID,
+async def get_all_derived_content_by_version_node_id(
+    version_node_id: uuid.UUID,
+    content_kinds: set[ContentKind] | None = None,
 ) -> list[DerivedContent]:
     from database.db import async_engine
     from sqlmodel import select
 
     async with AsyncSession(async_engine) as session:
-        statement = select(DerivedContent).where(
-            DerivedContent.node_id == node_id,
+        statement = (
+            select(DerivedContent)
+            .join(VersionNode, DerivedContent.node_id == VersionNode.node_id)
+            .where(
+                VersionNode.id == version_node_id,
+            )
         )
+        if content_kinds is not None:
+            statement = statement.where(DerivedContent.content_kind.in_(content_kinds))
         return (await session.exec(statement)).all()
+
+
+def sync_get_all_derived_content_by_version_node_id(
+    version_node_id: uuid.UUID,
+    content_kinds: set[ContentKind] | None = None,
+) -> list[DerivedContent]:
+    from database.db import engine
+    from sqlmodel import Session, select
+
+    with Session(engine) as session:
+        statement = (
+            select(DerivedContent)
+            .join(VersionNode, DerivedContent.node_id == VersionNode.node_id)
+            .where(
+                VersionNode.id == version_node_id,
+            )
+        )
+        if content_kinds is not None:
+            statement = statement.where(DerivedContent.content_kind.in_(content_kinds))
+        results = session.exec(statement)
+        return results.all()
+
+
+async def get_node_from_version_node_id(
+    version_node_id: uuid.UUID,
+) -> Node:
+    from database.db import async_engine
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = (
+            select(VersionNode)
+            .where(VersionNode.id == version_node_id)
+            .options(selectinload(VersionNode.node))
+        )
+        version_node = (await session.exec(statement)).one()
+        return version_node.node
+
+
+def sync_get_node_from_version_node_id(
+    version_node_id: uuid.UUID,
+) -> Node:
+    from database.db import engine
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
+    with Session(engine) as session:
+        statement = (
+            select(VersionNode)
+            .where(VersionNode.id == version_node_id)
+            .options(selectinload(VersionNode.node))
+        )
+        version_node = session.exec(statement).one()
+        return version_node.node
 
 
 def get_usage_balance_in_bytes(

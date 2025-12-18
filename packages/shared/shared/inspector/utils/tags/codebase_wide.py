@@ -1,7 +1,7 @@
 from typing import Any, Self
 
+from shared.agent.chat_openai import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.dag import LiteNode
-from shared.inspector.utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.tags.scoring import (
     CODEBASE_SCORING_PROMPT_TEMPLATE,
     Scorable,

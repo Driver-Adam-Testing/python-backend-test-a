@@ -77,7 +77,7 @@ class Auth0EventLambda(Construct):
                 "MODAL_ENVIRONMENT": "FIXME",
                 "MODAL_SECRET_NAME": deployment_secrets.secret_name,
                 "IS_PRIVATE_DEPLOY": "true" if self.is_private_deploy else "false",
-                "HATCHET_CLIENT_HOST_PORT": f"hatchet.{hosted_zone_name}:7077",
+                "HATCHET_CLIENT_HOST_PORT": f"hatchet.private.{hosted_zone_name}:7077",
                 "HATCHET_CLIENT_TOKEN_SECRET_NAME": hatchet_token_secret.secret_name,
                 "HATCHET_CLIENT_TLS_STRATEGY": "none",
             },

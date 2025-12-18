@@ -48,7 +48,7 @@ class Settings:
     SECRECTS_KEYS:str
     # add more as needed...
     IS_PRIVATE_DEPLOY:bool
-    ALLOWED_AWS_ACCOUNT: str | None = None
+    ALLOWED_AWS_ACCOUNT:str
 
     def __init__(self, prefix: str = "") -> None:
         missing = []

@@ -40,8 +40,8 @@ class BackendParams:
         metrics_bus: aws_events.EventBus,
         aws_region: str,
         aws_account: str,
+        allowed_aws_account: str,
         is_private_deploy: bool = False,
-        allowed_aws_account: str | None = None,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
@@ -349,7 +349,7 @@ class Backend(Construct):
 
             # Create VPC Endpoint Service for PrivateLink access
             allowed_principals = None
-            if params.allowed_aws_account:
+            if params.allowed_aws_account is not "":
                 allowed_principals = [
                     aws_iam.ArnPrincipal(
                         f"arn:aws:iam::{params.allowed_aws_account}:root"

@@ -88,7 +88,7 @@ class Backend(Construct):
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
         )
 
-        openai_url = None if params.is_private_deploy is not "true" else aws_ssm.StringParameter.value_from_lookup(
+        openai_url = None if params.is_private_deploy != "true" else aws_ssm.StringParameter.value_from_lookup(
             scope,
             parameter_name="/baseline/infra/v2/azure/openai/url"
         )
@@ -135,7 +135,6 @@ class Backend(Construct):
             "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
             "HATCHET_CLIENT_HOST_PORT": f"hatchet.{hosted_zone.zone_name}:7077",
             "HATCHET_CLIENT_TLS_STRATEGY": "none",
-            "OPENAI_URL": openai_url,
             "REDIS_HOST": "hatchet.private." + hosted_zone.zone_name,
             "MCP_STORAGE_BACKEND": "redis",
             # TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup.

@@ -26,7 +26,7 @@ class HatchetWorkerParams:
         aws_region: str,
         aws_account: str,
         metrics_bus: aws_events.EventBus,
-        is_private_deploy: str
+        is_private_deploy: bool
     ) -> None:
         self.environment = environment
         self.aws_region = aws_region
@@ -65,7 +65,7 @@ class HatchetWorker(Construct):
             hosted_zone_id=hosted_zone_id,
         )
 
-        openai_url = None if params.is_private_deploy != "true" else aws_ssm.StringParameter.value_from_lookup(
+        openai_url = None if not params.is_private_deploy else aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/azure/openai/url"
         )
 
@@ -84,7 +84,7 @@ class HatchetWorker(Construct):
             "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000"
         }
 
-        if settings.IS_PRIVATE_DEPLOY == "true":
+        if params.is_private_deploy:
             base_env["IS_PRIVATE_DEPLOY"] = "true"
 
         if openai_url is not None:

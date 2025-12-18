@@ -58,9 +58,11 @@ class AssetOnboardingLambda(Construct):
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
-                "SENTRY_DSN": "FIXME"
-                if params.is_private_deploy
-                else settings.SENTRY_DSN,
+                # Optional settings need fixed since they seem to get set 
+                # in all the envs and cause problems. Disabling for now.
+                # "SENTRY_DSN": "FIXME"
+                # if params.is_private_deploy
+                # else settings.SENTRY_DSN,
                 "IS_PRIVATE_DEPLOY": str(params.is_private_deploy),
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(

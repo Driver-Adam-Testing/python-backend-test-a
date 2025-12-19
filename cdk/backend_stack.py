@@ -39,7 +39,7 @@ class BackendStack(Stack):
             self, "Auth0EventLambda", environment=settings.DEPLOYMENT_ENVIRONMENT
         )
 
-        self.hatchetworker = HatchetWorker(
+        self.heavyhatchetworker = HatchetWorker(
             self,
             "HatchetHeavyWorker",
             HatchetWorkerParams(
@@ -55,7 +55,7 @@ class BackendStack(Stack):
             ),
         )
 
-        self.hatchetworker = HatchetWorker(
+        self.basehatchetworker = HatchetWorker(
             self,
             "HatchetBaselineWorker",
             HatchetWorkerParams(

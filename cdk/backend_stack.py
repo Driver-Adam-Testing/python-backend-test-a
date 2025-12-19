@@ -39,18 +39,6 @@ class BackendStack(Stack):
             self, "Auth0EventLambda", environment=settings.DEPLOYMENT_ENVIRONMENT
         )
 
-        self.hatchetworker = HatchetWorker(
-            self,
-            "HatchetWorker",
-            HatchetWorkerParams(
-                environment=settings.DEPLOYMENT_ENVIRONMENT,
-                metrics_bus=self.metrics_lambda.metrics_bus,
-                aws_region=self.cdkenv.region,
-                aws_account=self.cdkenv.account,
-                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
-            ),
-        )
-
         self.backend = Backend(
             self,
             "ApiBackend",
@@ -80,7 +68,18 @@ class BackendStack(Stack):
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
-
+        self.hatchetworker = HatchetWorker(
+            self,
+            "HatchetWorker",
+            HatchetWorkerParams(
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
+                metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
+                dropzone_bucket=self.backend.dropzone_bucket
+            ),
+        )
         self.scimserver = SCIMServer(
             self,
             "SCIMServer",

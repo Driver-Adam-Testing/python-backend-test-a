@@ -13,6 +13,7 @@ from cdk.constructs.hatchet_worker import HatchetWorker, HatchetWorkerParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 from cdk.constructs.scim_server import SCIMServer, SCIMServerParams
 from cdk.settings import settings
+from content_services.src.worker_config import HatchetWorkerType
 
 
 class BackendStack(Stack):
@@ -68,14 +69,35 @@ class BackendStack(Stack):
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
-        self.hatchetworker = HatchetWorker(
+        self.heavyhatchetworker = HatchetWorker(
             self,
-            "HatchetWorker",
+            "HatchetHeavyWorker",
             HatchetWorkerParams(
                 environment=settings.DEPLOYMENT_ENVIRONMENT,
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
+                cpu_size=8192,
+                mem_size=32768,
+                min_instance=1,
+                workflow_set_name=HatchetWorkerType.HEAVY.value,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
+                dropzone_bucket=self.backend.dropzone_bucket
+            ),
+        )
+
+        self.basehatchetworker = HatchetWorker(
+            self,
+            "HatchetBaselineWorker",
+            HatchetWorkerParams(
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
+                metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account,
+                cpu_size=2048,
+                mem_size=4096,
+                min_instance=1,
+                workflow_set_name=HatchetWorkerType.BASE.value,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
                 dropzone_bucket=self.backend.dropzone_bucket
             ),
@@ -92,4 +114,3 @@ class BackendStack(Stack):
                 listener=self.backend.backend_alb_listener
             ),
         )
-

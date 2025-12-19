@@ -27,7 +27,11 @@ class HatchetWorkerParams:
         aws_account: str,
         metrics_bus: aws_events.EventBus,
         is_private_deploy: bool,
-        dropzone_bucket: aws_s3.Bucket
+        dropzone_bucket: aws_s3.Bucket,
+        cpu_size: int,
+        mem_size: int,
+        min_instance: int,
+        workflow_set_name: str,
     ) -> None:
         self.environment = environment
         self.aws_region = aws_region
@@ -35,6 +39,11 @@ class HatchetWorkerParams:
         self.metrics_bus = metrics_bus
         self.is_private_deploy = is_private_deploy
         self.dropzone_bucket = dropzone_bucket
+        self.cpu_size = cpu_size
+        self.mem_size = mem_size
+        self.min_instance = min_instance
+        self.workflow_set_name = workflow_set_name
+    
 
 
 class HatchetWorker(Construct):
@@ -87,7 +96,8 @@ class HatchetWorker(Construct):
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
             "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
-            "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000"
+            "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000",
+            "WORKFLOW_SET_NAME": params.workflow_set_name
         }
 
         if params.is_private_deploy:
@@ -116,8 +126,8 @@ class HatchetWorker(Construct):
         worker_task_def = aws_ecs.FargateTaskDefinition(
             self,
             "HatchetWorkerTaskDef",
-            cpu=8192,
-            memory_limit_mib=32768,
+            cpu=params.cpu_size,
+            memory_limit_mib=params.mem_size,
             runtime_platform=aws_ecs.RuntimePlatform(
                 cpu_architecture=aws_ecs.CpuArchitecture.X86_64
             ),
@@ -170,7 +180,7 @@ class HatchetWorker(Construct):
             "HatchetWorkerSvc",
             cluster=cluster,
             task_definition=worker_task_def,
-            desired_count=2,  # Run 2 copies
+            desired_count=params.min_instance,
             assign_public_ip=False,
             vpc_subnets=aws_ec2.SubnetSelection(
                 subnet_group_name="Private"
@@ -182,7 +192,7 @@ class HatchetWorker(Construct):
 
         # --- CPU-based autoscaling ---
         scalable = self.worker_service.auto_scale_task_count(
-            min_capacity=2,  # keep at least 2 running
+            min_capacity=params.min_instance,  # keep at least 2 running
             max_capacity=10,  # adjust as needed
         )
         scalable.scale_on_cpu_utilization(

@@ -622,7 +622,7 @@ def test_extract_module_definitions(data_structures_test_code: str) -> None:
 
     # Check symbol kind and bespoke data
     # Modules use SymbolKind.CLASS with is_module=True in bespoke data
-    from utils.lang_specialization.symbol_common import SymbolKind
+    from shared.inspector.utils.lang_specialization.symbol_common import SymbolKind
 
     assert my_module.symbol_kind == SymbolKind.CLASS
     assert my_module.bespoke_data is not None
@@ -1756,7 +1756,7 @@ def test_extract_variables_by_class(
 
 def test_extract_variables_symbol_kind(variables_test_code: str) -> None:
     """Test that all extracted variables have SymbolKind.VARIABLE_DEFINITION"""
-    from utils.lang_specialization.symbol_common import SymbolKind
+    from shared.inspector.utils.lang_specialization.symbol_common import SymbolKind
 
     driver_tree = RubyDriverTree.from_code(variables_test_code, "test_variables.rb")
     variables = driver_tree._extract_variables_and_constants()
@@ -2056,7 +2056,7 @@ def test_extract_singleton_class_attributes(attributes_test_code: str) -> None:
 
 def test_extract_attributes_symbol_kind(attributes_test_code: str) -> None:
     """Test that all extracted attributes have SymbolKind.VARIABLE_DEFINITION"""
-    from utils.lang_specialization.symbol_common import SymbolKind
+    from shared.inspector.utils.lang_specialization.symbol_common import SymbolKind
 
     driver_tree = RubyDriverTree.from_code(attributes_test_code, "test_attributes.rb")
     attributes = driver_tree._extract_attributes()

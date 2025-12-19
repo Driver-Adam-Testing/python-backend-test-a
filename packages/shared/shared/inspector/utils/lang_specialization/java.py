@@ -588,7 +588,9 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
             for ts_symbol in driver_tree.extract_interface_definitions():
                 if ts_symbol.name is not None:
                     # Create a minimal ReifiedSymbol for consistency
-                    from utils.lang_specialization.symbol_common import ReifiedSymbol
+                    from shared.inspector.utils.lang_specialization.symbol_common import (
+                        ReifiedSymbol,
+                    )
 
                     reified = ReifiedSymbol(
                         raw=ts_symbol,

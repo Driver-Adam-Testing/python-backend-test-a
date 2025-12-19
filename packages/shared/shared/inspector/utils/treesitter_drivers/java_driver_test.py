@@ -1,8 +1,7 @@
 import pathlib
 
 import pytest
-
-from utils.lang_specialization.symbol_common import SymbolKind
+from shared.inspector.utils.lang_specialization.symbol_common import SymbolKind
 
 from .java_driver import JavaDriverTree
 

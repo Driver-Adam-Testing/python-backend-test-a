@@ -113,8 +113,8 @@ class HatchetWorker(Construct):
         worker_task_def = aws_ecs.FargateTaskDefinition(
             self,
             "HatchetWorkerTaskDef",
-            cpu=2048,
-            memory_limit_mib=4096,
+            cpu=8192,
+            memory_limit_mib=32768,
             runtime_platform=aws_ecs.RuntimePlatform(
                 cpu_architecture=aws_ecs.CpuArchitecture.X86_64
             ),

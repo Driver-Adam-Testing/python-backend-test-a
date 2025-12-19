@@ -13,6 +13,7 @@ from cdk.constructs.hatchet_worker import HatchetWorker, HatchetWorkerParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 from cdk.constructs.scim_server import SCIMServer, SCIMServerParams
 from cdk.settings import settings
+from content_services.src.worker_config import HatchetWorkerType
 
 
 class BackendStack(Stack):
@@ -50,7 +51,7 @@ class BackendStack(Stack):
                 cpu_size=8192,
                 mem_size=32768,
                 min_instance=1,
-                workflow_set_name="heavy", #TODO Shane update with import from worker.py
+                workflow_set_name=HatchetWorkerType.HEAVY.value,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
@@ -66,7 +67,7 @@ class BackendStack(Stack):
                 cpu_size=2048,
                 mem_size=4096,
                 min_instance=1,
-                workflow_set_name="base", #TODO Shane update with import from worker.py
+                workflow_set_name=HatchetWorkerType.BASE.value,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
@@ -124,4 +125,3 @@ class BackendStack(Stack):
                 listener=self.backend.backend_alb_listener
             ),
         )
-

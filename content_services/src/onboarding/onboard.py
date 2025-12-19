@@ -575,7 +575,7 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
             if not has_next:
                 break
 
-        handle_github_events.spawn(
+        handle_github_events(
             gh_install_id,
             install.organization_id,
             repos_added,
@@ -584,7 +584,7 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
         )
 
         print(
-            f"Spawned processing for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
+            f"Processed for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
         )
         for repo in repos:
             print(f"=> Repo: {repo['full_name']}")
@@ -669,7 +669,7 @@ def connect_unconnected_repos() -> None:
                 if not has_next:
                     break
 
-            handle_github_events.spawn(
+            handle_github_events(
                 gh_install_id,
                 install.organization_id,
                 repos_added,
@@ -678,7 +678,7 @@ def connect_unconnected_repos() -> None:
             )
 
             print(
-                f"Spawned processing for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
+                f"Processed for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
             )
             for repo in repos:
                 print(f"=> Repo: {repo['full_name']}")

@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install system dependencies and Poetry
 RUN apt-get update && \
- apt-get install -y curl nano ripgrep ghostscript && \
+ apt-get install -y curl nano ripgrep ghostscript git && \
  curl -sSL https://install.python-poetry.org | python3 - && \
  ln -s /root/.local/bin/poetry /usr/local/bin/poetry && \
  apt-get clean && \

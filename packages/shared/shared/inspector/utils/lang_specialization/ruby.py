@@ -631,7 +631,9 @@ class RubyTopLevelVariableRawSymbolCollection(RawSymbolCollection):
     def from_static_analysis(
         cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol]
     ) -> Self | None:
-        from utils.treesitter_drivers.ruby_driver import RubyVariableKind
+        from shared.inspector.utils.treesitter_drivers.ruby_driver import (
+            RubyVariableKind,
+        )
 
         top_level_variables = [
             reified_symbol

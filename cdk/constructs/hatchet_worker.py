@@ -26,17 +26,19 @@ class HatchetWorkerParams:
         aws_region: str,
         aws_account: str,
         metrics_bus: aws_events.EventBus,
+        is_private_deploy: bool,
+        dropzone_bucket: aws_s3.Bucket,
         cpu_size: int,
         mem_size: int,
         min_instance: int,
         workflow_set_name: str,
-        is_private_deploy: bool
     ) -> None:
         self.environment = environment
         self.aws_region = aws_region
         self.aws_account = aws_account
         self.metrics_bus = metrics_bus
         self.is_private_deploy = is_private_deploy
+        self.dropzone_bucket = dropzone_bucket
         self.cpu_size = cpu_size
         self.mem_size = mem_size
         self.min_instance = min_instance
@@ -74,9 +76,12 @@ class HatchetWorker(Construct):
             hosted_zone_id=hosted_zone_id,
         )
 
-        openai_url = None if not params.is_private_deploy else aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url"
-        )
+        openai_url = None
+        if params.is_private_deploy:
+            openai_url = aws_ssm.StringParameter.value_from_lookup(
+                scope,
+                parameter_name="/baseline/infra/v2/azure/openai/url"
+            )
 
         inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
@@ -89,6 +94,7 @@ class HatchetWorker(Construct):
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
+            "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
             "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
             "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000",
             "WORKFLOW_SET_NAME": params.workflow_set_name
@@ -212,6 +218,8 @@ class HatchetWorker(Construct):
         worker_task_def.task_role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
+        # Add explicit perms for dropzone bucket in the event we scope down S3 full access
+        params.dropzone_bucket.grant_read_write(worker_task_def.task_role)
 
         if settings.IS_PRIVATE_DEPLOY == "true":
             firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(

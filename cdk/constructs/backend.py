@@ -88,10 +88,12 @@ class Backend(Construct):
             scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
         )
 
-        openai_url = None if not params.is_private_deploy else aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/azure/openai/url"
-        )
+        openai_url = None
+        if params.is_private_deploy:
+            openai_url = aws_ssm.StringParameter.value_from_lookup(
+                scope,
+                parameter_name="/baseline/infra/v2/azure/openai/url"
+            )
 
         self.dropzone_bucket = aws_s3.Bucket(
             self,
@@ -133,7 +135,7 @@ class Backend(Construct):
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
-            "HATCHET_CLIENT_HOST_PORT": f"hatchet.{hosted_zone.zone_name}:7077",
+            "HATCHET_CLIENT_HOST_PORT": f"hatchet.private.{hosted_zone.zone_name}:7077",
             "HATCHET_CLIENT_TLS_STRATEGY": "none",
             "REDIS_HOST": "hatchet.private." + hosted_zone.zone_name,
             "MCP_STORAGE_BACKEND": "redis",

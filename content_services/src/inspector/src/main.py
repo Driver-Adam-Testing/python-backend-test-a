@@ -99,7 +99,7 @@ async def get_result_loading_config(
 
 async def inspect_db(
     version_id: uuid.UUID,
-    inspection_mode: InspectionMode = InspectionMode.NORMAL,
+    inspection_mode: InspectionMode = InspectionMode.RESUME,
 ) -> None:
     import tempfile
 

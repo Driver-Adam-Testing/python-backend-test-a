@@ -36,13 +36,14 @@ is_private_deploy = (
     os.getenv("IS_PRIVATE_DEPLOY") and os.getenv("IS_PRIVATE_DEPLOY") == "true"
 )
 
-if not is_private_deploy:
-    sentry_sdk.init(
-        dsn=os.environ["SENTRY_DSN"],
-        integrations=[AwsLambdaIntegration(timeout_warning=True)],
-        traces_sample_rate=0.1,
-        environment=settings.ENVIRONMENT,
-    )
+# TODO: Reenable when optional settings are fixed
+# if not is_private_deploy:
+#     sentry_sdk.init(
+#         dsn=os.environ["SENTRY_DSN"],
+#         integrations=[AwsLambdaIntegration(timeout_warning=True)],
+#         traces_sample_rate=0.1,
+#         environment=settings.ENVIRONMENT,
+#     )
 
 
 def handler(

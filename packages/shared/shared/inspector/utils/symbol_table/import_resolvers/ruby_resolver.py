@@ -9,7 +9,9 @@ from shared.inspector.utils.lang_specialization.symbol_common import (
 from ..base import SymbolResolver
 
 if TYPE_CHECKING:
-    from utils.treesitter_drivers.ruby_driver import RubyRequireBespokeMarker
+    from shared.inspector.utils.treesitter_drivers.ruby_driver import (
+        RubyRequireBespokeMarker,
+    )
 
 
 class RubyResolver(SymbolResolver):

@@ -1,4 +1,4 @@
-from utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
+from shared.inspector.utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
 
 
 class TestFQN:

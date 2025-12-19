@@ -33,7 +33,7 @@ class HatchetWorkerParams:
         self.aws_region = aws_region
         self.aws_account = aws_account
         self.metrics_bus = metrics_bus
-        self.is_private_deploy = is_private_deploy,
+        self.is_private_deploy = is_private_deploy
         self.dropzone_bucket = dropzone_bucket
 
 

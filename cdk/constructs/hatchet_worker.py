@@ -227,10 +227,3 @@ class HatchetWorker(Construct):
             )
             firewall_cert_secret.grant_read(self.worker_service.task_definition.task_role)
 
-        # Outputs
-        CfnOutput(
-            self,
-            "WorkerServiceArn",
-            export_name="WorkerServiceArn",
-            value=self.worker_service.service_arn,
-        )

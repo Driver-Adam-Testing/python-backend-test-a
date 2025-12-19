@@ -94,13 +94,26 @@ class FolderTechDocTask(Task):
             }
             for task, dr in dependent_results.items()
         }  # NOTE: passing just the single sentence to reduce payload size (GRPC limit for hatchet)
+
+        # For previous content only pass through short sentence and paragraph
+        pass_through_content_kinds = [
+            ContentKind.SHORT_SENTENCE_DESCRIPTION,
+            ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
+        ]
+        previous_content = None
+        if self.previous_content:
+            previous_content = {
+                k: v
+                for k, v in self.previous_content.items()
+                if ContentKind(k) in pass_through_content_kinds
+            }
         async with folder_tech_docs_sem:
             child_nodes_to_docs_list = list(child_nodes_to_docs.items())
             folder_doc_input = FolderDocInput(
                 node=self.node,
                 codebase_name=self.codebase_name,
                 child_nodes_to_docs=child_nodes_to_docs_list,
-                previous_content=self.previous_content,
+                previous_content=previous_content,
             )
             docs = await folder_doc_task.aio_run(folder_doc_input)
         return TaskResult(data={"docs": docs}, serialization=SerializationMethod.JSON)

@@ -26,13 +26,15 @@ class HatchetWorkerParams:
         aws_region: str,
         aws_account: str,
         metrics_bus: aws_events.EventBus,
-        is_private_deploy: bool
+        is_private_deploy: bool,
+        dropzone_bucket: aws_s3.Bucket
     ) -> None:
         self.environment = environment
         self.aws_region = aws_region
         self.aws_account = aws_account
         self.metrics_bus = metrics_bus
-        self.is_private_deploy = is_private_deploy
+        self.is_private_deploy = is_private_deploy,
+        self.dropzone_bucket = dropzone_bucket
 
 
 class HatchetWorker(Construct):
@@ -80,6 +82,7 @@ class HatchetWorker(Construct):
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
             "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
+            "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
             "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
             "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000"
         }
@@ -202,6 +205,8 @@ class HatchetWorker(Construct):
         worker_task_def.task_role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
+        # Add explicit perms for dropzone bucket in the event we scope down S3 full access
+        params.dropzone_bucket.grant_write(worker_task_def.task_role)
 
         if settings.IS_PRIVATE_DEPLOY == "true":
             firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(

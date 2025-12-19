@@ -41,12 +41,32 @@ class BackendStack(Stack):
 
         self.hatchetworker = HatchetWorker(
             self,
-            "HatchetWorker",
+            "HatchetHeavyWorker",
             HatchetWorkerParams(
                 environment=settings.DEPLOYMENT_ENVIRONMENT,
                 metrics_bus=self.metrics_lambda.metrics_bus,
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
+                cpu_size=8192,
+                mem_size=32768,
+                min_instance=1,
+                workflow_set_name="heavy", #TODO Shane update with import from worker.py
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
+            ),
+        )
+
+        self.hatchetworker = HatchetWorker(
+            self,
+            "HatchetBaselineWorker",
+            HatchetWorkerParams(
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
+                metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account,
+                cpu_size=2048,
+                mem_size=4096,
+                min_instance=1,
+                workflow_set_name="base", #TODO Shane update with import from worker.py
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )

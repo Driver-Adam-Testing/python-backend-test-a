@@ -70,7 +70,7 @@ base_workflow_set = [
 
 
 def main() -> None:
-    worker_type = HatchetWorkerType(os.environ["WORKER_SET_NAME"])
+    worker_type = HatchetWorkerType(os.environ["WORKFLOW_SET_NAME"])
     workflows = (
         heavy_workflow_set
         if worker_type == HatchetWorkerType.HEAVY

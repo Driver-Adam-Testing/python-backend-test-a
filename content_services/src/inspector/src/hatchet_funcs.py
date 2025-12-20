@@ -26,7 +26,8 @@ def put_symbol_table_cache(
             del _SYMBOL_TABLE_CACHE[k]
     expires = time.time() + ttl_seconds
     with _CACHE_LOCK:
-        _SYMBOL_TABLE_CACHE[key] = (value, expires)
+        if key not in _SYMBOL_TABLE_CACHE:
+            _SYMBOL_TABLE_CACHE[key] = (value, expires)
     return key
 
 

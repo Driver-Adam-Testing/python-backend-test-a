@@ -1233,6 +1233,7 @@ class CSymbolTableTask(Task):
                 bucket_name=bucket_name,
                 version_id=self.version_id,
             )
+            put_symbol_table_cache(self.version_id, full_symbol_table)
         except Exception as e:
             print(
                 f"Could not load existing symbol table for task {self.task_name}: {e}"

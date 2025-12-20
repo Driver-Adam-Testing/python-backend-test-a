@@ -24,6 +24,9 @@ from inspector.src.hatchet_funcs import (
 )
 from pydantic import BaseModel
 from shared.inspector.utils.dag import FlatTopoFileDiffDag, LiteNode, NodeKind
+from shared.inspector.utils.synthesis.deep_context import (
+    DeepContextDoc,
+)
 
 
 class TechDocInput(BaseModel):
@@ -139,10 +142,20 @@ def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str
 async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> dict:
     print("starting deep context docs task")
     # Call the function to generate deep context docs
+    # Reconstruct the old version content and diff dag
+    old_version_content = None
+    if input.old_version_content is not None:
+        old_version_content = []
+        for doc in input.old_version_content:
+            old_version_content.append(DeepContextDoc.model_validate(doc))
+    code_diff = None
+    if input.code_diff is not None:
+        code_diff = FlatTopoFileDiffDag.model_validate(input.code_diff)
+
     await deep_context_docs(
         input.old_version_id,
-        input.old_version_content,
-        input.code_diff,
+        old_version_content,
+        code_diff,
         input.new_version_id,
         input.install_id,
     )

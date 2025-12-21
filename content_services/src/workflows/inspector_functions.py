@@ -235,8 +235,9 @@ def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
         child_nodes_to_docs,
         input.previous_content,
     )
+    cleaned_folder_docs = remove_null_unicode_character(data=folder_docs)
     print("executed folder doc task")
-    return folder_docs
+    return cleaned_folder_docs
 
 
 @hatchet.task(
@@ -300,4 +301,5 @@ def toplevel_doc_task(input: TopLevelDocInput, ctx: Context) -> dict[str, any]:
     )
     delete_top_level_cache(input.version_node_id)
     print("executed toplevel doc task")
-    return toplevel_docs
+    cleaned_top_level_docs = remove_null_unicode_character(data=toplevel_docs)
+    return cleaned_top_level_docs

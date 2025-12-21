@@ -43,9 +43,9 @@ try:
 except FileNotFoundError:
     LOCAL_FILES = None
 
-OPENAI_SEM = asyncio.Semaphore(100)
+OPENAI_SEM = asyncio.Semaphore(75)
 PDF_DOWNLOAD_DIR = "pdfs/"
-OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
+OPENAI_LIMITER = AsyncLimiter(50, 1)  # 50 requests per second
 
 
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:

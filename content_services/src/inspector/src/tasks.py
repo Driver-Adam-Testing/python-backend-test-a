@@ -283,10 +283,15 @@ class FileTechDocTask(Task):
             return deduped_result
 
         async with tech_docs_sem:
+            cleaned_source = (
+                self.source_code.replace("\u0000", "")
+                .replace("\\u0000", "")
+                .replace("\x00", "")
+            )  # Apparently the \\u0000 and \x00 is an issue with hatchet
             tech_doc_input = TechDocInput(
                 node=self.node,
                 codebase_name=self.codebase_name,
-                source_code=self.source_code,
+                source_code=cleaned_source,
                 version_id=self.version_id,
             )
             task_result = await tech_doc_task.aio_run(
@@ -1233,6 +1238,7 @@ class CSymbolTableTask(Task):
                 bucket_name=bucket_name,
                 version_id=self.version_id,
             )
+            put_symbol_table_cache(self.version_id, full_symbol_table)
         except Exception as e:
             print(
                 f"Could not load existing symbol table for task {self.task_name}: {e}"

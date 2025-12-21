@@ -65,10 +65,10 @@ class AutoToml:
     )
     LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
-    MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
+    MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 100
     OPENAI_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_SUMMARIES)
     SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
-    REQUESTS_PER_SECOND: ClassVar[int] = 100
+    REQUESTS_PER_SECOND: ClassVar[int] = 50
     OPENAI_LIMITER = AsyncLimiter(REQUESTS_PER_SECOND, 1)
     MAX_CODE_SCALE_FACTOR: ClassVar[int] = 10
     PDF_SCALE_FACTOR: ClassVar[int] = 10

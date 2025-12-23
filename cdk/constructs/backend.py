@@ -307,46 +307,6 @@ class Backend(Construct):
             # Create NLB for PrivateLink (VPC Endpoint Services require NLB, not ALB)
             private_subnets = self.vpc.select_subnets(subnet_group_name="Private")
 
-            privatelink_nlb = aws_elasticloadbalancingv2.NetworkLoadBalancer(
-                self,
-                "PrivateLinkApiNlb",
-                vpc=self.vpc,
-                internet_facing=False,
-                vpc_subnets=aws_ec2.SubnetSelection(subnets=private_subnets.subnets),
-            )
-
-            privatelink_nlb_target_group = (
-                aws_elasticloadbalancingv2.NetworkTargetGroup(
-                    self,
-                    "PrivateLinkApiAlbTargetGroup",
-                    vpc=self.vpc,
-                    port=443,
-                    protocol=aws_elasticloadbalancingv2.Protocol.TCP,
-                    target_type=aws_elasticloadbalancingv2.TargetType.ALB,
-                    targets=[
-                        aws_elasticloadbalancingv2_targets.AlbTarget(
-                            self.service.load_balancer, 443
-                        )
-                    ],
-                    health_check=aws_elasticloadbalancingv2.HealthCheck(
-                        protocol=aws_elasticloadbalancingv2.Protocol.HTTPS,
-                        path="/studio/v1/healthcheck/",
-                        healthy_threshold_count=2,
-                        unhealthy_threshold_count=2,
-                        interval=Duration.seconds(30),
-                    ),
-                )
-            )
-
-            privatelink_nlb.add_listener(
-                "PrivateLinkApiNlbListener",
-                port=443,
-                protocol=aws_elasticloadbalancingv2.Protocol.TCP,
-                default_action=aws_elasticloadbalancingv2.NetworkListenerAction.forward(
-                    target_groups=[privatelink_nlb_target_group]
-                ),
-            )
-
             # Create VPC Endpoint Service for PrivateLink access
             allowed_principals = None
             if params.allowed_aws_account != "":
@@ -356,46 +316,86 @@ class Backend(Construct):
                     )
                 ]
 
-            self.endpoint_service = aws_ec2.VpcEndpointService(
-                self,
-                "PrivateLinkApiEndpointService",
-                vpc_endpoint_service_load_balancers=[privatelink_nlb],
-                acceptance_required=False,
-                allowed_principals=allowed_principals,
-            )
+            if allowed_principals:
+                privatelink_nlb = aws_elasticloadbalancingv2.NetworkLoadBalancer(
+                    self,
+                    "PrivateLinkApiNlb",
+                    vpc=self.vpc,
+                    internet_facing=False,
+                    vpc_subnets=aws_ec2.SubnetSelection(subnets=private_subnets.subnets),
+                )
 
-            # Configure private DNS with automatic domain verification
-            aws_route53.VpcEndpointServiceDomainName(
-                self,
-                "PrivateLinkApiDomainName",
-                endpoint_service=self.endpoint_service,
-                domain_name=api_domain_name,
-                public_hosted_zone=hosted_zone,
-            )
+                privatelink_nlb_target_group = (
+                    aws_elasticloadbalancingv2.NetworkTargetGroup(
+                        self,
+                        "PrivateLinkApiAlbTargetGroup",
+                        vpc=self.vpc,
+                        port=443,
+                        protocol=aws_elasticloadbalancingv2.Protocol.TCP,
+                        target_type=aws_elasticloadbalancingv2.TargetType.ALB,
+                        targets=[
+                            aws_elasticloadbalancingv2_targets.AlbTarget(
+                                self.service.load_balancer, 443
+                            )
+                        ],
+                        health_check=aws_elasticloadbalancingv2.HealthCheck(
+                            protocol=aws_elasticloadbalancingv2.Protocol.HTTPS,
+                            path="/studio/v1/healthcheck/",
+                            healthy_threshold_count=2,
+                            unhealthy_threshold_count=2,
+                            interval=Duration.seconds(30),
+                        ),
+                    )
+                )
 
-            CfnOutput(
-                self,
-                "PrivateLinkApiServiceName",
-                export_name="PrivateLinkApiServiceName",
-                value=self.endpoint_service.vpc_endpoint_service_name,
-                description="VPC Endpoint Service name for PrivateLink connections",
-            )
+                privatelink_nlb.add_listener(
+                    "PrivateLinkApiNlbListener",
+                    port=443,
+                    protocol=aws_elasticloadbalancingv2.Protocol.TCP,
+                    default_action=aws_elasticloadbalancingv2.NetworkListenerAction.forward(
+                        target_groups=[privatelink_nlb_target_group]
+                    ),
+                )
+                self.endpoint_service = aws_ec2.VpcEndpointService(
+                    self,
+                    "PrivateLinkApiEndpointService",
+                    vpc_endpoint_service_load_balancers=[privatelink_nlb],
+                    acceptance_required=False,
+                    allowed_principals=allowed_principals,
+                )
 
-            CfnOutput(
-                self,
-                "PrivateLinkApiServiceId",
-                export_name="PrivateLinkApiServiceId",
-                value=self.endpoint_service.vpc_endpoint_service_id,
-                description="VPC Endpoint Service ID for managing connections",
-            )
+                # Configure private DNS with automatic domain verification
+                aws_route53.VpcEndpointServiceDomainName(
+                    self,
+                    "PrivateLinkApiDomainName",
+                    endpoint_service=self.endpoint_service,
+                    domain_name=api_domain_name,
+                    public_hosted_zone=hosted_zone,
+                )
 
-            CfnOutput(
-                self,
-                "PrivateLinkApiAvailabilityZones",
-                export_name="PrivateLinkApiAvailabilityZones",
-                value=",".join(private_subnets.availability_zones),
-                description="Availability zones where the VPC Endpoint Service is available",
-            )
+                CfnOutput(
+                    self,
+                    "PrivateLinkApiServiceName",
+                    export_name="PrivateLinkApiServiceName",
+                    value=self.endpoint_service.vpc_endpoint_service_name,
+                    description="VPC Endpoint Service name for PrivateLink connections",
+                )
+
+                CfnOutput(
+                    self,
+                    "PrivateLinkApiServiceId",
+                    export_name="PrivateLinkApiServiceId",
+                    value=self.endpoint_service.vpc_endpoint_service_id,
+                    description="VPC Endpoint Service ID for managing connections",
+                )
+
+                CfnOutput(
+                    self,
+                    "PrivateLinkApiAvailabilityZones",
+                    export_name="PrivateLinkApiAvailabilityZones",
+                    value=",".join(private_subnets.availability_zones),
+                    description="Availability zones where the VPC Endpoint Service is available",
+                )
 
         # Output ECS Cluster ARN
         CfnOutput(

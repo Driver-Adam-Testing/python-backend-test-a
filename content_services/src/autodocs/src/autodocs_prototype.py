@@ -358,12 +358,16 @@ class DriverDocsContent(BaseModel):
             root_short_paragraph = content[codebase_name].short_paragraph_description
             for k in content:
                 if content[k].source is not None:
-                    chunks = split_text(
-                        content[k].source,
-                        chunk_size=64_000,
-                        chunk_overlap=0,
-                    )
-                    content[k].split_source = chunks[0].text
+                    try:
+                        chunks = split_text(
+                            content[k].source,
+                            chunk_size=64_000,
+                            chunk_overlap=0,
+                        )
+                        content[k].split_source = chunks[0].text
+                    except Exception as e:
+                        print(f"Error splitting source for {k}: {e}")
+                        content[k].split_source = None
                 else:
                     content[k].split_source = None
 

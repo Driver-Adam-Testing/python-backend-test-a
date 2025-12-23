@@ -47,6 +47,7 @@ except FileNotFoundError:
 OPENAI_SEM = asyncio.Semaphore(75)
 PDF_DOWNLOAD_DIR = "pdfs/"
 OPENAI_LIMITER = AsyncLimiter(50, 1)  # 50 requests per second
+MAX_CONCURRENT_ANNOTATIONS = 50
 
 
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
@@ -1416,9 +1417,18 @@ Your output should be markdown formatted text.
                         )
                     )
 
-        node_responses = await asyncio.gather(*node_coroutines)
-        for ordered_node, response in zip(ordered_nodes, node_responses):
-            file_by_file_content[ordered_node] = response
+        # Do it in batches to reduce heartbeat errors in Hatchet
+        MAX_CONCURRENT_SCATTER_SECTIONS = 100
+        print(f"Generating {len(node_coroutines)} node sections...")
+        for i in range(0, len(node_coroutines), MAX_CONCURRENT_SCATTER_SECTIONS):
+            batch = node_coroutines[i : i + MAX_CONCURRENT_SCATTER_SECTIONS]
+            batch_nodes = ordered_nodes[i : i + MAX_CONCURRENT_SCATTER_SECTIONS]
+            print(
+                f"Generating batch {i // MAX_CONCURRENT_SCATTER_SECTIONS + 1} with {len(batch)} node sections..."
+            )
+            batch_responses = await asyncio.gather(*batch)
+            for ordered_node, response in zip(batch_nodes, batch_responses):
+                file_by_file_content[ordered_node] = response
 
         print(f"Created {len(file_by_file_content)} node sections")
         return file_by_file_content
@@ -2220,9 +2230,17 @@ Your output is the full content of the document with editing updates based on yo
         for node in topo:
             if node[1].source is not None:
                 coroutines.append(self._annotate_file(llm=llm, node=node))
-        node_results = await tqdm_asyncio.gather(*coroutines)
-        for result in node_results:
-            tagged_nodes[result[0]] = result[1]
+        # Process this in groups:
+        for i in range(0, len(coroutines), MAX_CONCURRENT_ANNOTATIONS):
+            batch = coroutines[i : i + MAX_CONCURRENT_ANNOTATIONS]
+            print(f"[{pidx} / {total}] Annotating files...")
+            node_results = await tqdm_asyncio.gather(*batch)
+            for result in node_results:
+                tagged_nodes[result[0]] = result[1]
+            pidx += len(batch)
+        # node_results = await tqdm_asyncio.gather(*coroutines)
+        # for result in node_results:
+        #     tagged_nodes[result[0]] = result[1]
 
         # Annotate folders after (since they depend on files)
         for p, tech_docs in topo:

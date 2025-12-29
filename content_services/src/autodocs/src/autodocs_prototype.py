@@ -1980,13 +1980,6 @@ Your output is the full content of the document with editing updates based on yo
                             driver_docs = await loop.run_in_executor(
                                 pool, _load_driver_docs, cfg
                             )
-                        # driver_docs = [
-                        #     DriverDocsContent.from_db(
-                        #         version_id=code_cfg.version_id,
-                        #         relative_path=code_cfg.node_path,
-                        #     )
-                        #     for code_cfg in cfg.scope.code
-                        # ]
                     case _:
                         raise ValueError("Invalid execution mode")
 
@@ -2238,9 +2231,6 @@ Your output is the full content of the document with editing updates based on yo
             for result in node_results:
                 tagged_nodes[result[0]] = result[1]
             pidx += len(batch)
-        # node_results = await tqdm_asyncio.gather(*coroutines)
-        # for result in node_results:
-        #     tagged_nodes[result[0]] = result[1]
 
         # Annotate folders after (since they depend on files)
         for p, tech_docs in topo:
@@ -2794,7 +2784,6 @@ Your output is the full content of the document with editing updates based on yo
                 annotations = None
                 pdf_annotations = None
 
-            # self.save_annotations(annotations=annotations)
             if execution_mode == ExecutionMode.MODAL:
                 await update_autodocs_status(
                     source_version_node_id=source_version_node_id,
@@ -2829,7 +2818,6 @@ Your output is the full content of the document with editing updates based on yo
                 "appended_reverse_topo": appended_reverse_topo,
                 "init_node_set": init_node_set,
             }
-            # self.save_state(revisions=revisions, init_state=init_state)
 
         # Exhaustive updates
         if any(
@@ -2863,7 +2851,6 @@ Your output is the full content of the document with editing updates based on yo
                 new_section_state["sections"] = section_update
                 new_section_state["_index"] = pidx
                 revisions.append(new_section_state)
-                # self.save_state(revisions=revisions, init_state=init_state)
                 section_state = new_section_state
 
             if len(self.scope.pdfs) > 0:
@@ -2885,7 +2872,6 @@ Your output is the full content of the document with editing updates based on yo
                     new_section_state["sections"] = section_update
                     new_section_state["_index"] = pidx
                     revisions.append(new_section_state)
-                    # self.save_state(revisions=revisions, init_state=init_state)
                     section_state = new_section_state
 
         if execution_mode == ExecutionMode.MODAL:
@@ -2907,7 +2893,6 @@ Your output is the full content of the document with editing updates based on yo
         new_section_state["sections"] = final_section_update
         new_section_state["_index"] = pidx
         revisions.append(new_section_state)
-        # self.save_state(revisions=revisions, init_state=init_state)
         section_state = new_section_state
         if execution_mode == ExecutionMode.MODAL:
             await update_autodocs_status(
@@ -2930,11 +2915,6 @@ Your output is the full content of the document with editing updates based on yo
             user_prompt=assembly_user_prompt,
         )
         final_doc_revisions.append(full_document)
-        # self.save_state(
-        #     revisions=revisions,
-        #     init_state=init_state,
-        #     final_doc_revisions=final_doc_revisions,
-        # )
 
         if execution_mode == ExecutionMode.MODAL:
             await update_autodocs_status(
@@ -2957,14 +2937,6 @@ Your output is the full content of the document with editing updates based on yo
 
         final_doc_revisions.append(final_document)
         final_doc_revisions.append(fix_mermaid_syntax_in_response(text=final_document))
-        # self.save_state(
-        #     revisions=revisions,
-        #     init_state=init_state,
-        #     final_doc_revisions=final_doc_revisions,
-        # )
-
-        # Write final output to a separate file.
-        self.write_final_output_to_markdown(output=final_doc_revisions[-1])
 
         return final_doc_revisions[-1]
 

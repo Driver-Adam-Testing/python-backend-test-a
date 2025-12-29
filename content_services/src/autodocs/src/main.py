@@ -177,6 +177,17 @@ async def run_autodoc(
         config.scope = scope
         print(config.scope)
 
+        # run from_cfg in a Executor to avoid blocking event loop
+        # loop = asyncio.get_running_loop()
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        #     init_state = await loop.run_in_executor(
+        #         pool,
+        #         AutoDocInitState.from_cfg,
+        #         config,
+        #         ExecutionMode.MODAL,
+        #         version_node_id,
+        #     )
+
         init_state = await AutoDocInitState.from_cfg(
             cfg=config,
             execution_mode=ExecutionMode.MODAL,

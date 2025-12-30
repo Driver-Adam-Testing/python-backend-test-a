@@ -1061,7 +1061,7 @@ def run_codebase_connection(
                 version_id=version_id,
             )
             try:
-                inspector_task.run(inspector_input)
+                inspector_task.run_no_wait(inspector_input)
             except Exception as e:
                 print(f"Uncaught during inspection: {e}")
                 # Note: this is likely redundant setting of error state, but this allows us to handle modal timeout exceptions

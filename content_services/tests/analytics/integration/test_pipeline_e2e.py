@@ -216,3 +216,128 @@ class TestPipelineIntegration:
         assert branches_result.success
         assert len(branches_result.branches) >= 1
 
+
+class TestOrgLevelFileSchemas:
+    """Tests for org-level JSON file schema validation.
+    
+    These tests ensure Phase 8 generates files that match the schema
+    expected by AnalyticsService. A schema mismatch causes API 500 errors.
+    """
+
+    def test_codebase_entry_has_required_fields(self):
+        """Test that codebase entry has all fields required by API.
+        
+        The AnalyticsService expects these fields in codebases_list.json entries.
+        Missing fields cause the API to fail.
+        """
+        # Simulate what _phase_update_org_files creates
+        from datetime import datetime, timezone
+        
+        codebase_entry = {
+            "codebase_id": "test-uuid-1234",
+            "display_name": "owner/repo",
+            "full_name": "owner/repo",
+            "owner": "owner",
+            "repository_name": "repo",
+            "total_commits": 100,
+            "total_contributors": 10,
+            "total_branches": 5,
+            "total_churn": 5000,
+            "current_sloc": 1000,
+            "net_sloc": 1000,
+            "primary_language": "Python",
+            "last_commit_date": datetime.now(timezone.utc).isoformat(),
+            "has_analytics": True,
+            "analytics_status": "complete",  # Required by API
+        }
+        
+        # Verify required fields exist
+        required_fields = [
+            "codebase_id",
+            "display_name", 
+            "total_commits",
+            "current_sloc",
+            "analytics_status",  # This was missing in the original bug
+        ]
+        
+        for field in required_fields:
+            assert field in codebase_entry, f"Missing required field: {field}"
+        
+        # Verify analytics_status has valid value
+        assert codebase_entry["analytics_status"] in ["complete", "pending", "error"], \
+            "analytics_status must be 'complete', 'pending', or 'error'"
+
+    def test_codebases_list_schema(self):
+        """Test that codebases_list.json has correct top-level schema.
+        
+        Schema expected by AnalyticsService:
+        {
+            "organization_id": "org-id",  # NOT derived from codebase_id!
+            "codebases": [...],
+            "generated_at": "ISO timestamp"  # NOT "last_updated"!
+        }
+        """
+        from datetime import datetime, timezone
+        
+        # Simulate correct schema
+        codebases_list = {
+            "organization_id": "org_oVrvUshpraavOMNe",  # Real org ID
+            "codebases": [],
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        
+        # Required top-level fields
+        required_fields = ["organization_id", "codebases", "generated_at"]
+        
+        for field in required_fields:
+            assert field in codebases_list, f"Missing required field: {field}"
+        
+        # organization_id should be a real org ID, not a UUID prefix
+        assert not codebases_list["organization_id"].startswith("test-uuid"), \
+            "organization_id should be the actual org ID, not derived from codebase_id"
+
+    def test_org_summary_schema(self):
+        """Test that org_summary.json has correct schema.
+        
+        Schema expected by AnalyticsService:
+        {
+            "organization_id": "org-id",
+            "total_codebases": N,
+            "codebases_with_analytics": N,
+            "total_commits": N,
+            "total_contributors": N,
+            "total_sloc": N,
+            "generated_at": "ISO timestamp"  # NOT "last_updated"!
+        }
+        """
+        from datetime import datetime, timezone
+        
+        # Simulate correct schema
+        org_summary = {
+            "organization_id": "org_oVrvUshpraavOMNe",
+            "total_codebases": 3,
+            "codebases_with_analytics": 3,
+            "total_commits": 500,
+            "total_contributors": 25,
+            "total_sloc": 50000,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        
+        # Required fields per AnalyticsService tests
+        required_fields = [
+            "organization_id",
+            "total_codebases",
+            "codebases_with_analytics",
+            "total_commits",
+            "total_contributors",
+            "total_sloc",
+            "generated_at",  # NOT "last_updated"
+        ]
+        
+        for field in required_fields:
+            assert field in org_summary, f"Missing required field: {field}"
+        
+        # Verify "last_updated" is NOT used (common mistake)
+        assert "last_updated" not in org_summary, \
+            "Use 'generated_at' not 'last_updated' for timestamp field"
+

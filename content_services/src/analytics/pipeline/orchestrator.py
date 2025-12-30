@@ -402,28 +402,42 @@ class AnalyticsPipeline:
             "net_sloc": net_sloc,
             "primary_language": metrics.get('primary_language'),
             "last_commit_date": metrics.get('last_commit_at').isoformat() if metrics.get('last_commit_at') else None,
-            "has_analytics": True
+            "has_analytics": True,
+            "analytics_status": "complete",  # Required by API schema
         }
+
+        organization_id = ctx.input.organization_id
 
         # Update codebases_list.json
         try:
-            self._update_codebases_list(s3_client, bucket, new_codebase_entry)
+            self._update_codebases_list(s3_client, bucket, organization_id, new_codebase_entry)
             logger.info("Updated codebases_list.json")
         except Exception as e:
             logger.error(f"Failed to update codebases_list.json: {e}")
 
         # Update org_summary.json
         try:
-            self._update_org_summary(s3_client, bucket, new_codebase_entry)
+            self._update_org_summary(s3_client, bucket, organization_id)
             logger.info("Updated org_summary.json")
         except Exception as e:
             logger.error(f"Failed to update org_summary.json: {e}")
 
-    def _update_codebases_list(self, s3_client: AWSS3Client, bucket: str, new_entry: dict) -> None:
-        """Update codebases_list.json with new codebase entry."""
+    def _update_codebases_list(
+        self, s3_client: AWSS3Client, bucket: str, organization_id: str, new_entry: dict
+    ) -> None:
+        """Update codebases_list.json with new codebase entry.
+        
+        Schema must match what AnalyticsService expects:
+        {
+            "organization_id": "org-id",
+            "codebases": [{ ... }],
+            "generated_at": "ISO timestamp"
+        }
+        """
         import json
         import tempfile
         import boto3
+        from datetime import datetime, timezone
 
         key = "analytics/codebases_list.json"
         codebases = []
@@ -448,10 +462,11 @@ class AnalyticsPipeline:
         if not updated:
             codebases.append(new_entry)
 
-        # Write updated file
+        # Write updated file with correct schema
         data = {
-            "organization_id": new_entry.get('codebase_id', '').split('-')[0] if '-' in new_entry.get('codebase_id', '') else '',
-            "codebases": codebases
+            "organization_id": organization_id,
+            "codebases": codebases,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
@@ -468,8 +483,20 @@ class AnalyticsPipeline:
 
         temp_path.unlink()
 
-    def _update_org_summary(self, s3_client: AWSS3Client, bucket: str, new_entry: dict) -> None:
-        """Update org_summary.json with aggregated totals."""
+    def _update_org_summary(self, s3_client: AWSS3Client, bucket: str, organization_id: str) -> None:
+        """Update org_summary.json with aggregated totals.
+        
+        Schema must match what AnalyticsService expects:
+        {
+            "organization_id": "org-id",
+            "total_codebases": N,
+            "codebases_with_analytics": N,
+            "total_commits": N,
+            "total_contributors": N,
+            "total_sloc": N,
+            "generated_at": "ISO timestamp"
+        }
+        """
         import json
         import tempfile
         import boto3
@@ -486,26 +513,23 @@ class AnalyticsPipeline:
             codebases = existing_data.get('codebases', [])
         except Exception as e:
             logger.info(f"Could not read codebases_list.json for summary: {e}")
-            codebases = [new_entry]
+            return  # Can't compute summary without codebases list
 
         # Aggregate totals
         total_codebases = len(codebases)
         total_commits = sum(cb.get('total_commits', 0) for cb in codebases)
         total_contributors = sum(cb.get('total_contributors', 0) for cb in codebases)
-        total_branches = sum(cb.get('total_branches', 0) for cb in codebases)
         total_sloc = sum(cb.get('current_sloc', 0) for cb in codebases)
-        total_churn = sum(cb.get('total_churn', 0) for cb in codebases)
 
+        # Build summary with correct schema (matching AnalyticsService expectations)
         summary = {
-            "organization_id": new_entry.get('codebase_id', '').split('-')[0] if '-' in new_entry.get('codebase_id', '') else '',
+            "organization_id": organization_id,
             "total_codebases": total_codebases,
             "codebases_with_analytics": total_codebases,
             "total_commits": total_commits,
             "total_contributors": total_contributors,
-            "total_branches": total_branches,
-            "current_sloc": total_sloc,
-            "total_churn": total_churn,
-            "last_updated": datetime.now(timezone.utc).isoformat()
+            "total_sloc": total_sloc,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:

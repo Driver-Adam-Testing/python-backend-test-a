@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import re
 import subprocess
@@ -16,6 +17,8 @@ from database.models_enums import (
     VersionStatus,
 )
 from workflows.inspector_workflow import InspectorInput, inspector_task
+
+logger = logging.getLogger(__name__)
 
 
 def collect_file_paths(extracted_path: Path) -> tuple[list[Path], list[Path]]:
@@ -684,6 +687,26 @@ def connect_unconnected_repos() -> None:
                 print(f"=> Repo: {repo['full_name']}")
 
 
+# Analytics trigger is implemented in analytics_trigger.py
+# We import the spawn function here for convenience
+def _spawn_analytics_task(
+    codebase_id: str,
+    organization_id: str,
+    codebase_name: str,
+    provider: str,
+    install_id: str | None = None,
+) -> str | None:
+    """Spawn analytics task as background Hatchet job. Wrapper around analytics_trigger module."""
+    from onboarding.analytics_trigger import spawn_analytics_task
+    return spawn_analytics_task(
+        codebase_id=codebase_id,
+        organization_id=organization_id,
+        codebase_name=codebase_name,
+        provider=provider,
+        install_id=install_id,
+    )
+
+
 def run_codebase_connection(
     presigned_url: str,
     provisional_codebase_name: str,
@@ -1080,5 +1103,16 @@ def run_codebase_connection(
         f"Codebase connection complete for codebase: {codebase_name} (cb id: {primary_asset_id}). "
         f"Version ID: {version_id}."
     )
+
+    # === ANALYTICS TRIGGER ===
+    # Spawn analytics as separate background task (non-blocking)
+    _spawn_analytics_task(
+        codebase_id=str(primary_asset_id),
+        organization_id=org_id,
+        codebase_name=codebase_name,
+        provider=provider,
+        install_id=install_id,
+    )
+    # Note: _spawn_analytics_task never raises, so connection always succeeds
 
     return None

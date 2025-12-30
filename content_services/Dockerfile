@@ -31,6 +31,9 @@ RUN chmod +x /start.sh
 # Copy the setEnv.sh if using the deployment repo
 COPY setEnv.sh* /
 
+# Install tiktoken encodings for single-tenant envs without internet access
+RUN poetry run python -c "import tiktoken; tiktoken.encoding_for_model('gpt-4'); tiktoken.encoding_for_model('gpt-4.1')"
+
 # Capture Git info at build time
 ARG GIT_COMMIT
 ARG GIT_BRANCH

@@ -398,19 +398,36 @@ def _scatter_user_prompt_constructor(
     node_path: str,
 ) -> str:
     user_prompt = (
-        f"Short description of the full codebase:\n\n{root_short_paragraph}\n\n"
+        Prompt.empty()
+        .append(
+            Component(
+                string=(
+                    f"Short description of the full codebase:\n\n{root_short_paragraph}\n\n"
+                )
+            )
+        )
+        .append(
+            Component(
+                string=f"DESCRIPTION OF `{node_path}`:\n\n{node_long_description}\n\n"
+            )
+        )
     )
-    user_prompt += f"DESCRIPTION OF `{node_path}`:\n\n{node_long_description}\n\n"
-    # TODO: handle context window issues for both source code and long description
     if node_source is not None:
         if len(node_source.strip()) > 0:
-            user_prompt += f"Source code for  `{node_path}`:\n\n{node_source}\n\n"
+            user_prompt.append(
+                Component(
+                    string=f"Source code for  `{node_path}`:\n\n{node_source}\n\n"
+                )
+            )
         else:
-            user_prompt += f"Source code for  `{node_path}`:\n\nEmpty file\n\n"
-    chunks = split_text(user_prompt, chunk_size=96_000, chunk_overlap=0)
+            user_prompt.append(
+                Component(string=f"Source code for  `{node_path}`:\n\nEmpty file\n\n")
+            )
+    user_prompt_str = user_prompt.into_str()
+    chunks = split_text(user_prompt_str, chunk_size=96_000, chunk_overlap=0)
     if len(chunks) > 1:
         return chunks[0].text
-    return user_prompt
+    return user_prompt_str
 
 
 def _get_derived_contents(
@@ -569,8 +586,7 @@ class LlmCfg(BaseModel):
             tag_model="gpt-4.1",
             section_init_model="o3-mini",
             section_update_model="gpt-4.1",
-            # section_format_model="gpt-5",
-            section_format_model="gpt-4.1",
+            section_format_model="gpt-5",
             assembly_model="o3-mini",
             copy_editor_model="gpt-4.1",
         )
@@ -1440,8 +1456,7 @@ Your output should be markdown formatted text.
         file_by_file_content: dict,
         section_name: str,
     ) -> list:
-        model = "gpt-4.1"
-        # model = "gpt-5"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
         loop = asyncio.get_event_loop()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
@@ -1478,8 +1493,7 @@ Your output should be markdown formatted text.
         aggregate_docs: list,
         section_name: str,
     ) -> list:
-        model = "gpt-4.1"
-        # model = "gpt-5"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
         loop = asyncio.get_event_loop()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:

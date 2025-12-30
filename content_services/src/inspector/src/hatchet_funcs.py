@@ -10,6 +10,7 @@ from shared.inspector.utils.io import download_symbol_table_from_s3_with_cache
 _SYMBOL_TABLE_CACHE = {}
 _TOP_LEVEL_CACHE = {}
 _TAGS_CACHE = {}
+_DIFF_CONTENT_CACHE = {}
 _CACHE_LOCK = threading.Lock()
 
 
@@ -106,6 +107,38 @@ def get_tags_cache(key: str) -> dict:
 def delete_tags_cache(key: str) -> None:
     with _CACHE_LOCK:
         _TAGS_CACHE.pop(key, None)
+
+
+def put_diff_content_cache(
+    key: str, value: dict, ttl_seconds: int = 28800
+) -> str:  # 8 Hours expiration
+    # Evict expired entries
+    now = time.time()
+    with _CACHE_LOCK:
+        keys_to_delete = [
+            k for k, (_, expires) in _DIFF_CONTENT_CACHE.items() if expires < now
+        ]
+        for k in keys_to_delete:
+            del _DIFF_CONTENT_CACHE[k]
+    expires = time.time() + ttl_seconds
+    with _CACHE_LOCK:
+        _DIFF_CONTENT_CACHE[key] = (value, expires)
+    return key
+
+
+def get_diff_content_cache(key: str) -> dict:
+    now = time.time()
+    with _CACHE_LOCK:
+        value, expires = _DIFF_CONTENT_CACHE[key]  # KeyError if missing
+        if expires < now:
+            del _DIFF_CONTENT_CACHE[key]
+            raise KeyError(key)
+        return value
+
+
+def delete_diff_content_cache(key: str) -> None:
+    with _CACHE_LOCK:
+        _DIFF_CONTENT_CACHE.pop(key, None)
 
 
 def make_tech_doc(

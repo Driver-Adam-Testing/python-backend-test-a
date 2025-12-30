@@ -854,9 +854,10 @@ def run_codebase_connection(
         s3 = client("s3")
         response = s3.head_object(Bucket=dropzone_bucket, Key=dropzone_key)
 
-        # Extract and print metadata
+        # Extract metadata from S3 object
         metadata = response.get("Metadata", {})
         install_id = metadata.get("install_id", None)
+        full_repo_name = metadata.get("full_repo_name", None)  # e.g., "owner/repo" from provider
         if install_id is not None:
             s3_bucket.upload_file(
                 Path(provisional_codebase_name),
@@ -1106,10 +1107,13 @@ def run_codebase_connection(
 
     # === ANALYTICS TRIGGER ===
     # Spawn analytics as separate background task (non-blocking)
+    # Use full_repo_name from S3 metadata (set by provider during upload) if available,
+    # otherwise fall back to provisional_codebase_name
+    analytics_codebase_name = full_repo_name or provisional_codebase_name
     _spawn_analytics_task(
         codebase_id=str(primary_asset_id),
         organization_id=org_id,
-        codebase_name=codebase_name,
+        codebase_name=analytics_codebase_name,
         provider=provider,
         install_id=install_id,
     )

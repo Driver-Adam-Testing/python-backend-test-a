@@ -218,6 +218,9 @@ class HatchetWorker(Construct):
         worker_task_def.task_role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
+        worker_task_def.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
+        )
         # Add explicit perms for dropzone bucket in the event we scope down S3 full access
         params.dropzone_bucket.grant_read_write(worker_task_def.task_role)
 

@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import concurrent.futures
 import copy
 import hashlib
 import json
@@ -46,6 +47,7 @@ except FileNotFoundError:
 OPENAI_SEM = asyncio.Semaphore(75)
 PDF_DOWNLOAD_DIR = "pdfs/"
 OPENAI_LIMITER = AsyncLimiter(50, 1)  # 50 requests per second
+MAX_CONCURRENT_ANNOTATIONS = 50
 
 
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
@@ -238,6 +240,8 @@ class TechDocsContent(BaseModel):
     short_sentence_description: str
     long_description: str
     short_paragraph_description: str
+    split_source: str | None = None
+    split_scatter_user_prompt: str | None = None
 
 
 class DriverDocsContent(BaseModel):
@@ -352,6 +356,29 @@ class DriverDocsContent(BaseModel):
             )
             toposort = TopologicalSorter(dag)
 
+            root_short_paragraph = content[codebase_name].short_paragraph_description
+            for k in content:
+                if content[k].source is not None:
+                    try:
+                        chunks = split_text(
+                            content[k].source,
+                            chunk_size=64_000,
+                            chunk_overlap=0,
+                        )
+                        content[k].split_source = chunks[0].text
+                    except Exception as e:
+                        print(f"Error splitting source for {k}: {e}")
+                        content[k].split_source = None
+                else:
+                    content[k].split_source = None
+
+                content[k].split_scatter_user_prompt = _scatter_user_prompt_constructor(
+                    root_short_paragraph=root_short_paragraph,
+                    node_long_description=ld[k],
+                    node_source=content[k].source,
+                    node_path=k,
+                )
+
         return DriverDocsContent(
             codebase_name=codebase_name,
             version_id=version_id,
@@ -362,6 +389,45 @@ class DriverDocsContent(BaseModel):
 
     def walk_topo(self) -> Generator[tuple[str, TechDocsContent], None, None]:
         return ((p, self.content[p]) for p in self.topo_order)
+
+
+def _scatter_user_prompt_constructor(
+    root_short_paragraph: str,
+    node_long_description: str,
+    node_source: str | None,
+    node_path: str,
+) -> str:
+    user_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=(
+                    f"Short description of the full codebase:\n\n{root_short_paragraph}\n\n"
+                )
+            )
+        )
+        .append(
+            Component(
+                string=f"DESCRIPTION OF `{node_path}`:\n\n{node_long_description}\n\n"
+            )
+        )
+    )
+    if node_source is not None:
+        if len(node_source.strip()) > 0:
+            user_prompt.append(
+                Component(
+                    string=f"Source code for  `{node_path}`:\n\n{node_source}\n\n"
+                )
+            )
+        else:
+            user_prompt.append(
+                Component(string=f"Source code for  `{node_path}`:\n\nEmpty file\n\n")
+            )
+    user_prompt_str = user_prompt.into_str()
+    chunks = split_text(user_prompt_str, chunk_size=96_000, chunk_overlap=0)
+    if len(chunks) > 1:
+        return chunks[0].text
+    return user_prompt_str
 
 
 def _get_derived_contents(
@@ -520,8 +586,7 @@ class LlmCfg(BaseModel):
             tag_model="gpt-4.1",
             section_init_model="o3-mini",
             section_update_model="gpt-4.1",
-            # section_format_model="gpt-5",
-            section_format_model="gpt-4.1",
+            section_format_model="gpt-5",
             assembly_model="o3-mini",
             copy_editor_model="gpt-4.1",
         )
@@ -1320,9 +1385,7 @@ Your output should be markdown formatted text.
             root_p, root_content = reverse_topo[0]
             # Always force at least the root of every dag to be used to generate the section
             ordered_nodes.append(root_p)
-            user_prompt = self.scatter_user_prompt_constructor(
-                root_content, root_content, root_p
-            )
+            user_prompt = root_content.split_scatter_user_prompt
             node_coroutines.append(
                 llm_generate(
                     llm=llm,
@@ -1342,9 +1405,7 @@ Your output should be markdown formatted text.
                 ):
                     ordered_nodes.append(p)
 
-                    user_prompt = self.scatter_user_prompt_constructor(
-                        root_content, tech_docs, p
-                    )
+                    user_prompt = tech_docs.split_scatter_user_prompt
                     node_coroutines.append(
                         llm_generate(
                             llm=llm,
@@ -1372,9 +1433,18 @@ Your output should be markdown formatted text.
                         )
                     )
 
-        node_responses = await asyncio.gather(*node_coroutines)
-        for ordered_node, response in zip(ordered_nodes, node_responses):
-            file_by_file_content[ordered_node] = response
+        # Do it in batches to reduce heartbeat errors in Hatchet
+        MAX_CONCURRENT_SCATTER_SECTIONS = 100
+        print(f"Generating {len(node_coroutines)} node sections...")
+        for i in range(0, len(node_coroutines), MAX_CONCURRENT_SCATTER_SECTIONS):
+            batch = node_coroutines[i : i + MAX_CONCURRENT_SCATTER_SECTIONS]
+            batch_nodes = ordered_nodes[i : i + MAX_CONCURRENT_SCATTER_SECTIONS]
+            print(
+                f"Generating batch {i // MAX_CONCURRENT_SCATTER_SECTIONS + 1} with {len(batch)} node sections..."
+            )
+            batch_responses = await asyncio.gather(*batch)
+            for ordered_node, response in zip(batch_nodes, batch_responses):
+                file_by_file_content[ordered_node] = response
 
         print(f"Created {len(file_by_file_content)} node sections")
         return file_by_file_content
@@ -1386,12 +1456,16 @@ Your output should be markdown formatted text.
         file_by_file_content: dict,
         section_name: str,
     ) -> list:
-        model = "gpt-4.1"
-        # model = "gpt-5"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
-        user_prompts = self.gather_user_prompt_constructor(
-            file_by_file_content, section_name
-        )
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            user_prompts = await loop.run_in_executor(
+                pool,
+                self.gather_user_prompt_constructor,
+                file_by_file_content,
+                section_name,
+            )
 
         aggregate_coroutines = []
         aggregate_docs = []
@@ -1419,12 +1493,16 @@ Your output should be markdown formatted text.
         aggregate_docs: list,
         section_name: str,
     ) -> list:
-        model = "gpt-4.1"
-        # model = "gpt-5"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
-        user_prompts = self.gather_aggregate_user_prompt_constructor(
-            aggregate_docs, section_name
-        )
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            user_prompts = await loop.run_in_executor(
+                pool,
+                self.gather_aggregate_user_prompt_constructor,
+                aggregate_docs,
+                section_name,
+            )
         aggregate_coroutines = []
         new_aggregate_docs = []
         for prompt in user_prompts:
@@ -1442,29 +1520,6 @@ Your output should be markdown formatted text.
         for response in aggregate_responses:
             new_aggregate_docs.append(response)
         return new_aggregate_docs
-
-    def scatter_user_prompt_constructor(
-        self,
-        root_content: TechDocsContent,
-        node_content: TechDocsContent,
-        node_path: str,
-    ) -> str:
-        user_prompt = f"Short description of the full codebase:\n\n{root_content.short_paragraph_description}\n\n"
-        user_prompt += (
-            f"DESCRIPTION OF `{node_path}`:\n\n{node_content.long_description}\n\n"
-        )
-        # TODO: handle context window issues for both source code and long description
-        if node_content.source is not None:
-            if len(node_content.source.strip()) > 0:
-                user_prompt += (
-                    f"Source code for  `{node_path}`:\n\n{node_content.source}\n\n"
-                )
-            else:
-                user_prompt += f"Source code for  `{node_path}`:\n\nEmpty file\n\n"
-        chunks = split_text(user_prompt, chunk_size=96_000, chunk_overlap=0)
-        if len(chunks) > 1:
-            return chunks[0].text
-        return user_prompt
 
     def source_code_aggregation_user_prompt_constructor(
         self,
@@ -1738,6 +1793,7 @@ class AutoDocInitState(BaseModel):
     document: DocumentCfg
     scope: Scope
     sections: list[SectionCommitted]
+    driver_docs: list[DriverDocsContent] = []
     _source_list: dict[str, list[str]] = {}
 
     @property
@@ -1919,69 +1975,87 @@ Your output is the full content of the document with editing updates based on yo
                             for _, t in targets
                         ]
                     case ExecutionMode.MODAL:
-                        driver_docs = [
-                            DriverDocsContent.from_db(
-                                version_id=code_cfg.version_id,
-                                relative_path=code_cfg.node_path,
+
+                        def _load_driver_docs(
+                            cfg: AutoDocCfg,
+                        ) -> list[DriverDocsContent]:
+                            return [
+                                DriverDocsContent.from_db(
+                                    version_id=code_cfg.version_id,
+                                    relative_path=code_cfg.node_path,
+                                )
+                                for code_cfg in cfg.scope.code
+                            ]
+
+                        loop = asyncio.get_running_loop()
+                        with concurrent.futures.ThreadPoolExecutor(
+                            max_workers=1
+                        ) as pool:
+                            driver_docs = await loop.run_in_executor(
+                                pool, _load_driver_docs, cfg
                             )
-                            for code_cfg in cfg.scope.code
-                        ]
                     case _:
                         raise ValueError("Invalid execution mode")
 
-                subgraphs = []
-                for dd, code_cfg in zip(driver_docs, cfg.scope.code):
-                    subgraph = build_subgraph(dag=dd.dag, start=code_cfg.node_path)
-                    if subgraph:
-                        subgraphs.append(subgraph)
-                if len(subgraphs) == 0:
-                    raise ValueError(
-                        "Subgraphs could not be built for any supplied source nodes."
+                if any(section.required is False for section in cfg.sections):
+                    subgraphs = []
+                    for dd, code_cfg in zip(driver_docs, cfg.scope.code):
+                        subgraph = build_subgraph(dag=dd.dag, start=code_cfg.node_path)
+                        if subgraph:
+                            subgraphs.append(subgraph)
+                    if len(subgraphs) == 0:
+                        raise ValueError(
+                            "Subgraphs could not be built for any supplied source nodes."
+                        )
+
+                    toposorts = [
+                        list(TopologicalSorter(sg).static_order()) for sg in subgraphs
+                    ]
+                    reverse_topos = [
+                        [(p, dd.content[p]) for p in ts]
+                        for ts, dd in zip(toposorts, driver_docs)
+                    ]
+                    _ = [rt.reverse() for rt in reverse_topos]
+
+                    user_prompt = ""
+                    num_dag_roots = len(reverse_topos)
+                    ridx = 1
+                    for rt in reverse_topos:
+                        root_p, root_content = rt[0]
+                        if root_content.source is None:
+                            padding = "\n\n" if ridx == 1 else ""
+                            user_prompt += f"{padding}Included root folder {ridx} / {num_dag_roots} (`{root_p}`) description:\n\n{root_content.long_description}"
+                            for node_p, node_content in rt[1:]:
+                                if node_content.source is None:
+                                    user_prompt += f"\n\nSubfolder (`{node_p}`) description:\n\n{node_content.long_description}"
+                                else:
+                                    user_prompt += f"\n\nFile (`{node_p}`) description:\n\n{node_content.long_description}"
+                        else:
+                            user_prompt += f"\n\nFile (`{root_p}`) description:\n\n{root_content.long_description}"
+                        ridx += 1
+                    # TODO: Actually figure out how to handle very large aggregations.
+                    aggregation_chunks = split_text(
+                        text=user_prompt,
+                        chunk_size=96_000,
+                        chunk_overlap=0,
                     )
-
-                toposorts = [
-                    list(TopologicalSorter(sg).static_order()) for sg in subgraphs
-                ]
-                reverse_topos = [
-                    [(p, dd.content[p]) for p in ts]
-                    for ts, dd in zip(toposorts, driver_docs)
-                ]
-                _ = [rt.reverse() for rt in reverse_topos]
-
-                user_prompt = ""
-                num_dag_roots = len(reverse_topos)
-                ridx = 1
-                for rt in reverse_topos:
-                    root_p, root_content = rt[0]
-                    if root_content.source is None:
-                        padding = "\n\n" if ridx == 1 else ""
-                        user_prompt += f"{padding}Included root folder {ridx} / {num_dag_roots} (`{root_p}`) description:\n\n{root_content.long_description}"
-                        for node_p, node_content in rt[1:]:
-                            if node_content.source is None:
-                                user_prompt += f"\n\nSubfolder (`{node_p}`) description:\n\n{node_content.long_description}"
-                            else:
-                                user_prompt += f"\n\nFile (`{node_p}`) description:\n\n{node_content.long_description}"
-                    else:
-                        user_prompt += f"\n\nFile (`{root_p}`) description:\n\n{root_content.long_description}"
-                    ridx += 1
-                # TODO: Actually figure out how to handle very large aggregations.
-                aggregation_chunks = split_text(
-                    text=user_prompt,
-                    chunk_size=96_000,
-                    chunk_overlap=0,
-                )
-                llm = ChatOpenAI(
-                    model=cfg.llm.tag_model, temperature=0, request_timeout=300
-                )
-                long_descriptions = aggregation_chunks[0].text
-                committed_sections = await cfg.eval_optional_sections(
-                    llm=llm, long_descriptions=long_descriptions
-                )
+                    llm = ChatOpenAI(
+                        model=cfg.llm.tag_model, temperature=0, request_timeout=300
+                    )
+                    long_descriptions = aggregation_chunks[0].text
+                    committed_sections = await cfg.eval_optional_sections(
+                        llm=llm, long_descriptions=long_descriptions
+                    )
+                else:
+                    committed_sections = [
+                        SectionCommitted.from_section_cfg(s) for s in cfg.sections
+                    ]
                 return cls(
                     llm=cfg.llm,
                     document=cfg.document,
                     scope=cfg.scope,
                     sections=committed_sections,
+                    driver_docs=driver_docs,
                 )
             case DocKind.UNDEFINED:
                 sections = _autogen_sections(cfg=cfg)
@@ -2091,10 +2165,7 @@ Your output is the full content of the document with editing updates based on yo
 
             node_list = []
 
-            code_chunks = split_text(
-                text=tech_docs.source, chunk_size=64_000, chunk_overlap=0
-            )
-            user_prompt = f"A single paragraph description of the file to categorize:\n\n{tech_docs.short_paragraph_description}.\n\nThe source code of the file to categorize:\n\n{code_chunks[0].text}"
+            user_prompt = f"A single paragraph description of the file to categorize:\n\n{tech_docs.short_paragraph_description}.\n\nThe source code of the file to categorize:\n\n{tech_docs.split_source}"
             async with asyncio.TaskGroup() as tg:
                 annotation_task_list = []
                 for section in self.sections:
@@ -2166,9 +2237,14 @@ Your output is the full content of the document with editing updates based on yo
         for node in topo:
             if node[1].source is not None:
                 coroutines.append(self._annotate_file(llm=llm, node=node))
-        node_results = await tqdm_asyncio.gather(*coroutines)
-        for result in node_results:
-            tagged_nodes[result[0]] = result[1]
+        # Process this in groups:
+        for i in range(0, len(coroutines), MAX_CONCURRENT_ANNOTATIONS):
+            batch = coroutines[i : i + MAX_CONCURRENT_ANNOTATIONS]
+            print(f"[{pidx} / {total}] Annotating files...")
+            node_results = await tqdm_asyncio.gather(*batch)
+            for result in node_results:
+                tagged_nodes[result[0]] = result[1]
+            pidx += len(batch)
 
         # Annotate folders after (since they depend on files)
         for p, tech_docs in topo:
@@ -2670,13 +2746,7 @@ Your output is the full content of the document with editing updates based on yo
                         for [_, t] in targets
                     ]
                 case ExecutionMode.MODAL:
-                    driver_docs = [
-                        DriverDocsContent.from_db(
-                            version_id=code_cfg.version_id,
-                            relative_path=code_cfg.node_path,
-                        )
-                        for code_cfg in self.scope.code
-                    ]
+                    driver_docs = self.driver_docs
                 case _:
                     raise ValueError("Invalid execution mode")
 
@@ -2728,7 +2798,6 @@ Your output is the full content of the document with editing updates based on yo
                 annotations = None
                 pdf_annotations = None
 
-            # self.save_annotations(annotations=annotations)
             if execution_mode == ExecutionMode.MODAL:
                 await update_autodocs_status(
                     source_version_node_id=source_version_node_id,
@@ -2763,7 +2832,6 @@ Your output is the full content of the document with editing updates based on yo
                 "appended_reverse_topo": appended_reverse_topo,
                 "init_node_set": init_node_set,
             }
-            self.save_state(revisions=revisions, init_state=init_state)
 
         # Exhaustive updates
         if any(
@@ -2797,7 +2865,6 @@ Your output is the full content of the document with editing updates based on yo
                 new_section_state["sections"] = section_update
                 new_section_state["_index"] = pidx
                 revisions.append(new_section_state)
-                self.save_state(revisions=revisions, init_state=init_state)
                 section_state = new_section_state
 
             if len(self.scope.pdfs) > 0:
@@ -2819,7 +2886,6 @@ Your output is the full content of the document with editing updates based on yo
                     new_section_state["sections"] = section_update
                     new_section_state["_index"] = pidx
                     revisions.append(new_section_state)
-                    self.save_state(revisions=revisions, init_state=init_state)
                     section_state = new_section_state
 
         if execution_mode == ExecutionMode.MODAL:
@@ -2841,7 +2907,6 @@ Your output is the full content of the document with editing updates based on yo
         new_section_state["sections"] = final_section_update
         new_section_state["_index"] = pidx
         revisions.append(new_section_state)
-        self.save_state(revisions=revisions, init_state=init_state)
         section_state = new_section_state
         if execution_mode == ExecutionMode.MODAL:
             await update_autodocs_status(
@@ -2864,11 +2929,6 @@ Your output is the full content of the document with editing updates based on yo
             user_prompt=assembly_user_prompt,
         )
         final_doc_revisions.append(full_document)
-        self.save_state(
-            revisions=revisions,
-            init_state=init_state,
-            final_doc_revisions=final_doc_revisions,
-        )
 
         if execution_mode == ExecutionMode.MODAL:
             await update_autodocs_status(
@@ -2891,14 +2951,6 @@ Your output is the full content of the document with editing updates based on yo
 
         final_doc_revisions.append(final_document)
         final_doc_revisions.append(fix_mermaid_syntax_in_response(text=final_document))
-        self.save_state(
-            revisions=revisions,
-            init_state=init_state,
-            final_doc_revisions=final_doc_revisions,
-        )
-
-        # Write final output to a separate file.
-        self.write_final_output_to_markdown(output=final_doc_revisions[-1])
 
         return final_doc_revisions[-1]
 

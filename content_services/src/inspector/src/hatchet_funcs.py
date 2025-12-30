@@ -2,143 +2,106 @@ import os
 import threading
 import time
 import uuid
+from typing import Any
 
 from shared.inspector.inspection.files import comprehend_file_top_down
 from shared.inspector.utils.dag import LiteNode
 from shared.inspector.utils.io import download_symbol_table_from_s3_with_cache
 
-_SYMBOL_TABLE_CACHE = {}
-_TOP_LEVEL_CACHE = {}
-_TAGS_CACHE = {}
-_DIFF_CONTENT_CACHE = {}
-_CACHE_LOCK = threading.Lock()
 
+class TTLCache:
+    """Thread-safe cache with TTL-based expiration"""
 
-def put_symbol_table_cache(
-    key: str, value: dict, ttl_seconds: int = 28800
-) -> str:  # 8 Hours expiration
-    # Evict expired entries
-    now = time.time()
-    with _CACHE_LOCK:
-        keys_to_delete = [
-            k for k, (_, expires) in _SYMBOL_TABLE_CACHE.items() if expires < now
-        ]
+    def __init__(self, default_ttl_seconds: int = 28800) -> None:
+        self._cache: dict[str, tuple[Any, float]] = {}
+        self._lock = threading.Lock()
+        self._default_ttl = default_ttl_seconds
+
+    def put(self, key: str, value: Any, ttl_seconds: int | None = None) -> str:
+        now = time.time()
+        ttl = ttl_seconds if ttl_seconds is not None else self._default_ttl
+        expires = now + ttl
+
+        with self._lock:
+            self._evict_expired(now)
+            self._cache[key] = (value, expires)
+
+        return key
+
+    def get(self, key: str) -> Any:
+        now = time.time()
+
+        with self._lock:
+            value, expires = self._cache[key]  # Raises KeyError if missing
+            if expires < now:
+                del self._cache[key]
+                raise KeyError(key)
+            return value
+
+    def delete(self, key: str) -> None:
+        with self._lock:
+            self._cache.pop(key, None)
+
+    def _evict_expired(self, now: float) -> None:
+        keys_to_delete = [k for k, (_, exp) in self._cache.items() if exp < now]
         for k in keys_to_delete:
-            del _SYMBOL_TABLE_CACHE[k]
-    expires = time.time() + ttl_seconds
-    with _CACHE_LOCK:
-        if key not in _SYMBOL_TABLE_CACHE:
-            _SYMBOL_TABLE_CACHE[key] = (value, expires)
-    return key
+            del self._cache[k]
+
+
+# Create cache instances (each with its own lock)
+_symbol_table_cache = TTLCache()
+_top_level_cache = TTLCache()
+_tags_cache = TTLCache()
+_diff_content_cache = TTLCache()
+
+
+# Public API - keeps existing interface intact
+def put_symbol_table_cache(key: str, value: dict, ttl_seconds: int = 28800) -> str:
+    return _symbol_table_cache.put(key, value, ttl_seconds)
 
 
 def get_symbol_table_cache(key: str) -> dict:
-    now = time.time()
-    with _CACHE_LOCK:
-        value, expires = _SYMBOL_TABLE_CACHE[key]  # KeyError if missing
-        if expires < now:
-            del _SYMBOL_TABLE_CACHE[key]
-            raise KeyError(key)
-        return value
+    return _symbol_table_cache.get(key)
 
 
 def delete_symbol_table_cache(key: str) -> None:
-    with _CACHE_LOCK:
-        _SYMBOL_TABLE_CACHE.pop(key, None)
+    _symbol_table_cache.delete(key)
 
 
-def put_top_level_cache(
-    key: str, value: dict, ttl_seconds: int = 28800
-) -> str:  # 8 Hours expiration
-    # Evict expired entries
-    now = time.time()
-    with _CACHE_LOCK:
-        keys_to_delete = [
-            k for k, (_, expires) in _TOP_LEVEL_CACHE.items() if expires < now
-        ]
-        for k in keys_to_delete:
-            del _TOP_LEVEL_CACHE[k]
-    expires = time.time() + ttl_seconds
-    with _CACHE_LOCK:
-        _TOP_LEVEL_CACHE[key] = (value, expires)
-    return key
+def put_top_level_cache(key: str, value: dict, ttl_seconds: int = 28800) -> str:
+    return _top_level_cache.put(key, value, ttl_seconds)
 
 
 def get_top_level_cache(key: str) -> dict:
-    now = time.time()
-    with _CACHE_LOCK:
-        value, expires = _TOP_LEVEL_CACHE[key]  # KeyError if missing
-        if expires < now:
-            del _TOP_LEVEL_CACHE[key]
-            raise KeyError(key)
-        return value
+    return _top_level_cache.get(key)
 
 
 def delete_top_level_cache(key: str) -> None:
-    with _CACHE_LOCK:
-        _TOP_LEVEL_CACHE.pop(key, None)
+    _top_level_cache.delete(key)
 
 
-def put_tags_cache(
-    key: str, value: dict, ttl_seconds: int = 28800
-) -> str:  # 8 Hours expiration
-    # Evict expired entries
-    now = time.time()
-    with _CACHE_LOCK:
-        keys_to_delete = [k for k, (_, expires) in _TAGS_CACHE.items() if expires < now]
-        for k in keys_to_delete:
-            del _TAGS_CACHE[k]
-    expires = time.time() + ttl_seconds
-    with _CACHE_LOCK:
-        _TAGS_CACHE[key] = (value, expires)
-    return key
+def put_tags_cache(key: str, value: dict, ttl_seconds: int = 28800) -> str:
+    return _tags_cache.put(key, value, ttl_seconds)
 
 
 def get_tags_cache(key: str) -> dict:
-    now = time.time()
-    with _CACHE_LOCK:
-        value, expires = _TAGS_CACHE[key]  # KeyError if missing
-        if expires < now:
-            del _TAGS_CACHE[key]
-            raise KeyError(key)
-        return value
+    return _tags_cache.get(key)
 
 
 def delete_tags_cache(key: str) -> None:
-    with _CACHE_LOCK:
-        _TAGS_CACHE.pop(key, None)
+    _tags_cache.delete(key)
 
 
-def put_diff_content_cache(
-    key: str, value: dict, ttl_seconds: int = 28800
-) -> str:  # 8 Hours expiration
-    # Evict expired entries
-    now = time.time()
-    with _CACHE_LOCK:
-        keys_to_delete = [
-            k for k, (_, expires) in _DIFF_CONTENT_CACHE.items() if expires < now
-        ]
-        for k in keys_to_delete:
-            del _DIFF_CONTENT_CACHE[k]
-    expires = time.time() + ttl_seconds
-    with _CACHE_LOCK:
-        _DIFF_CONTENT_CACHE[key] = (value, expires)
-    return key
+def put_diff_content_cache(key: str, value: dict, ttl_seconds: int = 28800) -> str:
+    return _diff_content_cache.put(key, value, ttl_seconds)
 
 
 def get_diff_content_cache(key: str) -> dict:
-    now = time.time()
-    with _CACHE_LOCK:
-        value, expires = _DIFF_CONTENT_CACHE[key]  # KeyError if missing
-        if expires < now:
-            del _DIFF_CONTENT_CACHE[key]
-            raise KeyError(key)
-        return value
+    return _diff_content_cache.get(key)
 
 
 def delete_diff_content_cache(key: str) -> None:
-    with _CACHE_LOCK:
-        _DIFF_CONTENT_CACHE.pop(key, None)
+    _diff_content_cache.delete(key)
 
 
 def make_tech_doc(

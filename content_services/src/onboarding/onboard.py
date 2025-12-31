@@ -1201,16 +1201,20 @@ def run_codebase_connection(
 
     # === ANALYTICS TRIGGER ===
     # Spawn analytics as separate background task (non-blocking)
-    # Use full_repo_name from S3 metadata (set by provider during upload) if available,
-    # otherwise fall back to provisional_codebase_name
-    analytics_codebase_name = full_repo_name or provisional_codebase_name
-    _spawn_analytics_task(
-        codebase_id=str(primary_asset_id),
-        organization_id=org_id,
-        codebase_name=analytics_codebase_name,
-        provider=provider,
-        install_id=install_id,
-    )
-    # Note: _spawn_analytics_task never raises, so connection always succeeds
+    # Only trigger for INITIAL connections (CONNECTING status).
+    # For PUSH events (GENERATING status), analytics is triggered by
+    # _trigger_incremental_analytics_for_push() in handle_*_events() with incremental=True.
+    if version_status != VersionStatus.GENERATING:
+        analytics_codebase_name = full_repo_name or provisional_codebase_name
+        _spawn_analytics_task(
+            codebase_id=str(primary_asset_id),
+            organization_id=org_id,
+            codebase_name=analytics_codebase_name,
+            provider=provider,
+            install_id=install_id,
+        )
+        # Note: _spawn_analytics_task never raises, so connection always succeeds
+    else:
+        print(f"Skipping analytics in run_codebase_connection (push event handled by incremental trigger)")
 
     return None

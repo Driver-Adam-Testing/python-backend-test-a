@@ -249,23 +249,25 @@ def _extract_commit_data(
             total_additions = stats.insertions
             total_deletions = stats.deletions
             
-            # Calculate bytes from patch content if requested
-            if include_patches:
-                try:
-                    patch_text = diff.patch
-                    if patch_text:
-                        for line in patch_text.split('\n'):
-                            if line.startswith('+') and not line.startswith('+++'):
-                                total_addition_bytes += len(line[1:].encode('utf-8', errors='replace'))
-                            elif line.startswith('-') and not line.startswith('---'):
-                                total_deletion_bytes += len(line[1:].encode('utf-8', errors='replace'))
-                except Exception:
-                    # Fall back to estimate
-                    total_addition_bytes = total_additions * 50
-                    total_deletion_bytes = total_deletions * 50
-            else:
-                total_addition_bytes = total_additions * 50
-                total_deletion_bytes = total_deletions * 50
+            # Calculate bytes from patch content
+            # CRITICAL: Always use patch data for accurate SLOC. No fallback to estimates.
+            # The include_patches parameter is deprecated but kept for API compatibility.
+            try:
+                patch_text = diff.patch
+                if patch_text:
+                    for line in patch_text.split('\n'):
+                        if line.startswith('+') and not line.startswith('+++'):
+                            total_addition_bytes += len(line[1:].encode('utf-8', errors='replace'))
+                        elif line.startswith('-') and not line.startswith('---'):
+                            total_deletion_bytes += len(line[1:].encode('utf-8', errors='replace'))
+                else:
+                    # No patch data available - log warning, set bytes to 0
+                    logger.warning(f"Commit {commit_sha[:8]}: No patch data available, bytes set to 0")
+            except Exception as e:
+                # Patch analysis failed - log warning, set bytes to 0
+                logger.warning(f"Commit {commit_sha[:8]}: Patch analysis failed: {e}, bytes set to 0")
+                total_addition_bytes = 0
+                total_deletion_bytes = 0
 
         # Calculate derived metrics
         net_lines = total_additions - total_deletions

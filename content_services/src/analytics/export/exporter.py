@@ -1,6 +1,6 @@
 """Driver-specific JSON export for analytics integration."""
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from analytics.storage.hot_storage import HotStorage
@@ -10,6 +10,69 @@ from .schemas import (
     MetadataJSON, BranchEntry, ActivityEntry,
     DirectoryOwnership, ContributorEntry,
 )
+
+
+# Constants for branch status computation
+STALE_THRESHOLD_DAYS = 30
+
+
+def _compute_branch_status(branch: dict) -> str:
+    """Compute branch display status based on activity and state.
+    
+    Status priority:
+    1. "merged" - Branch was merged and deleted
+    2. "deleted" - Branch was deleted (but not merged)
+    3. "default" - The default branch (always shown as default)
+    4. "stale" - No commits in 30+ days
+    5. "active" - Has commits within the last 30 days
+    
+    Args:
+        branch: Branch data dict with keys:
+            - is_default_branch: bool
+            - is_deleted: bool (optional)
+            - is_merged: bool (optional)
+            - last_commit_at: datetime or ISO string (optional)
+    
+    Returns:
+        Status string: "default", "active", "stale", "deleted", or "merged"
+    """
+    # Check merged status first (merged + deleted)
+    if branch.get('is_merged'):
+        return 'merged'
+    
+    # Check deleted status
+    if branch.get('is_deleted'):
+        return 'deleted'
+    
+    # Default branch always has 'default' status
+    if branch.get('is_default_branch'):
+        return 'default'
+    
+    # Get last commit date
+    last_commit = branch.get('last_commit_at')
+    
+    if last_commit is None:
+        # No commit date = assume it's new/active
+        return 'active'
+    
+    # Handle string dates (ISO format)
+    if isinstance(last_commit, str):
+        try:
+            last_commit = datetime.fromisoformat(last_commit.replace('Z', '+00:00'))
+        except (ValueError, TypeError):
+            return 'active'  # Can't parse, assume active
+    
+    # Ensure timezone-aware comparison
+    now = datetime.now(timezone.utc)
+    if last_commit.tzinfo is None:
+        last_commit = last_commit.replace(tzinfo=timezone.utc)
+    
+    # Check 30-day stale threshold
+    age = now - last_commit
+    if age > timedelta(days=STALE_THRESHOLD_DAYS):
+        return 'stale'
+    
+    return 'active'
 
 
 class DriverJSONExporter:
@@ -155,7 +218,7 @@ class DriverJSONExporter:
                     commits=b.get('total_commits', 0),
                     last_commit_date=b.get('last_commit_at'),
                     last_analyzed_at=b.get('last_analyzed_at') or datetime.now(timezone.utc),
-                    status='active' if b.get('is_active') else 'stale',
+                    status=_compute_branch_status(b),
                     # Branch metadata
                     head_commit_sha=b.get('head_commit_sha', ''),
                     divergence_point_sha=b.get('divergence_point_sha'),

@@ -19,7 +19,7 @@ class TestSlocBytesFromPatch:
 
     def test_bytes_calculated_from_patch_not_estimate(self):
         """Bytes are calculated from actual patch content, not estimated."""
-        from analytics.pipeline.phases.extract import _extract_commit_data
+        from analytics.pipeline.phases.extract import _extract_commit_data_with_diff
         
         # Create a mock repo and commit with known patch content
         mock_repo = MagicMock()
@@ -45,7 +45,7 @@ class TestSlocBytesFromPatch:
         
         # Mock _get_commit_diff to return our controlled diff
         with patch('analytics.pipeline.phases.extract._get_commit_diff', return_value=mock_diff):
-            result = _extract_commit_data(
+            result, _ = _extract_commit_data_with_diff(
                 mock_repo, "abc123def456", "test-codebase", ["main"],
                 datetime.now(timezone.utc), include_patches=True
             )
@@ -63,7 +63,7 @@ class TestSlocBytesFromPatch:
 
     def test_no_fallback_when_include_patches_true(self):
         """When include_patches=True, never fall back to 50 bytes/line."""
-        from analytics.pipeline.phases.extract import _extract_commit_data
+        from analytics.pipeline.phases.extract import _extract_commit_data_with_diff
         
         mock_repo = MagicMock()
         mock_commit = MagicMock()
@@ -85,7 +85,7 @@ class TestSlocBytesFromPatch:
         mock_repo.get.return_value = mock_commit
         
         with patch('analytics.pipeline.phases.extract._get_commit_diff', return_value=mock_diff):
-            result = _extract_commit_data(
+            result, _ = _extract_commit_data_with_diff(
                 mock_repo, "abc123", "test-codebase", ["main"],
                 datetime.now(timezone.utc), include_patches=True
             )
@@ -99,7 +99,7 @@ class TestSlocBytesFromPatch:
 
     def test_warning_logged_when_no_patch_data(self, caplog):
         """Warning is logged when patch is None or empty."""
-        from analytics.pipeline.phases.extract import _extract_commit_data
+        from analytics.pipeline.phases.extract import _extract_commit_data_with_diff
         
         mock_repo = MagicMock()
         mock_commit = MagicMock()
@@ -122,7 +122,7 @@ class TestSlocBytesFromPatch:
         
         with patch('analytics.pipeline.phases.extract._get_commit_diff', return_value=mock_diff):
             with caplog.at_level(logging.WARNING):
-                result = _extract_commit_data(
+                result, _ = _extract_commit_data_with_diff(
                     mock_repo, "abc123", "test-codebase", ["main"],
                     datetime.now(timezone.utc), include_patches=True
                 )
@@ -139,7 +139,7 @@ class TestSlocBytesFromPatch:
 
     def test_warning_logged_when_patch_analysis_fails(self, caplog):
         """Warning is logged when patch analysis raises exception."""
-        from analytics.pipeline.phases.extract import _extract_commit_data
+        from analytics.pipeline.phases.extract import _extract_commit_data_with_diff
         
         mock_repo = MagicMock()
         mock_commit = MagicMock()
@@ -163,7 +163,7 @@ class TestSlocBytesFromPatch:
         
         with patch('analytics.pipeline.phases.extract._get_commit_diff', return_value=mock_diff):
             with caplog.at_level(logging.WARNING):
-                result = _extract_commit_data(
+                result, _ = _extract_commit_data_with_diff(
                     mock_repo, "abc123", "test-codebase", ["main"],
                     datetime.now(timezone.utc), include_patches=True
                 )
@@ -188,7 +188,7 @@ class TestIncludePatchesFalseRemoved:
         This test verifies that the fallback behavior is removed.
         The include_patches parameter should be deprecated or ignored.
         """
-        from analytics.pipeline.phases.extract import _extract_commit_data
+        from analytics.pipeline.phases.extract import _extract_commit_data_with_diff
         
         mock_repo = MagicMock()
         mock_commit = MagicMock()
@@ -210,7 +210,7 @@ class TestIncludePatchesFalseRemoved:
         mock_repo.get.return_value = mock_commit
         
         with patch('analytics.pipeline.phases.extract._get_commit_diff', return_value=mock_diff):
-            result = _extract_commit_data(
+            result, _ = _extract_commit_data_with_diff(
                 mock_repo, "abc123", "test-codebase", ["main"],
                 datetime.now(timezone.utc), include_patches=False  # Even with False
             )

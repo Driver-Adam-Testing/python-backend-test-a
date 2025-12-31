@@ -418,10 +418,20 @@ class AnalyticsPipeline:
             branch_names=branch_names,
             include_patches=ctx.config.include_patches,
             since_sha=ctx.since_sha,  # For incremental updates
+            include_file_changes=True,  # Always extract file-level changes
         )
 
         if not result.success:
             raise RuntimeError(f"Extract failed: {result.error}")
+        
+        # Store file changes in cold storage if available
+        if result.file_changes and ctx.cold_storage:
+            ctx.cold_storage.write_file_changes(
+                codebase_id=ctx.input.codebase_id,
+                file_changes=result.file_changes,
+                partition_by_date=True,
+            )
+            logger.info(f"Stored {len(result.file_changes)} file changes in cold storage")
 
         ctx.extract_result = result
 

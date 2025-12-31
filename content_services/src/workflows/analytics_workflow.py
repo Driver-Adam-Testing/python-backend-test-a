@@ -22,6 +22,7 @@ class AnalyticsInput(BaseModel):
     repo_owner: str
     repo_name: str
     auth_token: str | None = None
+    incremental: bool = False  # For incremental updates on push
 
 
 @hatchet.task(
@@ -57,7 +58,8 @@ async def analytics_task(input: AnalyticsInput, ctx: Context) -> dict[str, str]:
         PipelineInput
     )
 
-    print(f"Starting analytics task for codebase {input.codebase_id}")
+    mode = "incremental" if input.incremental else "full"
+    print(f"Starting analytics task for codebase {input.codebase_id} (mode={mode})")
 
     # Configure pipeline
     config = PipelineConfig(
@@ -76,7 +78,8 @@ async def analytics_task(input: AnalyticsInput, ctx: Context) -> dict[str, str]:
         clone_url=input.clone_url,
         repo_owner=input.repo_owner,
         repo_name=input.repo_name,
-        auth_token=input.auth_token
+        auth_token=input.auth_token,
+        incremental=input.incremental,
     ))
 
     if not result.success:

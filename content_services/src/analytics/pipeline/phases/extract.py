@@ -29,7 +29,8 @@ def extract_commits(
     repo: pygit2.Repository,
     codebase_id: str,
     branch_names: list[str] | None = None,
-    include_patches: bool = True
+    include_patches: bool = True,
+    since_sha: str | None = None,
 ) -> ExtractResult:
     """
     Extract commits from repository.
@@ -39,6 +40,7 @@ def extract_commits(
         codebase_id: Codebase UUID
         branch_names: List of branches to extract from (None = all)
         include_patches: Whether to include patch data for SLOC
+        since_sha: Only extract commits after this SHA (for incremental updates)
 
     Returns:
         ExtractResult with commit data
@@ -66,7 +68,16 @@ def extract_commits(
         for shas in commit_shas_by_branch.values():
             all_sha_set.update(shas)
 
-        logger.info(f"Found {len(all_sha_set)} unique commits")
+        total_before_filter = len(all_sha_set)
+        logger.info(f"Found {total_before_filter} unique commits")
+
+        # Filter by since_sha for incremental updates
+        if since_sha:
+            all_sha_set = _filter_commits_since(repo, all_sha_set, since_sha)
+            # Also filter branch-specific sets
+            for branch_name in commit_shas_by_branch:
+                commit_shas_by_branch[branch_name] &= all_sha_set
+            logger.info(f"Incremental: {len(all_sha_set)} new commits (filtered {total_before_filter - len(all_sha_set)} old)")
 
         # Process each commit
         collected_at = datetime.now(timezone.utc)
@@ -156,6 +167,51 @@ def _get_commits_in_branch(repo: pygit2.Repository, branch_name: str) -> set[str
         logger.warning(f"Error walking branch {branch_name}: {e}")
 
     return commit_shas
+
+
+def _filter_commits_since(
+    repo: pygit2.Repository,
+    all_shas: set[str],
+    since_sha: str
+) -> set[str]:
+    """Filter commits to only those after since_sha.
+
+    Uses git ancestry to determine which commits are new.
+    If since_sha is not found, returns all commits (fallback to full rebuild).
+    
+    Args:
+        repo: pygit2.Repository instance
+        all_shas: Set of all commit SHAs to filter
+        since_sha: Only include commits after this SHA
+        
+    Returns:
+        Set of commit SHAs that are newer than since_sha
+    """
+    try:
+        # Try to find the since_sha commit
+        since_commit = repo.get(since_sha)
+        if not since_commit:
+            logger.warning(f"since_sha {since_sha[:8]} not found, extracting all commits")
+            return all_shas
+
+        # Get all commits reachable from since_sha (these are the "old" commits)
+        old_shas = set()
+        try:
+            for commit in repo.walk(since_commit.id, pygit2.GIT_SORT_TOPOLOGICAL):
+                old_shas.add(str(commit.id))
+        except Exception as e:
+            logger.warning(f"Error walking from since_sha: {e}")
+            return all_shas
+
+        # New commits = all commits - old commits (including since_sha itself)
+        new_shas = all_shas - old_shas
+        
+        logger.debug(f"Filtered: {len(new_shas)} new commits, {len(old_shas)} old commits")
+        return new_shas
+
+    except Exception as e:
+        logger.warning(f"Error filtering commits since {since_sha[:8]}: {e}")
+        return all_shas  # Fallback to all
 
 
 def _extract_commit_data(

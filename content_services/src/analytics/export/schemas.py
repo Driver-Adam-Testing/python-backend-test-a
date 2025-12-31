@@ -129,11 +129,16 @@ class ActivityJSON(BaseModel):
 
 
 class MetadataJSON(BaseModel):
-    """Schema for metadata.json - generation info."""
+    """Schema for metadata.json - generation info + checkpoint for incremental updates."""
     codebase_id: str
     generated_at: datetime
-    status: str  # "complete", "failed"
+    status: str  # "complete", "partial", "failed"
     generation_seconds: float
+    # Checkpoint fields for incremental updates
+    pipeline_version: str = "2.0"
+    last_processed_commit_sha: str | None = None
+    last_processed_commit_date: datetime | None = None
+    total_commits_processed: int = 0
 
 
 class CodebaseListEntry(BaseModel):

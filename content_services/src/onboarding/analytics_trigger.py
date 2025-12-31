@@ -97,11 +97,20 @@ def spawn_analytics_task(
     codebase_name: str,
     provider: str,
     install_id: str | None = None,
+    incremental: bool = False,
 ) -> str | None:
     """Spawn analytics task as background Hatchet job.
 
     Supports all git providers: GitHub, GitLab, Bitbucket, Azure DevOps.
     Manual uploads (provider="manual") are skipped.
+
+    Args:
+        codebase_id: Codebase UUID
+        organization_id: Organization UUID
+        codebase_name: Full repo name (owner/repo)
+        provider: Git provider name
+        install_id: Provider app installation ID
+        incremental: If True, only process new commits since last checkpoint
 
     Returns workflow_run_id if spawned successfully, None otherwise.
     Never raises - analytics failure should not block connection.
@@ -131,6 +140,7 @@ def spawn_analytics_task(
         else:
             repo_owner, repo_name = "", codebase_name
 
+        mode = "incremental" if incremental else "full"
         analytics_input = AnalyticsInput(
             codebase_id=codebase_id,
             organization_id=organization_id,
@@ -138,10 +148,11 @@ def spawn_analytics_task(
             repo_owner=repo_owner,
             repo_name=repo_name,
             auth_token=auth_token,
+            incremental=incremental,
         )
 
         call = analytics_task.run_no_wait(analytics_input)
-        logger.info(f"Analytics task spawned: {call.workflow_run_id} for {codebase_name}")
+        logger.info(f"Analytics task spawned ({mode}): {call.workflow_run_id} for {codebase_name}")
         return call.workflow_run_id
 
     except Exception as e:

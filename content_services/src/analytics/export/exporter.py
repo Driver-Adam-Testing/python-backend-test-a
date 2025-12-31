@@ -40,8 +40,22 @@ class DriverJSONExporter:
         self.output_dir = output_dir or Path(".")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def export_all(self) -> list[Path]:
-        """Export all JSON files for this codebase."""
+    def export_all(
+        self,
+        last_commit_sha: str | None = None,
+        last_commit_date: datetime | None = None,
+        total_commits: int = 0,
+    ) -> list[Path]:
+        """Export all JSON files for this codebase.
+        
+        Args:
+            last_commit_sha: SHA of latest processed commit (for checkpoint)
+            last_commit_date: Date of latest processed commit
+            total_commits: Total commits processed
+            
+        Returns:
+            List of exported file paths
+        """
         start = time.time()
 
         files = [
@@ -51,7 +65,12 @@ class DriverJSONExporter:
             self._export_ownership(),  # Code ownership + contributor data
         ]
 
-        files.append(self._export_metadata(time.time() - start))
+        files.append(self._export_metadata(
+            duration=time.time() - start,
+            last_commit_sha=last_commit_sha,
+            last_commit_date=last_commit_date,
+            total_commits=total_commits,
+        ))
         return [f for f in files if f]
 
     def _export_overview(self) -> Path | None:
@@ -310,13 +329,33 @@ class DriverJSONExporter:
 
         return self._write('ownership.json', data)
 
-    def _export_metadata(self, duration: float) -> Path:
-        """Export metadata.json with generation info."""
+    def _export_metadata(
+        self,
+        duration: float,
+        last_commit_sha: str | None = None,
+        last_commit_date: datetime | None = None,
+        total_commits: int = 0,
+    ) -> Path:
+        """Export metadata.json with generation info and checkpoint data.
+        
+        Args:
+            duration: Processing duration in seconds
+            last_commit_sha: SHA of the latest processed commit (for checkpoint)
+            last_commit_date: Date of the latest processed commit
+            total_commits: Total commits processed
+            
+        Returns:
+            Path to written metadata.json
+        """
         data = MetadataJSON(
             codebase_id=self.codebase_id,
             generated_at=datetime.now(timezone.utc),
             status='complete',
             generation_seconds=duration,
+            pipeline_version='2.0',
+            last_processed_commit_sha=last_commit_sha,
+            last_processed_commit_date=last_commit_date,
+            total_commits_processed=total_commits,
         )
 
         return self._write('metadata.json', data)

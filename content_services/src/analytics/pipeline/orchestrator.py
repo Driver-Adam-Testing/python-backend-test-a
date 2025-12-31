@@ -38,6 +38,7 @@ class PipelineConfig(BaseModel):
     cleanup_on_complete: bool = True
     default_branch_only: bool = False
     include_patches: bool = True
+    incremental: bool = False  # For incremental updates on push
 
 
 class PipelineInput(BaseModel):
@@ -48,6 +49,7 @@ class PipelineInput(BaseModel):
     repo_owner: str
     repo_name: str
     auth_token: str | None = None
+    incremental: bool = False  # For incremental updates on push
 
 
 class PipelineOutput(BaseModel):
@@ -81,6 +83,9 @@ class PipelineContext:
     clone_result: CloneResult | None = None
     extract_result: ExtractResult | None = None
     branches_result: BranchesResult | None = None
+
+    # Incremental mode
+    since_sha: str | None = None  # For incremental updates
 
     # Timing
     start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -118,7 +123,8 @@ class AnalyticsPipeline:
         Returns:
             PipelineOutput with results
         """
-        logger.info(f"Starting analytics pipeline for {input.codebase_id}")
+        mode = "incremental" if input.incremental else "full"
+        logger.info(f"Starting analytics pipeline for {input.codebase_id} (mode={mode})")
 
         ctx = PipelineContext(config=self.config, input=input)
 
@@ -126,11 +132,37 @@ class AnalyticsPipeline:
             # Initialize storage
             self._init_storage(ctx)
 
+            # For incremental mode, get checkpoint before extraction
+            if input.incremental:
+                bucket = org_id_to_hash(input.organization_id)
+                ctx.since_sha = self._get_since_sha_from_checkpoint(bucket, input.codebase_id)
+                if ctx.since_sha:
+                    logger.info(f"Incremental mode: extracting commits since {ctx.since_sha[:8]}")
+                else:
+                    logger.info("Incremental mode: no checkpoint, will process all commits")
+
             # Phase 1: Clone
             self._phase_clone(ctx)
 
             # Phase 2: Extract commits
             self._phase_extract(ctx)
+
+            # Check if we have any commits to process
+            extracted_commits = ctx.extract_result.total_commits if ctx.extract_result else 0
+
+            # If incremental mode extracted 0 commits, we're done (already up to date)
+            if input.incremental and extracted_commits == 0:
+                duration = (datetime.now(timezone.utc) - ctx.start_time).total_seconds()
+                logger.info(f"Incremental pipeline: no new commits for {input.codebase_id}")
+                return PipelineOutput(
+                    success=True,
+                    codebase_id=input.codebase_id,
+                    total_commits=0,
+                    total_branches=0,
+                    total_contributors=0,
+                    json_files=[],
+                    duration_seconds=duration
+                )
 
             # Phase 3: Discover branches
             self._phase_branches(ctx)
@@ -158,7 +190,7 @@ class AnalyticsPipeline:
             return PipelineOutput(
                 success=True,
                 codebase_id=input.codebase_id,
-                total_commits=ctx.extract_result.total_commits if ctx.extract_result else 0,
+                total_commits=extracted_commits,
                 total_branches=len(ctx.branches_result.branches) if ctx.branches_result else 0,
                 total_contributors=self._count_contributors(ctx),
                 json_files=[str(f) for f in json_files],
@@ -240,7 +272,8 @@ class AnalyticsPipeline:
             repo=ctx.repo,
             codebase_id=ctx.input.codebase_id,
             branch_names=branch_names,
-            include_patches=ctx.config.include_patches
+            include_patches=ctx.config.include_patches,
+            since_sha=ctx.since_sha,  # For incremental updates
         )
 
         if not result.success:
@@ -248,7 +281,8 @@ class AnalyticsPipeline:
 
         ctx.extract_result = result
 
-        logger.info(f"Extracted {result.total_commits} unique commits ({len(result.commits)} records)")
+        mode_info = f" (since {ctx.since_sha[:8]})" if ctx.since_sha else ""
+        logger.info(f"Extracted {result.total_commits} unique commits ({len(result.commits)} records){mode_info}")
 
     def _phase_branches(self, ctx: PipelineContext) -> None:
         """Phase 3: Discover branches."""
@@ -279,8 +313,14 @@ class AnalyticsPipeline:
         # Store commits in warm storage
         commits = ctx.extract_result.commits
         if commits:
-            ctx.warm_storage.write_commits(ctx.input.codebase_id, commits)
-            logger.info(f"Stored {len(commits)} commit records in warm storage")
+            if ctx.input.incremental and ctx.since_sha:
+                # Incremental mode: append to existing
+                ctx.warm_storage.append_commits(ctx.input.codebase_id, commits)
+                logger.info(f"Appended {len(commits)} new commit records to warm storage")
+            else:
+                # Full mode: overwrite
+                ctx.warm_storage.write_commits(ctx.input.codebase_id, commits)
+                logger.info(f"Stored {len(commits)} commit records in warm storage")
 
         # TODO: Store file changes in cold storage
 
@@ -325,7 +365,14 @@ class AnalyticsPipeline:
             output_dir=output_dir
         )
 
-        json_files = exporter.export_all()
+        # Get checkpoint data from extraction results
+        last_commit_sha, last_commit_date, total_commits = self._get_checkpoint_data(ctx)
+
+        json_files = exporter.export_all(
+            last_commit_sha=last_commit_sha,
+            last_commit_date=last_commit_date,
+            total_commits=total_commits,
+        )
 
         logger.info(f"Exported {len(json_files)} JSON files to {output_dir}")
         return json_files
@@ -546,6 +593,86 @@ class AnalyticsPipeline:
 
         temp_path.unlink()
         logger.info(f"Org summary updated: {total_codebases} codebases, {total_commits} commits")
+
+    def _download_checkpoint(self, bucket: str, codebase_id: str) -> dict | None:
+        """Download existing metadata.json from S3 for checkpoint.
+        
+        Args:
+            bucket: S3 bucket name
+            codebase_id: Codebase UUID
+            
+        Returns:
+            Checkpoint data dict or None if not found
+        """
+        import boto3
+        import json
+        from botocore.exceptions import ClientError
+
+        s3 = boto3.client('s3')
+        key = f"analytics/{codebase_id}/metadata.json"
+
+        try:
+            response = s3.get_object(Bucket=bucket, Key=key)
+            data = json.loads(response['Body'].read().decode('utf-8'))
+            logger.info(f"Downloaded checkpoint: {data.get('last_processed_commit_sha', 'none')[:8] if data.get('last_processed_commit_sha') else 'none'}")
+            return data
+        except ClientError as e:
+            error_code = e.response.get('Error', {}).get('Code', '')
+            if error_code in ('NoSuchKey', '404'):
+                logger.info(f"No checkpoint found for {codebase_id}")
+            else:
+                logger.warning(f"Error downloading checkpoint: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Unexpected error downloading checkpoint: {e}")
+            return None
+
+    def _get_since_sha_from_checkpoint(self, bucket: str, codebase_id: str) -> str | None:
+        """Get the since_sha from checkpoint for incremental extraction.
+        
+        Args:
+            bucket: S3 bucket name
+            codebase_id: Codebase UUID
+            
+        Returns:
+            Last processed commit SHA or None
+        """
+        checkpoint = self._download_checkpoint(bucket, codebase_id)
+        if checkpoint:
+            return checkpoint.get('last_processed_commit_sha')
+        return None
+
+    def _get_checkpoint_data(self, ctx: PipelineContext) -> tuple[str | None, datetime | None, int]:
+        """Get checkpoint data from extraction results.
+        
+        Args:
+            ctx: Pipeline context
+            
+        Returns:
+            Tuple of (latest_sha, latest_date, total_commits)
+        """
+        if not ctx.extract_result or not ctx.extract_result.commits:
+            return None, None, 0
+
+        # Find the latest commit by date
+        commits = ctx.extract_result.commits
+        latest_commit = max(commits, key=lambda c: c.get('committed_at', datetime.min))
+        
+        latest_sha = latest_commit.get('commit_sha')
+        latest_date = latest_commit.get('committed_at')
+        
+        # Get total commits from repository metrics (includes previous + new)
+        total_commits = 0
+        if ctx.hot_storage:
+            metrics = ctx.hot_storage.get_repository_metrics(ctx.input.codebase_id)
+            if metrics:
+                total_commits = metrics.get('total_commits', 0)
+        
+        # Fallback to extracted count if metrics not available
+        if total_commits == 0:
+            total_commits = ctx.extract_result.total_commits
+
+        return latest_sha, latest_date, total_commits
 
     def _count_contributors(self, ctx: PipelineContext) -> int:
         """Count unique contributors from extracted commits."""

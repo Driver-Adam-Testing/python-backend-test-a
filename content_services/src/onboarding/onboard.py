@@ -1201,10 +1201,16 @@ def run_codebase_connection(
 
     # === ANALYTICS TRIGGER ===
     # Spawn analytics as separate background task (non-blocking)
-    # Only trigger for INITIAL connections (CONNECTING status).
-    # For PUSH events (GENERATING status), analytics is triggered by
+    # Only trigger for INITIAL connections (no previous version).
+    # For PUSH events (has previous_version_id), analytics is triggered by
     # _trigger_incremental_analytics_for_push() in handle_*_events() with incremental=True.
-    if version_status != VersionStatus.GENERATING:
+    # Note: We check previous_version_id instead of status because rapid pushes may
+    # create versions with CONNECTING status before the previous version completes generation.
+    with Session(engine) as session:
+        version = session.get(Version, version_id)
+        is_push_event = version.previous_version_id is not None
+    
+    if not is_push_event:
         analytics_codebase_name = full_repo_name or provisional_codebase_name
         _spawn_analytics_task(
             codebase_id=str(primary_asset_id),

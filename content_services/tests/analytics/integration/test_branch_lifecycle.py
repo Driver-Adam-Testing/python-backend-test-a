@@ -310,3 +310,147 @@ class TestExporterWithDeletedBranches:
         result = exporter._export_branches()
         assert result is None
 
+    def test_exporter_filters_deleted_branches_from_hot_storage(self, tmp_path):
+        """Exporter filters out deleted branches from hot storage results.
+        
+        This tests the bug fix where hot storage returns deleted branches
+        (because commits still have branch_name references) but they should
+        be exported as deleted, not active.
+        """
+        from analytics.export.exporter import DriverJSONExporter
+        from analytics.storage.hot_storage import HotStorage
+
+        # Hot storage still returns test-branch because commits have branch_name
+        hot_storage = MagicMock(spec=HotStorage)
+        hot_storage.get_all_branch_metrics.return_value = [
+            {
+                "branch_name": "main",
+                "is_default_branch": True,
+                "total_commits": 100,
+                "last_commit_at": datetime.now(timezone.utc),
+                "is_active": True,
+                "head_commit_sha": "abc123",
+            },
+            {
+                "branch_name": "test-branch",  # Deleted but still in hot storage!
+                "is_default_branch": False,
+                "total_commits": 3,
+                "last_commit_at": datetime.now(timezone.utc),
+                "is_active": True,  # Hot storage thinks it's active
+                "head_commit_sha": "def456",
+            }
+        ]
+
+        # But we know test-branch was deleted
+        deleted_branches = [
+            {
+                "name": "test-branch",
+                "is_merged": True,
+                "is_deleted": True,
+                "deleted_at": datetime.now(timezone.utc),
+                "merged_at": datetime.now(timezone.utc),
+                "commits": 3,
+                "head_commit_sha": "def456",
+                "status": "merged",
+                "current_sloc": 10,
+                "total_addition_bytes": 500,
+            }
+        ]
+
+        exporter = DriverJSONExporter(
+            codebase_id="test-codebase",
+            hot_storage=hot_storage,
+            output_dir=tmp_path,
+            deleted_branches=deleted_branches,
+        )
+
+        result = exporter._export_branches()
+        assert result is not None
+        
+        data = json.loads(result.read_text())
+        
+        # Should have exactly 2 branches (main active, test-branch deleted)
+        assert len(data["branches"]) == 2
+
+        # Verify main is active
+        main_branch = next(b for b in data["branches"] if b["name"] == "main")
+        assert main_branch["is_active"] is True
+        assert main_branch["is_deleted"] is False
+
+        # Verify test-branch is deleted (not duplicated as active)
+        test_branch = next(b for b in data["branches"] if b["name"] == "test-branch")
+        assert test_branch["is_deleted"] is True
+        assert test_branch["is_merged"] is True
+        assert test_branch["is_active"] is False
+        assert test_branch["status"] == "merged"
+        # Verify historical metrics are preserved
+        assert test_branch["current_sloc"] == 10
+        assert test_branch["total_addition_bytes"] == 500
+
+    def test_branch_diff_ignores_already_deleted_branches(self):
+        """Branch diff doesn't re-detect branches already marked as deleted.
+        
+        This tests the bug fix where previously deleted branches were being
+        re-detected as deleted on every incremental run.
+        """
+        from analytics.pipeline.orchestrator import (
+            AnalyticsPipeline,
+            PipelineConfig,
+            PipelineContext,
+            PipelineInput,
+        )
+        from analytics.pipeline.phases.branches import BranchesResult, BranchInfo
+
+        config = PipelineConfig(work_dir=Path(tempfile.mkdtemp()))
+        pipeline = AnalyticsPipeline(config)
+
+        input_data = PipelineInput(
+            codebase_id="test-codebase",
+            organization_id="test-org",
+            clone_url="https://github.com/test/repo",
+            repo_owner="test",
+            repo_name="repo",
+            incremental=True,
+        )
+
+        ctx = PipelineContext(config=config, input=input_data)
+
+        # Current: only main
+        ctx.branches_result = BranchesResult(
+            success=True,
+            branches=[
+                BranchInfo(
+                    name="main",
+                    head_sha="abc123",
+                    divergence_point_sha=None,
+                    parent_branch=None,
+                    created_at=None,
+                    last_commit_at=datetime.now(timezone.utc),
+                    is_default=True,
+                )
+            ],
+            default_branch="main",
+        )
+
+        # Previous branches.json includes an already-deleted branch
+        previous_branches = {
+            "codebase_id": "test-codebase",
+            "branches": [
+                {"name": "main", "head_commit_sha": "abc123", "commits": 100, "is_deleted": False},
+                {
+                    "name": "old-deleted-branch",
+                    "head_commit_sha": "xyz789",
+                    "commits": 5,
+                    "is_deleted": True,  # Already marked as deleted!
+                    "deleted_at": "2024-01-01T00:00:00Z",
+                },
+            ],
+        }
+
+        with patch.object(pipeline, '_download_branches_json', return_value=previous_branches):
+            ctx.repo = MagicMock()
+            pipeline._phase_branch_diff(ctx)
+
+        # Should NOT re-detect old-deleted-branch
+        assert len(ctx.deleted_branches) == 0
+

@@ -137,9 +137,17 @@ class DriverJSONExporter:
         if not branches and not self.deleted_branches:
             return None
 
-        # Build branch entries from hot storage (active branches)
+        # Get names of deleted branches to filter them from hot storage results
+        # (hot storage derives branches from commits, so deleted branches still appear)
+        deleted_names = {d.get('name') for d in self.deleted_branches if d.get('name')}
+
+        # Build branch entries from hot storage (active branches only)
         branch_entries = []
         for b in (branches or []):
+            branch_name = b.get('branch_name')
+            # Skip branches that have been deleted - they'll be added with proper flags below
+            if branch_name in deleted_names:
+                continue
             branch_entries.append(
                 BranchEntry(
                     name=b.get('branch_name'),
@@ -178,6 +186,7 @@ class DriverJSONExporter:
             )
 
         # Add deleted branches (from branch lifecycle detection)
+        # Preserve all historical metrics so users can see what the branch contributed
         for d in self.deleted_branches:
             branch_entries.append(
                 BranchEntry(
@@ -192,6 +201,21 @@ class DriverJSONExporter:
                     divergence_point_sha=d.get('divergence_point_sha'),
                     parent_branch=d.get('parent_branch'),
                     created_at=d.get('created_at'),
+                    # Historical line-based metrics (preserved from last known state)
+                    current_lines=d.get('current_lines', 0),
+                    unique_lines=d.get('unique_lines', 0),
+                    total_additions_lines=d.get('total_additions_lines', 0),
+                    total_deletions_lines=d.get('total_deletions_lines', 0),
+                    # Historical byte-based SLOC metrics
+                    current_sloc=d.get('current_sloc', 0),
+                    churn_sloc=d.get('churn_sloc', 0),
+                    unique_sloc=d.get('unique_sloc', 0),
+                    total_addition_bytes=d.get('total_addition_bytes', 0),
+                    total_deletion_bytes=d.get('total_deletion_bytes', 0),
+                    # Historical branch stats
+                    unique_commits=d.get('unique_commits', 0),
+                    unique_contributors=d.get('unique_contributors', 0),
+                    total_files=d.get('total_files', 0),
                     # Branch state flags
                     is_active=False,
                     is_merged=d.get('is_merged', False),

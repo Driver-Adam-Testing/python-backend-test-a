@@ -122,6 +122,9 @@ def _build_deleted_branch_entry(
     """
     Build a branch entry for a deleted branch.
     
+    Preserves all historical metrics from the branch's last known state,
+    which allows users to see what the branch contributed before deletion.
+    
     Args:
         branch_name: Name of the deleted branch
         previous_branch_data: Branch data from previous branches.json
@@ -140,11 +143,29 @@ def _build_deleted_branch_entry(
         "is_deleted": True,
         "deleted_at": now,
         "merged_at": now if is_merged else None,
-        # Preserve previous data
+        "status": "merged" if is_merged else "deleted",
+        # Preserve historical commit data
         "commits": previous_branch_data.get("commits", 0),
         "last_commit_date": previous_branch_data.get("last_commit_date"),
         "head_commit_sha": previous_branch_data.get("head_commit_sha", ""),
-        "status": "merged" if is_merged else "deleted",
+        "divergence_point_sha": previous_branch_data.get("divergence_point_sha"),
+        "parent_branch": previous_branch_data.get("parent_branch"),
+        "created_at": previous_branch_data.get("created_at"),
+        # Preserve historical line-based metrics
+        "current_lines": previous_branch_data.get("current_lines", 0),
+        "unique_lines": previous_branch_data.get("unique_lines", 0),
+        "total_additions_lines": previous_branch_data.get("total_additions_lines", 0),
+        "total_deletions_lines": previous_branch_data.get("total_deletions_lines", 0),
+        # Preserve historical byte-based SLOC metrics
+        "current_sloc": previous_branch_data.get("current_sloc", 0),
+        "churn_sloc": previous_branch_data.get("churn_sloc", 0),
+        "unique_sloc": previous_branch_data.get("unique_sloc", 0),
+        "total_addition_bytes": previous_branch_data.get("total_addition_bytes", 0),
+        "total_deletion_bytes": previous_branch_data.get("total_deletion_bytes", 0),
+        # Preserve historical branch stats
+        "unique_commits": previous_branch_data.get("unique_commits", 0),
+        "unique_contributors": previous_branch_data.get("unique_contributors", 0),
+        "total_files": previous_branch_data.get("total_files", 0),
     }
 
 
@@ -778,9 +799,14 @@ class AnalyticsPipeline:
         ctx.previous_branches_data = previous_data
 
         # Get current and previous branch names
+        # Only consider previously ACTIVE branches when detecting deletions
+        # (branches already marked is_deleted=True should not be re-detected)
         current_names = {b.name for b in ctx.branches_result.branches}
         previous_branches = previous_data.get("branches", [])
-        previous_names = {b.get("name") for b in previous_branches if b.get("name")}
+        previous_names = {
+            b.get("name") for b in previous_branches 
+            if b.get("name") and not b.get("is_deleted", False)
+        }
 
         # Detect changes
         diff = _detect_branch_changes(current_names, previous_names)

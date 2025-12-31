@@ -319,6 +319,10 @@ def _extract_file_changes(
             # Calculate SLOC for this file (bytes / 50)
             file_sloc = (addition_bytes + deletion_bytes) // 50
             
+            # Detect language from file path (A11)
+            from analytics.aggregation.language import _get_language_from_path
+            file_language = _get_language_from_path(file_path)
+            
             file_change = {
                 'codebase_id': codebase_id,
                 'commit_sha': commit_sha,
@@ -333,7 +337,7 @@ def _extract_file_changes(
                 'deletion_bytes': deletion_bytes,
                 'file_sloc': file_sloc,
                 'file_extension': file_extension,
-                'file_language': None,  # Will be populated by language detection (A11)
+                'file_language': file_language,
                 'has_patch_data': has_patch_data,
                 'patch_blob_key': None,  # Reserved for future patch storage
             }

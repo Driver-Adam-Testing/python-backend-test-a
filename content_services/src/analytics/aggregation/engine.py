@@ -6,7 +6,7 @@ into pre-computed metrics in hot storage (DuckDB) for sub-10ms query performance
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import pandas as pd
 
@@ -105,6 +105,10 @@ class AggregationEngine:
 
             self._build_monthly_aggregates(codebase_id, commits_df)
             stats['aggregates_built'].append('monthly')
+            
+            # Build contributor aggregates (A8)
+            self._build_contributor_aggregates(codebase_id, commits_df)
+            stats['aggregates_built'].append('contributors')
 
             stats['status'] = 'success'
             stats['timestamp'] = datetime.now().isoformat()
@@ -461,6 +465,21 @@ class AggregationEngine:
             'last_analyzed_at': datetime.now()
         }
 
+    def _build_contributor_aggregates(self, codebase_id: str, commits_df: pd.DataFrame) -> None:
+        """Build contributor aggregates and write to warm storage.
+        
+        A8: Contributor Tracking
+        """
+        logger.debug(f"Building contributor aggregates for repo {codebase_id}")
+        
+        contributors = _build_contributor_data(codebase_id, commits_df)
+        
+        if contributors:
+            self.warm.write_contributors(codebase_id, contributors)
+            logger.info(f"Built {len(contributors)} contributor aggregates")
+        else:
+            logger.debug("No contributors to aggregate")
+
     def _aggregates_exist(self, codebase_id: str) -> bool:
         """Check if aggregates exist for repository.
 
@@ -472,4 +491,95 @@ class AggregationEngine:
         """
         metrics = self.hot.get_repository_metrics(codebase_id)
         return metrics is not None
+
+
+def _build_contributor_data(codebase_id: str, commits_df: pd.DataFrame) -> list[dict]:
+    """Build contributor aggregates from commits DataFrame.
+    
+    A8: Contributor Tracking
+    
+    Aggregates commits by author to build per-contributor metrics.
+    
+    Args:
+        codebase_id: Repository ID
+        commits_df: DataFrame of commits with author and metric columns
+        
+    Returns:
+        List of contributor dicts matching CONTRIBUTORS_SCHEMA
+    """
+    if commits_df.empty:
+        return []
+    
+    # Ensure datetime type
+    if 'committed_at' in commits_df.columns:
+        commits_df = commits_df.copy()
+        commits_df['committed_at'] = pd.to_datetime(commits_df['committed_at'])
+    
+    now = datetime.now(timezone.utc)
+    thirty_days_ago = now - timedelta(days=30)
+    ninety_days_ago = now - timedelta(days=90)
+    year_ago = now - timedelta(days=365)
+    
+    contributors = []
+    
+    # Group by author email
+    for email, group in commits_df.groupby('author_email'):
+        # Basic counts
+        total_commits = len(group)
+        
+        # Get name (use most recent)
+        name = group.iloc[-1].get('author_name', email) if 'author_name' in group.columns else email
+        
+        # Time range
+        first_commit = group['committed_at'].min()
+        last_commit = group['committed_at'].max()
+        
+        # Branches
+        branches = group['branch_name'].unique().tolist()
+        primary_branch = group['branch_name'].mode().iloc[0] if not group['branch_name'].mode().empty else branches[0]
+        
+        # Windowed commits
+        commits_30d = len(group[group['committed_at'] >= thirty_days_ago])
+        commits_90d = len(group[group['committed_at'] >= ninety_days_ago])
+        commits_365d = len(group[group['committed_at'] >= year_ago])
+        
+        # Line metrics
+        total_additions_lines = group['additions_lines'].sum()
+        total_deletions_lines = group['deletions_lines'].sum()
+        churn_lines = total_additions_lines + total_deletions_lines
+        avg_commit_size_lines = float(churn_lines / total_commits) if total_commits > 0 else 0.0
+        
+        # Byte/SLOC metrics
+        total_addition_bytes = group['addition_bytes'].sum()
+        total_deletion_bytes = group['deletion_bytes'].sum()
+        total_sloc = group['sloc'].sum()
+        avg_commit_size_sloc = float(total_sloc / total_commits) if total_commits > 0 else 0.0
+        
+        contributor = {
+            'codebase_id': codebase_id,
+            'contributor_email': email,
+            'contributor_name': name,
+            'total_commits': int(total_commits),
+            'first_commit_at': first_commit.to_pydatetime() if hasattr(first_commit, 'to_pydatetime') else first_commit,
+            'last_commit_at': last_commit.to_pydatetime() if hasattr(last_commit, 'to_pydatetime') else last_commit,
+            'branches_contributed_to': branches,
+            'primary_branch': primary_branch,
+            'branches_count': len(branches),
+            'commits_last_30_days': int(commits_30d),
+            'commits_last_90_days': int(commits_90d),
+            'commits_last_365_days': int(commits_365d),
+            'total_additions_lines': int(total_additions_lines),
+            'total_deletions_lines': int(total_deletions_lines),
+            'avg_commit_size_lines': float(avg_commit_size_lines),
+            'total_sloc_contributed': int(total_sloc),
+            'total_addition_bytes': int(total_addition_bytes),
+            'total_deletion_bytes': int(total_deletion_bytes),
+            'avg_commit_size_sloc': float(avg_commit_size_sloc),
+            'collected_at': now,
+        }
+        
+        contributors.append(contributor)
+    
+    logger.info(f"Built {len(contributors)} contributor aggregates for {codebase_id}")
+    return contributors
 

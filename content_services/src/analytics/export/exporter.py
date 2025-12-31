@@ -32,6 +32,7 @@ class DriverJSONExporter:
         warm_storage: ParquetStorage | None = None,
         cold_storage: ParquetStorage | None = None,
         output_dir: Path | None = None,
+        deleted_branches: list[dict] | None = None,
     ):
         self.codebase_id = codebase_id
         self.hot = hot_storage
@@ -39,6 +40,7 @@ class DriverJSONExporter:
         self.cold_storage = cold_storage
         self.output_dir = output_dir or Path(".")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.deleted_branches = deleted_branches or []
 
     def export_all(
         self,
@@ -126,14 +128,19 @@ class DriverJSONExporter:
         return self._write('overview.json', overview)
 
     def _export_branches(self) -> Path | None:
-        """Export branches.json using existing HotStorage patterns."""
+        """Export branches.json using existing HotStorage patterns.
+        
+        Includes both active branches from hot storage and deleted branches
+        that were detected during branch lifecycle processing.
+        """
         branches = self.hot.get_all_branch_metrics(self.codebase_id)
-        if not branches:
+        if not branches and not self.deleted_branches:
             return None
 
-        data = BranchesJSON(
-            codebase_id=self.codebase_id,
-            branches=[
+        # Build branch entries from hot storage (active branches)
+        branch_entries = []
+        for b in (branches or []):
+            branch_entries.append(
                 BranchEntry(
                     name=b.get('branch_name'),
                     is_default=b.get('is_default_branch', False),
@@ -168,8 +175,35 @@ class DriverJSONExporter:
                     merged_at=b.get('merged_at'),
                     deleted_at=b.get('deleted_at'),
                 )
-                for b in branches
-            ]
+            )
+
+        # Add deleted branches (from branch lifecycle detection)
+        for d in self.deleted_branches:
+            branch_entries.append(
+                BranchEntry(
+                    name=d.get('name', ''),
+                    is_default=False,
+                    commits=d.get('commits', 0),
+                    last_commit_date=d.get('last_commit_date'),
+                    last_analyzed_at=datetime.now(timezone.utc),
+                    status=d.get('status', 'deleted'),
+                    # Branch metadata
+                    head_commit_sha=d.get('head_commit_sha', ''),
+                    divergence_point_sha=d.get('divergence_point_sha'),
+                    parent_branch=d.get('parent_branch'),
+                    created_at=d.get('created_at'),
+                    # Branch state flags
+                    is_active=False,
+                    is_merged=d.get('is_merged', False),
+                    is_deleted=True,
+                    merged_at=d.get('merged_at'),
+                    deleted_at=d.get('deleted_at'),
+                )
+            )
+
+        data = BranchesJSON(
+            codebase_id=self.codebase_id,
+            branches=branch_entries,
         )
 
         return self._write('branches.json', data)

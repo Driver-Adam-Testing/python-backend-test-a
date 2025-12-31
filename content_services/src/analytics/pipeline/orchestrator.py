@@ -11,6 +11,7 @@ Coordinates all phases of the analytics pipeline:
 7. Upload to S3
 """
 
+import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -30,6 +31,121 @@ from .phases.extract import extract_commits, ExtractResult
 from .phases.branches import discover_branches, BranchesResult
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Branch Lifecycle Types and Functions
+# ============================================================================
+
+@dataclass
+class BranchDiffResult:
+    """Result of branch diff detection between runs."""
+    new_branches: set[str]
+    deleted_branches: set[str]
+
+
+def _detect_branch_changes(
+    current_branches: set[str],
+    previous_branches: set[str],
+) -> BranchDiffResult:
+    """
+    Detect branch changes between the current and previous runs.
+    
+    Args:
+        current_branches: Set of branch names currently in the repository
+        previous_branches: Set of branch names from previous run (branches.json)
+        
+    Returns:
+        BranchDiffResult with new and deleted branch sets
+    """
+    return BranchDiffResult(
+        new_branches=current_branches - previous_branches,
+        deleted_branches=previous_branches - current_branches,
+    )
+
+
+def _was_merged(
+    repo: pygit2.Repository | None,
+    branch_last_sha: str | None,
+    default_branch: str,
+) -> bool:
+    """
+    Check if a deleted branch's commits were merged into the default branch.
+    
+    A branch is considered merged if its last commit is reachable from
+    the default branch (i.e., it's an ancestor of the default branch HEAD).
+    
+    Args:
+        repo: pygit2.Repository instance (or None for testing)
+        branch_last_sha: SHA of the branch's last commit before deletion
+        default_branch: Name of the default branch
+        
+    Returns:
+        True if the branch was merged, False otherwise
+    """
+    if not repo or not branch_last_sha:
+        return False
+
+    try:
+        # Get default branch reference
+        default_ref = None
+        if default_branch in repo.branches.local:
+            default_ref = repo.branches[default_branch]
+        elif f"origin/{default_branch}" in repo.branches.remote:
+            default_ref = repo.branches[f"origin/{default_branch}"]
+
+        if not default_ref:
+            logger.warning(f"Default branch {default_branch} not found")
+            return False
+
+        # Get the branch's last commit
+        try:
+            branch_commit_oid = pygit2.Oid(hex=branch_last_sha)
+        except ValueError:
+            logger.warning(f"Invalid commit SHA: {branch_last_sha}")
+            return False
+
+        # Check if branch commit is an ancestor of default branch HEAD
+        # This means the branch was merged (its commits are reachable from default)
+        return repo.descendant_of(default_ref.target, branch_commit_oid)
+
+    except Exception as e:
+        logger.warning(f"Error checking merge status for {branch_last_sha}: {e}")
+        return False
+
+
+def _build_deleted_branch_entry(
+    branch_name: str,
+    previous_branch_data: dict,
+    is_merged: bool,
+) -> dict:
+    """
+    Build a branch entry for a deleted branch.
+    
+    Args:
+        branch_name: Name of the deleted branch
+        previous_branch_data: Branch data from previous branches.json
+        is_merged: Whether the branch was merged into default
+        
+    Returns:
+        Dictionary with branch entry for the deleted branch
+    """
+    now = datetime.now(timezone.utc)
+
+    return {
+        "name": branch_name,
+        "is_default": False,
+        "is_active": False,
+        "is_merged": is_merged,
+        "is_deleted": True,
+        "deleted_at": now,
+        "merged_at": now if is_merged else None,
+        # Preserve previous data
+        "commits": previous_branch_data.get("commits", 0),
+        "last_commit_date": previous_branch_data.get("last_commit_date"),
+        "head_commit_sha": previous_branch_data.get("head_commit_sha", ""),
+        "status": "merged" if is_merged else "deleted",
+    }
 
 
 class PipelineConfig(BaseModel):
@@ -86,6 +202,10 @@ class PipelineContext:
 
     # Incremental mode
     since_sha: str | None = None  # For incremental updates
+
+    # Branch lifecycle (for incremental mode)
+    deleted_branches: list[dict] = field(default_factory=list)
+    previous_branches_data: dict | None = None  # Previous branches.json content
 
     # Timing
     start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -166,6 +286,9 @@ class AnalyticsPipeline:
 
             # Phase 3: Discover branches
             self._phase_branches(ctx)
+
+            # Phase 3b: Branch lifecycle detection (incremental mode only)
+            self._phase_branch_diff(ctx)
 
             # Phase 4: Store in warm/cold storage
             self._phase_store(ctx)
@@ -362,7 +485,8 @@ class AnalyticsPipeline:
             hot_storage=ctx.hot_storage,
             warm_storage=ctx.warm_storage,
             cold_storage=ctx.cold_storage,
-            output_dir=output_dir
+            output_dir=output_dir,
+            deleted_branches=ctx.deleted_branches,  # Pass deleted branches for lifecycle tracking
         )
 
         # Get checkpoint data from extraction results
@@ -593,6 +717,106 @@ class AnalyticsPipeline:
 
         temp_path.unlink()
         logger.info(f"Org summary updated: {total_codebases} codebases, {total_commits} commits")
+
+    def _download_branches_json(self, bucket: str, codebase_id: str) -> dict | None:
+        """Download existing branches.json from S3 for branch lifecycle tracking.
+        
+        Args:
+            bucket: S3 bucket name
+            codebase_id: Codebase UUID
+            
+        Returns:
+            Branches data dict or None if not found
+        """
+        import boto3
+        from botocore.exceptions import ClientError
+
+        s3 = boto3.client('s3')
+        key = f"analytics/{codebase_id}/branches.json"
+
+        try:
+            response = s3.get_object(Bucket=bucket, Key=key)
+            data = json.loads(response['Body'].read().decode('utf-8'))
+            logger.info(f"Downloaded previous branches.json: {len(data.get('branches', []))} branches")
+            return data
+        except ClientError as e:
+            error_code = e.response.get('Error', {}).get('Code', '')
+            if error_code in ('NoSuchKey', '404'):
+                logger.info(f"No previous branches.json found for {codebase_id}")
+            else:
+                logger.warning(f"Error downloading branches.json: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Unexpected error downloading branches.json: {e}")
+            return None
+
+    def _phase_branch_diff(self, ctx: PipelineContext) -> None:
+        """Detect branch changes since last run (incremental mode only).
+        
+        Compares current branches from the repo with previous branches.json
+        to detect new, deleted, and merged branches.
+        
+        Args:
+            ctx: Pipeline context
+        """
+        if not ctx.input.incremental:
+            logger.debug("Branch diff skipped: not in incremental mode")
+            return
+
+        if not ctx.branches_result:
+            logger.warning("Branch diff skipped: no branches result")
+            return
+
+        # Download previous branches.json
+        bucket = org_id_to_hash(ctx.input.organization_id)
+        previous_data = self._download_branches_json(bucket, ctx.input.codebase_id)
+
+        if not previous_data:
+            logger.info("No previous branches data, skipping branch diff")
+            return
+
+        ctx.previous_branches_data = previous_data
+
+        # Get current and previous branch names
+        current_names = {b.name for b in ctx.branches_result.branches}
+        previous_branches = previous_data.get("branches", [])
+        previous_names = {b.get("name") for b in previous_branches if b.get("name")}
+
+        # Detect changes
+        diff = _detect_branch_changes(current_names, previous_names)
+
+        logger.info(f"Branch diff: {len(diff.new_branches)} new, {len(diff.deleted_branches)} deleted")
+
+        # Process deleted branches
+        for branch_name in diff.deleted_branches:
+            # Find the previous branch data
+            prev_branch = next(
+                (b for b in previous_branches if b.get("name") == branch_name),
+                None
+            )
+
+            if not prev_branch:
+                logger.warning(f"Could not find previous data for deleted branch: {branch_name}")
+                continue
+
+            # Check if the branch was merged into default
+            default_branch = ctx.branches_result.default_branch or "main"
+            is_merged = _was_merged(
+                ctx.repo,
+                prev_branch.get("head_commit_sha"),
+                default_branch,
+            )
+
+            # Build the deleted branch entry
+            deleted_entry = _build_deleted_branch_entry(
+                branch_name=branch_name,
+                previous_branch_data=prev_branch,
+                is_merged=is_merged,
+            )
+
+            ctx.deleted_branches.append(deleted_entry)
+            status = "merged" if is_merged else "deleted"
+            logger.info(f"Branch {branch_name} marked as {status}")
 
     def _download_checkpoint(self, bucket: str, codebase_id: str) -> dict | None:
         """Download existing metadata.json from S3 for checkpoint.

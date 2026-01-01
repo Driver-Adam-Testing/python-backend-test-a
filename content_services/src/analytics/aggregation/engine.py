@@ -205,7 +205,11 @@ class AggregationEngine:
             'sloc',
             'bytes_per_line',
             'author_email',
-            'files_changed'
+            'files_changed',
+            # Tree-based metrics (actual codebase size)
+            'tree_bytes',
+            'tree_lines',
+            'tree_sloc',
         ]
 
         commits_df = self.warm.read_commits(codebase_id, columns=columns, filters=filters)
@@ -234,10 +238,17 @@ class AggregationEngine:
         total_additions_lines = unique_commits['additions_lines'].sum()
         total_deletions_lines = unique_commits['deletions_lines'].sum()
 
-        # Byte-based SLOC
+        # Byte-based SLOC (churn metrics from patches)
         total_sloc = unique_commits['sloc'].sum()
         total_addition_bytes = unique_commits['addition_bytes'].sum()
         total_deletion_bytes = unique_commits['deletion_bytes'].sum()
+
+        # Tree-based SLOC (actual codebase size from latest commit's tree walk)
+        # This is the REAL current size of the codebase
+        latest_commit = unique_commits.loc[unique_commits['committed_at'].idxmax()]
+        current_tree_sloc = int(latest_commit.get('tree_sloc', 0)) if 'tree_sloc' in unique_commits.columns else 0
+        current_tree_bytes = int(latest_commit.get('tree_bytes', 0)) if 'tree_bytes' in unique_commits.columns else 0
+        current_tree_lines = int(latest_commit.get('tree_lines', 0)) if 'tree_lines' in unique_commits.columns else 0
 
         # Average bytes per line
         avg_bytes_per_line = (
@@ -273,8 +284,10 @@ class AggregationEngine:
             'total_lines': int(total_lines),
             'total_additions_lines': int(total_additions_lines),
             'total_deletions_lines': int(total_deletions_lines),
-            'total_sloc': int(total_sloc),
-            'current_sloc': int(total_sloc),
+            'total_sloc': int(total_sloc),  # Churn SLOC (from patches)
+            'current_sloc': current_tree_sloc,  # REAL codebase size (from tree walk)
+            'current_tree_bytes': current_tree_bytes,  # Total bytes in current codebase
+            'current_tree_lines': current_tree_lines,  # Total lines in current codebase
             'total_addition_bytes': int(total_addition_bytes),
             'total_deletion_bytes': int(total_deletion_bytes),
             'avg_bytes_per_line': float(avg_bytes_per_line),

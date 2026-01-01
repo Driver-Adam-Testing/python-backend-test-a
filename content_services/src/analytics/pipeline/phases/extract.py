@@ -429,6 +429,11 @@ def _extract_commit_data_with_diff(
         # Get commit timestamp
         commit_time = datetime.fromtimestamp(commit.commit_time, tz=timezone.utc)
 
+        # Calculate actual codebase size at this commit (tree walk)
+        # This is the REAL codebase size, not cumulative churn
+        tree_bytes, tree_lines = _get_tree_size_at_commit(repo, commit)
+        tree_sloc = tree_bytes // 50  # Same conversion factor as Driver
+
         # Create base commit record
         base_record = {
             'commit_sha': commit_sha,
@@ -460,6 +465,10 @@ def _extract_commit_data_with_diff(
             'bytes_per_line': bytes_per_line,
             'commit_size_category': size_category,
             'is_refactor': total_additions > 0 and total_deletions > 0 and abs(net_lines) < churn_lines * 0.1,
+            # Tree-based metrics (actual codebase size at this commit)
+            'tree_bytes': tree_bytes,
+            'tree_lines': tree_lines,
+            'tree_sloc': tree_sloc,
             'collection_version': '2.0'
         }
 
@@ -493,4 +502,81 @@ def _get_commit_diff(repo: pygit2.Repository, commit: pygit2.Commit) -> pygit2.D
     except Exception as e:
         logger.debug(f"Error getting diff for commit {commit.id}: {e}")
         return None
+
+
+def _get_tree_size_at_commit(repo: pygit2.Repository, commit: pygit2.Commit) -> tuple[int, int]:
+    """
+    Calculate the total size of the codebase at a given commit by walking its tree.
+    
+    This gives the ACTUAL codebase size (all files) at this point in history,
+    NOT the cumulative churn from patches. This is what users expect when they
+    see "current SLOC" - the actual size of the codebase.
+    
+    Args:
+        repo: pygit2.Repository instance
+        commit: pygit2.Commit to analyze
+        
+    Returns:
+        Tuple of (total_bytes, total_lines) for all non-binary files in the tree
+    """
+    total_bytes = 0
+    total_lines = 0
+    
+    try:
+        tree = commit.tree
+        if not tree:
+            return (0, 0)
+        
+        # Recursively walk the tree
+        total_bytes, total_lines = _walk_tree_recursive(repo, tree)
+        
+    except Exception as e:
+        logger.warning(f"Error calculating tree size for commit {commit.id}: {e}")
+        return (0, 0)
+    
+    return (total_bytes, total_lines)
+
+
+def _walk_tree_recursive(repo: pygit2.Repository, tree: pygit2.Tree) -> tuple[int, int]:
+    """
+    Recursively walk a tree and sum up file sizes.
+    
+    Args:
+        repo: pygit2.Repository instance
+        tree: pygit2.Tree to walk
+        
+    Returns:
+        Tuple of (total_bytes, total_lines)
+    """
+    total_bytes = 0
+    total_lines = 0
+    
+    for entry in tree:
+        try:
+            if entry.type_str == 'blob':
+                # It's a file - get the blob and check if binary
+                blob = repo.get(entry.id)
+                if blob and not blob.is_binary:
+                    data = blob.data
+                    total_bytes += len(data)
+                    # Count lines: number of newlines + 1 for last line without newline
+                    if data:
+                        total_lines += data.count(b'\n')
+                        # Add 1 for the last line if it doesn't end with newline
+                        if not data.endswith(b'\n'):
+                            total_lines += 1
+                            
+            elif entry.type_str == 'tree':
+                # It's a subdirectory - recurse
+                subtree = repo.get(entry.id)
+                if subtree:
+                    sub_bytes, sub_lines = _walk_tree_recursive(repo, subtree)
+                    total_bytes += sub_bytes
+                    total_lines += sub_lines
+                    
+        except Exception as e:
+            logger.debug(f"Error processing tree entry {entry.name}: {e}")
+            continue
+    
+    return (total_bytes, total_lines)
 

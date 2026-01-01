@@ -151,9 +151,12 @@ class DriverJSONExporter:
         # Extract metrics from hot storage
         total_addition_bytes = metrics.get('total_addition_bytes', 0)
         total_deletion_bytes = metrics.get('total_deletion_bytes', 0)
-        # Compute net_sloc the same way GitStats backend does: (addition_bytes - deletion_bytes) / 50
+        # net_sloc from patches (approximation): (addition_bytes - deletion_bytes) / 50
         net_sloc = (total_addition_bytes - total_deletion_bytes) // 50
-        total_sloc = metrics.get('total_sloc', 0)
+        total_sloc = metrics.get('total_sloc', 0)  # Churn SLOC (from patches)
+        # current_sloc now comes from tree walk (REAL codebase size)
+        # Falls back to net_sloc if tree walk data not available
+        current_sloc = metrics.get('current_sloc', net_sloc)
         total_lines = metrics.get('total_lines', net_sloc)
 
         overview = OverviewJSON(
@@ -171,9 +174,9 @@ class DriverJSONExporter:
             total_deletions_lines=metrics.get('total_deletions_lines', 0),
             total_churn=metrics.get('total_additions_lines', 0) + metrics.get('total_deletions_lines', 0),
             # Byte-based SLOC metrics
-            total_sloc=total_sloc,  # Churn-based SLOC (stored in hot storage)
-            net_sloc=net_sloc,  # Net SLOC: (addition_bytes - deletion_bytes) / 50
-            current_sloc=net_sloc,  # Alias for net_sloc (current codebase size)
+            total_sloc=total_sloc,  # Churn SLOC: sum of patch_bytes / 50 across all commits
+            net_sloc=net_sloc,  # Net SLOC from patches: (addition_bytes - deletion_bytes) / 50
+            current_sloc=current_sloc,  # REAL codebase size from tree walk (tree_bytes / 50)
             total_addition_bytes=total_addition_bytes,
             total_deletion_bytes=total_deletion_bytes,
             avg_bytes_per_line=metrics.get('avg_bytes_per_line'),

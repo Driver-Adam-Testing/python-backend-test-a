@@ -49,12 +49,18 @@ COMMITS_SCHEMA = pa.schema([
     pa.field("net_lines", pa.int32(), nullable=False),
     pa.field("churn_lines", pa.int32(), nullable=False),
 
-    # Byte-based SLOC metrics
+    # Byte-based SLOC metrics (from patches - measures CHURN)
     pa.field("addition_bytes", pa.int64(), nullable=False),
     pa.field("deletion_bytes", pa.int64(), nullable=False),
     pa.field("patch_bytes", pa.int64(), nullable=False),
     pa.field("net_bytes", pa.int64(), nullable=False),
-    pa.field("sloc", pa.int64(), nullable=False),
+    pa.field("sloc", pa.int64(), nullable=False),  # Churn SLOC: patch_bytes // 50
+
+    # Tree-based metrics (from tree walk - measures ACTUAL CODEBASE SIZE)
+    # This is the real codebase size at this commit, not cumulative churn
+    pa.field("tree_bytes", pa.int64(), nullable=False),  # Total bytes of all files at this commit
+    pa.field("tree_lines", pa.int64(), nullable=False),  # Total lines of all files at this commit
+    pa.field("tree_sloc", pa.int64(), nullable=False),   # Actual codebase SLOC: tree_bytes // 50
 
     # Derived metrics
     pa.field("bytes_per_line", pa.float32(), nullable=False),

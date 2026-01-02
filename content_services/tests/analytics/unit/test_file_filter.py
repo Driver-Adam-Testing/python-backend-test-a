@@ -95,7 +95,7 @@ class TestBlacklistFilenames:
 
 
 class TestHexDetection:
-    """Test hex file detection matches inspector (>40% threshold)."""
+    """Test hex file detection matches inspector (>99% threshold with whitespace)."""
     
     def test_pure_hex_content_detected(self):
         from analytics.utils.file_filter import is_hex_content
@@ -107,7 +107,7 @@ class TestHexDetection:
     def test_mostly_hex_content_detected(self):
         from analytics.utils.file_filter import is_hex_content
         
-        # >40% hex characters (hex dump style)
+        # Hex dump style with spaces and newlines (100% hex + whitespace chars)
         hex_dump = b"00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n" * 10
         assert is_hex_content(hex_dump)
         
@@ -332,4 +332,164 @@ class TestEdgeCases:
         # Both .BIN and .bin should be blacklisted
         assert is_blacklisted_extension('.BIN')
         assert is_blacklisted_extension('.bin')
+
+
+class TestIsAnalyzablePath:
+    """Test path-only filtering for diffs.
+    
+    This tests the is_analyzable_path() function which is used during
+    diff processing to filter files without access to content.
+    """
+    
+    def test_python_file_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert is_analyzable_path("src/main.py")
+        
+    def test_nested_python_file_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert is_analyzable_path("src/utils/helpers.py")
+        
+    def test_root_level_python_file_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert is_analyzable_path("main.py")
+        
+    def test_javascript_files_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert is_analyzable_path("src/app.js")
+        assert is_analyzable_path("src/app.ts")
+        assert is_analyzable_path("src/Component.jsx")
+        assert is_analyzable_path("src/Component.tsx")
+        
+    def test_markdown_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path("README.md")
+        assert not is_analyzable_path("docs/api.md")
+        assert not is_analyzable_path("CHANGELOG.md")
+        
+    def test_json_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path("package.json")
+        assert not is_analyzable_path("config/settings.json")
+        assert not is_analyzable_path("tsconfig.json")
+        
+    def test_yaml_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path(".github/workflows/ci.yml")
+        assert not is_analyzable_path("docker-compose.yaml")
+        assert not is_analyzable_path("config.yml")
+        
+    def test_toml_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path("pyproject.toml")
+        assert not is_analyzable_path("Cargo.toml")
+        
+    def test_git_directory_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path(".git/config")
+        assert not is_analyzable_path(".git/objects/pack/file")
+        assert not is_analyzable_path(".git/HEAD")
+        
+    def test_driver_docs_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path("driver_docs/README.md")
+        assert not is_analyzable_path("driver_docs/api/overview.md")
+        
+    def test_binary_extension_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path("build/output.exe")
+        assert not is_analyzable_path("lib/mylib.dll")
+        assert not is_analyzable_path("target/release/myapp.so")
+        assert not is_analyzable_path("obj/file.o")
+        
+    def test_dockerfile_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert is_analyzable_path("Dockerfile")
+        assert is_analyzable_path("docker/Dockerfile")
+        
+    def test_makefile_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert is_analyzable_path("Makefile")
+        assert is_analyzable_path("build/Makefile")
+        
+    def test_svg_not_analyzable(self):
+        from analytics.utils.file_filter import is_analyzable_path
+        assert not is_analyzable_path("assets/logo.svg")
+        assert not is_analyzable_path("icons/icon.svg")
+
+
+class TestHexDetectionAligned:
+    """Test hex detection matches inspector (99% threshold with whitespace).
+    
+    The inspector uses a 99% threshold and includes whitespace (newlines, spaces)
+    in the "allowed hex characters" pattern. This is to detect firmware/hex dump
+    files which are nearly 100% hex characters with formatting whitespace.
+    """
+    
+    def test_pure_hex_dump_detected(self):
+        from analytics.utils.file_filter import is_hex_content
+        
+        # Pure hex with whitespace (like firmware files) - should be detected
+        # Pattern: hex chars + newlines + spaces = nearly 100%
+        hex_dump = b"00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n" * 100
+        assert is_hex_content(hex_dump)
+        
+    def test_pure_hex_no_whitespace_detected(self):
+        from analytics.utils.file_filter import is_hex_content
+        
+        # Pure hex without whitespace - 100% hex
+        hex_content = b"0123456789abcdefABCDEF" * 100
+        assert is_hex_content(hex_content)
+        
+    def test_code_with_hex_literals_not_detected(self):
+        from analytics.utils.file_filter import is_hex_content
+        
+        # Code with hex values should NOT trigger (< 99% hex)
+        code = b'''
+def validate_checksum(data):
+    # Check magic bytes: 0x89504E47 for PNG
+    if data[:4] == b"\\x89PNG":
+        return True
+    # MD5 hash example: d41d8cd98f00b204e9800998ecf8427e
+    return calculate_hash(data)
+'''
+        assert not is_hex_content(code)
+        
+    def test_normal_python_code_not_hex(self):
+        from analytics.utils.file_filter import is_hex_content
+        
+        code = b"""
+import os
+import sys
+
+def main():
+    print("Hello, World!")
+    for i in range(10):
+        print(f"Count: {i}")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
+"""
+        assert not is_hex_content(code)
+        
+    def test_json_with_ids_not_hex(self):
+        from analytics.utils.file_filter import is_hex_content
+        
+        # JSON often contains UUIDs/hashes but shouldn't be flagged as hex
+        json_content = b'''
+{
+    "id": "a1b2c3d4e5f6",
+    "user_id": "deadbeef1234",
+    "name": "Test User",
+    "active": true
+}
+'''
+        assert not is_hex_content(json_content)
+        
+    def test_mixed_content_not_hex(self):
+        from analytics.utils.file_filter import is_hex_content
+        
+        # Content that's ~50% hex shouldn't be flagged with 99% threshold
+        mixed = b"abc123 def456 hello world this is text 789abc\n" * 10
+        assert not is_hex_content(mixed)
 

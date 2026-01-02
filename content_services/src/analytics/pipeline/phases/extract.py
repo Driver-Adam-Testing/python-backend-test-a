@@ -254,6 +254,9 @@ def _extract_file_changes(
 ) -> list[dict]:
     """Extract file-level changes from a diff.
     
+    Only includes ANALYZABLE code files (matching inspector criteria).
+    Docs, config, and other non-code files are excluded.
+    
     Args:
         diff: pygit2.Diff object
         commit_sha: SHA of the commit
@@ -263,6 +266,8 @@ def _extract_file_changes(
     Returns:
         List of file change dictionaries matching FILE_CHANGES_SCHEMA
     """
+    from analytics.utils.file_filter import is_analyzable_path
+    
     file_changes = []
     
     if not diff:
@@ -278,6 +283,10 @@ def _extract_file_changes(
             file_path = new_path or old_path
             
             if not file_path:
+                continue
+            
+            # Skip non-analyzable files (docs, config, binary, etc.)
+            if not is_analyzable_path(file_path):
                 continue
             
             # Get change type from status char
@@ -361,11 +370,17 @@ def _extract_commit_data_with_diff(
     """
     Extract data for a single commit and return the diff.
 
+    Metrics are filtered to only include ANALYZABLE code files (matching
+    inspector criteria). This ensures additions/deletions/churn metrics
+    are comparable to current_sloc from tree walks.
+
     Returns:
         Tuple of (commit records, diff object)
         - One commit record per branch the commit belongs to
         - The diff object for file-level extraction
     """
+    from analytics.utils.file_filter import is_analyzable_path
+    
     try:
         commit = repo.get(commit_sha)
         if not commit:
@@ -375,6 +390,7 @@ def _extract_commit_data_with_diff(
         diff = _get_commit_diff(repo, commit)
 
         # Calculate line/byte metrics from diff
+        # FILTERED to only include analyzable code files (matching inspector criteria)
         files_changed = 0
         total_additions = 0
         total_deletions = 0
@@ -382,31 +398,38 @@ def _extract_commit_data_with_diff(
         total_deletion_bytes = 0
 
         if diff:
-            # Use diff.stats for line counts (most reliable)
-            stats = diff.stats
-            files_changed = stats.files_changed
-            total_additions = stats.insertions
-            total_deletions = stats.deletions
-            
-            # Calculate bytes from patch content
-            # CRITICAL: Always use patch data for accurate SLOC. No fallback to estimates.
-            # The include_patches parameter is deprecated but kept for API compatibility.
-            try:
-                patch_text = diff.patch
-                if patch_text:
-                    for line in patch_text.split('\n'):
-                        if line.startswith('+') and not line.startswith('+++'):
-                            total_addition_bytes += len(line[1:].encode('utf-8', errors='replace'))
-                        elif line.startswith('-') and not line.startswith('---'):
-                            total_deletion_bytes += len(line[1:].encode('utf-8', errors='replace'))
-                else:
-                    # No patch data available - log warning, set bytes to 0
-                    logger.warning(f"Commit {commit_sha[:8]}: No patch data available, bytes set to 0")
-            except Exception as e:
-                # Patch analysis failed - log warning, set bytes to 0
-                logger.warning(f"Commit {commit_sha[:8]}: Patch analysis failed: {e}, bytes set to 0")
-                total_addition_bytes = 0
-                total_deletion_bytes = 0
+            # Iterate over individual patches and filter to analyzable files
+            # (cannot use diff.stats as it includes all files)
+            for patch in diff:
+                delta = patch.delta
+                file_path = delta.new_file.path or delta.old_file.path
+                
+                # Skip non-analyzable files (docs, config, binary, etc.)
+                if not file_path or not is_analyzable_path(file_path):
+                    continue
+                
+                # Count this file
+                files_changed += 1
+                
+                # Get line stats for this file
+                try:
+                    _, additions, deletions = patch.line_stats
+                    total_additions += additions
+                    total_deletions += deletions
+                except Exception:
+                    pass
+                
+                # Get bytes from patch content for this file
+                try:
+                    patch_text = patch.text
+                    if patch_text:
+                        for line in patch_text.split('\n'):
+                            if line.startswith('+') and not line.startswith('+++'):
+                                total_addition_bytes += len(line[1:].encode('utf-8', errors='replace'))
+                            elif line.startswith('-') and not line.startswith('---'):
+                                total_deletion_bytes += len(line[1:].encode('utf-8', errors='replace'))
+                except Exception:
+                    pass
 
         # Calculate derived metrics
         net_lines = total_additions - total_deletions

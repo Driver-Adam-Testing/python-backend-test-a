@@ -35,31 +35,38 @@ class TestHotStorage:
         assert "branch_metrics" in table_names
 
     def test_upsert_repository_metrics(self, hot_storage):
-        """Test upserting repository metrics."""
+        """Test upserting repository metrics with v3.0 schema."""
         metrics = {
             "codebase_id": "test-uuid-123",
             "repository_name": "test-repo",
             "full_name": "owner/test-repo",
             "owner": "owner",
+            # Current codebase state
+            "current_sloc": 1000,
+            "current_lines": 2000,
+            # Line-based cumulative activity
+            "additions_lines": 1500,
+            "deletions_lines": 500,
+            "churn_lines": 2000,
+            "net_lines": 1000,
+            # SLOC-based cumulative activity
+            "additions_sloc": 30,  # 1500 bytes / 50
+            "deletions_sloc": 10,  # 500 bytes / 50
+            "churn_sloc": 40,
+            "net_sloc": 20,
+            # Other metrics
+            "avg_bytes_per_line": 50.0,
             "total_commits": 100,
             "total_contributors": 5,
             "total_branches": 3,
             "total_files": 50,
-            "total_lines": 1000,
-            "total_additions_lines": 1500,
-            "total_deletions_lines": 500,
-            "total_sloc": 1000,
-            "current_sloc": 1000,
-            "total_addition_bytes": 75000,
-            "total_deletion_bytes": 25000,
-            "avg_bytes_per_line": 50.0,
             "default_branch": "main",
             "primary_language": "Python",
             "first_commit_at": datetime.now(timezone.utc),
             "last_commit_at": datetime.now(timezone.utc),
             "collected_at": datetime.now(timezone.utc),
             "last_updated_at": datetime.now(timezone.utc),
-            "collection_version": "2.0",
+            "collection_version": "3.0",
         }
         
         hot_storage.upsert_repository_metrics(metrics)
@@ -123,7 +130,7 @@ class TestHotStorage:
         assert result[0]["commits_count"] == 10
 
     def test_upsert_branch_metrics(self, hot_storage):
-        """Test upserting branch metrics."""
+        """Test upserting branch metrics with v3.0 schema."""
         metrics = {
             "codebase_id": "test-uuid",
             "branch_name": "main",
@@ -132,19 +139,23 @@ class TestHotStorage:
             "parent_branch": None,
             "created_at": None,
             "last_commit_at": datetime.now(timezone.utc),
+            # Line-based metrics
             "current_lines": 1000,
             "unique_lines": 1000,
-            "total_additions_lines": 1500,
-            "total_deletions_lines": 500,
+            "additions_lines": 1500,
+            "deletions_lines": 500,
+            # SLOC-based metrics
             "current_sloc": 1000,
-            "churn_sloc": 2000,
             "unique_sloc": 1000,
-            "total_addition_bytes": 75000,
-            "total_deletion_bytes": 25000,
+            "additions_sloc": 30,  # 1500 bytes / 50
+            "deletions_sloc": 10,  # 500 bytes / 50
+            "churn_sloc": 40,
+            # Branch stats
             "total_commits": 100,
             "unique_commits": 100,
             "unique_contributors": 5,
             "total_files": 50,
+            # Branch state
             "is_default_branch": True,
             "is_active": True,
             "is_merged": False,

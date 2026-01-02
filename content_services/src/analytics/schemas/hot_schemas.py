@@ -8,7 +8,7 @@ byte-based) and comprehensive branch tracking.
 Version: 2.0
 """
 
-HOT_SCHEMA_VERSION = "2.0"
+HOT_SCHEMA_VERSION = "3.0"
 
 # SQL DDL statements
 REPOSITORY_METRICS_DDL = """
@@ -18,22 +18,23 @@ CREATE TABLE IF NOT EXISTS repository_metrics (
     full_name VARCHAR NOT NULL,
     owner VARCHAR NOT NULL,
 
-    -- Traditional line-based metrics
-    total_lines BIGINT NOT NULL DEFAULT 0,
-    total_additions_lines BIGINT NOT NULL DEFAULT 0,
-    total_deletions_lines BIGINT NOT NULL DEFAULT 0,
+    -- Current codebase state (from tree walk at HEAD)
+    current_sloc BIGINT NOT NULL DEFAULT 0,      -- SLOC in codebase now (tree_bytes / 50)
+    current_lines BIGINT NOT NULL DEFAULT 0,     -- Lines in codebase now
 
-    -- Byte-based SLOC metrics (Driver method - from patches, measures CHURN)
-    total_sloc BIGINT NOT NULL DEFAULT 0,
-    total_addition_bytes BIGINT NOT NULL DEFAULT 0,
-    total_deletion_bytes BIGINT NOT NULL DEFAULT 0,
+    -- Cumulative line-based activity (sum across all commits)
+    additions_lines BIGINT NOT NULL DEFAULT 0,   -- Total lines added
+    deletions_lines BIGINT NOT NULL DEFAULT 0,   -- Total lines deleted
+    churn_lines BIGINT NOT NULL DEFAULT 0,       -- additions + deletions
+    net_lines BIGINT NOT NULL DEFAULT 0,         -- additions - deletions
 
-    -- Tree-based metrics (from tree walk - measures ACTUAL CODEBASE SIZE)
-    current_sloc BIGINT NOT NULL DEFAULT 0,
-    current_tree_bytes BIGINT NOT NULL DEFAULT 0,
-    current_tree_lines BIGINT NOT NULL DEFAULT 0,
+    -- Cumulative SLOC-based activity (sum across all commits)
+    additions_sloc BIGINT NOT NULL DEFAULT 0,    -- Total SLOC added (bytes / 50)
+    deletions_sloc BIGINT NOT NULL DEFAULT 0,    -- Total SLOC deleted (bytes / 50)
+    churn_sloc BIGINT NOT NULL DEFAULT 0,        -- additions + deletions
+    net_sloc BIGINT NOT NULL DEFAULT 0,          -- additions - deletions
 
-    -- Metrics comparison
+    -- Other metrics
     avg_bytes_per_line FLOAT,
 
     -- Aggregates
@@ -53,7 +54,7 @@ CREATE TABLE IF NOT EXISTS repository_metrics (
     -- Collection metadata
     collected_at TIMESTAMP NOT NULL,
     last_updated_at TIMESTAMP NOT NULL,
-    collection_version VARCHAR NOT NULL DEFAULT '2.0'
+    collection_version VARCHAR NOT NULL DEFAULT '3.0'
 );
 """
 
@@ -131,17 +132,18 @@ CREATE TABLE IF NOT EXISTS branch_summary (
     created_at TIMESTAMP,
     last_commit_at TIMESTAMP NOT NULL,
 
-    -- Traditional line-based metrics
+    -- Line-based metrics
     current_lines BIGINT NOT NULL DEFAULT 0,
     unique_lines BIGINT NOT NULL DEFAULT 0,
-    total_additions_lines BIGINT NOT NULL DEFAULT 0,
-    total_deletions_lines BIGINT NOT NULL DEFAULT 0,
+    additions_lines BIGINT NOT NULL DEFAULT 0,
+    deletions_lines BIGINT NOT NULL DEFAULT 0,
 
-    -- Byte-based SLOC metrics
+    -- SLOC-based metrics
     current_sloc BIGINT NOT NULL DEFAULT 0,
     unique_sloc BIGINT NOT NULL DEFAULT 0,
-    total_addition_bytes BIGINT NOT NULL DEFAULT 0,
-    total_deletion_bytes BIGINT NOT NULL DEFAULT 0,
+    additions_sloc BIGINT NOT NULL DEFAULT 0,
+    deletions_sloc BIGINT NOT NULL DEFAULT 0,
+    churn_sloc BIGINT NOT NULL DEFAULT 0,
 
     -- Branch stats
     total_commits INTEGER NOT NULL DEFAULT 0,
@@ -181,18 +183,18 @@ CREATE TABLE IF NOT EXISTS branch_metrics (
     created_at TIMESTAMP,
     last_commit_at TIMESTAMP NOT NULL,
 
-    -- Traditional line-based metrics
+    -- Line-based metrics
     current_lines BIGINT NOT NULL DEFAULT 0,
     unique_lines BIGINT NOT NULL DEFAULT 0,
-    total_additions_lines BIGINT NOT NULL DEFAULT 0,
-    total_deletions_lines BIGINT NOT NULL DEFAULT 0,
+    additions_lines BIGINT NOT NULL DEFAULT 0,
+    deletions_lines BIGINT NOT NULL DEFAULT 0,
 
-    -- Byte-based SLOC metrics
+    -- SLOC-based metrics
     current_sloc BIGINT NOT NULL DEFAULT 0,
-    churn_sloc BIGINT NOT NULL DEFAULT 0,
     unique_sloc BIGINT NOT NULL DEFAULT 0,
-    total_addition_bytes BIGINT NOT NULL DEFAULT 0,
-    total_deletion_bytes BIGINT NOT NULL DEFAULT 0,
+    additions_sloc BIGINT NOT NULL DEFAULT 0,
+    deletions_sloc BIGINT NOT NULL DEFAULT 0,
+    churn_sloc BIGINT NOT NULL DEFAULT 0,
 
     -- Branch stats
     total_commits INTEGER NOT NULL DEFAULT 0,

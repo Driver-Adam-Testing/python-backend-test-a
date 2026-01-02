@@ -43,7 +43,14 @@ class TestAggregationToHotStorageSchemaConsistency:
         fields that exist in the repository_metrics table schema.
         
         This catches errors like:
-        "INTERNAL Error: Column with name 'current_tree_bytes' does not exist"
+        "INTERNAL Error: Column with name 'current_lines' does not exist"
+        
+        Schema v3.0 uses clean naming:
+        - current_* : Current codebase state
+        - *_lines   : Line-based metrics
+        - *_sloc    : SLOC metrics (already converted from bytes)
+        - net_*     : additions - deletions
+        - churn_*   : additions + deletions
         """
         # Get the actual columns from DuckDB schema
         schema_columns = set(hot_storage._get_column_names('repository_metrics'))
@@ -65,7 +72,7 @@ class TestAggregationToHotStorageSchemaConsistency:
             'bytes_per_line': 50.0,
             'author_email': 'test@example.com',
             'files_changed': 5,
-            # Tree-based fields (new)
+            # Tree-based fields (current codebase state)
             'tree_bytes': 100000,
             'tree_lines': 2000,
             'tree_sloc': 2000,
@@ -78,29 +85,34 @@ class TestAggregationToHotStorageSchemaConsistency:
         engine._repo_owner = 'test-owner'
         engine._repo_name = 'test-repo'
         
-        # Build repository aggregate (this is what we're testing)
-        # We need to call the internal method to get the metrics dict
-        # Without actually writing to storage
-        
         # Deduplicate commits by SHA
         unique_commits = commits_df.drop_duplicates(subset=['commit_sha'])
         
-        # Calculate metrics (mimicking _build_repository_aggregate logic)
+        # Calculate metrics (mimicking _build_repository_aggregate v3.0 logic)
         total_commits = len(unique_commits)
-        total_lines = unique_commits['net_lines'].sum()
-        total_additions_lines = unique_commits['additions_lines'].sum()
-        total_deletions_lines = unique_commits['deletions_lines'].sum()
-        total_sloc = unique_commits['sloc'].sum()
-        total_addition_bytes = unique_commits['addition_bytes'].sum()
-        total_deletion_bytes = unique_commits['deletion_bytes'].sum()
+        
+        # Line-based metrics
+        additions_lines = unique_commits['additions_lines'].sum()
+        deletions_lines = unique_commits['deletions_lines'].sum()
+        churn_lines = additions_lines + deletions_lines
+        net_lines = unique_commits['net_lines'].sum()
+        
+        # Byte metrics for SLOC conversion
+        addition_bytes = unique_commits['addition_bytes'].sum()
+        deletion_bytes = unique_commits['deletion_bytes'].sum()
+        
+        # SLOC-based metrics (convert bytes to SLOC: bytes / 50)
+        additions_sloc = int(addition_bytes) // 50
+        deletions_sloc = int(deletion_bytes) // 50
+        churn_sloc = additions_sloc + deletions_sloc
+        net_sloc = additions_sloc - deletions_sloc
         
         # Tree-based SLOC (actual codebase size from latest commit's tree walk)
         latest_commit = unique_commits.loc[unique_commits['committed_at'].idxmax()]
-        current_tree_sloc = int(latest_commit.get('tree_sloc', 0)) if 'tree_sloc' in unique_commits.columns else 0
-        current_tree_bytes = int(latest_commit.get('tree_bytes', 0)) if 'tree_bytes' in unique_commits.columns else 0
-        current_tree_lines = int(latest_commit.get('tree_lines', 0)) if 'tree_lines' in unique_commits.columns else 0
+        current_sloc = int(latest_commit.get('tree_sloc', 0)) if 'tree_sloc' in unique_commits.columns else 0
+        current_lines = int(latest_commit.get('tree_lines', 0)) if 'tree_lines' in unique_commits.columns else 0
         
-        avg_bytes_per_line = total_addition_bytes / total_additions_lines if total_additions_lines > 0 else 0.0
+        avg_bytes_per_line = addition_bytes / additions_lines if additions_lines > 0 else 0.0
         total_contributors = unique_commits['author_email'].nunique()
         branch_count = commits_df['branch_name'].nunique()
         first_commit_at = unique_commits['committed_at'].min()
@@ -108,21 +120,26 @@ class TestAggregationToHotStorageSchemaConsistency:
         total_files = unique_commits['files_changed'].sum()
         default_branch = commits_df['branch_name'].mode()[0] if not commits_df.empty else 'main'
         
-        # Build metrics dict (same structure as engine._build_repository_aggregate)
+        # Build metrics dict (same structure as engine._build_repository_aggregate v3.0)
         metrics = {
             'codebase_id': 'test-uuid',
             'repository_name': 'test-repo',
             'full_name': 'test-owner/test-repo',
             'owner': 'test-owner',
-            'total_lines': int(total_lines),
-            'total_additions_lines': int(total_additions_lines),
-            'total_deletions_lines': int(total_deletions_lines),
-            'total_sloc': int(total_sloc),
-            'current_sloc': current_tree_sloc,
-            'current_tree_bytes': current_tree_bytes,
-            'current_tree_lines': current_tree_lines,
-            'total_addition_bytes': int(total_addition_bytes),
-            'total_deletion_bytes': int(total_deletion_bytes),
+            # Current codebase state
+            'current_sloc': int(current_sloc),
+            'current_lines': int(current_lines),
+            # Line-based cumulative activity
+            'additions_lines': int(additions_lines),
+            'deletions_lines': int(deletions_lines),
+            'churn_lines': int(churn_lines),
+            'net_lines': int(net_lines),
+            # SLOC-based cumulative activity
+            'additions_sloc': int(additions_sloc),
+            'deletions_sloc': int(deletions_sloc),
+            'churn_sloc': int(churn_sloc),
+            'net_sloc': int(net_sloc),
+            # Other metrics
             'avg_bytes_per_line': float(avg_bytes_per_line),
             'total_commits': int(total_commits),
             'total_contributors': int(total_contributors),
@@ -134,7 +151,7 @@ class TestAggregationToHotStorageSchemaConsistency:
             'last_commit_at': last_commit_at.to_pydatetime() if hasattr(last_commit_at, 'to_pydatetime') else last_commit_at,
             'collected_at': datetime.now(),
             'last_updated_at': datetime.now(),
-            'collection_version': '2.0'
+            'collection_version': '3.0'
         }
         
         aggregation_columns = set(metrics.keys())
@@ -154,8 +171,8 @@ class TestAggregationToHotStorageSchemaConsistency:
         # Verify we can read it back
         result = hot_storage.get_repository_metrics('test-uuid')
         assert result is not None
-        assert result['current_tree_bytes'] == current_tree_bytes
-        assert result['current_tree_lines'] == current_tree_lines
+        assert result['current_sloc'] == current_sloc
+        assert result['current_lines'] == current_lines
 
 
 class TestWarmStorageSchemaConsistency:
@@ -239,14 +256,14 @@ class TestHotStorageSchemaCompleteness:
         storage.close()
 
     def test_repository_metrics_has_tree_columns(self, hot_storage):
-        """Test that repository_metrics table includes tree-based columns."""
+        """Test that repository_metrics table includes current state columns."""
         columns = set(hot_storage._get_column_names('repository_metrics'))
         
-        # These are the tree-based columns we added
-        tree_columns = {'current_sloc', 'current_tree_bytes', 'current_tree_lines'}
+        # These are the current state columns (from tree walk at HEAD)
+        current_state_columns = {'current_sloc', 'current_lines'}
         
-        missing = tree_columns - columns
-        assert not missing, f"Missing tree-based columns in repository_metrics: {missing}"
+        missing = current_state_columns - columns
+        assert not missing, f"Missing current state columns in repository_metrics: {missing}"
 
     def test_branch_metrics_schema_complete(self, hot_storage):
         """Test that branch_metrics has all required columns."""

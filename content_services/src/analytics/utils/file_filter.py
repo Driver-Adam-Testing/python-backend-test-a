@@ -6,7 +6,7 @@ the codebase connection flow and the analytics flow.
 
 The inspector determines a file is "analyzable" based on:
 1. Not binary
-2. Not hex content (>40% hex characters)
+2. Not hex content (>99% hex characters including whitespace)
 3. Not in a blacklisted directory (.git, driver_docs)
 4. Not a blacklisted extension (.svg, .exe, .dll, etc.)
 5. Not a blacklisted filename (.DS_Store, .driverignore)
@@ -15,6 +15,7 @@ The inspector determines a file is "analyzable" based on:
 from functools import cache
 from pathlib import Path
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +51,11 @@ BLACKLIST_FILENAMES = {
     ".driverignore",
 }
 
-# Characters that are considered "hex" for hex file detection
-HEX_CHARS = set("0123456789abcdefABCDEF")
-
-# Threshold for hex detection - if >40% of characters are hex, it's a hex file
-HEX_THRESHOLD = 0.4
+# Hex detection - matches inspector's evaluate_file_hex logic
+# The inspector uses 99% threshold and includes whitespace (newlines, spaces)
+# in the "allowed hex characters" pattern. This detects firmware/hex dump files.
+HEX_THRESHOLD = 0.99
+HEX_PATTERN = re.compile(r"[a-fA-F0-9\n ]")
 
 
 def is_blacklisted_path(path_parts: tuple[str, ...]) -> bool:
@@ -98,15 +99,18 @@ def is_blacklisted_filename(filename: str) -> bool:
 
 def is_hex_content(data: bytes | None) -> bool:
     """
-    Check if content is mostly hex characters (>40% threshold).
+    Check if content is mostly hex characters (>99% threshold).
     
-    This matches the inspector's evaluate_file_hex logic.
+    This matches the inspector's evaluate_file_hex logic which uses a 99%
+    threshold and includes whitespace (newlines, spaces) in the pattern.
+    This detects firmware/hex dump files which are nearly 100% hex with
+    formatting whitespace.
     
     Args:
         data: File content as bytes
         
     Returns:
-        True if >40% of characters are hex characters
+        True if >99% of characters match the hex pattern (hex chars + whitespace)
     """
     if not data:
         return False
@@ -115,9 +119,10 @@ def is_hex_content(data: bytes | None) -> bool:
         text = data.decode('utf-8', errors='ignore')
         if not text:
             return False
-            
-        hex_count = sum(1 for c in text if c in HEX_CHARS)
-        return (hex_count / len(text)) > HEX_THRESHOLD
+        
+        # Count characters matching the hex pattern (hex + newlines + spaces)
+        hex_char_count = len(HEX_PATTERN.findall(text))
+        return (hex_char_count / len(text)) > HEX_THRESHOLD
     except Exception:
         return False
 
@@ -245,4 +250,31 @@ def is_analyzable_file(
         return False
     
     return True
+
+
+def is_analyzable_path(file_path: str) -> bool:
+    """
+    Quick path-only check for diff filtering.
+    
+    This is used during diff processing to filter files without access to
+    content. Cannot check hex content (requires file access), but catches:
+    - Blacklisted directories (.git, driver_docs)
+    - Blacklisted extensions (.svg, .exe, .dll, etc.)
+    - Blacklisted filenames (.DS_Store, .driverignore)
+    - Non-code file types (.md, .json, .yaml, etc.)
+    
+    Args:
+        file_path: Full file path from diff (e.g., "src/main.py")
+        
+    Returns:
+        True if path appears to be analyzable code
+    """
+    path = Path(file_path)
+    return is_analyzable_file(
+        path_parts=path.parts,
+        filename=path.name,
+        extension=path.suffix,
+        is_binary=False,  # Can't determine from path alone
+        content=None  # No content access during diff parsing
+    )
 

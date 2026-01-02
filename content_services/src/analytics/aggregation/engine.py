@@ -224,7 +224,15 @@ class AggregationEngine:
         return commits_df
 
     def _build_repository_aggregate(self, codebase_id: str, commits_df: pd.DataFrame) -> None:
-        """Build repository-level aggregate."""
+        """Build repository-level aggregate.
+        
+        All metrics use clean naming convention:
+        - current_* : Current codebase state from tree walk at HEAD
+        - *_lines   : Line-based metrics
+        - *_sloc    : SLOC metrics (already converted from bytes / 50)
+        - net_*     : additions - deletions
+        - churn_*   : additions + deletions
+        """
         logger.debug(f"Building repository aggregate for repo {codebase_id}")
 
         # Deduplicate commits by SHA (same commit may appear on multiple branches)
@@ -233,27 +241,32 @@ class AggregationEngine:
         # Calculate metrics
         total_commits = len(unique_commits)
 
-        # Line-based SLOC (net additions - deletions)
-        total_lines = unique_commits['net_lines'].sum()
-        total_additions_lines = unique_commits['additions_lines'].sum()
-        total_deletions_lines = unique_commits['deletions_lines'].sum()
+        # Line-based metrics (cumulative)
+        additions_lines = unique_commits['additions_lines'].sum()
+        deletions_lines = unique_commits['deletions_lines'].sum()
+        churn_lines = additions_lines + deletions_lines
+        net_lines = unique_commits['net_lines'].sum()
 
-        # Byte-based SLOC (churn metrics from patches)
-        total_sloc = unique_commits['sloc'].sum()
-        total_addition_bytes = unique_commits['addition_bytes'].sum()
-        total_deletion_bytes = unique_commits['deletion_bytes'].sum()
+        # Byte metrics (for SLOC conversion)
+        addition_bytes = unique_commits['addition_bytes'].sum()
+        deletion_bytes = unique_commits['deletion_bytes'].sum()
+        
+        # SLOC-based metrics (convert bytes to SLOC: bytes / 50)
+        additions_sloc = int(addition_bytes) // 50
+        deletions_sloc = int(deletion_bytes) // 50
+        churn_sloc = additions_sloc + deletions_sloc
+        net_sloc = additions_sloc - deletions_sloc
 
         # Tree-based SLOC (actual codebase size from latest commit's tree walk)
         # This is the REAL current size of the codebase
         latest_commit = unique_commits.loc[unique_commits['committed_at'].idxmax()]
-        current_tree_sloc = int(latest_commit.get('tree_sloc', 0)) if 'tree_sloc' in unique_commits.columns else 0
-        current_tree_bytes = int(latest_commit.get('tree_bytes', 0)) if 'tree_bytes' in unique_commits.columns else 0
-        current_tree_lines = int(latest_commit.get('tree_lines', 0)) if 'tree_lines' in unique_commits.columns else 0
+        current_sloc = int(latest_commit.get('tree_sloc', 0)) if 'tree_sloc' in unique_commits.columns else 0
+        current_lines = int(latest_commit.get('tree_lines', 0)) if 'tree_lines' in unique_commits.columns else 0
 
         # Average bytes per line
         avg_bytes_per_line = (
-            total_addition_bytes / total_additions_lines
-            if total_additions_lines > 0 else 0.0
+            addition_bytes / additions_lines
+            if additions_lines > 0 else 0.0
         )
 
         # Unique counts
@@ -275,21 +288,26 @@ class AggregationEngine:
         repo_owner = getattr(self, '_repo_owner', None) or 'owner'
         full_name = f'{repo_owner}/{repo_name}'
 
-        # Store aggregate (convert numpy types to Python types)
+        # Store aggregate with clean naming (convert numpy types to Python types)
         metrics = {
             'codebase_id': codebase_id,
             'repository_name': repo_name,
             'full_name': full_name,
             'owner': repo_owner,
-            'total_lines': int(total_lines),
-            'total_additions_lines': int(total_additions_lines),
-            'total_deletions_lines': int(total_deletions_lines),
-            'total_sloc': int(total_sloc),  # Churn SLOC (from patches)
-            'current_sloc': current_tree_sloc,  # REAL codebase size (from tree walk)
-            'current_tree_bytes': current_tree_bytes,  # Total bytes in current codebase
-            'current_tree_lines': current_tree_lines,  # Total lines in current codebase
-            'total_addition_bytes': int(total_addition_bytes),
-            'total_deletion_bytes': int(total_deletion_bytes),
+            # Current codebase state (from tree walk)
+            'current_sloc': int(current_sloc),
+            'current_lines': int(current_lines),
+            # Line-based cumulative activity
+            'additions_lines': int(additions_lines),
+            'deletions_lines': int(deletions_lines),
+            'churn_lines': int(churn_lines),
+            'net_lines': int(net_lines),
+            # SLOC-based cumulative activity
+            'additions_sloc': int(additions_sloc),
+            'deletions_sloc': int(deletions_sloc),
+            'churn_sloc': int(churn_sloc),
+            'net_sloc': int(net_sloc),
+            # Other metrics
             'avg_bytes_per_line': float(avg_bytes_per_line),
             'total_commits': int(total_commits),
             'total_contributors': int(total_contributors),
@@ -301,7 +319,7 @@ class AggregationEngine:
             'last_commit_at': last_commit_at.to_pydatetime() if hasattr(last_commit_at, 'to_pydatetime') else last_commit_at,
             'collected_at': datetime.now(),
             'last_updated_at': datetime.now(),
-            'collection_version': '2.0'
+            'collection_version': '3.0'
         }
 
         self.hot.upsert_repository_metrics(metrics)
@@ -419,7 +437,7 @@ class AggregationEngine:
             branch_df: DataFrame of commits for this branch
 
         Returns:
-            Dictionary of branch metrics
+            Dictionary of branch metrics with clean naming
         """
         logger.debug(f"Calculating metrics for branch {branch_name}")
 
@@ -433,13 +451,18 @@ class AggregationEngine:
 
         # Line-based metrics
         current_lines = branch_df['net_lines'].sum()
-        total_additions_lines = branch_df['additions_lines'].sum()
-        total_deletions_lines = branch_df['deletions_lines'].sum()
+        additions_lines = branch_df['additions_lines'].sum()
+        deletions_lines = branch_df['deletions_lines'].sum()
 
-        # Byte-based metrics
+        # Byte metrics (for SLOC conversion)
+        addition_bytes = branch_df['addition_bytes'].sum()
+        deletion_bytes = branch_df['deletion_bytes'].sum()
+        
+        # SLOC-based metrics (convert bytes to SLOC: bytes / 50)
+        additions_sloc = int(addition_bytes) // 50
+        deletions_sloc = int(deletion_bytes) // 50
+        churn_sloc = additions_sloc + deletions_sloc
         current_sloc = branch_df['sloc'].sum()
-        total_addition_bytes = branch_df['addition_bytes'].sum()
-        total_deletion_bytes = branch_df['deletion_bytes'].sum()
 
         # Timestamps
         first_commit = branch_df['committed_at'].min()
@@ -456,19 +479,23 @@ class AggregationEngine:
             'parent_branch': None,
             'created_at': first_commit.to_pydatetime() if hasattr(first_commit, 'to_pydatetime') else first_commit,
             'last_commit_at': last_commit.to_pydatetime() if hasattr(last_commit, 'to_pydatetime') else last_commit,
+            # Line-based metrics (clean names)
             'current_lines': int(current_lines),
             'unique_lines': int(current_lines),
-            'total_additions_lines': int(total_additions_lines),
-            'total_deletions_lines': int(total_deletions_lines),
+            'additions_lines': int(additions_lines),
+            'deletions_lines': int(deletions_lines),
+            # SLOC-based metrics (clean names, already converted from bytes)
             'current_sloc': int(current_sloc),
-            'churn_sloc': int(total_addition_bytes + total_deletion_bytes) // 50,
             'unique_sloc': int(current_sloc),
-            'total_addition_bytes': int(total_addition_bytes),
-            'total_deletion_bytes': int(total_deletion_bytes),
+            'additions_sloc': int(additions_sloc),
+            'deletions_sloc': int(deletions_sloc),
+            'churn_sloc': int(churn_sloc),
+            # Branch stats
             'total_commits': int(total_commits),
             'unique_commits': int(total_commits),
             'unique_contributors': int(unique_contributors),
             'total_files': int(total_files),
+            # Branch state
             'is_default_branch': False,
             'is_active': True,
             'is_merged': False,

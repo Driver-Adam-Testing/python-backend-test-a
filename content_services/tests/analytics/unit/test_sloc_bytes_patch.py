@@ -5,13 +5,23 @@ A3: SLOC Bytes - Always use patches, no fallback to 50 bytes/line estimate.
 These tests ensure:
 1. Bytes are calculated from actual patch content
 2. No 50 bytes/line fallback exists
-3. Warnings are logged when patch analysis fails
+3. Only analyzable code files are counted
 4. Metadata tracks patch failures
 """
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 import logging
+
+
+def create_mock_patch(file_path: str, additions: int, deletions: int, patch_text: str):
+    """Create a mock patch object for testing."""
+    mock_patch = MagicMock()
+    mock_patch.delta.new_file.path = file_path
+    mock_patch.delta.old_file.path = file_path
+    mock_patch.line_stats = (0, additions, deletions)
+    mock_patch.text = patch_text
+    return mock_patch
 
 
 class TestSlocBytesFromPatch:
@@ -33,13 +43,15 @@ class TestSlocBytesFromPatch:
         mock_commit.message = "Test commit"
         mock_commit.parents = []
         
-        # Create mock diff with specific patch content
+        # Create mock diff with a proper patch object for iteration
+        mock_patch = create_mock_patch(
+            file_path="src/main.py",  # Analyzable code file
+            additions=2,
+            deletions=1,
+            patch_text="+short\n+tiny\n-medium line"  # 5 + 4 = 9 bytes additions, 11 bytes deletions
+        )
         mock_diff = MagicMock()
-        mock_diff.stats.files_changed = 1
-        mock_diff.stats.insertions = 2  # 2 lines added
-        mock_diff.stats.deletions = 1   # 1 line deleted
-        # Patch with specific byte content (not 50 bytes per line)
-        mock_diff.patch = "+short\n+tiny\n-medium line"  # 5 + 4 + 11 = different from 2*50 + 1*50
+        mock_diff.__iter__ = lambda self: iter([mock_patch])
         
         mock_repo.get.return_value = mock_commit
         
@@ -76,11 +88,15 @@ class TestSlocBytesFromPatch:
         mock_commit.message = "Test"
         mock_commit.parents = []
         
+        # Create mock diff with proper patch iteration
+        mock_patch = create_mock_patch(
+            file_path="src/app.py",  # Analyzable code file
+            additions=10,
+            deletions=5,
+            patch_text="+a\n" * 10 + "-b\n" * 5  # 10 bytes additions, 5 bytes deletions
+        )
         mock_diff = MagicMock()
-        mock_diff.stats.files_changed = 1
-        mock_diff.stats.insertions = 10
-        mock_diff.stats.deletions = 5
-        mock_diff.patch = "+a\n" * 10 + "-b\n" * 5  # 10 bytes additions, 5 bytes deletions
+        mock_diff.__iter__ = lambda self: iter([mock_patch])
         
         mock_repo.get.return_value = mock_commit
         
@@ -97,8 +113,8 @@ class TestSlocBytesFromPatch:
         assert commit_data['deletion_bytes'] == 5
         assert commit_data['patch_bytes'] == 15
 
-    def test_warning_logged_when_no_patch_data(self, caplog):
-        """Warning is logged when patch is None or empty."""
+    def test_non_code_files_not_counted(self):
+        """Non-analyzable files (docs, config) are not counted in metrics."""
         from analytics.pipeline.phases.extract import _extract_commit_data_with_diff
         
         mock_repo = MagicMock()
@@ -112,33 +128,31 @@ class TestSlocBytesFromPatch:
         mock_commit.message = "Test"
         mock_commit.parents = []
         
+        # Create mock patches - only code file should be counted
+        code_patch = create_mock_patch("src/main.py", 5, 2, "+code\n" * 5 + "-rm\n" * 2)
+        readme_patch = create_mock_patch("README.md", 10, 3, "+doc\n" * 10)  # Should be excluded
+        config_patch = create_mock_patch("config.json", 8, 0, "+cfg\n" * 8)  # Should be excluded
+        
         mock_diff = MagicMock()
-        mock_diff.stats.files_changed = 1
-        mock_diff.stats.insertions = 5
-        mock_diff.stats.deletions = 2
-        mock_diff.patch = None  # No patch data
+        mock_diff.__iter__ = lambda self: iter([code_patch, readme_patch, config_patch])
         
         mock_repo.get.return_value = mock_commit
         
         with patch('analytics.pipeline.phases.extract._get_commit_diff', return_value=mock_diff):
-            with caplog.at_level(logging.WARNING):
-                result, _ = _extract_commit_data_with_diff(
-                    mock_repo, "abc123", "test-codebase", ["main"],
-                    datetime.now(timezone.utc), include_patches=True
-                )
+            result, _ = _extract_commit_data_with_diff(
+                mock_repo, "abc123", "test-codebase", ["main"],
+                datetime.now(timezone.utc), include_patches=True
+            )
         
-        # Should log a warning about missing patch data
-        assert any("patch" in record.message.lower() or "no patch" in record.message.lower() 
-                   for record in caplog.records), \
-            "Should log warning when patch data is unavailable"
-        
-        # Bytes should be 0, not estimated
         commit_data = result[0]
-        assert commit_data['addition_bytes'] == 0
-        assert commit_data['deletion_bytes'] == 0
+        
+        # Should only count the code file (main.py)
+        assert commit_data['files_changed'] == 1
+        assert commit_data['additions_lines'] == 5
+        assert commit_data['deletions_lines'] == 2
 
-    def test_warning_logged_when_patch_analysis_fails(self, caplog):
-        """Warning is logged when patch analysis raises exception."""
+    def test_empty_diff_produces_zero_metrics(self):
+        """Empty diff (no patches) produces zero metrics."""
         from analytics.pipeline.phases.extract import _extract_commit_data_with_diff
         
         mock_repo = MagicMock()
@@ -152,29 +166,23 @@ class TestSlocBytesFromPatch:
         mock_commit.message = "Test"
         mock_commit.parents = []
         
+        # Empty diff (no patches)
         mock_diff = MagicMock()
-        mock_diff.stats.files_changed = 1
-        mock_diff.stats.insertions = 5
-        mock_diff.stats.deletions = 2
-        # Make patch property raise an exception
-        type(mock_diff).patch = property(lambda self: (_ for _ in ()).throw(Exception("Patch error")))
+        mock_diff.__iter__ = lambda self: iter([])
         
         mock_repo.get.return_value = mock_commit
         
         with patch('analytics.pipeline.phases.extract._get_commit_diff', return_value=mock_diff):
-            with caplog.at_level(logging.WARNING):
-                result, _ = _extract_commit_data_with_diff(
-                    mock_repo, "abc123", "test-codebase", ["main"],
-                    datetime.now(timezone.utc), include_patches=True
-                )
+            result, _ = _extract_commit_data_with_diff(
+                mock_repo, "abc123", "test-codebase", ["main"],
+                datetime.now(timezone.utc), include_patches=True
+            )
         
-        # Should log a warning about the failure
-        assert any("patch" in record.message.lower() or "fail" in record.message.lower()
-                   for record in caplog.records), \
-            "Should log warning when patch analysis fails"
-        
-        # Bytes should be 0, not estimated
         commit_data = result[0]
+        
+        assert commit_data['files_changed'] == 0
+        assert commit_data['additions_lines'] == 0
+        assert commit_data['deletions_lines'] == 0
         assert commit_data['addition_bytes'] == 0
         assert commit_data['deletion_bytes'] == 0
 
@@ -201,11 +209,15 @@ class TestIncludePatchesFalseRemoved:
         mock_commit.message = "Test"
         mock_commit.parents = []
         
+        # Create mock diff with proper patch iteration
+        mock_patch = create_mock_patch(
+            file_path="src/app.py",  # Analyzable code file
+            additions=10,
+            deletions=5,
+            patch_text="+hello\n" * 10 + "-world\n" * 5  # Actual patch content
+        )
         mock_diff = MagicMock()
-        mock_diff.stats.files_changed = 1
-        mock_diff.stats.insertions = 10
-        mock_diff.stats.deletions = 5
-        mock_diff.patch = "+hello\n" * 10 + "-world\n" * 5  # Actual patch content
+        mock_diff.__iter__ = lambda self: iter([mock_patch])
         
         mock_repo.get.return_value = mock_commit
         

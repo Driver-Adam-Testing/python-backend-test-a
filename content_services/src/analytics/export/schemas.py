@@ -4,7 +4,17 @@ from pydantic import BaseModel, Field
 
 
 class OverviewJSON(BaseModel):
-    """Schema for overview.json - codebase summary metrics."""
+    """Schema for overview.json - codebase summary metrics.
+    
+    All metrics measure ANALYZABLE CODE ONLY (matching inspector criteria).
+    
+    Naming convention:
+    - current_* : Current codebase state from tree walk at HEAD
+    - *_lines   : Line-based metrics (from git diff stats)
+    - *_sloc    : SLOC metrics (bytes / 50, from patch content)
+    - net_*     : additions - deletions
+    - churn_*   : additions + deletions (total activity)
+    """
     codebase_id: str
     display_name: str
     repository_name: str
@@ -13,19 +23,26 @@ class OverviewJSON(BaseModel):
     total_commits: int
     total_contributors: int
     total_branches: int
-    # Traditional line-based metrics
-    total_lines: int  # Traditional line count (current codebase size)
-    total_additions_lines: int  # Total lines added over time (churn)
-    total_deletions_lines: int  # Total lines deleted over time (churn)
-    total_churn: int  # total_additions_lines + total_deletions_lines
-    # Byte-based SLOC metrics
-    total_sloc: int  # Churn-based SLOC (additions + deletions in bytes / 50)
-    net_sloc: int  # Net SLOC from patches: (addition_bytes - deletion_bytes) / 50
-    current_sloc: int  # REAL codebase size from tree walk (code files only)
-    total_addition_bytes: int  # Total bytes added over time (churn)
-    total_deletion_bytes: int  # Total bytes deleted over time (churn)
+    
+    # Current codebase state (from tree walk at HEAD)
+    current_sloc: int       # SLOC in codebase now (tree_bytes / 50)
+    current_lines: int      # Line count in codebase now (from tree walk)
+    
+    # Cumulative line-based activity (sum across all commits)
+    additions_lines: int    # Total lines added over time
+    deletions_lines: int    # Total lines deleted over time
+    churn_lines: int        # additions_lines + deletions_lines
+    net_lines: int          # additions_lines - deletions_lines
+    
+    # Cumulative SLOC-based activity (sum across all commits)
+    additions_sloc: int     # Total SLOC added (addition_bytes / 50)
+    deletions_sloc: int     # Total SLOC deleted (deletion_bytes / 50)
+    churn_sloc: int         # additions_sloc + deletions_sloc
+    net_sloc: int           # additions_sloc - deletions_sloc
+    
+    # Other metrics
     avg_bytes_per_line: float | None  # Average bytes per line ratio
-    total_files: int  # Total number of files
+    total_files: int        # Total number of files
     default_branch: str
     primary_language: str | None
     first_commit_date: datetime | None
@@ -35,6 +52,10 @@ class OverviewJSON(BaseModel):
 
 
 class BranchEntry(BaseModel):
+    """Branch metrics entry for branches.json.
+    
+    All metrics measure ANALYZABLE CODE ONLY.
+    """
     name: str
     is_default: bool
     commits: int
@@ -49,14 +70,14 @@ class BranchEntry(BaseModel):
     # Line-based metrics
     current_lines: int = 0
     unique_lines: int = 0
-    total_additions_lines: int = 0
-    total_deletions_lines: int = 0
-    # Byte-based SLOC metrics
+    additions_lines: int = 0    # Total lines added (was total_additions_lines)
+    deletions_lines: int = 0    # Total lines deleted (was total_deletions_lines)
+    # SLOC-based metrics
     current_sloc: int = 0
     churn_sloc: int = 0
     unique_sloc: int = 0
-    total_addition_bytes: int = 0
-    total_deletion_bytes: int = 0
+    additions_sloc: int = 0     # SLOC added (was total_addition_bytes / 50)
+    deletions_sloc: int = 0     # SLOC deleted (was total_deletion_bytes / 50)
     # Branch stats
     unique_commits: int = 0
     unique_contributors: int = 0
@@ -142,6 +163,7 @@ class MetadataJSON(BaseModel):
 
 
 class CodebaseListEntry(BaseModel):
+    """Codebase entry for codebases_list.json."""
     codebase_id: str
     display_name: str
     total_commits: int
@@ -152,7 +174,7 @@ class CodebaseListEntry(BaseModel):
     total_contributors: int = 0
     total_branches: int = 0
     primary_language: str | None = None
-    total_churn: int = 0  # total_additions_lines + total_deletions_lines
+    churn_lines: int = 0  # additions_lines + deletions_lines (was total_churn)
 
 
 class OrgSummaryJSON(BaseModel):

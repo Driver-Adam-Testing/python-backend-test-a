@@ -353,7 +353,7 @@ class TestExporterWithDeletedBranches:
                 "head_commit_sha": "def456",
                 "status": "merged",
                 "current_sloc": 10,
-                "total_addition_bytes": 500,
+                "additions_sloc": 10,  # v3.0 schema: stored directly as SLOC
             }
         ]
 
@@ -385,7 +385,7 @@ class TestExporterWithDeletedBranches:
         assert test_branch["status"] == "merged"
         # Verify historical metrics are preserved
         assert test_branch["current_sloc"] == 10
-        assert test_branch["total_addition_bytes"] == 500
+        assert test_branch["additions_sloc"] == 10  # 500 bytes / 50 = 10 SLOC
 
     def test_branch_diff_ignores_already_deleted_branches(self):
         """Branch diff doesn't re-detect branches already marked as deleted.

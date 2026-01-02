@@ -216,7 +216,7 @@ class TestFileChangeExtraction:
         # Language detection will be implemented - for now just check extension is captured
 
     def test_handles_binary_files(self):
-        """Binary files are skipped or marked appropriately."""
+        """Binary/non-code files are excluded from file changes."""
         from analytics.pipeline.phases.extract import _extract_file_changes
         
         mock_delta = MagicMock()
@@ -240,10 +240,48 @@ class TestFileChangeExtraction:
             datetime.now(timezone.utc).date()
         )
         
-        # Binary files should have 0 bytes (no text patch)
-        assert result[0]['addition_bytes'] == 0
-        assert result[0]['deletion_bytes'] == 0
-        assert result[0]['has_patch_data'] is False
+        # Non-code files (binary images) should be excluded entirely
+        # Only analyzable code files are included in file changes
+        assert len(result) == 0
+    
+    def test_non_code_files_excluded(self):
+        """Non-code files (docs, config) are excluded from file changes."""
+        from analytics.pipeline.phases.extract import _extract_file_changes
+        
+        # Create patches for code and non-code files
+        code_delta = MagicMock()
+        code_delta.new_file.path = "src/main.py"
+        code_delta.old_file.path = "src/main.py"
+        code_delta.status_char.return_value = 'M'
+        
+        code_patch = MagicMock()
+        code_patch.delta = code_delta
+        code_patch.line_stats = (0, 5, 2)
+        code_patch.text = "+line1\n+line2"
+        
+        readme_delta = MagicMock()
+        readme_delta.new_file.path = "README.md"
+        readme_delta.old_file.path = "README.md"
+        readme_delta.status_char.return_value = 'M'
+        
+        readme_patch = MagicMock()
+        readme_patch.delta = readme_delta
+        readme_patch.line_stats = (0, 10, 0)
+        readme_patch.text = "+doc line"
+        
+        mock_diff = MagicMock()
+        mock_diff.__iter__ = lambda self: iter([code_patch, readme_patch])
+        
+        result = _extract_file_changes(
+            mock_diff,
+            "abc123",
+            "test-codebase",
+            datetime.now(timezone.utc).date()
+        )
+        
+        # Only the code file should be included
+        assert len(result) == 1
+        assert result[0]['file_path'] == "src/main.py"
 
 
 class TestExtractCommitsWithFileChanges:

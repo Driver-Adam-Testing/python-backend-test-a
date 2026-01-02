@@ -139,7 +139,10 @@ class DriverJSONExporter:
         return [f for f in files if f]
 
     def _export_overview(self) -> Path | None:
-        """Export overview.json using existing HotStorage patterns."""
+        """Export overview.json directly from hot storage.
+        
+        Hot storage now uses clean field names matching the export schema.
+        """
         metrics = self.hot.get_repository_metrics(self.codebase_id)
         if not metrics:
             return None
@@ -147,17 +150,6 @@ class DriverJSONExporter:
         # Extract owner from full_name (format: "owner/repo")
         full_name = metrics.get('full_name', '')
         owner = full_name.split('/')[0] if '/' in full_name else ''
-
-        # Extract metrics from hot storage
-        total_addition_bytes = metrics.get('total_addition_bytes', 0)
-        total_deletion_bytes = metrics.get('total_deletion_bytes', 0)
-        # net_sloc from patches (approximation): (addition_bytes - deletion_bytes) / 50
-        net_sloc = (total_addition_bytes - total_deletion_bytes) // 50
-        total_sloc = metrics.get('total_sloc', 0)  # Churn SLOC (from patches)
-        # current_sloc now comes from tree walk (REAL codebase size)
-        # Falls back to net_sloc if tree walk data not available
-        current_sloc = metrics.get('current_sloc', net_sloc)
-        total_lines = metrics.get('total_lines', net_sloc)
 
         overview = OverviewJSON(
             codebase_id=self.codebase_id,
@@ -168,23 +160,24 @@ class DriverJSONExporter:
             total_commits=metrics.get('total_commits', 0),
             total_contributors=metrics.get('total_contributors', 0),
             total_branches=metrics.get('total_branches', 0),
-            # Line-based metrics
-            total_lines=total_lines,
-            total_additions_lines=metrics.get('total_additions_lines', 0),
-            total_deletions_lines=metrics.get('total_deletions_lines', 0),
-            total_churn=metrics.get('total_additions_lines', 0) + metrics.get('total_deletions_lines', 0),
-            # Byte-based SLOC metrics
-            total_sloc=total_sloc,  # Churn SLOC: sum of patch_bytes / 50 across all commits
-            net_sloc=net_sloc,  # Net SLOC from patches: (addition_bytes - deletion_bytes) / 50
-            current_sloc=current_sloc,  # REAL codebase size from tree walk (tree_bytes / 50)
-            total_addition_bytes=total_addition_bytes,
-            total_deletion_bytes=total_deletion_bytes,
+            # Current codebase state (from tree walk at HEAD)
+            current_sloc=metrics.get('current_sloc', 0),
+            current_lines=metrics.get('current_lines', 0),
+            # Line-based cumulative activity
+            additions_lines=metrics.get('additions_lines', 0),
+            deletions_lines=metrics.get('deletions_lines', 0),
+            churn_lines=metrics.get('churn_lines', 0),
+            net_lines=metrics.get('net_lines', 0),
+            # SLOC-based cumulative activity
+            additions_sloc=metrics.get('additions_sloc', 0),
+            deletions_sloc=metrics.get('deletions_sloc', 0),
+            churn_sloc=metrics.get('churn_sloc', 0),
+            net_sloc=metrics.get('net_sloc', 0),
+            # Other metrics
             avg_bytes_per_line=metrics.get('avg_bytes_per_line'),
             total_files=metrics.get('total_files', 0),
-            # Branch and language info
             default_branch=metrics.get('default_branch', 'main'),
             primary_language=metrics.get('primary_language'),
-            # Timestamps
             first_commit_date=metrics.get('first_commit_at'),
             last_commit_date=metrics.get('last_commit_at'),
             collected_at=metrics.get('collected_at') or datetime.now(timezone.utc),
@@ -194,8 +187,9 @@ class DriverJSONExporter:
         return self._write('overview.json', overview)
 
     def _export_branches(self) -> Path | None:
-        """Export branches.json using existing HotStorage patterns.
+        """Export branches.json directly from hot storage.
         
+        Hot storage now uses clean field names matching the export schema.
         Includes both active branches from hot storage and deleted branches
         that were detected during branch lifecycle processing.
         """
@@ -214,6 +208,7 @@ class DriverJSONExporter:
             # Skip branches that have been deleted - they'll be added with proper flags below
             if branch_name in deleted_names:
                 continue
+            
             branch_entries.append(
                 BranchEntry(
                     name=b.get('branch_name'),
@@ -227,17 +222,17 @@ class DriverJSONExporter:
                     divergence_point_sha=b.get('divergence_point_sha'),
                     parent_branch=b.get('parent_branch'),
                     created_at=b.get('created_at'),
-                    # Line-based metrics
+                    # Line-based metrics (directly from hot storage)
                     current_lines=b.get('current_lines', 0),
                     unique_lines=b.get('unique_lines', 0),
-                    total_additions_lines=b.get('total_additions_lines', 0),
-                    total_deletions_lines=b.get('total_deletions_lines', 0),
-                    # Byte-based SLOC metrics
+                    additions_lines=b.get('additions_lines', 0),
+                    deletions_lines=b.get('deletions_lines', 0),
+                    # SLOC-based metrics (directly from hot storage)
                     current_sloc=b.get('current_sloc', 0),
                     churn_sloc=b.get('churn_sloc', 0),
                     unique_sloc=b.get('unique_sloc', 0),
-                    total_addition_bytes=b.get('total_addition_bytes', 0),
-                    total_deletion_bytes=b.get('total_deletion_bytes', 0),
+                    additions_sloc=b.get('additions_sloc', 0),
+                    deletions_sloc=b.get('deletions_sloc', 0),
                     # Branch stats
                     unique_commits=b.get('unique_commits', 0),
                     unique_contributors=b.get('unique_contributors', 0),
@@ -267,17 +262,17 @@ class DriverJSONExporter:
                     divergence_point_sha=d.get('divergence_point_sha'),
                     parent_branch=d.get('parent_branch'),
                     created_at=d.get('created_at'),
-                    # Historical line-based metrics (preserved from last known state)
+                    # Historical line-based metrics (directly from stored data)
                     current_lines=d.get('current_lines', 0),
                     unique_lines=d.get('unique_lines', 0),
-                    total_additions_lines=d.get('total_additions_lines', 0),
-                    total_deletions_lines=d.get('total_deletions_lines', 0),
-                    # Historical byte-based SLOC metrics
+                    additions_lines=d.get('additions_lines', 0),
+                    deletions_lines=d.get('deletions_lines', 0),
+                    # Historical SLOC-based metrics (directly from stored data)
                     current_sloc=d.get('current_sloc', 0),
                     churn_sloc=d.get('churn_sloc', 0),
                     unique_sloc=d.get('unique_sloc', 0),
-                    total_addition_bytes=d.get('total_addition_bytes', 0),
-                    total_deletion_bytes=d.get('total_deletion_bytes', 0),
+                    additions_sloc=d.get('additions_sloc', 0),
+                    deletions_sloc=d.get('deletions_sloc', 0),
                     # Historical branch stats
                     unique_commits=d.get('unique_commits', 0),
                     unique_contributors=d.get('unique_contributors', 0),

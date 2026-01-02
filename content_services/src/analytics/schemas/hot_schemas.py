@@ -23,11 +23,15 @@ CREATE TABLE IF NOT EXISTS repository_metrics (
     total_additions_lines BIGINT NOT NULL DEFAULT 0,
     total_deletions_lines BIGINT NOT NULL DEFAULT 0,
 
-    -- Byte-based SLOC metrics (Driver method)
+    -- Byte-based SLOC metrics (Driver method - from patches, measures CHURN)
     total_sloc BIGINT NOT NULL DEFAULT 0,
-    current_sloc BIGINT NOT NULL DEFAULT 0,
     total_addition_bytes BIGINT NOT NULL DEFAULT 0,
     total_deletion_bytes BIGINT NOT NULL DEFAULT 0,
+
+    -- Tree-based metrics (from tree walk - measures ACTUAL CODEBASE SIZE)
+    current_sloc BIGINT NOT NULL DEFAULT 0,
+    current_tree_bytes BIGINT NOT NULL DEFAULT 0,
+    current_tree_lines BIGINT NOT NULL DEFAULT 0,
 
     -- Metrics comparison
     avg_bytes_per_line FLOAT,

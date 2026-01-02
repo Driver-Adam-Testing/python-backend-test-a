@@ -506,18 +506,25 @@ def _get_commit_diff(repo: pygit2.Repository, commit: pygit2.Commit) -> pygit2.D
 
 def _get_tree_size_at_commit(repo: pygit2.Repository, commit: pygit2.Commit) -> tuple[int, int]:
     """
-    Calculate the total size of the codebase at a given commit by walking its tree.
+    Calculate the total size of ANALYZABLE code at a given commit by walking its tree.
     
-    This gives the ACTUAL codebase size (all files) at this point in history,
-    NOT the cumulative churn from patches. This is what users expect when they
-    see "current SLOC" - the actual size of the codebase.
+    This gives the ACTUAL codebase size (code files only) at this point in history,
+    NOT the cumulative churn from patches. This matches the inspector's is_analyzable
+    filtering so that current_sloc from analytics matches SLOC from codebase connection.
+    
+    Files are filtered to match inspector criteria:
+    - Only recognized code languages (via languages.yml)
+    - Excludes binary files, hex files
+    - Excludes blacklisted directories (.git, driver_docs)
+    - Excludes blacklisted extensions (.svg, .exe, .dll, etc.)
+    - Excludes documentation (.md, .rst) and config files (.json, .yaml)
     
     Args:
         repo: pygit2.Repository instance
         commit: pygit2.Commit to analyze
         
     Returns:
-        Tuple of (total_bytes, total_lines) for all non-binary files in the tree
+        Tuple of (total_bytes, total_lines) for analyzable code files in the tree
     """
     total_bytes = 0
     total_lines = 0
@@ -527,8 +534,8 @@ def _get_tree_size_at_commit(repo: pygit2.Repository, commit: pygit2.Commit) -> 
         if not tree:
             return (0, 0)
         
-        # Recursively walk the tree
-        total_bytes, total_lines = _walk_tree_recursive(repo, tree)
+        # Recursively walk the tree with filtering
+        total_bytes, total_lines = _walk_tree_recursive(repo, tree, path_parts=())
         
     except Exception as e:
         logger.warning(f"Error calculating tree size for commit {commit.id}: {e}")
@@ -537,40 +544,78 @@ def _get_tree_size_at_commit(repo: pygit2.Repository, commit: pygit2.Commit) -> 
     return (total_bytes, total_lines)
 
 
-def _walk_tree_recursive(repo: pygit2.Repository, tree: pygit2.Tree) -> tuple[int, int]:
+def _walk_tree_recursive(
+    repo: pygit2.Repository, 
+    tree: pygit2.Tree,
+    path_parts: tuple[str, ...] = ()
+) -> tuple[int, int]:
     """
-    Recursively walk a tree and sum up file sizes.
+    Recursively walk a tree and sum up file sizes for ANALYZABLE files only.
+    
+    Files are filtered to match inspector's is_analyzable criteria:
+    - Only recognized code languages
+    - Excludes binary, hex, blacklisted files
+    - Excludes documentation and config files
     
     Args:
         repo: pygit2.Repository instance
         tree: pygit2.Tree to walk
+        path_parts: Current path as tuple of directory names (for blacklist checking)
         
     Returns:
-        Tuple of (total_bytes, total_lines)
+        Tuple of (total_bytes, total_lines) for analyzable files only
     """
+    from pathlib import Path
+    from analytics.utils.file_filter import is_analyzable_file
+    
     total_bytes = 0
     total_lines = 0
     
     for entry in tree:
         try:
+            current_path = path_parts + (entry.name,)
+            
             if entry.type_str == 'blob':
-                # It's a file - get the blob and check if binary
+                # It's a file - get the blob
                 blob = repo.get(entry.id)
-                if blob and not blob.is_binary:
-                    data = blob.data
-                    total_bytes += len(data)
-                    # Count lines: number of newlines + 1 for last line without newline
-                    if data:
-                        total_lines += data.count(b'\n')
-                        # Add 1 for the last line if it doesn't end with newline
-                        if not data.endswith(b'\n'):
-                            total_lines += 1
+                if blob is None:
+                    continue
+                
+                # Get file info for filtering
+                filename = entry.name
+                extension = Path(filename).suffix
+                is_binary = blob.is_binary
+                
+                # Get content for hex detection (only for non-binary files)
+                content = None if is_binary else blob.data
+                
+                # Check if file is analyzable (matches inspector criteria)
+                if not is_analyzable_file(
+                    path_parts=current_path,
+                    filename=filename,
+                    extension=extension,
+                    is_binary=is_binary,
+                    content=content
+                ):
+                    continue
+                
+                # Count this file
+                data = blob.data
+                total_bytes += len(data)
+                # Count lines: number of newlines + 1 for last line without newline
+                if data:
+                    total_lines += data.count(b'\n')
+                    # Add 1 for the last line if it doesn't end with newline
+                    if not data.endswith(b'\n'):
+                        total_lines += 1
                             
             elif entry.type_str == 'tree':
-                # It's a subdirectory - recurse
+                # It's a subdirectory - recurse with updated path
                 subtree = repo.get(entry.id)
                 if subtree:
-                    sub_bytes, sub_lines = _walk_tree_recursive(repo, subtree)
+                    sub_bytes, sub_lines = _walk_tree_recursive(
+                        repo, subtree, path_parts=current_path
+                    )
                     total_bytes += sub_bytes
                     total_lines += sub_lines
                     

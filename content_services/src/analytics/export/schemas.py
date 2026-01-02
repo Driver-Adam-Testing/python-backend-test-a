@@ -20,8 +20,8 @@ class OverviewJSON(BaseModel):
     total_churn: int  # total_additions_lines + total_deletions_lines
     # Byte-based SLOC metrics
     total_sloc: int  # Churn-based SLOC (additions + deletions in bytes / 50)
-    net_sloc: int  # Net SLOC (current codebase size)
-    current_sloc: int  # Alias for net_sloc
+    net_sloc: int  # Net SLOC from patches: (addition_bytes - deletion_bytes) / 50
+    current_sloc: int  # REAL codebase size from tree walk (code files only)
     total_addition_bytes: int  # Total bytes added over time (churn)
     total_deletion_bytes: int  # Total bytes deleted over time (churn)
     avg_bytes_per_line: float | None  # Average bytes per line ratio

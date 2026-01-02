@@ -589,6 +589,8 @@ class AnalyticsPipeline:
         total_addition_bytes = metrics.get('total_addition_bytes', 0)
         total_deletion_bytes = metrics.get('total_deletion_bytes', 0)
         net_sloc = (total_addition_bytes - total_deletion_bytes) // 50
+        # current_sloc comes from tree walk (actual codebase size), fall back to net_sloc
+        current_sloc = metrics.get('current_sloc', net_sloc)
 
         new_codebase_entry = {
             "codebase_id": ctx.input.codebase_id,
@@ -600,8 +602,8 @@ class AnalyticsPipeline:
             "total_contributors": metrics.get('total_contributors', 0),
             "total_branches": metrics.get('total_branches', 0),
             "total_churn": metrics.get('total_additions_lines', 0) + metrics.get('total_deletions_lines', 0),
-            "current_sloc": net_sloc,
-            "net_sloc": net_sloc,
+            "current_sloc": current_sloc,  # From tree walk (actual codebase size)
+            "net_sloc": net_sloc,  # From patches (additions - deletions)
             "primary_language": metrics.get('primary_language'),
             "last_commit_date": metrics.get('last_commit_at').isoformat() if metrics.get('last_commit_at') else None,
             "has_analytics": True,

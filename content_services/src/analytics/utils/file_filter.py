@@ -144,9 +144,11 @@ def _load_languages_yml() -> tuple[set[str], set[str]]:
     # Path from file_filter.py: utils -> analytics -> src -> content_services -> python-backend
     python_backend_root = Path(__file__).parent.parent.parent.parent.parent
     possible_paths = [
+        # Local development path
         python_backend_root / "packages/shared/shared/inspector/onboarding/languages.yml",
-        # Also try the absolute path in Docker/Lambda environments
-        Path("/app/packages/shared/shared/inspector/onboarding/languages.yml"),
+        # Docker container path (packages copied to /packages, not /app/packages)
+        # This matches how onboarding loads it: open("/packages/shared/...")
+        Path("/packages/shared/shared/inspector/onboarding/languages.yml"),
     ]
     
     for path in possible_paths:

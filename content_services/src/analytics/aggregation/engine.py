@@ -12,6 +12,7 @@ import pandas as pd
 
 from analytics.storage.hot_storage import HotStorage
 from analytics.storage.parquet_storage import ParquetStorage
+from analytics.aggregation.language import detect_primary_language
 
 logger = logging.getLogger(__name__)
 
@@ -288,6 +289,17 @@ class AggregationEngine:
         repo_owner = getattr(self, '_repo_owner', None) or 'owner'
         full_name = f'{repo_owner}/{repo_name}'
 
+        # Detect primary language from file changes in cold storage
+        primary_language = None
+        try:
+            file_changes_df = self.cold.read_file_changes(codebase_id)
+            if file_changes_df is not None and not file_changes_df.empty:
+                file_changes = file_changes_df.to_dict('records')
+                primary_language = detect_primary_language(file_changes)
+                logger.debug(f"Detected primary language: {primary_language}")
+        except Exception as e:
+            logger.warning(f"Failed to detect primary language: {e}")
+
         # Store aggregate with clean naming (convert numpy types to Python types)
         metrics = {
             'codebase_id': codebase_id,
@@ -314,7 +326,7 @@ class AggregationEngine:
             'total_branches': int(branch_count),
             'total_files': int(total_files),
             'default_branch': str(default_branch),
-            'primary_language': None,
+            'primary_language': primary_language,
             'first_commit_at': first_commit_at.to_pydatetime() if hasattr(first_commit_at, 'to_pydatetime') else first_commit_at,
             'last_commit_at': last_commit_at.to_pydatetime() if hasattr(last_commit_at, 'to_pydatetime') else last_commit_at,
             'collected_at': datetime.now(),

@@ -586,9 +586,10 @@ class AnalyticsPipeline:
             return
 
         # Build codebase entry for the list
-        total_addition_bytes = metrics.get('total_addition_bytes', 0)
-        total_deletion_bytes = metrics.get('total_deletion_bytes', 0)
-        net_sloc = (total_addition_bytes - total_deletion_bytes) // 50
+        # Note: Field names match D2 schema cleanup (additions_sloc, deletions_sloc, etc.)
+        additions_sloc = metrics.get('additions_sloc', 0)
+        deletions_sloc = metrics.get('deletions_sloc', 0)
+        net_sloc = additions_sloc - deletions_sloc
         # current_sloc comes from tree walk (actual codebase size), fall back to net_sloc
         current_sloc = metrics.get('current_sloc', net_sloc)
 
@@ -601,7 +602,7 @@ class AnalyticsPipeline:
             "total_commits": metrics.get('total_commits', 0),
             "total_contributors": metrics.get('total_contributors', 0),
             "total_branches": metrics.get('total_branches', 0),
-            "total_churn": metrics.get('total_additions_lines', 0) + metrics.get('total_deletions_lines', 0),
+            "churn_lines": metrics.get('churn_lines', 0),  # Use new field name
             "current_sloc": current_sloc,  # From tree walk (actual codebase size)
             "net_sloc": net_sloc,  # From patches (additions - deletions)
             "primary_language": metrics.get('primary_language'),

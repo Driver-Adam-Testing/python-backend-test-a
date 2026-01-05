@@ -143,6 +143,9 @@ class ActivityEntry(BaseModel):
     net_bytes: int = 0
     patch_bytes: int = 0
     cumulative_sloc: int = 0
+    # Tree-based actual codebase size at end of day (not cumulative churn)
+    codebase_sloc: int = 0
+    codebase_lines: int = 0
 
 
 class ActivityJSON(BaseModel):

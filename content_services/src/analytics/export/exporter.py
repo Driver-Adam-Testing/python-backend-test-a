@@ -318,6 +318,9 @@ class DriverJSONExporter:
                     net_bytes=m.get('net_bytes', 0),
                     patch_bytes=m.get('patch_bytes', 0),
                     cumulative_sloc=m.get('cumulative_sloc', 0),
+                    # Tree-based actual codebase size
+                    codebase_sloc=m.get('codebase_sloc', 0),
+                    codebase_lines=m.get('codebase_lines', 0),
                 )
                 for m in metrics[-365:]  # Last year
             ]

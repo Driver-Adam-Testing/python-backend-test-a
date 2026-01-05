@@ -148,6 +148,8 @@ class HotStorage:
                 m.get('net_bytes', 0),
                 m.get('patch_bytes', 0),
                 m.get('cumulative_sloc', 0),
+                m.get('codebase_sloc', 0),  # Tree-based actual codebase size
+                m.get('codebase_lines', 0),  # Tree-based actual codebase lines
                 m.get('commits_count', 0),
                 m.get('active_contributors', 0),
                 m.get('files_changed', 0),
@@ -156,7 +158,7 @@ class HotStorage:
 
         try:
             self.conn.executemany("""
-                INSERT INTO daily_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO daily_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (codebase_id, date) DO NOTHING
             """, rows)
             logger.info(f"Successfully inserted daily metrics for codebase {codebase_id}")

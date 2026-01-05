@@ -77,6 +77,10 @@ CREATE TABLE IF NOT EXISTS daily_metrics (
     patch_bytes BIGINT NOT NULL DEFAULT 0,
     cumulative_sloc BIGINT NOT NULL DEFAULT 0,
 
+    -- Tree-based codebase size (actual size at end of day, not cumulative churn)
+    codebase_sloc BIGINT NOT NULL DEFAULT 0,
+    codebase_lines BIGINT NOT NULL DEFAULT 0,
+
     -- Activity
     commits_count INTEGER NOT NULL DEFAULT 0,
     active_contributors INTEGER NOT NULL DEFAULT 0,

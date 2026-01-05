@@ -371,6 +371,7 @@ class AggregationEngine:
         # Group by date
         unique_commits['date'] = unique_commits['committed_at'].dt.date
 
+        # Aggregate churn metrics by date
         daily_df = unique_commits.groupby('date').agg({
             'commit_sha': 'count',
             'additions_lines': 'sum',
@@ -402,10 +403,30 @@ class AggregationEngine:
             'files_changed'
         ]
 
-        # Calculate cumulative totals
+        # Get the ACTUAL codebase size (tree_sloc) from the last commit of each day
+        # This is the real codebase size at the end of each day, not cumulative churn
+        if 'tree_sloc' in unique_commits.columns and 'tree_lines' in unique_commits.columns:
+            # Sort by committed_at within each date to get the last commit
+            unique_commits_sorted = unique_commits.sort_values(['date', 'committed_at'])
+            # Get the last commit of each day (which has the final tree state)
+            last_commit_per_day = unique_commits_sorted.groupby('date').last().reset_index()
+            # Extract tree_sloc and tree_lines from last commit of each day
+            tree_metrics = last_commit_per_day[['date', 'tree_sloc', 'tree_lines']].copy()
+            tree_metrics.columns = ['date', 'codebase_sloc', 'codebase_lines']
+            # Merge with daily_df
+            daily_df = daily_df.merge(tree_metrics, on='date', how='left')
+            daily_df['codebase_sloc'] = daily_df['codebase_sloc'].fillna(0).astype(int)
+            daily_df['codebase_lines'] = daily_df['codebase_lines'].fillna(0).astype(int)
+        else:
+            # Fallback if tree metrics not available
+            daily_df['codebase_sloc'] = 0
+            daily_df['codebase_lines'] = 0
+
+        # Sort by date and calculate cumulative churn (kept for backward compatibility)
         daily_df = daily_df.sort_values('date')
         daily_df['cumulative_lines'] = daily_df['net_change_lines'].cumsum()
-        daily_df['cumulative_sloc'] = daily_df['sloc'].cumsum()
+        # cumulative_sloc now uses actual tree-based codebase size, not cumulative churn
+        daily_df['cumulative_sloc'] = daily_df['codebase_sloc']
 
         # Convert to list of dicts
         daily_metrics = daily_df.to_dict('records')

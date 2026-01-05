@@ -202,11 +202,26 @@ class ContributorEntry(BaseModel):
     contributor_email: str
     contributor_name: str
     total_commits: int
-    total_sloc: int
+    churn_sloc: int = Field(0, alias="total_sloc")  # Total SLOC touched (additions + deletions)
+    additions_sloc: int = 0  # SLOC added
+    deletions_sloc: int = 0  # SLOC deleted
     ownership_percentage: float
     first_commit_at: datetime | None
     last_commit_at: datetime | None
     active_days: int
+
+    model_config = {"populate_by_name": True}
+
+    def __init__(self, **data):
+        # Handle legacy data that only has total_sloc
+        if "total_sloc" in data and "churn_sloc" not in data:
+            data["churn_sloc"] = data.pop("total_sloc")
+        # If we have churn_sloc but not additions/deletions, approximate
+        if "churn_sloc" in data and "additions_sloc" not in data:
+            # Can't split without more info, so default to all additions
+            data["additions_sloc"] = data.get("churn_sloc", 0)
+            data["deletions_sloc"] = 0
+        super().__init__(**data)
 
 
 class DirectoryOwnership(BaseModel):
@@ -214,12 +229,20 @@ class DirectoryOwnership(BaseModel):
 
     directory_path: str
     total_commits: int
-    total_sloc: int
+    churn_sloc: int = Field(0, alias="total_sloc")  # Total SLOC touched
     unique_contributors: int
     primary_owner_email: str | None
     primary_owner_name: str | None
     primary_owner_percentage: float
     contributors: list[ContributorEntry]
+
+    model_config = {"populate_by_name": True}
+
+    def __init__(self, **data):
+        # Handle legacy data
+        if "total_sloc" in data and "churn_sloc" not in data:
+            data["churn_sloc"] = data.pop("total_sloc")
+        super().__init__(**data)
 
 
 class OwnershipResponse(BaseModel):

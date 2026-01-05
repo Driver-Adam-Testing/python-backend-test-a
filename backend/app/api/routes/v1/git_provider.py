@@ -28,6 +28,7 @@ from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.interfaces.hatchet_interfaces import (
     ConnectReposForInstallationInput,
     HandleAzureDevopsEventsInput,
+    HandleBitbucketDCEventsInput,
     HandleBitbucketEventsInput,
     HandleGithubEventsInput,
     HandleGitlabEventsInput,
@@ -307,6 +308,12 @@ def connect_git_provider_repo(
             input_validator=HandleAzureDevopsEventsInput,
         )
         input_type = HandleAzureDevopsEventsInput
+    elif app.provider_kind == GitProviderKind.BITBUCKET_DATA_CENTER:
+        handle_events_task = hatchet.stubs.task(
+            name="handle-bitbucket-dc-events-workflow",
+            input_validator=HandleBitbucketDCEventsInput,
+        )
+        input_type = HandleBitbucketDCEventsInput
     else:
         raise HTTPException(
             status_code=400, detail=f"Unsupported provider kind: {app.provider_kind}"

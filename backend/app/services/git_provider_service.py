@@ -19,6 +19,7 @@ from app.git_providers.interfaces.provider_interface import (
     WebhookEventContext,
 )
 from app.git_providers.providers.azure_devops_provider import AzureDevOpsProvider
+from app.git_providers.providers.bitbucket_dc_provider import BitbucketDCProvider
 from app.git_providers.providers.bitbucket_provider import BitbucketProvider
 from app.git_providers.providers.gitlab_provider import GitLabProvider
 from app.git_providers.utils.errors import (
@@ -46,6 +47,7 @@ class GitProviderService:
     PROVIDERS: ClassVar[dict[GitProviderKind, type[GitProviderInterface]]] = {
         GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED: GitLabProvider,
         GitProviderKind.BITBUCKET: BitbucketProvider,
+        GitProviderKind.BITBUCKET_DATA_CENTER: BitbucketDCProvider,
         GitProviderKind.AZURE_DEVOPS_CLOUD: AzureDevOpsProvider,
     }
 
@@ -72,8 +74,11 @@ class GitProviderService:
         app = GitProviderApp(**app_data)
 
         if app.provider_kind in [GitProviderKind.BITBUCKET]:
-            # Bitbucket requires a workspace for apps
+            # Bitbucket Cloud requires a workspace for apps
             app.provider_metadata = {"workspace": app.name}
+        elif app.provider_kind == GitProviderKind.BITBUCKET_DATA_CENTER:
+            # Bitbucket DC stores instance URL in provider_metadata
+            app.provider_metadata = {"instance_url": app.base_url}
 
         session.add(app)
 
@@ -312,6 +317,18 @@ class GitProviderService:
                 secret_token="",  # Not used in Azure DevOps
                 ssl_verification=True,
                 triggers=["git.push"],
+            )
+        elif (
+            installation.git_provider_app.provider_kind
+            == GitProviderKind.BITBUCKET_DATA_CENTER
+        ):
+            # Bitbucket DC webhooks (manually configured via Bitbucket UI)
+            webhook_info = WebhookInfo(
+                callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook?installation_id={installation_id}",
+                custom_headers={},
+                secret_token=secret["secret_token"],
+                ssl_verification=not secret.get("disable_ssl_verify", False),
+                triggers=["repo:refs_changed", "pr:merged"],
             )
         else:
             raise ValueError(

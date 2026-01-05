@@ -496,6 +496,111 @@ def handle_azure_devops_events(
             errant_repos.append(repo_name_or_none)
 
 
+def handle_bitbucket_dc_events(
+    installation_id: str | None,
+    org_id: str,
+    repos_added: list[dict],
+    repos_deleted: list[dict],
+    repos_pushed: list[dict],
+) -> None:
+    from database.db import (
+        engine,
+    )
+    from database.models import (
+        GithubAppInstallation,  # noqa: F401
+        PrimaryAsset,
+    )
+    from shared.inspector.onboarding import bitbucket_dc_ops
+    from shared.inspector.onboarding.onboard_utils import AccessTokenError
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
+    if installation_id is None and (repos_added or repos_pushed):
+        raise ValueError(
+            "Installation ID is required for added or pushed repos. It only can be null for delete-only events"
+        )
+
+    if repos_deleted:
+        with Session(engine) as session, session.begin():
+            for repo in repos_deleted:
+                primary_asset = session.exec(
+                    select(PrimaryAsset)
+                    .where(
+                        PrimaryAsset.repository_id == str(repo["id"]),
+                        PrimaryAsset.organization_id == org_id,
+                    )
+                    .options(selectinload(PrimaryAsset.versions))
+                ).first()
+
+                if not primary_asset:
+                    print(f"Primary asset for repo {repo['name']} not found.")
+                    continue
+
+                if all(
+                    v.status
+                    in {
+                        VersionStatus.CONNECTED,
+                        VersionStatus.CONNECTING,
+                        VersionStatus.CONNECTION_FAILED,
+                    }
+                    for v in primary_asset.versions
+                ):
+                    print(
+                        f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
+                    )
+                    session.delete(primary_asset)
+                else:
+                    print(
+                        f"Primary asset {primary_asset.id} for repo {repo['name']} has versions with tech docs. Not deleting."
+                    )
+
+    if not repos_added and not repos_pushed:
+        return
+
+    # Fetch token for additions/updates
+    try:
+        token, instance_url = bitbucket_dc_ops.fetch_access_token(
+            installation_id=installation_id
+        )
+    except AccessTokenError:
+        print(f"Bitbucket DC installation {installation_id} not found.")
+        raise
+
+    errant_repos = []
+    # Add installation_id to each repo dict if not present
+    for repo in repos_added:
+        print(repo)
+        if "installation_id" not in repo:
+            repo["installation_id"] = installation_id
+
+    # Using 2 workers to be conservative with Bitbucket DC rate limits
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(
+                bitbucket_dc_ops.download_and_upload_repo, org_id, repo, token
+            )
+            for repo in repos_added
+        ]
+        wait(futures)
+        for f in futures:
+            if f.result():
+                errant_repos.append(f.result())
+
+    for repo in repos_pushed:
+        # Add installation_id to repo dict if not present
+        if "installation_id" not in repo:
+            repo["installation_id"] = installation_id
+
+        repo_name_or_none = bitbucket_dc_ops.download_and_upload_repo(
+            org_id=org_id,
+            repo=repo,
+            access_token=token,
+            is_push=True,
+        )
+        if repo_name_or_none is not None:
+            errant_repos.append(repo_name_or_none)
+
+
 def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
@@ -575,7 +680,7 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
             if not has_next:
                 break
 
-        handle_github_events.spawn(
+        handle_github_events(
             gh_install_id,
             install.organization_id,
             repos_added,
@@ -669,7 +774,7 @@ def connect_unconnected_repos() -> None:
                 if not has_next:
                     break
 
-            handle_github_events.spawn(
+            handle_github_events(
                 gh_install_id,
                 install.organization_id,
                 repos_added,

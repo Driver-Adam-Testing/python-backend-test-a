@@ -7,10 +7,12 @@ from pydantic import BaseModel, Field
 class TokenType(str, Enum):
     # OAUTH = "oauth"
     GROUP_ACCESS_TOKEN = "group_access_token"  # GitLab
-    WORKSPACE_ACCESS_TOKEN = "workspace_access_token"  # Bitbucket
-    PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket
-    REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket
+    WORKSPACE_ACCESS_TOKEN = "workspace_access_token"  # Bitbucket Cloud
+    PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket Cloud
+    REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket Cloud
     PERSONAL_ACCESS_TOKEN = "personal_access_token"  # Azure DevOps
+    BITBUCKET_DC_HTTP_TOKEN = "bitbucket_dc_http_token"  # Bitbucket Data Center
+    HTTP_ACCESS_TOKEN = "http_access_token"  # Bitbucket Data Center (alternative name)
 
     def __str__(self) -> str:
         return self.name
@@ -24,6 +26,9 @@ class AccessTokenData(BaseModel):
     workspace_or_group: str | None = None
     name: str | None = None
     metadata: dict = {}
+    # Bitbucket DC specific fields (optional, will be populated from app config if not provided)
+    username: str | None = None
+    instance_url: str | None = None
 
     def is_access_token(self) -> bool:
         return self.token_type in [
@@ -44,7 +49,7 @@ class GitRepository(BaseModel):
     provider_kind: GitProviderKind | None = None
     repo_name: str
     org: str
-    last_updated: str
+    last_updated: str | None = None
     metadata: dict
     latest_commit: dict | None = None
     default_branch: str | None = None
@@ -134,3 +139,27 @@ class AzureDevOpsWebhookPayload(BaseModel):
 
     eventType: str
     resource: AzureDevOpsWebhookResource | None = None
+
+
+# Bitbucket Data Center specific models
+class BitbucketDCTokenData(BaseModel):
+    """Bitbucket Data Center HTTP Access Token data structure.
+
+    For Project/Repository tokens, we use Bearer auth only (no username needed).
+    Clone URLs use x-token-auth as the username placeholder.
+    """
+
+    token: str = Field(..., description="HTTP Access Token")
+    instance_url: str = Field(
+        ...,
+        description="Bitbucket DC instance URL (e.g., https://bitbucket.company.com)",
+    )
+    secret_token: str | None = Field(
+        None, description="Webhook secret for signature verification"
+    )
+    ca_bundle_path: str | None = Field(
+        None, description="Path to CA bundle for self-signed certificates"
+    )
+    disable_ssl_verify: bool = Field(
+        False, description="Disable SSL verification (dev/test only)"
+    )

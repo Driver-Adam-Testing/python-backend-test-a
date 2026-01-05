@@ -19,7 +19,15 @@ from workflows.inspector_functions import (
     toplevel_doc_task,
 )
 from workflows.inspector_workflow import inspector_task
-from workflows.onboarding_workflows import run_codebase_connection_task
+from workflows.onboarding_workflows import (
+    connect_repos_for_installation_task,
+    handle_azure_devops_events_task,
+    handle_bitbucket_dc_events_task,
+    handle_bitbucket_events_task,
+    handle_github_events_task,
+    handle_gitlab_events_task,
+    run_codebase_connection_task,
+)
 from workflows.pdf_processing_workflow import pdf_processing_task
 
 truststore.inject_into_ssl()
@@ -53,6 +61,13 @@ def main() -> None:
             auth0_sync_task,
             process_auth0_event_task,
             scheduled_auth0_sync_task,
+            # Git provider onboarding event handlers
+            handle_github_events_task,
+            handle_gitlab_events_task,
+            handle_bitbucket_events_task,
+            handle_bitbucket_dc_events_task,
+            handle_azure_devops_events_task,
+            connect_repos_for_installation_task,
         ],
     )
     worker.start()

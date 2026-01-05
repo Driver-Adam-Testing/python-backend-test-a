@@ -129,7 +129,7 @@ def main():
     print()
     
     # Phase 5: Aggregate
-    print("Phase 6: Aggregating metrics...")
+    print("Phase 5: Aggregating metrics...")
     engine = AggregationEngine(hot_storage, warm_storage, cold_storage)
     engine._repo_name = repo_name
     engine._repo_owner = repo_owner
@@ -140,6 +140,11 @@ def main():
         repo_name=repo_name,
     )
     print("  Aggregation complete")
+    
+    # Phase 6: Branch metrics
+    print("Phase 6: Refreshing branch metrics...")
+    branch_stats = engine.refresh_branch_metrics(codebase_id)
+    print(f"  Refreshed {len(branch_stats.get('branches_updated', []))} branches")
     print()
     
     # Phase 7: Export JSON

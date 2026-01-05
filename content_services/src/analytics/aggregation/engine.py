@@ -160,9 +160,13 @@ class AggregationEngine:
         }
 
         try:
+            # Get default branch from repository metrics (if available)
+            repo_metrics = self.hot.get_repository_metrics(codebase_id)
+            default_branch = repo_metrics.get('default_branch', 'main') if repo_metrics else 'main'
+            
             # Group by branch and calculate metrics
             for branch, branch_df in commits_df.groupby('branch_name'):
-                branch_metrics = self._calculate_branch_metrics(codebase_id, branch, branch_df)
+                branch_metrics = self._calculate_branch_metrics(codebase_id, branch, branch_df, default_branch)
                 self.hot.upsert_branch_metrics(branch_metrics)
                 stats['branches_updated'].append(branch)
 
@@ -440,13 +444,16 @@ class AggregationEngine:
         self.hot.insert_monthly_metrics(codebase_id, monthly_metrics)
         logger.info(f"Built {len(monthly_metrics)} monthly aggregates")
 
-    def _calculate_branch_metrics(self, codebase_id: str, branch_name: str, branch_df: pd.DataFrame) -> dict:
+    def _calculate_branch_metrics(
+        self, codebase_id: str, branch_name: str, branch_df: pd.DataFrame, default_branch: str = 'main'
+    ) -> dict:
         """Calculate metrics for a single branch.
 
         Args:
             codebase_id: Repository ID
             branch_name: Branch name
             branch_df: DataFrame of commits for this branch
+            default_branch: Name of the default branch (for is_default_branch flag)
 
         Returns:
             Dictionary of branch metrics with clean naming
@@ -508,7 +515,7 @@ class AggregationEngine:
             'unique_contributors': int(unique_contributors),
             'total_files': int(total_files),
             # Branch state
-            'is_default_branch': False,
+            'is_default_branch': str(branch_name) == str(default_branch),
             'is_active': True,
             'is_merged': False,
             'is_deleted': False,

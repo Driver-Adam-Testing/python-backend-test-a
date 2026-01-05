@@ -97,21 +97,46 @@ def discover_branches(
 
 
 def _get_default_branch(repo: pygit2.Repository) -> str:
-    """Get the default branch name."""
+    """Get the default branch name.
+    
+    Priority:
+    1. refs/remotes/origin/HEAD (GitHub sets this to the actual default)
+    2. Common default branch names that exist locally
+    3. Local HEAD (what's currently checked out)
+    4. First local branch
+    """
+    # Try origin/HEAD first - this is what GitHub sets as the default
     try:
-        if not repo.head_is_unborn:
-            return repo.head.shorthand
+        origin_head = repo.references.get("refs/remotes/origin/HEAD")
+        if origin_head:
+            # origin/HEAD is a symbolic ref like "refs/remotes/origin/main"
+            target = origin_head.target
+            if isinstance(target, str) and target.startswith("refs/remotes/origin/"):
+                branch_name = target.replace("refs/remotes/origin/", "")
+                logger.debug(f"Default branch from origin/HEAD: {branch_name}")
+                return branch_name
     except Exception as e:
-        logger.debug(f"Could not get HEAD: {e}")
+        logger.debug(f"Could not get origin/HEAD: {e}")
 
     # Fallback: check common default branch names
     for candidate in ["main", "master", "develop"]:
         if candidate in repo.branches.local:
+            logger.debug(f"Default branch from common names: {candidate}")
             return candidate
+
+    # Try local HEAD (what's checked out)
+    try:
+        if not repo.head_is_unborn:
+            branch_name = repo.head.shorthand
+            logger.debug(f"Default branch from HEAD: {branch_name}")
+            return branch_name
+    except Exception as e:
+        logger.debug(f"Could not get HEAD: {e}")
 
     # Last resort: use first branch
     branches = list(repo.branches.local)
     if branches:
+        logger.debug(f"Default branch from first local: {branches[0]}")
         return branches[0]
 
     return "main"

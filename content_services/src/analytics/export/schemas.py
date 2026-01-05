@@ -101,7 +101,9 @@ class ContributorEntry(BaseModel):
     contributor_email: str
     contributor_name: str
     total_commits: int
-    total_sloc: int
+    churn_sloc: int  # Total SLOC touched (additions + deletions)
+    additions_sloc: int  # SLOC added
+    deletions_sloc: int  # SLOC deleted
     ownership_percentage: float
     first_commit_at: datetime | None
     last_commit_at: datetime | None
@@ -112,7 +114,7 @@ class DirectoryOwnership(BaseModel):
     """Ownership data for a single directory."""
     directory_path: str
     total_commits: int
-    total_sloc: int
+    churn_sloc: int  # Total SLOC touched in this directory
     unique_contributors: int
     primary_owner_email: str | None
     primary_owner_name: str | None

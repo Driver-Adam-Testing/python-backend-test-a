@@ -367,44 +367,45 @@ class DriverJSONExporter:
 
         joined["directory"] = joined["file_path"].apply(extract_directory)
 
-        # Calculate SLOC estimate from bytes
+        # Calculate SLOC estimate from bytes (separate additions and deletions)
         add_col = "addition_bytes_x" if "addition_bytes_x" in joined.columns else "addition_bytes"
         del_col = "deletion_bytes_x" if "deletion_bytes_x" in joined.columns else "deletion_bytes"
 
-        joined["sloc"] = (
-            joined[add_col].fillna(0) + joined[del_col].fillna(0)
-        ) / 50
-        joined["sloc"] = joined["sloc"].astype(int)
+        joined["additions_sloc"] = (joined[add_col].fillna(0) / 50).astype(int)
+        joined["deletions_sloc"] = (joined[del_col].fillna(0) / 50).astype(int)
+        joined["churn_sloc"] = joined["additions_sloc"] + joined["deletions_sloc"]
 
         # Aggregate by directory and contributor
         ownership = (
             joined.groupby(["directory", "author_email", "author_name"])
             .agg({
-                "sloc": "sum",
+                "churn_sloc": "sum",
+                "additions_sloc": "sum",
+                "deletions_sloc": "sum",
                 "commit_sha": "nunique",
                 "committed_at": ["min", "max", "nunique"],
             })
             .reset_index()
         )
         ownership.columns = [
-            "directory", "author_email", "author_name", "sloc", "commits",
-            "first_commit_at", "last_commit_at", "active_days"
+            "directory", "author_email", "author_name", "churn_sloc", "additions_sloc", "deletions_sloc",
+            "commits", "first_commit_at", "last_commit_at", "active_days"
         ]
 
         # Calculate totals and ownership percentages
-        dir_totals = ownership.groupby("directory")["sloc"].sum()
+        dir_totals = ownership.groupby("directory")["churn_sloc"].sum()
         ownership["ownership_pct"] = (
-            ownership["sloc"] / ownership["directory"].map(dir_totals) * 100
+            ownership["churn_sloc"] / ownership["directory"].map(dir_totals) * 100
         ).fillna(0.0)
 
         contributor_counts = ownership.groupby("directory")["author_email"].nunique()
-        ownership = ownership.sort_values(["directory", "sloc"], ascending=[True, False])
+        ownership = ownership.sort_values(["directory", "churn_sloc"], ascending=[True, False])
 
         # Build result
         directories = []
         for directory in ownership["directory"].unique():
             dir_data = ownership[ownership["directory"] == directory]
-            total_sloc = int(dir_totals[directory])
+            churn_sloc = int(dir_totals[directory])
             total_contributors = int(contributor_counts[directory])
 
             top_contributors = dir_data.head(10)  # Max 10 per directory
@@ -418,7 +419,9 @@ class DriverJSONExporter:
                     contributor_email=str(c["author_email"]),
                     contributor_name=str(c["author_name"]),
                     total_commits=int(c["commits"]),
-                    total_sloc=int(c["sloc"]),
+                    churn_sloc=int(c["churn_sloc"]),
+                    additions_sloc=int(c["additions_sloc"]),
+                    deletions_sloc=int(c["deletions_sloc"]),
                     ownership_percentage=float(c["ownership_pct"]),
                     first_commit_at=c["first_commit_at"],
                     last_commit_at=c["last_commit_at"],
@@ -430,7 +433,7 @@ class DriverJSONExporter:
             directories.append(DirectoryOwnership(
                 directory_path=str(directory),
                 total_commits=int(dir_data["commits"].sum()),
-                total_sloc=total_sloc,
+                churn_sloc=churn_sloc,
                 unique_contributors=total_contributors,
                 primary_owner_email=str(primary["author_email"]),
                 primary_owner_name=str(primary["author_name"]),
@@ -438,8 +441,8 @@ class DriverJSONExporter:
                 contributors=contributors,
             ))
 
-        # Sort by total SLOC descending
-        directories.sort(key=lambda x: x.total_sloc, reverse=True)
+        # Sort by churn SLOC descending
+        directories.sort(key=lambda x: x.churn_sloc, reverse=True)
 
         data = OwnershipJSON(
             codebase_id=self.codebase_id,

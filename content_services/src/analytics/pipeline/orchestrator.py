@@ -489,12 +489,18 @@ class AnalyticsPipeline:
 
         engine = AggregationEngine(ctx.hot_storage, ctx.warm_storage, ctx.cold_storage)
 
+        # Get default branch from branch discovery
+        default_branch = None
+        if ctx.branches_result and ctx.branches_result.default_branch:
+            default_branch = ctx.branches_result.default_branch
+        
         # Build all aggregates with repository metadata
         engine.build_all_aggregates(
             ctx.input.codebase_id,
             force_rebuild=True,
             repo_owner=ctx.input.repo_owner,
-            repo_name=ctx.input.repo_name
+            repo_name=ctx.input.repo_name,
+            default_branch=default_branch
         )
 
         # Refresh branch metrics

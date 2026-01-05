@@ -138,6 +138,7 @@ def main():
         force_rebuild=True,
         repo_owner=repo_owner,
         repo_name=repo_name,
+        default_branch=branches_result.default_branch,
     )
     print("  Aggregation complete")
     

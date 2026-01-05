@@ -49,7 +49,8 @@ class AggregationEngine:
         codebase_id: str,
         force_rebuild: bool = False,
         repo_owner: str | None = None,
-        repo_name: str | None = None
+        repo_name: str | None = None,
+        default_branch: str | None = None
     ) -> dict:
         """
         Build all aggregates for a repository.
@@ -59,6 +60,7 @@ class AggregationEngine:
             force_rebuild: Force full rebuild even if aggregates exist
             repo_owner: Repository owner (e.g., 'lodash')
             repo_name: Repository name (e.g., 'lodash')
+            default_branch: Name of the default branch (from discover_branches)
 
         Returns:
             Dictionary with aggregation statistics
@@ -70,6 +72,7 @@ class AggregationEngine:
         
         # Store repo metadata for use in aggregates
         self._repo_owner = repo_owner
+        self._default_branch = default_branch
         self._repo_name = repo_name
 
         # Check if aggregates exist
@@ -301,8 +304,9 @@ class AggregationEngine:
         # Total files (approximate - count unique file changes)
         total_files = unique_commits['files_changed'].sum()
 
-        # Default branch (most common branch)
-        default_branch = commits_df['branch_name'].mode()[0] if not commits_df.empty else 'main'
+        # Default branch (from discover_branches, not from commit frequency)
+        # Fall back to 'main' if not provided
+        default_branch = getattr(self, '_default_branch', None) or 'main'
 
         # Determine repository name from stored metadata or use fallback
         repo_name = getattr(self, '_repo_name', None) or f'repo_{codebase_id[:8]}'

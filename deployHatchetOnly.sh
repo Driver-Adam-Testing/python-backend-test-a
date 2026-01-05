@@ -33,22 +33,25 @@ CLUSTER_NAME=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'V2BaseIn
 
 SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-ApiBackendBackendApiService')]" --output text)
 
-HATCHET_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetWorkerHatchetWorkerSvc')]" --output text)
+HATCHET_BASE_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetBaselineWorkerHatchetWorkerSvc')]" --output text)
+
+HATCHET_HEAVY_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetHeavyWorkerHatchetWorkerSvc')]" --output text)
 
 echo "Forcing hatchet worker redeploy..."
 
-aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment
+aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_BASE_WORKER_SERVICE_NAME --force-new-deployment
+aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_HEAVY_WORKER_SERVICE_NAME --force-new-deployment
 
-echo "Waiting up to 5 minutes for ECS service to stabilize..."
+echo "Waiting up to 5 minutes for ECS services to stabilize..."
 set +e
-timeout 300 aws ecs wait services-stable --cluster $CLUSTER_NAME --services $HATCHET_WORKER_SERVICE_NAME
+timeout 300 aws ecs wait services-stable --cluster $CLUSTER_NAME --services $HATCHET_BASE_WORKER_SERVICE_NAME $HATCHET_HEAVY_WORKER_SERVICE_NAME
 status=$?
 set -e
 
 if [[ $status -eq 0 ]]; then
-    echo "✅ Service became stable."
+    echo "✅ Services became stable."
 elif [[ $status -eq 124 ]]; then
-  echo "⏰ Timed out waiting for service to become stable."
+  echo "⏰ Timed out waiting for services to become stable."
 else
   echo "❌ Waiter failed with exit code ${status}. Fetching logs anyway…"
 fi

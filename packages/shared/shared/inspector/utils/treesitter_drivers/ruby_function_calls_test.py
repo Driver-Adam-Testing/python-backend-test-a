@@ -5,8 +5,7 @@ Tests for Ruby function call extraction
 import pathlib
 
 import pytest
-
-from utils.lang_specialization.symbol_common import SymbolKind
+from shared.inspector.utils.lang_specialization.symbol_common import SymbolKind
 
 from .ruby_driver import RubyDriverTree
 

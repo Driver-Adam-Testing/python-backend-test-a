@@ -7,6 +7,7 @@ from enum import Enum
 from pathlib import Path
 from uuid import UUID
 
+from hatchet_sdk import TriggerWorkflowOptions
 from shared.inspector.utils.dag import (
     FileTreeDag,
     Node,
@@ -15,7 +16,7 @@ from shared.inspector.utils.dag import (
 )
 from shared.inspector.utils.task import TaskManager
 
-from .hatchet_funcs import delete_symbol_table_cache
+from .hatchet_funcs import delete_symbol_table_cache, put_diff_content_cache
 from .tasks import (
     CodebaseTaggingTask,
     CSymbolTableTask,
@@ -99,7 +100,7 @@ async def get_result_loading_config(
 
 async def inspect_db(
     version_id: uuid.UUID,
-    inspection_mode: InspectionMode = InspectionMode.NORMAL,
+    inspection_mode: InspectionMode = InspectionMode.RESUME,
 ) -> None:
     import tempfile
 
@@ -428,14 +429,20 @@ async def inspect_db(
             previous_version_root_content = None
             previous_version_content = None
 
+        if previous_version_id is not None:
+            put_diff_content_cache(
+                str(previous_version_id),
+                flat_topo_file_diff_dag,
+            )
         deep_context_docs_input = DeepContextDocsInput(
             old_version_id=previous_version_id,
             old_version_content=previous_version_content,
-            code_diff=flat_topo_file_diff_dag,
             new_version_id=version_id,
             install_id=install_id,
         )
-        await deep_context_docs_task.aio_run(deep_context_docs_input)
+        await deep_context_docs_task.aio_run(
+            deep_context_docs_input, options=TriggerWorkflowOptions(sticky=True)
+        )
 
 
 def hash_file(file_path: Path) -> str:

@@ -58,7 +58,7 @@ def git_diff_size_bytes_per_file(file_a: Path, file_b: Path) -> int:
 def compute_and_log_code_diff_size_in_bytes(
     code_diff_params: CodeDiffParams,
 ) -> None:
-    from utils.db import get_usage_balance_in_bytes
+    from shared.inspector.utils.db import get_usage_balance_in_bytes
 
     codebase_name = code_diff_params.codebase_name
     version_id = code_diff_params.version_id

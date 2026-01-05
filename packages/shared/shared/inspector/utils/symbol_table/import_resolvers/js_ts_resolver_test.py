@@ -5,8 +5,10 @@ Tests for JavaScript/TypeScript import resolver
 from pathlib import Path
 
 import pytest
-
-from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
+from shared.inspector.utils.lang_specialization.symbol_common import (
+    RawTreeSitterSymbolData,
+    SymbolKind,
+)
 
 from .js_ts_resolver import JsTsResolver
 

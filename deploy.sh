@@ -35,9 +35,9 @@ SCIM_SERVER_TAG=latest
 SCIM_SERVER_REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$SCIM_SERVER_IMAGE_NAME:$SCIM_SERVER_TAG
 
 
-DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $BACKEND_REPO_URI .
-DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_REPO_URI -f content_services/Dockerfile .
-DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $SCIM_SERVER_REPO_URI -f scim/Dockerfile .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $BACKEND_IMAGE_NAME -t $BACKEND_REPO_URI .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $HATCHET_WORKER_IMAGE_NAME -t $HATCHET_WORKER_REPO_URI  -f content_services/Dockerfile .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $SCIM_SERVER_IMAGE_NAME -t $SCIM_SERVER_REPO_URI -f scim/Dockerfile .
 
 echo $BACKEND_REPO_URI
 echo $HATCHET_WORKER_REPO_URI
@@ -98,7 +98,9 @@ CLUSTER_NAME=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'V2BaseIn
 
 SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-ApiBackendBackendApiService')]" --output text)
 
-HATCHET_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetWorkerHatchetWorkerSvc')]" --output text)
+HATCHET_BASE_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetBaselineWorkerHatchetWorkerSvc')]" --output text)
+
+HATCHET_HEAVY_WORKER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-HatchetHeavyWorkerHatchetWorkerSvc')]" --output text)
 
 SCIM_SERVER_SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[?contains(@, 'DriverApiStack-SCIMServer')]" --output text)
 
@@ -111,7 +113,8 @@ fi
 if [ "$HATCHET_WORKER_PUSHED" = "true" ]; then
     echo "Forcing hatchet worker redeploy..."
 
-    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_WORKER_SERVICE_NAME --force-new-deployment > /dev/null
+    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_BASE_WORKER_SERVICE_NAME --force-new-deployment > /dev/null
+    aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $HATCHET_HEAVY_WORKER_SERVICE_NAME --force-new-deployment > /dev/null
 fi
 
 echo "Forcing SCIM server redeploy..."

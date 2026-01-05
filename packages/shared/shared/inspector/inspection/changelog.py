@@ -516,9 +516,11 @@ async def create_changelog(
         )
 
         repo = GitFetcher(repo_path=repo_dir)
-        all_commits = list(
-            repo.fetch_commits(start_commit=vcs_hash, limit=MAX_COMMITS_TO_PROCESS)
+        # Fetch commits is CPU-bound work, so run it in a thread.
+        commits_ret = await asyncio.to_thread(
+            repo.fetch_commits, start_commit=vcs_hash, limit=MAX_COMMITS_TO_PROCESS
         )
+        all_commits = list(commits_ret)
 
         print(f"Fetched {len(all_commits)} commits from {full_name}")
         if not all_commits:
@@ -553,14 +555,15 @@ async def update_changelog(
         # This list of commits includes new commits that occurred chronologically since previous_sha up to and including vcs_hash,
         # PLUS any commits that are unique ancestors of merge commits contained in the set of new commits
         # that may have occurred chronologically before previous_sha.
-        new_commits = list(
-            repo.fetch_commits(
-                start_commit=vcs_hash,
-                limit=MAX_COMMITS_TO_PROCESS,
-                stop_commit=previous_sha,
-                unravel_merges=True,
-            )
+        # Fetch commits is CPU-bound work, so run it in a thread.
+        commits_ret = await asyncio.to_thread(
+            repo.fetch_commits,
+            start_commit=vcs_hash,
+            limit=MAX_COMMITS_TO_PROCESS,
+            stop_commit=previous_sha,
+            unravel_merges=True,
         )
+        new_commits = list(commits_ret)
 
         print(f"Fetched {len(new_commits)} commits from {full_name}")
         if not new_commits:

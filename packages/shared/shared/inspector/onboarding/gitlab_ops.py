@@ -71,9 +71,7 @@ def fetch_access_token(installation_id: str) -> str:
     install_key = format_secret_name("GIT_PROVIDER_GAT_INSTALL_SECRET", installation_id)
     secrets_manager = AWSSecretManagementStrategy(
         AWSClientConfig(
-            region_name=os.environ["AWS_REGION"],
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            region_name=os.environ["AWS_REGION"]
         )
     )
     secret_value = secrets_manager.read_secret(install_key)

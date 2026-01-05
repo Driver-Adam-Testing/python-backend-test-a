@@ -689,7 +689,7 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
         )
 
         print(
-            f"Spawned processing for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
+            f"Processed for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
         )
         for repo in repos:
             print(f"=> Repo: {repo['full_name']}")
@@ -783,7 +783,7 @@ def connect_unconnected_repos() -> None:
             )
 
             print(
-                f"Spawned processing for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
+                f"Processed for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
             )
             for repo in repos:
                 print(f"=> Repo: {repo['full_name']}")
@@ -1166,7 +1166,7 @@ def run_codebase_connection(
                 version_id=version_id,
             )
             try:
-                inspector_task.run(inspector_input)
+                inspector_task.run_no_wait(inspector_input)
             except Exception as e:
                 print(f"Uncaught during inspection: {e}")
                 # Note: this is likely redundant setting of error state, but this allows us to handle modal timeout exceptions

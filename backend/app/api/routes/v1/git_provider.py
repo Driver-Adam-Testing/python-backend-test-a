@@ -480,7 +480,7 @@ def handle_installation_delete_event(
     handle_github_events_task.run_no_wait(
         HandleGithubEventsInput(
             installation_id=installation_id,
-            organization_id=org_id,
+            org_id=org_id,
             repos_added=repos_added,
             repos_deleted=repos_deleted,
             repos_pushed=repos_pushed,
@@ -545,7 +545,7 @@ def handle_installation_modified_event(
     handle_github_events_task.run_no_wait(
         HandleGithubEventsInput(
             installation_id=installation_id,
-            organization_id=gh_app_install.organization_id,
+            org_id=gh_app_install.organization_id,
             repos_added=repos_added,
             repos_deleted=repos_deleted,
             repos_pushed=repos_pushed,
@@ -628,7 +628,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         handle_github_events_task.run_no_wait(
             HandleGithubEventsInput(
                 installation_id=installation_id,
-                organization_id=gh_app_install.organization_id,
+                org_id=gh_app_install.organization_id,
                 repos_added=repos_added,
                 repos_deleted=repos_deleted,
                 repos_pushed=repos_pushed,

@@ -1,6 +1,7 @@
 import os
 from inspect import cleandoc
 from typing import Annotated
+import truststore
 
 from pydantic import Field
 
@@ -27,17 +28,19 @@ from shared.tool_executors import (  # noqa: E402
     get_llm_onboarding_guide,
 )
 
-from .auth_middleware import (  # noqa: E402
-    McpAuthMiddleware,
-    get_organization_id,
-    get_user_id,
-)
+from .icons import driver_logo_svg  # noqa: E402
 from .logging_middleware import (  # noqa: E402
     DriverMcpToolResponse,
     McpLoggingMiddleware,
 )
+from .oauth_auth import (  # noqa: E402
+    create_mcp_oauth_provider,
+    get_organization_id_from_token,
+    get_user_id_from_token,
+)
 
 logger = logging.getLogger(__name__)
+truststore.inject_into_ssl()
 
 CODEBASE_NAME_PARAM_DESCRIPTION = """Name of the Driver supported codebase.  The 'get_codebase_names' tool can be used to generate a list of supported codebases.  Only codebase names returned by this tool are valid for this parameter.
 """
@@ -61,6 +64,9 @@ my_mcp = FastMCP(
     "Driver MCP Server",
     include_fastmcp_meta=False,
     instructions=MCP_INSTRUCTIONS,
+    icons=[
+        driver_logo_svg,
+    ],
 )
 assert (
     fastmcp.settings.stateless_http is True
@@ -69,8 +75,8 @@ assert (
     fastmcp.settings.mask_error_details is True
 ), "FastMCP must be configured to mask error details."
 
-auth_middleware = McpAuthMiddleware()
-my_mcp.add_middleware(auth_middleware)
+auth_provider = create_mcp_oauth_provider()
+my_mcp.auth = auth_provider
 
 logging_middleware = McpLoggingMiddleware()
 my_mcp.add_middleware(logging_middleware)
@@ -104,8 +110,8 @@ def get_codebase_names_tool(
     ctx: Context, dummy: str | None = None
 ) -> DriverMcpToolResponse:
     try:
-        org_id = get_organization_id(ctx)
-        user_id = get_user_id(ctx)
+        org_id = get_organization_id_from_token()
+        user_id = get_user_id_from_token()
         payload = get_codebase_names(org_id=org_id, user_id=user_id)
         return DriverMcpToolResponse(payload=payload, error_message=None)
     except ToolUseError as e:
@@ -125,8 +131,8 @@ def get_architecture_overview_tool(
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
 ) -> DriverMcpToolResponse:
     try:
-        org_id = get_organization_id(ctx)
-        user_id = get_user_id(ctx)
+        org_id = get_organization_id_from_token()
+        user_id = get_user_id_from_token()
         payload = get_architecture_overview(
             org_id=org_id, codebase_name=codebase_name, user_id=user_id
         )
@@ -148,8 +154,8 @@ def get_llm_onboarding_guide_tool(
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
 ) -> DriverMcpToolResponse:
     try:
-        org_id = get_organization_id(ctx)
-        user_id = get_user_id(ctx)
+        org_id = get_organization_id_from_token()
+        user_id = get_user_id_from_token()
         payload = get_llm_onboarding_guide(
             org_id=org_id, codebase_name=codebase_name, user_id=user_id
         )
@@ -175,8 +181,8 @@ def get_changelog_tool(
     codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
 ) -> DriverMcpToolResponse:
     try:
-        org_id = get_organization_id(ctx)
-        user_id = get_user_id(ctx)
+        org_id = get_organization_id_from_token()
+        user_id = get_user_id_from_token()
         payload = get_changelog(
             org_id=org_id, codebase_name=codebase_name, user_id=user_id
         )
@@ -204,8 +210,8 @@ def get_detailed_changelog_tool(
     ],
 ) -> DriverMcpToolResponse:
     try:
-        org_id = get_organization_id(ctx)
-        user_id = get_user_id(ctx)
+        org_id = get_organization_id_from_token()
+        user_id = get_user_id_from_token()
         payload = get_detailed_changelog(
             org_id=org_id,
             codebase_name=codebase_name,
@@ -272,8 +278,8 @@ def get_file_documentation_tool(
     ] = 0,
 ) -> DriverMcpToolResponse:
     try:
-        org_id = get_organization_id(ctx)
-        user_id = get_user_id(ctx)
+        org_id = get_organization_id_from_token()
+        user_id = get_user_id_from_token()
         payload = get_file_documentation(
             org_id=org_id,
             codebase_name=codebase_name,
@@ -376,8 +382,8 @@ def get_code_map_tool(
     ] = 0,
 ) -> DriverMcpToolResponse:
     try:
-        org_id = get_organization_id(ctx)
-        user_id = get_user_id(ctx)
+        org_id = get_organization_id_from_token()
+        user_id = get_user_id_from_token()
         payload = get_code_map(
             org_id=org_id,
             codebase_name=codebase_name,

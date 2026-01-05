@@ -47,8 +47,10 @@ class Settings:
     # SENTRY_DSN:str
     SECRECTS_KEYS:str
     # add more as needed...
-    IS_PRIVATE_DEPLOY:bool
-    ALLOWED_AWS_ACCOUNT: str | None = None
+    IS_PRIVATE_DEPLOY:str
+    ALLOWED_AWS_ACCOUNT:str
+    MCP_AUTH0_CLIENT_ID:str
+    MCP_AUTH0_AUDIENCE:str
 
     def __init__(self, prefix: str = "") -> None:
         missing = []
@@ -64,6 +66,11 @@ class Settings:
                     missing.append(env_key)
             else:
                 setattr(self, name, val)
+        # --- CONDITIONAL REQUIREMENT LOGIC ---
+        # If NOT private deploy, override ALLOWED_AWS_ACCOUNT and ensure it's not considered missing.
+        if getattr(self, "IS_PRIVATE_DEPLOY", "").lower() != "true":
+            self.ALLOWED_AWS_ACCOUNT = ""
+            missing = [m for m in missing if m != "ALLOWED_AWS_ACCOUNT"]
 
         if missing:
             raise EnvironmentError(

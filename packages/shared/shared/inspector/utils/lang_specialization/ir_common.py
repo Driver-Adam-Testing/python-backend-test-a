@@ -416,11 +416,6 @@ class IrData(BaseModel, abc.ABC):
         if len(symbol.children) > 0:
             workers = compute_num_workers(len(symbol.children))
             futures = {}
-            llm_to_use = (
-                llm
-                if workers == 1
-                else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=500)
-            )
 
             with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
                 for idx, child_symbol in enumerate(symbol.children):
@@ -429,9 +424,7 @@ class IrData(BaseModel, abc.ABC):
                         cls_instance._children.append((child_symbol, None))
                     else:
                         futures[
-                            executor.submit(
-                                child_ir_cls.from_llm, llm_to_use, child_symbol
-                            )
+                            executor.submit(child_ir_cls.from_llm, llm, child_symbol)
                         ] = [idx, child_symbol]
                 results = []
                 for idx, future in enumerate(
@@ -648,11 +641,6 @@ class IrCollection(BaseModel, abc.ABC):
         futures = {}
         workers = compute_num_workers(len(symbols_list.data))
         print("Num workers: ", workers)
-        llm_to_use = (
-            llm
-            if workers == 1
-            else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=500)
-        )
 
         with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
             for _, s in symbols_list.data.items():
@@ -662,12 +650,12 @@ class IrCollection(BaseModel, abc.ABC):
                             symbols_dict[raw_sym_data.name] = []
                             # can reattach raw symbol info to use downstream when rendering MD.
                         futures[
-                            executor.submit(ir_data.from_llm, llm_to_use, raw_sym_data)
+                            executor.submit(ir_data.from_llm, llm, raw_sym_data)
                         ] = raw_sym_data.name
                 elif isinstance(s, RawSymbolData):
                     if s.name not in symbols_dict:
                         symbols_dict[s.name] = []
-                    futures[executor.submit(ir_data.from_llm, llm_to_use, s)] = s.name
+                    futures[executor.submit(ir_data.from_llm, llm, s)] = s.name
                 else:
                     raise ValueError("Unsupported type in RawSymbolCollection")
 

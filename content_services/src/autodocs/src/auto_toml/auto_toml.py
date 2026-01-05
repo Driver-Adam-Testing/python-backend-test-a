@@ -63,13 +63,12 @@ class AutoToml:
     LLM_SCATTER_MODEL: ClassVar[str] = (
         "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
     )
-    # LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
-    LLM_TOML_MODEL: ClassVar[str] = "gpt-4.1"
+    LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
-    MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
+    MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 100
     OPENAI_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_SUMMARIES)
     SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
-    REQUESTS_PER_SECOND: ClassVar[int] = 100
+    REQUESTS_PER_SECOND: ClassVar[int] = 50
     OPENAI_LIMITER = AsyncLimiter(REQUESTS_PER_SECOND, 1)
     MAX_CODE_SCALE_FACTOR: ClassVar[int] = 10
     PDF_SCALE_FACTOR: ClassVar[int] = 10

@@ -481,7 +481,10 @@ class AggregationEngine:
         additions_sloc = int(addition_bytes) // 50
         deletions_sloc = int(deletion_bytes) // 50
         churn_sloc = additions_sloc + deletions_sloc
-        current_sloc = branch_df['sloc'].sum()
+        
+        # Current SLOC = actual codebase size at HEAD (from tree walk of latest commit)
+        # Use tree_sloc from the most recent commit, NOT sum of churn
+        current_sloc = int(latest_commit.get('tree_sloc', 0))
 
         # Timestamps
         first_commit = branch_df['committed_at'].min()

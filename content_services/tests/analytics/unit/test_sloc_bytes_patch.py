@@ -128,10 +128,10 @@ class TestSlocBytesFromPatch:
         mock_commit.message = "Test"
         mock_commit.parents = []
         
-        # Create mock patches - only code file should be counted
+        # Create mock patches - all text files should be counted (aligned with onboarding)
         code_patch = create_mock_patch("src/main.py", 5, 2, "+code\n" * 5 + "-rm\n" * 2)
-        readme_patch = create_mock_patch("README.md", 10, 3, "+doc\n" * 10)  # Should be excluded
-        config_patch = create_mock_patch("config.json", 8, 0, "+cfg\n" * 8)  # Should be excluded
+        readme_patch = create_mock_patch("README.md", 10, 3, "+doc\n" * 10)  # Now counted
+        config_patch = create_mock_patch("config.json", 8, 0, "+cfg\n" * 8)  # Now counted
         
         mock_diff = MagicMock()
         mock_diff.__iter__ = lambda self: iter([code_patch, readme_patch, config_patch])
@@ -146,10 +146,10 @@ class TestSlocBytesFromPatch:
         
         commit_data = result[0]
         
-        # Should only count the code file (main.py)
-        assert commit_data['files_changed'] == 1
-        assert commit_data['additions_lines'] == 5
-        assert commit_data['deletions_lines'] == 2
+        # All text files are counted (aligned with onboarding pipeline)
+        assert commit_data['files_changed'] == 3
+        assert commit_data['additions_lines'] == 5 + 10 + 8  # 23 total
+        assert commit_data['deletions_lines'] == 2 + 3 + 0  # 5 total
 
     def test_empty_diff_produces_zero_metrics(self):
         """Empty diff (no patches) produces zero metrics."""

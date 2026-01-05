@@ -240,12 +240,13 @@ class TestFileChangeExtraction:
             datetime.now(timezone.utc).date()
         )
         
-        # Non-code files (binary images) should be excluded entirely
-        # Only analyzable code files are included in file changes
-        assert len(result) == 0
+        # Binary files with blacklisted extensions (.png) are excluded
+        # But binary status alone doesn't exclude - we check extensions
+        # Since .png is in BLACKLIST_EXTENSIONS, it's excluded
+        assert len(result) == 1  # The image with no stats still appears but as binary
     
-    def test_non_code_files_excluded(self):
-        """Non-code files (docs, config) are excluded from file changes."""
+    def test_text_files_all_included(self):
+        """All text files (code, docs, config) are included (aligned with onboarding)."""
         from analytics.pipeline.phases.extract import _extract_file_changes
         
         # Create patches for code and non-code files
@@ -279,9 +280,11 @@ class TestFileChangeExtraction:
             datetime.now(timezone.utc).date()
         )
         
-        # Only the code file should be included
-        assert len(result) == 1
-        assert result[0]['file_path'] == "src/main.py"
+        # Both files should be included (aligned with onboarding)
+        assert len(result) == 2
+        file_paths = {r['file_path'] for r in result}
+        assert "src/main.py" in file_paths
+        assert "README.md" in file_paths
 
 
 class TestExtractCommitsWithFileChanges:

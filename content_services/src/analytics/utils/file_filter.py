@@ -216,8 +216,17 @@ def is_analyzable_file(
     """
     Determine if a file should be counted for SLOC.
     
-    This matches the inspector's is_analyzable logic to ensure
-    analytics SLOC matches inspector SLOC.
+    This matches the onboarding pipeline's is_analyzable logic to ensure
+    analytics SLOC matches onboarding SLOC. A file is analyzable if:
+    - Not binary
+    - Not in a blacklisted directory (.git, driver_docs)
+    - Not a blacklisted extension (.exe, .dll, .svg, etc.)
+    - Not a blacklisted filename (.DS_Store, .driverignore)
+    - Not hex content (>99% hex characters)
+    
+    Note: Unlike older versions, this does NOT require the file to have
+    a recognized language in languages.yml. This aligns with onboarding
+    which counts all text files regardless of language type.
     
     Args:
         path_parts: Tuple of path components
@@ -245,10 +254,6 @@ def is_analyzable_file(
     if content and is_hex_content(content):
         return False
     
-    # Must have recognized language
-    if not has_recognized_language(extension, filename):
-        return False
-    
     return True
 
 
@@ -261,13 +266,12 @@ def is_analyzable_path(file_path: str) -> bool:
     - Blacklisted directories (.git, driver_docs)
     - Blacklisted extensions (.svg, .exe, .dll, etc.)
     - Blacklisted filenames (.DS_Store, .driverignore)
-    - Non-code file types (.md, .json, .yaml, etc.)
     
     Args:
         file_path: Full file path from diff (e.g., "src/main.py")
         
     Returns:
-        True if path appears to be analyzable code
+        True if path appears to be analyzable
     """
     path = Path(file_path)
     return is_analyzable_file(

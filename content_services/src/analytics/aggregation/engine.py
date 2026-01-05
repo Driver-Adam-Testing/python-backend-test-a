@@ -488,23 +488,9 @@ class AggregationEngine:
 
         # Calculate aggregates for ALL commits on this branch
         total_commits = len(branch_df)
-        unique_contributors = branch_df['author_email'].nunique()
 
-        # Line-based metrics (all commits)
+        # Current metrics from tree walk at HEAD
         current_lines = int(latest_commit.get('tree_lines', 0))
-        additions_lines = branch_df['additions_lines'].sum()
-        deletions_lines = branch_df['deletions_lines'].sum()
-
-        # Byte metrics (for SLOC conversion)
-        addition_bytes = branch_df['addition_bytes'].sum()
-        deletion_bytes = branch_df['deletion_bytes'].sum()
-        
-        # SLOC-based metrics (convert bytes to SLOC: bytes / 50)
-        additions_sloc = int(addition_bytes) // 50
-        deletions_sloc = int(deletion_bytes) // 50
-        churn_sloc = additions_sloc + deletions_sloc
-        
-        # Current SLOC = actual codebase size at HEAD (from tree walk of latest commit)
         current_sloc = int(latest_commit.get('tree_sloc', 0))
 
         # Calculate UNIQUE metrics using tree-based approach
@@ -513,13 +499,13 @@ class AggregationEngine:
         divergence_point_sha = None
         
         if str(branch_name) == str(default_branch) or default_branch_commits is None:
-            # For the default branch, unique = current (all code is "unique" to it)
+            # For the default branch, unique = all commits
+            unique_commits_df = branch_df
             unique_commits_count = total_commits
             unique_lines = current_lines
             unique_sloc = current_sloc
         else:
             # Find the divergence point: most recent commit that's on BOTH branches
-            # This is the commit where this branch diverged from default
             branch_shas = set(branch_df['commit_sha'])
             shared_commits = branch_shas & set(default_branch_commits.keys())
             
@@ -533,22 +519,39 @@ class AggregationEngine:
                 divergence_sloc = int(default_branch_commits[divergence_sha].get('tree_sloc', 0))
                 divergence_lines = int(default_branch_commits[divergence_sha].get('tree_lines', 0))
                 
-                # Unique = difference between HEAD and divergence point (tree-based)
+                # Unique SLOC/lines = difference between HEAD and divergence point (tree-based)
                 unique_sloc = current_sloc - divergence_sloc
                 unique_lines = current_lines - divergence_lines
                 
-                # Count commits after the divergence point
-                divergence_time = default_branch_commits[divergence_sha]['committed_at']
-                unique_commits_df = branch_df[
-                    (~branch_df['commit_sha'].isin(default_branch_commits.keys())) |
-                    (branch_df['committed_at'] > divergence_time)
-                ]
+                # Get commits that are unique to this branch (not on default)
+                unique_commits_df = branch_df[~branch_df['commit_sha'].isin(default_branch_commits.keys())]
                 unique_commits_count = len(unique_commits_df)
             else:
                 # No shared commits - entire branch is unique
+                unique_commits_df = branch_df
                 unique_sloc = current_sloc
                 unique_lines = current_lines
                 unique_commits_count = total_commits
+
+        # Contributors from UNIQUE commits only
+        unique_contributors = unique_commits_df['author_email'].nunique() if len(unique_commits_df) > 0 else 0
+
+        # Churn metrics from UNIQUE commits only (what this branch contributes)
+        if len(unique_commits_df) > 0:
+            additions_lines = int(unique_commits_df['additions_lines'].sum())
+            deletions_lines = int(unique_commits_df['deletions_lines'].sum())
+            addition_bytes = unique_commits_df['addition_bytes'].sum()
+            deletion_bytes = unique_commits_df['deletion_bytes'].sum()
+        else:
+            additions_lines = 0
+            deletions_lines = 0
+            addition_bytes = 0
+            deletion_bytes = 0
+        
+        # SLOC-based metrics (convert bytes to SLOC: bytes / 50)
+        additions_sloc = int(addition_bytes) // 50
+        deletions_sloc = int(deletion_bytes) // 50
+        churn_sloc = additions_sloc + deletions_sloc
 
         # Timestamps
         first_commit = branch_df['committed_at'].min()

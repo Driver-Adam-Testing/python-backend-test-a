@@ -67,8 +67,8 @@ class TestTreeWalkFiltering:
         
         return repo_path, repo
     
-    def test_only_code_files_counted(self, repo_with_mixed_files):
-        """Verify only code files are counted, not docs/config."""
+    def test_all_text_files_counted(self, repo_with_mixed_files):
+        """Verify all text files in languages.yml are counted."""
         from analytics.pipeline.phases.extract import _get_tree_size_at_commit
         
         repo_path, repo = repo_with_mixed_files
@@ -76,19 +76,23 @@ class TestTreeWalkFiltering:
         
         tree_bytes, tree_lines = _get_tree_size_at_commit(repo, commit)
         
-        # Expected code files:
+        # All text files in languages.yml are counted:
         # main.py: 2 lines
         # utils.js: 3 lines
         # src/app.py: 2 lines
         # Dockerfile: 2 lines
         # Makefile: 2 lines
-        # Total: 11 lines
+        # README.md: 3 lines (type: prose)
+        # CHANGELOG.md: 2 lines (type: prose)
+        # docs/guide.md: 3 lines (type: prose)
+        # package.json: 1 line (type: data)
+        # pyproject.toml: 2 lines (type: data)
+        # Total: 22 lines
         #
-        # NOT counted:
-        # README.md, CHANGELOG.md, docs/guide.md
-        # package.json, pyproject.toml, .gitignore
+        # NOT counted (not in languages.yml):
+        # .gitignore
         
-        assert tree_lines == 11, f"Expected 11 lines (code only), got {tree_lines}"
+        assert tree_lines == 22, f"Expected 22 lines (all in languages.yml), got {tree_lines}"
     
     def test_git_directory_excluded(self, tmp_path):
         """Verify .git directory contents are not counted."""
@@ -165,16 +169,16 @@ class TestTreeWalkConsistencyWithInspector:
     These tests verify the core filtering logic matches.
     """
     
-    def test_markdown_files_excluded(self, tmp_path):
-        """Markdown files should NOT be counted (matching inspector)."""
+    def test_markdown_files_are_counted(self, tmp_path):
+        """Markdown files ARE counted (they're in languages.yml as type: prose)."""
         from analytics.pipeline.phases.extract import _get_tree_size_at_commit
         
         repo_path = tmp_path / "test_repo"
         repo_path.mkdir()
         
         # Only markdown files
-        (repo_path / "README.md").write_text("# Title\n\nContent\n")
-        (repo_path / "CONTRIBUTING.md").write_text("# How to contribute\n")
+        (repo_path / "README.md").write_text("# Title\n\nContent\n")  # 3 lines
+        (repo_path / "CONTRIBUTING.md").write_text("# How to contribute\n")  # 1 line
         
         # Create repo
         repo = pygit2.init_repository(str(repo_path), bare=False)
@@ -193,21 +197,21 @@ class TestTreeWalkConsistencyWithInspector:
         commit = repo.head.peel(pygit2.Commit)
         tree_bytes, tree_lines = _get_tree_size_at_commit(repo, commit)
         
-        # No code files, so should be 0
-        assert tree_lines == 0
-        assert tree_bytes == 0
+        # Markdown IS in languages.yml, so counted
+        assert tree_lines == 4
+        assert tree_bytes > 0
     
-    def test_json_config_files_excluded(self, tmp_path):
-        """JSON/YAML config files should NOT be counted."""
+    def test_json_config_files_are_counted(self, tmp_path):
+        """JSON/YAML config files ARE counted (they're in languages.yml)."""
         from analytics.pipeline.phases.extract import _get_tree_size_at_commit
         
         repo_path = tmp_path / "test_repo"
         repo_path.mkdir()
         
         # Only config files
-        (repo_path / "package.json").write_text('{"name": "test"}\n')
-        (repo_path / "tsconfig.json").write_text('{"compilerOptions": {}}\n')
-        (repo_path / "config.yaml").write_text("key: value\n")
+        (repo_path / "package.json").write_text('{"name": "test"}\n')  # 1 line
+        (repo_path / "tsconfig.json").write_text('{"compilerOptions": {}}\n')  # 1 line
+        (repo_path / "config.yaml").write_text("key: value\n")  # 1 line
         
         # Create repo
         repo = pygit2.init_repository(str(repo_path), bare=False)
@@ -226,7 +230,7 @@ class TestTreeWalkConsistencyWithInspector:
         commit = repo.head.peel(pygit2.Commit)
         tree_bytes, tree_lines = _get_tree_size_at_commit(repo, commit)
         
-        # No code files, so should be 0
-        assert tree_lines == 0
-        assert tree_bytes == 0
+        # JSON/YAML ARE in languages.yml, so counted
+        assert tree_lines == 3
+        assert tree_bytes > 0
 

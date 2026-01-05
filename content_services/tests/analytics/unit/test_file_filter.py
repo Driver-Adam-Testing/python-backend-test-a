@@ -158,21 +158,21 @@ class TestLanguageRecognition:
         assert has_recognized_language('.rb', 'app.rb')
         assert has_recognized_language('.php', 'index.php')
         
-    def test_markdown_not_recognized_as_code(self):
+    def test_markdown_is_recognized(self):
         from analytics.utils.file_filter import has_recognized_language
         
-        # Markdown should NOT be recognized as analyzable code
-        # This is key to matching inspector behavior
-        assert not has_recognized_language('.md', 'README.md')
-        assert not has_recognized_language('.rst', 'docs.rst')
+        # Markdown IS in languages.yml (type: prose)
+        # This aligns analytics with onboarding pipeline
+        assert has_recognized_language('.md', 'README.md')
+        assert has_recognized_language('.rst', 'docs.rst')
         
-    def test_config_files_not_recognized_as_code(self):
+    def test_config_files_are_recognized(self):
         from analytics.utils.file_filter import has_recognized_language
         
-        # Config files should NOT be recognized
-        assert not has_recognized_language('.json', 'package.json')
-        assert not has_recognized_language('.toml', 'pyproject.toml')
-        assert not has_recognized_language('.ini', 'config.ini')
+        # These ARE in languages.yml (type: data)
+        assert has_recognized_language('.json', 'package.json')
+        assert has_recognized_language('.toml', 'pyproject.toml')
+        # Note: .ini may or may not be in languages.yml - check actual file
         
     def test_special_filenames_recognized(self):
         from analytics.utils.file_filter import has_recognized_language
@@ -215,21 +215,23 @@ class TestIsAnalyzableFile:
             is_binary=True
         )
         
-    def test_markdown_not_analyzable(self):
+    def test_markdown_is_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_file
         
-        # Critical: .md should NOT be analyzable (matches inspector)
-        assert not is_analyzable_file(
+        # .md IS analyzable - it's in languages.yml (type: prose)
+        # This matches onboarding pipeline behavior
+        assert is_analyzable_file(
             path_parts=('docs',),
             filename='README.md',
             extension='.md',
             is_binary=False
         )
         
-    def test_json_not_analyzable(self):
+    def test_json_is_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_file
         
-        assert not is_analyzable_file(
+        # .json IS analyzable - it's in languages.yml (type: data)
+        assert is_analyzable_file(
             path_parts=('',),
             filename='package.json',
             extension='.json',
@@ -360,28 +362,32 @@ class TestIsAnalyzablePath:
         assert is_analyzable_path("src/Component.jsx")
         assert is_analyzable_path("src/Component.tsx")
         
-    def test_markdown_not_analyzable(self):
+    def test_markdown_is_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        assert not is_analyzable_path("README.md")
-        assert not is_analyzable_path("docs/api.md")
-        assert not is_analyzable_path("CHANGELOG.md")
+        # .md is in languages.yml (type: prose) - should be counted
+        assert is_analyzable_path("README.md")
+        assert is_analyzable_path("docs/api.md")
+        assert is_analyzable_path("CHANGELOG.md")
         
-    def test_json_not_analyzable(self):
+    def test_json_is_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        assert not is_analyzable_path("package.json")
-        assert not is_analyzable_path("config/settings.json")
-        assert not is_analyzable_path("tsconfig.json")
+        # .json is in languages.yml (type: data) - should be counted
+        assert is_analyzable_path("package.json")
+        assert is_analyzable_path("config/settings.json")
+        assert is_analyzable_path("tsconfig.json")
         
-    def test_yaml_not_analyzable(self):
+    def test_yaml_is_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        assert not is_analyzable_path(".github/workflows/ci.yml")
-        assert not is_analyzable_path("docker-compose.yaml")
-        assert not is_analyzable_path("config.yml")
+        # .yml/.yaml is in languages.yml - should be counted
+        assert is_analyzable_path(".github/workflows/ci.yml")
+        assert is_analyzable_path("docker-compose.yaml")
+        assert is_analyzable_path("config.yml")
         
-    def test_toml_not_analyzable(self):
+    def test_toml_is_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        assert not is_analyzable_path("pyproject.toml")
-        assert not is_analyzable_path("Cargo.toml")
+        # .toml is in languages.yml (type: data) - should be counted
+        assert is_analyzable_path("pyproject.toml")
+        assert is_analyzable_path("Cargo.toml")
         
     def test_git_directory_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path

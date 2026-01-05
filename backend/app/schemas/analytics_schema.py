@@ -30,6 +30,7 @@ class CodebaseListItem(BaseModel):
 
     codebase_id: str
     display_name: str
+    provider: str | None = None  # github, gitlab, bitbucket, azure-devops - for icon display
     total_commits: int
     current_sloc: int
     last_commit_date: datetime | None
@@ -69,6 +70,7 @@ class AnalyticsOverview(BaseModel):
 
     codebase_id: str
     display_name: str
+    provider: str | None = None  # github, gitlab, bitbucket, azure-devops - for icon display
     repository_name: str
     full_name: str
     owner: str

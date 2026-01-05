@@ -21,6 +21,10 @@ from database.models_enums import (
     ContentKind,
 )
 from fastapi import Body, HTTPException, Path, Request
+from shared.analytics_cleanup import (
+    delete_analytics_folder,
+    update_org_files_after_deletion,
+)
 from shared.authorization.query_filters import (
     asset_visibility_expr,
     effective_asset_role_expr,
@@ -50,108 +54,6 @@ from app.core.config import settings  # Assuming settings contains AWS credentia
 from app.repositories import acl_repository
 
 logger = getLogger(__name__)
-
-
-# ============================================================================
-# Analytics Cleanup Helpers
-# ============================================================================
-
-def _delete_analytics_folder(bucket, codebase_id: str) -> None:
-    """Delete all analytics files for a codebase.
-    
-    Args:
-        bucket: boto3 S3 Bucket resource
-        codebase_id: UUID of the codebase to clean up
-    """
-    prefix = f"analytics/{codebase_id}/"
-    try:
-        objects = list(bucket.objects.filter(Prefix=prefix))
-        if objects:
-            bucket.objects.filter(Prefix=prefix).delete()
-            logger.info(f"Deleted {len(objects)} analytics files for codebase {codebase_id}")
-        else:
-            logger.info(f"No analytics files found for codebase {codebase_id}")
-    except Exception as e:
-        logger.warning(f"Failed to delete analytics folder for {codebase_id}: {e}")
-        # Don't raise - continue with deletion
-
-
-def _update_org_files_after_deletion(
-    s3_client,
-    bucket_name: str,
-    organization_id: str,
-    deleted_codebase_id: str,
-) -> None:
-    """Update org-level analytics files after codebase deletion.
-    
-    Removes the deleted codebase from codebases_list.json and
-    recomputes org_summary.json with updated totals.
-    
-    Args:
-        s3_client: boto3 S3 client
-        bucket_name: Name of the org S3 bucket
-        organization_id: Organization UUID
-        deleted_codebase_id: UUID of the deleted codebase
-    """
-    try:
-        # 1. Update codebases_list.json
-        key = "analytics/codebases_list.json"
-        try:
-            response = s3_client.get_object(Bucket=bucket_name, Key=key)
-            data = json.loads(response['Body'].read().decode('utf-8'))
-        except s3_client.exceptions.NoSuchKey:
-            logger.info("No codebases_list.json to update")
-            return
-        except Exception as e:
-            logger.warning(f"Could not read codebases_list.json: {e}")
-            return
-
-        # Remove deleted codebase
-        original_count = len(data.get('codebases', []))
-        data['codebases'] = [
-            cb for cb in data.get('codebases', [])
-            if cb.get('codebase_id') != deleted_codebase_id
-        ]
-        new_count = len(data['codebases'])
-        
-        if original_count == new_count:
-            logger.info(f"Codebase {deleted_codebase_id} not found in codebases_list.json")
-            return
-        
-        data['generated_at'] = datetime.now(timezone.utc).isoformat()
-
-        # Upload updated list
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=key,
-            Body=json.dumps(data, indent=2),
-            ContentType='application/json',
-        )
-        logger.info(f"Updated codebases_list.json: removed {deleted_codebase_id}")
-
-        # 2. Recompute org_summary.json
-        codebases = data.get('codebases', [])
-        summary = {
-            "organization_id": organization_id,
-            "total_codebases": len(codebases),
-            "codebases_with_analytics": len(codebases),
-            "total_commits": sum(cb.get('total_commits', 0) for cb in codebases),
-            "total_contributors": sum(cb.get('total_contributors', 0) for cb in codebases),
-            "total_sloc": sum(cb.get('current_sloc', 0) for cb in codebases),
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-        }
-
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key="analytics/org_summary.json",
-            Body=json.dumps(summary, indent=2),
-            ContentType='application/json',
-        )
-        logger.info(f"Recomputed org_summary.json: {len(codebases)} codebases remaining")
-
-    except Exception as e:
-        logger.warning(f"Failed to update org files after deletion: {e}")
-        # Don't raise - continue with deletion
 
 
 @router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetDetailRead])
@@ -457,8 +359,8 @@ def delete_primary_asset(
         # TODO: instead of storing run data in a separate bucket, place in the org bucket under the primary asset
 
     # Analytics cleanup - delete analytics folder and update org files
-    _delete_analytics_folder(bucket, str(primary_asset_id))
-    _update_org_files_after_deletion(
+    delete_analytics_folder(s3, org_id_hash, str(primary_asset_id))
+    update_org_files_after_deletion(
         s3_client=s3.meta.client,
         bucket_name=org_id_hash,
         organization_id=user.organization_id,

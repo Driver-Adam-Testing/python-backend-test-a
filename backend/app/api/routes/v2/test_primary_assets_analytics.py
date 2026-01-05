@@ -16,52 +16,67 @@ _backend_path = Path(__file__).parent.parent.parent.parent.parent
 if str(_backend_path) not in sys.path:
     sys.path.insert(0, str(_backend_path))
 
+from shared.analytics_cleanup import (
+    delete_analytics_folder,
+    update_org_files_after_deletion,
+)
+
 
 class TestDeleteAnalyticsFolder:
-    """Tests for _delete_analytics_folder helper."""
+    """Tests for delete_analytics_folder helper."""
 
     def test_deletes_analytics_files(self):
         """Analytics folder is deleted when it exists."""
         codebase_id = str(uuid4())
+        bucket_name = "test-bucket"
         
-        # Mock bucket
+        # Mock S3 resource and bucket
+        mock_s3_resource = MagicMock()
         mock_bucket = MagicMock()
+        mock_s3_resource.Bucket.return_value = mock_bucket
         mock_objects = MagicMock()
         mock_bucket.objects.filter.return_value = mock_objects
         mock_objects.__iter__ = lambda self: iter([MagicMock()])  # Has objects
         
-        _delete_analytics_folder(mock_bucket, codebase_id)
+        delete_analytics_folder(mock_s3_resource, bucket_name, codebase_id)
         
+        mock_s3_resource.Bucket.assert_called_with(bucket_name)
         mock_bucket.objects.filter.assert_called_with(Prefix=f"analytics/{codebase_id}/")
         mock_objects.delete.assert_called_once()
 
     def test_handles_empty_folder(self):
         """Gracefully handles when no analytics files exist."""
         codebase_id = str(uuid4())
+        bucket_name = "test-bucket"
         
+        mock_s3_resource = MagicMock()
         mock_bucket = MagicMock()
+        mock_s3_resource.Bucket.return_value = mock_bucket
         mock_objects = MagicMock()
         mock_bucket.objects.filter.return_value = mock_objects
         mock_objects.__iter__ = lambda self: iter([])  # No objects
         
         # Should not raise
-        _delete_analytics_folder(mock_bucket, codebase_id)
+        delete_analytics_folder(mock_s3_resource, bucket_name, codebase_id)
         
         mock_bucket.objects.filter.assert_called_with(Prefix=f"analytics/{codebase_id}/")
 
     def test_handles_s3_error(self):
         """Logs warning and continues on S3 error."""
         codebase_id = str(uuid4())
+        bucket_name = "test-bucket"
         
+        mock_s3_resource = MagicMock()
         mock_bucket = MagicMock()
+        mock_s3_resource.Bucket.return_value = mock_bucket
         mock_bucket.objects.filter.side_effect = Exception("S3 error")
         
         # Should not raise
-        _delete_analytics_folder(mock_bucket, codebase_id)
+        delete_analytics_folder(mock_s3_resource, bucket_name, codebase_id)
 
 
 class TestUpdateOrgFilesAfterDeletion:
-    """Tests for _update_org_files_after_deletion helper."""
+    """Tests for update_org_files_after_deletion helper."""
 
     def test_removes_codebase_from_list(self):
         """Deleted codebase is removed from codebases_list.json."""
@@ -84,7 +99,7 @@ class TestUpdateOrgFilesAfterDeletion:
             'Body': MagicMock(read=lambda: json.dumps(initial_list).encode('utf-8'))
         }
         
-        _update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
+        update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
         
         # Verify codebases_list.json was updated
         list_call = [c for c in mock_client.put_object.call_args_list 
@@ -114,7 +129,7 @@ class TestUpdateOrgFilesAfterDeletion:
             'Body': MagicMock(read=lambda: json.dumps(initial_list).encode('utf-8'))
         }
         
-        _update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
+        update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
         
         # Verify org_summary.json was updated
         summary_call = [c for c in mock_client.put_object.call_args_list 
@@ -129,17 +144,19 @@ class TestUpdateOrgFilesAfterDeletion:
 
     def test_handles_missing_codebases_list(self):
         """Gracefully handles when codebases_list.json doesn't exist."""
+        from botocore.exceptions import ClientError
+        
         codebase_id = str(uuid4())
         organization_id = "test-org"
         bucket_name = "test-bucket"
         
         mock_client = MagicMock()
-        mock_client.exceptions = MagicMock()
-        mock_client.exceptions.NoSuchKey = type('NoSuchKey', (Exception,), {})
-        mock_client.get_object.side_effect = mock_client.exceptions.NoSuchKey()
+        # Simulate NoSuchKey error
+        error_response = {'Error': {'Code': 'NoSuchKey', 'Message': 'Key not found'}}
+        mock_client.get_object.side_effect = ClientError(error_response, 'GetObject')
         
         # Should not raise
-        _update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
+        update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
         
         # Should not attempt to upload
         mock_client.put_object.assert_not_called()
@@ -164,7 +181,7 @@ class TestUpdateOrgFilesAfterDeletion:
         }
         
         # Should not raise
-        _update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
+        update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
         
         # Should not upload since nothing changed
         mock_client.put_object.assert_not_called()
@@ -179,7 +196,7 @@ class TestUpdateOrgFilesAfterDeletion:
         mock_client.get_object.side_effect = Exception("S3 error")
         
         # Should not raise
-        _update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
+        update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
 
     def test_handles_s3_write_error(self):
         """Gracefully handles S3 write errors."""
@@ -203,7 +220,7 @@ class TestUpdateOrgFilesAfterDeletion:
         mock_client.put_object.side_effect = Exception("S3 write error")
         
         # Should not raise
-        _update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
+        update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
 
     def test_deletes_last_codebase(self):
         """Org summary shows zeros when last codebase is deleted."""
@@ -223,7 +240,7 @@ class TestUpdateOrgFilesAfterDeletion:
             'Body': MagicMock(read=lambda: json.dumps(initial_list).encode('utf-8'))
         }
         
-        _update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
+        update_org_files_after_deletion(mock_client, bucket_name, organization_id, codebase_id)
         
         # Verify org_summary.json shows zeros
         summary_call = [c for c in mock_client.put_object.call_args_list 

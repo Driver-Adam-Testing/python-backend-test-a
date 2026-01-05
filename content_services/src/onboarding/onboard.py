@@ -16,9 +16,32 @@ from database.models_enums import (
     NodeKind,
     VersionStatus,
 )
+from shared.analytics_cleanup import cleanup_analytics_for_codebase
 from workflows.inspector_workflow import InspectorInput, inspector_task
 
 logger = logging.getLogger(__name__)
+
+
+def _cleanup_analytics_before_delete(org_id: str, codebase_id: str) -> None:
+    """Clean up analytics data before deleting a codebase.
+    
+    Args:
+        org_id: Organization UUID string
+        codebase_id: Codebase UUID string
+    """
+    try:
+        # Get AWS config from environment (set by Modal/worker)
+        aws_region = os.environ.get("AWS_REGION", "us-east-1")
+        
+        cleanup_analytics_for_codebase(
+            organization_id=org_id,
+            codebase_id=codebase_id,
+            aws_region=aws_region,
+        )
+        print(f"Analytics cleanup complete for codebase {codebase_id}")
+    except Exception as e:
+        # Log but don't fail the deletion
+        print(f"Warning: Analytics cleanup failed for {codebase_id}: {e}")
 
 
 def _trigger_incremental_analytics_for_push(
@@ -221,6 +244,8 @@ def handle_github_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )
@@ -326,6 +351,8 @@ def handle_gitlab_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )
@@ -424,6 +451,8 @@ def handle_bitbucket_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )
@@ -532,6 +561,8 @@ def handle_azure_devops_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )

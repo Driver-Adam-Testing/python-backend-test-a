@@ -19,6 +19,7 @@ from app.api.auth import UserToken
 from app.core.config import settings
 from app.utils.aws_s3 import org_id_to_hash
 from database.models import PrimaryAsset
+from database.models_enums import PrimaryAssetProvider
 from shared.authorization.helpers import is_super_admin
 from shared.authorization.query_filters import (
     PrimaryAssetRole,
@@ -26,6 +27,15 @@ from shared.authorization.query_filters import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Map PrimaryAssetProvider enum to frontend provider strings
+PROVIDER_MAP: dict[PrimaryAssetProvider, str] = {
+    PrimaryAssetProvider.GITHUB: "github",
+    PrimaryAssetProvider.GITLAB_SELF_MANAGED: "gitlab",
+    PrimaryAssetProvider.BITBUCKET: "bitbucket",
+    PrimaryAssetProvider.AZURE_DEVOPS_CLOUD: "azure-devops",
+    # USER provider doesn't have an icon, will return None
+}
 
 
 class AnalyticsService:
@@ -93,6 +103,36 @@ class AnalyticsService:
         query = self.session.query(PrimaryAsset.id).where(filter_clause)
         return {row[0] for row in query.all()}
 
+    def _get_provider_for_codebase(self, codebase_id: str) -> str | None:
+        """Get the provider string for a codebase (github, gitlab, etc.)."""
+        try:
+            asset = self.session.query(PrimaryAsset).filter(
+                PrimaryAsset.id == UUID(codebase_id)
+            ).first()
+            if asset and asset.provider:
+                return PROVIDER_MAP.get(asset.provider)
+        except Exception as e:
+            logger.debug(f"Could not look up provider for {codebase_id}: {e}")
+        return None
+
+    def _get_providers_for_codebases(self, codebase_ids: list[str]) -> dict[str, str | None]:
+        """Get provider strings for multiple codebases in one query."""
+        if not codebase_ids:
+            return {}
+        
+        try:
+            uuid_ids = [UUID(cid) for cid in codebase_ids]
+            assets = self.session.query(PrimaryAsset.id, PrimaryAsset.provider).filter(
+                PrimaryAsset.id.in_(uuid_ids)
+            ).all()
+            return {
+                str(asset.id): PROVIDER_MAP.get(asset.provider)
+                for asset in assets
+            }
+        except Exception as e:
+            logger.debug(f"Could not look up providers: {e}")
+        return {}
+
     # === Organization-Level Methods ===
 
     def get_org_summary(self) -> dict[str, Any] | None:
@@ -145,6 +185,7 @@ class AnalyticsService:
 
         Super Admins see all codebases.
         Source Admins see only codebases they administer.
+        Enriches each codebase with provider information from database.
         """
         data = self._read_json("analytics/codebases_list.json")
         if not data:
@@ -154,26 +195,38 @@ class AnalyticsService:
 
         if administered_ids is None:
             # Super Admin - return all
-            return data
+            codebases = data.get("codebases", [])
+        else:
+            # Source Admin - filter to only administered codebases
+            codebases = [
+                cb
+                for cb in data.get("codebases", [])
+                if UUID(cb["codebase_id"]) in administered_ids
+            ]
 
-        # Source Admin - filter to only administered codebases
-        filtered_codebases = [
-            cb
-            for cb in data.get("codebases", [])
-            if UUID(cb["codebase_id"]) in administered_ids
-        ]
+        # Enrich with provider information
+        codebase_ids = [cb["codebase_id"] for cb in codebases]
+        providers = self._get_providers_for_codebases(codebase_ids)
+        for cb in codebases:
+            cb["provider"] = providers.get(cb["codebase_id"])
 
         return {
             **data,
-            "codebases": filtered_codebases,
-            "total_codebases": len(filtered_codebases),
+            "codebases": codebases,
+            "total_codebases": len(codebases),
         }
 
     # === Codebase-Level Methods ===
 
     def get_overview(self, codebase_id: str) -> dict[str, Any] | None:
-        """Get overview metrics for a codebase."""
-        return self._read_json(f"analytics/{codebase_id}/overview.json")
+        """Get overview metrics for a codebase.
+        
+        Enriches with provider information from database.
+        """
+        data = self._read_json(f"analytics/{codebase_id}/overview.json")
+        if data:
+            data["provider"] = self._get_provider_for_codebase(codebase_id)
+        return data
 
     def get_branches(self, codebase_id: str) -> dict[str, Any] | None:
         """Get branch data for a codebase."""

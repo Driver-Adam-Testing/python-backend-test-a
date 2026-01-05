@@ -215,22 +215,21 @@ class TestIsAnalyzableFile:
             is_binary=True
         )
         
-    def test_markdown_is_analyzable(self):
+    def test_markdown_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_file
         
-        # .md files ARE analyzable (matches onboarding pipeline behavior)
-        assert is_analyzable_file(
+        # Critical: .md should NOT be analyzable (matches inspector)
+        assert not is_analyzable_file(
             path_parts=('docs',),
             filename='README.md',
             extension='.md',
             is_binary=False
         )
         
-    def test_json_is_analyzable(self):
+    def test_json_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_file
         
-        # .json files ARE analyzable (matches onboarding pipeline behavior)
-        assert is_analyzable_file(
+        assert not is_analyzable_file(
             path_parts=('',),
             filename='package.json',
             extension='.json',
@@ -361,32 +360,28 @@ class TestIsAnalyzablePath:
         assert is_analyzable_path("src/Component.jsx")
         assert is_analyzable_path("src/Component.tsx")
         
-    def test_markdown_is_analyzable(self):
+    def test_markdown_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        # Markdown files ARE analyzable (matches onboarding pipeline)
-        assert is_analyzable_path("README.md")
-        assert is_analyzable_path("docs/api.md")
-        assert is_analyzable_path("CHANGELOG.md")
+        assert not is_analyzable_path("README.md")
+        assert not is_analyzable_path("docs/api.md")
+        assert not is_analyzable_path("CHANGELOG.md")
         
-    def test_json_is_analyzable(self):
+    def test_json_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        # JSON files ARE analyzable (matches onboarding pipeline)
-        assert is_analyzable_path("package.json")
-        assert is_analyzable_path("config/settings.json")
-        assert is_analyzable_path("tsconfig.json")
+        assert not is_analyzable_path("package.json")
+        assert not is_analyzable_path("config/settings.json")
+        assert not is_analyzable_path("tsconfig.json")
         
-    def test_yaml_is_analyzable(self):
+    def test_yaml_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        # YAML files ARE analyzable (matches onboarding pipeline)
-        assert is_analyzable_path(".github/workflows/ci.yml")
-        assert is_analyzable_path("docker-compose.yaml")
-        assert is_analyzable_path("config.yml")
+        assert not is_analyzable_path(".github/workflows/ci.yml")
+        assert not is_analyzable_path("docker-compose.yaml")
+        assert not is_analyzable_path("config.yml")
         
-    def test_toml_is_analyzable(self):
+    def test_toml_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path
-        # TOML files ARE analyzable (matches onboarding pipeline)
-        assert is_analyzable_path("pyproject.toml")
-        assert is_analyzable_path("Cargo.toml")
+        assert not is_analyzable_path("pyproject.toml")
+        assert not is_analyzable_path("Cargo.toml")
         
     def test_git_directory_not_analyzable(self):
         from analytics.utils.file_filter import is_analyzable_path

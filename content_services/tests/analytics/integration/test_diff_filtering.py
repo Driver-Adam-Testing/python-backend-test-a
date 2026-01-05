@@ -142,13 +142,13 @@ class TestDiffFiltering:
         # Find the second commit (the one with mixed changes)
         second_commit = [c for c in result.commits if "Add features" in c['message']][0]
         
-        # All text files count now (aligned with onboarding pipeline)
-        # 1 line in main.py + 3 lines in README.md + 1 line in config.json = 5 lines
-        assert second_commit['additions_lines'] == 5
-        assert second_commit['files_changed'] == 3
+        # Should only count the 1 line added to main.py
+        # NOT the 3 lines in README.md or 1 line in config.json
+        assert second_commit['additions_lines'] == 1
+        assert second_commit['files_changed'] == 1
     
-    def test_yaml_files_are_counted(self, repo_with_yaml_changes):
-        """Verify YAML files ARE included in metrics (aligned with onboarding)."""
+    def test_yaml_files_not_counted(self, repo_with_yaml_changes):
+        """Verify YAML files are excluded from metrics."""
         repo = repo_with_yaml_changes
         
         result = extract_commits(
@@ -163,9 +163,9 @@ class TestDiffFiltering:
         # Find the CI commit
         ci_commit = [c for c in result.commits if "Add CI config" in c['message']][0]
         
-        # YAML files ARE counted (aligned with onboarding pipeline)
-        assert ci_commit['additions_lines'] == 4
-        assert ci_commit['files_changed'] == 1
+        # Should have 0 additions (YAML is not analyzable code)
+        assert ci_commit['additions_lines'] == 0
+        assert ci_commit['files_changed'] == 0
     
     def test_binary_extensions_not_counted(self, repo_with_binary_extension):
         """Verify files with binary extensions are excluded."""
@@ -250,16 +250,16 @@ class TestFileChangesFiltering:
         # Get file changes for this commit
         commit_file_changes = [fc for fc in result.file_changes if fc['commit_sha'] == commit_sha]
         
-        # All text files are now included (aligned with onboarding pipeline)
-        # main.py, util.js, README.md, package.json, config.yaml = 5 files
-        assert len(commit_file_changes) == 5
+        # Should only have 2 file changes: main.py and util.js
+        # NOT: README.md, package.json, config.yaml
+        assert len(commit_file_changes) == 2
         
         file_paths = {fc['file_path'] for fc in commit_file_changes}
         assert 'src/main.py' in file_paths
         assert 'src/util.js' in file_paths
-        assert 'README.md' in file_paths
-        assert 'package.json' in file_paths
-        assert 'config.yaml' in file_paths
+        assert 'README.md' not in file_paths
+        assert 'package.json' not in file_paths
+        assert 'config.yaml' not in file_paths
 
 
 class TestDriverDocsFiltering:

@@ -164,19 +164,24 @@ class AggregationEngine:
             repo_metrics = self.hot.get_repository_metrics(codebase_id)
             default_branch = repo_metrics.get('default_branch', 'main') if repo_metrics else 'main'
             
-            # Get default branch commit SHAs for calculating unique metrics
-            # Load all commits to get the default branch commits
+            # Load all commits to find divergence points
             all_commits_df = self._load_commits(codebase_id)
-            default_branch_shas = set()
+            
+            # Get default branch commits with their tree metrics for divergence calculation
+            default_branch_commits = {}
             if default_branch in all_commits_df['branch_name'].values:
-                default_branch_shas = set(
-                    all_commits_df[all_commits_df['branch_name'] == default_branch]['commit_sha']
-                )
+                default_df = all_commits_df[all_commits_df['branch_name'] == default_branch]
+                for _, row in default_df.iterrows():
+                    default_branch_commits[row['commit_sha']] = {
+                        'tree_sloc': row.get('tree_sloc', 0),
+                        'tree_lines': row.get('tree_lines', 0),
+                        'committed_at': row['committed_at']
+                    }
             
             # Group by branch and calculate metrics
             for branch, branch_df in commits_df.groupby('branch_name'):
                 branch_metrics = self._calculate_branch_metrics(
-                    codebase_id, branch, branch_df, default_branch, default_branch_shas
+                    codebase_id, branch, branch_df, default_branch, default_branch_commits
                 )
                 self.hot.upsert_branch_metrics(branch_metrics)
                 stats['branches_updated'].append(branch)
@@ -461,7 +466,7 @@ class AggregationEngine:
         branch_name: str,
         branch_df: pd.DataFrame,
         default_branch: str = 'main',
-        default_branch_shas: set = None
+        default_branch_commits: dict = None
     ) -> dict:
         """Calculate metrics for a single branch.
 
@@ -470,7 +475,7 @@ class AggregationEngine:
             branch_name: Branch name
             branch_df: DataFrame of commits for this branch
             default_branch: Name of the default branch (for is_default_branch flag)
-            default_branch_shas: Set of commit SHAs on the default branch (for unique metrics)
+            default_branch_commits: Dict of {sha: {tree_sloc, tree_lines, committed_at}} for default branch
 
         Returns:
             Dictionary of branch metrics with clean naming
@@ -486,7 +491,7 @@ class AggregationEngine:
         unique_contributors = branch_df['author_email'].nunique()
 
         # Line-based metrics (all commits)
-        current_lines = branch_df['net_lines'].sum()
+        current_lines = int(latest_commit.get('tree_lines', 0))
         additions_lines = branch_df['additions_lines'].sum()
         deletions_lines = branch_df['deletions_lines'].sum()
 
@@ -500,29 +505,50 @@ class AggregationEngine:
         churn_sloc = additions_sloc + deletions_sloc
         
         # Current SLOC = actual codebase size at HEAD (from tree walk of latest commit)
-        # Use tree_sloc from the most recent commit, NOT sum of churn
         current_sloc = int(latest_commit.get('tree_sloc', 0))
 
-        # Calculate UNIQUE metrics (commits not on default branch)
-        # For the default branch itself, unique = total
-        if str(branch_name) == str(default_branch) or default_branch_shas is None:
+        # Calculate UNIQUE metrics using tree-based approach
+        # unique_sloc = branch_head_tree_sloc - divergence_point_tree_sloc
+        # This gives the actual net change in codebase size from this branch
+        divergence_point_sha = None
+        
+        if str(branch_name) == str(default_branch) or default_branch_commits is None:
+            # For the default branch, unique = current (all code is "unique" to it)
             unique_commits_count = total_commits
             unique_lines = current_lines
             unique_sloc = current_sloc
         else:
-            # Filter to commits that are NOT on the default branch
-            unique_commits_df = branch_df[~branch_df['commit_sha'].isin(default_branch_shas)]
-            unique_commits_count = len(unique_commits_df)
+            # Find the divergence point: most recent commit that's on BOTH branches
+            # This is the commit where this branch diverged from default
+            branch_shas = set(branch_df['commit_sha'])
+            shared_commits = branch_shas & set(default_branch_commits.keys())
             
-            if unique_commits_count > 0:
-                # Sum up the SLOC contributed by unique commits
-                unique_addition_bytes = unique_commits_df['addition_bytes'].sum()
-                unique_deletion_bytes = unique_commits_df['deletion_bytes'].sum()
-                unique_sloc = int(unique_addition_bytes - unique_deletion_bytes) // 50
-                unique_lines = int(unique_commits_df['net_lines'].sum())
+            if shared_commits:
+                # Find the most recent shared commit (by date)
+                divergence_sha = max(
+                    shared_commits,
+                    key=lambda sha: default_branch_commits[sha]['committed_at']
+                )
+                divergence_point_sha = divergence_sha
+                divergence_sloc = int(default_branch_commits[divergence_sha].get('tree_sloc', 0))
+                divergence_lines = int(default_branch_commits[divergence_sha].get('tree_lines', 0))
+                
+                # Unique = difference between HEAD and divergence point (tree-based)
+                unique_sloc = current_sloc - divergence_sloc
+                unique_lines = current_lines - divergence_lines
+                
+                # Count commits after the divergence point
+                divergence_time = default_branch_commits[divergence_sha]['committed_at']
+                unique_commits_df = branch_df[
+                    (~branch_df['commit_sha'].isin(default_branch_commits.keys())) |
+                    (branch_df['committed_at'] > divergence_time)
+                ]
+                unique_commits_count = len(unique_commits_df)
             else:
-                unique_sloc = 0
-                unique_lines = 0
+                # No shared commits - entire branch is unique
+                unique_sloc = current_sloc
+                unique_lines = current_lines
+                unique_commits_count = total_commits
 
         # Timestamps
         first_commit = branch_df['committed_at'].min()
@@ -535,8 +561,8 @@ class AggregationEngine:
             'codebase_id': codebase_id,
             'branch_name': str(branch_name),
             'head_commit_sha': str(head_commit_sha),
-            'divergence_point_sha': None,
-            'parent_branch': None,
+            'divergence_point_sha': divergence_point_sha,
+            'parent_branch': default_branch if divergence_point_sha else None,
             'created_at': first_commit.to_pydatetime() if hasattr(first_commit, 'to_pydatetime') else first_commit,
             'last_commit_at': last_commit.to_pydatetime() if hasattr(last_commit, 'to_pydatetime') else last_commit,
             # Line-based metrics (clean names)

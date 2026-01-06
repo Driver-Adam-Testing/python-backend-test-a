@@ -147,16 +147,21 @@ def _get_all_branch_names(repo: pygit2.Repository) -> list[str]:
     branch_names = set()
 
     # Add local branches
-    for branch_name in repo.branches.local:
+    local_branches = list(repo.branches.local)
+    logger.debug(f"Local branches in clone: {local_branches}")
+    for branch_name in local_branches:
         branch_names.add(branch_name)
 
     # Add remote branches (strip "origin/" prefix)
-    for remote_branch in repo.branches.remote:
+    remote_branches = list(repo.branches.remote)
+    logger.debug(f"Remote branches in clone: {remote_branches}")
+    for remote_branch in remote_branches:
         if "/" in remote_branch:
             branch_name = remote_branch.split("/", 1)[1]
             if branch_name.upper() != "HEAD":
                 branch_names.add(branch_name)
 
+    logger.info(f"All discovered branch names: {sorted(list(branch_names))}")
     return sorted(list(branch_names))
 
 

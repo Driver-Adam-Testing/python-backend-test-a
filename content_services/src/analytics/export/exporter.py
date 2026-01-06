@@ -1,10 +1,13 @@
 """Driver-specific JSON export for analytics integration."""
+import logging
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from analytics.storage.hot_storage import HotStorage
 from analytics.storage.parquet_storage import ParquetStorage
+
+logger = logging.getLogger(__name__)
 from .schemas import (
     OverviewJSON, BranchesJSON, ActivityJSON, OwnershipJSON,
     MetadataJSON, BranchEntry, ActivityEntry,
@@ -200,6 +203,12 @@ class DriverJSONExporter:
         # Get names of deleted branches to filter them from hot storage results
         # (hot storage derives branches from commits, so deleted branches still appear)
         deleted_names = {d.get('name') for d in self.deleted_branches if d.get('name')}
+        
+        logger.info(f"Exporting branches: {len(branches or [])} in hot storage, {len(self.deleted_branches)} marked deleted")
+        logger.info(f"Deleted branch names to filter: {sorted(deleted_names)}")
+        
+        hot_storage_branch_names = [b.get('branch_name') for b in (branches or [])]
+        logger.info(f"Hot storage branch names: {sorted(hot_storage_branch_names)}")
 
         # Build branch entries from hot storage (active branches only)
         branch_entries = []
@@ -207,6 +216,7 @@ class DriverJSONExporter:
             branch_name = b.get('branch_name')
             # Skip branches that have been deleted - they'll be added with proper flags below
             if branch_name in deleted_names:
+                logger.info(f"Filtering out deleted branch from hot storage: {branch_name}")
                 continue
             
             branch_entries.append(
@@ -248,7 +258,9 @@ class DriverJSONExporter:
 
         # Add deleted branches (from branch lifecycle detection)
         # Preserve all historical metrics so users can see what the branch contributed
+        logger.info(f"Adding {len(self.deleted_branches)} deleted branches to export")
         for d in self.deleted_branches:
+            logger.info(f"Adding deleted branch: {d.get('name')} (status={d.get('status')})")
             branch_entries.append(
                 BranchEntry(
                     name=d.get('name', ''),

@@ -27,7 +27,7 @@ from shared.authorization.query_filters import (
     primary_asset_grant_filter,
 )
 from sqlalchemy.orm import selectinload, with_loader_criteria
-from sqlmodel import func, select
+from sqlmodel import delete, func, select
 
 from app.api.auth import UserToken
 from app.api.routes.v2.query_utils import (
@@ -330,8 +330,12 @@ def delete_primary_asset(
 
     s3 = boto3.resource(
         "s3",
-        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID if not settings.IS_PRIVATE_DEPLOY else None,
-        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY if not settings.IS_PRIVATE_DEPLOY else None,
+        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID
+        if not settings.IS_PRIVATE_DEPLOY
+        else None,
+        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY
+        if not settings.IS_PRIVATE_DEPLOY
+        else None,
         region_name=settings.AWS_REGION,
     )
 
@@ -353,6 +357,8 @@ def delete_primary_asset(
         # TODO: instead of storing run data in a separate bucket, place in the org bucket under the primary asset
 
     session.delete(asset)
+    session.flush()
+    session.exec(delete(Node).where(Node.primary_asset_id.is_(None)))
     session.commit()
 
     return asset

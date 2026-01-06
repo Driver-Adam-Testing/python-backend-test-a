@@ -825,10 +825,10 @@ class Node(SQLModel, table=True):  # type: ignore
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     source_hash: str | None = Field(nullable=True, index=True)
     kind: NodeKind
-    primary_asset_id: UUID = Field(
+    primary_asset_id: None | UUID = Field(
         foreign_key="primary_asset.id",
-        ondelete="CASCADE",
-        nullable=False,
+        ondelete="SET NULL",
+        nullable=True,
         index=True,
     )
     created_at: None | datetime = Field(
@@ -846,7 +846,7 @@ class Node(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    primary_asset: "PrimaryAsset" = Relationship(back_populates="nodes")
+    primary_asset: Optional["PrimaryAsset"] = Relationship(back_populates="nodes")
     contents: list["DerivedContent"] = Relationship(
         back_populates="node",
         sa_relationship_kwargs={

@@ -308,7 +308,7 @@ class AnalyticsPipeline:
             # Phase 3: Discover branches
             self._phase_branches(ctx)
 
-            # Phase 3b: Branch lifecycle detection (incremental mode only)
+            # Phase 3b: Branch lifecycle detection (tracks deleted/merged branches)
             self._phase_branch_diff(ctx)
 
             # Phase 4: Store in warm/cold storage
@@ -791,18 +791,17 @@ class AnalyticsPipeline:
             return None
 
     def _phase_branch_diff(self, ctx: PipelineContext) -> None:
-        """Detect branch changes since last run (incremental mode only).
+        """Detect branch changes since last run.
         
         Compares current branches from the repo with previous branches.json
         to detect new, deleted, and merged branches.
         
+        This runs in ALL modes (not just incremental) to ensure deleted branches
+        are properly tracked and don't reappear as "stale" active branches.
+        
         Args:
             ctx: Pipeline context
         """
-        if not ctx.input.incremental:
-            logger.debug("Branch diff skipped: not in incremental mode")
-            return
-
         if not ctx.branches_result:
             logger.warning("Branch diff skipped: no branches result")
             return

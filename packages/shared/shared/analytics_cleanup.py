@@ -7,7 +7,8 @@ Used by both:
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def delete_analytics_folder(
-    s3_resource,
+    s3_resource: Any,
     bucket_name: str,
     codebase_id: str,
 ) -> None:
@@ -35,7 +36,9 @@ def delete_analytics_folder(
         objects = list(bucket.objects.filter(Prefix=prefix))
         if objects:
             bucket.objects.filter(Prefix=prefix).delete()
-            logger.info(f"Deleted {len(objects)} analytics files for codebase {codebase_id}")
+            logger.info(
+                f"Deleted {len(objects)} analytics files for codebase {codebase_id}"
+            )
         else:
             logger.info(f"No analytics files found for codebase {codebase_id}")
     except Exception as e:
@@ -44,7 +47,7 @@ def delete_analytics_folder(
 
 
 def update_org_files_after_deletion(
-    s3_client,
+    s3_client: Any,
     bucket_name: str,
     organization_id: str,
     deleted_codebase_id: str,
@@ -85,10 +88,12 @@ def update_org_files_after_deletion(
         new_count = len(data["codebases"])
 
         if original_count == new_count:
-            logger.info(f"Codebase {deleted_codebase_id} not found in codebases_list.json")
+            logger.info(
+                f"Codebase {deleted_codebase_id} not found in codebases_list.json"
+            )
             return
 
-        data["generated_at"] = datetime.now(timezone.utc).isoformat()
+        data["generated_at"] = datetime.now(UTC).isoformat()
 
         # Upload updated list
         s3_client.put_object(
@@ -106,9 +111,11 @@ def update_org_files_after_deletion(
             "total_codebases": len(codebases),
             "codebases_with_analytics": len(codebases),
             "total_commits": sum(cb.get("total_commits", 0) for cb in codebases),
-            "total_contributors": sum(cb.get("total_contributors", 0) for cb in codebases),
+            "total_contributors": sum(
+                cb.get("total_contributors", 0) for cb in codebases
+            ),
             "total_sloc": sum(cb.get("current_sloc", 0) for cb in codebases),
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
         s3_client.put_object(
@@ -117,7 +124,9 @@ def update_org_files_after_deletion(
             Body=json.dumps(summary, indent=2),
             ContentType="application/json",
         )
-        logger.info(f"Recomputed org_summary.json: {len(codebases)} codebases remaining")
+        logger.info(
+            f"Recomputed org_summary.json: {len(codebases)} codebases remaining"
+        )
 
     except Exception as e:
         logger.warning(f"Failed to update org files after deletion: {e}")
@@ -166,7 +175,8 @@ def cleanup_analytics_for_codebase(
     delete_analytics_folder(s3_resource, bucket_name, codebase_id)
 
     # 2. Update org-level files
-    update_org_files_after_deletion(s3_client, bucket_name, organization_id, codebase_id)
+    update_org_files_after_deletion(
+        s3_client, bucket_name, organization_id, codebase_id
+    )
 
     logger.info(f"Analytics cleanup complete for codebase {codebase_id}")
-

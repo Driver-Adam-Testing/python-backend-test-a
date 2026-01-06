@@ -3,7 +3,9 @@ Data models for analytics pipeline.
 
 All models use Pydantic for validation and serialization.
 """
+
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -62,7 +64,7 @@ class CommitRecord(BaseModel):
     # Collection metadata
     collection_version: str = "2.0"
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, __context: Any) -> None:
         """Compute derived fields after initialization."""
         if self.commit_date is None and self.committed_at:
             self.commit_date = self.committed_at.date()
@@ -163,4 +165,3 @@ class ContributorRecord(BaseModel):
 
     # Collection metadata
     collected_at: datetime
-

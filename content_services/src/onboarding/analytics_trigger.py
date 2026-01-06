@@ -9,6 +9,7 @@ codebase is connected. They support all git providers:
 
 Manual uploads (provider="manual") are not supported for analytics.
 """
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,23 +17,40 @@ logger = logging.getLogger(__name__)
 
 # Provider clone URL patterns
 _PROVIDER_CLONE_URLS = {
-    "github": lambda name, token: f"https://x-access-token:{token}@github.com/{name}.git" if token else f"https://github.com/{name}.git",
-    "gitlab": lambda name, token: f"https://oauth2:{token}@gitlab.com/{name}.git" if token else f"https://gitlab.com/{name}.git",
-    "gitlab_enterprise": lambda name, token: f"https://oauth2:{token}@gitlab.com/{name}.git" if token else f"https://gitlab.com/{name}.git",
-    "gitlab_enterprise_self_managed": lambda name, token: f"https://oauth2:{token}@gitlab.com/{name}.git" if token else f"https://gitlab.com/{name}.git",
-    "bitbucket": lambda name, token: f"https://x-token-auth:{token}@bitbucket.org/{name}.git" if token else f"https://bitbucket.org/{name}.git",
-    "azure_devops": lambda name, token: f"https://{token}@dev.azure.com/{name}.git" if token else f"https://dev.azure.com/{name}.git",
+    "github": lambda name,
+    token: f"https://x-access-token:{token}@github.com/{name}.git"
+    if token
+    else f"https://github.com/{name}.git",
+    "gitlab": lambda name, token: f"https://oauth2:{token}@gitlab.com/{name}.git"
+    if token
+    else f"https://gitlab.com/{name}.git",
+    "gitlab_enterprise": lambda name,
+    token: f"https://oauth2:{token}@gitlab.com/{name}.git"
+    if token
+    else f"https://gitlab.com/{name}.git",
+    "gitlab_enterprise_self_managed": lambda name,
+    token: f"https://oauth2:{token}@gitlab.com/{name}.git"
+    if token
+    else f"https://gitlab.com/{name}.git",
+    "bitbucket": lambda name,
+    token: f"https://x-token-auth:{token}@bitbucket.org/{name}.git"
+    if token
+    else f"https://bitbucket.org/{name}.git",
+    "azure_devops": lambda name, token: f"https://{token}@dev.azure.com/{name}.git"
+    if token
+    else f"https://dev.azure.com/{name}.git",
 }
 
 
-def get_provider_token_fetchers():
+def get_provider_token_fetchers() -> dict:
     """Get provider token fetch mapping (deferred import to avoid circular imports)."""
     from shared.inspector.onboarding import (
+        azure_devops_ops,
+        bitbucket_ops,
         gh_ops,
         gitlab_ops,
-        bitbucket_ops,
-        azure_devops_ops,
     )
+
     return {
         "github": gh_ops.fetch_app_access_token,
         "gitlab": gitlab_ops.fetch_access_token,
@@ -70,14 +88,18 @@ def get_provider_auth_token(provider: str, install_id: str | None) -> str | None
     try:
         return token_fetcher(install_id)
     except AccessTokenError as e:
-        logger.warning(f"Install {install_id} not found for {provider} (may be uninstalled): {e}")
+        logger.warning(
+            f"Install {install_id} not found for {provider} (may be uninstalled): {e}"
+        )
         return None
     except Exception as e:
         logger.error(f"Error getting {provider} token: {e}")
         return None
 
 
-def build_clone_url(provider: str, codebase_name: str, auth_token: str | None = None) -> str | None:
+def build_clone_url(
+    provider: str, codebase_name: str, auth_token: str | None = None
+) -> str | None:
     """Build clone URL for repository.
 
     Uses provider-specific URL patterns matching existing infrastructure.
@@ -116,7 +138,7 @@ def spawn_analytics_task(
     Never raises - analytics failure should not block connection.
     """
     # Deferred imports to avoid Hatchet client initialization at module load
-    from workflows.analytics_workflow import analytics_task, AnalyticsInput
+    from workflows.analytics_workflow import AnalyticsInput, analytics_task
 
     # Skip manual uploads - no git provider means no clone URL
     if provider == "manual":
@@ -152,10 +174,11 @@ def spawn_analytics_task(
         )
 
         call = analytics_task.run_no_wait(analytics_input)
-        logger.info(f"Analytics task spawned ({mode}): {call.workflow_run_id} for {codebase_name}")
+        logger.info(
+            f"Analytics task spawned ({mode}): {call.workflow_run_id} for {codebase_name}"
+        )
         return call.workflow_run_id
 
     except Exception as e:
         logger.error(f"Failed to spawn analytics task for {codebase_name}: {e}")
         return None
-

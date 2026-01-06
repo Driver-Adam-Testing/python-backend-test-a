@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CloneResult:
     """Result of clone operation."""
+
     success: bool
     repo_path: Path | None
     repo: pygit2.Repository | None
@@ -28,7 +29,7 @@ def clone_repository(
     clone_url: str,
     target_path: Path,
     auth_token: str | None = None,
-    clean_existing: bool = True
+    clean_existing: bool = True,
 ) -> CloneResult:
     """
     Clone a repository using pygit2.
@@ -58,39 +59,21 @@ def clone_repository(
             callbacks = _create_auth_callbacks(auth_token)
 
         # Clone the repository
-        logger.info(f"Starting clone operation...")
-        repo = pygit2.clone_repository(
-            clone_url,
-            str(target_path),
-            callbacks=callbacks
-        )
+        logger.info("Starting clone operation...")
+        repo = pygit2.clone_repository(clone_url, str(target_path), callbacks=callbacks)
 
         logger.info(f"Successfully cloned repository to {target_path}")
 
-        return CloneResult(
-            success=True,
-            repo_path=target_path,
-            repo=repo
-        )
+        return CloneResult(success=True, repo_path=target_path, repo=repo)
 
     except pygit2.GitError as e:
         error_msg = f"Git error during clone: {e}"
         logger.error(error_msg)
-        return CloneResult(
-            success=False,
-            repo_path=None,
-            repo=None,
-            error=error_msg
-        )
+        return CloneResult(success=False, repo_path=None, repo=None, error=error_msg)
     except Exception as e:
         error_msg = f"Unexpected error during clone: {e}"
         logger.error(error_msg)
-        return CloneResult(
-            success=False,
-            repo_path=None,
-            repo=None,
-            error=error_msg
-        )
+        return CloneResult(success=False, repo_path=None, repo=None, error=error_msg)
 
 
 def open_repository(repo_path: Path) -> CloneResult:
@@ -111,27 +94,18 @@ def open_repository(repo_path: Path) -> CloneResult:
                 success=False,
                 repo_path=None,
                 repo=None,
-                error=f"Repository path does not exist: {repo_path}"
+                error=f"Repository path does not exist: {repo_path}",
             )
 
         repo = pygit2.Repository(str(repo_path))
         logger.info(f"Successfully opened repository at {repo_path}")
 
-        return CloneResult(
-            success=True,
-            repo_path=repo_path,
-            repo=repo
-        )
+        return CloneResult(success=True, repo_path=repo_path, repo=repo)
 
     except pygit2.GitError as e:
         error_msg = f"Git error opening repository: {e}"
         logger.error(error_msg)
-        return CloneResult(
-            success=False,
-            repo_path=None,
-            repo=None,
-            error=error_msg
-        )
+        return CloneResult(success=False, repo_path=None, repo=None, error=error_msg)
 
 
 def cleanup_repository(repo_path: Path) -> None:
@@ -161,11 +135,12 @@ def _create_auth_callbacks(token: str) -> pygit2.RemoteCallbacks:
         pygit2.RemoteCallbacks with credentials
     """
 
-    def credentials_callback(url, username_from_url, allowed_types):
+    def credentials_callback(
+        url: str, username_from_url: str | None, allowed_types: int
+    ) -> pygit2.Credential | None:
         if allowed_types & pygit2.GIT_CREDENTIAL_USERPASS_PLAINTEXT:
             return pygit2.UserPass(token, "x-oauth-basic")
         return None
 
     callbacks = pygit2.RemoteCallbacks(credentials=credentials_callback)
     return callbacks
-

@@ -8,7 +8,7 @@ SLOC measurement:
 """
 
 from dataclasses import dataclass
-
+from typing import ClassVar
 
 # Conversion factor (must match python-backend)
 BYTES_PER_LINE = 50
@@ -16,12 +16,10 @@ BYTES_PER_LINE = 50
 
 class BinaryFileError(Exception):
     """Raised when attempting to calculate SLOC for binary files."""
-    pass
 
 
 class InvalidEncodingError(Exception):
     """Raised when patch contains invalid UTF-8."""
-    pass
 
 
 @dataclass
@@ -32,6 +30,7 @@ class SLOCMetrics:
     Provides both traditional line-based metrics (GitHub-compatible) and
     byte-based metrics (Driver-compatible) from a single calculation.
     """
+
     # Traditional line-based metrics
     additions_lines: int
     deletions_lines: int
@@ -72,17 +71,19 @@ class DualSLOCCalculator:
         1
     """
 
-    BYTES_PER_LINE = 50  # Driver standard
+    BYTES_PER_LINE: ClassVar[int] = 50  # Driver standard
 
     # Binary file indicators
-    BINARY_INDICATORS = [
-        b'\\0',  # Null byte
-        'Binary files',
-        'GIT binary patch',
+    BINARY_INDICATORS: ClassVar[list] = [
+        b"\\0",  # Null byte
+        "Binary files",
+        "GIT binary patch",
     ]
 
     @classmethod
-    def from_git_diff(cls, diff_text: str, validate_encoding: bool = True) -> SLOCMetrics:
+    def from_git_diff(
+        cls, diff_text: str, validate_encoding: bool = True
+    ) -> SLOCMetrics:
         """
         Calculate metrics from git diff output.
 
@@ -112,48 +113,52 @@ class DualSLOCCalculator:
         try:
             for line in diff_text.splitlines():
                 # Skip diff metadata lines
-                if line.startswith('+++') or line.startswith('---') or line.startswith('@@'):
+                if line.startswith(("+++", "---", "@@")):
                     continue
 
                 # Process additions
-                if line.startswith('+'):
+                if line.startswith("+"):
                     lines_added += 1
                     # Count bytes excluding the '+' prefix
                     content = line[1:]
                     if validate_encoding:
                         try:
-                            bytes_added += len(content.encode('utf-8'))
+                            bytes_added += len(content.encode("utf-8"))
                         except UnicodeEncodeError as e:
-                            raise InvalidEncodingError(f"Invalid UTF-8 in added line: {e}")
+                            raise InvalidEncodingError(
+                                f"Invalid UTF-8 in added line: {e}"
+                            )
                     else:
                         # Use errors='replace' to handle invalid UTF-8
-                        bytes_added += len(content.encode('utf-8', errors='replace'))
+                        bytes_added += len(content.encode("utf-8", errors="replace"))
 
                 # Process deletions
-                elif line.startswith('-'):
+                elif line.startswith("-"):
                     lines_deleted += 1
                     content = line[1:]
                     if validate_encoding:
                         try:
-                            bytes_deleted += len(content.encode('utf-8'))
+                            bytes_deleted += len(content.encode("utf-8"))
                         except UnicodeEncodeError as e:
-                            raise InvalidEncodingError(f"Invalid UTF-8 in deleted line: {e}")
+                            raise InvalidEncodingError(
+                                f"Invalid UTF-8 in deleted line: {e}"
+                            )
                     else:
-                        bytes_deleted += len(content.encode('utf-8', errors='replace'))
+                        bytes_deleted += len(content.encode("utf-8", errors="replace"))
 
         except UnicodeDecodeError as e:
             if validate_encoding:
                 raise InvalidEncodingError(f"Invalid UTF-8 in diff: {e}")
             # If not validating, try to process as best we can
-            pass
 
         return cls._create_metrics(
-            lines_added, lines_deleted,
-            bytes_added, bytes_deleted
+            lines_added, lines_deleted, bytes_added, bytes_deleted
         )
 
     @classmethod
-    def from_line_counts(cls, additions: int, deletions: int, patch: str | None = None) -> SLOCMetrics:
+    def from_line_counts(
+        cls, additions: int, deletions: int, patch: str | None = None
+    ) -> SLOCMetrics:
         """
         Calculate from line counts (GitHub API style) plus optional patch.
 
@@ -181,12 +186,13 @@ class DualSLOCCalculator:
             bytes_deleted = deletions * cls.BYTES_PER_LINE
 
         return cls._create_metrics(
-            lines_added, lines_deleted,
-            bytes_added, bytes_deleted
+            lines_added, lines_deleted, bytes_added, bytes_deleted
         )
 
     @classmethod
-    def from_batch(cls, diffs: list[str], validate_encoding: bool = False) -> list[SLOCMetrics]:
+    def from_batch(
+        cls, diffs: list[str], validate_encoding: bool = False
+    ) -> list[SLOCMetrics]:
         """
         Calculate metrics for multiple diffs efficiently.
 
@@ -230,21 +236,21 @@ class DualSLOCCalculator:
 
         for line in patch.splitlines():
             # Skip diff metadata
-            if line.startswith('+++') or line.startswith('---') or line.startswith('@@'):
+            if line.startswith(("+++", "---", "@@")):
                 continue
 
             # Count additions (exclude '+' prefix)
-            if line.startswith('+'):
+            if line.startswith("+"):
                 try:
-                    addition_bytes += len(line[1:].encode('utf-8', errors='replace'))
+                    addition_bytes += len(line[1:].encode("utf-8", errors="replace"))
                 except Exception:
                     # Fallback: estimate
                     addition_bytes += len(line[1:]) * 1
 
             # Count deletions (exclude '-' prefix)
-            elif line.startswith('-'):
+            elif line.startswith("-"):
                 try:
-                    deletion_bytes += len(line[1:].encode('utf-8', errors='replace'))
+                    deletion_bytes += len(line[1:].encode("utf-8", errors="replace"))
                 except Exception:
                     deletion_bytes += len(line[1:]) * 1
 
@@ -252,10 +258,7 @@ class DualSLOCCalculator:
 
     @staticmethod
     def _create_metrics(
-        lines_added: int,
-        lines_deleted: int,
-        bytes_added: int,
-        bytes_deleted: int
+        lines_added: int, lines_deleted: int, bytes_added: int, bytes_deleted: int
     ) -> SLOCMetrics:
         """
         Create SLOCMetrics from raw counts.
@@ -291,7 +294,7 @@ class DualSLOCCalculator:
             patch_bytes=patch_bytes,
             net_bytes=net_bytes,
             sloc=sloc,
-            bytes_per_line=bytes_per_line
+            bytes_per_line=bytes_per_line,
         )
 
     @staticmethod
@@ -307,7 +310,7 @@ class DualSLOCCalculator:
             patch_bytes=0,
             net_bytes=0,
             sloc=0,
-            bytes_per_line=0.0
+            bytes_per_line=0.0,
         )
 
     @staticmethod
@@ -326,9 +329,9 @@ class DualSLOCCalculator:
             if isinstance(indicator, bytes):
                 # Check if binary representation exists
                 try:
-                    if indicator.decode('unicode_escape') in diff_text:
+                    if indicator.decode("unicode_escape") in diff_text:
                         return True
-                except:
+                except Exception:
                     pass
             elif indicator in diff_text:
                 return True
@@ -392,4 +395,3 @@ def calculate_patch_bytes(patch: str | None) -> tuple[int, int, int]:
     addition_bytes, deletion_bytes = DualSLOCCalculator._count_patch_bytes(patch or "")
     total_bytes = addition_bytes + deletion_bytes
     return (addition_bytes, deletion_bytes, total_bytes)
-

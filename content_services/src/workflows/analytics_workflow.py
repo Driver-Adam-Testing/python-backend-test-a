@@ -27,14 +27,14 @@ class AnalyticsInput(BaseModel):
 
 @hatchet.task(
     name="analytics-workflow",
-    execution_timeout=timedelta(minutes=120),  # 2 hours max
+    execution_timeout=timedelta(hours=8),
     concurrency=ConcurrencyExpression(
         max_runs=3,
         expression="'analytics-workflow'",
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
 )
-async def analytics_task(input: AnalyticsInput, ctx: Context) -> dict[str, str]:
+def analytics_task(input: AnalyticsInput, ctx: Context) -> dict[str, str]:
     """
     Run analytics pipeline for a codebase.
 

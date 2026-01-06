@@ -11,9 +11,11 @@ from hatchet_sdk.runnables.types import (
 )
 from inspector.src.deep_context_docs import deep_context_docs
 from inspector.src.hatchet_funcs import (
+    delete_diff_content_cache,
     delete_tags_cache,
     delete_top_level_cache,
     export_tech_docs_to_zip,
+    get_diff_content_cache,
     get_tags_cache,
     get_top_level_cache,
     make_codebase_tags,
@@ -23,7 +25,7 @@ from inspector.src.hatchet_funcs import (
     make_toplevel_tech_docs,
 )
 from pydantic import BaseModel
-from shared.inspector.utils.dag import FlatTopoFileDiffDag, LiteNode, NodeKind
+from shared.inspector.utils.dag import LiteNode, NodeKind
 from shared.inspector.utils.synthesis.deep_context import (
     DeepContextDoc,
 )
@@ -59,7 +61,6 @@ class TopLevelDocInput(BaseModel):
 class DeepContextDocsInput(BaseModel):
     old_version_id: uuid.UUID | None
     old_version_content: list | None
-    code_diff: FlatTopoFileDiffDag | None
     new_version_id: uuid.UUID
     install_id: str | None
 
@@ -138,6 +139,7 @@ def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str
         expression="'deep-context-docs-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
+    sticky=StickyStrategy.HARD,
 )
 async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> dict:
     print("starting deep context docs task")
@@ -149,8 +151,10 @@ async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> d
         for doc in input.old_version_content:
             old_version_content.append(DeepContextDoc.model_validate(doc))
     code_diff = None
-    if input.code_diff is not None:
-        code_diff = FlatTopoFileDiffDag.model_validate(input.code_diff)
+    if input.old_version_id is not None:
+        code_diff = get_diff_content_cache(
+            input.old_version_id,
+        )
 
     await deep_context_docs(
         input.old_version_id,
@@ -159,6 +163,10 @@ async def deep_context_docs_task(input: DeepContextDocsInput, ctx: Context) -> d
         input.new_version_id,
         input.install_id,
     )
+    if input.old_version_id is not None:
+        delete_diff_content_cache(
+            input.old_version_id,
+        )
     print("executed deep context docs task")
     return {"status": "completed"}
 

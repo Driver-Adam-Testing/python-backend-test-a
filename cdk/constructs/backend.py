@@ -470,6 +470,9 @@ class Backend(Construct):
         self.service.task_definition.task_role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
+        self.service.task_definition.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
+        )
 
         # Create private hosted zone entry for internal VPC routing
         private_hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(

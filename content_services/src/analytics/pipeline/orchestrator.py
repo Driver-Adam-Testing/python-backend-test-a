@@ -291,25 +291,27 @@ class AnalyticsPipeline:
             # Check if we have any commits to process
             extracted_commits = ctx.extract_result.total_commits if ctx.extract_result else 0
 
-            # If incremental mode extracted 0 commits, we're done (already up to date)
-            if input.incremental and extracted_commits == 0:
+            # Phase 3: Discover branches (needed for branch lifecycle detection)
+            self._phase_branches(ctx)
+
+            # Phase 3b: Branch lifecycle detection (tracks deleted/merged branches)
+            # This runs BEFORE the early exit check because branch deletions can
+            # happen without any new commits being pushed
+            self._phase_branch_diff(ctx)
+
+            # If incremental mode extracted 0 commits AND no branch changes, we're done
+            if input.incremental and extracted_commits == 0 and not ctx.deleted_branches:
                 duration = (datetime.now(timezone.utc) - ctx.start_time).total_seconds()
-                logger.info(f"Incremental pipeline: no new commits for {input.codebase_id}")
+                logger.info(f"Incremental pipeline: no new commits or branch changes for {input.codebase_id}")
                 return PipelineOutput(
                     success=True,
                     codebase_id=input.codebase_id,
                     total_commits=0,
-                    total_branches=0,
+                    total_branches=len(ctx.branches_result.branches) if ctx.branches_result else 0,
                     total_contributors=0,
                     json_files=[],
                     duration_seconds=duration
                 )
-
-            # Phase 3: Discover branches
-            self._phase_branches(ctx)
-
-            # Phase 3b: Branch lifecycle detection (tracks deleted/merged branches)
-            self._phase_branch_diff(ctx)
 
             # Phase 4: Store in warm/cold storage
             self._phase_store(ctx)
@@ -820,6 +822,9 @@ class AnalyticsPipeline:
         current_names = {b.name for b in ctx.branches_result.branches}
         previous_branches = previous_data.get("branches", [])
         
+        logger.info(f"Branch lifecycle: current branches in repo: {sorted(current_names)}")
+        logger.info(f"Branch lifecycle: previous branches in S3: {[b.get('name') for b in previous_branches]}")
+        
         # Carry forward previously deleted branches (so they stay deleted)
         # Only carry forward if they haven't reappeared in the repo
         for prev_branch in previous_branches:
@@ -827,7 +832,7 @@ class AnalyticsPipeline:
             if prev_branch.get("is_deleted", False) and branch_name not in current_names:
                 # Branch was deleted before and hasn't reappeared - keep it deleted
                 ctx.deleted_branches.append(prev_branch)
-                logger.debug(f"Carrying forward deleted branch: {branch_name}")
+                logger.info(f"Carrying forward deleted branch: {branch_name}")
         
         # Only consider previously ACTIVE branches when detecting NEW deletions
         # (branches already marked is_deleted=True should not be re-detected)
@@ -835,11 +840,15 @@ class AnalyticsPipeline:
             b.get("name") for b in previous_branches 
             if b.get("name") and not b.get("is_deleted", False)
         }
+        
+        logger.info(f"Branch lifecycle: previous ACTIVE branches: {sorted(previous_active_names)}")
 
         # Detect changes
         diff = _detect_branch_changes(current_names, previous_active_names)
 
         logger.info(f"Branch diff: {len(diff.new_branches)} new, {len(diff.deleted_branches)} deleted")
+        if diff.deleted_branches:
+            logger.info(f"Newly deleted branches: {sorted(diff.deleted_branches)}")
 
         # Process newly deleted branches
         for branch_name in diff.deleted_branches:

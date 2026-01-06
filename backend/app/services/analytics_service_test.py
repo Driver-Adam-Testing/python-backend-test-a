@@ -69,7 +69,7 @@ class TestAnalyticsService:
     @pytest.mark.unit
     def test_get_overview_success(self, service, mock_s3_client):
         """Test successful overview retrieval with full schema."""
-        expected_data = {
+        s3_data = {
             "codebase_id": "test-id",
             "display_name": "test-repo",
             "repository_name": "test-repo",
@@ -78,14 +78,15 @@ class TestAnalyticsService:
             "total_commits": 100,
             "total_contributors": 5,
             "total_branches": 3,
-            "total_lines": 5000,
-            "total_additions_lines": 8000,
-            "total_deletions_lines": 3000,
-            "total_sloc": 5000,
+            "net_lines": 5000,
+            "additions_lines": 8000,
+            "deletions_lines": 3000,
+            "churn_lines": 11000,
+            "churn_sloc": 5000,
             "net_sloc": 2500,
             "current_sloc": 2500,
-            "total_addition_bytes": 400000,
-            "total_deletion_bytes": 150000,
+            "additions_sloc": 8000,
+            "deletions_sloc": 3000,
             "avg_bytes_per_line": 50.0,
             "total_files": 42,
             "default_branch": "main",
@@ -96,11 +97,13 @@ class TestAnalyticsService:
             "last_updated_at": "2024-06-01T12:00:00Z",
         }
         mock_s3_client.get_object.return_value = {
-            "Body": MagicMock(read=lambda: json.dumps(expected_data).encode())
+            "Body": MagicMock(read=lambda: json.dumps(s3_data).encode())
         }
 
         result = service.get_overview("test-id")
 
+        # Service enriches with provider (None when not found in DB)
+        expected_data = {**s3_data, "provider": None}
         assert result == expected_data
         mock_s3_client.get_object.assert_called_once()
 
@@ -177,7 +180,7 @@ class TestAnalyticsService:
     @pytest.mark.unit
     def test_get_codebases_list_success(self, service, mock_s3_client):
         """Test successful codebases list retrieval."""
-        expected_data = {
+        s3_data = {
             "organization_id": "test-org",
             "codebases": [
                 {
@@ -200,13 +203,17 @@ class TestAnalyticsService:
             "generated_at": "2024-06-15T10:00:00Z",
         }
         mock_s3_client.get_object.return_value = {
-            "Body": MagicMock(read=lambda: json.dumps(expected_data).encode())
+            "Body": MagicMock(read=lambda: json.dumps(s3_data).encode())
         }
 
         result = service.get_codebases_list()
 
-        assert result == expected_data
+        # Service enriches each codebase with provider (None when not found in DB)
         assert len(result["codebases"]) == 2
+        assert result["organization_id"] == "test-org"
+        # Verify provider is added to each codebase
+        for cb in result["codebases"]:
+            assert "provider" in cb
 
     @pytest.mark.unit
     def test_get_branches_success(self, service, mock_s3_client):
@@ -279,7 +286,7 @@ class TestAnalyticsService:
                 {
                     "directory_path": "src",
                     "total_commits": 50,
-                    "total_sloc": 3000,
+                    "churn_sloc": 3000,
                     "unique_contributors": 3,
                     "primary_owner_email": "dev@example.com",
                     "primary_owner_name": "Developer",
@@ -289,7 +296,9 @@ class TestAnalyticsService:
                             "contributor_email": "dev@example.com",
                             "contributor_name": "Developer",
                             "total_commits": 30,
-                            "total_sloc": 1800,
+                            "churn_sloc": 1800,
+                            "additions_sloc": 1800,
+                            "deletions_sloc": 0,
                             "ownership_percentage": 60.0,
                             "first_commit_at": "2024-01-01T00:00:00Z",
                             "last_commit_at": "2024-06-01T00:00:00Z",

@@ -818,21 +818,31 @@ class AnalyticsPipeline:
         ctx.previous_branches_data = previous_data
 
         # Get current and previous branch names
-        # Only consider previously ACTIVE branches when detecting deletions
-        # (branches already marked is_deleted=True should not be re-detected)
         current_names = {b.name for b in ctx.branches_result.branches}
         previous_branches = previous_data.get("branches", [])
-        previous_names = {
+        
+        # Carry forward previously deleted branches (so they stay deleted)
+        # Only carry forward if they haven't reappeared in the repo
+        for prev_branch in previous_branches:
+            branch_name = prev_branch.get("name")
+            if prev_branch.get("is_deleted", False) and branch_name not in current_names:
+                # Branch was deleted before and hasn't reappeared - keep it deleted
+                ctx.deleted_branches.append(prev_branch)
+                logger.debug(f"Carrying forward deleted branch: {branch_name}")
+        
+        # Only consider previously ACTIVE branches when detecting NEW deletions
+        # (branches already marked is_deleted=True should not be re-detected)
+        previous_active_names = {
             b.get("name") for b in previous_branches 
             if b.get("name") and not b.get("is_deleted", False)
         }
 
         # Detect changes
-        diff = _detect_branch_changes(current_names, previous_names)
+        diff = _detect_branch_changes(current_names, previous_active_names)
 
         logger.info(f"Branch diff: {len(diff.new_branches)} new, {len(diff.deleted_branches)} deleted")
 
-        # Process deleted branches
+        # Process newly deleted branches
         for branch_name in diff.deleted_branches:
             # Find the previous branch data
             prev_branch = next(

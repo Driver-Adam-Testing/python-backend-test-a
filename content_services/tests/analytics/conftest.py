@@ -13,6 +13,11 @@ _src_path = Path(__file__).resolve().parent.parent.parent / "src"
 if str(_src_path) not in sys.path:
     sys.path.insert(0, str(_src_path))
 
+# Add shared package to Python path (for shared.file_storage, etc.)
+_shared_path = Path(__file__).resolve().parent.parent.parent.parent / "packages" / "shared"
+if str(_shared_path) not in sys.path:
+    sys.path.insert(0, str(_shared_path))
+
 # Mock Hatchet before any imports that might trigger it
 sys.modules['hatchet_client'] = MagicMock()
 

@@ -22,6 +22,11 @@ mypy = "^1.8.0"
 pre-commit = "^3.6.2"
 pytest-mock = "^3.12.0"
 hypothesis = "^6.142.4"
+pygit2 = "^1.19.1"
+duckdb = "^1.4.3"
+pyarrow = "^22.0.0"
+pandas = "^2.3.3"
+boto3 = "^1.42.22"
 
 [build-system]
 requires = ["poetry>=0.12"]

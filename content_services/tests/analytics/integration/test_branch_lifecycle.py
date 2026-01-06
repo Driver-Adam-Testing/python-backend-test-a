@@ -10,8 +10,8 @@ import tempfile
 class TestBranchLifecycleIntegration:
     """Integration tests for branch lifecycle in incremental mode."""
 
-    def test_branch_diff_skipped_in_full_mode(self):
-        """Branch diff is skipped when not in incremental mode."""
+    def test_branch_diff_runs_in_full_mode(self):
+        """Branch diff runs in ALL modes (not just incremental) to detect deletions."""
         from analytics.pipeline.orchestrator import (
             AnalyticsPipeline,
             PipelineConfig,
@@ -23,14 +23,14 @@ class TestBranchLifecycleIntegration:
         config = PipelineConfig(work_dir=Path(tempfile.mkdtemp()))
         pipeline = AnalyticsPipeline(config)
 
-        # Non-incremental input
+        # Non-incremental input - branch diff should still run!
         input_data = PipelineInput(
             codebase_id="test-codebase",
             organization_id="test-org",
             clone_url="https://github.com/test/repo",
             repo_owner="test",
             repo_name="repo",
-            incremental=False,  # Not incremental
+            incremental=False,  # Not incremental, but should still detect deletions
         )
 
         ctx = PipelineContext(config=config, input=input_data)
@@ -50,11 +50,28 @@ class TestBranchLifecycleIntegration:
             default_branch="main",
         )
 
-        # Run branch diff phase
-        pipeline._phase_branch_diff(ctx)
+        # Mock previous branches.json with a deleted branch
+        previous_branches = {
+            "codebase_id": "test-codebase",
+            "branches": [
+                {"name": "main", "head_commit_sha": "abc123", "commits": 100},
+                {"name": "feature-old", "head_commit_sha": "def456", "commits": 10},
+            ],
+        }
 
-        # Should not have any deleted branches since we're not in incremental mode
-        assert ctx.deleted_branches == []
+        with patch.object(pipeline, '_download_branches_json', return_value=previous_branches):
+            ctx.repo = MagicMock()
+            ctx.repo.branches = MagicMock()
+            ctx.repo.branches.local = ["main"]
+            ctx.repo.branches.remote = []
+            ctx.repo.branches.__getitem__ = MagicMock(return_value=MagicMock(target="abc123"))
+            ctx.repo.descendant_of = MagicMock(return_value=False)
+
+            pipeline._phase_branch_diff(ctx)
+
+        # Branch diff should run even in full mode - should detect deletion
+        assert len(ctx.deleted_branches) == 1
+        assert ctx.deleted_branches[0]["name"] == "feature-old"
 
     def test_branch_diff_detects_deleted_branch(self):
         """Deleted branches are detected and marked in incremental mode."""
@@ -387,11 +404,11 @@ class TestExporterWithDeletedBranches:
         assert test_branch["current_sloc"] == 10
         assert test_branch["additions_sloc"] == 10  # 500 bytes / 50 = 10 SLOC
 
-    def test_branch_diff_ignores_already_deleted_branches(self):
-        """Branch diff doesn't re-detect branches already marked as deleted.
+    def test_branch_diff_carries_forward_deleted_branches(self):
+        """Branch diff carries forward previously deleted branches.
         
-        This tests the bug fix where previously deleted branches were being
-        re-detected as deleted on every incremental run.
+        This ensures deleted branches stay deleted across pipeline runs,
+        rather than reappearing as 'stale' active branches.
         """
         from analytics.pipeline.orchestrator import (
             AnalyticsPipeline,
@@ -442,6 +459,8 @@ class TestExporterWithDeletedBranches:
                     "head_commit_sha": "xyz789",
                     "commits": 5,
                     "is_deleted": True,  # Already marked as deleted!
+                    "is_merged": True,
+                    "status": "merged",
                     "deleted_at": "2024-01-01T00:00:00Z",
                 },
             ],
@@ -451,6 +470,9 @@ class TestExporterWithDeletedBranches:
             ctx.repo = MagicMock()
             pipeline._phase_branch_diff(ctx)
 
-        # Should NOT re-detect old-deleted-branch
-        assert len(ctx.deleted_branches) == 0
+        # Should carry forward the deleted branch (so it stays deleted in export)
+        assert len(ctx.deleted_branches) == 1
+        assert ctx.deleted_branches[0]["name"] == "old-deleted-branch"
+        assert ctx.deleted_branches[0]["is_deleted"] is True
+        assert ctx.deleted_branches[0]["status"] == "merged"
 

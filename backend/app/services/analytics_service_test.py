@@ -404,6 +404,7 @@ class TestAnalyticsFiltering:
                     "total_commits": 100,
                     "total_contributors": 5,
                     "current_sloc": 5000,
+                    "last_commit_date": "2024-06-01T00:00:00Z",
                     "analytics_status": "complete",
                 },
                 {
@@ -412,6 +413,7 @@ class TestAnalyticsFiltering:
                     "total_commits": 50,
                     "total_contributors": 3,
                     "current_sloc": 2500,
+                    "last_commit_date": "2024-05-15T00:00:00Z",
                     "analytics_status": "complete",
                 },
             ],
@@ -978,6 +980,7 @@ class TestFilteringEdgeCases:
                     "display_name": "repo-1",
                     "total_commits": 100,
                     "current_sloc": 5000,
+                    "last_commit_date": "2024-06-01T00:00:00Z",
                     "analytics_status": "complete",
                 },
                 {
@@ -985,6 +988,7 @@ class TestFilteringEdgeCases:
                     "display_name": "repo-2",
                     "total_commits": 50,
                     "current_sloc": 2500,
+                    "last_commit_date": "2024-05-15T00:00:00Z",
                     "analytics_status": "complete",
                 },
             ],

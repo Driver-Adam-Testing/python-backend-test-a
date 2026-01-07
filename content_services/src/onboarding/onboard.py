@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import re
 import subprocess
@@ -15,7 +16,94 @@ from database.models_enums import (
     NodeKind,
     VersionStatus,
 )
+from shared.analytics_cleanup import cleanup_analytics_for_codebase
 from workflows.inspector_workflow import InspectorInput, inspector_task
+
+logger = logging.getLogger(__name__)
+
+
+def _cleanup_analytics_before_delete(org_id: str, codebase_id: str) -> None:
+    """Clean up analytics data before deleting a codebase.
+    
+    Args:
+        org_id: Organization UUID string
+        codebase_id: Codebase UUID string
+    """
+    try:
+        # Get AWS config from environment (set by Modal/worker)
+        aws_region = os.environ.get("AWS_REGION", "us-east-1")
+        
+        cleanup_analytics_for_codebase(
+            organization_id=org_id,
+            codebase_id=codebase_id,
+            aws_region=aws_region,
+        )
+        print(f"Analytics cleanup complete for codebase {codebase_id}")
+    except Exception as e:
+        # Log but don't fail the deletion
+        print(f"Warning: Analytics cleanup failed for {codebase_id}: {e}")
+
+
+def _trigger_incremental_analytics_for_push(
+    org_id: str,
+    repo: dict,
+    install_id: str | None,
+    provider: str,
+) -> None:
+    """Trigger incremental analytics after a push event.
+    
+    Looks up the codebase_id from the database and spawns an incremental
+    analytics task. Silently fails if analytics cannot be triggered.
+    
+    Args:
+        org_id: Organization UUID
+        repo: Repository dict with 'id' (repository_id), 'name', and 'full_name'
+        install_id: Provider app installation ID
+        provider: Git provider name
+    """
+    from database.db import engine
+    from database.models import PrimaryAsset
+    from sqlmodel import Session, select
+    
+    from onboarding.analytics_trigger import spawn_analytics_task
+
+    repository_id = str(repo.get("id", ""))
+    full_name = repo.get("full_name", repo.get("name", ""))
+    
+    if not repository_id:
+        logger.warning(f"Cannot trigger analytics: no repository_id for {full_name}")
+        return
+
+    try:
+        with Session(engine) as session:
+            # Look up codebase_id from PrimaryAsset
+            primary_asset = session.exec(
+                select(PrimaryAsset).where(
+                    PrimaryAsset.repository_id == repository_id,
+                    PrimaryAsset.organization_id == org_id,
+                )
+            ).first()
+
+            if not primary_asset:
+                logger.warning(f"Cannot trigger analytics: no PrimaryAsset for repo {full_name}")
+                return
+
+            codebase_id = str(primary_asset.id)
+
+        # Spawn incremental analytics task
+        spawn_analytics_task(
+            codebase_id=codebase_id,
+            organization_id=org_id,
+            codebase_name=full_name,
+            provider=provider,
+            install_id=install_id,
+            incremental=True,
+        )
+        logger.info(f"Triggered incremental analytics for {full_name} (codebase={codebase_id})")
+
+    except Exception as e:
+        logger.error(f"Failed to trigger analytics for {full_name}: {e}")
+        # Don't raise - analytics failure should not block push processing
 
 
 def collect_file_paths(extracted_path: Path) -> tuple[list[Path], list[Path]]:
@@ -156,6 +244,8 @@ def handle_github_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )
@@ -202,6 +292,14 @@ def handle_github_events(
         )
         if repo_name_or_none is not None:
             errant_repos.append(repo_name_or_none)
+        else:
+            # Push succeeded - trigger incremental analytics
+            _trigger_incremental_analytics_for_push(
+                org_id=org_id,
+                repo=repo,
+                install_id=installation_id,
+                provider="github",
+            )
 
 
 def handle_gitlab_events(
@@ -253,6 +351,8 @@ def handle_gitlab_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )
@@ -292,6 +392,14 @@ def handle_gitlab_events(
         )
         if repo_name_or_none is not None:
             errant_repos.append(repo_name_or_none)
+        else:
+            # Push succeeded - trigger incremental analytics
+            _trigger_incremental_analytics_for_push(
+                org_id=org_id,
+                repo=repo,
+                install_id=installation_id,
+                provider="gitlab",
+            )
 
 
 def handle_bitbucket_events(
@@ -343,6 +451,8 @@ def handle_bitbucket_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )
@@ -392,6 +502,14 @@ def handle_bitbucket_events(
         )
         if repo_name_or_none is not None:
             errant_repos.append(repo_name_or_none)
+        else:
+            # Push succeeded - trigger incremental analytics
+            _trigger_incremental_analytics_for_push(
+                org_id=org_id,
+                repo=repo,
+                install_id=installation_id,
+                provider="bitbucket",
+            )
 
 
 def handle_azure_devops_events(
@@ -443,6 +561,8 @@ def handle_azure_devops_events(
                     }
                     for v in primary_asset.versions
                 ):
+                    # Clean up analytics before deleting the asset
+                    _cleanup_analytics_before_delete(org_id, str(primary_asset.id))
                     print(
                         f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
                     )
@@ -494,6 +614,14 @@ def handle_azure_devops_events(
         )
         if repo_name_or_none is not None:
             errant_repos.append(repo_name_or_none)
+        else:
+            # Push succeeded - trigger incremental analytics
+            _trigger_incremental_analytics_for_push(
+                org_id=org_id,
+                repo=repo,
+                install_id=installation_id,
+                provider="azure_devops",
+            )
 
 
 def connect_repos_for_installation(github_installation_id: str) -> None:
@@ -684,6 +812,26 @@ def connect_unconnected_repos() -> None:
                 print(f"=> Repo: {repo['full_name']}")
 
 
+# Analytics trigger is implemented in analytics_trigger.py
+# We import the spawn function here for convenience
+def _spawn_analytics_task(
+    codebase_id: str,
+    organization_id: str,
+    codebase_name: str,
+    provider: str,
+    install_id: str | None = None,
+) -> str | None:
+    """Spawn analytics task as background Hatchet job. Wrapper around analytics_trigger module."""
+    from onboarding.analytics_trigger import spawn_analytics_task
+    return spawn_analytics_task(
+        codebase_id=codebase_id,
+        organization_id=organization_id,
+        codebase_name=codebase_name,
+        provider=provider,
+        install_id=install_id,
+    )
+
+
 def run_codebase_connection(
     presigned_url: str,
     provisional_codebase_name: str,
@@ -831,9 +979,10 @@ def run_codebase_connection(
         s3 = client("s3")
         response = s3.head_object(Bucket=dropzone_bucket, Key=dropzone_key)
 
-        # Extract and print metadata
+        # Extract metadata from S3 object
         metadata = response.get("Metadata", {})
         install_id = metadata.get("install_id", None)
+        full_repo_name = metadata.get("full_repo_name", None)  # e.g., "owner/repo" from provider
         if install_id is not None:
             s3_bucket.upload_file(
                 Path(provisional_codebase_name),
@@ -1080,5 +1229,29 @@ def run_codebase_connection(
         f"Codebase connection complete for codebase: {codebase_name} (cb id: {primary_asset_id}). "
         f"Version ID: {version_id}."
     )
+
+    # === ANALYTICS TRIGGER ===
+    # Spawn analytics as separate background task (non-blocking)
+    # Only trigger for INITIAL connections (no previous version).
+    # For PUSH events (has previous_version_id), analytics is triggered by
+    # _trigger_incremental_analytics_for_push() in handle_*_events() with incremental=True.
+    # Note: We check previous_version_id instead of status because rapid pushes may
+    # create versions with CONNECTING status before the previous version completes generation.
+    with Session(engine) as session:
+        version = session.get(Version, version_id)
+        is_push_event = version.previous_version_id is not None
+    
+    if not is_push_event:
+        analytics_codebase_name = full_repo_name or provisional_codebase_name
+        _spawn_analytics_task(
+            codebase_id=str(primary_asset_id),
+            organization_id=org_id,
+            codebase_name=analytics_codebase_name,
+            provider=provider,
+            install_id=install_id,
+        )
+        # Note: _spawn_analytics_task never raises, so connection always succeeds
+    else:
+        print(f"Skipping analytics in run_codebase_connection (push event handled by incremental trigger)")
 
     return None

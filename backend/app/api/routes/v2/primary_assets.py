@@ -1,4 +1,6 @@
 import hashlib
+import json
+from datetime import datetime, timezone
 from logging import getLogger
 from typing import Any
 from uuid import UUID
@@ -19,6 +21,10 @@ from database.models_enums import (
     ContentKind,
 )
 from fastapi import Body, HTTPException, Path, Request
+from shared.analytics_cleanup import (
+    delete_analytics_folder,
+    update_org_files_after_deletion,
+)
 from shared.authorization.query_filters import (
     asset_visibility_expr,
     effective_asset_role_expr,
@@ -355,6 +361,15 @@ def delete_primary_asset(
     for run_id in run_ids:
         inspector_bucket.objects.filter(Prefix=str(run_id)).delete()
         # TODO: instead of storing run data in a separate bucket, place in the org bucket under the primary asset
+
+    # Analytics cleanup - delete analytics folder and update org files
+    delete_analytics_folder(s3, org_id_hash, str(primary_asset_id))
+    update_org_files_after_deletion(
+        s3_client=s3.meta.client,
+        bucket_name=org_id_hash,
+        organization_id=user.organization_id,
+        deleted_codebase_id=str(primary_asset_id),
+    )
 
     session.delete(asset)
     session.flush()

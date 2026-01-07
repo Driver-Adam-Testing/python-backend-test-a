@@ -11,13 +11,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
-import boto3
 from botocore.exceptions import ClientError
-from sqlmodel import Session
-
-from app.api.auth import UserToken
-from app.core.config import settings
-from app.utils.aws_s3 import org_id_to_hash
 from database.models import PrimaryAsset
 from database.models_enums import PrimaryAssetProvider
 from shared.authorization.helpers import is_super_admin
@@ -25,6 +19,10 @@ from shared.authorization.query_filters import (
     PrimaryAssetRole,
     primary_asset_grant_filter,
 )
+from sqlmodel import Session
+
+from app.api.auth import UserToken
+from app.utils.aws_s3 import org_id_to_hash, s3_client
 
 logger = logging.getLogger(__name__)
 
@@ -44,33 +42,16 @@ class AnalyticsService:
     Filters results based on user's admin access to codebases.
     """
 
-    def __init__(self, session: Session, user: UserToken):
+    def __init__(self, session: Session, user: UserToken) -> None:
         self.session = session
         self.user = user
         self.organization_id = str(user.organization_id)
         self.bucket = org_id_to_hash(self.organization_id)
-        self.s3_client = boto3.client(
-            "s3",
-            region_name=settings.AWS_REGION,
-            aws_access_key_id=(
-                settings.S3ADMIN_AWS_ACCESS_KEY_ID
-                if not settings.IS_PRIVATE_DEPLOY
-                else None
-            ),
-            aws_secret_access_key=(
-                settings.S3ADMIN_AWS_SECRET_ACCESS_KEY
-                if not settings.IS_PRIVATE_DEPLOY
-                else None
-            ),
-            endpoint_url=(
-                settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None
-            ),
-        )
 
     def _read_json(self, key: str) -> dict[str, Any] | None:
         """Read a JSON file from S3. Returns None if not found."""
         try:
-            response = self.s3_client.get_object(Bucket=self.bucket, Key=key)
+            response = s3_client.get_object(Bucket=self.bucket, Key=key)
             content = response["Body"].read().decode("utf-8")
             return json.loads(content)
         except ClientError as e:
@@ -106,29 +87,32 @@ class AnalyticsService:
     def _get_provider_for_codebase(self, codebase_id: str) -> str | None:
         """Get the provider string for a codebase (github, gitlab, etc.)."""
         try:
-            asset = self.session.query(PrimaryAsset).filter(
-                PrimaryAsset.id == UUID(codebase_id)
-            ).first()
+            asset = (
+                self.session.query(PrimaryAsset)
+                .filter(PrimaryAsset.id == UUID(codebase_id))
+                .first()
+            )
             if asset and asset.provider:
                 return PROVIDER_MAP.get(asset.provider)
         except Exception as e:
             logger.debug(f"Could not look up provider for {codebase_id}: {e}")
         return None
 
-    def _get_providers_for_codebases(self, codebase_ids: list[str]) -> dict[str, str | None]:
+    def _get_providers_for_codebases(
+        self, codebase_ids: list[str]
+    ) -> dict[str, str | None]:
         """Get provider strings for multiple codebases in one query."""
         if not codebase_ids:
             return {}
-        
+
         try:
             uuid_ids = [UUID(cid) for cid in codebase_ids]
-            assets = self.session.query(PrimaryAsset.id, PrimaryAsset.provider).filter(
-                PrimaryAsset.id.in_(uuid_ids)
-            ).all()
-            return {
-                str(asset.id): PROVIDER_MAP.get(asset.provider)
-                for asset in assets
-            }
+            assets = (
+                self.session.query(PrimaryAsset.id, PrimaryAsset.provider)
+                .filter(PrimaryAsset.id.in_(uuid_ids))
+                .all()
+            )
+            return {str(asset.id): PROVIDER_MAP.get(asset.provider) for asset in assets}
         except Exception as e:
             logger.debug(f"Could not look up providers: {e}")
         return {}
@@ -220,7 +204,7 @@ class AnalyticsService:
 
     def get_overview(self, codebase_id: str) -> dict[str, Any] | None:
         """Get overview metrics for a codebase.
-        
+
         Enriches with provider information from database.
         """
         data = self._read_json(f"analytics/{codebase_id}/overview.json")
@@ -252,4 +236,3 @@ class AnalyticsService:
             "generated_at": None,
             "generation_seconds": None,
         }
-

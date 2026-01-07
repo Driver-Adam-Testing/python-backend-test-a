@@ -4,8 +4,22 @@ from typing import Any
 
 import httpx
 from app.git_providers.utils.errors import GitProviderAccessTokenError
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 logger = logging.getLogger(__name__)
+
+# Retry transient network errors with exponential backoff
+_retry_transient = retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type((httpx.ConnectError, httpx.TimeoutException)),
+    reraise=True,
+)
 
 
 class BitbucketDCAPIResources:
@@ -37,7 +51,7 @@ class BitbucketDCAPIResources:
         else:
             self.verify = True
 
-    def get_current_user(self, access_token: str) -> dict:
+    def get_current_user(self, access_token: str) -> dict[str, Any]:
         """Get current authenticated user info.
 
         Uses the /plugins/servlet/applinks/whoami endpoint which returns
@@ -82,8 +96,10 @@ class BitbucketDCAPIResources:
 
         except httpx.ConnectError as e:
             raise ValueError(f"Connection error: Unable to reach {self.base_url}. {e}")
-        except Exception as e:
-            raise ValueError(f"Failed to get current user: {e!s}")
+        except httpx.TimeoutException as e:
+            raise ValueError(f"Timeout reaching {self.base_url}: {e}")
+        except httpx.HTTPStatusError as e:
+            raise ValueError(f"HTTP error getting current user: {e}")
 
     def validate_token(self, access_token: str) -> tuple[bool, str]:
         """Validate HTTP Access Token using Bearer auth.
@@ -116,25 +132,18 @@ class BitbucketDCAPIResources:
 
         except httpx.ConnectError as e:
             return False, f"Connection error: Unable to reach {self.base_url}. {e}"
-        except Exception as e:
-            return False, f"Validation error: {e!s}"
+        except httpx.TimeoutException as e:
+            return False, f"Timeout validating token: {e}"
+        except httpx.HTTPStatusError as e:
+            return False, f"HTTP error: {e}"
 
+    @_retry_transient
     def list_repositories(
         self,
         access_token: str,
         project_key: str | None = None,
         limit: int = 100,
-    ) -> list[dict]:
-        """List accessible repositories.
-
-        Args:
-            access_token: HTTP Access Token
-            project_key: Optional project key to filter by
-            limit: Number of results per page (max 1000)
-
-        Returns:
-            List of repository dictionaries
-        """
+    ) -> list[dict[str, Any]]:
         headers = {"Authorization": f"Bearer {access_token}"}
         repos = []
 
@@ -177,17 +186,8 @@ class BitbucketDCAPIResources:
         project_key: str,
         repo_slug: str,
         access_token: str,
-    ) -> dict | None:
-        """Get repository details.
-
-        Args:
-            project_key: Project key (typically uppercase)
-            repo_slug: Repository slug
-            access_token: HTTP Access Token
-
-        Returns:
-            Repository dictionary or None if not found
-        """
+    ) -> dict[str, Any] | None:
+        """Returns None if repository not found."""
         headers = {"Authorization": f"Bearer {access_token}"}
         url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}"
 
@@ -209,16 +209,12 @@ class BitbucketDCAPIResources:
         project_key: str,
         repo_slug: str,
         access_token: str,
-    ) -> str:
-        """Get default branch for repository.
+    ) -> str | None:
+        """Get default branch. Returns None if no default branch or no commits.
 
-        Args:
-            project_key: Project key
-            repo_slug: Repository slug
-            access_token: HTTP Access Token
-
-        Returns:
-            Default branch name (e.g., "main", "master")
+        We intentionally do NOT fall back to arbitrary branches if the default branch
+        is missing or empty. If a repo has no configured default branch, that's a
+        configuration issue that should be fixed in Bitbucket, not worked around here.
         """
         headers = {"Authorization": f"Bearer {access_token}"}
         url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/default-branch"
@@ -228,14 +224,46 @@ class BitbucketDCAPIResources:
                 response = client.get(url, headers=headers)
                 response.raise_for_status()
                 data = response.json()
-                return data.get("displayId", "main")
+                default_branch = data.get("displayId")
+
+                if not default_branch:
+                    logger.info(
+                        f"No default branch configured for {project_key}/{repo_slug}"
+                    )
+                    return None
+
+                # Verify the default branch has commits
+                branch_url = (
+                    f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/branches"
+                )
+                branch_response = client.get(
+                    branch_url,
+                    headers=headers,
+                    params={"filterText": default_branch, "limit": 1},
+                )
+                branch_response.raise_for_status()
+                branches = branch_response.json().get("values", [])
+
+                for b in branches:
+                    if b.get("displayId") == default_branch:
+                        if b.get("latestCommit"):
+                            return default_branch
+                        logger.info(
+                            f"Default branch '{default_branch}' has no commits for {project_key}/{repo_slug}"
+                        )
+                        return None
+
+                logger.info(
+                    f"Default branch '{default_branch}' not found in branches list for {project_key}/{repo_slug}"
+                )
+                return None
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                logger.warning(
-                    f"Default branch not found for {project_key}/{repo_slug}, falling back to 'main'"
+                logger.info(
+                    f"No default branch endpoint for {project_key}/{repo_slug} (empty repo)"
                 )
-                return "main"
+                return None
             raise
 
     def get_commit(
@@ -244,18 +272,7 @@ class BitbucketDCAPIResources:
         repo_slug: str,
         commit_id: str,
         access_token: str,
-    ) -> dict:
-        """Get commit details.
-
-        Args:
-            project_key: Project key
-            repo_slug: Repository slug
-            commit_id: Commit SHA
-            access_token: HTTP Access Token
-
-        Returns:
-            Commit dictionary with id, message, author info, timestamp
-        """
+    ) -> dict[str, Any]:
         headers = {"Authorization": f"Bearer {access_token}"}
         url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/commits/{commit_id}"
 
@@ -276,19 +293,7 @@ class BitbucketDCAPIResources:
         access_token: str,
         filter_text: str | None = None,
         limit: int = 100,
-    ) -> list[dict]:
-        """List branches for repository.
-
-        Args:
-            project_key: Project key
-            repo_slug: Repository slug
-            access_token: HTTP Access Token
-            filter_text: Optional filter for branch names
-            limit: Results per page
-
-        Returns:
-            List of branch dictionaries
-        """
+    ) -> list[dict[str, Any]]:
         headers = {"Authorization": f"Bearer {access_token}"}
         url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/branches"
         branches = []
@@ -319,6 +324,19 @@ class BitbucketDCAPIResources:
             logger.error(f"Failed to list branches: {e}")
             raise
 
+    def _build_webhook_payload(self, config: dict[str, Any]) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "name": config.get("description", "Driver AI Webhook"),
+            "url": config["url"],
+            "active": config.get("active", True),
+            "events": config["events"],
+            "configuration": {},
+        }
+        if config.get("secret"):
+            payload["configuration"]["secret"] = config["secret"]
+        return payload
+
+    @_retry_transient
     def create_repository_webhook(
         self,
         project_key: str,
@@ -326,34 +344,12 @@ class BitbucketDCAPIResources:
         config: dict[str, Any],
         access_token: str,
     ) -> dict[str, Any]:
-        """Create a repository-level webhook.
-
-        Args:
-            project_key: Project key
-            repo_slug: Repository slug
-            config: Webhook configuration with url, events, secret, etc.
-            access_token: HTTP Access Token
-
-        Returns:
-            Created webhook data
-        """
         url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/webhooks"
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
-
-        payload = {
-            "name": config.get("description", "Driver AI Webhook"),
-            "url": config["url"],
-            "active": config.get("active", True),
-            "events": config["events"],
-            "configuration": {},
-        }
-
-        # Add secret if provided
-        if config.get("secret"):
-            payload["configuration"]["secret"] = config["secret"]
+        payload = self._build_webhook_payload(config)
 
         try:
             with httpx.Client(verify=self.verify, timeout=30.0) as client:
@@ -366,42 +362,20 @@ class BitbucketDCAPIResources:
             )
             raise
 
+    @_retry_transient
     def create_project_webhook(
         self,
         project_key: str,
         config: dict[str, Any],
         access_token: str,
     ) -> dict[str, Any]:
-        """Create a project-level webhook.
-
-        Project webhooks fire for all repositories in the project.
-        Requires Project Admin permissions.
-
-        Args:
-            project_key: Project key
-            config: Webhook configuration with url, events, secret, etc.
-            access_token: HTTP Access Token with Project Admin permissions
-
-        Returns:
-            Created webhook data
-        """
+        """Fires for all repositories in the project. Requires Project Admin permissions."""
         url = f"{self.api_base}/projects/{project_key}/webhooks"
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
-
-        payload = {
-            "name": config.get("description", "Driver AI Webhook"),
-            "url": config["url"],
-            "active": config.get("active", True),
-            "events": config["events"],
-            "configuration": {},
-        }
-
-        # Add secret if provided
-        if config.get("secret"):
-            payload["configuration"]["secret"] = config["secret"]
+        payload = self._build_webhook_payload(config)
 
         try:
             with httpx.Client(verify=self.verify, timeout=30.0) as client:
@@ -421,14 +395,6 @@ class BitbucketDCAPIResources:
         webhook_id: int,
         access_token: str,
     ) -> None:
-        """Delete a repository-level webhook.
-
-        Args:
-            project_key: Project key
-            repo_slug: Repository slug
-            webhook_id: ID of the webhook to delete
-            access_token: HTTP Access Token
-        """
         url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/webhooks/{webhook_id}"
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -448,13 +414,6 @@ class BitbucketDCAPIResources:
         webhook_id: int,
         access_token: str,
     ) -> None:
-        """Delete a project-level webhook.
-
-        Args:
-            project_key: Project key
-            webhook_id: ID of the webhook to delete
-            access_token: HTTP Access Token
-        """
         url = f"{self.api_base}/projects/{project_key}/webhooks/{webhook_id}"
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -473,20 +432,7 @@ class BitbucketDCAPIResources:
         project_key: str,
         repo_slug: str,
     ) -> str:
-        """Build clone URL for Bitbucket Data Center (without embedded credentials).
-
-        For Bitbucket DC HTTP Access Tokens (Project/Repository tokens), credentials
-        must be passed via git header, not embedded in URL.
-
-        Args:
-            project_key: Project key
-            repo_slug: Repository slug
-
-        Returns:
-            Clone URL in format: https://{host}/scm/{project}/{slug}.git
-
-        Note: Token is passed via: git clone -c http.extraHeader='Authorization: Bearer TOKEN'
-        """
+        """Token must be passed via git header: git clone -c http.extraHeader='Authorization: Bearer TOKEN'"""
         from urllib.parse import urlparse
 
         parsed = urlparse(self.base_url)

@@ -1,7 +1,7 @@
 import json
 import logging
 import secrets
-from typing import Any
+from typing import Any, ClassVar
 
 from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.interfaces.provider_interface import (
@@ -43,6 +43,12 @@ class BitbucketDCProvider(GitProviderInterface):
     - May use self-signed SSL certificates
     """
 
+    _TRIGGER_MAP: ClassVar[dict[str, str | list[str]]] = {
+        "push events": "repo:refs_changed",
+        "pull request events": ["pr:opened", "pr:modified"],
+        "merge events": "pr:merged",
+    }
+
     def __init__(
         self,
         config: GitProviderConfig,
@@ -58,7 +64,6 @@ class BitbucketDCProvider(GitProviderInterface):
         ca_bundle_path: str | None = None,
         disable_ssl_verify: bool = False,
     ) -> BitbucketDCAPIResources:
-        """Get or create API resources instance with SSL configuration."""
         return BitbucketDCAPIResources(
             base_url=base_url,
             ca_bundle_path=ca_bundle_path,
@@ -77,7 +82,9 @@ class BitbucketDCProvider(GitProviderInterface):
 
         return cls(config, secrets_manager)
 
-    def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
+    def validate_access_token(
+        self, token_data: dict[str, Any]
+    ) -> tuple[bool, str | None]:
         """Validate Bitbucket DC HTTP Access Token.
 
         For Project/Repository tokens, we use Bearer auth only (no username needed).
@@ -121,9 +128,8 @@ class BitbucketDCProvider(GitProviderInterface):
             return False, str(e)
 
     def create_installation(
-        self, organization_id: str, app_id: str, token_data: dict
+        self, organization_id: str, app_id: str, token_data: dict[str, Any]
     ) -> GitProviderAppInstallation:
-        """Create a new installation for Bitbucket DC."""
         dc_token = BitbucketDCTokenData(**token_data)
 
         metadata = {
@@ -145,9 +151,8 @@ class BitbucketDCProvider(GitProviderInterface):
         )
 
     def store_secrets(
-        self, installation: GitProviderAppInstallation, token_data: dict
+        self, installation: GitProviderAppInstallation, token_data: dict[str, Any]
     ) -> None:
-        """Store Bitbucket DC credentials in AWS Secrets Manager."""
         dc_token = BitbucketDCTokenData(**token_data)
 
         # Generate webhook secret
@@ -178,9 +183,8 @@ class BitbucketDCProvider(GitProviderInterface):
         )
 
     def update_secrets(
-        self, installation: GitProviderAppInstallation, token_data: dict
+        self, installation: GitProviderAppInstallation, token_data: dict[str, Any]
     ) -> None:
-        """Update Bitbucket DC credentials while preserving webhook secret."""
         dc_token = BitbucketDCTokenData(**token_data)
 
         secret_key = format_secret_name(
@@ -211,8 +215,7 @@ class BitbucketDCProvider(GitProviderInterface):
             f"Updated HTTP Access Token for Bitbucket DC installation {installation.id}"
         )
 
-    def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict:
-        """Fetch secrets for an installation."""
+    def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict[str, Any]:
         secret_key = format_secret_name(
             APP_INSTALL_BBDC_HTTP_NAME_PREFIX, str(installation.id)
         )
@@ -225,8 +228,7 @@ class BitbucketDCProvider(GitProviderInterface):
 
         return secret_value
 
-    def fetch_secrets_by_id(self, installation_id: str) -> dict:
-        """Fetch secrets by installation ID."""
+    def fetch_secrets_by_id(self, installation_id: str) -> dict[str, Any]:
         secret_key = format_secret_name(
             APP_INSTALL_BBDC_HTTP_NAME_PREFIX, installation_id
         )
@@ -242,72 +244,75 @@ class BitbucketDCProvider(GitProviderInterface):
     def fetch_repositories(
         self, installation: GitProviderAppInstallation
     ) -> list[GitRepository]:
-        """Fetch Bitbucket DC repositories."""
         logger.info(f"Fetching repositories for installation: {installation.id}")
 
+        secrets = self.fetch_secrets(installation)
+        access_token = secrets["token"]
+        instance_url = secrets["instance_url"]
+
+        api = self._get_api_resources(
+            base_url=instance_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
+
         try:
-            secrets = self.fetch_secrets(installation)
-            access_token = secrets["token"]
-            instance_url = secrets["instance_url"]
-
-            api = self._get_api_resources(
-                base_url=instance_url,
-                ca_bundle_path=secrets.get("ca_bundle_path"),
-                disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-            )
-
             repos_data = api.list_repositories(access_token)
-            repos = []
+        except Exception as e:
+            logger.error(f"API call to list repositories failed: {e}")
+            raise
 
-            for repo in repos_data:
-                project_key = repo.get("project", {}).get("key")
-                repo_slug = repo.get("slug")
+        repos = []
+        for repo in repos_data:
+            project_key = repo.get("project", {}).get("key")
+            repo_slug = repo.get("slug")
 
-                # Get default branch (requires separate API call for DC)
-                default_branch = None
-                try:
-                    default_branch = api.get_default_branch(
-                        project_key, repo_slug, access_token
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to fetch default branch for {project_key}/{repo_slug}: {e}"
-                    )
-
-                repos.append(
-                    GitRepository(
-                        provider_name=str(installation.git_provider_app.provider_kind),
-                        provider_kind=installation.git_provider_app.provider_kind,
-                        org=project_key,
-                        installation_id=str(installation.id),
-                        repo_name=repo.get("name"),
-                        last_updated=None,  # DC doesn't provide this in list response
-                        default_branch=default_branch,
-                        latest_commit=None,
-                        metadata={
-                            "id": repo.get("id"),
-                            "project_key": project_key,
-                            "project_name": repo.get("project", {}).get("name"),
-                            "slug": repo_slug,
-                            "is_public": repo.get("public", False),
-                            "clone_url": repo.get("links", {})
-                            .get("clone", [{}])[0]
-                            .get("href")
-                            if repo.get("links", {}).get("clone")
-                            else None,
-                            "instance_url": instance_url,
-                        },
-                    )
+            default_branch = None
+            try:
+                default_branch = api.get_default_branch(
+                    project_key, repo_slug, access_token
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to fetch default branch for {project_key}/{repo_slug}: {e}"
                 )
 
-            logger.info(
-                f"Fetched {len(repos)} repositories for installation {installation.id}"
-            )
-            return repos
+            if not default_branch:
+                logger.warning(
+                    f"Skipping {project_key}/{repo_slug}: no default branch available"
+                )
+                continue
 
-        except Exception as e:
-            logger.error(f"Failed to fetch repositories: {e}")
-            raise
+            repos.append(
+                GitRepository(
+                    provider_name=str(installation.git_provider_app.provider_kind),
+                    provider_kind=installation.git_provider_app.provider_kind,
+                    org=project_key,
+                    installation_id=str(installation.id),
+                    repo_name=repo.get("name"),
+                    last_updated=None,
+                    default_branch=default_branch,
+                    latest_commit=None,
+                    metadata={
+                        "id": repo.get("id"),
+                        "project_key": project_key,
+                        "project_name": repo.get("project", {}).get("name"),
+                        "slug": repo_slug,
+                        "is_public": repo.get("public", False),
+                        "clone_url": repo.get("links", {})
+                        .get("clone", [{}])[0]
+                        .get("href")
+                        if repo.get("links", {}).get("clone")
+                        else None,
+                        "instance_url": instance_url,
+                    },
+                )
+            )
+
+        logger.info(
+            f"Fetched {len(repos)} repositories for installation {installation.id}"
+        )
+        return repos
 
     def handle_webhook_event(
         self,
@@ -339,49 +344,103 @@ class BitbucketDCProvider(GitProviderInterface):
     def _handle_push_event(
         self, payload: dict, webhook_event_ctx: WebhookEventContext
     ) -> dict:
-        """Handle repo:refs_changed event."""
         installation_id = webhook_event_ctx.installation_id
         organization_id = webhook_event_ctx.organization_id
 
-        repository = payload.get("repository", {})
+        repo_info = self._extract_repo_info(payload.get("repository", {}))
         changes = payload.get("changes", [])
 
-        project_key = repository.get("project", {}).get("key")
-        repo_slug = repository.get("slug")
-        repo_name = repository.get("name")
-        repo_id = repository.get("id")
+        context = self._build_push_context(installation_id)
+        if not context:
+            return {"message": "Failed to process push event: missing access token"}
 
-        # Get access token for API calls
+        tracked_branch = self._resolve_tracked_branch(
+            webhook_event_ctx, organization_id, repo_info, context
+        )
+        if not tracked_branch:
+            logger.warning(
+                f"Cannot process push event for {repo_info['project_key']}/{repo_info['repo_slug']}: "
+                "no tracked branch configured and unable to determine default branch"
+            )
+            return {"message": "Push event ignored: unable to determine tracked branch"}
+
+        return self._process_branch_changes(
+            changes,
+            tracked_branch,
+            repo_info,
+            context,
+            installation_id,
+            organization_id,
+            webhook_event_ctx,
+        )
+
+    def _extract_repo_info(self, repository: dict) -> dict[str, Any]:
+        return {
+            "project_key": repository.get("project", {}).get("key"),
+            "repo_slug": repository.get("slug"),
+            "repo_name": repository.get("name"),
+            "repo_id": repository.get("id"),
+        }
+
+    def _build_push_context(self, installation_id: str) -> dict[str, Any] | None:
         try:
             secrets = self.fetch_secrets_by_id(installation_id)
-            access_token = secrets["token"]
-            instance_url = secrets["instance_url"]
         except Exception as e:
             logger.error(
                 f"Failed to fetch access token for installation {installation_id}: {e}"
             )
-            return {"message": "Failed to process push event: missing access token"}
+            return None
 
         api = self._get_api_resources(
-            base_url=instance_url,
+            base_url=secrets["instance_url"],
             ca_bundle_path=secrets.get("ca_bundle_path"),
             disable_ssl_verify=secrets.get("disable_ssl_verify", False),
         )
 
-        # Get tracked branch or default
+        return {
+            "secrets": secrets,
+            "api": api,
+            "access_token": secrets["token"],
+            "instance_url": secrets["instance_url"],
+        }
+
+    def _resolve_tracked_branch(
+        self,
+        webhook_event_ctx: WebhookEventContext,
+        organization_id: str,
+        repo_info: dict[str, Any],
+        context: dict[str, Any],
+    ) -> str | None:
         tracked_branch = get_tracked_branch_or_none(
             session=webhook_event_ctx.session,
             org_id=organization_id,
-            repo_name=repo_name,
+            repo_name=repo_info["repo_name"],
         )
-        if not tracked_branch:
-            try:
-                tracked_branch = api.get_default_branch(
-                    project_key, repo_slug, access_token
-                )
-            except Exception:
-                tracked_branch = "main"
+        if tracked_branch:
+            return tracked_branch
 
+        try:
+            return context["api"].get_default_branch(
+                repo_info["project_key"],
+                repo_info["repo_slug"],
+                context["access_token"],
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to get default branch for {repo_info['project_key']}/{repo_info['repo_slug']}: {e}"
+            )
+            return None
+
+    def _process_branch_changes(
+        self,
+        changes: list[dict],
+        tracked_branch: str,
+        repo_info: dict[str, Any],
+        context: dict[str, Any],
+        installation_id: str,
+        organization_id: str,
+        webhook_event_ctx: WebhookEventContext,
+    ) -> dict[str, str]:
         message: dict[str, str] = {"message": ""}
 
         for change in changes:
@@ -390,97 +449,108 @@ class BitbucketDCProvider(GitProviderInterface):
                 continue
 
             branch_name = ref.get("displayId")
-            commit_hash = change.get("toHash")
-
             if branch_name != tracked_branch:
                 logger.info(
-                    f"Push event ignored: Not tracked branch. Project: {project_key}, "
-                    f"Repo: {repo_name}, Branch: {branch_name}, Tracked: {tracked_branch}"
+                    f"Push event ignored: Not tracked branch. Project: {repo_info['project_key']}, "
+                    f"Repo: {repo_info['repo_name']}, Branch: {branch_name}, Tracked: {tracked_branch}"
                 )
                 message = {"message": "Push event ignored (not tracked branch)"}
                 continue
 
             logger.info(
-                f"Push event on tracked branch. Project: {project_key}, "
-                f"Repo: {repo_name}, Branch: {branch_name}"
+                f"Push event on tracked branch. Project: {repo_info['project_key']}, "
+                f"Repo: {repo_info['repo_name']}, Branch: {branch_name}"
             )
 
-            process_update, update_msg = is_update_required(
-                session=webhook_event_ctx.session,
-                org_id=organization_id,
-                repo_name=repo_name,
+            result = self._maybe_dispatch_push_update(
+                change,
+                tracked_branch,
+                repo_info,
+                context,
+                installation_id,
+                organization_id,
+                webhook_event_ctx,
             )
-
-            if process_update:
-                repos_pushed = [
-                    {
-                        "repo_id": repo_id,
-                        "repo_name": repo_name,
-                        "project_key": project_key,
-                        "repo_slug": repo_slug,
-                        "commit": commit_hash,
-                        "tracked_branch": tracked_branch,
-                        "installation_id": installation_id,
-                        "metadata": {
-                            "id": repo_id,
-                            "project_key": project_key,
-                            "slug": repo_slug,
-                            "instance_url": instance_url,
-                        },
-                    }
-                ]
-
-                hatchet = Hatchet()
-                handle_dc_events_task = hatchet.stubs.task(
-                    name="handle-bitbucket-dc-events-workflow",
-                    input_validator=HandleBitbucketDCEventsInput,
-                )
-
-                handle_dc_events_task.run_no_wait(
-                    HandleBitbucketDCEventsInput(
-                        installation_id=installation_id,
-                        org_id=organization_id,
-                        repos_added=[],
-                        repos_deleted=[],
-                        repos_pushed=repos_pushed,
-                    )
-                )
-                return {"message": "Push event processed"}
-            else:
-                message = {"message": update_msg}
+            if result:
+                return result
+            message = {"message": result} if isinstance(result, str) else message
 
         return message
+
+    def _maybe_dispatch_push_update(
+        self,
+        change: dict,
+        tracked_branch: str,
+        repo_info: dict[str, Any],
+        context: dict[str, Any],
+        installation_id: str,
+        organization_id: str,
+        webhook_event_ctx: WebhookEventContext,
+    ) -> dict[str, str] | None:
+        process_update, update_msg = is_update_required(
+            session=webhook_event_ctx.session,
+            org_id=organization_id,
+            repo_name=repo_info["repo_name"],
+        )
+
+        if not process_update:
+            return {"message": update_msg}
+
+        repos_pushed = [
+            self._build_repo_pushed_entry(
+                change.get("toHash"),
+                tracked_branch,
+                repo_info,
+                context["instance_url"],
+                installation_id,
+            )
+        ]
+        self._dispatch_bitbucket_dc_event(
+            installation_id, organization_id, repos_pushed
+        )
+        return {"message": "Push event processed"}
+
+    def _build_repo_pushed_entry(
+        self,
+        commit_hash: str | None,
+        tracked_branch: str,
+        repo_info: dict[str, Any],
+        instance_url: str,
+        installation_id: str,
+    ) -> dict[str, Any]:
+        return {
+            "repo_id": repo_info["repo_id"],
+            "repo_name": repo_info["repo_name"],
+            "project_key": repo_info["project_key"],
+            "repo_slug": repo_info["repo_slug"],
+            "commit": commit_hash,
+            "tracked_branch": tracked_branch,
+            "installation_id": installation_id,
+            "metadata": {
+                "id": repo_info["repo_id"],
+                "project_key": repo_info["project_key"],
+                "slug": repo_info["repo_slug"],
+                "instance_url": instance_url,
+            },
+        }
 
     def _handle_pr_merged_event(
         self, payload: dict, webhook_event_ctx: WebhookEventContext
     ) -> dict:
-        """Handle pr:merged event.
-
-        When a PR is merged, we treat it like a push to the target branch.
-        """
+        """When a PR is merged, we treat it like a push to the target branch."""
         installation_id = webhook_event_ctx.installation_id
         organization_id = webhook_event_ctx.organization_id
 
         pull_request = payload.get("pullRequest", {})
         to_ref = pull_request.get("toRef", {})
-        repository = to_ref.get("repository", {})
-
-        project_key = repository.get("project", {}).get("key")
-        repo_slug = repository.get("slug")
-        repo_name = repository.get("name")
-        repo_id = repository.get("id")
+        repo_info = self._extract_repo_info(to_ref.get("repository", {}))
         target_branch = to_ref.get("displayId")
 
-        # Get the merge commit from properties
-        merge_commit = (
-            pull_request.get("properties", {}).get("mergeCommit", {}).get("id")
-        )
-
+        merge_commit = self._extract_merge_commit(pull_request)
         if not merge_commit:
             logger.warning("PR merged event missing merge commit ID")
             return {"message": "PR merged event ignored: no merge commit"}
 
-        # Get access token
         try:
             secrets = self.fetch_secrets_by_id(installation_id)
             instance_url = secrets["instance_url"]
@@ -488,11 +558,10 @@ class BitbucketDCProvider(GitProviderInterface):
             logger.error(f"Failed to fetch access token: {e}")
             return {"message": "Failed to process PR merged event"}
 
-        # Check if target branch is the tracked branch
         tracked_branch = get_tracked_branch_or_none(
             session=webhook_event_ctx.session,
             org_id=organization_id,
-            repo_name=repo_name,
+            repo_name=repo_info["repo_name"],
         )
 
         if tracked_branch and target_branch != tracked_branch:
@@ -502,49 +571,47 @@ class BitbucketDCProvider(GitProviderInterface):
         process_update, update_msg = is_update_required(
             session=webhook_event_ctx.session,
             org_id=organization_id,
-            repo_name=repo_name,
+            repo_name=repo_info["repo_name"],
         )
 
-        if process_update:
-            repos_pushed = [
-                {
-                    "repo_id": repo_id,
-                    "repo_name": repo_name,
-                    "project_key": project_key,
-                    "repo_slug": repo_slug,
-                    "commit": merge_commit,
-                    "tracked_branch": target_branch,
-                    "installation_id": installation_id,
-                    "metadata": {
-                        "id": repo_id,
-                        "project_key": project_key,
-                        "slug": repo_slug,
-                        "instance_url": instance_url,
-                    },
-                }
-            ]
+        if not process_update:
+            return {"message": update_msg}
 
-            hatchet = Hatchet()
-            handle_dc_events_task = hatchet.stubs.task(
-                name="handle-bitbucket-dc-events-workflow",
-                input_validator=HandleBitbucketDCEventsInput,
+        repos_pushed = [
+            self._build_repo_pushed_entry(
+                merge_commit, target_branch, repo_info, instance_url, installation_id
             )
+        ]
+        self._dispatch_bitbucket_dc_event(
+            installation_id, organization_id, repos_pushed
+        )
+        return {"message": "PR merged event processed"}
 
-            handle_dc_events_task.run_no_wait(
-                HandleBitbucketDCEventsInput(
-                    installation_id=installation_id,
-                    org_id=organization_id,
-                    repos_added=[],
-                    repos_deleted=[],
-                    repos_pushed=repos_pushed,
-                )
+    def _extract_merge_commit(self, pull_request: dict) -> str | None:
+        return pull_request.get("properties", {}).get("mergeCommit", {}).get("id")
+
+    def _dispatch_bitbucket_dc_event(
+        self,
+        installation_id: str,
+        organization_id: str,
+        repos_pushed: list[dict[str, Any]],
+    ) -> None:
+        hatchet = Hatchet()
+        handle_dc_events_task = hatchet.stubs.task(
+            name="handle-bitbucket-dc-events-workflow",
+            input_validator=HandleBitbucketDCEventsInput,
+        )
+        handle_dc_events_task.run_no_wait(
+            HandleBitbucketDCEventsInput(
+                installation_id=installation_id,
+                org_id=organization_id,
+                repos_added=[],
+                repos_deleted=[],
+                repos_pushed=repos_pushed,
             )
-            return {"message": "PR merged event processed"}
-
-        return {"message": update_msg}
+        )
 
     def revoke_access(self, installation: GitProviderAppInstallation) -> None:
-        """Revoke access for a Bitbucket DC installation."""
         logger.info(f"Revoking access for Bitbucket DC installation {installation.id}")
 
         secret_key = format_secret_name(
@@ -618,96 +685,147 @@ class BitbucketDCProvider(GitProviderInterface):
             f"Registering webhook for Bitbucket DC installation {installation.id}"
         )
 
-        try:
-            secrets = self.fetch_secrets(installation)
-            access_token = secrets["token"]
-            instance_url = secrets["instance_url"]
-            token_type = secrets.get("token_type", "project_access_token")
-            secret_token = config.secret_token or secrets.get("secret_token")
+        secrets = self.fetch_secrets(installation)
+        access_token = secrets["token"]
+        instance_url = secrets["instance_url"]
+        token_type = secrets.get("token_type", "project_access_token")
+        secret_token = config.secret_token or secrets.get("secret_token")
 
-            api = self._get_api_resources(
-                base_url=instance_url,
-                ca_bundle_path=secrets.get("ca_bundle_path"),
-                disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        api = self._get_api_resources(
+            base_url=instance_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
+
+        callback_url = self._build_webhook_callback_url(
+            config.callback_url, installation.id
+        )
+        webhook_config = self._build_webhook_config(config, callback_url, secret_token)
+        scope_type = scope.get("type") if scope else None
+
+        webhook_data = self._create_webhook_by_scope(
+            api,
+            scope_type,
+            scope,
+            token_type,
+            webhook_config,
+            access_token,
+            installation.id,
+        )
+
+        return {
+            "id": webhook_data.get("id"),
+            "callback_url": callback_url,
+            "triggers": config.triggers,
+            "scope_type": scope_type,
+            "active": webhook_data.get("active", True),
+            "provider_specific": webhook_data,
+        }
+
+    def _build_webhook_callback_url(self, base_url: str, installation_id: Any) -> str:
+        separator = "&" if "?" in base_url else "?"
+        return f"{base_url}{separator}installation_id={installation_id}"
+
+    def _build_webhook_config(
+        self, config: WebhookConfig, callback_url: str, secret_token: str | None
+    ) -> dict[str, Any]:
+        dc_events = self._map_triggers_to_events(config.triggers)
+        return {
+            "url": callback_url,
+            "events": dc_events,
+            "secret": secret_token,
+            "active": True,
+            "description": config.description or "Driver AI Webhook",
+        }
+
+    def _create_webhook_by_scope(
+        self,
+        api: BitbucketDCAPIResources,
+        scope_type: str | None,
+        scope: dict[str, str] | None,
+        token_type: str,
+        webhook_config: dict[str, Any],
+        access_token: str,
+        installation_id: Any,
+    ) -> dict[str, Any]:
+        if scope_type == "project":
+            return self._create_project_webhook(
+                api, scope, token_type, webhook_config, access_token, installation_id
+            )
+        elif scope_type == "repository":
+            return self._create_repository_webhook(
+                api, scope, webhook_config, access_token, installation_id
+            )
+        else:
+            raise ValueError(
+                f"Invalid scope type: {scope_type}. Must be 'project' or 'repository'"
             )
 
-            # Add installation_id as query parameter
-            callback_url = config.callback_url
-            separator = "&" if "?" in callback_url else "?"
-            callback_url = f"{callback_url}{separator}installation_id={installation.id}"
+    def _create_project_webhook(
+        self,
+        api: BitbucketDCAPIResources,
+        scope: dict[str, str] | None,
+        token_type: str,
+        webhook_config: dict[str, Any],
+        access_token: str,
+        installation_id: Any,
+    ) -> dict[str, Any]:
+        if token_type == "repository_access_token":
+            raise ValueError(
+                "Repository access tokens cannot create project-level webhooks. "
+                "Use a project access token or create repository-level webhooks."
+            )
 
-            # Map triggers to Bitbucket DC events
-            dc_events = self._map_triggers_to_events(config.triggers)
+        project_key = scope.get("project_key") if scope else None
+        if not project_key:
+            raise ValueError("project_key is required for project webhooks")
 
-            webhook_config = {
-                "url": callback_url,
-                "events": dc_events,
-                "secret": secret_token,
-                "active": True,
-                "description": config.description or "Driver AI Webhook",
-            }
-
-            # Determine scope type and create appropriate webhook
-            scope_type = scope.get("type") if scope else None
-
-            if scope_type == "project":
-                # Project-level webhook - requires project_access_token
-                if token_type == "repository_access_token":
-                    raise ValueError(
-                        "Repository access tokens cannot create project-level webhooks. "
-                        "Use a project access token or create repository-level webhooks."
-                    )
-
-                project_key = scope.get("project_key")
-                if not project_key:
-                    raise ValueError("project_key is required for project webhooks")
-
-                webhook_data = api.create_project_webhook(
-                    project_key=project_key,
-                    config=webhook_config,
-                    access_token=access_token,
-                )
-                logger.info(
-                    f"Created project webhook for {project_key} on installation {installation.id}"
-                )
-
-            elif scope_type == "repository":
-                # Repository-level webhook
-                project_key = scope.get("project_key")
-                repo_slug = scope.get("slug") or scope.get("repo_slug")
-
-                if not project_key or not repo_slug:
-                    raise ValueError(
-                        "project_key and slug/repo_slug are required for repository webhooks"
-                    )
-
-                webhook_data = api.create_repository_webhook(
-                    project_key=project_key,
-                    repo_slug=repo_slug,
-                    config=webhook_config,
-                    access_token=access_token,
-                )
-                logger.info(
-                    f"Created repo webhook for {project_key}/{repo_slug} on installation {installation.id}"
-                )
-
-            else:
-                raise ValueError(
-                    f"Invalid scope type: {scope_type}. Must be 'project' or 'repository'"
-                )
-
-            return {
-                "id": webhook_data.get("id"),
-                "callback_url": callback_url,
-                "triggers": config.triggers,
-                "scope_type": scope_type,
-                "active": webhook_data.get("active", True),
-                "provider_specific": webhook_data,
-            }
-
+        try:
+            webhook_data = api.create_project_webhook(
+                project_key=project_key,
+                config=webhook_config,
+                access_token=access_token,
+            )
         except Exception as e:
-            logger.error(f"Failed to register webhook: {e}")
+            logger.error(f"API call to create project webhook failed: {e}")
             raise
+
+        logger.info(
+            f"Created project webhook for {project_key} on installation {installation_id}"
+        )
+        return webhook_data
+
+    def _create_repository_webhook(
+        self,
+        api: BitbucketDCAPIResources,
+        scope: dict[str, str] | None,
+        webhook_config: dict[str, Any],
+        access_token: str,
+        installation_id: Any,
+    ) -> dict[str, Any]:
+        project_key = scope.get("project_key") if scope else None
+        repo_slug = (scope.get("slug") or scope.get("repo_slug")) if scope else None
+
+        if not project_key or not repo_slug:
+            raise ValueError(
+                "project_key and slug/repo_slug are required for repository webhooks"
+            )
+
+        try:
+            webhook_data = api.create_repository_webhook(
+                project_key=project_key,
+                repo_slug=repo_slug,
+                config=webhook_config,
+                access_token=access_token,
+            )
+        except Exception as e:
+            logger.error(f"API call to create repository webhook failed: {e}")
+            raise
+
+        logger.info(
+            f"Created repo webhook for {project_key}/{repo_slug} on installation {installation_id}"
+        )
+        return webhook_data
 
     def deregister_webhook(
         self,
@@ -715,77 +833,62 @@ class BitbucketDCProvider(GitProviderInterface):
         webhook_id: int,
         scope: dict[str, str],
     ) -> None:
-        """Deregister a Bitbucket DC webhook.
-
-        Args:
-            installation: The installation to deregister webhook for
-            webhook_id: The webhook ID to delete
-            scope: Scope info with "type", "project_key", and optionally "repo_slug"
-        """
         logger.info(
             f"Deregistering webhook {webhook_id} for installation {installation.id}"
         )
 
-        try:
-            secrets = self.fetch_secrets(installation)
-            access_token = secrets["token"]
-            instance_url = secrets["instance_url"]
+        secrets = self.fetch_secrets(installation)
+        access_token = secrets["token"]
+        instance_url = secrets["instance_url"]
 
-            api = self._get_api_resources(
-                base_url=instance_url,
-                ca_bundle_path=secrets.get("ca_bundle_path"),
-                disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-            )
+        api = self._get_api_resources(
+            base_url=instance_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
 
-            scope_type = scope.get("type")
-            project_key = scope.get("project_key")
+        scope_type = scope.get("type")
+        project_key = scope.get("project_key")
 
-            if scope_type == "project":
+        if scope_type == "project":
+            try:
                 api.delete_project_webhook(
                     project_key=project_key,
                     webhook_id=webhook_id,
                     access_token=access_token,
                 )
-                logger.info(f"Deleted project webhook {webhook_id} for {project_key}")
+            except Exception as e:
+                logger.error(f"API call to delete project webhook failed: {e}")
+                raise
+            logger.info(f"Deleted project webhook {webhook_id} for {project_key}")
 
-            elif scope_type == "repository":
-                repo_slug = scope.get("repo_slug")
+        elif scope_type == "repository":
+            repo_slug = scope.get("repo_slug")
+            try:
                 api.delete_repository_webhook(
                     project_key=project_key,
                     repo_slug=repo_slug,
                     webhook_id=webhook_id,
                     access_token=access_token,
                 )
-                logger.info(
-                    f"Deleted repo webhook {webhook_id} for {project_key}/{repo_slug}"
-                )
-            else:
-                raise ValueError(f"Invalid scope type: {scope_type}")
-
-        except Exception as e:
-            logger.error(f"Failed to deregister webhook: {e}")
-            raise
+            except Exception as e:
+                logger.error(f"API call to delete repository webhook failed: {e}")
+                raise
+            logger.info(
+                f"Deleted repo webhook {webhook_id} for {project_key}/{repo_slug}"
+            )
+        else:
+            raise ValueError(f"Invalid scope type: {scope_type}")
 
     def _map_triggers_to_events(self, triggers: list[str]) -> list[str]:
-        """Map generic triggers to Bitbucket DC-specific events."""
-        TRIGGER_MAP = {
-            "push events": "repo:refs_changed",
-            "pull request events": ["pr:opened", "pr:modified"],
-            "merge events": "pr:merged",
-        }
-
+        dc_event_names = {"repo:refs_changed", "pr:merged", "pr:opened", "pr:modified"}
         events = []
+
         for trigger in triggers:
-            # Use exact match if it's already a DC event
-            if trigger in [
-                "repo:refs_changed",
-                "pr:merged",
-                "pr:opened",
-                "pr:modified",
-            ]:
+            if trigger in dc_event_names:
                 events.append(trigger)
             else:
-                mapped = TRIGGER_MAP.get(trigger, trigger)
+                mapped = self._TRIGGER_MAP.get(trigger, trigger)
                 if isinstance(mapped, list):
                     events.extend(mapped)
                 else:

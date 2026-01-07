@@ -1,5 +1,4 @@
 import hashlib
-import logging
 import os
 import shutil
 import ssl
@@ -7,6 +6,7 @@ import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -37,11 +37,10 @@ from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
     format_secret_name,
 )
+from shared.utils.decorators import retry_with_exponential_backoff
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
-
-logger = logging.getLogger(__name__)
 
 # Secret prefix for Bitbucket DC installations
 BBDC_SECRET_PREFIX = "GIT_PROVIDER_BBDC_HTTP_INSTALL_SECRET"
@@ -49,13 +48,25 @@ BBDC_SECRET_PREFIX = "GIT_PROVIDER_BBDC_HTTP_INSTALL_SECRET"
 # Environment variable to override instance URL (for Docker/local dev)
 BBDC_INSTANCE_URL_ENV = "BITBUCKET_DC_INSTANCE_URL"
 
+# Retry configuration for transient network failures
+NETWORK_RETRY = retry_with_exponential_backoff(
+    initial_delay=1,
+    exponential_base=2,
+    jitter=True,
+    max_retries=3,
+    errors=(httpx.HTTPStatusError, httpx.ConnectError, httpx.TimeoutException),
+)
+
+
+class BitbucketDCError(Exception):
+    pass
+
 
 def _create_git_provider_grants(
     session: Session,
     primary_asset_id: UUID,
     organization_id: str,
 ) -> None:
-    """Create default grants for a primary asset based on org visibility settings."""
     org = session.get(Organization, organization_id)
     if not org:
         raise ValueError(f"Organization {organization_id} not found")
@@ -70,7 +81,7 @@ def _create_git_provider_grants(
             role=PrimaryAssetRole.asset_member,
         )
         session.add(grant)
-        print(f"INFO: Created internal visibility grant for asset {primary_asset_id}")
+        print(f"Created internal visibility grant for asset {primary_asset_id}")
     elif visibility == SourceVisibility.public:
         grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
@@ -79,17 +90,11 @@ def _create_git_provider_grants(
             role=PrimaryAssetRole.asset_member,
         )
         session.add(grant)
-        print(f"INFO: Created public visibility grant for asset {primary_asset_id}")
+        print(f"Created public visibility grant for asset {primary_asset_id}")
 
 
 def fetch_access_token(installation_id: str) -> tuple[str, str]:
-    """Fetch HTTP Access Token and instance URL for installation.
-
-    Returns:
-        Tuple of (token, instance_url). The instance_url can be overridden
-        by the BITBUCKET_DC_INSTANCE_URL environment variable for local
-        development or Docker environments.
-    """
+    """Returns (token, instance_url). Instance URL can be overridden via BITBUCKET_DC_INSTANCE_URL env var."""
     print(
         f"Fetching HTTP Access Token for Bitbucket DC installation ID {installation_id}"
     )
@@ -116,13 +121,8 @@ def fetch_access_token(installation_id: str) -> tuple[str, str]:
     )
 
 
-def fetch_secrets(installation_id: str) -> dict:
-    """Fetch all secrets for installation.
-
-    The instance_url in the returned dict can be overridden by the
-    BITBUCKET_DC_INSTANCE_URL environment variable for local development
-    or Docker environments.
-    """
+def fetch_secrets(installation_id: str) -> dict[str, Any]:
+    """Instance URL in returned dict can be overridden via BITBUCKET_DC_INSTANCE_URL env var."""
     install_key = format_secret_name(BBDC_SECRET_PREFIX, installation_id)
     secrets_manager = AWSSecretManagementStrategy(
         AWSClientConfig(
@@ -144,7 +144,7 @@ def fetch_secrets(installation_id: str) -> dict:
     return secret_value
 
 
-def _get_ssl_context(secrets: dict) -> bool | ssl.SSLContext:
+def _get_ssl_context(secrets: dict[str, Any]) -> bool | ssl.SSLContext:
     """Get SSL context based on secrets configuration."""
     if secrets.get("disable_ssl_verify", False):
         return False
@@ -174,17 +174,18 @@ def build_clone_url(
     return f"{scheme}://{host}/scm/{project_key}/{repo_slug}.git"
 
 
+@NETWORK_RETRY
 def get_default_branch(
     instance_url: str,
     project_key: str,
     repo_slug: str,
     access_token: str,
     verify: bool | ssl.SSLContext = True,
-) -> str:
+) -> str | None:
     """Get default branch for repository.
 
+    Returns None if repository has no commits (empty repo).
     First tries the /default-branch endpoint, then validates the branch exists.
-    Falls back to checking branches list for isDefault flag or first available branch.
     """
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -201,8 +202,8 @@ def get_default_branch(
         except httpx.HTTPStatusError as e:
             if e.response.status_code != 404:
                 raise
-            logger.warning(
-                f"Default branch endpoint returned 404 for {project_key}/{repo_slug}"
+            print(
+                f"WARNING: Default branch endpoint returned 404 for {project_key}/{repo_slug}"
             )
 
         # Validate the default branch exists by listing branches
@@ -214,35 +215,46 @@ def get_default_branch(
             branches = branches_data.get("values", [])
 
             if not branches:
-                logger.warning(f"No branches found for {project_key}/{repo_slug}")
-                return default_branch or "main"
+                # Empty repo - no branches means no commits
+                print(
+                    f"WARNING: No branches found for {project_key}/{repo_slug} - repo appears empty"
+                )
+                return None
 
             # Check if reported default branch actually exists
             if default_branch:
                 for b in branches:
                     if b.get("displayId") == default_branch:
                         return default_branch
-                logger.warning(
-                    f"Default branch '{default_branch}' not found in branches list"
+                print(
+                    f"WARNING: Default branch '{default_branch}' not found in branches list"
                 )
 
             # Look for branch with isDefault flag
             for b in branches:
                 if b.get("isDefault"):
                     actual_default = b.get("displayId")
-                    logger.info(f"Using isDefault branch: {actual_default}")
+                    print(f"Using isDefault branch: {actual_default}")
                     return actual_default
 
-            # Fall back to first branch
+            # Fall back to first branch if it has commits
             first_branch = branches[0].get("displayId")
-            logger.info(f"No default found, using first branch: {first_branch}")
-            return first_branch
+            if branches[0].get("latestCommit"):
+                print(f"No default found, using first branch: {first_branch}")
+                return first_branch
+
+            # Branch exists but has no commits
+            print(
+                f"WARNING: Branch {first_branch} exists but has no commits for {project_key}/{repo_slug}"
+            )
+            return None
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Failed to list branches: {e}")
-            return default_branch or "main"
+            print(f"ERROR: Failed to list branches: {e}")
+            return None
 
 
+@NETWORK_RETRY
 def get_latest_commit_on_branch(
     instance_url: str,
     project_key: str,
@@ -307,7 +319,7 @@ def get_latest_commit_on_branch(
             return None
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"Failed to get latest commit on {branch}: {e}")
+        print(f"ERROR: Failed to get latest commit on {branch}: {e}")
         raise
 
 
@@ -320,14 +332,7 @@ def download_repo(
     ca_bundle_path: str | None = None,
     disable_ssl_verify: bool = False,
 ) -> bytes:
-    """Download repository using git clone with Bearer token auth.
-
-    For Bitbucket DC Project/Repository tokens, we must use Bearer auth via
-    git http.extraHeader, not embedded credentials in the URL.
-
-    Returns:
-        ZIP file content as bytes
-    """
+    """Clone repo and return ZIP content. Uses Bearer auth via git http.extraHeader."""
     print(
         f"Cloning Bitbucket DC repository {project_key}/{repo_slug} at commit {commit}"
     )
@@ -347,7 +352,7 @@ def download_repo(
         try:
             # Clone the repository with Bearer token via http.extraHeader
             # This is required for Bitbucket DC Project/Repository HTTP Access Tokens
-            print("Cloning repository...")
+            print("DEBUG: Cloning repository...")
             clone_cmd = [
                 "git",
                 "-c",
@@ -367,14 +372,16 @@ def download_repo(
             )
 
             if clone_result.returncode != 0:
-                print(f"Clone failed: {clone_result.stderr}")
-                raise Exception(f"Failed to clone repository: {clone_result.stderr}")
+                print(f"ERROR: Clone failed: {clone_result.stderr}")
+                raise BitbucketDCError(
+                    f"Failed to clone repository: {clone_result.stderr}"
+                )
 
-            print("Repository cloned successfully")
+            print("DEBUG: Repository cloned successfully")
 
             # Checkout specific commit or HEAD if no commit specified
             if commit:
-                print(f"Checking out commit {commit}...")
+                print(f"DEBUG: Checking out commit {commit}...")
                 checkout_result = subprocess.run(
                     ["git", "checkout", commit],
                     cwd=str(repo_path),
@@ -385,7 +392,7 @@ def download_repo(
 
                 if checkout_result.returncode != 0:
                     print(
-                        f"Could not checkout commit {commit}, fetching all commits..."
+                        f"DEBUG: Could not checkout commit {commit}, fetching all commits..."
                     )
                     subprocess.run(
                         ["git", "fetch", "--unshallow"],
@@ -404,13 +411,13 @@ def download_repo(
                     )
 
                     if checkout_result.returncode != 0:
-                        raise Exception(f"Failed to checkout commit {commit}")
+                        raise BitbucketDCError(f"Failed to checkout commit {commit}")
 
-                print(f"Successfully checked out commit {commit}")
+                print(f"DEBUG: Successfully checked out commit {commit}")
             else:
                 # No specific commit, checkout the default branch
                 # After --no-checkout clone, use `git checkout` with no args to checkout default branch
-                print("No commit specified, checking out default branch...")
+                print("DEBUG: No commit specified, checking out default branch...")
                 checkout_result = subprocess.run(
                     ["git", "checkout"],
                     cwd=str(repo_path),
@@ -419,7 +426,7 @@ def download_repo(
                     env=env,
                 )
                 if checkout_result.returncode != 0:
-                    raise Exception(
+                    raise BitbucketDCError(
                         f"Failed to checkout default branch: {checkout_result.stderr}"
                     )
 
@@ -436,7 +443,9 @@ def download_repo(
                     if head_result.returncode == 0
                     else "unknown"
                 )
-                print(f"Successfully checked out default branch (HEAD: {head_sha})")
+                print(
+                    f"DEBUG: Successfully checked out default branch (HEAD: {head_sha})"
+                )
 
             # Remove .git directory
             git_dir = repo_path / ".git"
@@ -445,7 +454,7 @@ def download_repo(
 
             # Create ZIP archive
             zip_path = Path(temp_dir) / f"{repo_slug}.zip"
-            print("Creating ZIP archive...")
+            print("DEBUG: Creating ZIP archive...")
 
             with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for file_path in repo_path.rglob("*"):
@@ -456,16 +465,17 @@ def download_repo(
             with open(zip_path, "rb") as f:
                 zip_content = f.read()
 
-            print(f"Archive created. Size: {len(zip_content)} bytes")
+            print(f"DEBUG: Archive created. Size: {len(zip_content)} bytes")
             return zip_content
 
         except subprocess.TimeoutExpired:
-            raise Exception("Git clone operation timed out")
-        except Exception as e:
-            print(f"Error during repository download: {e!s}")
-            raise
+            raise BitbucketDCError("Git clone operation timed out")
+        except OSError as e:
+            print(f"ERROR: File system error during repository download: {e!s}")
+            raise BitbucketDCError(f"File system error: {e!s}")
 
 
+@NETWORK_RETRY
 def get_commit_info(
     instance_url: str,
     project_key: str,
@@ -473,8 +483,7 @@ def get_commit_info(
     commit_sha: str,
     access_token: str,
     verify: bool | ssl.SSLContext = True,
-) -> dict:
-    """Get commit details from Bitbucket DC API."""
+) -> dict[str, Any]:
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/commits/{commit_sha}"
@@ -485,14 +494,14 @@ def get_commit_info(
         return response.json()
 
 
+@NETWORK_RETRY
 def get_repository_info(
     instance_url: str,
     project_key: str,
     repo_slug: str,
     access_token: str,
     verify: bool | ssl.SSLContext = True,
-) -> dict:
-    """Get repository details from Bitbucket DC API."""
+) -> dict[str, Any]:
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"{api_base}/projects/{project_key}/repos/{repo_slug}"
@@ -571,13 +580,12 @@ def generate_codebase_metadata(
     asset_name: str,
     install_id: str,
     instance_url: str,
-) -> dict:
-    """Generate metadata for codebase upload."""
+) -> dict[str, Any]:
     return {
         "unhashed_organization_id": org_id,
         "full_repo_name": f"{project_key}/{repo_name}",
         "project_key": project_key,
-        "provider": "bitbucket_data_center",
+        "provider": PrimaryAssetProvider.BITBUCKET_DATA_CENTER.value,
         "version_id": str(version_id),
         "repository_id": str(repo_id),
         "asset_name": asset_name,
@@ -587,82 +595,206 @@ def generate_codebase_metadata(
     }
 
 
-def download_and_upload_repo(
-    org_id: str, repo: dict, access_token: str, is_push: bool = False
+def _extract_repo_info(repo: dict[str, Any]) -> dict[str, Any]:
+    metadata = repo.get("metadata", {})
+    return {
+        "repo_id": repo.get("repo_id") or metadata.get("id"),
+        "repo_name": repo.get("repo_name") or repo.get("name"),
+        "project_key": repo.get("project_key") or metadata.get("project_key"),
+        "repo_slug": repo.get("repo_slug")
+        or metadata.get("slug")
+        or repo.get("repo_name")
+        or repo.get("name"),
+        "installation_id": repo.get("installation_id"),
+        "tracked_branch": repo.get("tracked_branch"),
+        "metadata": metadata,
+    }
+
+
+def _get_repo_commit(
+    repo: dict[str, Any],
+    instance_url: str,
+    project_key: str,
+    repo_slug: str,
+    access_token: str,
+    tracked_branch: str | None,
+    verify: bool | ssl.SSLContext,
 ) -> str | None:
-    """Download and upload Bitbucket DC repository."""
-    from database.db import engine
+    if repo.get("commit"):
+        return repo["commit"]
+    if repo.get("latest_commit"):
+        latest = repo["latest_commit"]
+        return latest.get("id") if isinstance(latest, dict) else latest
+
+    branch = tracked_branch or get_default_branch(
+        instance_url, project_key, repo_slug, access_token, verify
+    )
+    if not branch:
+        # No branch means empty repo with no commits
+        print(f"No branch available for {project_key}/{repo_slug} - repo is empty")
+        return None
+
+    print(f"No commit specified, fetching latest commit on branch {branch}...")
+    commit = get_latest_commit_on_branch(
+        instance_url, project_key, repo_slug, branch, access_token, verify
+    )
+    if commit:
+        print(f"Using commit {commit}")
+    return commit
+
+
+def _handle_push_version(
+    session: Session,
+    primary_asset: Any,
+    commit: str,
+    vcs_info: VersionControlInfo | None,
+    repo_name: str,
+) -> UUID | None:
+    """Handle version creation for push events. Returns version_id or None if skipped."""
+    from database.models import Version
+
+    versions = primary_asset.versions
+    if all(v.status == VersionStatus.CONNECTED for v in versions):
+        new_version = Version(
+            primary_asset_id=primary_asset.id,
+            vcs_hash=commit,
+            status=VersionStatus.CONNECTING,
+            previous_version_id=versions[0].id if versions else None,
+            vcs_metadata=vcs_info.model_dump() if vcs_info else None,
+        )
+        session.add(new_version)
+        return new_version.id
+
+    generation_statuses = [
+        VersionStatus.GENERATING,
+        VersionStatus.GENERATION_COMPLETE,
+        VersionStatus.GENERATION_ERROR,
+    ]
+    if any(v.status in generation_statuses for v in versions):
+        for version in versions:
+            if version.status in [
+                VersionStatus.GENERATION_COMPLETE,
+                VersionStatus.GENERATION_ERROR,
+            ]:
+                new_version = Version(
+                    primary_asset_id=primary_asset.id,
+                    vcs_hash=commit,
+                    status=VersionStatus.GENERATING,
+                    previous_version_id=version.id,
+                    vcs_metadata=vcs_info.model_dump() if vcs_info else None,
+                )
+                session.add(new_version)
+                return new_version.id
+            if version.status == VersionStatus.GENERATING:
+                print(f"Generation in progress for {repo_name}, ignoring push")
+                return None
+
+    if versions and versions[0].status == VersionStatus.CONNECTING:
+        print(f"Version already connecting for {repo_name}")
+        return None
+
+    return None
+
+
+def _create_new_asset(
+    session: Session,
+    org_id: str,
+    repo_name: str,
+    repo_id: str | int,
+    installation_id: str,
+    commit: str,
+    vcs_info: VersionControlInfo | None,
+) -> tuple[UUID, UUID]:
+    """Create new primary asset and version. Returns (primary_asset_id, version_id)."""
     from database.models import PrimaryAsset, Version
 
-    # Extract repo info
-    metadata = repo.get("metadata", {})
-    repo_id = repo.get("repo_id") or metadata.get("id")
-    repo_name = repo.get("repo_name") or repo.get("name")
-    project_key = repo.get("project_key") or metadata.get("project_key")
-    repo_slug = repo.get("repo_slug") or metadata.get("slug") or repo_name
-    installation_id = repo.get("installation_id")
-    tracked_branch = repo.get("tracked_branch")
+    primary_asset = PrimaryAsset(
+        display_name=repo_name,
+        organization_id=org_id,
+        kind=PrimaryAssetKind.CODEBASE,
+        repository_id=str(repo_id),
+        installation_id=installation_id,
+        codebase_settings_auto_commit_docs=False,
+        provider=PrimaryAssetProvider.BITBUCKET_DATA_CENTER,
+        vcs_auto_update_policy=VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT,
+    )
+    session.add(primary_asset)
+
+    version = Version(
+        primary_asset_id=primary_asset.id,
+        vcs_hash=commit,
+        status=VersionStatus.CONNECTING,
+        previous_version_id=None,
+        vcs_metadata=vcs_info.model_dump() if vcs_info else None,
+    )
+    session.add(version)
+
+    _create_git_provider_grants(session, primary_asset.id, org_id)
+    print(f"Created primary asset and version for {repo_name}:{commit}")
+
+    return primary_asset.id, version.id
+
+
+def download_and_upload_repo(
+    org_id: str, repo: dict[str, Any], access_token: str, is_push: bool = False
+) -> str | None:
+    """Returns repo_name on failure, None on success."""
+    from database.db import engine
+    from database.models import PrimaryAsset
+
+    info = _extract_repo_info(repo)
+    repo_name = info["repo_name"]
+    installation_id = info["installation_id"]
 
     if not installation_id:
-        print(f"Missing installation_id for repo {repo_name}")
+        print(f"WARNING: Missing installation_id for repo {repo_name}")
         return repo_name
 
-    # Get secrets for SSL config and instance_url
     try:
         secrets = fetch_secrets(installation_id)
-        verify = _get_ssl_context(secrets)
-        ca_bundle_path = secrets.get("ca_bundle_path")
-        disable_ssl_verify = secrets.get("disable_ssl_verify", False)
-        # Prefer instance_url from secrets over metadata (secrets has the authoritative URL)
-        # Note: fetch_secrets applies BITBUCKET_DC_INSTANCE_URL env var override if set
-        instance_url = secrets.get("instance_url") or metadata.get("instance_url")
-    except Exception as e:
-        print(f"Failed to fetch secrets: {e}")
+    except (AccessTokenError, OSError) as e:
+        print(f"ERROR: Failed to fetch secrets: {e}")
         return repo_name
 
+    verify = _get_ssl_context(secrets)
+    ca_bundle_path = secrets.get("ca_bundle_path")
+    disable_ssl_verify = secrets.get("disable_ssl_verify", False)
+    instance_url = secrets.get("instance_url") or info["metadata"].get("instance_url")
+
+    repo_id, project_key, repo_slug = (
+        info["repo_id"],
+        info["project_key"],
+        info["repo_slug"],
+    )
     if not repo_id or not repo_name or not project_key or not instance_url:
-        print(f"Missing required repo data: {repo}")
+        print(f"WARNING: Missing required repo data: {repo}")
         return repo_name or "unknown"
 
-    # Get commit
-    commit = None
-    if repo.get("commit"):
-        commit = repo["commit"]
-    elif repo.get("latest_commit"):
-        if isinstance(repo["latest_commit"], dict):
-            commit = repo["latest_commit"].get("id")
-        else:
-            commit = repo["latest_commit"]
-
+    commit = _get_repo_commit(
+        repo,
+        instance_url,
+        project_key,
+        repo_slug,
+        access_token,
+        info["tracked_branch"],
+        verify,
+    )
     if not commit:
-        # Get latest commit on tracked branch (or default branch)
-        branch_to_check = tracked_branch or get_default_branch(
-            instance_url, project_key, repo_slug, access_token, verify
-        )
-        print(
-            f"No commit specified, fetching latest commit on branch {branch_to_check}..."
-        )
-        commit = get_latest_commit_on_branch(
-            instance_url, project_key, repo_slug, branch_to_check, access_token, verify
-        )
-        if not commit:
-            print(f"Repository {repo_name} appears to be empty (no commits). Skipping.")
-            return repo_name
-        print(f"Using commit {commit}")
+        print(f"Repository {repo_name} appears to be empty (no commits). Skipping.")
+        return repo_name
 
-    # Fetch VCS info
     try:
         vcs_info = fetch_vcs_info(
-            instance_url=instance_url,
-            project_key=project_key,
-            repo_slug=repo_slug,
-            access_token=access_token,
-            commit_sha=commit,
-            tracked_branch=tracked_branch,
-            verify=verify,
+            instance_url,
+            project_key,
+            repo_slug,
+            access_token,
+            commit,
+            info["tracked_branch"],
+            verify,
         )
-    except Exception as e:
-        print(f"Failed to fetch VCS info: {e}")
+    except (httpx.HTTPError, OSError) as e:
+        print(f"WARNING: Failed to fetch VCS info: {e}")
         vcs_info = None
 
     try:
@@ -676,101 +808,31 @@ def download_and_upload_repo(
                     )
                     .options(selectinload(PrimaryAsset.versions))
                 ).first()
-
                 if not primary_asset:
-                    print(f"Primary asset not found for {repo_name}, org: {org_id}")
-                    return repo_name
-
-                primary_asset_id = primary_asset.id
-
-                # Handle version creation based on current status
-                if all(
-                    v.status == VersionStatus.CONNECTED for v in primary_asset.versions
-                ):
-                    new_version = Version(
-                        primary_asset_id=primary_asset.id,
-                        vcs_hash=commit,
-                        status=VersionStatus.CONNECTING,
-                        previous_version_id=primary_asset.versions[0].id
-                        if primary_asset.versions
-                        else None,
-                        vcs_metadata=vcs_info.model_dump() if vcs_info else None,
+                    print(
+                        f"WARNING: Primary asset not found for {repo_name}, org: {org_id}"
                     )
-                    session.add(new_version)
-                    version_id = new_version.id
-                elif any(
-                    v.status
-                    in [
-                        VersionStatus.GENERATING,
-                        VersionStatus.GENERATION_COMPLETE,
-                        VersionStatus.GENERATION_ERROR,
-                    ]
-                    for v in primary_asset.versions
-                ):
-                    for version in primary_asset.versions:
-                        if version.status in [
-                            VersionStatus.GENERATION_COMPLETE,
-                            VersionStatus.GENERATION_ERROR,
-                        ]:
-                            new_version = Version(
-                                primary_asset_id=primary_asset.id,
-                                vcs_hash=commit,
-                                status=VersionStatus.GENERATING,
-                                previous_version_id=version.id,
-                                vcs_metadata=vcs_info.model_dump()
-                                if vcs_info
-                                else None,
-                            )
-                            session.add(new_version)
-                            version_id = new_version.id
-                            break
-                        elif version.status == VersionStatus.GENERATING:
-                            print(
-                                f"Generation in progress for {repo_name}, ignoring push"
-                            )
-                            return repo_name
-                elif (
-                    primary_asset.versions
-                    and primary_asset.versions[0].status == VersionStatus.CONNECTING
-                ):
-                    print(f"Version already connecting for {repo_name}")
                     return repo_name
-                else:
+                primary_asset_id = primary_asset.id
+                version_id = _handle_push_version(
+                    session, primary_asset, commit, vcs_info, repo_name
+                )
+                if not version_id:
                     return repo_name
             else:
-                # Create new primary asset and version
-                primary_asset = PrimaryAsset(
-                    display_name=repo_name,
-                    organization_id=org_id,
-                    kind=PrimaryAssetKind.CODEBASE,
-                    repository_id=str(repo_id),
-                    installation_id=installation_id,
-                    codebase_settings_auto_commit_docs=False,
-                    provider=PrimaryAssetProvider.BITBUCKET_DATA_CENTER,
-                    vcs_auto_update_policy=VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT,
+                primary_asset_id, version_id = _create_new_asset(
+                    session,
+                    org_id,
+                    repo_name,
+                    repo_id,
+                    installation_id,
+                    commit,
+                    vcs_info,
                 )
-                session.add(primary_asset)
-                primary_asset_id = primary_asset.id
-
-                version = Version(
-                    primary_asset_id=primary_asset.id,
-                    vcs_hash=commit,
-                    status=VersionStatus.CONNECTING,
-                    previous_version_id=None,
-                    vcs_metadata=vcs_info.model_dump() if vcs_info else None,
-                )
-                session.add(version)
-                version_id = version.id
-
-                _create_git_provider_grants(session, primary_asset_id, org_id)
-
-                print(f"Created primary asset and version for {repo_name}:{commit}")
-
     except IntegrityError:
-        print(f"Failed to create primary asset for {repo_name}:{commit}")
+        print(f"ERROR: Failed to create primary asset for {repo_name}:{commit}")
         return repo_name
 
-    # Generate metadata
     codebase_metadata = generate_codebase_metadata(
         org_id,
         project_key,
@@ -782,19 +844,17 @@ def download_and_upload_repo(
         instance_url,
     )
 
-    # Download repository
     zip_content = download_repo(
-        instance_url=instance_url,
-        project_key=project_key,
-        repo_slug=repo_slug,
-        commit=commit,
-        access_token=access_token,
-        ca_bundle_path=ca_bundle_path,
-        disable_ssl_verify=disable_ssl_verify,
+        instance_url,
+        project_key,
+        repo_slug,
+        commit,
+        access_token,
+        ca_bundle_path,
+        disable_ssl_verify,
     )
     print(f"Repository downloaded. Size: {len(zip_content)} bytes")
 
-    # Upload to S3
     org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
     upload_key = (
         f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{repo_name}.zip"
@@ -825,6 +885,7 @@ def get_repo_clone_info_from_id(
 # =============================================================================
 
 
+@NETWORK_RETRY
 def list_pull_requests(
     instance_url: str,
     project_key: str,
@@ -832,25 +893,13 @@ def list_pull_requests(
     access_token: str,
     state: str = "OPEN",
     verify: bool | ssl.SSLContext = True,
-) -> list[dict]:
-    """List pull requests for a repository.
-
-    Args:
-        instance_url: Bitbucket DC instance URL
-        project_key: Project key
-        repo_slug: Repository slug
-        access_token: HTTP Access Token
-        state: PR state filter (OPEN, MERGED, DECLINED, ALL)
-        verify: SSL verification setting
-
-    Returns:
-        List of pull request dictionaries
-    """
+) -> list[dict[str, Any]]:
+    """State filter: OPEN, MERGED, DECLINED, or ALL."""
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests"
 
-    all_prs: list[dict] = []
+    all_prs: list[dict[str, Any]] = []
     start = 0
     limit = 25
 
@@ -871,6 +920,7 @@ def list_pull_requests(
     return all_prs
 
 
+@NETWORK_RETRY
 def get_pull_request_commits(
     instance_url: str,
     project_key: str,
@@ -878,25 +928,12 @@ def get_pull_request_commits(
     pr_id: int,
     access_token: str,
     verify: bool | ssl.SSLContext = True,
-) -> list[dict]:
-    """Get commits for a pull request.
-
-    Args:
-        instance_url: Bitbucket DC instance URL
-        project_key: Project key
-        repo_slug: Repository slug
-        pr_id: Pull request ID
-        access_token: HTTP Access Token
-        verify: SSL verification setting
-
-    Returns:
-        List of commit dictionaries
-    """
+) -> list[dict[str, Any]]:
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests/{pr_id}/commits"
 
-    all_commits: list[dict] = []
+    all_commits: list[dict[str, Any]] = []
     start = 0
     limit = 25
 
@@ -925,42 +962,29 @@ def decline_pull_request(
     access_token: str,
     verify: bool | ssl.SSLContext = True,
 ) -> None:
-    """Decline (close) a pull request.
-
-    Args:
-        instance_url: Bitbucket DC instance URL
-        project_key: Project key
-        repo_slug: Repository slug
-        pr_id: Pull request ID
-        access_token: HTTP Access Token
-        verify: SSL verification setting
-    """
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
 
-    # First check the PR status
     pr_url = (
         f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests/{pr_id}"
     )
 
     with httpx.Client(verify=verify, timeout=30.0) as client:
         pr_response = client.get(pr_url, headers=headers)
+        pr_response.raise_for_status()
 
-        if pr_response.status_code == 200:
-            pr_data = pr_response.json()
-            state = pr_data.get("state", "").upper()
+        pr_data = pr_response.json()
+        state = pr_data.get("state", "").upper()
 
-            if state in ["MERGED", "DECLINED"]:
-                print(f"INFO: Pull request #{pr_id} is already {state.lower()}")
-                return
+        if state in ["MERGED", "DECLINED"]:
+            print(f"Pull request #{pr_id} is already {state.lower()}")
+            return
 
-            # Get the current version for optimistic locking
-            version = pr_data.get("version", 0)
+        version = pr_data.get("version", 0)
 
-        # Decline the PR
         decline_url = f"{pr_url}/decline"
         params = {"version": version}
 
@@ -974,10 +998,10 @@ def decline_pull_request(
             try:
                 error_json = e.response.json()
                 error_detail = f" - {error_json}"
-            except Exception:
+            except (ValueError, KeyError):
                 error_detail = f" - {e.response.text}"
 
-            print(f"Failed to decline pull request #{pr_id}: {e}{error_detail}")
+            print(f"ERROR: Failed to decline pull request #{pr_id}: {e}{error_detail}")
             raise
 
 
@@ -990,22 +1014,8 @@ def create_pull_request(
     commit_slug: str,
     target_branch: str | None = None,
     verify: bool | ssl.SSLContext = True,
-) -> dict | None:
-    """Create a pull request.
-
-    Args:
-        instance_url: Bitbucket DC instance URL
-        project_key: Project key
-        repo_slug: Repository slug
-        access_token: HTTP Access Token
-        source_branch: Source branch name
-        commit_slug: Short commit hash for PR title
-        target_branch: Target branch name (defaults to repo default branch)
-        verify: SSL verification setting
-
-    Returns:
-        Created PR data or None if PR already exists
-    """
+) -> dict[str, Any] | None:
+    """Returns created PR data or None if PR already exists."""
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -1050,17 +1060,16 @@ def create_pull_request(
             return result
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 409:
-                # PR already exists
                 print("Pull request already exists for this branch")
                 return None
             error_detail = ""
             try:
                 error_json = e.response.json()
                 error_detail = f" - {error_json}"
-            except Exception:
+            except (ValueError, KeyError):
                 error_detail = f" - {e.response.text}"
 
-            print(f"Failed to create pull request: {e}{error_detail}")
+            print(f"ERROR: Failed to create pull request: {e}{error_detail}")
             raise
 
 
@@ -1073,28 +1082,22 @@ def create_pull_request_with_bot_cleanup(
     commit_slug: str,
     tracked_branch: str | None = None,
 ) -> None:
-    """Create a pull request and close any existing bot PRs from docs_* branches.
-
-    Args:
-        instance_url: Bitbucket DC instance URL
-        project_key: Project key
-        repo_slug: Repository slug
-        access_token: HTTP Access Token
-        branch: Source branch name
-        commit_slug: Short commit hash for PR title
-        tracked_branch: Target branch (defaults to repo default branch)
-    """
-    BOT_NAME = "docs-bot"
-    BOT_EMAIL = "bot@driverai.com"
+    """Create a pull request and close any existing bot PRs from docs_* branches."""
+    bot_email = "bot@driverai.com"
 
     # Get SSL context from secrets if available
     try:
         secrets = fetch_secrets_by_installation_url(instance_url)
         verify = _get_ssl_context(secrets)
-    except Exception:
+    except (AccessTokenError, NotImplementedError):
+        verify = True
+    except (httpx.HTTPError, OSError) as e:
+        print(
+            f"WARNING: Failed to fetch secrets for {instance_url}, using default SSL: {e}"
+        )
         verify = True
 
-    print("Checking for existing bot pull requests...")
+    print("DEBUG: Checking for existing bot pull requests...")
 
     try:
         existing_prs = list_pull_requests(
@@ -1121,10 +1124,8 @@ def create_pull_request_with_bot_cleanup(
                         verify=verify,
                     )
 
-                    # Check if any commit is authored by the bot
                     is_bot_pr = any(
-                        BOT_EMAIL in commit.get("author", {}).get("emailAddress", "")
-                        or BOT_NAME in commit.get("author", {}).get("name", "")
+                        bot_email in commit.get("author", {}).get("emailAddress", "")
                         for commit in commits
                     )
 
@@ -1141,16 +1142,16 @@ def create_pull_request_with_bot_cleanup(
                             print(
                                 f"Closed existing bot PR #{pr_id} from branch {source_branch}"
                             )
-                        except Exception as close_error:
+                        except httpx.HTTPStatusError as close_error:
                             print(
-                                f"Warning: Could not close PR #{pr_id}: {close_error}"
+                                f"WARNING: Could not close PR #{pr_id}: {close_error}"
                             )
 
-                except Exception as e:
-                    print(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
+                except httpx.HTTPStatusError as e:
+                    print(f"WARNING: Error checking PR #{pr.get('id', 'unknown')}: {e}")
 
-    except Exception as e:
-        print(f"Error listing pull requests: {e}")
+    except httpx.HTTPStatusError as e:
+        print(f"WARNING: Error listing pull requests: {e}")
 
     # Create new pull request
     create_pull_request(
@@ -1165,13 +1166,11 @@ def create_pull_request_with_bot_cleanup(
     )
 
 
-def fetch_secrets_by_installation_url(instance_url: str) -> dict:
-    """Fetch secrets by matching instance URL.
+def fetch_secrets_by_installation_url(instance_url: str) -> dict[str, Any]:
+    """Fallback for when we don't have installation_id but have the URL.
 
-    This is a fallback for when we don't have the installation_id but have the URL.
-    Note: This searches through secrets which may not be efficient for large numbers
-    of installations. Consider caching if this becomes a bottleneck.
+    TODO: Implement lookup by instance URL or remove this function.
     """
-    # For now, return empty dict to use default SSL verification
-    # In a full implementation, we'd search secrets by instance_url
-    return {}
+    raise NotImplementedError(
+        "fetch_secrets_by_installation_url not yet implemented - pass installation_id instead"
+    )

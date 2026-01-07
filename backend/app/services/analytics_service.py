@@ -64,16 +64,12 @@ class AnalyticsService:
             logger.error(f"Invalid JSON in {key}: {e}")
             return None
 
-    def _get_administered_codebase_ids(self) -> set[UUID] | None:
+    def _get_codebase_ids_for_user(self) -> set[UUID]:
         """Get IDs of codebases this user can administer.
 
-        Returns None if user is Super Admin (meaning all codebases).
-        Returns set of codebase IDs if user is Source Admin.
+        Uses primary_asset_grant_filter which returns True for super admins
+        (meaning all rows match) or the appropriate filter for source admins.
         """
-        if is_super_admin(self.session, self.user.user_id, self.organization_id):
-            return None  # Super Admin sees all
-
-        # Source Admin - filter by asset_admin role
         filter_clause = primary_asset_grant_filter(
             self.session,
             self.user.user_id,
@@ -81,7 +77,10 @@ class AnalyticsService:
             role=PrimaryAssetRole.asset_admin,
         )
 
-        query = self.session.query(PrimaryAsset.id).where(filter_clause)
+        query = self.session.query(PrimaryAsset.id).where(
+            PrimaryAsset.organization_id == self.organization_id,
+            filter_clause,
+        )
         return {row[0] for row in query.all()}
 
     def _get_provider_for_codebase(self, codebase_id: str) -> str | None:
@@ -125,13 +124,12 @@ class AnalyticsService:
         For Source Admins, computes a filtered summary based on their administered codebases.
         Super Admins get the full pre-computed org summary.
         """
-        administered_ids = self._get_administered_codebase_ids()
-
-        if administered_ids is None:
-            # Super Admin - return pre-computed full org summary
+        # Super Admin optimization: return pre-computed full org summary
+        if is_super_admin(self.session, self.user.user_id, self.organization_id):
             return self._read_json("analytics/org_summary.json")
 
         # Source Admin - compute filtered summary from codebases list
+        administered_ids = self._get_codebase_ids_for_user()
         codebases_data = self._read_json("analytics/codebases_list.json")
         if not codebases_data:
             return None
@@ -167,7 +165,7 @@ class AnalyticsService:
     def get_codebases_list(self) -> dict[str, Any] | None:
         """Get list of codebases with analytics status.
 
-        Super Admins see all codebases.
+        Super Admins see all codebases (via primary_asset_grant_filter returning True).
         Source Admins see only codebases they administer.
         Enriches each codebase with provider information from database.
         """
@@ -175,18 +173,16 @@ class AnalyticsService:
         if not data:
             return None
 
-        administered_ids = self._get_administered_codebase_ids()
+        # Get IDs of codebases user can administer
+        # For super admins, this returns all codebase IDs
+        administered_ids = self._get_codebase_ids_for_user()
 
-        if administered_ids is None:
-            # Super Admin - return all
-            codebases = data.get("codebases", [])
-        else:
-            # Source Admin - filter to only administered codebases
-            codebases = [
-                cb
-                for cb in data.get("codebases", [])
-                if UUID(cb["codebase_id"]) in administered_ids
-            ]
+        # Filter to only administered codebases
+        codebases = [
+            cb
+            for cb in data.get("codebases", [])
+            if UUID(cb["codebase_id"]) in administered_ids
+        ]
 
         # Enrich with provider information
         codebase_ids = [cb["codebase_id"] for cb in codebases]

@@ -120,10 +120,10 @@ def codebase_tags_task(input: CodebaseTagsInput, ctx: Context) -> dict[str, str]
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
 )
-def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str]:
+async def export_tech_docs_task(input: ExportDocsInput, ctx: Context) -> dict[str, str]:
     print("starting export tech docs task")
     # Call the function to export tech docs to zip
-    export_tech_docs_to_zip(
+    await export_tech_docs_to_zip(
         input.version_id,
         input.install_id,
     )

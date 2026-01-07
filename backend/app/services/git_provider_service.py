@@ -11,6 +11,7 @@ from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
     format_secret_name,
 )
+from sqlalchemy.orm.attributes import flag_modified
 from sqlmodel import Session
 
 from app.core.config import settings
@@ -399,13 +400,15 @@ class GitProviderService:
         result["repo_slug"] = scope.get("repo_slug")
 
         # Save webhook state in installation metadata
-        metadata = installation.misc_metadata or {}
+        metadata = dict(installation.misc_metadata or {})
         metadata["webhook_registered"] = True
         metadata["webhook_id"] = result.get("id")
         metadata["webhook_scope_type"] = scope.get("type")
         installation.misc_metadata = metadata
+        flag_modified(installation, "misc_metadata")
         session.add(installation)
         session.commit()
+        session.refresh(installation)
 
         logger.info(
             f"Registered webhook for installation {installation_id}: "
@@ -413,6 +416,77 @@ class GitProviderService:
         )
 
         return result
+
+    def deregister_webhook(
+        self,
+        session: Session,
+        organization_id: str,
+        app_id: str,
+        installation_id: str,
+    ) -> dict:
+        """Deregister a webhook for a Bitbucket DC installation.
+
+        Uses stored webhook_id and scope from installation metadata.
+
+        Args:
+            session: Database session
+            organization_id: Organization ID
+            app_id: Git provider app ID
+            installation_id: Installation ID
+
+        Returns:
+            Status message
+        """
+        installation = git_provider_app_installation_by_id(session, installation_id)
+        if (
+            not installation
+            or installation.organization_id != organization_id
+            or str(installation.git_provider_app_id) != app_id
+        ):
+            raise ValueError("Installation not found or doesn't match app")
+
+        if (
+            installation.git_provider_app.provider_kind
+            != GitProviderKind.BITBUCKET_DATA_CENTER
+        ):
+            raise ValueError(
+                f"Webhook deregistration not supported for {installation.git_provider_app.provider_kind}"
+            )
+
+        metadata = installation.misc_metadata or {}
+        webhook_id = metadata.get("webhook_id")
+        if not webhook_id:
+            raise ValueError("No webhook registered for this installation")
+
+        # Build scope from metadata
+        scope = {
+            "type": metadata.get("webhook_scope_type"),
+            "project_key": metadata.get("project_key"),
+            "repo_slug": metadata.get("repo_slug"),
+        }
+
+        # If scope info not in metadata, discover it
+        if not scope["type"] or not scope["project_key"]:
+            provider = self.get_provider(installation.git_provider_app)
+            scope = provider.discover_token_scope(installation)
+
+        provider = self.get_provider(installation.git_provider_app)
+        provider.deregister_webhook(installation, webhook_id, scope)
+
+        # Update metadata to mark webhook as deregistered
+        metadata = dict(installation.misc_metadata or {})
+        metadata["webhook_registered"] = False
+        metadata.pop("webhook_id", None)
+        metadata.pop("webhook_scope_type", None)
+        installation.misc_metadata = metadata
+        flag_modified(installation, "misc_metadata")
+        session.add(installation)
+        session.commit()
+        session.refresh(installation)
+
+        logger.info(f"Deregistered webhook for installation {installation_id}")
+
+        return {"message": "Webhook deregistered successfully"}
 
     # Helper Methods
 

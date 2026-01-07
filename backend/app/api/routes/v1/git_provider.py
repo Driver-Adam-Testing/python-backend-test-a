@@ -244,6 +244,47 @@ def register_webhook(
 
 
 @router.delete(
+    "/app/{application_id}/installations/{installation_id}/webhook/register",
+    summary="Deregister a webhook for Bitbucket DC installation.",
+)
+def deregister_webhook(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: UUID,
+    installation_id: UUID,
+) -> JSONResponse:
+    """Deregister a webhook for a Bitbucket DC installation.
+
+    Uses the stored webhook_id from installation metadata to delete
+    the webhook from Bitbucket DC.
+    """
+    enforce_org_action(session, current_user, "vcs.manage")
+    try:
+        result = provider_service.deregister_webhook(
+            session,
+            current_user.organization_id,
+            str(application_id),
+            str(installation_id),
+        )
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=result,
+        )
+    except KeyError as e:
+        logger.error(f"Missing metadata for webhook deregistration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Installation metadata missing '{e.args[0]}'",
+        )
+    except ValueError as e:
+        logger.error(f"Webhook deregistration failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
+@router.delete(
     "/app/{application_id}/installations/{installation_id}",
     summary="Delete app install",
 )

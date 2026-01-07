@@ -709,6 +709,63 @@ class BitbucketDCProvider(GitProviderInterface):
             logger.error(f"Failed to register webhook: {e}")
             raise
 
+    def deregister_webhook(
+        self,
+        installation: GitProviderAppInstallation,
+        webhook_id: int,
+        scope: dict[str, str],
+    ) -> None:
+        """Deregister a Bitbucket DC webhook.
+
+        Args:
+            installation: The installation to deregister webhook for
+            webhook_id: The webhook ID to delete
+            scope: Scope info with "type", "project_key", and optionally "repo_slug"
+        """
+        logger.info(
+            f"Deregistering webhook {webhook_id} for installation {installation.id}"
+        )
+
+        try:
+            secrets = self.fetch_secrets(installation)
+            access_token = secrets["token"]
+            instance_url = secrets["instance_url"]
+
+            api = self._get_api_resources(
+                base_url=instance_url,
+                ca_bundle_path=secrets.get("ca_bundle_path"),
+                disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+            )
+
+            scope_type = scope.get("type")
+            project_key = scope.get("project_key")
+
+            if scope_type == "project":
+                api.delete_project_webhook(
+                    project_key=project_key,
+                    webhook_id=webhook_id,
+                    access_token=access_token,
+                )
+                logger.info(f"Deleted project webhook {webhook_id} for {project_key}")
+
+            elif scope_type == "repository":
+                repo_slug = scope.get("repo_slug")
+                api.delete_repository_webhook(
+                    project_key=project_key,
+                    repo_slug=repo_slug,
+                    webhook_id=webhook_id,
+                    access_token=access_token,
+                )
+                logger.info(
+                    f"Deleted repo webhook {webhook_id} for {project_key}/{repo_slug}"
+                )
+            else:
+                raise ValueError(f"Invalid scope type: {scope_type}")
+
+        except Exception as e:
+            logger.error(f"Failed to deregister webhook: {e}")
+            raise
+
     def _map_triggers_to_events(self, triggers: list[str]) -> list[str]:
         """Map generic triggers to Bitbucket DC-specific events."""
         TRIGGER_MAP = {

@@ -414,6 +414,60 @@ class BitbucketDCAPIResources:
             )
             raise
 
+    def delete_repository_webhook(
+        self,
+        project_key: str,
+        repo_slug: str,
+        webhook_id: int,
+        access_token: str,
+    ) -> None:
+        """Delete a repository-level webhook.
+
+        Args:
+            project_key: Project key
+            repo_slug: Repository slug
+            webhook_id: ID of the webhook to delete
+            access_token: HTTP Access Token
+        """
+        url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/webhooks/{webhook_id}"
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        try:
+            with httpx.Client(verify=self.verify, timeout=30.0) as client:
+                response = client.delete(url, headers=headers)
+                response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Failed to delete webhook: {e.response.status_code} - {e.response.text}"
+            )
+            raise
+
+    def delete_project_webhook(
+        self,
+        project_key: str,
+        webhook_id: int,
+        access_token: str,
+    ) -> None:
+        """Delete a project-level webhook.
+
+        Args:
+            project_key: Project key
+            webhook_id: ID of the webhook to delete
+            access_token: HTTP Access Token
+        """
+        url = f"{self.api_base}/projects/{project_key}/webhooks/{webhook_id}"
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        try:
+            with httpx.Client(verify=self.verify, timeout=30.0) as client:
+                response = client.delete(url, headers=headers)
+                response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Failed to delete project webhook: {e.response.status_code} - {e.response.text}"
+            )
+            raise
+
     def build_clone_url(
         self,
         project_key: str,

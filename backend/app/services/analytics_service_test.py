@@ -177,13 +177,18 @@ class TestAnalyticsService:
         mock_s3_client.get_object.assert_called_once()
 
     @pytest.mark.unit
-    def test_get_codebases_list_success(self, service, mock_s3_client):
+    def test_get_codebases_list_success(
+        self, mock_s3_client, mock_session, mock_super_admin_user
+    ):
         """Test successful codebases list retrieval."""
+        from app.services.analytics_service import AnalyticsService
+
+        id1, id2 = uuid4(), uuid4()
         s3_data = {
             "organization_id": "test-org",
             "codebases": [
                 {
-                    "codebase_id": "id-1",
+                    "codebase_id": str(id1),
                     "display_name": "repo-1",
                     "total_commits": 100,
                     "current_sloc": 5000,
@@ -191,7 +196,7 @@ class TestAnalyticsService:
                     "analytics_status": "complete",
                 },
                 {
-                    "codebase_id": "id-2",
+                    "codebase_id": str(id2),
                     "display_name": "repo-2",
                     "total_commits": 50,
                     "current_sloc": 2500,
@@ -205,7 +210,16 @@ class TestAnalyticsService:
             "Body": MagicMock(read=lambda: json.dumps(s3_data).encode())
         }
 
-        result = service.get_codebases_list()
+        with (
+            patch("app.services.analytics_service.is_super_admin", return_value=True),
+            patch.object(
+                AnalyticsService,
+                "_get_codebase_ids_for_user",
+                return_value={id1, id2},
+            ),
+        ):
+            service = AnalyticsService(mock_session, mock_super_admin_user)
+            result = service.get_codebases_list()
 
         # Service enriches each codebase with provider (None when not found in DB)
         assert result is not None
@@ -415,7 +429,19 @@ class TestAnalyticsFiltering:
             "Body": MagicMock(read=lambda: json.dumps(all_codebases_data).encode())
         }
 
-        with patch("app.services.analytics_service.is_super_admin", return_value=True):
+        # For super admin, _get_codebase_ids_for_user returns all codebase IDs
+        all_ids = {
+            UUID("11111111-1111-1111-1111-111111111111"),
+            UUID("22222222-2222-2222-2222-222222222222"),
+        }
+        with (
+            patch("app.services.analytics_service.is_super_admin", return_value=True),
+            patch.object(
+                AnalyticsService,
+                "_get_codebase_ids_for_user",
+                return_value=all_ids,
+            ),
+        ):
             service = AnalyticsService(mock_session, mock_super_admin_user)
             result = service.get_codebases_list()
 

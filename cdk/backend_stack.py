@@ -53,6 +53,7 @@ class BackendStack(Stack):
                 aws_account=self.cdkenv.account,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
                 allowed_aws_account=settings.ALLOWED_AWS_ACCOUNT,
+                allowed_privatelink_regions=[r.strip() for r in settings.ALLOWED_PRIVATELINK_REGIONS.split(",") if r.strip()],
             ),
         )
         self.onboarding_lambda = AssetOnboardingLambda(

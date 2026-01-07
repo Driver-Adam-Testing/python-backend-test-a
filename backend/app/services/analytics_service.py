@@ -22,6 +22,15 @@ from shared.authorization.query_filters import (
 from sqlmodel import Session
 
 from app.api.auth import UserToken
+from app.schemas.analytics_schema import (
+    ActivityResponse,
+    AnalyticsOverview,
+    AnalyticsStatus,
+    BranchesResponse,
+    CodebasesListResponse,
+    OrgAnalyticsSummary,
+    OwnershipResponse,
+)
 from app.utils.aws_s3 import org_id_to_hash, s3_client
 
 logger = logging.getLogger(__name__)
@@ -118,7 +127,7 @@ class AnalyticsService:
 
     # === Organization-Level Methods ===
 
-    def get_org_summary(self) -> dict[str, Any] | None:
+    def get_org_summary(self) -> OrgAnalyticsSummary | None:
         """Get organization-level analytics summary.
 
         For Source Admins, computes a filtered summary based on their administered codebases.
@@ -126,7 +135,10 @@ class AnalyticsService:
         """
         # Super Admin optimization: return pre-computed full org summary
         if is_super_admin(self.session, self.user.user_id, self.organization_id):
-            return self._read_json("analytics/org_summary.json")
+            data = self._read_json("analytics/org_summary.json")
+            if not data:
+                return None
+            return OrgAnalyticsSummary(**data)
 
         # Source Admin - compute filtered summary from codebases list
         administered_ids = self._get_codebase_ids_for_user()
@@ -142,27 +154,20 @@ class AnalyticsService:
         ]
 
         # Compute aggregated summary from filtered codebases
-        return {
-            "organization_id": self.organization_id,
-            "total_codebases": len(filtered_codebases),
-            "codebases_with_analytics": len(
+        return OrgAnalyticsSummary(
+            organization_id=self.organization_id,
+            total_codebases=len(filtered_codebases),
+            codebases_with_analytics=len(
                 [
                     cb
                     for cb in filtered_codebases
                     if cb.get("analytics_status") == "complete"
                 ]
             ),
-            "total_commits": sum(
-                cb.get("total_commits", 0) for cb in filtered_codebases
-            ),
-            "total_contributors": sum(
-                cb.get("total_contributors", 0) for cb in filtered_codebases
-            ),
-            "total_sloc": sum(cb.get("current_sloc", 0) for cb in filtered_codebases),
-            "generated_at": codebases_data.get("generated_at"),
-        }
+            generated_at=codebases_data.get("generated_at"),
+        )
 
-    def get_codebases_list(self) -> dict[str, Any] | None:
+    def get_codebases_list(self) -> CodebasesListResponse | None:
         """Get list of codebases with analytics status.
 
         Super Admins see all codebases (via primary_asset_grant_filter returning True).
@@ -190,45 +195,55 @@ class AnalyticsService:
         for cb in codebases:
             cb["provider"] = providers.get(cb["codebase_id"])
 
-        return {
-            **data,
-            "codebases": codebases,
-            "total_codebases": len(codebases),
-        }
+        return CodebasesListResponse(
+            organization_id=data.get("organization_id", self.organization_id),
+            codebases=codebases,
+            generated_at=data.get("generated_at"),
+        )
 
     # === Codebase-Level Methods ===
 
-    def get_overview(self, codebase_id: str) -> dict[str, Any] | None:
+    def get_overview(self, codebase_id: str) -> AnalyticsOverview | None:
         """Get overview metrics for a codebase.
 
         Enriches with provider information from database.
         """
         data = self._read_json(f"analytics/{codebase_id}/overview.json")
-        if data:
-            data["provider"] = self._get_provider_for_codebase(codebase_id)
-        return data
+        if not data:
+            return None
+        data["provider"] = self._get_provider_for_codebase(codebase_id)
+        return AnalyticsOverview(**data)
 
-    def get_branches(self, codebase_id: str) -> dict[str, Any] | None:
+    def get_branches(self, codebase_id: str) -> BranchesResponse | None:
         """Get branch data for a codebase."""
-        return self._read_json(f"analytics/{codebase_id}/branches.json")
+        data = self._read_json(f"analytics/{codebase_id}/branches.json")
+        if not data:
+            return None
+        return BranchesResponse(**data)
 
-    def get_activity(self, codebase_id: str) -> dict[str, Any] | None:
+    def get_activity(self, codebase_id: str) -> ActivityResponse | None:
         """Get activity data for a codebase."""
-        return self._read_json(f"analytics/{codebase_id}/activity.json")
+        data = self._read_json(f"analytics/{codebase_id}/activity.json")
+        if not data:
+            return None
+        return ActivityResponse(**data)
 
-    def get_ownership(self, codebase_id: str) -> dict[str, Any] | None:
+    def get_ownership(self, codebase_id: str) -> OwnershipResponse | None:
         """Get code ownership data for a codebase."""
-        return self._read_json(f"analytics/{codebase_id}/ownership.json")
+        data = self._read_json(f"analytics/{codebase_id}/ownership.json")
+        if not data:
+            return None
+        return OwnershipResponse(**data)
 
-    def get_status(self, codebase_id: str) -> dict[str, Any]:
+    def get_status(self, codebase_id: str) -> AnalyticsStatus:
         """Get analytics status for a codebase."""
         metadata = self._read_json(f"analytics/{codebase_id}/metadata.json")
         if metadata:
-            return metadata
+            return AnalyticsStatus(**metadata)
         # If no metadata, return a "none" status
-        return {
-            "codebase_id": codebase_id,
-            "status": "none",
-            "generated_at": None,
-            "generation_seconds": None,
-        }
+        return AnalyticsStatus(
+            codebase_id=codebase_id,
+            status="none",
+            generated_at=None,
+            generation_seconds=None,
+        )

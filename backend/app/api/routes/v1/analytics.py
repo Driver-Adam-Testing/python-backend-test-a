@@ -39,9 +39,9 @@ def get_analytics_summary(
     enforce_any_source_admin(db=session, user=user)
 
     service = AnalyticsService(session, user)
-    data = service.get_org_summary()
+    summary = service.get_org_summary()
 
-    if not data:
+    if not summary:
         return OrgAnalyticsSummary(
             organization_id=str(user.organization_id),
             total_codebases=0,
@@ -49,7 +49,7 @@ def get_analytics_summary(
             generated_at=datetime.now(UTC),
         )
 
-    return OrgAnalyticsSummary(**data)
+    return summary
 
 
 @router.get(
@@ -69,16 +69,16 @@ def get_analytics_codebases(
     enforce_any_source_admin(db=session, user=user)
 
     service = AnalyticsService(session, user)
-    data = service.get_codebases_list()  # Filtered by admin access
+    codebases_list = service.get_codebases_list()
 
-    if not data:
+    if not codebases_list:
         return CodebasesListResponse(
             organization_id=str(user.organization_id),
             codebases=[],
             generated_at=datetime.now(UTC),
         )
 
-    return CodebasesListResponse(**data)
+    return codebases_list
 
 
 # === Codebase-Level Endpoints ===
@@ -102,14 +102,14 @@ def get_codebase_overview(
     )
 
     service = AnalyticsService(session, user)
-    data = service.get_overview(str(codebase_id))
+    overview = service.get_overview(str(codebase_id))
 
-    if not data:
+    if not overview:
         raise HTTPException(
             status_code=404, detail="Analytics not found for this codebase"
         )
 
-    return AnalyticsOverview(**data)
+    return overview
 
 
 @router.get(
@@ -128,14 +128,14 @@ def get_codebase_branches(
     )
 
     service = AnalyticsService(session, user)
-    data = service.get_branches(str(codebase_id))
+    branches = service.get_branches(str(codebase_id))
 
-    if not data:
+    if not branches:
         raise HTTPException(
             status_code=404, detail="Analytics not found for this codebase"
         )
 
-    return BranchesResponse(**data)
+    return branches
 
 
 @router.get(
@@ -154,14 +154,14 @@ def get_codebase_activity(
     )
 
     service = AnalyticsService(session, user)
-    data = service.get_activity(str(codebase_id))
+    activity = service.get_activity(str(codebase_id))
 
-    if not data:
+    if not activity:
         raise HTTPException(
             status_code=404, detail="Analytics not found for this codebase"
         )
 
-    return ActivityResponse(**data)
+    return activity
 
 
 @router.get(
@@ -180,14 +180,14 @@ def get_codebase_ownership(
     )
 
     service = AnalyticsService(session, user)
-    data = service.get_ownership(str(codebase_id))
+    ownership = service.get_ownership(str(codebase_id))
 
-    if not data:
+    if not ownership:
         raise HTTPException(
             status_code=404, detail="Analytics not found for this codebase"
         )
 
-    return OwnershipResponse(**data)
+    return ownership
 
 
 @router.get(
@@ -206,6 +206,4 @@ def get_analytics_status(
     )
 
     service = AnalyticsService(session, user)
-    data = service.get_status(str(codebase_id))
-
-    return AnalyticsStatus(**data)
+    return service.get_status(str(codebase_id))

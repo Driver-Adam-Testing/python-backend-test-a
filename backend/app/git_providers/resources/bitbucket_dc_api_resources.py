@@ -366,6 +366,54 @@ class BitbucketDCAPIResources:
             )
             raise
 
+    def create_project_webhook(
+        self,
+        project_key: str,
+        config: dict[str, Any],
+        access_token: str,
+    ) -> dict[str, Any]:
+        """Create a project-level webhook.
+
+        Project webhooks fire for all repositories in the project.
+        Requires Project Admin permissions.
+
+        Args:
+            project_key: Project key
+            config: Webhook configuration with url, events, secret, etc.
+            access_token: HTTP Access Token with Project Admin permissions
+
+        Returns:
+            Created webhook data
+        """
+        url = f"{self.api_base}/projects/{project_key}/webhooks"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "name": config.get("description", "Driver AI Webhook"),
+            "url": config["url"],
+            "active": config.get("active", True),
+            "events": config["events"],
+            "configuration": {},
+        }
+
+        # Add secret if provided
+        if config.get("secret"):
+            payload["configuration"]["secret"] = config["secret"]
+
+        try:
+            with httpx.Client(verify=self.verify, timeout=30.0) as client:
+                response = client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Failed to create project webhook: {e.response.status_code} - {e.response.text}"
+            )
+            raise
+
     def build_clone_url(
         self,
         project_key: str,

@@ -5,14 +5,11 @@ from pydantic import BaseModel, Field
 
 
 class TokenType(str, Enum):
-    # OAUTH = "oauth"
     GROUP_ACCESS_TOKEN = "group_access_token"  # GitLab
     WORKSPACE_ACCESS_TOKEN = "workspace_access_token"  # Bitbucket Cloud
-    PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket Cloud
-    REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket Cloud
+    PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket Cloud & Data Center
+    REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket Cloud & Data Center
     PERSONAL_ACCESS_TOKEN = "personal_access_token"  # Azure DevOps
-    BITBUCKET_DC_HTTP_TOKEN = "bitbucket_dc_http_token"  # Bitbucket Data Center
-    HTTP_ACCESS_TOKEN = "http_access_token"  # Bitbucket Data Center (alternative name)
 
     def __str__(self) -> str:
         return self.name
@@ -147,12 +144,29 @@ class BitbucketDCTokenData(BaseModel):
 
     For Project/Repository tokens, we use Bearer auth only (no username needed).
     Clone URLs use x-token-auth as the username placeholder.
+
+    token_type determines the scope of the token:
+    - PROJECT_ACCESS_TOKEN: Can access all repos in a project, create project webhooks
+    - REPOSITORY_ACCESS_TOKEN: Can only access a specific repo, create repo webhooks
     """
 
     token: str = Field(..., description="HTTP Access Token")
+    name: str | None = Field(None, description="Token name for identification")
+    token_type: TokenType = Field(
+        default=TokenType.PROJECT_ACCESS_TOKEN,
+        description="Type of token (project_access_token or repository_access_token)",
+    )
     instance_url: str = Field(
         ...,
         description="Bitbucket DC instance URL (e.g., https://bitbucket.company.com)",
+    )
+    # For repository tokens, store the project/repo scope
+    project_key: str | None = Field(
+        None,
+        description="Project key (required for project tokens, optional for repo tokens)",
+    )
+    repo_slug: str | None = Field(
+        None, description="Repository slug (required for repository tokens)"
     )
     secret_token: str | None = Field(
         None, description="Webhook secret for signature verification"

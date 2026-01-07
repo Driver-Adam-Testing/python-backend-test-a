@@ -46,6 +46,9 @@ logger = logging.getLogger(__name__)
 # Secret prefix for Bitbucket DC installations
 BBDC_SECRET_PREFIX = "GIT_PROVIDER_BBDC_HTTP_INSTALL_SECRET"
 
+# Environment variable to override instance URL (for Docker/local dev)
+BBDC_INSTANCE_URL_ENV = "BITBUCKET_DC_INSTANCE_URL"
+
 
 def _create_git_provider_grants(
     session: Session,
@@ -83,7 +86,9 @@ def fetch_access_token(installation_id: str) -> tuple[str, str]:
     """Fetch HTTP Access Token and instance URL for installation.
 
     Returns:
-        Tuple of (token, instance_url)
+        Tuple of (token, instance_url). The instance_url can be overridden
+        by the BITBUCKET_DC_INSTANCE_URL environment variable for local
+        development or Docker environments.
     """
     print(
         f"Fetching HTTP Access Token for Bitbucket DC installation ID {installation_id}"
@@ -102,14 +107,22 @@ def fetch_access_token(installation_id: str) -> tuple[str, str]:
             "HTTP Access Token not found for Bitbucket DC installation"
         )
 
+    # Allow environment variable to override instance URL for Docker/local dev
+    instance_url = os.environ.get(BBDC_INSTANCE_URL_ENV) or secret_value["instance_url"]
+
     return (
         secret_value["token"],
-        secret_value["instance_url"],
+        instance_url,
     )
 
 
 def fetch_secrets(installation_id: str) -> dict:
-    """Fetch all secrets for installation."""
+    """Fetch all secrets for installation.
+
+    The instance_url in the returned dict can be overridden by the
+    BITBUCKET_DC_INSTANCE_URL environment variable for local development
+    or Docker environments.
+    """
     install_key = format_secret_name(BBDC_SECRET_PREFIX, installation_id)
     secrets_manager = AWSSecretManagementStrategy(
         AWSClientConfig(
@@ -121,6 +134,13 @@ def fetch_secrets(installation_id: str) -> dict:
     secret_value = secrets_manager.read_secret(install_key)
     if not secret_value:
         raise AccessTokenError("Secrets not found for Bitbucket DC installation")
+
+    # Allow environment variable to override instance URL for Docker/local dev
+    env_url = os.environ.get(BBDC_INSTANCE_URL_ENV)
+    if env_url:
+        secret_value = dict(secret_value)  # Copy to avoid mutating cached value
+        secret_value["instance_url"] = env_url
+
     return secret_value
 
 
@@ -133,27 +153,6 @@ def _get_ssl_context(secrets: dict) -> bool | ssl.SSLContext:
         context.load_verify_locations(secrets["ca_bundle_path"])
         return context
     return True
-
-
-def _translate_url_for_docker(url: str) -> str:
-    """Translate localhost URLs to Docker-accessible URLs.
-
-    When running inside a Docker container, localhost refers to the container itself.
-    This function translates localhost URLs to use the container name instead.
-    """
-    if not url:
-        return url
-
-    # Check if we're running inside Docker (look for /.dockerenv or /run/.containerenv)
-    import os
-
-    in_docker = os.path.exists("/.dockerenv") or os.path.exists("/run/.containerenv")
-
-    if in_docker and "localhost" in url:
-        # Replace localhost with the Bitbucket DC container name
-        return url.replace("localhost", "bitbucket-dc")
-
-    return url
 
 
 def build_clone_url(
@@ -182,22 +181,66 @@ def get_default_branch(
     access_token: str,
     verify: bool | ssl.SSLContext = True,
 ) -> str:
-    """Get default branch for repository."""
+    """Get default branch for repository.
+
+    First tries the /default-branch endpoint, then validates the branch exists.
+    Falls back to checking branches list for isDefault flag or first available branch.
+    """
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/default-branch"
 
-    try:
-        with httpx.Client(verify=verify, timeout=30.0) as client:
+    with httpx.Client(verify=verify, timeout=30.0) as client:
+        # First, try the default-branch endpoint
+        default_branch = None
+        try:
+            url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/default-branch"
             response = client.get(url, headers=headers)
             response.raise_for_status()
             data = response.json()
-            return data.get("displayId", "main")
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logger.warning(f"Default branch not found for {project_key}/{repo_slug}")
-            return "main"
-        raise
+            default_branch = data.get("displayId")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code != 404:
+                raise
+            logger.warning(
+                f"Default branch endpoint returned 404 for {project_key}/{repo_slug}"
+            )
+
+        # Validate the default branch exists by listing branches
+        branches_url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/branches"
+        try:
+            response = client.get(branches_url, headers=headers, params={"limit": 100})
+            response.raise_for_status()
+            branches_data = response.json()
+            branches = branches_data.get("values", [])
+
+            if not branches:
+                logger.warning(f"No branches found for {project_key}/{repo_slug}")
+                return default_branch or "main"
+
+            # Check if reported default branch actually exists
+            if default_branch:
+                for b in branches:
+                    if b.get("displayId") == default_branch:
+                        return default_branch
+                logger.warning(
+                    f"Default branch '{default_branch}' not found in branches list"
+                )
+
+            # Look for branch with isDefault flag
+            for b in branches:
+                if b.get("isDefault"):
+                    actual_default = b.get("displayId")
+                    logger.info(f"Using isDefault branch: {actual_default}")
+                    return actual_default
+
+            # Fall back to first branch
+            first_branch = branches[0].get("displayId")
+            logger.info(f"No default found, using first branch: {first_branch}")
+            return first_branch
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Failed to list branches: {e}")
+            return default_branch or "main"
 
 
 def get_latest_commit_on_branch(
@@ -571,9 +614,8 @@ def download_and_upload_repo(
         ca_bundle_path = secrets.get("ca_bundle_path")
         disable_ssl_verify = secrets.get("disable_ssl_verify", False)
         # Prefer instance_url from secrets over metadata (secrets has the authoritative URL)
+        # Note: fetch_secrets applies BITBUCKET_DC_INSTANCE_URL env var override if set
         instance_url = secrets.get("instance_url") or metadata.get("instance_url")
-        # Translate localhost to container name when running in Docker
-        instance_url = _translate_url_for_docker(instance_url)
     except Exception as e:
         print(f"Failed to fetch secrets: {e}")
         return repo_name
@@ -776,3 +818,360 @@ def get_repo_clone_info_from_id(
     clone_url = build_clone_url(instance_url, project_key, repo_slug)
     full_name = f"{project_key}/{repo_slug}"
     return clone_url, full_name
+
+
+# =============================================================================
+# Pull Request Functions for Push Bot
+# =============================================================================
+
+
+def list_pull_requests(
+    instance_url: str,
+    project_key: str,
+    repo_slug: str,
+    access_token: str,
+    state: str = "OPEN",
+    verify: bool | ssl.SSLContext = True,
+) -> list[dict]:
+    """List pull requests for a repository.
+
+    Args:
+        instance_url: Bitbucket DC instance URL
+        project_key: Project key
+        repo_slug: Repository slug
+        access_token: HTTP Access Token
+        state: PR state filter (OPEN, MERGED, DECLINED, ALL)
+        verify: SSL verification setting
+
+    Returns:
+        List of pull request dictionaries
+    """
+    api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests"
+
+    all_prs: list[dict] = []
+    start = 0
+    limit = 25
+
+    with httpx.Client(verify=verify, timeout=30.0) as client:
+        while True:
+            params = {"state": state, "start": start, "limit": limit}
+            response = client.get(url, headers=headers, params=params)
+            response.raise_for_status()
+
+            data = response.json()
+            all_prs.extend(data.get("values", []))
+
+            if data.get("isLastPage", True):
+                break
+
+            start = data.get("nextPageStart", start + limit)
+
+    return all_prs
+
+
+def get_pull_request_commits(
+    instance_url: str,
+    project_key: str,
+    repo_slug: str,
+    pr_id: int,
+    access_token: str,
+    verify: bool | ssl.SSLContext = True,
+) -> list[dict]:
+    """Get commits for a pull request.
+
+    Args:
+        instance_url: Bitbucket DC instance URL
+        project_key: Project key
+        repo_slug: Repository slug
+        pr_id: Pull request ID
+        access_token: HTTP Access Token
+        verify: SSL verification setting
+
+    Returns:
+        List of commit dictionaries
+    """
+    api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests/{pr_id}/commits"
+
+    all_commits: list[dict] = []
+    start = 0
+    limit = 25
+
+    with httpx.Client(verify=verify, timeout=30.0) as client:
+        while True:
+            params = {"start": start, "limit": limit}
+            response = client.get(url, headers=headers, params=params)
+            response.raise_for_status()
+
+            data = response.json()
+            all_commits.extend(data.get("values", []))
+
+            if data.get("isLastPage", True):
+                break
+
+            start = data.get("nextPageStart", start + limit)
+
+    return all_commits
+
+
+def decline_pull_request(
+    instance_url: str,
+    project_key: str,
+    repo_slug: str,
+    pr_id: int,
+    access_token: str,
+    verify: bool | ssl.SSLContext = True,
+) -> None:
+    """Decline (close) a pull request.
+
+    Args:
+        instance_url: Bitbucket DC instance URL
+        project_key: Project key
+        repo_slug: Repository slug
+        pr_id: Pull request ID
+        access_token: HTTP Access Token
+        verify: SSL verification setting
+    """
+    api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+
+    # First check the PR status
+    pr_url = (
+        f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests/{pr_id}"
+    )
+
+    with httpx.Client(verify=verify, timeout=30.0) as client:
+        pr_response = client.get(pr_url, headers=headers)
+
+        if pr_response.status_code == 200:
+            pr_data = pr_response.json()
+            state = pr_data.get("state", "").upper()
+
+            if state in ["MERGED", "DECLINED"]:
+                print(f"INFO: Pull request #{pr_id} is already {state.lower()}")
+                return
+
+            # Get the current version for optimistic locking
+            version = pr_data.get("version", 0)
+
+        # Decline the PR
+        decline_url = f"{pr_url}/decline"
+        params = {"version": version}
+
+        response = client.post(decline_url, headers=headers, params=params)
+
+        try:
+            response.raise_for_status()
+            print(f"Declined pull request #{pr_id}")
+        except httpx.HTTPStatusError as e:
+            error_detail = ""
+            try:
+                error_json = e.response.json()
+                error_detail = f" - {error_json}"
+            except Exception:
+                error_detail = f" - {e.response.text}"
+
+            print(f"Failed to decline pull request #{pr_id}: {e}{error_detail}")
+            raise
+
+
+def create_pull_request(
+    instance_url: str,
+    project_key: str,
+    repo_slug: str,
+    access_token: str,
+    source_branch: str,
+    commit_slug: str,
+    target_branch: str | None = None,
+    verify: bool | ssl.SSLContext = True,
+) -> dict | None:
+    """Create a pull request.
+
+    Args:
+        instance_url: Bitbucket DC instance URL
+        project_key: Project key
+        repo_slug: Repository slug
+        access_token: HTTP Access Token
+        source_branch: Source branch name
+        commit_slug: Short commit hash for PR title
+        target_branch: Target branch name (defaults to repo default branch)
+        verify: SSL verification setting
+
+    Returns:
+        Created PR data or None if PR already exists
+    """
+    api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+
+    # Get default branch if target not specified
+    if target_branch is None:
+        target_branch = get_default_branch(
+            instance_url, project_key, repo_slug, access_token, verify
+        )
+
+    pr_data = {
+        "title": f"Update driver docs for commit {commit_slug}",
+        "description": f"Automated update of driver documentation for commit {commit_slug}",
+        "fromRef": {
+            "id": f"refs/heads/{source_branch}",
+            "repository": {
+                "slug": repo_slug,
+                "project": {"key": project_key},
+            },
+        },
+        "toRef": {
+            "id": f"refs/heads/{target_branch}",
+            "repository": {
+                "slug": repo_slug,
+                "project": {"key": project_key},
+            },
+        },
+    }
+
+    url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests"
+
+    with httpx.Client(verify=verify, timeout=30.0) as client:
+        response = client.post(url, headers=headers, json=pr_data)
+
+        try:
+            response.raise_for_status()
+            result = response.json()
+            pr_link = result.get("links", {}).get("self", [{}])[0].get("href", "")
+            print(f"Pull request created successfully: {pr_link}")
+            return result
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 409:
+                # PR already exists
+                print("Pull request already exists for this branch")
+                return None
+            error_detail = ""
+            try:
+                error_json = e.response.json()
+                error_detail = f" - {error_json}"
+            except Exception:
+                error_detail = f" - {e.response.text}"
+
+            print(f"Failed to create pull request: {e}{error_detail}")
+            raise
+
+
+def create_pull_request_with_bot_cleanup(
+    instance_url: str,
+    project_key: str,
+    repo_slug: str,
+    access_token: str,
+    branch: str,
+    commit_slug: str,
+    tracked_branch: str | None = None,
+) -> None:
+    """Create a pull request and close any existing bot PRs from docs_* branches.
+
+    Args:
+        instance_url: Bitbucket DC instance URL
+        project_key: Project key
+        repo_slug: Repository slug
+        access_token: HTTP Access Token
+        branch: Source branch name
+        commit_slug: Short commit hash for PR title
+        tracked_branch: Target branch (defaults to repo default branch)
+    """
+    BOT_NAME = "docs-bot"
+    BOT_EMAIL = "bot@driverai.com"
+
+    # Get SSL context from secrets if available
+    try:
+        secrets = fetch_secrets_by_installation_url(instance_url)
+        verify = _get_ssl_context(secrets)
+    except Exception:
+        verify = True
+
+    print("Checking for existing bot pull requests...")
+
+    try:
+        existing_prs = list_pull_requests(
+            instance_url,
+            project_key,
+            repo_slug,
+            access_token,
+            state="OPEN",
+            verify=verify,
+        )
+
+        for pr in existing_prs:
+            source_branch = pr.get("fromRef", {}).get("displayId", "")
+
+            if source_branch.startswith("docs_"):
+                try:
+                    pr_id = pr["id"]
+                    commits = get_pull_request_commits(
+                        instance_url,
+                        project_key,
+                        repo_slug,
+                        pr_id,
+                        access_token,
+                        verify=verify,
+                    )
+
+                    # Check if any commit is authored by the bot
+                    is_bot_pr = any(
+                        BOT_EMAIL in commit.get("author", {}).get("emailAddress", "")
+                        or BOT_NAME in commit.get("author", {}).get("name", "")
+                        for commit in commits
+                    )
+
+                    if is_bot_pr:
+                        try:
+                            decline_pull_request(
+                                instance_url,
+                                project_key,
+                                repo_slug,
+                                pr_id,
+                                access_token,
+                                verify=verify,
+                            )
+                            print(
+                                f"Closed existing bot PR #{pr_id} from branch {source_branch}"
+                            )
+                        except Exception as close_error:
+                            print(
+                                f"Warning: Could not close PR #{pr_id}: {close_error}"
+                            )
+
+                except Exception as e:
+                    print(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
+
+    except Exception as e:
+        print(f"Error listing pull requests: {e}")
+
+    # Create new pull request
+    create_pull_request(
+        instance_url,
+        project_key,
+        repo_slug,
+        access_token,
+        branch,
+        commit_slug,
+        tracked_branch,
+        verify=verify,
+    )
+
+
+def fetch_secrets_by_installation_url(instance_url: str) -> dict:
+    """Fetch secrets by matching instance URL.
+
+    This is a fallback for when we don't have the installation_id but have the URL.
+    Note: This searches through secrets which may not be efficient for large numbers
+    of installations. Consider caching if this becomes a bottleneck.
+    """
+    # For now, return empty dict to use default SSL verification
+    # In a full implementation, we'd search secrets by instance_url
+    return {}

@@ -16,6 +16,7 @@ from sqlmodel import Session
 from app.core.config import settings
 from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
+    WebhookConfig,
     WebhookEventContext,
 )
 from app.git_providers.providers.azure_devops_provider import AzureDevOpsProvider
@@ -335,6 +336,83 @@ class GitProviderService:
                 f"Unsupported provider kind: {installation.git_provider_app.provider_kind}"
             )
         return webhook_info
+
+    def register_webhook(
+        self,
+        session: Session,
+        organization_id: str,
+        app_id: str,
+        installation_id: str,
+        triggers: list[str] | None = None,
+    ) -> dict:
+        """Register a webhook for a Bitbucket DC installation.
+
+        Auto-discovers the scope (project or repository) by querying
+        the Bitbucket DC API with the installation's token.
+
+        Args:
+            session: Database session
+            organization_id: Organization ID
+            app_id: Git provider app ID
+            installation_id: Installation ID
+            triggers: Optional list of triggers (defaults to push and merge events)
+
+        Returns:
+            Webhook registration result with id, callback_url, scope info, etc.
+        """
+        installation = git_provider_app_installation_by_id(session, installation_id)
+        if (
+            not installation
+            or installation.organization_id != organization_id
+            or str(installation.git_provider_app_id) != app_id
+        ):
+            raise ValueError("Installation not found or doesn't match app")
+
+        if (
+            installation.git_provider_app.provider_kind
+            != GitProviderKind.BITBUCKET_DATA_CENTER
+        ):
+            raise ValueError(
+                f"Webhook registration not supported for {installation.git_provider_app.provider_kind}"
+            )
+
+        provider = self.get_provider(installation.git_provider_app)
+
+        # Discover scope from token
+        scope = provider.discover_token_scope(installation)
+
+        # Build webhook config
+        callback_url = f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook"
+        default_triggers = ["repo:refs_changed", "pr:merged"]
+
+        config = WebhookConfig(
+            callback_url=callback_url,
+            triggers=triggers or default_triggers,
+            description="Driver AI Webhook",
+        )
+
+        # Register webhook
+        result = provider.register_webhook(installation, config, scope)
+
+        # Add scope info to result
+        result["project_key"] = scope.get("project_key")
+        result["repo_slug"] = scope.get("repo_slug")
+
+        # Save webhook state in installation metadata
+        metadata = installation.misc_metadata or {}
+        metadata["webhook_registered"] = True
+        metadata["webhook_id"] = result.get("id")
+        metadata["webhook_scope_type"] = scope.get("type")
+        installation.misc_metadata = metadata
+        session.add(installation)
+        session.commit()
+
+        logger.info(
+            f"Registered webhook for installation {installation_id}: "
+            f"scope={scope['type']}, project={scope.get('project_key')}"
+        )
+
+        return result
 
     # Helper Methods
 

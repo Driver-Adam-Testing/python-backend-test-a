@@ -199,6 +199,50 @@ def get_app_installation_webhook_info(
     return webhook_info
 
 
+@router.post(
+    "/app/{application_id}/installations/{installation_id}/webhook/register",
+    summary="Register a webhook for Bitbucket DC installation.",
+)
+def register_webhook(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: UUID,
+    installation_id: UUID,
+) -> JSONResponse:
+    """Register a webhook for a Bitbucket DC installation.
+
+    Auto-discovers the scope (project or repository) by querying
+    the Bitbucket DC API with the installation's token.
+
+    For project tokens: Creates a project-level webhook (fires for all repos).
+    For repository tokens: Creates a repository-level webhook.
+    """
+    enforce_org_action(session, current_user, "vcs.manage")
+    try:
+        result = provider_service.register_webhook(
+            session,
+            current_user.organization_id,
+            str(application_id),
+            str(installation_id),
+        )
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content=result,
+        )
+    except KeyError as e:
+        logger.error(f"Missing metadata for webhook registration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Installation metadata missing '{e.args[0]}'",
+        )
+    except ValueError as e:
+        logger.error(f"Webhook registration failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
 @router.delete(
     "/app/{application_id}/installations/{installation_id}",
     summary="Delete app install",

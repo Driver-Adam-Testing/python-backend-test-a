@@ -127,9 +127,16 @@ class BitbucketDCProvider(GitProviderInterface):
         dc_token = BitbucketDCTokenData(**token_data)
 
         metadata = {
-            "kind": "bitbucket_dc_http_token",
+            "kind": dc_token.token_type.value,  # project_access_token or repository_access_token
+            "name": dc_token.name,
             "instance_url": dc_token.instance_url,
         }
+
+        # Store scope information based on token type
+        if dc_token.project_key:
+            metadata["project_key"] = dc_token.project_key
+        if dc_token.repo_slug:
+            metadata["repo_slug"] = dc_token.repo_slug
 
         return GitProviderAppInstallation(
             git_provider_app_id=app_id,
@@ -150,17 +157,22 @@ class BitbucketDCProvider(GitProviderInterface):
             APP_INSTALL_BBDC_HTTP_NAME_PREFIX, str(installation.id)
         )
 
-        secret_value = json.dumps(
-            {
-                "token": dc_token.token,
-                "instance_url": dc_token.instance_url,
-                "secret_token": webhook_secret,
-                "ca_bundle_path": dc_token.ca_bundle_path,
-                "disable_ssl_verify": dc_token.disable_ssl_verify,
-            }
-        )
+        secret_data = {
+            "token": dc_token.token,
+            "token_type": dc_token.token_type.value,
+            "instance_url": dc_token.instance_url,
+            "secret_token": webhook_secret,
+            "ca_bundle_path": dc_token.ca_bundle_path,
+            "disable_ssl_verify": dc_token.disable_ssl_verify,
+        }
 
-        self.secrets_manager.write_secret(secret_key, secret_value)
+        # Store scope for webhook registration
+        if dc_token.project_key:
+            secret_data["project_key"] = dc_token.project_key
+        if dc_token.repo_slug:
+            secret_data["repo_slug"] = dc_token.repo_slug
+
+        self.secrets_manager.write_secret(secret_key, json.dumps(secret_data))
         logger.info(
             f"Stored HTTP Access Token for Bitbucket DC installation {installation.id}"
         )
@@ -541,6 +553,51 @@ class BitbucketDCProvider(GitProviderInterface):
         self.secrets_manager.delete_secret(secret_key)
         logger.info(f"Deleted access token secret for installation {installation.id}")
 
+    def discover_token_scope(
+        self,
+        installation: GitProviderAppInstallation,
+    ) -> dict[str, str]:
+        """Discover project/repo scope by querying Bitbucket DC API.
+
+        Uses the token to list accessible repositories and extracts scope info.
+        Token type from metadata determines whether this is a project or repo scope.
+
+        Returns:
+            dict with "type" ("project" or "repository"), "project_key",
+            and optionally "repo_slug" for repository tokens
+
+        Raises:
+            KeyError: If installation metadata is missing "kind"
+            ValueError: If token has no accessible repositories
+        """
+        secrets = self.fetch_secrets(installation)
+        token_type = installation.misc_metadata["kind"]
+
+        api = self._get_api_resources(
+            base_url=secrets["instance_url"],
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
+
+        repos = api.list_repositories(secrets["token"], limit=1)
+
+        if not repos:
+            raise ValueError("Token has no accessible repositories")
+
+        project_key = repos[0]["project"]["key"]
+
+        if token_type == "repository_access_token":
+            return {
+                "type": "repository",
+                "project_key": project_key,
+                "repo_slug": repos[0]["slug"],
+            }
+        else:
+            return {
+                "type": "project",
+                "project_key": project_key,
+            }
+
     def register_webhook(
         self,
         installation: GitProviderAppInstallation,
@@ -549,8 +606,13 @@ class BitbucketDCProvider(GitProviderInterface):
     ) -> dict[str, Any]:
         """Register a Bitbucket DC webhook.
 
-        Note: Bitbucket DC webhooks are typically configured via the UI,
-        but we support API-based registration for automation.
+        Supports both project-level and repository-level webhooks based on scope:
+        - scope["type"] == "project": Creates webhook for all repos in project
+        - scope["type"] == "repository": Creates webhook for specific repo
+
+        The token_type in secrets determines what's allowed:
+        - project_access_token: Can create both project and repo webhooks
+        - repository_access_token: Can only create repo webhooks
         """
         logger.info(
             f"Registering webhook for Bitbucket DC installation {installation.id}"
@@ -560,6 +622,7 @@ class BitbucketDCProvider(GitProviderInterface):
             secrets = self.fetch_secrets(installation)
             access_token = secrets["token"]
             instance_url = secrets["instance_url"]
+            token_type = secrets.get("token_type", "project_access_token")
             secret_token = config.secret_token or secrets.get("secret_token")
 
             api = self._get_api_resources(
@@ -576,9 +639,6 @@ class BitbucketDCProvider(GitProviderInterface):
             # Map triggers to Bitbucket DC events
             dc_events = self._map_triggers_to_events(config.triggers)
 
-            if not scope or scope.get("type") != "repository":
-                raise ValueError("Bitbucket DC webhooks must be scoped to a repository")
-
             webhook_config = {
                 "url": callback_url,
                 "events": dc_events,
@@ -587,21 +647,60 @@ class BitbucketDCProvider(GitProviderInterface):
                 "description": config.description or "Driver AI Webhook",
             }
 
-            webhook_data = api.create_repository_webhook(
-                project_key=scope["project_key"],
-                repo_slug=scope["slug"],
-                config=webhook_config,
-                access_token=access_token,
-            )
+            # Determine scope type and create appropriate webhook
+            scope_type = scope.get("type") if scope else None
 
-            logger.info(
-                f"Successfully registered webhook for installation {installation.id}"
-            )
+            if scope_type == "project":
+                # Project-level webhook - requires project_access_token
+                if token_type == "repository_access_token":
+                    raise ValueError(
+                        "Repository access tokens cannot create project-level webhooks. "
+                        "Use a project access token or create repository-level webhooks."
+                    )
+
+                project_key = scope.get("project_key")
+                if not project_key:
+                    raise ValueError("project_key is required for project webhooks")
+
+                webhook_data = api.create_project_webhook(
+                    project_key=project_key,
+                    config=webhook_config,
+                    access_token=access_token,
+                )
+                logger.info(
+                    f"Created project webhook for {project_key} on installation {installation.id}"
+                )
+
+            elif scope_type == "repository":
+                # Repository-level webhook
+                project_key = scope.get("project_key")
+                repo_slug = scope.get("slug") or scope.get("repo_slug")
+
+                if not project_key or not repo_slug:
+                    raise ValueError(
+                        "project_key and slug/repo_slug are required for repository webhooks"
+                    )
+
+                webhook_data = api.create_repository_webhook(
+                    project_key=project_key,
+                    repo_slug=repo_slug,
+                    config=webhook_config,
+                    access_token=access_token,
+                )
+                logger.info(
+                    f"Created repo webhook for {project_key}/{repo_slug} on installation {installation.id}"
+                )
+
+            else:
+                raise ValueError(
+                    f"Invalid scope type: {scope_type}. Must be 'project' or 'repository'"
+                )
 
             return {
                 "id": webhook_data.get("id"),
                 "callback_url": callback_url,
                 "triggers": config.triggers,
+                "scope_type": scope_type,
                 "active": webhook_data.get("active", True),
                 "provider_specific": webhook_data,
             }

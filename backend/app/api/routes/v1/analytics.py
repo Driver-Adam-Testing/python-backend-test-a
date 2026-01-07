@@ -1,14 +1,6 @@
-"""Analytics API endpoints for GitStats integration.
+"""Analytics API endpoints for GitStats integration."""
 
-Authorization follows the same pattern as the Sources tab:
-- Org-level endpoints: enforce_any_source_admin (Super Admin OR admin of any source)
-- Codebase-level endpoints: enforce_asset_action with "asset.manage" (admin only)
-
-The list endpoint filters results so Source Admins only see codebases they admin.
-Super Admins see all codebases.
-"""
-
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
@@ -54,7 +46,7 @@ def get_analytics_summary(
             organization_id=str(user.organization_id),
             total_codebases=0,
             codebases_with_analytics=0,
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
         )
 
     return OrgAnalyticsSummary(**data)
@@ -83,7 +75,7 @@ def get_analytics_codebases(
         return CodebasesListResponse(
             organization_id=str(user.organization_id),
             codebases=[],
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
         )
 
     return CodebasesListResponse(**data)
@@ -105,7 +97,6 @@ def get_codebase_overview(
     codebase_id: UUID,
 ) -> AnalyticsOverview:
     """Get overview metrics for a specific codebase (25 fields)."""
-    # Uses asset.manage action - only asset_admin role has this permission
     enforce_asset_action(
         db=session, user=user, asset_id=codebase_id, action_key="asset.manage"
     )
@@ -218,4 +209,3 @@ def get_analytics_status(
     data = service.get_status(str(codebase_id))
 
     return AnalyticsStatus(**data)
-

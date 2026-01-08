@@ -5,6 +5,8 @@ This phase collects commit metadata and calculates SLOC metrics.
 """
 
 import logging
+import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -12,6 +14,23 @@ from pathlib import Path
 import pygit2
 
 logger = logging.getLogger(__name__)
+
+
+def get_parallel_workers() -> int:
+    """
+    Get number of parallel workers for commit processing.
+
+    Configurable via ANALYTICS_PARALLEL_WORKERS environment variable.
+    Default is 4, max is 6 to leave headroom for other tasks on shared workers.
+    """
+    default = 4
+    max_allowed = 6
+
+    try:
+        configured = int(os.environ.get("ANALYTICS_PARALLEL_WORKERS", default))
+        return max(1, min(configured, max_allowed))
+    except (ValueError, TypeError):
+        return default
 
 
 @dataclass
@@ -94,46 +113,30 @@ def extract_commits(
         )
         logger.info(f"Calculated tree sizes for {len(tree_size_cache)} commits")
 
-        # Process each commit
+        # Process commits in parallel
         collected_at = datetime.now(UTC)
         all_commits = []
         all_file_changes = []
 
-        for i, commit_sha in enumerate(all_sha_set):
-            if (i + 1) % 1000 == 0 or (i + 1) == len(all_sha_set):
-                logger.info(f"Processing commits: {i + 1}/{len(all_sha_set)}")
+        # Get parallelization settings
+        workers = get_parallel_workers()
+        commit_shas = list(all_sha_set)
+        total = len(commit_shas)
 
-            try:
-                # OPTIMIZED: O(1) branch lookup instead of O(branches)
-                commit_branches = commit_to_branches.get(commit_sha, [])
+        logger.info(f"Processing {total} commits with {workers} parallel workers")
 
-                # Extract commit data (also returns diff for file changes)
-                commit_data, diff = _extract_commit_data_with_diff(
-                    repo,
-                    commit_sha,
-                    codebase_id,
-                    commit_branches,
-                    collected_at,
-                    include_patches,
-                    tree_size_cache,
-                )
-
-                if commit_data:
-                    all_commits.extend(commit_data)
-
-                    # Extract file-level changes if requested
-                    if include_file_changes and diff:
-                        commit_time = datetime.fromtimestamp(
-                            repo.get(commit_sha).commit_time, tz=UTC
-                        )
-                        file_changes = _extract_file_changes(
-                            diff, commit_sha, codebase_id, commit_time.date()
-                        )
-                        all_file_changes.extend(file_changes)
-
-            except Exception as e:
-                logger.warning(f"Error processing commit {commit_sha[:8]}: {e}")
-                continue
+        # Process commits in parallel using thread pool
+        all_commits, all_file_changes = _process_commits_parallel(
+            repo_path=repo.path,
+            commit_shas=commit_shas,
+            codebase_id=codebase_id,
+            commit_to_branches=commit_to_branches,
+            collected_at=collected_at,
+            include_patches=include_patches,
+            include_file_changes=include_file_changes,
+            tree_size_cache=tree_size_cache,
+            workers=workers,
+        )
 
         logger.info(f"Successfully extracted {len(all_commits)} commit records")
         if include_file_changes:
@@ -152,6 +155,98 @@ def extract_commits(
         return ExtractResult(
             success=False, commits=[], total_commits=0, error=error_msg
         )
+
+
+def _process_commits_parallel(
+    repo_path: str,
+    commit_shas: list[str],
+    codebase_id: str,
+    commit_to_branches: dict[str, list[str]],
+    collected_at: datetime,
+    include_patches: bool,
+    include_file_changes: bool,
+    tree_size_cache: dict[str, tuple[int, int]],
+    workers: int,
+) -> tuple[list[dict], list[dict]]:
+    """
+    Process commits in parallel using a thread pool.
+
+    Each worker thread creates its own pygit2.Repository instance for thread safety.
+    Results are collected and flattened in the original order.
+
+    Args:
+        repo_path: Path to the git repository
+        commit_shas: List of commit SHAs to process
+        codebase_id: Codebase UUID
+        commit_to_branches: Mapping from commit SHA to branches (read-only, shared)
+        collected_at: Timestamp for collection
+        include_patches: Whether to include patch data
+        include_file_changes: Whether to extract file-level changes
+        tree_size_cache: Pre-computed tree sizes (read-only, shared)
+        workers: Number of parallel workers
+
+    Returns:
+        Tuple of (all_commits, all_file_changes)
+    """
+    total = len(commit_shas)
+
+    def process_single_commit(commit_sha: str) -> tuple[list[dict], list[dict]]:
+        """Process a single commit in a worker thread."""
+        # Each thread creates its own Repository instance for thread safety
+        thread_repo = pygit2.Repository(repo_path)
+
+        try:
+            commit_branches = commit_to_branches.get(commit_sha, [])
+
+            commit_data, diff = _extract_commit_data_with_diff(
+                thread_repo,
+                commit_sha,
+                codebase_id,
+                commit_branches,
+                collected_at,
+                include_patches,
+                tree_size_cache,
+            )
+
+            file_changes = []
+            if include_file_changes and diff and commit_data:
+                commit_time = datetime.fromtimestamp(
+                    thread_repo.get(commit_sha).commit_time, tz=UTC
+                )
+                file_changes = _extract_file_changes(
+                    diff, commit_sha, codebase_id, commit_time.date()
+                )
+
+            return commit_data, file_changes
+
+        except Exception as e:
+            logger.warning(f"Error processing commit {commit_sha[:8]}: {e}")
+            return [], []
+
+    # Process in batches for progress reporting
+    all_commits = []
+    all_file_changes = []
+    batch_size = 1000
+    processed = 0
+
+    for batch_start in range(0, total, batch_size):
+        batch_end = min(batch_start + batch_size, total)
+        batch = commit_shas[batch_start:batch_end]
+
+        # Process batch in parallel
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            results = list(executor.map(process_single_commit, batch))
+
+        # Collect results
+        for commit_data, file_changes in results:
+            all_commits.extend(commit_data)
+            all_file_changes.extend(file_changes)
+
+        processed += len(batch)
+        if processed % 1000 == 0 or processed == total:
+            logger.info(f"Processing commits: {processed}/{total}")
+
+    return all_commits, all_file_changes
 
 
 def _get_all_branch_names(repo: pygit2.Repository) -> list[str]:
@@ -823,6 +918,7 @@ def _calculate_tree_sizes_incremental(
     """
     tree_sizes: dict[str, tuple[int, int]] = {}
     blob_lines_cache: dict[str, int] = {}
+    blob_bytes_cache: dict[str, int] = {}  # Cache blob sizes to avoid redundant lookups
     hex_cache: dict[str, bool] = {}  # Cache hex detection results by blob OID
 
     # Use pre-sorted commits if provided, otherwise sort internally
@@ -860,7 +956,7 @@ def _calculate_tree_sizes_incremental(
         # Incremental: calculate delta from parent
         parent_bytes, parent_lines = tree_sizes[parent_sha]
         delta_bytes, delta_lines = _calculate_delta(
-            repo, parent, commit, blob_lines_cache, hex_cache
+            repo, parent, commit, blob_lines_cache, blob_bytes_cache, hex_cache
         )
         tree_sizes[sha] = (parent_bytes + delta_bytes, parent_lines + delta_lines)
 
@@ -868,7 +964,8 @@ def _calculate_tree_sizes_incremental(
             logger.info(f"Tree sizes: {i + 1}/{total} commits processed")
 
     logger.info(
-        f"Incremental caches: {len(blob_lines_cache)} blob lines, {len(hex_cache)} hex results"
+        f"Incremental caches: {len(blob_lines_cache)} blob lines, "
+        f"{len(blob_bytes_cache)} blob bytes, {len(hex_cache)} hex results"
     )
     return tree_sizes
 
@@ -878,6 +975,7 @@ def _calculate_delta(
     parent: pygit2.Commit,
     commit: pygit2.Commit,
     blob_lines_cache: dict[str, int],
+    blob_bytes_cache: dict[str, int],
     hex_cache: dict[str, bool],
 ) -> tuple[int, int]:
     """
@@ -906,7 +1004,7 @@ def _calculate_delta(
         if old_analyzable and not new_analyzable:
             # File became non-analyzable (deleted or moved to blacklisted dir)
             old_bytes, old_lines = _get_blob_size(
-                repo, delta.old_file, blob_lines_cache
+                repo, delta.old_file, blob_lines_cache, blob_bytes_cache
             )
             delta_bytes -= old_bytes
             delta_lines -= old_lines
@@ -914,7 +1012,7 @@ def _calculate_delta(
         elif not old_analyzable and new_analyzable:
             # File became analyzable (added or moved from blacklisted dir)
             new_bytes, new_lines = _get_blob_size(
-                repo, delta.new_file, blob_lines_cache
+                repo, delta.new_file, blob_lines_cache, blob_bytes_cache
             )
             delta_bytes += new_bytes
             delta_lines += new_lines
@@ -922,10 +1020,10 @@ def _calculate_delta(
         elif old_analyzable and new_analyzable:
             # Both analyzable - calculate difference
             old_bytes, old_lines = _get_blob_size(
-                repo, delta.old_file, blob_lines_cache
+                repo, delta.old_file, blob_lines_cache, blob_bytes_cache
             )
             new_bytes, new_lines = _get_blob_size(
-                repo, delta.new_file, blob_lines_cache
+                repo, delta.new_file, blob_lines_cache, blob_bytes_cache
             )
             delta_bytes += new_bytes - old_bytes
             delta_lines += new_lines - old_lines
@@ -1001,34 +1099,46 @@ def _get_blob_size(
     repo: pygit2.Repository,
     diff_file: pygit2.DiffFile,
     blob_lines_cache: dict[str, int],
+    blob_bytes_cache: dict[str, int],
 ) -> tuple[int, int]:
-    """Get (bytes, lines) for a blob, using cache for line counts."""
+    """Get (bytes, lines) for a blob, using caches to avoid redundant git lookups."""
     blob_oid = str(diff_file.id)
 
     # Zero OID means file doesn't exist
     if blob_oid == "0" * 40:
         return (0, 0)
 
+    # OPTIMIZATION: Check both caches BEFORE doing expensive git lookup
+    if blob_oid in blob_bytes_cache and blob_oid in blob_lines_cache:
+        return (blob_bytes_cache[blob_oid], blob_lines_cache[blob_oid])
+
     try:
         blob = repo.get(diff_file.id)
         if blob is None:
             return (0, 0)
 
-        blob_bytes = len(blob.data) if blob.data else 0
+        # Use blob.size property (reads from git object header, may be faster)
+        blob_bytes = blob.size
 
-        # Check cache for line count
+        # Check if we only need to calculate lines (bytes might be cached)
         if blob_oid in blob_lines_cache:
+            blob_bytes_cache[blob_oid] = blob_bytes
             return (blob_bytes, blob_lines_cache[blob_oid])
 
         # Calculate line count
-        if blob.is_binary or not blob.data:
+        if blob.is_binary:
             blob_lines = 0
         else:
             data = blob.data
-            blob_lines = data.count(b"\n")
-            if data and not data.endswith(b"\n"):
-                blob_lines += 1
+            if not data:
+                blob_lines = 0
+            else:
+                blob_lines = data.count(b"\n")
+                if not data.endswith(b"\n"):
+                    blob_lines += 1
 
+        # Cache both values
+        blob_bytes_cache[blob_oid] = blob_bytes
         blob_lines_cache[blob_oid] = blob_lines
         return (blob_bytes, blob_lines)
 

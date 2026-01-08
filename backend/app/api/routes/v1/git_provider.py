@@ -131,7 +131,6 @@ def delete_git_provider_app(
     )
 
 
-# ✅
 @router.get(
     "/app/{application_id}/installations",
     summary="Get app install for logged.",
@@ -165,17 +164,17 @@ def add_access_token(
         install = provider_service.install_access_token(
             session, current_user.organization_id, application_id, gat.model_dump()
         )
-
-        if not install:
-            raise HTTPException(status_code=404, detail="Installation not found.")
-
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"message": "Token added."},
-        )
     except GitProviderAccessTokenError:
         logger.exception("Error adding token")
         raise HTTPException(status_code=500, detail="Invalid token")
+
+    if not install:
+        raise HTTPException(status_code=404, detail="Installation not found.")
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Token added."},
+    )
 
 
 @router.get(
@@ -209,14 +208,6 @@ def register_webhook(
     application_id: UUID,
     installation_id: UUID,
 ) -> JSONResponse:
-    """Register a webhook for a Bitbucket DC installation.
-
-    Auto-discovers the scope (project or repository) by querying
-    the Bitbucket DC API with the installation's token.
-
-    For project tokens: Creates a project-level webhook (fires for all repos).
-    For repository tokens: Creates a repository-level webhook.
-    """
     enforce_org_action(session, current_user, "vcs.manage")
     try:
         result = provider_service.register_webhook(
@@ -253,11 +244,6 @@ def deregister_webhook(
     application_id: UUID,
     installation_id: UUID,
 ) -> JSONResponse:
-    """Deregister a webhook for a Bitbucket DC installation.
-
-    Uses the stored webhook_id from installation metadata to delete
-    the webhook from Bitbucket DC.
-    """
     enforce_org_action(session, current_user, "vcs.manage")
     try:
         result = provider_service.deregister_webhook(
@@ -324,8 +310,7 @@ def get_repositories_by_installation_id(
         )
     except GitProviderAccessTokenError as e:
         logger.error(f"Error fetching repositories: {e}")
-        # give me a 403 if the user is not authorized to access the installation
-        raise HTTPException(status_code=500, detail="Invalid Token")
+        raise HTTPException(status_code=403, detail="Invalid or expired token")
 
 
 @router.put(
@@ -347,13 +332,14 @@ def update_git_provider_group_access_token(
             installation_id,
             new_gat.model_dump(by_alias=True),
         )
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"message": "Token updated."},
-        )
     except GitProviderAccessTokenError:
-        logger.exception("Error adding token")
+        logger.exception("Error updating token")
         raise HTTPException(status_code=500, detail="Invalid token")
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Token updated."},
+    )
 
 
 @router.post(
@@ -541,7 +527,6 @@ def handle_installation_delete_event(
     org_id = installation_record.organization_id
     session.delete(installation_record)
     session.commit()
-    installation_id = None
 
     repositories = body["repositories"]
     repos_added = []
@@ -782,6 +767,7 @@ def git_provider_webhook(
     """Generic webhook handler for GitLab, Bitbucket, and Azure DevOps"""
     body = body_data["json_body"]
     headers = body_data["headers"]
+    raw_body = body_data["raw_body"]  # For HMAC signature verification
     logger.info("Received webhook event: %s", body)
 
     # Get installation_id from query param OR header
@@ -794,7 +780,11 @@ def git_provider_webhook(
     try:
         # Delegate everything to the service
         content = provider_service.handle_webhook_event(
-            session=session, installation_id=installation_id, headers=headers, body=body
+            session=session,
+            installation_id=installation_id,
+            headers=headers,
+            body=body,
+            raw_body=raw_body,
         )
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,

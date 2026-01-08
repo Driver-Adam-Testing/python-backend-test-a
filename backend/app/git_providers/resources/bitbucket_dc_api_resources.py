@@ -44,6 +44,10 @@ class BitbucketDCAPIResources:
 
         # Configure SSL context for self-signed certificates
         if disable_ssl_verify:
+            logger.warning(
+                "SSL verification disabled for Bitbucket DC API. "
+                "This should only be used for development/testing."
+            )
             self.verify: bool | ssl.SSLContext = False
         elif ca_bundle_path:
             self.verify = ssl.create_default_context()
@@ -52,16 +56,8 @@ class BitbucketDCAPIResources:
             self.verify = True
 
     def get_current_user(self, access_token: str) -> dict[str, Any]:
-        """Get current authenticated user info.
-
-        Uses the /plugins/servlet/applinks/whoami endpoint which returns
-        the username of the current authenticated user.
-
-        Args:
-            access_token: HTTP Access Token
-
-        Returns:
-            User info dictionary with at least 'name' or 'slug' field
+        """Uses /plugins/servlet/applinks/whoami endpoint.
+        Returns dict with at least 'name' or 'slug' field.
         """
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -102,17 +98,7 @@ class BitbucketDCAPIResources:
             raise ValueError(f"HTTP error getting current user: {e}")
 
     def validate_token(self, access_token: str) -> tuple[bool, str]:
-        """Validate HTTP Access Token using Bearer auth.
-
-        For Project/Repository tokens, we use Bearer auth only (no username needed).
-        Validates by attempting to list repositories.
-
-        Args:
-            access_token: HTTP Access Token
-
-        Returns:
-            Tuple of (is_valid, message)
-        """
+        """Validates by attempting to list repositories with Bearer auth."""
         try:
             headers = {"Authorization": f"Bearer {access_token}"}
             # Try to list repos with limit=1 to validate the token
@@ -181,6 +167,7 @@ class BitbucketDCAPIResources:
             logger.error(f"HTTP error listing repositories: {e}")
             raise
 
+    @_retry_transient
     def get_repository(
         self,
         project_key: str,
@@ -204,6 +191,7 @@ class BitbucketDCAPIResources:
                 raise GitProviderAccessTokenError("Invalid access token")
             raise
 
+    @_retry_transient
     def get_default_branch(
         self,
         project_key: str,
@@ -266,6 +254,7 @@ class BitbucketDCAPIResources:
                 return None
             raise
 
+    @_retry_transient
     def get_commit(
         self,
         project_key: str,

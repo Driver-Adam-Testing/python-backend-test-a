@@ -1,5 +1,5 @@
 import logging
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from database.models import (
     GitProviderApp,
@@ -11,6 +11,7 @@ from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
     format_secret_name,
 )
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.attributes import flag_modified
 from sqlmodel import Session
 
@@ -71,7 +72,7 @@ class GitProviderService:
 
     # App Management
     # ✅
-    def create_app(self, session: Session, app_data: dict) -> GitProviderApp:
+    def create_app(self, session: Session, app_data: dict[str, Any]) -> GitProviderApp:
         """Create a new git provider app"""
         app = GitProviderApp(**app_data)
 
@@ -86,13 +87,14 @@ class GitProviderService:
 
         try:
             session.commit()
-            session.refresh(app)
-            logger.info(f"Created {app.provider_kind} app: {app.id}")
-            return app
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Failed to create app: {e}")
             session.rollback()
             raise
+
+        session.refresh(app)
+        logger.info(f"Created {app.provider_kind} app: {app.id}")
+        return app
 
     def list_apps(
         self,
@@ -135,40 +137,36 @@ class GitProviderService:
     # Access Token Management
 
     def install_access_token(
-        self, session: Session, organization_id: str, app_id: str, token_data: dict
+        self,
+        session: Session,
+        organization_id: str,
+        app_id: str,
+        token_data: dict[str, Any],
     ) -> GitProviderAppInstallation:
-        """Install any type of access token (GAT, WAT, OAuth)"""
+        app = git_provider_app_by_id(session, organization_id, app_id)
+        provider = self.get_provider(app)
+
+        is_valid, error = provider.validate_access_token(token_data)
+        if not is_valid:
+            raise GitProviderAccessTokenError(error or "Invalid access token")
+
+        installation = provider.create_installation(organization_id, app_id, token_data)
+
+        app.app_installations.append(installation)
+        session.add(installation)
+
         try:
-            # Get app and provider
-            app = git_provider_app_by_id(session, organization_id, app_id)
-            provider = self.get_provider(app)
-
-            # Validate token
-            is_valid, error = provider.validate_access_token(token_data)
-            if not is_valid:
-                raise GitProviderAccessTokenError(error or "Invalid access token")
-
-            # Create installation
-            installation = provider.create_installation(
-                organization_id, app_id, token_data
-            )
-
-            # Store in database
-            app.app_installations.append(installation)
-            session.add(installation)
             session.commit()
-            session.refresh(installation)
-
-            # Store secrets
-            provider.store_secrets(installation, token_data)
-
-            logger.info(f"Installed access token for app {app_id}: {installation.id}")
-            return installation
-
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Failed to install access token: {e}")
             session.rollback()
             raise
+
+        session.refresh(installation)
+        provider.store_secrets(installation, token_data)
+
+        logger.info(f"Installed access token for app {app_id}: {installation.id}")
+        return installation
 
     def update_access_token(
         self,
@@ -176,96 +174,74 @@ class GitProviderService:
         organization_id: str,
         app_id: str,
         installation_id: str,
-        token_data: dict,
+        token_data: dict[str, Any],
     ) -> GitProviderAppInstallation:
-        """Update an existing access token"""
-        try:
-            # Get installation and provider
-            installation = git_provider_app_installation_by_id(session, installation_id)
-            if (
-                not installation
-                or installation.organization_id != organization_id
-                or str(installation.git_provider_app_id) != app_id
-            ):
-                raise ValueError("Installation not found or doesn't match app")
+        installation = git_provider_app_installation_by_id(session, installation_id)
+        if (
+            not installation
+            or installation.organization_id != organization_id
+            or str(installation.git_provider_app_id) != app_id
+        ):
+            raise ValueError("Installation not found or doesn't match app")
 
-            provider = self.get_provider(installation.git_provider_app)
+        provider = self.get_provider(installation.git_provider_app)
 
-            # Validate new token
-            is_valid, error = provider.validate_access_token(token_data)
-            if not is_valid:
-                raise GitProviderAccessTokenError(error or "Invalid access token")
+        is_valid, error = provider.validate_access_token(token_data)
+        if not is_valid:
+            raise GitProviderAccessTokenError(error or "Invalid access token")
 
-            # Update secrets while preserving webhook secret
-            provider.update_secrets(installation, token_data)
+        provider.update_secrets(installation, token_data)
 
-            logger.info(f"Updated access token for installation {installation_id}")
-            return installation
-
-        except Exception as e:
-            logger.error(f"Failed to update access token: {e}")
-            raise
+        logger.info(f"Updated access token for installation {installation_id}")
+        return installation
 
     def revoke_access_token(
         self, session: Session, organization_id: str, app_id: str, installation_id: str
     ) -> None:
-        """Revoke an access token installation"""
+        installation = git_provider_app_installation_by_id(session, installation_id)
+        if (
+            not installation
+            or installation.organization_id != organization_id
+            or str(installation.git_provider_app_id) != app_id
+        ):
+            raise ValueError("Installation not found or doesn't match app")
+
+        provider = self.get_provider(installation.git_provider_app)
+        provider.revoke_access(installation)
+
+        session.delete(installation)
+
         try:
-            # Get installation and provider
-            installation = git_provider_app_installation_by_id(session, installation_id)
-            if (
-                not installation
-                or installation.organization_id != organization_id
-                or str(installation.git_provider_app_id) != app_id
-            ):
-                raise ValueError("Installation not found or doesn't match app")
-
-            provider = self.get_provider(installation.git_provider_app)
-
-            # Revoke access
-            provider.revoke_access(installation)
-
-            # Delete from database
-            session.delete(installation)
             session.commit()
-
-            logger.info(f"Revoked access token for installation {installation_id}")
-
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Failed to revoke access token: {e}")
             session.rollback()
             raise
+
+        logger.info(f"Revoked access token for installation {installation_id}")
 
     # Repository Operations
 
     def list_repositories(
         self, session: Session, organization_id: str, app_id: str, installation_id: str
     ) -> list[GitRepository]:
-        """List repositories for an installation"""
+        installation = git_provider_app_installation_by_id(session, installation_id)
+        if (
+            not installation
+            or installation.organization_id != organization_id
+            or str(installation.git_provider_app_id) != app_id
+        ):
+            raise ValueError("Installation not found or doesn't match app")
+
+        provider = self.get_provider(installation.git_provider_app)
+
         try:
-            # Get installation and provider
-            installation = git_provider_app_installation_by_id(session, installation_id)
-            if (
-                not installation
-                or installation.organization_id != organization_id
-                or str(installation.git_provider_app_id) != app_id
-            ):
-                raise ValueError("Installation not found or doesn't match app")
-
-            provider = self.get_provider(installation.git_provider_app)
-
-            # Fetch repositories
             return provider.fetch_repositories(installation)
-
         except GitProviderAppRevokeError:
             logger.error(f"Access revoked for installation {installation_id}")
-            # Handle revocation
             self.handle_access_revoked(
                 session, organization_id, app_id, installation_id
             )
-            raise
-        except Exception as e:
-            logger.error(f"Failed to list repositories: {e}")
             raise
 
     def get_webhook_info(
@@ -493,17 +469,21 @@ class GitProviderService:
     def handle_access_revoked(
         self, session: Session, organization_id: str, app_id: str, installation_id: str
     ) -> None:
-        """Handle access revocation"""
         logger.info(f"Handling access revocation for installation {installation_id}")
 
         try:
             self.revoke_access_token(session, organization_id, app_id, installation_id)
-        except Exception as e:
+        except (ValueError, SQLAlchemyError) as e:
             logger.error(f"Error during revocation cleanup: {e}")
 
     # Webhook Event Handling
     def handle_webhook_event(
-        self, session: Session, installation_id: str, headers: dict, body: dict
+        self,
+        session: Session,
+        installation_id: str,
+        headers: dict,
+        body: dict,
+        raw_body: bytes | None = None,
     ) -> dict:
         """Handle webhook event by routing to appropriate provider"""
 
@@ -521,6 +501,7 @@ class GitProviderService:
                 installation_id=installation_id,
                 organization_id=app_install.organization_id,
                 session=session,
+                raw_body=raw_body,
             ),
         )
 

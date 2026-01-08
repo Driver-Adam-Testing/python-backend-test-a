@@ -332,7 +332,17 @@ def download_repo(
     ca_bundle_path: str | None = None,
     disable_ssl_verify: bool = False,
 ) -> bytes:
-    """Clone repo and return ZIP content. Uses Bearer auth via git http.extraHeader."""
+    """Clone repo and return ZIP content. Uses Bearer auth via git http.extraHeader.
+
+    Args:
+        instance_url: Bitbucket DC instance URL
+        project_key: Project key
+        repo_slug: Repository slug
+        commit: Commit SHA to checkout
+        access_token: HTTP Access Token (Project or Repository Access Token)
+        ca_bundle_path: Path to CA bundle for SSL verification
+        disable_ssl_verify: If True, skip SSL verification (for testing only)
+    """
     print(
         f"Cloning Bitbucket DC repository {project_key}/{repo_slug} at commit {commit}"
     )
@@ -345,13 +355,17 @@ def download_repo(
         # Set up environment for SSL handling
         env = os.environ.copy()
         if disable_ssl_verify:
+            print(
+                "WARNING: SSL verification disabled for git clone. "
+                "This should only be used for development/testing."
+            )
             env["GIT_SSL_NO_VERIFY"] = "true"
         elif ca_bundle_path:
             env["GIT_SSL_CAINFO"] = ca_bundle_path
 
         try:
-            # Clone the repository with Bearer token via http.extraHeader
-            # This is required for Bitbucket DC Project/Repository HTTP Access Tokens
+            # Clone with Bearer auth via http.extraHeader
+            # This is required for Bitbucket DC Project/Repository Access Tokens
             print("DEBUG: Cloning repository...")
             clone_cmd = [
                 "git",
@@ -735,67 +749,56 @@ def _create_new_asset(
     return primary_asset.id, version.id
 
 
-def download_and_upload_repo(
-    org_id: str, repo: dict[str, Any], access_token: str, is_push: bool = False
-) -> str | None:
-    """Returns repo_name on failure, None on success."""
-    from database.db import engine
-    from database.models import PrimaryAsset
-
+def _prepare_repo_context(repo: dict[str, Any]) -> dict[str, Any] | None:
+    """Prepare and validate repo context for download. Returns None on validation failure."""
     info = _extract_repo_info(repo)
     repo_name = info["repo_name"]
     installation_id = info["installation_id"]
 
     if not installation_id:
         print(f"WARNING: Missing installation_id for repo {repo_name}")
-        return repo_name
+        return None
 
     try:
         secrets = fetch_secrets(installation_id)
     except (AccessTokenError, OSError) as e:
         print(f"ERROR: Failed to fetch secrets: {e}")
-        return repo_name
+        return None
 
-    verify = _get_ssl_context(secrets)
-    ca_bundle_path = secrets.get("ca_bundle_path")
-    disable_ssl_verify = secrets.get("disable_ssl_verify", False)
     instance_url = secrets.get("instance_url") or info["metadata"].get("instance_url")
+    repo_id = info["repo_id"]
+    project_key = info["project_key"]
 
-    repo_id, project_key, repo_slug = (
-        info["repo_id"],
-        info["project_key"],
-        info["repo_slug"],
-    )
     if not repo_id or not repo_name or not project_key or not instance_url:
         print(f"WARNING: Missing required repo data: {repo}")
-        return repo_name or "unknown"
+        return None
 
-    commit = _get_repo_commit(
-        repo,
-        instance_url,
-        project_key,
-        repo_slug,
-        access_token,
-        info["tracked_branch"],
-        verify,
-    )
-    if not commit:
-        print(f"Repository {repo_name} appears to be empty (no commits). Skipping.")
-        return repo_name
+    return {
+        "repo_name": repo_name,
+        "repo_id": repo_id,
+        "project_key": project_key,
+        "repo_slug": info["repo_slug"],
+        "installation_id": installation_id,
+        "tracked_branch": info["tracked_branch"],
+        "instance_url": instance_url,
+        "verify": _get_ssl_context(secrets),
+        "ca_bundle_path": secrets.get("ca_bundle_path"),
+        "disable_ssl_verify": secrets.get("disable_ssl_verify", False),
+    }
 
-    try:
-        vcs_info = fetch_vcs_info(
-            instance_url,
-            project_key,
-            repo_slug,
-            access_token,
-            commit,
-            info["tracked_branch"],
-            verify,
-        )
-    except (httpx.HTTPError, OSError) as e:
-        print(f"WARNING: Failed to fetch VCS info: {e}")
-        vcs_info = None
+
+def _persist_version_in_db(
+    org_id: str,
+    repo_id: str | int,
+    repo_name: str,
+    installation_id: str,
+    commit: str,
+    vcs_info: VersionControlInfo | None,
+    is_push: bool,
+) -> tuple[UUID, UUID] | None:
+    """Create or update version in database. Returns (primary_asset_id, version_id) or None."""
+    from database.db import engine
+    from database.models import PrimaryAsset
 
     try:
         with Session(engine) as session, session.begin():
@@ -812,56 +815,114 @@ def download_and_upload_repo(
                     print(
                         f"WARNING: Primary asset not found for {repo_name}, org: {org_id}"
                     )
-                    return repo_name
-                primary_asset_id = primary_asset.id
+                    return None
                 version_id = _handle_push_version(
                     session, primary_asset, commit, vcs_info, repo_name
                 )
                 if not version_id:
-                    return repo_name
-            else:
-                primary_asset_id, version_id = _create_new_asset(
-                    session,
-                    org_id,
-                    repo_name,
-                    repo_id,
-                    installation_id,
-                    commit,
-                    vcs_info,
-                )
+                    return None
+                return primary_asset.id, version_id
+
+            return _create_new_asset(
+                session, org_id, repo_name, repo_id, installation_id, commit, vcs_info
+            )
     except IntegrityError:
         print(f"ERROR: Failed to create primary asset for {repo_name}:{commit}")
-        return repo_name
+        return None
 
+
+def _download_and_upload_to_s3(
+    org_id: str,
+    primary_asset_id: UUID,
+    version_id: UUID,
+    ctx: dict[str, Any],
+    commit: str,
+    access_token: str,
+) -> None:
+    """Download repository and upload to S3."""
     codebase_metadata = generate_codebase_metadata(
         org_id,
-        project_key,
-        repo_name,
-        repo_id,
+        ctx["project_key"],
+        ctx["repo_name"],
+        ctx["repo_id"],
         version_id,
-        repo_name,
-        installation_id,
-        instance_url,
+        ctx["repo_name"],
+        ctx["installation_id"],
+        ctx["instance_url"],
     )
 
     zip_content = download_repo(
-        instance_url,
-        project_key,
-        repo_slug,
+        ctx["instance_url"],
+        ctx["project_key"],
+        ctx["repo_slug"],
         commit,
         access_token,
-        ca_bundle_path,
-        disable_ssl_verify,
+        ctx["ca_bundle_path"],
+        ctx["disable_ssl_verify"],
     )
     print(f"Repository downloaded. Size: {len(zip_content)} bytes")
 
     org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
     upload_key = (
-        f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{repo_name}.zip"
+        f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{ctx['repo_name']}.zip"
     )
     upload_to_s3_with_metadata(zip_content, codebase_metadata, upload_key)
-    print(f"Repository {repo_name} uploaded to {upload_key}")
+    print(f"Repository {ctx['repo_name']} uploaded to {upload_key}")
 
+
+def download_and_upload_repo(
+    org_id: str, repo: dict[str, Any], access_token: str, is_push: bool = False
+) -> str | None:
+    """Returns repo_name on failure, None on success."""
+    ctx = _prepare_repo_context(repo)
+    if not ctx:
+        return repo.get("repo_name") or repo.get("name") or "unknown"
+
+    commit = _get_repo_commit(
+        repo,
+        ctx["instance_url"],
+        ctx["project_key"],
+        ctx["repo_slug"],
+        access_token,
+        ctx["tracked_branch"],
+        ctx["verify"],
+    )
+    if not commit:
+        print(
+            f"Repository {ctx['repo_name']} appears to be empty (no commits). Skipping."
+        )
+        return ctx["repo_name"]
+
+    try:
+        vcs_info = fetch_vcs_info(
+            ctx["instance_url"],
+            ctx["project_key"],
+            ctx["repo_slug"],
+            access_token,
+            commit,
+            ctx["tracked_branch"],
+            ctx["verify"],
+        )
+    except (httpx.HTTPError, OSError) as e:
+        print(f"WARNING: Failed to fetch VCS info: {e}")
+        vcs_info = None
+
+    result = _persist_version_in_db(
+        org_id,
+        ctx["repo_id"],
+        ctx["repo_name"],
+        ctx["installation_id"],
+        commit,
+        vcs_info,
+        is_push,
+    )
+    if not result:
+        return ctx["repo_name"]
+
+    primary_asset_id, version_id = result
+    _download_and_upload_to_s3(
+        org_id, primary_asset_id, version_id, ctx, commit, access_token
+    )
     return None
 
 
@@ -954,6 +1015,7 @@ def get_pull_request_commits(
     return all_commits
 
 
+@NETWORK_RETRY
 def decline_pull_request(
     instance_url: str,
     project_key: str,
@@ -1005,6 +1067,7 @@ def decline_pull_request(
             raise
 
 
+@NETWORK_RETRY
 def create_pull_request(
     instance_url: str,
     project_key: str,

@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import json
 import logging
 import secrets
@@ -85,17 +87,7 @@ class BitbucketDCProvider(GitProviderInterface):
     def validate_access_token(
         self, token_data: dict[str, Any]
     ) -> tuple[bool, str | None]:
-        """Validate Bitbucket DC HTTP Access Token.
-
-        For Project/Repository tokens, we use Bearer auth only (no username needed).
-
-        Args:
-            token_data: Dictionary with token. instance_url is optional
-                       (will use app config if not provided).
-
-        Returns:
-            Tuple of (is_valid, error_message)
-        """
+        """Validate token using Bearer auth (no username needed for Project/Repository tokens)."""
         try:
             token = token_data.get("token")
             if not token:
@@ -314,19 +306,60 @@ class BitbucketDCProvider(GitProviderInterface):
         )
         return repos
 
+    def _verify_webhook_signature(
+        self,
+        raw_body: bytes,
+        secret_token: str,
+        signature_header: str | None,
+    ) -> bool:
+        """Verify HMAC-SHA256 signature. Expects X-Hub-Signature header format: sha256=<hex_digest>."""
+        if not signature_header:
+            logger.warning("Missing X-Hub-Signature header for Bitbucket DC webhook")
+            return False
+
+        if not signature_header.startswith("sha256="):
+            logger.warning(f"Invalid signature format: {signature_header}")
+            return False
+
+        provided_signature = signature_header[7:]  # Remove "sha256=" prefix
+
+        expected_signature = hmac.new(
+            secret_token.encode("utf-8"),
+            msg=raw_body,
+            digestmod=hashlib.sha256,
+        ).hexdigest()
+
+        # Constant-time comparison to prevent timing attacks
+        return hmac.compare_digest(expected_signature, provided_signature)
+
     def handle_webhook_event(
         self,
-        headers: dict,
-        payload: dict,
+        headers: dict[str, Any],
+        payload: dict[str, Any],
         webhook_event_ctx: WebhookEventContext,
-    ) -> dict:
-        """Handle Bitbucket DC webhook events.
-
-        Bitbucket DC uses different event keys than Cloud:
-        - repo:refs_changed (push)
-        - pr:merged (PR merged)
-        """
+    ) -> dict[str, Any]:
+        """Handle Bitbucket DC webhook events (repo:refs_changed for push, pr:merged for PR merge)."""
         installation_id = webhook_event_ctx.installation_id
+
+        # Verify webhook signature (HMAC-SHA256)
+        secrets_data = self.fetch_secrets_by_id(installation_id)
+        secret_token = secrets_data.get("secret_token")
+
+        if not secret_token:
+            logger.error(f"No webhook secret found for installation {installation_id}")
+            raise PermissionError("Webhook secret not configured")
+
+        raw_body = webhook_event_ctx.raw_body
+        if raw_body is None:
+            logger.error("Raw body not available for signature verification")
+            raise PermissionError("Unable to verify webhook signature")
+
+        signature_header = headers.get("x-hub-signature")
+        if not self._verify_webhook_signature(raw_body, secret_token, signature_header):
+            logger.error(
+                f"Webhook signature verification failed for installation {installation_id}"
+            )
+            raise PermissionError("Invalid webhook signature")
 
         event_type = headers.get("x-event-key", "")
         logger.info(
@@ -342,8 +375,8 @@ class BitbucketDCProvider(GitProviderInterface):
             return {"message": "Event ignored"}
 
     def _handle_push_event(
-        self, payload: dict, webhook_event_ctx: WebhookEventContext
-    ) -> dict:
+        self, payload: dict[str, Any], webhook_event_ctx: WebhookEventContext
+    ) -> dict[str, Any]:
         installation_id = webhook_event_ctx.installation_id
         organization_id = webhook_event_ctx.organization_id
 
@@ -433,7 +466,7 @@ class BitbucketDCProvider(GitProviderInterface):
 
     def _process_branch_changes(
         self,
-        changes: list[dict],
+        changes: list[dict[str, Any]],
         tracked_branch: str,
         repo_info: dict[str, Any],
         context: dict[str, Any],
@@ -479,14 +512,14 @@ class BitbucketDCProvider(GitProviderInterface):
 
     def _maybe_dispatch_push_update(
         self,
-        change: dict,
+        change: dict[str, Any],
         tracked_branch: str,
         repo_info: dict[str, Any],
         context: dict[str, Any],
         installation_id: str,
         organization_id: str,
         webhook_event_ctx: WebhookEventContext,
-    ) -> dict[str, str] | None:
+    ) -> dict[str, str]:
         process_update, update_msg = is_update_required(
             session=webhook_event_ctx.session,
             org_id=organization_id,
@@ -535,9 +568,8 @@ class BitbucketDCProvider(GitProviderInterface):
         }
 
     def _handle_pr_merged_event(
-        self, payload: dict, webhook_event_ctx: WebhookEventContext
-    ) -> dict:
-        """When a PR is merged, we treat it like a push to the target branch."""
+        self, payload: dict[str, Any], webhook_event_ctx: WebhookEventContext
+    ) -> dict[str, Any]:
         installation_id = webhook_event_ctx.installation_id
         organization_id = webhook_event_ctx.organization_id
 
@@ -624,19 +656,6 @@ class BitbucketDCProvider(GitProviderInterface):
         self,
         installation: GitProviderAppInstallation,
     ) -> dict[str, str]:
-        """Discover project/repo scope by querying Bitbucket DC API.
-
-        Uses the token to list accessible repositories and extracts scope info.
-        Token type from metadata determines whether this is a project or repo scope.
-
-        Returns:
-            dict with "type" ("project" or "repository"), "project_key",
-            and optionally "repo_slug" for repository tokens
-
-        Raises:
-            KeyError: If installation metadata is missing "kind"
-            ValueError: If token has no accessible repositories
-        """
         secrets = self.fetch_secrets(installation)
         token_type = installation.misc_metadata["kind"]
 

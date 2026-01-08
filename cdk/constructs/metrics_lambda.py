@@ -17,6 +17,7 @@ from aws_cdk import (
     aws_events_targets as targets,
 )
 from constructs import Construct
+from cdk.settings import settings
 
 
 class MetricsLambdaParams:
@@ -46,6 +47,10 @@ class MetricsLambda(Construct):
         alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(self, '/infrastructure/alarms/topic-arn')
         alarm_topic = aws_sns.Topic.from_topic_arn(self, 'InfrastructureAlarmsTopic', alarm_topic_arn)
 
+        lambda_concurrent_executions = 0
+        if settings.IS_PRODUCTION_ACCOUNT == "true":
+            lambda_concurrent_executions = 10
+
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "MetricsLambdaPy",
@@ -70,7 +75,7 @@ class MetricsLambda(Construct):
                     {"containerPath": "/driver_db", "hostPath": driver_db_path},
                 ],
             ),
-            reserved_concurrent_executions=10,
+            reserved_concurrent_executions=lambda_concurrent_executions,
             timeout=Duration.seconds(60),
         )
         database_url_secret.grant_read(self.lambda_function)

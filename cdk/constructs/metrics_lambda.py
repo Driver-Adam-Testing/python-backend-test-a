@@ -47,7 +47,7 @@ class MetricsLambda(Construct):
         alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(self, '/infrastructure/alarms/topic-arn')
         alarm_topic = aws_sns.Topic.from_topic_arn(self, 'InfrastructureAlarmsTopic', alarm_topic_arn)
 
-        lambda_concurrent_executions = 0
+        lambda_concurrent_executions = None
         if settings.IS_PRODUCTION_ACCOUNT == "true":
             lambda_concurrent_executions = 10
 

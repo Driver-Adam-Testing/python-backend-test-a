@@ -60,7 +60,7 @@ class Auth0EventLambda(Construct):
             scope, parameter_name="/baseline/infra/v2/route53/hostedZoneName"
         )
 
-        lambda_concurrent_executions = 0
+        lambda_concurrent_executions = None
         if settings.IS_PRODUCTION_ACCOUNT == "true":
             lambda_concurrent_executions = 10
 

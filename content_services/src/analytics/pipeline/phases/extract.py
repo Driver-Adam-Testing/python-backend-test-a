@@ -850,6 +850,7 @@ def _is_diff_file_analyzable(
     from pathlib import Path
 
     from analytics.utils.file_filter import (
+        can_skip_hex_check,
         is_blacklisted_extension,
         is_blacklisted_filename,
         is_blacklisted_path,
@@ -874,6 +875,9 @@ def _is_diff_file_analyzable(
     if is_blacklisted_filename(path.name):
         return False
 
+    # Fast path: skip hex check for known-safe extensions
+    skip_hex = can_skip_hex_check(path.suffix)
+
     try:
         blob = repo.get(diff_file.id)
         if blob is None:
@@ -883,16 +887,17 @@ def _is_diff_file_analyzable(
         if blob.is_binary:
             return False
 
-        # Hex content check with caching by blob OID
-        if blob_oid in hex_cache:
-            if hex_cache[blob_oid]:
-                return False  # Cached as hex content
-        else:
-            # Check and cache the result
-            is_hex = is_hex_content(blob.data)
-            hex_cache[blob_oid] = is_hex
-            if is_hex:
-                return False
+        # Hex content check (skip for safe extensions, use cache for others)
+        if not skip_hex:
+            if blob_oid in hex_cache:
+                if hex_cache[blob_oid]:
+                    return False  # Cached as hex content
+            else:
+                # Check and cache the result
+                is_hex = is_hex_content(blob.data)
+                hex_cache[blob_oid] = is_hex
+                if is_hex:
+                    return False
 
         return True
     except Exception:

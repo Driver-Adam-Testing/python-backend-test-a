@@ -8,7 +8,6 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-
 # === Organization-Level Schemas ===
 
 
@@ -26,7 +25,9 @@ class CodebaseListItem(BaseModel):
 
     codebase_id: str
     display_name: str
-    provider: str | None = None  # github, gitlab, bitbucket, azure-devops - for icon display
+    provider: str | None = (
+        None  # github, gitlab, bitbucket, azure-devops - for icon display
+    )
     total_commits: int
     current_sloc: int
     last_commit_date: datetime | None
@@ -36,6 +37,7 @@ class CodebaseListItem(BaseModel):
     total_branches: int = 0
     primary_language: str | None = None
     churn_lines: int = 0
+    churn_sloc: int = 0
 
 
 class CodebasesListResponse(BaseModel):
@@ -57,7 +59,9 @@ class AnalyticsOverview(BaseModel):
 
     codebase_id: str
     display_name: str
-    provider: str | None = None  # github, gitlab, bitbucket, azure-devops - for icon display
+    provider: str | None = (
+        None  # github, gitlab, bitbucket, azure-devops - for icon display
+    )
     repository_name: str
     full_name: str
     owner: str
@@ -215,4 +219,3 @@ class AnalyticsStatus(BaseModel):
     generated_at: datetime | None = None
     status: str  # "complete" | "failed" | "none"
     generation_seconds: float | None = None
-

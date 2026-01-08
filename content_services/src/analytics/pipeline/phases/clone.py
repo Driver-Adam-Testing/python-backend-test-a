@@ -137,7 +137,7 @@ def _create_auth_callbacks(token: str) -> pygit2.RemoteCallbacks:
 
     def credentials_callback(
         url: str, username_from_url: str | None, allowed_types: int
-    ) -> pygit2.Credential | None:
+    ) -> pygit2.UserPass | None:
         if allowed_types & pygit2.GIT_CREDENTIAL_USERPASS_PLAINTEXT:
             return pygit2.UserPass(token, "x-oauth-basic")
         return None

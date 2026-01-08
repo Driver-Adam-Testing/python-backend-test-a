@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 class AnalyticsInput(BaseModel):
     """Input for analytics workflow."""
+
     codebase_id: str
     organization_id: str
     clone_url: str
@@ -28,8 +29,9 @@ class AnalyticsInput(BaseModel):
 @hatchet.task(
     name="analytics-workflow",
     execution_timeout=timedelta(hours=8),
+    schedule_timeout=timedelta(hours=4),
     concurrency=ConcurrencyExpression(
-        max_runs=3,
+        max_runs=80,
         expression="'analytics-workflow'",
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
@@ -55,7 +57,7 @@ def analytics_task(input: AnalyticsInput, ctx: Context) -> dict[str, str]:
     from analytics.pipeline.orchestrator import (
         AnalyticsPipeline,
         PipelineConfig,
-        PipelineInput
+        PipelineInput,
     )
 
     mode = "incremental" if input.incremental else "full"
@@ -66,32 +68,36 @@ def analytics_task(input: AnalyticsInput, ctx: Context) -> dict[str, str]:
         work_dir=Path("/tmp/analytics"),
         cleanup_on_complete=True,
         default_branch_only=False,
-        include_patches=True
+        include_patches=True,
     )
 
     pipeline = AnalyticsPipeline(config)
 
     # Run pipeline
-    result = pipeline.run(PipelineInput(
-        codebase_id=input.codebase_id,
-        organization_id=input.organization_id,
-        clone_url=input.clone_url,
-        repo_owner=input.repo_owner,
-        repo_name=input.repo_name,
-        auth_token=input.auth_token,
-        incremental=input.incremental,
-    ))
+    result = pipeline.run(
+        PipelineInput(
+            codebase_id=input.codebase_id,
+            organization_id=input.organization_id,
+            clone_url=input.clone_url,
+            repo_owner=input.repo_owner,
+            repo_name=input.repo_name,
+            auth_token=input.auth_token,
+            incremental=input.incremental,
+        )
+    )
 
     if not result.success:
         print(f"Analytics task failed: {result.error}")
         return {
             "status": "failed",
             "error": result.error or "Unknown error",
-            "codebase_id": input.codebase_id
+            "codebase_id": input.codebase_id,
         }
 
-    print(f"Analytics task completed: {result.total_commits} commits, "
-          f"{result.total_branches} branches in {result.duration_seconds:.1f}s")
+    print(
+        f"Analytics task completed: {result.total_commits} commits, "
+        f"{result.total_branches} branches in {result.duration_seconds:.1f}s"
+    )
 
     return {
         "status": "complete",
@@ -100,6 +106,5 @@ def analytics_task(input: AnalyticsInput, ctx: Context) -> dict[str, str]:
         "total_branches": str(result.total_branches),
         "total_contributors": str(result.total_contributors),
         "duration_seconds": f"{result.duration_seconds:.1f}",
-        "json_files": str(len(result.json_files))
+        "json_files": str(len(result.json_files)),
     }
-

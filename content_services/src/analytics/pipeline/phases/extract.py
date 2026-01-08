@@ -87,6 +87,11 @@ def extract_commits(
                 f"Incremental: {len(all_sha_set)} new commits (filtered {total_before_filter - len(all_sha_set)} old)"
             )
 
+        # Pre-calculate tree sizes using incremental method (much faster)
+        logger.info("Pre-calculating tree sizes (incremental)...")
+        tree_size_cache = _calculate_tree_sizes_incremental(repo, all_sha_set)
+        logger.info(f"Calculated tree sizes for {len(tree_size_cache)} commits")
+
         # Process each commit
         collected_at = datetime.now(UTC)
         all_file_changes = []
@@ -111,6 +116,7 @@ def extract_commits(
                     commit_branches,
                     collected_at,
                     include_patches,
+                    tree_size_cache,
                 )
 
                 if commit_data:
@@ -375,6 +381,7 @@ def _extract_commit_data_with_diff(
     branches: list[str],
     collected_at: datetime,
     include_patches: bool,
+    tree_size_cache: dict[str, tuple[int, int]] | None = None,
 ) -> tuple[list[dict], pygit2.Diff | None]:
     """
     Extract data for a single commit and return the diff.
@@ -382,6 +389,9 @@ def _extract_commit_data_with_diff(
     Metrics are filtered to only include ANALYZABLE code files (matching
     inspector criteria). This ensures additions/deletions/churn metrics
     are comparable to current_sloc from tree walks.
+
+    Args:
+        tree_size_cache: Pre-computed tree sizes from incremental calculation
 
     Returns:
         Tuple of (commit records, diff object)
@@ -465,9 +475,9 @@ def _extract_commit_data_with_diff(
         # Get commit timestamp
         commit_time = datetime.fromtimestamp(commit.commit_time, tz=UTC)
 
-        # Calculate actual codebase size at this commit (tree walk)
-        # This is the REAL codebase size, not cumulative churn
-        tree_bytes, tree_lines = _get_tree_size_at_commit(repo, commit)
+        # Calculate actual codebase size at this commit
+        # Uses cached incremental values if available, otherwise full tree walk
+        tree_bytes, tree_lines = _get_tree_size_at_commit(repo, commit, tree_size_cache)
         tree_sloc = tree_bytes // 50  # Same conversion factor as Driver
 
         # Create base commit record
@@ -545,29 +555,31 @@ def _get_commit_diff(
 
 
 def _get_tree_size_at_commit(
-    repo: pygit2.Repository, commit: pygit2.Commit
+    repo: pygit2.Repository,
+    commit: pygit2.Commit,
+    tree_size_cache: dict[str, tuple[int, int]] | None = None,
 ) -> tuple[int, int]:
     """
-    Calculate the total size of ANALYZABLE code at a given commit by walking its tree.
+    Calculate the total size of ANALYZABLE code at a given commit.
 
-    This gives the ACTUAL codebase size (code files only) at this point in history,
-    NOT the cumulative churn from patches. This matches the inspector's is_analyzable
-    filtering so that current_sloc from analytics matches SLOC from codebase connection.
-
-    Files are filtered to match inspector criteria:
-    - Only recognized code languages (via languages.yml)
-    - Excludes binary files, hex files
-    - Excludes blacklisted directories (.git, driver_docs)
-    - Excludes blacklisted extensions (.svg, .exe, .dll, etc.)
-    - Excludes documentation (.md, .rst) and config files (.json, .yaml)
+    If tree_size_cache is provided and contains this commit, returns cached value.
+    Otherwise falls back to full tree walk.
 
     Args:
         repo: pygit2.Repository instance
         commit: pygit2.Commit to analyze
+        tree_size_cache: Optional pre-computed cache from incremental calculation
 
     Returns:
         Tuple of (total_bytes, total_lines) for analyzable code files in the tree
     """
+    commit_sha = str(commit.id)
+
+    # Use cache if available
+    if tree_size_cache and commit_sha in tree_size_cache:
+        return tree_size_cache[commit_sha]
+
+    # Fall back to full tree walk
     total_bytes = 0
     total_lines = 0
 
@@ -576,7 +588,6 @@ def _get_tree_size_at_commit(
         if not tree:
             return (0, 0)
 
-        # Recursively walk the tree with filtering
         total_bytes, total_lines = _walk_tree_recursive(repo, tree, path_parts=())
 
     except Exception as e:
@@ -663,3 +674,265 @@ def _walk_tree_recursive(
             continue
 
     return (total_bytes, total_lines)
+
+
+# =============================================================================
+# Incremental Tree Size Calculation
+# =============================================================================
+
+
+def _get_commits_topological(
+    repo: pygit2.Repository, commit_shas: set[str]
+) -> list[pygit2.Commit]:
+    """
+    Sort commits topologically so parents are processed before children.
+
+    This ordering is essential for incremental calculation since we need
+    parent tree sizes to compute child tree sizes.
+    """
+    seen = set()
+    result = []
+
+    # Walk from all branch heads to collect commits in reverse topological order
+    for branch in repo.branches.local:
+        try:
+            branch_ref = repo.branches[branch]
+            head_oid = branch_ref.peel().id
+            flags = pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE
+            for commit in repo.walk(head_oid, flags):
+                sha = str(commit.id)
+                if sha in commit_shas and sha not in seen:
+                    seen.add(sha)
+                    result.append(commit)
+        except Exception:
+            continue
+
+    # Also check remote branches
+    for remote_branch in repo.branches.remote:
+        try:
+            branch_ref = repo.branches[remote_branch]
+            head_oid = branch_ref.peel().id
+            flags = pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE
+            for commit in repo.walk(head_oid, flags):
+                sha = str(commit.id)
+                if sha in commit_shas and sha not in seen:
+                    seen.add(sha)
+                    result.append(commit)
+        except Exception:
+            continue
+
+    return result
+
+
+def _calculate_tree_sizes_incremental(
+    repo: pygit2.Repository, commit_shas: set[str]
+) -> dict[str, tuple[int, int]]:
+    """
+    Calculate tree sizes for all commits using incremental delta approach.
+
+    Instead of walking the entire tree for each commit (~1000 files), we
+    calculate the delta from the parent commit (~2-5 files changed).
+
+    Returns:
+        Dict mapping commit_sha to (tree_bytes, tree_lines)
+    """
+    tree_sizes: dict[str, tuple[int, int]] = {}
+    blob_lines_cache: dict[str, int] = {}
+    hex_cache: dict[str, bool] = {}  # Cache hex detection results by blob OID
+
+    commits = _get_commits_topological(repo, commit_shas)
+    total = len(commits)
+
+    for i, commit in enumerate(commits):
+        sha = str(commit.id)
+
+        if sha in tree_sizes:
+            continue
+
+        # Root commit or parent not in cache: full tree walk
+        if len(commit.parents) == 0:
+            tree_bytes, tree_lines = _walk_tree_recursive(repo, commit.tree, ())
+            tree_sizes[sha] = (tree_bytes, tree_lines)
+            continue
+
+        parent = commit.parents[0]
+        parent_sha = str(parent.id)
+
+        if parent_sha not in tree_sizes:
+            # Parent not processed yet - do full tree walk
+            tree_bytes, tree_lines = _walk_tree_recursive(repo, commit.tree, ())
+            tree_sizes[sha] = (tree_bytes, tree_lines)
+            continue
+
+        # Incremental: calculate delta from parent
+        parent_bytes, parent_lines = tree_sizes[parent_sha]
+        delta_bytes, delta_lines = _calculate_delta(
+            repo, parent, commit, blob_lines_cache, hex_cache
+        )
+        tree_sizes[sha] = (parent_bytes + delta_bytes, parent_lines + delta_lines)
+
+        if (i + 1) % 500 == 0:
+            logger.debug(f"Tree sizes: {i + 1}/{total} commits processed")
+
+    logger.debug(
+        f"Incremental caches: {len(blob_lines_cache)} blob lines, {len(hex_cache)} hex results"
+    )
+    return tree_sizes
+
+
+def _calculate_delta(
+    repo: pygit2.Repository,
+    parent: pygit2.Commit,
+    commit: pygit2.Commit,
+    blob_lines_cache: dict[str, int],
+    hex_cache: dict[str, bool],
+) -> tuple[int, int]:
+    """
+    Calculate the change in (bytes, lines) between parent and commit.
+
+    Examines only the files that changed in the diff, not the entire tree.
+    """
+
+    delta_bytes = 0
+    delta_lines = 0
+
+    try:
+        diff = repo.diff(parent.tree, commit.tree)
+    except Exception:
+        return (0, 0)
+
+    for patch in diff:
+        delta = patch.delta
+        old_analyzable = _is_diff_file_analyzable(
+            repo, delta.old_file, blob_lines_cache, hex_cache
+        )
+        new_analyzable = _is_diff_file_analyzable(
+            repo, delta.new_file, blob_lines_cache, hex_cache
+        )
+
+        if old_analyzable and not new_analyzable:
+            # File became non-analyzable (deleted or moved to blacklisted dir)
+            old_bytes, old_lines = _get_blob_size(
+                repo, delta.old_file, blob_lines_cache
+            )
+            delta_bytes -= old_bytes
+            delta_lines -= old_lines
+
+        elif not old_analyzable and new_analyzable:
+            # File became analyzable (added or moved from blacklisted dir)
+            new_bytes, new_lines = _get_blob_size(
+                repo, delta.new_file, blob_lines_cache
+            )
+            delta_bytes += new_bytes
+            delta_lines += new_lines
+
+        elif old_analyzable and new_analyzable:
+            # Both analyzable - calculate difference
+            old_bytes, old_lines = _get_blob_size(
+                repo, delta.old_file, blob_lines_cache
+            )
+            new_bytes, new_lines = _get_blob_size(
+                repo, delta.new_file, blob_lines_cache
+            )
+            delta_bytes += new_bytes - old_bytes
+            delta_lines += new_lines - old_lines
+
+    return (delta_bytes, delta_lines)
+
+
+def _is_diff_file_analyzable(
+    repo: pygit2.Repository,
+    diff_file: pygit2.DiffFile,
+    blob_lines_cache: dict[str, int],
+    hex_cache: dict[str, bool],
+) -> bool:
+    """Check if a diff file is analyzable, using hex_cache to avoid redundant checks."""
+    from pathlib import Path
+
+    from analytics.utils.file_filter import (
+        is_blacklisted_extension,
+        is_blacklisted_filename,
+        is_blacklisted_path,
+        is_hex_content,
+    )
+
+    if not diff_file.path:
+        return False
+
+    path = Path(diff_file.path)
+    blob_oid = str(diff_file.id)
+
+    # Zero OID means file doesn't exist in this version
+    if blob_oid == "0" * 40:
+        return False
+
+    # Quick path-based checks first (no blob read needed)
+    if is_blacklisted_path(path.parts):
+        return False
+    if is_blacklisted_extension(path.suffix):
+        return False
+    if is_blacklisted_filename(path.name):
+        return False
+
+    try:
+        blob = repo.get(diff_file.id)
+        if blob is None:
+            return False
+
+        # Binary check
+        if blob.is_binary:
+            return False
+
+        # Hex content check with caching by blob OID
+        if blob_oid in hex_cache:
+            if hex_cache[blob_oid]:
+                return False  # Cached as hex content
+        else:
+            # Check and cache the result
+            is_hex = is_hex_content(blob.data)
+            hex_cache[blob_oid] = is_hex
+            if is_hex:
+                return False
+
+        return True
+    except Exception:
+        return False
+
+
+def _get_blob_size(
+    repo: pygit2.Repository,
+    diff_file: pygit2.DiffFile,
+    blob_lines_cache: dict[str, int],
+) -> tuple[int, int]:
+    """Get (bytes, lines) for a blob, using cache for line counts."""
+    blob_oid = str(diff_file.id)
+
+    # Zero OID means file doesn't exist
+    if blob_oid == "0" * 40:
+        return (0, 0)
+
+    try:
+        blob = repo.get(diff_file.id)
+        if blob is None:
+            return (0, 0)
+
+        blob_bytes = len(blob.data) if blob.data else 0
+
+        # Check cache for line count
+        if blob_oid in blob_lines_cache:
+            return (blob_bytes, blob_lines_cache[blob_oid])
+
+        # Calculate line count
+        if blob.is_binary or not blob.data:
+            blob_lines = 0
+        else:
+            data = blob.data
+            blob_lines = data.count(b"\n")
+            if data and not data.endswith(b"\n"):
+                blob_lines += 1
+
+        blob_lines_cache[blob_oid] = blob_lines
+        return (blob_bytes, blob_lines)
+
+    except Exception:
+        return (0, 0)

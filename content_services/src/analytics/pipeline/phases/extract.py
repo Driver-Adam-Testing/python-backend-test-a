@@ -60,19 +60,14 @@ def extract_commits(
 
         logger.info(f"Processing {len(branch_names)} branches: {branch_names[:5]}...")
 
-        # Collect commits from all branches
-        all_commits = []
-        commit_shas_by_branch: dict[str, set[str]] = {}
-
-        for branch_name in branch_names:
-            branch_shas = _get_commits_in_branch(repo, branch_name)
-            commit_shas_by_branch[branch_name] = branch_shas
-            logger.debug(f"Branch {branch_name}: {len(branch_shas)} commits")
-
-        # Get unique commit SHAs across all branches
-        all_sha_set = set()
-        for shas in commit_shas_by_branch.values():
-            all_sha_set.update(shas)
+        # OPTIMIZED: Single pass through commit graph collects both:
+        # 1. Commits in topological order (for tree size calculation)
+        # 2. Inverted index of commit -> branches (for O(1) lookup)
+        # This replaces the old two-pass approach that walked the graph twice.
+        commits_topo, commit_to_branches = _collect_commits_and_branches(
+            repo, branch_names
+        )
+        all_sha_set = set(commit_to_branches.keys())
 
         total_before_filter = len(all_sha_set)
         logger.info(f"Found {total_before_filter} unique commits")
@@ -80,33 +75,37 @@ def extract_commits(
         # Filter by since_sha for incremental updates
         if since_sha:
             all_sha_set = _filter_commits_since(repo, all_sha_set, since_sha)
-            # Also filter branch-specific sets
-            for branch_name in commit_shas_by_branch:
-                commit_shas_by_branch[branch_name] &= all_sha_set
+            # Filter commits_topo and commit_to_branches to only include new commits
+            commits_topo = [c for c in commits_topo if str(c.id) in all_sha_set]
+            commit_to_branches = {
+                sha: branches
+                for sha, branches in commit_to_branches.items()
+                if sha in all_sha_set
+            }
             logger.info(
                 f"Incremental: {len(all_sha_set)} new commits (filtered {total_before_filter - len(all_sha_set)} old)"
             )
 
         # Pre-calculate tree sizes using incremental method (much faster)
+        # Pass pre-sorted commits to avoid duplicate graph walk
         logger.info("Pre-calculating tree sizes (incremental)...")
-        tree_size_cache = _calculate_tree_sizes_incremental(repo, all_sha_set)
+        tree_size_cache = _calculate_tree_sizes_incremental(
+            repo, commit_shas=None, commits_topo=commits_topo
+        )
         logger.info(f"Calculated tree sizes for {len(tree_size_cache)} commits")
 
         # Process each commit
         collected_at = datetime.now(UTC)
+        all_commits = []
         all_file_changes = []
 
         for i, commit_sha in enumerate(all_sha_set):
-            if (i + 1) % 100 == 0:
-                logger.debug(f"Processing commit {i + 1}/{len(all_sha_set)}")
+            if (i + 1) % 1000 == 0 or (i + 1) == len(all_sha_set):
+                logger.info(f"Processing commits: {i + 1}/{len(all_sha_set)}")
 
             try:
-                # Get branches this commit belongs to
-                commit_branches = [
-                    branch
-                    for branch, shas in commit_shas_by_branch.items()
-                    if commit_sha in shas
-                ]
+                # OPTIMIZED: O(1) branch lookup instead of O(branches)
+                commit_branches = commit_to_branches.get(commit_sha, [])
 
                 # Extract commit data (also returns diff for file changes)
                 commit_data, diff = _extract_commit_data_with_diff(
@@ -196,6 +195,82 @@ def _get_commits_in_branch(repo: pygit2.Repository, branch_name: str) -> set[str
         logger.warning(f"Error walking branch {branch_name}: {e}")
 
     return commit_shas
+
+
+def _collect_commits_and_branches(
+    repo: pygit2.Repository,
+    branch_names: list[str],
+) -> tuple[list[pygit2.Commit], dict[str, list[str]]]:
+    """
+    Single pass through commit graph that collects:
+    1. All commits in topological order (parents before children)
+    2. Mapping from commit SHA to list of branches containing it
+
+    This replaces both:
+    - _get_commits_in_branch loop (Walk #1)
+    - _get_commits_topological (Walk #2)
+
+    Reduces commit graph traversal from O(2 * branches * commits)
+    to O(branches * commits) with better cache locality.
+
+    Additionally, the returned commit_to_branches dict enables O(1) branch lookup
+    instead of O(branches) per commit.
+
+    Returns:
+        Tuple of (commits_topo, commit_to_branches)
+        - commits_topo: List of commits in topological order
+        - commit_to_branches: Dict mapping commit_sha -> list of branch names
+    """
+    from collections import defaultdict
+
+    commits_topo: list[pygit2.Commit] = []
+    seen_for_topo: set[str] = set()
+    commit_to_branches: dict[str, list[str]] = defaultdict(list)
+
+    for branch_idx, branch_name in enumerate(branch_names):
+        logger.info(
+            f"Walking branch {branch_idx + 1}/{len(branch_names)}: {branch_name} "
+            f"({len(seen_for_topo)} unique commits so far)"
+        )
+
+        # Get branch reference (local first, then remote)
+        branch_ref = None
+        if branch_name in repo.branches.local:
+            branch_ref = repo.branches[branch_name]
+        elif f"origin/{branch_name}" in repo.branches.remote:
+            branch_ref = repo.branches[f"origin/{branch_name}"]
+
+        if not branch_ref:
+            logger.warning(f"Branch not found: {branch_name}")
+            continue
+
+        try:
+            head_oid = branch_ref.peel().id
+            flags = pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE
+
+            for branch_commit_count, commit in enumerate(
+                repo.walk(head_oid, flags), start=1
+            ):
+                sha = str(commit.id)
+
+                # Track branch membership (always, even if seen before)
+                commit_to_branches[sha].append(branch_name)
+
+                # Add to topological list only once
+                if sha not in seen_for_topo:
+                    seen_for_topo.add(sha)
+                    commits_topo.append(commit)
+
+                if branch_commit_count % 10000 == 0:
+                    logger.info(
+                        f"  ... walked {branch_commit_count} commits on {branch_name}"
+                    )
+
+        except Exception as e:
+            logger.warning(f"Error walking branch {branch_name}: {e}")
+            continue
+
+    return commits_topo, dict(commit_to_branches)
 
 
 def _filter_commits_since(
@@ -725,13 +800,23 @@ def _get_commits_topological(
 
 
 def _calculate_tree_sizes_incremental(
-    repo: pygit2.Repository, commit_shas: set[str]
+    repo: pygit2.Repository,
+    commit_shas: set[str] | None = None,
+    commits_topo: list[pygit2.Commit] | None = None,
 ) -> dict[str, tuple[int, int]]:
     """
     Calculate tree sizes for all commits using incremental delta approach.
 
     Instead of walking the entire tree for each commit (~1000 files), we
     calculate the delta from the parent commit (~2-5 files changed).
+
+    Args:
+        repo: pygit2.Repository instance
+        commit_shas: Set of commit SHAs to process (legacy, will sort internally)
+        commits_topo: Pre-sorted commits in topological order (optimized path)
+
+    Note: Either commit_shas OR commits_topo should be provided, not both.
+    If commits_topo is provided, it takes precedence and avoids the graph walk.
 
     Returns:
         Dict mapping commit_sha to (tree_bytes, tree_lines)
@@ -740,7 +825,15 @@ def _calculate_tree_sizes_incremental(
     blob_lines_cache: dict[str, int] = {}
     hex_cache: dict[str, bool] = {}  # Cache hex detection results by blob OID
 
-    commits = _get_commits_topological(repo, commit_shas)
+    # Use pre-sorted commits if provided, otherwise sort internally
+    if commits_topo is not None:
+        commits = commits_topo
+    elif commit_shas is not None:
+        commits = _get_commits_topological(repo, commit_shas)
+    else:
+        # Neither provided - nothing to process
+        return tree_sizes
+
     total = len(commits)
 
     for i, commit in enumerate(commits):
@@ -771,10 +864,10 @@ def _calculate_tree_sizes_incremental(
         )
         tree_sizes[sha] = (parent_bytes + delta_bytes, parent_lines + delta_lines)
 
-        if (i + 1) % 500 == 0:
-            logger.debug(f"Tree sizes: {i + 1}/{total} commits processed")
+        if (i + 1) % 5000 == 0 or (i + 1) == total:
+            logger.info(f"Tree sizes: {i + 1}/{total} commits processed")
 
-    logger.debug(
+    logger.info(
         f"Incremental caches: {len(blob_lines_cache)} blob lines, {len(hex_cache)} hex results"
     )
     return tree_sizes

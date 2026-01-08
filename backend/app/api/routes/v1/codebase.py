@@ -1,11 +1,12 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-import modal
 from database.models import PrimaryAsset, UsageEventType, Version
 from database.models_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter, HTTPException, Query
+from hatchet_sdk import Hatchet
 from pydantic import BaseModel
+from shared.interfaces.hatchet_interfaces import InspectorInput
 from shared.interfaces.usage.event_metadata import (
     UsageEventMetadata,
     UsageMetric,
@@ -20,7 +21,6 @@ from sqlmodel import func, select
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.authorization.fastapi import enforce_asset_action
-from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseGenerationRequest,
     CodebaseGenerationResponse,
@@ -120,7 +120,7 @@ def exec_codebase_generation(
             PrimaryAsset.organization_id == user.organization_id,
         )
         .options(
-            selectinload(Version.root_node),
+            selectinload(Version.root_version_node),
             selectinload(Version.primary_asset),
         )
     )
@@ -144,7 +144,7 @@ def exec_codebase_generation(
     total_codebase_size_in_bytes = 0
     for version in result:
         metadata = (
-            version.root_node.misc_metadata
+            version.root_version_node.misc_metadata
         )  # TODO: is this loaded as a dict? Or string?
         total_codebase_size_in_bytes += metadata["analyzable_bytes"]
     usage_balance = UsageService(session).get_usage_balance(user.organization_id)
@@ -161,7 +161,7 @@ def exec_codebase_generation(
             content_name=version.primary_asset.display_name,
             version_id=str(version.id),
         )
-        metadata = version.root_node.misc_metadata
+        metadata = version.root_version_node.misc_metadata
         codebase_size_in_bytes = metadata["analyzable_bytes"]
         with LLMUsageSession(
             user.organization_id, user.user_id, session_meta
@@ -190,9 +190,12 @@ def exec_codebase_generation(
         session.add(version)
         session.commit()
 
-    inspect_db = modal.Function.lookup(
-        "inspector-v2", "inspect_db", environment_name=settings.MODAL_ENVIRONMENT
+    hatchet = Hatchet()
+    inspector_task = hatchet.stubs.task(
+        name="inspector-workflow",
+        input_validator=InspectorInput,
     )
+
     for version in result:
-        inspect_db.spawn(version.id)
+        inspector_task.run_no_wait(InspectorInput(version_id=str(version.id)))
     return CodebaseGenerationResponse(call_id="1234")

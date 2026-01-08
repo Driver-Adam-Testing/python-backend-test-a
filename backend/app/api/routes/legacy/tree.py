@@ -2,7 +2,7 @@
 
 import strawberry
 from app.api.routes.legacy.scalars import ID
-from database.models import Node, PrimaryAsset, Version
+from database.models import Node, PrimaryAsset, Version, VersionNode
 from sqlmodel import Session, select
 
 
@@ -27,40 +27,38 @@ def get_codebase_tree(
     session: Session,
     organization_id: str,
 ) -> list[FlatNode]:
-    # Perform a single query to fetch all necessary data
-    nodes = session.exec(
-        select(Node, Version, PrimaryAsset)
-        .join(Version, Node.version_id == Version.id)
+    # Perform a single query to fetch all necessary data via VersionNode
+    results = session.exec(
+        select(VersionNode, Node, Version, PrimaryAsset)
+        .join(Node, VersionNode.node_id == Node.id)
+        .join(Version, VersionNode.version_id == Version.id)
         .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
-        .where(Version.id == version_id)
+        .where(VersionNode.version_id == version_id)
         .where(PrimaryAsset.organization_id == organization_id)
     ).all()
 
-    # If no nodes found, return an empty list
-    if not nodes:
+    # If no results found, return an empty list
+    if not results:
         return []
 
     # Construct the node tree
     directories_map = {}
     files = []
 
-    for node, _, _ in nodes:
+    for version_node, _, _, _ in results:
+        relative_path = version_node.relative_path
         # Determine if it's a directory or file
-        if node.relative_path.endswith("/"):
+        if relative_path.endswith("/"):
             kind = NodeTypeEnum.Directory
-            name = (
-                node.relative_path.rstrip("/").split("/")[-1]
-                if node.relative_path
-                else ""
-            )
+            name = relative_path.rstrip("/").split("/")[-1] if relative_path else ""
         else:
             kind = NodeTypeEnum.File
-            name = node.relative_path.split("/")[-1] if node.relative_path else ""
+            name = relative_path.split("/")[-1] if relative_path else ""
 
         flat_node = FlatNode(
-            id=ID(str(node.id)),
+            id=ID(str(version_node.id)),
             name=name,
-            path=node.relative_path,
+            path=relative_path,
             kind=kind,
             children=[],
         )
@@ -68,7 +66,7 @@ def get_codebase_tree(
         if kind == NodeTypeEnum.File:
             files.append(flat_node)
         else:
-            directories_map[node.relative_path] = flat_node
+            directories_map[relative_path] = flat_node
 
     for file_node in files:
         if file_node.path and "/" in file_node.path:

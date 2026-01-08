@@ -1,7 +1,9 @@
-from dataclasses import dataclass, field
+import os
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Self
 
+import httpx
 import openai
 from openai import AsyncOpenAI
 from pydantic import BaseModel, ValidationError
@@ -35,15 +37,46 @@ class OutputConfig(BaseModel):
                 raise ValueError("Unreachable")
 
 
+MAX_REQUEST_TIMEOUT = 900
+http_client = httpx.AsyncClient(
+    limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
+    timeout=httpx.Timeout(
+        connect=10.0, write=30.0, read=MAX_REQUEST_TIMEOUT, pool=10.0
+    ),
+)
+if os.environ.get("AZURE_OPENAI_BASE_URL"):
+    base_url = os.environ["AZURE_OPENAI_BASE_URL"]
+    base_url = f"https://{base_url}/openai/v1/"
+    api_key = os.environ["AZURE_OPENAI_KEY_1"]
+    client = AsyncOpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        timeout=MAX_REQUEST_TIMEOUT,
+        http_client=http_client,
+    )
+else:
+    client = AsyncOpenAI(timeout=MAX_REQUEST_TIMEOUT, http_client=http_client)
+
+
 @dataclass
 class ChatOpenAI:
     model: str
     temperature: int
     request_timeout: int
-    client: AsyncOpenAI = field(init=False)
+    # client: AsyncOpenAI = field(init=False)
 
     def __post_init__(self) -> None:
-        self.client = AsyncOpenAI(timeout=self.request_timeout)
+        pass
+
+    @staticmethod
+    def get_token_limit(model: str) -> int:
+        TOKEN_LIMITS = {
+            "gpt-4.1": 1_000_000,
+            "o3-mini": 200_000,
+            "gpt-4o": 128_000,
+            "gpt-5": 272_000,
+        }
+        return TOKEN_LIMITS[model]
 
     @async_retry_with_exponential_backoff(
         initial_delay=10.0,
@@ -53,7 +86,6 @@ class ChatOpenAI:
             openai.RateLimitError,
             openai.InternalServerError,
             openai.APIConnectionError,
-            openai.BadRequestError,
             openai.PermissionDeniedError,
             ValidationError,
         ),
@@ -75,7 +107,7 @@ class ChatOpenAI:
             raise ValueError(f"Model ({self.model}) does not support JSON strict mode")
         if output_cfg.kind == OutputConfigKind.JSON_STRICT:
             if "gpt-5" in self.model:
-                response = await self.client.beta.chat.completions.parse(
+                response = await client.beta.chat.completions.parse(
                     model=self.model,
                     response_format=output_cfg.into_openai_response_format(),
                     messages=[
@@ -90,7 +122,7 @@ class ChatOpenAI:
                     ],
                 )
             else:
-                response = await self.client.beta.chat.completions.parse(
+                response = await client.beta.chat.completions.parse(
                     model=self.model,
                     temperature=self.temperature,
                     response_format=output_cfg.into_openai_response_format(),
@@ -108,7 +140,7 @@ class ChatOpenAI:
 
         elif "o1" in self.model:
             if "o1-mini" in self.model:
-                response = await self.client.chat.completions.create(
+                response = await client.chat.completions.create(
                     model=self.model,
                     response_format=output_cfg.into_openai_response_format(),
                     messages=[
@@ -119,7 +151,7 @@ class ChatOpenAI:
                     ],
                 )
             else:
-                response = await self.client.chat.completions.create(
+                response = await client.chat.completions.create(
                     model=self.model,
                     response_format=output_cfg.into_openai_response_format(),
                     messages=[
@@ -134,7 +166,7 @@ class ChatOpenAI:
                     ],
                 )
         elif "o3" in self.model or "gpt-5" in self.model:
-            response = await self.client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=self.model,
                 response_format=output_cfg.into_openai_response_format(),
                 messages=[
@@ -149,7 +181,7 @@ class ChatOpenAI:
                 ],
             )
         else:
-            response = await self.client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
                 response_format=output_cfg.into_openai_response_format(),

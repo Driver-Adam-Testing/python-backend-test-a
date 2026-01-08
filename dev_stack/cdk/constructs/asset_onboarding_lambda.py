@@ -40,7 +40,7 @@ class AssetOnboardingLambda(Construct):
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "AssetOnboardingLambdaPy",
-            entry="../content_services/onboarding_event_handler",
+            entry="../lambdas/onboarding_event_handler",
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             index="src/main.py",
             environment={

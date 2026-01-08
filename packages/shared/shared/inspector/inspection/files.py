@@ -3,9 +3,9 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any, Self
 
-import modal
 import openai
 from pydantic import BaseModel, ValidationError
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.inspection.prompt_templates.files.templates.metadata_large_default import (
     METADATA_LARGE_TEMPLATE,
 )
@@ -144,7 +144,6 @@ from shared.inspector.utils.lang_specialization.symbol_common import (
     ReifiedSymbol,
     disambiguate_header,
 )
-from shared.inspector.utils.models import ChatOpenAI
 from shared.inspector.utils.templates import Template
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
@@ -682,10 +681,6 @@ def comprehend_file_top_down(
                 )
             )
         except openai.BadRequestError as e:
-            email_func = modal.Function.lookup("inspector-v2", "send_exception_email")
-            exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
-            email_func.remote(exception_details)
-
             print("BadRequestError processing file: ", e)
             description = "Could not process file"
             success = False
@@ -742,10 +737,6 @@ def comprehend_file_top_down(
                 code=source_code,
             )
         except openai.BadRequestError as e:
-            email_func = modal.Function.lookup("inspector-v2", "send_exception_email")
-            exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
-            email_func.remote(exception_details)
-
             # TODO: this is a hack. Should rethink the tokenizing
             print("BadRequestError processing file: ", e)
             description = "Could not process file"

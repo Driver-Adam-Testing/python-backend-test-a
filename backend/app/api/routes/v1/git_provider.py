@@ -6,7 +6,6 @@ import logging
 from itertools import groupby
 from uuid import UUID
 
-import modal
 from database.models import (
     GithubAppInstallation,
     GitProviderApp,
@@ -23,8 +22,16 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
+from hatchet_sdk import Hatchet
 from pydantic import BaseModel
 from shared.interfaces.aws_client_config import AWSClientConfig
+from shared.interfaces.hatchet_interfaces import (
+    ConnectReposForInstallationInput,
+    HandleAzureDevopsEventsInput,
+    HandleBitbucketEventsInput,
+    HandleGithubEventsInput,
+    HandleGitlabEventsInput,
+)
 from sqlmodel import select
 
 from app.api.auth import UserToken
@@ -60,8 +67,13 @@ router = APIRouter()
 
 aws_config = AWSClientConfig(
     region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
+    # TODO: Ensure required IAM role permissions are given to the containers
+    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID
+    if not settings.IS_PRIVATE_DEPLOY
+    else None,
+    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY
+    if not settings.IS_PRIVATE_DEPLOY
+    else None,
 )
 
 provider_service = get_git_provider_service(aws_config)
@@ -276,24 +288,25 @@ def connect_git_provider_repo(
         raise HTTPException(status_code=404, detail="Application not found.")
 
     # Determine which handler to use based on provider type
+    hatchet = Hatchet()
     if app.provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
-        handle_events = modal.Function.lookup(
-            "inspector-v2",
-            "handle_gitlab_events",
-            environment_name=settings.MODAL_ENVIRONMENT,
+        handle_events_task = hatchet.stubs.task(
+            name="handle-gitlab-events-workflow",
+            input_validator=HandleGitlabEventsInput,
         )
+        input_type = HandleGitlabEventsInput
     elif app.provider_kind == GitProviderKind.BITBUCKET:
-        handle_events = modal.Function.lookup(
-            "inspector-v2",
-            "handle_bitbucket_events",
-            environment_name=settings.MODAL_ENVIRONMENT,
+        handle_events_task = hatchet.stubs.task(
+            name="handle-bitbucket-events-workflow",
+            input_validator=HandleBitbucketEventsInput,
         )
+        input_type = HandleBitbucketEventsInput
     elif app.provider_kind == GitProviderKind.AZURE_DEVOPS_CLOUD:
-        handle_events = modal.Function.lookup(
-            "inspector-v2",
-            "handle_azure_devops_events",
-            environment_name=settings.MODAL_ENVIRONMENT,
+        handle_events_task = hatchet.stubs.task(
+            name="handle-azure-devops-events-workflow",
+            input_validator=HandleAzureDevopsEventsInput,
         )
+        input_type = HandleAzureDevopsEventsInput
     else:
         raise HTTPException(
             status_code=400, detail=f"Unsupported provider kind: {app.provider_kind}"
@@ -312,12 +325,14 @@ def connect_git_provider_repo(
         ):
             raise HTTPException(status_code=404, detail="Installation not found.")
 
-        handle_events.spawn(
-            installation_id,
-            current_user.organization_id,
-            repos_added=[repo.model_dump() for repo in repo_group],
-            repos_deleted=[],
-            repos_pushed=[],
+        handle_events_task.run_no_wait(
+            input_type(
+                installation_id=installation_id,
+                org_id=current_user.organization_id,
+                repos_added=[repo.model_dump() for repo in repo_group],
+                repos_deleted=[],
+                repos_pushed=[],
+            )
         )
 
     return JSONResponse(
@@ -369,13 +384,14 @@ def github_callback(
         )
         session.add(gh_app_install)
         session.commit()
-
-        connect_repos = modal.Function.from_name(
-            "inspector-v2",
-            "connect_repos_for_installation",
-            environment_name=settings.MODAL_ENVIRONMENT,
+        hatchet = Hatchet()
+        connect_repos_task = hatchet.stubs.task(
+            name="connect-repos-for-installation-workflow",
+            input_validator=ConnectReposForInstallationInput,
         )
-        connect_repos.spawn(installation_id)
+        connect_repos_task.run_no_wait(
+            ConnectReposForInstallationInput(github_installation_id=installation_id)
+        )
 
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
@@ -448,17 +464,20 @@ def handle_installation_delete_event(
             }
         )
 
-    handle_github_events = modal.Function.lookup(
-        "inspector-v2",
-        "handle_github_events",
-        environment_name=settings.MODAL_ENVIRONMENT,
+    hatchet = Hatchet()
+    handle_github_events_task = hatchet.stubs.task(
+        name="handle-github-events-workflow",
+        input_validator=HandleGithubEventsInput,
     )
-    handle_github_events.spawn(
-        installation_id,
-        org_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
+
+    handle_github_events_task.run_no_wait(
+        HandleGithubEventsInput(
+            installation_id=installation_id,
+            org_id=org_id,
+            repos_added=repos_added,
+            repos_deleted=repos_deleted,
+            repos_pushed=repos_pushed,
+        )
     )
 
     logger.info(
@@ -511,17 +530,19 @@ def handle_installation_modified_event(
             }
         )
 
-    handle_github_events = modal.Function.lookup(
-        "inspector-v2",
-        "handle_github_events",
-        environment_name=settings.MODAL_ENVIRONMENT,
+    hatchet = Hatchet()
+    handle_github_events_task = hatchet.stubs.task(
+        name="handle-github-events-workflow",
+        input_validator=HandleGithubEventsInput,
     )
-    handle_github_events.spawn(
-        installation_id,
-        gh_app_install.organization_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
+    handle_github_events_task.run_no_wait(
+        HandleGithubEventsInput(
+            installation_id=installation_id,
+            org_id=gh_app_install.organization_id,
+            repos_added=repos_added,
+            repos_deleted=repos_deleted,
+            repos_pushed=repos_pushed,
+        )
     )
 
     logger.info(
@@ -592,17 +613,19 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
                 "commit": commit_hash,
             }
         ]
-        handle_github_events = modal.Function.lookup(
-            "inspector-v2",
-            "handle_github_events",
-            environment_name=settings.MODAL_ENVIRONMENT,
+        hatchet = Hatchet()
+        handle_github_events_task = hatchet.stubs.task(
+            name="handle-github-events-workflow",
+            input_validator=HandleGithubEventsInput,
         )
-        handle_github_events.spawn(
-            installation_id,
-            gh_app_install.organization_id,
-            repos_added,
-            repos_deleted,
-            repos_pushed,
+        handle_github_events_task.run_no_wait(
+            HandleGithubEventsInput(
+                installation_id=installation_id,
+                org_id=gh_app_install.organization_id,
+                repos_added=repos_added,
+                repos_deleted=repos_deleted,
+                repos_pushed=repos_pushed,
+            )
         )
 
         logger.info(

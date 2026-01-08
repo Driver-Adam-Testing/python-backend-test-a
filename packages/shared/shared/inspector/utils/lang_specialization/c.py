@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Self
 
-from shared.inspector.utils.models import ChatOpenAI
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,

@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Any
 
 from database.models_enums import ContentKind
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.dag import LiteNode, NodeKind
 from shared.inspector.utils.io import get_prompt_template
-from shared.inspector.utils.models import ChatOpenAI
 from shared.inspector.utils.threadpool import FastShutdownThreadPoolExecutor
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
@@ -174,7 +174,6 @@ def folder_single_sentence_from_chunk_descriptions(
             )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str()
     )
     if previous_content is not None:
         system_prompt_structured.append(
@@ -184,7 +183,7 @@ def folder_single_sentence_from_chunk_descriptions(
                 string=f"Previous single sentence description:\n\n{previous_content}"
             )
         )
-    system_prompt = system_prompt_structured
+    system_prompt = system_prompt_structured.into_str()
     user_prompt = (
         Prompt.empty()
         .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
@@ -281,7 +280,7 @@ def comprehend_folder_top_down(
         for k, v in dict(
             sorted(
                 child_nodes_to_docs.items(),
-                key=lambda x: str(x[0]).lower(),
+                key=lambda x: str(x[0].root_rel_path).lower(),
             )
         ).items()
     }

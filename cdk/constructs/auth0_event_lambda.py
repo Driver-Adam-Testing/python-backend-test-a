@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_lambda,
     aws_lambda_python_alpha,
     aws_logs,
+    aws_route53,
     aws_secretsmanager,
     aws_sns,
     aws_ssm,
@@ -28,7 +29,9 @@ class Auth0EventLambda(Construct):
         id: str,
         environment: str,
         cloudwatch_alarm_arn: str | None = None,
+        is_private_deploy: bool = False,
     ) -> None:
+        self.is_private_deploy = is_private_deploy
         super().__init__(scope, id)
 
         auth0_eventbridge_bus_name = aws_ssm.StringParameter.value_from_lookup(
@@ -49,6 +52,14 @@ class Auth0EventLambda(Construct):
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
         )
 
+        hatchet_token_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
+        )
+
+        hosted_zone_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/route53/hostedZoneName"
+        )
+
         # Create Lambda function
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -62,9 +73,13 @@ class Auth0EventLambda(Construct):
             ),
             environment={
                 "LOG_LEVEL": "INFO",
-                "MODAL_TOKEN_ID": settings.MODAL_TOKEN_ID,
-                "MODAL_ENVIRONMENT": settings.MODAL_ENVIRONMENT,
+                "MODAL_TOKEN_ID": "FIXME",
+                "MODAL_ENVIRONMENT": "FIXME",
                 "MODAL_SECRET_NAME": deployment_secrets.secret_name,
+                "IS_PRIVATE_DEPLOY": "true" if self.is_private_deploy else "false",
+                "HATCHET_CLIENT_HOST_PORT": f"hatchet.private.{hosted_zone_name}:7077",
+                "HATCHET_CLIENT_TOKEN_SECRET_NAME": hatchet_token_secret.secret_name,
+                "HATCHET_CLIENT_TLS_STRATEGY": "none",
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
@@ -77,6 +92,14 @@ class Auth0EventLambda(Construct):
 
         # Grant Lambda permissions to read secrets
         deployment_secrets.grant_read(self.lambda_function)
+        hatchet_token_secret.grant_read(self.lambda_function)
+
+        # Grant permission to read firewall certificate for private deployments
+        if self.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.lambda_function)
 
         # Configure CloudWatch Logs with retention
         aws_logs.LogGroup(

@@ -3,11 +3,11 @@ import threading
 from collections import defaultdict
 from pathlib import Path
 
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.lang_specialization.symbol_common import (
     RawTreeSitterSymbolData,
     SymbolKind,
 )
-from shared.inspector.utils.models import ChatOpenAI
 
 _disambiguation_cache: dict = {}
 
@@ -63,6 +63,7 @@ def is_definition(sym: RawTreeSitterSymbolData) -> bool:
         SymbolKind.DATA_STRUCTURE,
         SymbolKind.CLASS,
         SymbolKind.INTERFACE,
+        SymbolKind.VARIABLE_DEFINITION,
     }
 
 

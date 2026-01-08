@@ -54,6 +54,8 @@ def build_symbol_table(
                 language_groups["js_ts"].append(file_path)
             case Lang.GO:
                 language_groups["go"].append(file_path)
+            case Lang.RUBY:
+                language_groups["ruby"].append(file_path)
             case _:
                 unsupported_files.append(file_path)
 

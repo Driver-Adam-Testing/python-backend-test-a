@@ -10,7 +10,7 @@ class Settings:
     AWS_ACCOUNT: str
     BASE_URL: str
     CORS_ORIGINS: str
-    METRICSLAMBDA_CW_ALARM:str
+    # METRICSLAMBDA_CW_ALARM:str
     BACKEND_ALLOWED_IPS:str
     ONBOARDING_LAMDBA_API_URL:str
     ONBOARDING_LAMDBA_AUTH0_URL:str
@@ -33,10 +33,10 @@ class Settings:
     AUTH0_MGMT_API_CLIENT_ID:str
     # AUTH0_MGMT_API_CLIENT_SECRET:str
     AUTH0_MGMT_API_AUDIENCE:str
-    MODAL_TOKEN_ID:str
+    # MODAL_TOKEN_ID:str
     # MODAL_TOKEN_SECRET:str
-    MODAL_ENVIRONMENT:str
-    S3ADMIN_AWS_ACCESS_KEY_ID:str
+    # MODAL_ENVIRONMENT:str
+    # S3ADMIN_AWS_ACCESS_KEY_ID:str
     # S3ADMIN_AWS_SECRET_ACCESS_KEY:str
     GH_CLIENT_ID:str
     # GH_CLIENT_SECRET:str
@@ -44,9 +44,14 @@ class Settings:
     # GH_WEBHOOK_SECRET:str
     # GH_CLIENT_PEM_SECRET:str
     # OPENAI_API_KEY:str
-    SENTRY_DSN:str
+    # SENTRY_DSN:str
     SECRECTS_KEYS:str
     # add more as needed...
+    IS_PRIVATE_DEPLOY:str
+    ALLOWED_AWS_ACCOUNT:str
+    ALLOWED_PRIVATELINK_REGIONS:str
+    MCP_AUTH0_CLIENT_ID:str
+    MCP_AUTH0_AUDIENCE:str
 
     def __init__(self, prefix: str = "") -> None:
         missing = []
@@ -56,9 +61,19 @@ class Settings:
             val = os.getenv(env_key)
 
             if val is None:
-                missing.append(env_key)
+                if hasattr(self.__class__, name):
+                    setattr(self, name, getattr(self.__class__, name))
+                else:
+                    missing.append(env_key)
             else:
                 setattr(self, name, val)
+        # --- CONDITIONAL REQUIREMENT LOGIC ---
+        # If NOT private deploy, override ALLOWED_AWS_ACCOUNT and ALLOWED_PRIVATELINK_REGIONS
+        # and ensure they're not considered missing.
+        if getattr(self, "IS_PRIVATE_DEPLOY", "").lower() != "true":
+            self.ALLOWED_AWS_ACCOUNT = ""
+            self.ALLOWED_PRIVATELINK_REGIONS = ""
+            missing = [m for m in missing if m not in ["ALLOWED_AWS_ACCOUNT", "ALLOWED_PRIVATELINK_REGIONS"]]
 
         if missing:
             raise EnvironmentError(

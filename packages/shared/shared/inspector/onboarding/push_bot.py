@@ -40,20 +40,29 @@ def run(
     return result
 
 
-async def push_docs(version_id: uuid.UUID) -> None:
+def push_docs(version_id: uuid.UUID) -> None:
     # import boto3
     import hashlib
     import shutil
     import tempfile
 
     from database.db import engine
-    from database.models import GitProviderAppInstallation, PrimaryAssetProvider
-    from onboarding import azure_devops_ops, bitbucket_ops, gh_ops, gitlab_ops
-    from onboarding.onboard_utils import (
+    from database.models import GitProviderAppInstallation
+    from database.models_enums import PrimaryAssetProvider
+    from shared.inspector.onboarding import (
+        azure_devops_ops,
+        bitbucket_ops,
+        gh_ops,
+        gitlab_ops,
+    )
+    from shared.inspector.onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
+    from shared.inspector.utils.db import (
+        get_version_by_id,
+        git_provider_app_installation_by_id,
+    )
     from sqlmodel import Session, select
-    from utils.db import get_version_by_id, git_provider_app_installation_by_id
 
     version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
@@ -166,7 +175,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             shutil.rmtree(driver_docs_path)
 
         dst_path = repo_dir / "driver_docs" / repo_name
-        COMMIT_MESSAGE = "Docs: update driver docs for commit: " + commit_slug
+        COMMIT_MESSAGE = "docs: update driver docs for commit: " + commit_slug
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)

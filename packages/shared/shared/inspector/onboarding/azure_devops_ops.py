@@ -6,9 +6,18 @@ import os
 from uuid import UUID
 
 import requests
-from database.models import VcsAutoUpdatePolicy
-from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
-from onboarding.vcs_utils import (
+from database.models import Organization, PrimaryAssetRoleGrant
+from database.models_enums import (
+    PrimaryAssetRole,
+    PrincipalKind,
+    SourceVisibility,
+    VcsAutoUpdatePolicy,
+)
+from shared.inspector.onboarding.onboard_utils import (
+    AccessTokenError,
+    upload_to_s3_with_metadata,
+)
+from shared.inspector.onboarding.vcs_utils import (
     AuthorInfo,
     BranchInfo,
     CommitInfo,
@@ -23,6 +32,38 @@ from shared.secret_management.aws_secret_management import (
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
+
+def _create_git_provider_grants(
+    session: Session,
+    primary_asset_id: UUID,
+    organization_id: str,
+) -> None:
+    org = session.get(Organization, organization_id)
+    if not org:
+        raise ValueError(f"Organization {organization_id} not found")
+
+    visibility = org.default_source_visibility
+
+    if visibility == SourceVisibility.internal:
+        grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.org,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(grant)
+        print(f"INFO: Created internal visibility grant for asset {primary_asset_id}")
+    elif visibility == SourceVisibility.public:
+        grant = PrimaryAssetRoleGrant(
+            primary_asset_id=primary_asset_id,
+            organization_id=organization_id,
+            principal_kind=PrincipalKind.public,
+            role=PrimaryAssetRole.asset_member,
+        )
+        session.add(grant)
+        print(f"INFO: Created public visibility grant for asset {primary_asset_id}")
+
+
 logger = logging.getLogger(__name__)
 
 API_VERSION = "7.2-preview"
@@ -33,9 +74,7 @@ def fetch_access_token(installation_id: str) -> str:
     install_key = format_secret_name("GIT_PROVIDER_PAT_INSTALL_SECRET", installation_id)
     secrets_manager = AWSSecretManagementStrategy(
         AWSClientConfig(
-            region_name=os.environ["AWS_REGION"],
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            region_name=os.environ["AWS_REGION"]
         )
     )
     secret_value = secrets_manager.read_secret(install_key)
@@ -444,6 +483,9 @@ def download_and_upload_repo(
                 )
                 session.add(version)
                 version_id = version.id
+
+                _create_git_provider_grants(session, primary_asset_id, org_id)
+
                 print(
                     f"Creating primary asset and version for {repo_name}:{commit} for org: {org_id}. Version ID: {version_id}"
                 )
@@ -501,6 +543,8 @@ def download_and_upload_repo(
 def get_repo_clone_info_from_id(
     base_url: str, project: str, repo_id: str, access_token: str
 ) -> tuple[str, str]:
+    import urllib
+
     auth_header = base64.b64encode(f"{access_token}:".encode()).decode()
     headers = {"Authorization": f"Basic {auth_header}"}
 
@@ -521,7 +565,10 @@ def get_repo_clone_info_from_id(
     full_name = f"{organization}/{project}/{data['name']}"
 
     # Azure DevOps clone URL format
-    clone_url = f"https://{access_token}@dev.azure.com/{organization}/{project}/_git/{data['name']}"
+    safe_org = urllib.parse.quote(organization, safe="")
+    safe_project = urllib.parse.quote(project, safe="")
+    safe_repo = urllib.parse.quote(data["name"], safe="")
+    clone_url = f"https://{access_token}@dev.azure.com/{safe_org}/{safe_project}/_git/{safe_repo}"
 
     return clone_url, full_name
 

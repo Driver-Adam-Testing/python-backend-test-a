@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
-from shared.inspector.utils.models import ChatOpenAI
+from shared.agent.chat_openai import ChatOpenAI
 from shared.inspector.utils.treesitter_drivers.java_driver import JavaDriverTree
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
@@ -588,7 +588,9 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
             for ts_symbol in driver_tree.extract_interface_definitions():
                 if ts_symbol.name is not None:
                     # Create a minimal ReifiedSymbol for consistency
-                    from utils.lang_specialization.symbol_common import ReifiedSymbol
+                    from shared.inspector.utils.lang_specialization.symbol_common import (
+                        ReifiedSymbol,
+                    )
 
                     reified = ReifiedSymbol(
                         raw=ts_symbol,

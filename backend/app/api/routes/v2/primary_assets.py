@@ -1,4 +1,6 @@
 import hashlib
+import json
+from datetime import datetime, timezone
 from logging import getLogger
 from typing import Any
 from uuid import UUID
@@ -13,11 +15,16 @@ from database.models import (
     PrimaryAsset,
     PrimaryAssetTag,
     Version,
+    VersionNode,
 )
 from database.models_enums import (
     ContentKind,
 )
 from fastapi import Body, HTTPException, Path, Request
+from shared.analytics_cleanup import (
+    delete_analytics_folder,
+    update_org_files_after_deletion,
+)
 from shared.authorization.query_filters import (
     asset_visibility_expr,
     effective_asset_role_expr,
@@ -26,7 +33,7 @@ from shared.authorization.query_filters import (
     primary_asset_grant_filter,
 )
 from sqlalchemy.orm import selectinload, with_loader_criteria
-from sqlmodel import func, select
+from sqlmodel import delete, func, select
 
 from app.api.auth import UserToken
 from app.api.routes.v2.query_utils import (
@@ -136,23 +143,25 @@ def _list_assets_with_filter(
         .options(
             selectinload(PrimaryAsset.most_recent_version),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
-                Version.root_node
+                Version.root_version_node
             ),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.creator
             ),
             selectinload(PrimaryAsset.most_recent_version)
-            .selectinload(Version.root_node)
+            .selectinload(Version.root_version_node)
+            .selectinload(VersionNode.node)
             .selectinload(Node.contents),
             selectinload(PrimaryAsset.most_recent_completed_version),
             selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
-                Version.root_node
+                Version.root_version_node
             ),
             selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
                 Version.creator
             ),
             selectinload(PrimaryAsset.most_recent_completed_version)
-            .selectinload(Version.root_node)
+            .selectinload(Version.root_version_node)
+            .selectinload(VersionNode.node)
             .selectinload(Node.contents),
             selectinload(PrimaryAsset.tags),
             with_loader_criteria(
@@ -185,24 +194,25 @@ def _list_assets_with_filter(
         """
         source_primary_asset_ids = document_source_ids.split(",")
 
-        # Need to use aliases to join through both page_node and source_node
+        # Need to use aliases only for source joins to avoid ambiguity
         from sqlalchemy import alias
 
-        SourceNode = alias(Node, name="source_node")
+        SourceVersionNode = alias(VersionNode, name="source_version_node")
         SourceVersion = alias(Version, name="source_version")
 
         query = query.where(
             select(DocumentSource)
-            .join(DocumentSource.page_node)  # Join to the page's node
-            .join(Node.version)  # Join to the page's version
+            .join(DocumentSource.page_version_node)
+            .join(VersionNode.version)
             .where(
                 Version.primary_asset_id == PrimaryAsset.id
             )  # Link to outer query PrimaryAsset (the page)
             .join(
-                SourceNode, DocumentSource.source_node_id == SourceNode.c.id
-            )  # Join to source node
+                SourceVersionNode,
+                DocumentSource.source_version_node_id == SourceVersionNode.c.id,
+            )  # Join to source version node
             .join(
-                SourceVersion, SourceNode.c.version_id == SourceVersion.c.id
+                SourceVersion, SourceVersionNode.c.version_id == SourceVersion.c.id
             )  # Join to source version
             .where(
                 SourceVersion.c.primary_asset_id.in_(source_primary_asset_ids)
@@ -213,13 +223,21 @@ def _list_assets_with_filter(
     count_query = select(func.count()).select_from(query.subquery())
     total_count = session.exec(count_query).one()
     # TODO: This is a hack to sort by total_files. We should use the query utils instead, but It's very problematic.
-    if pagination.sort_by == "most_recent_version.root_node.total_files":
+    if pagination.sort_by == "most_recent_version.root_version_node.total_files":
         results = session.exec(query).all()
         results = sorted(
             results,
             key=lambda row: (
-                row[0].most_recent_version.root_node.total_files
-                if row[0].most_recent_version.root_node
+                next(
+                    (
+                        vn.total_files
+                        for vn in row[0].most_recent_version.version_nodes
+                        if vn.depth == 0 and vn.total_files
+                    ),
+                    0,
+                )
+                if row[0].most_recent_version
+                and row[0].most_recent_version.version_nodes
                 else 0
             ),
             reverse=(pagination.sort_direction == "DESC"),
@@ -318,8 +336,12 @@ def delete_primary_asset(
 
     s3 = boto3.resource(
         "s3",
-        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID
+        if not settings.IS_PRIVATE_DEPLOY
+        else None,
+        aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY
+        if not settings.IS_PRIVATE_DEPLOY
+        else None,
         region_name=settings.AWS_REGION,
     )
 
@@ -340,7 +362,18 @@ def delete_primary_asset(
         inspector_bucket.objects.filter(Prefix=str(run_id)).delete()
         # TODO: instead of storing run data in a separate bucket, place in the org bucket under the primary asset
 
+    # Analytics cleanup - delete analytics folder and update org files
+    delete_analytics_folder(s3, org_id_hash, str(primary_asset_id))
+    update_org_files_after_deletion(
+        s3_client=s3.meta.client,
+        bucket_name=org_id_hash,
+        organization_id=user.organization_id,
+        deleted_codebase_id=str(primary_asset_id),
+    )
+
     session.delete(asset)
+    session.flush()
+    session.exec(delete(Node).where(Node.primary_asset_id.is_(None)))
     session.commit()
 
     return asset

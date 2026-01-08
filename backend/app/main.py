@@ -16,6 +16,8 @@ from logging import Formatter, LogRecord
 from typing import TYPE_CHECKING
 
 import sentry_sdk
+import truststore
+import truststore._api as tapi
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -31,7 +33,15 @@ if TYPE_CHECKING:
     from fastapi.routing import APIRoute
 
 logger = logging.getLogger(__name__)
+truststore.inject_into_ssl()
 
+# Patch botocore to use truststore's SSLContext (see https://github.com/sethmlarson/truststore/pull/180)
+try:
+    import botocore.httpsession
+
+    botocore.httpsession.SSLContext = tapi.SSLContext
+except ImportError:
+    pass
 
 # ---------------------------------------------------------------------------
 #  Logging & Sentry
@@ -61,11 +71,11 @@ def _configure_logging() -> None:
     logging.info("Log Level set to %s", log_level)
 
 
-def _configure_sentry(env: str, dsn: str) -> None:
-    if env == "local":
+def _configure_sentry(env: str, is_private_deploy: bool, dsn: str) -> None:
+    if is_private_deploy or env == "local":
         return
 
-    sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1}.get(env, 0.1)
+    sample_rate = {"development": 1.0, "staging": 0.0, "production": 0.1}.get(env, 0.1)
 
     sentry_sdk.init(
         dsn=dsn,
@@ -77,7 +87,7 @@ def _configure_sentry(env: str, dsn: str) -> None:
 
 
 _configure_logging()
-_configure_sentry(settings.ENVIRONMENT, settings.SENTRY_DSN)
+_configure_sentry(settings.ENVIRONMENT, settings.IS_PRIVATE_DEPLOY, settings.SENTRY_DSN)
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +100,6 @@ def _unique_id(route: APIRoute) -> str:  # pragma: no cover - deterministic IDs
     return f"{route.tags[0]}-{route.name}"
 
 
-# we should probably be documenting the api router, not the studio router
 mcp_app = my_mcp.http_app(path="/v1")
 
 app = FastAPI(
@@ -99,6 +108,27 @@ app = FastAPI(
     generate_unique_id_function=_unique_id,
     lifespan=mcp_app.lifespan,
 )
+
+# MCP Server Setup
+
+# OAuth Discovery Route Mounting
+# Implementation based on: https://fastmcp.wiki/en/deployment/http#mounting-authenticated-servers
+# Per OAuth 2.1 spec, oauth discovery endpoints MUST be at root level (/.well-known/...)
+# even though the MCP app is mounted at /mcp.
+# When client connects to /mcp/v1:
+# 1. Gets 401 with resource_metadata pointing to /.well-known/oauth-protected-resource/mcp/v1
+# 2. That metadata points to authorization server at /.well-known/oauth-authorization-server
+# 3. Client discovers OAuth endpoints and completes auth flow
+# 4. Client retries /mcp/v1 with valid bearer token
+well_known_routes = my_mcp.auth.get_well_known_routes(mcp_path="/v1")
+for route in well_known_routes:
+    app.routes.insert(0, route)
+
+# Mount MCP app at /mcp
+# Client URL: https://your-domain.com/mcp/v1
+# - OAuth discovery: /.well-known/oauth-authorization-server (mounted above at root)
+# - OAuth callbacks: /mcp/auth/callback
+# - MCP protocol: /mcp/v1/*
 app.mount("/mcp", mcp_app)
 
 # CORS ----------------------------------------------------------------------

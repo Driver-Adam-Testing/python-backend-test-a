@@ -27,7 +27,7 @@ class OpenFileTool(ToolStrict):
                 stmt = (
                     select(ChunkAndEmbedding)
                     .join(DerivedContent)
-                    .where(DerivedContent.node_id == datascope.node_ids[0])
+                    .where(DerivedContent.node_id == datascope.version_node_ids[0])
                     .options(selectinload(ChunkAndEmbedding.content))
                     .order_by(ChunkAndEmbedding.chunk_number)
                 )
@@ -70,10 +70,10 @@ class OpenFileTool(ToolStrict):
             search_result = SearchResult(
                 content=full_text,
                 score=1.0,
-                relative_path=datascope.nodes[0].node.relative_path,
+                relative_path=datascope.nodes[0].version_node.relative_path,
                 version_display_name=version_display_name,
-                node_id=datascope.nodes[0].node.id,
-                version_id=datascope.nodes[0].node.version_id,
+                version_node_id=datascope.nodes[0].version_node.id,
+                version_id=datascope.nodes[0].version_node.version_id,
                 metadata={},
             )
             agent.add_search_results(SearchResults(results=[search_result]))

@@ -1,0 +1,161 @@
+{
+  "scimgateway": {
+    "port": 8890,
+    "localhostonly": false,
+    "chainingBaseUrl": null,
+    "scim": {
+      "version": "2.0",
+      "skipTypeConvert": false,
+      "skipMetaLocation": false,
+      "groupMemberOfUser": false,
+      "usePutSoftSync": false
+    },
+    "log": {
+      "loglevel": {
+        "file": "debug",
+        "console": "error"
+      },
+      "customMasking": null
+    },
+    "auth": {
+      "basic": [
+        {
+          "username": "gwadmin",
+          "password": "password",
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "bearerToken": [
+        {
+          "token": null,
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "bearerJwt": [
+        {
+          "secret": null,
+          "publicKey": null,
+          "wellKnownUri": null,
+          "azureTenantId": null,
+          "options": {
+            "issuer": null
+          },
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "bearerOAuth": [
+        {
+          "clientId": null,
+          "clientSecret": null,
+          "readOnly": false,
+          "baseEntities": []
+        }
+      ],
+      "passThrough": {
+        "enabled": false,
+        "readOnly": false,
+        "baseEntities": []
+      }
+    },
+    "certificate": {
+      "key": null,
+      "cert": null,
+      "ca": null,
+      "pfx": {
+        "bundle": null,
+        "password": null
+      }
+    },
+    "ipAllowList": [],
+    "email": {
+      "auth": {
+        "type": "oauth",
+        "options": {
+          "azureTenantId": null,
+          "clientId": null,
+          "clientSecret": null
+        }
+      },
+      "emailOnError": {
+        "enabled": false,
+        "from": null,
+        "to": null
+      }
+    },
+    "azureRelay": {
+      "enabled": false,
+      "connectionUrl": null,
+      "apiKey": null
+    },
+    "stream": {
+      "baseUrls": [],
+      "certificate": {
+        "ca": null
+      },
+      "subscriber": {
+        "enabled": false,
+        "entity": {
+          "undefined": {
+            "nats": {
+              "tenant": null,
+              "subject": null,
+              "jwt": null,
+              "secret": null
+            },
+            "deleteUserOnLastGroupRoleRemoval": false,
+            "skipConvertRolesToGroups": false,
+            "generateUserPassword": false,
+            "modifyOnly": false,
+            "replaceDomains": []
+          }
+        }
+      },
+      "publisher": {
+        "enabled": false,
+        "entity": {
+          "undefined": {
+            "nats": {
+              "tenant": null,
+              "subject": null,
+              "jwt": null,
+              "secret": null
+            }
+          }
+        }
+      }
+    }
+  },
+  "endpoint": {
+    "entity": {
+      "undefined": {
+        "connection": {
+          "baseUrls": [
+            "https://dummyjson.com"
+          ],
+          "auth": {
+            "type": "token",
+            "options": {
+              "tokenUrl": "https://dummyjson.com/auth/login",
+              "username": "emilys",
+              "password": "emilyspass"
+            }
+          },
+          "options": {
+            "tls": {
+              "rejectUnauthorized": false,
+              "ca": null
+            }
+          },
+          "proxy": {
+            "host": null,
+            "username": null,
+            "password": null
+          }
+        }
+      }
+    }
+  }
+}

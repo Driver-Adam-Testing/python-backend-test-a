@@ -57,7 +57,7 @@ def load_extension_and_name_mapping() -> dict:
 
     import yaml
 
-    with open("/linguist/languages.yml") as f:
+    with open("/packages/shared/shared/inspector/onboarding/languages.yml") as f:
         language_dict = yaml.safe_load(f)
     extension_map = defaultdict(list)
     name_map = defaultdict(list)
@@ -800,7 +800,5 @@ def calculate_directory_stats(
                 else f"{directory_path}/"
             )
             results.append((final_stats, relative_path))
-        else:
-            results.append((None, None))
 
     return results

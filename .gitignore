@@ -5,6 +5,7 @@
 .env.dev
 .env.prod
 .env.local
+setEnv.sh
 python-backend.code-workspace
 backend/scripts/tests3.py
 copy_records.py
@@ -35,7 +36,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/

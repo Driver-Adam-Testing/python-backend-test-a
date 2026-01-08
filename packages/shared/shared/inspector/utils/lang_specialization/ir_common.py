@@ -9,6 +9,7 @@ from typing import Self
 
 import openai
 from pydantic import BaseModel, PrivateAttr
+from shared.agent.chat_openai import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.lang_specialization.symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
@@ -16,7 +17,6 @@ from shared.inspector.utils.lang_specialization.symbol_common import (
     ScopeRelation,
     SymbolKind,
 )
-from shared.inspector.utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.inspector.utils.symbol_table.utils import (
     get_fully_qualified_name,
     is_data_structure,
@@ -416,11 +416,6 @@ class IrData(BaseModel, abc.ABC):
         if len(symbol.children) > 0:
             workers = compute_num_workers(len(symbol.children))
             futures = {}
-            llm_to_use = (
-                llm
-                if workers == 1
-                else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=500)
-            )
 
             with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
                 for idx, child_symbol in enumerate(symbol.children):
@@ -429,9 +424,7 @@ class IrData(BaseModel, abc.ABC):
                         cls_instance._children.append((child_symbol, None))
                     else:
                         futures[
-                            executor.submit(
-                                child_ir_cls.from_llm, llm_to_use, child_symbol
-                            )
+                            executor.submit(child_ir_cls.from_llm, llm, child_symbol)
                         ] = [idx, child_symbol]
                 results = []
                 for idx, future in enumerate(
@@ -496,7 +489,7 @@ class IrData(BaseModel, abc.ABC):
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
                 callables_label = (
                     "Functions Called"
-                    if sym.raw.file_path.suffix != ".cs"
+                    if sym.raw.file_path.suffix not in [".cs", ".rb"]
                     else "Methods Called"
                 )
                 output += f"- **{callables_label}**:\n"
@@ -547,19 +540,21 @@ class IrData(BaseModel, abc.ABC):
                     not in [".java", ".ts", ".js", ".tsx", ".jsx"]
                     else "Extends/Implements"
                 )
+                callable_children = [
+                    child
+                    for child in sym.children
+                    if child.raw.symbol_kind == SymbolKind.CALLABLE
+                ]
                 if (
-                    len(sym.children) > 0
+                    len(callable_children) > 0
                     and sym.raw.symbol_kind != SymbolKind.INTERFACE
                 ):
                     output += f"- **{member_label}**:\n"
-                    for child_symbol in sym.children:
-                        if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
-                            fqn = get_fully_qualified_name(child_symbol.raw)
-                            kind_part = child_symbol.raw.symbol_kind.name.lower()
-                            path_part = child_symbol.raw.file_path
-                            output += (
-                                f"    - [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)\n"
-                            )
+                    for child_symbol in callable_children:
+                        fqn = get_fully_qualified_name(child_symbol.raw)
+                        kind_part = child_symbol.raw.symbol_kind.name.lower()
+                        path_part = child_symbol.raw.file_path
+                        output += f"    - [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)\n"
                 if sym.inherits_from is not None and len(sym.inherits_from) > 0:
                     output += f"- **{inherit_label}**:\n"
                     for inherited_class in sym.inherits_from:
@@ -646,11 +641,6 @@ class IrCollection(BaseModel, abc.ABC):
         futures = {}
         workers = compute_num_workers(len(symbols_list.data))
         print("Num workers: ", workers)
-        llm_to_use = (
-            llm
-            if workers == 1
-            else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=500)
-        )
 
         with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
             for _, s in symbols_list.data.items():
@@ -660,12 +650,12 @@ class IrCollection(BaseModel, abc.ABC):
                             symbols_dict[raw_sym_data.name] = []
                             # can reattach raw symbol info to use downstream when rendering MD.
                         futures[
-                            executor.submit(ir_data.from_llm, llm_to_use, raw_sym_data)
+                            executor.submit(ir_data.from_llm, llm, raw_sym_data)
                         ] = raw_sym_data.name
                 elif isinstance(s, RawSymbolData):
                     if s.name not in symbols_dict:
                         symbols_dict[s.name] = []
-                    futures[executor.submit(ir_data.from_llm, llm_to_use, s)] = s.name
+                    futures[executor.submit(ir_data.from_llm, llm, s)] = s.name
                 else:
                     raise ValueError("Unsupported type in RawSymbolCollection")
 

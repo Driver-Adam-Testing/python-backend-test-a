@@ -26,11 +26,24 @@ class HatchetWorkerParams:
         aws_region: str,
         aws_account: str,
         metrics_bus: aws_events.EventBus,
+        is_private_deploy: bool,
+        dropzone_bucket: aws_s3.Bucket,
+        cpu_size: int,
+        mem_size: int,
+        min_instance: int,
+        workflow_set_name: str,
     ) -> None:
         self.environment = environment
         self.aws_region = aws_region
         self.aws_account = aws_account
         self.metrics_bus = metrics_bus
+        self.is_private_deploy = is_private_deploy
+        self.dropzone_bucket = dropzone_bucket
+        self.cpu_size = cpu_size
+        self.mem_size = mem_size
+        self.min_instance = min_instance
+        self.workflow_set_name = workflow_set_name
+    
 
 
 class HatchetWorker(Construct):
@@ -63,8 +76,15 @@ class HatchetWorker(Construct):
             hosted_zone_id=hosted_zone_id,
         )
 
-        openai_url = aws_ssm.StringParameter.value_from_lookup(
-            scope, parameter_name="/baseline/infra/v2/azure/openai/url", default_value="https://api.openai.com/v1"
+        openai_url = None
+        if params.is_private_deploy:
+            openai_url = aws_ssm.StringParameter.value_from_lookup(
+                scope,
+                parameter_name="/baseline/infra/v2/azure/openai/url"
+            )
+
+        inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
         )
 
         base_env = {
@@ -72,9 +92,19 @@ class HatchetWorker(Construct):
             "ENVIRONMENT": params.environment,
             "AWS_REGION": params.aws_region,
             "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "OPENAI_URL": openai_url,
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077"
+            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077",
+            "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
+            "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
+            "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
+            "HATCHET_CLIENT_GRPC_MAX_SEND_MESSAGE_LENGTH": "100000000",
+            "WORKFLOW_SET_NAME": params.workflow_set_name
         }
+
+        if params.is_private_deploy:
+            base_env["IS_PRIVATE_DEPLOY"] = "true"
+
+        if openai_url is not None:
+            base_env["AZURE_OPENAI_BASE_URL"] = openai_url
 
         deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
@@ -96,8 +126,8 @@ class HatchetWorker(Construct):
         worker_task_def = aws_ecs.FargateTaskDefinition(
             self,
             "HatchetWorkerTaskDef",
-            cpu=2048,
-            memory_limit_mib=4096,
+            cpu=params.cpu_size,
+            memory_limit_mib=params.mem_size,
             runtime_platform=aws_ecs.RuntimePlatform(
                 cpu_architecture=aws_ecs.CpuArchitecture.X86_64
             ),
@@ -150,10 +180,10 @@ class HatchetWorker(Construct):
             "HatchetWorkerSvc",
             cluster=cluster,
             task_definition=worker_task_def,
-            desired_count=2,  # Run 2 copies
+            desired_count=params.min_instance,
             assign_public_ip=False,
             vpc_subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+                subnet_group_name="Private"
             ),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),
             min_healthy_percent=100,
@@ -162,13 +192,19 @@ class HatchetWorker(Construct):
 
         # --- CPU-based autoscaling ---
         scalable = self.worker_service.auto_scale_task_count(
-            min_capacity=2,  # keep at least 2 running
+            min_capacity=params.min_instance,  # keep at least 2 running
             max_capacity=10,  # adjust as needed
         )
         scalable.scale_on_cpu_utilization(
             "CpuScaling",
             target_utilization_percent=50,  # aim to keep avg CPU around 50%
-            scale_in_cooldown=Duration.seconds(120),
+            scale_in_cooldown=Duration.seconds(300),
+            scale_out_cooldown=Duration.seconds(60),
+        )
+        scalable.scale_on_memory_utilization(
+            "MemoryScaling",
+            target_utilization_percent=70,  # scale when memory hits ~70%
+            scale_in_cooldown=Duration.seconds(300),
             scale_out_cooldown=Duration.seconds(60),
         )
 
@@ -178,10 +214,19 @@ class HatchetWorker(Construct):
         # Allow the worker to emit metrics/events
         params.metrics_bus.grant_all_put_events(worker_task_def.task_role)
 
-        # Outputs
-        CfnOutput(
-            self,
-            "WorkerServiceArn",
-            export_name="WorkerServiceArn",
-            value=self.worker_service.service_arn,
+        # Grant full S3 admin access. TODO: Scope this down?
+        worker_task_def.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
+        worker_task_def.task_role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
+        )
+        # Add explicit perms for dropzone bucket in the event we scope down S3 full access
+        params.dropzone_bucket.grant_read_write(worker_task_def.task_role)
+
+        if settings.IS_PRIVATE_DEPLOY == "true":
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.worker_service.task_definition.task_role)
+

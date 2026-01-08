@@ -14,21 +14,24 @@ Coordinates all phases of the analytics pipeline:
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-import pygit2
-from pydantic import BaseModel
 
-from analytics.storage.hot_storage import HotStorage
-from analytics.storage.parquet_storage import ParquetStorage
+import pygit2
 from analytics.aggregation.engine import AggregationEngine
 from analytics.export.exporter import DriverJSONExporter
-
+from analytics.storage.hot_storage import HotStorage
+from analytics.storage.parquet_storage import ParquetStorage
+from pydantic import BaseModel
 from shared.file_storage.aws_s3_client import AWSS3Client, org_id_to_hash
 
-from .phases.clone import clone_repository, open_repository, cleanup_repository, CloneResult
-from .phases.extract import extract_commits, ExtractResult
-from .phases.branches import discover_branches, BranchesResult
+from .phases.branches import BranchesResult, discover_branches
+from .phases.clone import (
+    CloneResult,
+    cleanup_repository,
+    clone_repository,
+)
+from .phases.extract import ExtractResult, extract_commits
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +40,11 @@ logger = logging.getLogger(__name__)
 # Branch Lifecycle Types and Functions
 # ============================================================================
 
+
 @dataclass
 class BranchDiffResult:
     """Result of branch diff detection between runs."""
+
     new_branches: set[str]
     deleted_branches: set[str]
 
@@ -50,11 +55,11 @@ def _detect_branch_changes(
 ) -> BranchDiffResult:
     """
     Detect branch changes between the current and previous runs.
-    
+
     Args:
         current_branches: Set of branch names currently in the repository
         previous_branches: Set of branch names from previous run (branches.json)
-        
+
     Returns:
         BranchDiffResult with new and deleted branch sets
     """
@@ -71,15 +76,15 @@ def _was_merged(
 ) -> bool:
     """
     Check if a deleted branch's commits were merged into the default branch.
-    
+
     A branch is considered merged if its last commit is reachable from
     the default branch (i.e., it's an ancestor of the default branch HEAD).
-    
+
     Args:
         repo: pygit2.Repository instance (or None for testing)
         branch_last_sha: SHA of the branch's last commit before deletion
         default_branch: Name of the default branch
-        
+
     Returns:
         True if the branch was merged, False otherwise
     """
@@ -121,19 +126,19 @@ def _build_deleted_branch_entry(
 ) -> dict:
     """
     Build a branch entry for a deleted branch.
-    
+
     Preserves all historical metrics from the branch's last known state,
     which allows users to see what the branch contributed before deletion.
-    
+
     Args:
         branch_name: Name of the deleted branch
         previous_branch_data: Branch data from previous branches.json
         is_merged: Whether the branch was merged into default
-        
+
     Returns:
         Dictionary with branch entry for the deleted branch
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return {
         "name": branch_name,
@@ -171,6 +176,7 @@ def _build_deleted_branch_entry(
 
 class PipelineConfig(BaseModel):
     """Configuration for analytics pipeline."""
+
     work_dir: Path = Path("/tmp/analytics")
     cleanup_on_complete: bool = True
     default_branch_only: bool = False
@@ -180,6 +186,7 @@ class PipelineConfig(BaseModel):
 
 class PipelineInput(BaseModel):
     """Input for analytics pipeline."""
+
     codebase_id: str
     organization_id: str
     clone_url: str
@@ -191,6 +198,7 @@ class PipelineInput(BaseModel):
 
 class PipelineOutput(BaseModel):
     """Output from analytics pipeline."""
+
     success: bool
     codebase_id: str
     total_commits: int = 0
@@ -204,6 +212,7 @@ class PipelineOutput(BaseModel):
 @dataclass
 class PipelineContext:
     """Internal context for pipeline execution."""
+
     config: PipelineConfig
     input: PipelineInput
 
@@ -229,7 +238,7 @@ class PipelineContext:
     previous_branches_data: dict | None = None  # Previous branches.json content
 
     # Timing
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class AnalyticsPipeline:
@@ -250,7 +259,7 @@ class AnalyticsPipeline:
         ... ))
     """
 
-    def __init__(self, config: PipelineConfig):
+    def __init__(self, config: PipelineConfig) -> None:
         self.config = config
         self.config.work_dir.mkdir(parents=True, exist_ok=True)
 
@@ -265,7 +274,9 @@ class AnalyticsPipeline:
             PipelineOutput with results
         """
         mode = "incremental" if input.incremental else "full"
-        logger.info(f"Starting analytics pipeline for {input.codebase_id} (mode={mode})")
+        logger.info(
+            f"Starting analytics pipeline for {input.codebase_id} (mode={mode})"
+        )
 
         ctx = PipelineContext(config=self.config, input=input)
 
@@ -276,11 +287,17 @@ class AnalyticsPipeline:
             # For incremental mode, get checkpoint before extraction
             if input.incremental:
                 bucket = org_id_to_hash(input.organization_id)
-                ctx.since_sha = self._get_since_sha_from_checkpoint(bucket, input.codebase_id)
+                ctx.since_sha = self._get_since_sha_from_checkpoint(
+                    bucket, input.codebase_id
+                )
                 if ctx.since_sha:
-                    logger.info(f"Incremental mode: extracting commits since {ctx.since_sha[:8]}")
+                    logger.info(
+                        f"Incremental mode: extracting commits since {ctx.since_sha[:8]}"
+                    )
                 else:
-                    logger.info("Incremental mode: no checkpoint, will process all commits")
+                    logger.info(
+                        "Incremental mode: no checkpoint, will process all commits"
+                    )
 
             # Phase 1: Clone
             self._phase_clone(ctx)
@@ -289,7 +306,9 @@ class AnalyticsPipeline:
             self._phase_extract(ctx)
 
             # Check if we have any commits to process
-            extracted_commits = ctx.extract_result.total_commits if ctx.extract_result else 0
+            extracted_commits = (
+                ctx.extract_result.total_commits if ctx.extract_result else 0
+            )
 
             # Phase 3: Discover branches (needed for branch lifecycle detection)
             self._phase_branches(ctx)
@@ -300,17 +319,25 @@ class AnalyticsPipeline:
             self._phase_branch_diff(ctx)
 
             # If incremental mode extracted 0 commits AND no branch changes, we're done
-            if input.incremental and extracted_commits == 0 and not ctx.deleted_branches:
-                duration = (datetime.now(timezone.utc) - ctx.start_time).total_seconds()
-                logger.info(f"Incremental pipeline: no new commits or branch changes for {input.codebase_id}")
+            if (
+                input.incremental
+                and extracted_commits == 0
+                and not ctx.deleted_branches
+            ):
+                duration = (datetime.now(UTC) - ctx.start_time).total_seconds()
+                logger.info(
+                    f"Incremental pipeline: no new commits or branch changes for {input.codebase_id}"
+                )
                 return PipelineOutput(
                     success=True,
                     codebase_id=input.codebase_id,
                     total_commits=0,
-                    total_branches=len(ctx.branches_result.branches) if ctx.branches_result else 0,
+                    total_branches=len(ctx.branches_result.branches)
+                    if ctx.branches_result
+                    else 0,
                     total_contributors=0,
                     json_files=[],
-                    duration_seconds=duration
+                    duration_seconds=duration,
                 )
 
             # Phase 4: Store in warm/cold storage
@@ -329,7 +356,7 @@ class AnalyticsPipeline:
             self._phase_update_org_files(ctx)
 
             # Calculate duration
-            duration = (datetime.now(timezone.utc) - ctx.start_time).total_seconds()
+            duration = (datetime.now(UTC) - ctx.start_time).total_seconds()
 
             logger.info(f"Pipeline completed successfully for {input.codebase_id}")
 
@@ -337,21 +364,23 @@ class AnalyticsPipeline:
                 success=True,
                 codebase_id=input.codebase_id,
                 total_commits=extracted_commits,
-                total_branches=len(ctx.branches_result.branches) if ctx.branches_result else 0,
+                total_branches=len(ctx.branches_result.branches)
+                if ctx.branches_result
+                else 0,
                 total_contributors=self._count_contributors(ctx),
                 json_files=[str(f) for f in json_files],
-                duration_seconds=duration
+                duration_seconds=duration,
             )
 
         except Exception as e:
             logger.error(f"Pipeline failed for {input.codebase_id}: {e}")
-            duration = (datetime.now(timezone.utc) - ctx.start_time).total_seconds()
+            duration = (datetime.now(UTC) - ctx.start_time).total_seconds()
 
             return PipelineOutput(
                 success=False,
                 codebase_id=input.codebase_id,
                 error=str(e),
-                duration_seconds=duration
+                duration_seconds=duration,
             )
 
         finally:
@@ -389,7 +418,7 @@ class AnalyticsPipeline:
             clone_url=ctx.input.clone_url,
             target_path=repo_path,
             auth_token=ctx.input.auth_token,
-            clean_existing=True
+            clean_existing=True,
         )
 
         if not result.success:
@@ -412,7 +441,9 @@ class AnalyticsPipeline:
         branch_names = None  # All branches
         if ctx.config.default_branch_only:
             # Just extract default branch
-            branch_names = [ctx.repo.head.shorthand] if not ctx.repo.head_is_unborn else ["main"]
+            branch_names = (
+                [ctx.repo.head.shorthand] if not ctx.repo.head_is_unborn else ["main"]
+            )
 
         result = extract_commits(
             repo=ctx.repo,
@@ -425,7 +456,7 @@ class AnalyticsPipeline:
 
         if not result.success:
             raise RuntimeError(f"Extract failed: {result.error}")
-        
+
         # Store file changes in cold storage if available
         if result.file_changes and ctx.cold_storage:
             ctx.cold_storage.write_file_changes(
@@ -433,12 +464,16 @@ class AnalyticsPipeline:
                 file_changes=result.file_changes,
                 partition_by_date=True,
             )
-            logger.info(f"Stored {len(result.file_changes)} file changes in cold storage")
+            logger.info(
+                f"Stored {len(result.file_changes)} file changes in cold storage"
+            )
 
         ctx.extract_result = result
 
         mode_info = f" (since {ctx.since_sha[:8]})" if ctx.since_sha else ""
-        logger.info(f"Extracted {result.total_commits} unique commits ({len(result.commits)} records){mode_info}")
+        logger.info(
+            f"Extracted {result.total_commits} unique commits ({len(result.commits)} records){mode_info}"
+        )
 
     def _phase_branches(self, ctx: PipelineContext) -> None:
         """Phase 3: Discover branches."""
@@ -448,8 +483,7 @@ class AnalyticsPipeline:
             raise RuntimeError("No repository available for branch discovery")
 
         result = discover_branches(
-            repo=ctx.repo,
-            default_branch_only=ctx.config.default_branch_only
+            repo=ctx.repo, default_branch_only=ctx.config.default_branch_only
         )
 
         if not result.success:
@@ -457,7 +491,9 @@ class AnalyticsPipeline:
 
         ctx.branches_result = result
 
-        logger.info(f"Discovered {len(result.branches)} branches (default: {result.default_branch})")
+        logger.info(
+            f"Discovered {len(result.branches)} branches (default: {result.default_branch})"
+        )
 
     def _phase_store(self, ctx: PipelineContext) -> None:
         """Phase 4: Store data in warm/cold storage."""
@@ -472,7 +508,9 @@ class AnalyticsPipeline:
             if ctx.input.incremental and ctx.since_sha:
                 # Incremental mode: append to existing
                 ctx.warm_storage.append_commits(ctx.input.codebase_id, commits)
-                logger.info(f"Appended {len(commits)} new commit records to warm storage")
+                logger.info(
+                    f"Appended {len(commits)} new commit records to warm storage"
+                )
             else:
                 # Full mode: overwrite
                 ctx.warm_storage.write_commits(ctx.input.codebase_id, commits)
@@ -495,14 +533,14 @@ class AnalyticsPipeline:
         default_branch = None
         if ctx.branches_result and ctx.branches_result.default_branch:
             default_branch = ctx.branches_result.default_branch
-        
+
         # Build all aggregates with repository metadata
         engine.build_all_aggregates(
             ctx.input.codebase_id,
             force_rebuild=True,
             repo_owner=ctx.input.repo_owner,
             repo_name=ctx.input.repo_name,
-            default_branch=default_branch
+            default_branch=default_branch,
         )
 
         # Refresh branch metrics
@@ -529,7 +567,9 @@ class AnalyticsPipeline:
         )
 
         # Get checkpoint data from extraction results
-        last_commit_sha, last_commit_date, total_commits = self._get_checkpoint_data(ctx)
+        last_commit_sha, last_commit_date, total_commits = self._get_checkpoint_data(
+            ctx
+        )
 
         json_files = exporter.export_all(
             last_commit_sha=last_commit_sha,
@@ -567,7 +607,7 @@ class AnalyticsPipeline:
                     bucket=bucket,
                     upload_key=upload_key,
                     metadata={"codebase_id": ctx.input.codebase_id},
-                    content_type="application/json"
+                    content_type="application/json",
                 )
                 uploaded += 1
                 logger.info(f"Uploaded {json_file.name} to s3://{bucket}/{upload_key}")
@@ -581,9 +621,6 @@ class AnalyticsPipeline:
         """Phase 8: Update organization-level summary files."""
         logger.info("Phase 8: Updating org-level files...")
 
-        import json
-        import tempfile
-
         bucket = org_id_to_hash(ctx.input.organization_id)
         s3_client = AWSS3Client()
 
@@ -595,26 +632,34 @@ class AnalyticsPipeline:
 
         # Build codebase entry for the list
         # Note: Field names match D2 schema cleanup (additions_sloc, deletions_sloc, etc.)
-        additions_sloc = metrics.get('additions_sloc', 0)
-        deletions_sloc = metrics.get('deletions_sloc', 0)
+        additions_sloc = metrics.get("additions_sloc", 0)
+        deletions_sloc = metrics.get("deletions_sloc", 0)
         net_sloc = additions_sloc - deletions_sloc
+        churn_sloc = additions_sloc + deletions_sloc
         # current_sloc comes from tree walk (actual codebase size), fall back to net_sloc
-        current_sloc = metrics.get('current_sloc', net_sloc)
+        current_sloc = metrics.get("current_sloc", net_sloc)
 
         new_codebase_entry = {
             "codebase_id": ctx.input.codebase_id,
-            "display_name": metrics.get('full_name', f"{ctx.input.repo_owner}/{ctx.input.repo_name}"),
-            "full_name": metrics.get('full_name', f"{ctx.input.repo_owner}/{ctx.input.repo_name}"),
+            "display_name": metrics.get(
+                "full_name", f"{ctx.input.repo_owner}/{ctx.input.repo_name}"
+            ),
+            "full_name": metrics.get(
+                "full_name", f"{ctx.input.repo_owner}/{ctx.input.repo_name}"
+            ),
             "owner": ctx.input.repo_owner,
             "repository_name": ctx.input.repo_name,
-            "total_commits": metrics.get('total_commits', 0),
-            "total_contributors": metrics.get('total_contributors', 0),
-            "total_branches": metrics.get('total_branches', 0),
-            "churn_lines": metrics.get('churn_lines', 0),  # Use new field name
+            "total_commits": metrics.get("total_commits", 0),
+            "total_contributors": metrics.get("total_contributors", 0),
+            "total_branches": metrics.get("total_branches", 0),
+            "churn_lines": metrics.get("churn_lines", 0),
+            "churn_sloc": churn_sloc,  # additions_sloc + deletions_sloc
             "current_sloc": current_sloc,  # From tree walk (actual codebase size)
             "net_sloc": net_sloc,  # From patches (additions - deletions)
-            "primary_language": metrics.get('primary_language'),
-            "last_commit_date": metrics.get('last_commit_at').isoformat() if metrics.get('last_commit_at') else None,
+            "primary_language": metrics.get("primary_language"),
+            "last_commit_date": metrics.get("last_commit_at").isoformat()
+            if metrics.get("last_commit_at")
+            else None,
             "has_analytics": True,
             "analytics_status": "complete",  # Required by API schema
         }
@@ -623,7 +668,9 @@ class AnalyticsPipeline:
 
         # Update codebases_list.json
         try:
-            self._update_codebases_list(s3_client, bucket, organization_id, new_codebase_entry)
+            self._update_codebases_list(
+                s3_client, bucket, organization_id, new_codebase_entry
+            )
             logger.info("Updated codebases_list.json")
         except Exception as e:
             logger.error(f"Failed to update codebases_list.json: {e}")
@@ -639,7 +686,7 @@ class AnalyticsPipeline:
         self, s3_client: AWSS3Client, bucket: str, organization_id: str, new_entry: dict
     ) -> None:
         """Update codebases_list.json with new codebase entry.
-        
+
         Schema must match what AnalyticsService expects:
         {
             "organization_id": "org-id",
@@ -649,8 +696,9 @@ class AnalyticsPipeline:
         """
         import json
         import tempfile
+        from datetime import datetime
+
         import boto3
-        from datetime import datetime, timezone
 
         key = "analytics/codebases_list.json"
         codebases = []
@@ -659,15 +707,15 @@ class AnalyticsPipeline:
         try:
             s3 = boto3.client("s3")
             response = s3.get_object(Bucket=bucket, Key=key)
-            existing_data = json.loads(response['Body'].read().decode('utf-8'))
-            codebases = existing_data.get('codebases', [])
+            existing_data = json.loads(response["Body"].read().decode("utf-8"))
+            codebases = existing_data.get("codebases", [])
         except Exception as e:
             logger.info(f"No existing codebases_list.json, creating new: {e}")
 
         # Update or add entry
         updated = False
         for i, cb in enumerate(codebases):
-            if cb.get('codebase_id') == new_entry['codebase_id']:
+            if cb.get("codebase_id") == new_entry["codebase_id"]:
                 codebases[i] = new_entry
                 updated = True
                 break
@@ -679,10 +727,10 @@ class AnalyticsPipeline:
         data = {
             "organization_id": organization_id,
             "codebases": codebases,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f, indent=2, default=str)
             temp_path = Path(f.name)
 
@@ -691,14 +739,16 @@ class AnalyticsPipeline:
             bucket=bucket,
             upload_key=key,
             metadata=None,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         temp_path.unlink()
 
-    def _update_org_summary(self, s3_client: AWSS3Client, bucket: str, organization_id: str) -> None:
+    def _update_org_summary(
+        self, s3_client: AWSS3Client, bucket: str, organization_id: str
+    ) -> None:
         """Update org_summary.json with aggregated totals.
-        
+
         Schema must match what AnalyticsService expects:
         {
             "organization_id": "org-id",
@@ -712,8 +762,9 @@ class AnalyticsPipeline:
         """
         import json
         import tempfile
+        from datetime import datetime
+
         import boto3
-        from datetime import datetime, timezone
 
         key = "analytics/org_summary.json"
 
@@ -722,17 +773,17 @@ class AnalyticsPipeline:
         try:
             s3 = boto3.client("s3")
             response = s3.get_object(Bucket=bucket, Key="analytics/codebases_list.json")
-            existing_data = json.loads(response['Body'].read().decode('utf-8'))
-            codebases = existing_data.get('codebases', [])
+            existing_data = json.loads(response["Body"].read().decode("utf-8"))
+            codebases = existing_data.get("codebases", [])
         except Exception as e:
             logger.info(f"Could not read codebases_list.json for summary: {e}")
             return  # Can't compute summary without codebases list
 
         # Aggregate totals
         total_codebases = len(codebases)
-        total_commits = sum(cb.get('total_commits', 0) for cb in codebases)
-        total_contributors = sum(cb.get('total_contributors', 0) for cb in codebases)
-        total_sloc = sum(cb.get('current_sloc', 0) for cb in codebases)
+        total_commits = sum(cb.get("total_commits", 0) for cb in codebases)
+        total_contributors = sum(cb.get("total_contributors", 0) for cb in codebases)
+        total_sloc = sum(cb.get("current_sloc", 0) for cb in codebases)
 
         # Build summary with correct schema (matching AnalyticsService expectations)
         summary = {
@@ -742,10 +793,10 @@ class AnalyticsPipeline:
             "total_commits": total_commits,
             "total_contributors": total_contributors,
             "total_sloc": total_sloc,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(summary, f, indent=2)
             temp_path = Path(f.name)
 
@@ -754,36 +805,40 @@ class AnalyticsPipeline:
             bucket=bucket,
             upload_key=key,
             metadata=None,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         temp_path.unlink()
-        logger.info(f"Org summary updated: {total_codebases} codebases, {total_commits} commits")
+        logger.info(
+            f"Org summary updated: {total_codebases} codebases, {total_commits} commits"
+        )
 
     def _download_branches_json(self, bucket: str, codebase_id: str) -> dict | None:
         """Download existing branches.json from S3 for branch lifecycle tracking.
-        
+
         Args:
             bucket: S3 bucket name
             codebase_id: Codebase UUID
-            
+
         Returns:
             Branches data dict or None if not found
         """
         import boto3
         from botocore.exceptions import ClientError
 
-        s3 = boto3.client('s3')
+        s3 = boto3.client("s3")
         key = f"analytics/{codebase_id}/branches.json"
 
         try:
             response = s3.get_object(Bucket=bucket, Key=key)
-            data = json.loads(response['Body'].read().decode('utf-8'))
-            logger.info(f"Downloaded previous branches.json: {len(data.get('branches', []))} branches")
+            data = json.loads(response["Body"].read().decode("utf-8"))
+            logger.info(
+                f"Downloaded previous branches.json: {len(data.get('branches', []))} branches"
+            )
             return data
         except ClientError as e:
-            error_code = e.response.get('Error', {}).get('Code', '')
-            if error_code in ('NoSuchKey', '404'):
+            error_code = e.response.get("Error", {}).get("Code", "")
+            if error_code in ("NoSuchKey", "404"):
                 logger.info(f"No previous branches.json found for {codebase_id}")
             else:
                 logger.warning(f"Error downloading branches.json: {e}")
@@ -794,13 +849,13 @@ class AnalyticsPipeline:
 
     def _phase_branch_diff(self, ctx: PipelineContext) -> None:
         """Detect branch changes since last run.
-        
+
         Compares current branches from the repo with previous branches.json
         to detect new, deleted, and merged branches.
-        
+
         This runs in ALL modes (not just incremental) to ensure deleted branches
         are properly tracked and don't reappear as "stale" active branches.
-        
+
         Args:
             ctx: Pipeline context
         """
@@ -821,32 +876,44 @@ class AnalyticsPipeline:
         # Get current and previous branch names
         current_names = {b.name for b in ctx.branches_result.branches}
         previous_branches = previous_data.get("branches", [])
-        
-        logger.info(f"Branch lifecycle: current branches in repo: {sorted(current_names)}")
-        logger.info(f"Branch lifecycle: previous branches in S3: {[b.get('name') for b in previous_branches]}")
-        
+
+        logger.info(
+            f"Branch lifecycle: current branches in repo: {sorted(current_names)}"
+        )
+        logger.info(
+            f"Branch lifecycle: previous branches in S3: {[b.get('name') for b in previous_branches]}"
+        )
+
         # Carry forward previously deleted branches (so they stay deleted)
         # Only carry forward if they haven't reappeared in the repo
         for prev_branch in previous_branches:
             branch_name = prev_branch.get("name")
-            if prev_branch.get("is_deleted", False) and branch_name not in current_names:
+            if (
+                prev_branch.get("is_deleted", False)
+                and branch_name not in current_names
+            ):
                 # Branch was deleted before and hasn't reappeared - keep it deleted
                 ctx.deleted_branches.append(prev_branch)
                 logger.info(f"Carrying forward deleted branch: {branch_name}")
-        
+
         # Only consider previously ACTIVE branches when detecting NEW deletions
         # (branches already marked is_deleted=True should not be re-detected)
         previous_active_names = {
-            b.get("name") for b in previous_branches 
+            b.get("name")
+            for b in previous_branches
             if b.get("name") and not b.get("is_deleted", False)
         }
-        
-        logger.info(f"Branch lifecycle: previous ACTIVE branches: {sorted(previous_active_names)}")
+
+        logger.info(
+            f"Branch lifecycle: previous ACTIVE branches: {sorted(previous_active_names)}"
+        )
 
         # Detect changes
         diff = _detect_branch_changes(current_names, previous_active_names)
 
-        logger.info(f"Branch diff: {len(diff.new_branches)} new, {len(diff.deleted_branches)} deleted")
+        logger.info(
+            f"Branch diff: {len(diff.new_branches)} new, {len(diff.deleted_branches)} deleted"
+        )
         if diff.deleted_branches:
             logger.info(f"Newly deleted branches: {sorted(diff.deleted_branches)}")
 
@@ -854,12 +921,13 @@ class AnalyticsPipeline:
         for branch_name in diff.deleted_branches:
             # Find the previous branch data
             prev_branch = next(
-                (b for b in previous_branches if b.get("name") == branch_name),
-                None
+                (b for b in previous_branches if b.get("name") == branch_name), None
             )
 
             if not prev_branch:
-                logger.warning(f"Could not find previous data for deleted branch: {branch_name}")
+                logger.warning(
+                    f"Could not find previous data for deleted branch: {branch_name}"
+                )
                 continue
 
             # Check if the branch was merged into default
@@ -883,29 +951,32 @@ class AnalyticsPipeline:
 
     def _download_checkpoint(self, bucket: str, codebase_id: str) -> dict | None:
         """Download existing metadata.json from S3 for checkpoint.
-        
+
         Args:
             bucket: S3 bucket name
             codebase_id: Codebase UUID
-            
+
         Returns:
             Checkpoint data dict or None if not found
         """
-        import boto3
         import json
+
+        import boto3
         from botocore.exceptions import ClientError
 
-        s3 = boto3.client('s3')
+        s3 = boto3.client("s3")
         key = f"analytics/{codebase_id}/metadata.json"
 
         try:
             response = s3.get_object(Bucket=bucket, Key=key)
-            data = json.loads(response['Body'].read().decode('utf-8'))
-            logger.info(f"Downloaded checkpoint: {data.get('last_processed_commit_sha', 'none')[:8] if data.get('last_processed_commit_sha') else 'none'}")
+            data = json.loads(response["Body"].read().decode("utf-8"))
+            logger.info(
+                f"Downloaded checkpoint: {data.get('last_processed_commit_sha', 'none')[:8] if data.get('last_processed_commit_sha') else 'none'}"
+            )
             return data
         except ClientError as e:
-            error_code = e.response.get('Error', {}).get('Code', '')
-            if error_code in ('NoSuchKey', '404'):
+            error_code = e.response.get("Error", {}).get("Code", "")
+            if error_code in ("NoSuchKey", "404"):
                 logger.info(f"No checkpoint found for {codebase_id}")
             else:
                 logger.warning(f"Error downloading checkpoint: {e}")
@@ -914,27 +985,31 @@ class AnalyticsPipeline:
             logger.warning(f"Unexpected error downloading checkpoint: {e}")
             return None
 
-    def _get_since_sha_from_checkpoint(self, bucket: str, codebase_id: str) -> str | None:
+    def _get_since_sha_from_checkpoint(
+        self, bucket: str, codebase_id: str
+    ) -> str | None:
         """Get the since_sha from checkpoint for incremental extraction.
-        
+
         Args:
             bucket: S3 bucket name
             codebase_id: Codebase UUID
-            
+
         Returns:
             Last processed commit SHA or None
         """
         checkpoint = self._download_checkpoint(bucket, codebase_id)
         if checkpoint:
-            return checkpoint.get('last_processed_commit_sha')
+            return checkpoint.get("last_processed_commit_sha")
         return None
 
-    def _get_checkpoint_data(self, ctx: PipelineContext) -> tuple[str | None, datetime | None, int]:
+    def _get_checkpoint_data(
+        self, ctx: PipelineContext
+    ) -> tuple[str | None, datetime | None, int]:
         """Get checkpoint data from extraction results.
-        
+
         Args:
             ctx: Pipeline context
-            
+
         Returns:
             Tuple of (latest_sha, latest_date, total_commits)
         """
@@ -943,18 +1018,18 @@ class AnalyticsPipeline:
 
         # Find the latest commit by date
         commits = ctx.extract_result.commits
-        latest_commit = max(commits, key=lambda c: c.get('committed_at', datetime.min))
-        
-        latest_sha = latest_commit.get('commit_sha')
-        latest_date = latest_commit.get('committed_at')
-        
+        latest_commit = max(commits, key=lambda c: c.get("committed_at", datetime.min))
+
+        latest_sha = latest_commit.get("commit_sha")
+        latest_date = latest_commit.get("committed_at")
+
         # Get total commits from repository metrics (includes previous + new)
         total_commits = 0
         if ctx.hot_storage:
             metrics = ctx.hot_storage.get_repository_metrics(ctx.input.codebase_id)
             if metrics:
-                total_commits = metrics.get('total_commits', 0)
-        
+                total_commits = metrics.get("total_commits", 0)
+
         # Fallback to extracted count if metrics not available
         if total_commits == 0:
             total_commits = ctx.extract_result.total_commits
@@ -968,8 +1043,8 @@ class AnalyticsPipeline:
 
         emails = set()
         for commit in ctx.extract_result.commits:
-            if commit.get('author_email'):
-                emails.add(commit['author_email'])
+            if commit.get("author_email"):
+                emails.add(commit["author_email"])
 
         return len(emails)
 
@@ -999,7 +1074,7 @@ def run_pipeline(
     repo_name: str,
     organization_id: str = "default",
     work_dir: Path | None = None,
-    auth_token: str | None = None
+    auth_token: str | None = None,
 ) -> PipelineOutput:
     """
     Run analytics pipeline with default configuration.
@@ -1016,18 +1091,17 @@ def run_pipeline(
     Returns:
         PipelineOutput with results
     """
-    config = PipelineConfig(
-        work_dir=work_dir or Path("/tmp/analytics")
-    )
+    config = PipelineConfig(work_dir=work_dir or Path("/tmp/analytics"))
 
     pipeline = AnalyticsPipeline(config)
 
-    return pipeline.run(PipelineInput(
-        codebase_id=codebase_id,
-        organization_id=organization_id,
-        clone_url=clone_url,
-        repo_owner=repo_owner,
-        repo_name=repo_name,
-        auth_token=auth_token
-    ))
-
+    return pipeline.run(
+        PipelineInput(
+            codebase_id=codebase_id,
+            organization_id=organization_id,
+            clone_url=clone_url,
+            repo_owner=repo_owner,
+            repo_name=repo_name,
+            auth_token=auth_token,
+        )
+    )

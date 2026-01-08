@@ -1,13 +1,15 @@
 """Pydantic schemas for Driver JSON export."""
+
 from datetime import datetime
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
 
 
 class OverviewJSON(BaseModel):
     """Schema for overview.json - codebase summary metrics.
-    
+
     All metrics measure ANALYZABLE CODE ONLY (matching inspector criteria).
-    
+
     Naming convention:
     - current_* : Current codebase state from tree walk at HEAD
     - *_lines   : Line-based metrics (from git diff stats)
@@ -15,6 +17,7 @@ class OverviewJSON(BaseModel):
     - net_*     : additions - deletions
     - churn_*   : additions + deletions (total activity)
     """
+
     codebase_id: str
     display_name: str
     repository_name: str
@@ -23,26 +26,26 @@ class OverviewJSON(BaseModel):
     total_commits: int
     total_contributors: int
     total_branches: int
-    
+
     # Current codebase state (from tree walk at HEAD)
-    current_sloc: int       # SLOC in codebase now (tree_bytes / 50)
-    current_lines: int      # Line count in codebase now (from tree walk)
-    
+    current_sloc: int  # SLOC in codebase now (tree_bytes / 50)
+    current_lines: int  # Line count in codebase now (from tree walk)
+
     # Cumulative line-based activity (sum across all commits)
-    additions_lines: int    # Total lines added over time
-    deletions_lines: int    # Total lines deleted over time
-    churn_lines: int        # additions_lines + deletions_lines
-    net_lines: int          # additions_lines - deletions_lines
-    
+    additions_lines: int  # Total lines added over time
+    deletions_lines: int  # Total lines deleted over time
+    churn_lines: int  # additions_lines + deletions_lines
+    net_lines: int  # additions_lines - deletions_lines
+
     # Cumulative SLOC-based activity (sum across all commits)
-    additions_sloc: int     # Total SLOC added (addition_bytes / 50)
-    deletions_sloc: int     # Total SLOC deleted (deletion_bytes / 50)
-    churn_sloc: int         # additions_sloc + deletions_sloc
-    net_sloc: int           # additions_sloc - deletions_sloc
-    
+    additions_sloc: int  # Total SLOC added (addition_bytes / 50)
+    deletions_sloc: int  # Total SLOC deleted (deletion_bytes / 50)
+    churn_sloc: int  # additions_sloc + deletions_sloc
+    net_sloc: int  # additions_sloc - deletions_sloc
+
     # Other metrics
     avg_bytes_per_line: float | None  # Average bytes per line ratio
-    total_files: int        # Total number of files
+    total_files: int  # Total number of files
     default_branch: str
     primary_language: str | None
     first_commit_date: datetime | None
@@ -53,9 +56,10 @@ class OverviewJSON(BaseModel):
 
 class BranchEntry(BaseModel):
     """Branch metrics entry for branches.json.
-    
+
     All metrics measure ANALYZABLE CODE ONLY.
     """
+
     name: str
     is_default: bool
     commits: int
@@ -70,14 +74,14 @@ class BranchEntry(BaseModel):
     # Line-based metrics
     current_lines: int = 0
     unique_lines: int = 0
-    additions_lines: int = 0    # Total lines added (was total_additions_lines)
-    deletions_lines: int = 0    # Total lines deleted (was total_deletions_lines)
+    additions_lines: int = 0  # Total lines added (was total_additions_lines)
+    deletions_lines: int = 0  # Total lines deleted (was total_deletions_lines)
     # SLOC-based metrics
     current_sloc: int = 0
     churn_sloc: int = 0
     unique_sloc: int = 0
-    additions_sloc: int = 0     # SLOC added (was total_addition_bytes / 50)
-    deletions_sloc: int = 0     # SLOC deleted (was total_deletion_bytes / 50)
+    additions_sloc: int = 0  # SLOC added (was total_addition_bytes / 50)
+    deletions_sloc: int = 0  # SLOC deleted (was total_deletion_bytes / 50)
     # Branch stats
     unique_commits: int = 0
     unique_contributors: int = 0
@@ -92,12 +96,14 @@ class BranchEntry(BaseModel):
 
 class BranchesJSON(BaseModel):
     """Schema for branches.json"""
+
     codebase_id: str
     branches: list[BranchEntry]
 
 
 class ContributorEntry(BaseModel):
     """Single contributor within a directory."""
+
     contributor_email: str
     contributor_name: str
     total_commits: int
@@ -112,6 +118,7 @@ class ContributorEntry(BaseModel):
 
 class DirectoryOwnership(BaseModel):
     """Ownership data for a single directory."""
+
     directory_path: str
     total_commits: int
     churn_sloc: int  # Total SLOC touched in this directory
@@ -124,6 +131,7 @@ class DirectoryOwnership(BaseModel):
 
 class OwnershipJSON(BaseModel):
     """Schema for ownership.json - code ownership by directory."""
+
     codebase_id: str
     directories: list[DirectoryOwnership]
 
@@ -150,12 +158,14 @@ class ActivityEntry(BaseModel):
 
 class ActivityJSON(BaseModel):
     """Schema for activity.json"""
+
     codebase_id: str
     daily_activity: list[ActivityEntry]
 
 
 class MetadataJSON(BaseModel):
     """Schema for metadata.json - generation info + checkpoint for incremental updates."""
+
     codebase_id: str
     generated_at: datetime
     status: str  # "complete", "partial", "failed"
@@ -169,6 +179,7 @@ class MetadataJSON(BaseModel):
 
 class CodebaseListEntry(BaseModel):
     """Codebase entry for codebases_list.json."""
+
     codebase_id: str
     display_name: str
     total_commits: int
@@ -180,10 +191,12 @@ class CodebaseListEntry(BaseModel):
     total_branches: int = 0
     primary_language: str | None = None
     churn_lines: int = 0  # additions_lines + deletions_lines (was total_churn)
+    churn_sloc: int = 0  # additions_sloc + deletions_sloc
 
 
 class OrgSummaryJSON(BaseModel):
     """Schema for org_summary.json"""
+
     organization_id: str
     total_codebases: int
     codebases_with_analytics: int
@@ -192,7 +205,7 @@ class OrgSummaryJSON(BaseModel):
 
 class CodebasesListJSON(BaseModel):
     """Schema for codebases_list.json"""
+
     organization_id: str
     codebases: list[CodebaseListEntry]
     generated_at: datetime
-

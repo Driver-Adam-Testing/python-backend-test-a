@@ -70,7 +70,7 @@ class BackendStack(Stack):
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
-        self.heavyhatchetworker = HatchetWorker(
+        self.analyticshatchetworker = HatchetWorker(
             self,
             "HatchetAnalyticsWorker",
             HatchetWorkerParams(

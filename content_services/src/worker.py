@@ -4,6 +4,7 @@ import truststore
 import truststore._api as tapi
 from hatchet_client import hatchet
 from worker_config import HatchetWorkerType
+from workflows.analytics_workflow import analytics_task
 from workflows.auth0_sync_workflow import (
     auth0_sync_task,
     process_auth0_event_task,
@@ -22,7 +23,6 @@ from workflows.inspector_functions import (
     toplevel_doc_task,
 )
 from workflows.inspector_workflow import inspector_task
-from workflows.analytics_workflow import analytics_task
 from workflows.onboarding_workflows import (
     connect_repos_for_installation_task,
     handle_azure_devops_events_task,
@@ -45,7 +45,6 @@ except ImportError:
 heavy_workflow_set = [
     pdf_processing_task,
     inspector_task,
-    analytics_task,
     tech_doc_task,
     folder_doc_task,
     symbol_doc_task,
@@ -68,6 +67,10 @@ base_workflow_set = [
     handle_bitbucket_events_task,
     handle_gitlab_events_task,
     connect_repos_for_installation_task,
+]
+
+analytics_workflow_set = [
+    analytics_task,
 ]
 
 

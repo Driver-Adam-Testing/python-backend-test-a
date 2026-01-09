@@ -49,7 +49,16 @@
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::io::Write;
 use std::sync::OnceLock;
+
+/// Macro to log to stderr with immediate flush for containerized environments.
+macro_rules! log_flush {
+    ($($arg:tt)*) => {{
+        eprintln!($($arg)*);
+        let _ = std::io::stderr().flush();
+    }};
+}
 
 mod cache;
 mod commit;
@@ -260,12 +269,12 @@ fn calculate_tree_sizes_incremental(
     let mut last_checkpoint = std::time::Instant::now();
 
     if start_index > 0 {
-        eprintln!(
+        log_flush!(
             "[rust-incremental] Resuming from checkpoint: {}/{} commits already processed",
             start_index, total
         );
     } else {
-        eprintln!(
+        log_flush!(
             "[rust-incremental] Starting incremental tree size calculation for {} commits",
             total
         );
@@ -384,7 +393,7 @@ fn calculate_tree_sizes_incremental(
             let rate = if elapsed > 0.0 { commits_this_run as f64 / elapsed } else { 0.0 };
             let remaining = total - processed;
             let eta = if rate > 0.0 { remaining as f64 / rate } else { 0.0 };
-            eprintln!(
+            log_flush!(
                 "[rust-incremental] Progress: {}/{} ({:.1}%) | {:.0} commits/sec | ETA: {:.0}s | tree_size: ({}, {})",
                 processed, total,
                 (processed as f64 / total as f64) * 100.0,
@@ -399,11 +408,11 @@ fn calculate_tree_sizes_incremental(
     let (cache_bytes, cache_lines) = cache.stats();
     let commits_processed = total.saturating_sub(start_index);
     let rate = if elapsed > 0.0 { commits_processed as f64 / elapsed } else { 0.0 };
-    eprintln!(
+    log_flush!(
         "[rust-incremental] Complete: {} commits in {:.2}s ({:.0} commits/sec)",
         commits_processed, elapsed, rate
     );
-    eprintln!(
+    log_flush!(
         "[rust-incremental] Stats: {} root commits (full walk), {} delta commits | Cache: {} bytes, {} lines",
         root_commits, delta_commits, cache_bytes, cache_lines
     );

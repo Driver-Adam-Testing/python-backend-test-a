@@ -202,7 +202,7 @@ class TestCheckpointS3Storage:
         from analytics.checkpoint import download_checkpoint
 
         checkpoint_data = {
-            "version": "1.0",
+            "version": "1.1",
             "codebase_id": "test-uuid",
             "started_at": "2024-01-15T10:30:00Z",
             "last_updated_at": "2024-01-15T11:00:00Z",
@@ -211,6 +211,9 @@ class TestCheckpointS3Storage:
             "last_processed_index": 49,
             "last_processed_sha": "abc123",
             "tree_size_cache": {"abc123": [100, 10]},
+            "processed_commit_shas": [],
+            "commit_records": [],
+            "file_change_records": [],
         }
 
         with patch("boto3.client") as mock_boto:

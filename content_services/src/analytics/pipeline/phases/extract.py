@@ -34,18 +34,23 @@ def _convert_rust_commits(rust_commits: list[dict]) -> list[dict]:
         c = dict(commit)  # Make a copy
 
         # Convert timestamp strings to datetime objects
-        if isinstance(c.get("committed_at"), str):
+        # Guard against empty strings from Rust defaults
+        committed_at = c.get("committed_at")
+        if isinstance(committed_at, str) and committed_at:
             c["committed_at"] = datetime.fromisoformat(
-                c["committed_at"].replace("Z", "+00:00")
+                committed_at.replace("Z", "+00:00")
             )
-        if isinstance(c.get("collected_at"), str):
+
+        collected_at = c.get("collected_at")
+        if isinstance(collected_at, str) and collected_at:
             c["collected_at"] = datetime.fromisoformat(
-                c["collected_at"].replace("Z", "+00:00")
+                collected_at.replace("Z", "+00:00")
             )
 
         # Convert date string to date object
-        if isinstance(c.get("commit_date"), str):
-            c["commit_date"] = date.fromisoformat(c["commit_date"])
+        commit_date = c.get("commit_date")
+        if isinstance(commit_date, str) and commit_date:
+            c["commit_date"] = date.fromisoformat(commit_date)
 
         converted.append(c)
 
@@ -63,8 +68,10 @@ def _convert_rust_file_changes(rust_file_changes: list[dict]) -> list[dict]:
         f = dict(fc)  # Make a copy
 
         # Convert date string to date object
-        if isinstance(f.get("commit_date"), str):
-            f["commit_date"] = date.fromisoformat(f["commit_date"])
+        # Guard against empty strings from Rust defaults
+        commit_date = f.get("commit_date")
+        if isinstance(commit_date, str) and commit_date:
+            f["commit_date"] = date.fromisoformat(commit_date)
 
         converted.append(f)
 
@@ -250,6 +257,8 @@ def extract_commits(
             workers=workers,
             skip_shas=skip_shas,
             checkpoint_callback=commit_checkpoint_callback,
+            initial_commits=initial_commits,
+            initial_file_changes=initial_file_changes,
         )
 
         # Combine with initial results from checkpoint
@@ -287,6 +296,8 @@ def _process_commits_parallel(
     workers: int,
     skip_shas: set[str] | None = None,
     checkpoint_callback: "Callable[[dict], None] | None" = None,
+    initial_commits: list[dict] | None = None,
+    initial_file_changes: list[dict] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """
     Process commits in parallel using native Rust extension or Python fallback.
@@ -308,6 +319,8 @@ def _process_commits_parallel(
         workers: Number of parallel workers
         skip_shas: Set of SHAs to skip (already processed from checkpoint)
         checkpoint_callback: Callback for checkpointing after each batch
+        initial_commits: Commits from checkpoint to include in checkpoint saves
+        initial_file_changes: File changes from checkpoint to include in saves
 
     Returns:
         Tuple of (all_commits, all_file_changes)
@@ -332,9 +345,10 @@ def _process_commits_parallel(
         rust_callback = None
         if checkpoint_callback:
             # Track accumulated results across batches for checkpoint
+            # Initialize with prior checkpoint data to preserve across restarts
             accumulated_shas: set[str] = set(skip_shas) if skip_shas else set()
-            accumulated_commits: list[dict] = []
-            accumulated_file_changes: list[dict] = []
+            accumulated_commits: list[dict] = list(initial_commits or [])
+            accumulated_file_changes: list[dict] = list(initial_file_changes or [])
 
             def rust_callback(
                 batch_shas: list[str],

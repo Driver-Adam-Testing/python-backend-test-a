@@ -48,6 +48,7 @@ class Settings:
     SECRECTS_KEYS:str
     # add more as needed...
     IS_PRIVATE_DEPLOY:str
+    IS_PRODUCTION_ACCOUNT:str
     ALLOWED_AWS_ACCOUNT:str
     ALLOWED_PRIVATELINK_REGIONS:str
     MCP_AUTH0_CLIENT_ID:str

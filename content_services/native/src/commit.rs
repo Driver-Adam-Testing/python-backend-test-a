@@ -145,6 +145,9 @@ fn process_single_commit(
     let commit_date = commit_dt
         .map(|dt| dt.format("%Y-%m-%d").to_string())
         .unwrap_or_default();
+    let commit_year_month = commit_dt
+        .map(|dt| dt.format("%Y-%m").to_string())
+        .unwrap_or_else(|| "unknown".to_string());
     let (commit_year, commit_month, commit_day) = commit_dt
         .map(|dt| (dt.format("%Y").to_string().parse().unwrap_or(0),
                    dt.format("%m").to_string().parse().unwrap_or(0),
@@ -239,10 +242,13 @@ fn calculate_diff_metrics(
     // Get commit date for file changes
     let commit_time = commit.time();
     let commit_ts = commit_time.seconds();
-    let commit_date = Utc.timestamp_opt(commit_ts, 0)
-        .single()
+    let commit_dt = Utc.timestamp_opt(commit_ts, 0).single();
+    let commit_date = commit_dt
         .map(|dt| dt.format("%Y-%m-%d").to_string())
         .unwrap_or_default();
+    let commit_year_month = commit_dt
+        .map(|dt| dt.format("%Y-%m").to_string())
+        .unwrap_or_else(|| "unknown".to_string());
 
     // Get diff from parent
     let diff = if commit.parent_count() > 0 {
@@ -363,6 +369,7 @@ fn calculate_diff_metrics(
                 record.insert("commit_sha".to_string(), PyValue::Str(commit_sha.to_string()));
                 record.insert("file_path".to_string(), PyValue::Str(path.to_string()));
                 record.insert("commit_date".to_string(), PyValue::Str(commit_date.clone()));
+                record.insert("commit_year_month".to_string(), PyValue::Str(commit_year_month.clone()));
                 record.insert("change_type".to_string(), PyValue::Str(change_type.to_string()));
                 record.insert(
                     "previous_path".to_string(),

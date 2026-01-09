@@ -704,9 +704,13 @@ class BitbucketDCProvider(GitProviderInterface):
         - scope["type"] == "project": Creates webhook for all repos in project
         - scope["type"] == "repository": Creates webhook for specific repo
 
+        If scope is None, auto-discovers from token type using discover_token_scope().
+
         The token_type in secrets determines what's allowed:
         - project_access_token: Can create both project and repo webhooks
         - repository_access_token: Can only create repo webhooks
+
+        Persists webhook scope info to installation.misc_metadata for later deregistration.
         """
         logger.info(
             f"Registering webhook for Bitbucket DC installation {installation.id}"
@@ -724,11 +728,15 @@ class BitbucketDCProvider(GitProviderInterface):
             disable_ssl_verify=secrets.get("disable_ssl_verify", False),
         )
 
+        # Auto-discover scope if not provided
+        if scope is None:
+            scope = self.discover_token_scope(installation)
+
         callback_url = self._build_webhook_callback_url(
             config.callback_url, installation.id
         )
         webhook_config = self._build_webhook_config(config, callback_url, secret_token)
-        scope_type = scope.get("type") if scope else None
+        scope_type = scope.get("type")
 
         webhook_data = self._create_webhook_by_scope(
             api,
@@ -740,8 +748,21 @@ class BitbucketDCProvider(GitProviderInterface):
             installation.id,
         )
 
+        # Extract scope info for persistence
+        webhook_id = webhook_data["id"]
+        project_key = scope.get("project_key")
+        repo_slug = scope.get("slug") or scope.get("repo_slug")
+
+        # Persist webhook info to installation metadata for deregistration
+        metadata = dict(installation.misc_metadata or {})
+        metadata["webhook_id"] = webhook_id
+        metadata["webhook_project_key"] = project_key
+        metadata["webhook_repo_slug"] = repo_slug
+        metadata["webhook_scope_type"] = scope_type
+        installation.misc_metadata = metadata
+
         return {
-            "id": webhook_data.get("id"),
+            "id": webhook_id,
             "callback_url": callback_url,
             "triggers": config.triggers,
             "scope_type": scope_type,
@@ -857,9 +878,12 @@ class BitbucketDCProvider(GitProviderInterface):
     def deregister_webhook(
         self,
         installation: GitProviderAppInstallation,
-        webhook_id: int,
-        scope: dict[str, str],
+        webhook_id: str,
     ) -> None:
+        """Deregister a webhook by ID.
+
+        Reads scope info from installation.misc_metadata (set during registration).
+        """
         logger.info(
             f"Deregistering webhook {webhook_id} for installation {installation.id}"
         )
@@ -874,8 +898,17 @@ class BitbucketDCProvider(GitProviderInterface):
             disable_ssl_verify=secrets.get("disable_ssl_verify", False),
         )
 
-        scope_type = scope.get("type")
-        project_key = scope.get("project_key")
+        # Read scope from installation metadata (persisted during registration)
+        metadata = installation.misc_metadata or {}
+        scope_type = metadata.get("webhook_scope_type")
+        project_key = metadata.get("webhook_project_key")
+        repo_slug = metadata.get("webhook_repo_slug")
+
+        if not scope_type or not project_key:
+            raise ValueError(
+                "Webhook scope info not found in installation metadata. "
+                "Was the webhook registered through this system?"
+            )
 
         if scope_type == "project":
             try:
@@ -890,7 +923,10 @@ class BitbucketDCProvider(GitProviderInterface):
             logger.info(f"Deleted project webhook {webhook_id} for {project_key}")
 
         elif scope_type == "repository":
-            repo_slug = scope.get("repo_slug")
+            if not repo_slug:
+                raise ValueError(
+                    "repo_slug not found in metadata for repository-level webhook"
+                )
             try:
                 api.delete_repository_webhook(
                     project_key=project_key,

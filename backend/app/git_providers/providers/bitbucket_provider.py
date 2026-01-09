@@ -321,6 +321,17 @@ class BitbucketProvider(GitProviderInterface):
             logger.error(f"Failed to register webhook: {e}")
             raise
 
+    def deregister_webhook(
+        self,
+        installation: GitProviderAppInstallation,
+        webhook_id: str,
+    ) -> None:
+        """Deregister webhook - not implemented for Bitbucket Cloud"""
+        raise NotImplementedError(
+            "Webhook deregistration is not yet implemented for Bitbucket Cloud. "
+            "Please delete webhooks manually through the Bitbucket UI."
+        )
+
     def fetch_secrets_by_id(self, installation_id: str) -> dict:
         """Fetch secrets by installation ID"""
         secret_key = format_secret_name(APP_INSTALL_WAT_NAME_PREFIX, installation_id)

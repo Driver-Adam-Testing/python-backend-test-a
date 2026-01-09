@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import shutil
 import ssl
@@ -42,6 +43,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
+logger = logging.getLogger(__name__)
+
 # Secret prefix for Bitbucket DC installations
 BBDC_SECRET_PREFIX = "GIT_PROVIDER_BBDC_HTTP_INSTALL_SECRET"
 
@@ -81,7 +84,7 @@ def _create_git_provider_grants(
             role=PrimaryAssetRole.asset_member,
         )
         session.add(grant)
-        print(f"Created internal visibility grant for asset {primary_asset_id}")
+        logger.info(f"Created internal visibility grant for asset {primary_asset_id}")
     elif visibility == SourceVisibility.public:
         grant = PrimaryAssetRoleGrant(
             primary_asset_id=primary_asset_id,
@@ -90,12 +93,12 @@ def _create_git_provider_grants(
             role=PrimaryAssetRole.asset_member,
         )
         session.add(grant)
-        print(f"Created public visibility grant for asset {primary_asset_id}")
+        logger.info(f"Created public visibility grant for asset {primary_asset_id}")
 
 
 def fetch_access_token(installation_id: str) -> tuple[str, str]:
     """Returns (token, instance_url). Instance URL can be overridden via BITBUCKET_DC_INSTANCE_URL env var."""
-    print(
+    logger.info(
         f"Fetching HTTP Access Token for Bitbucket DC installation ID {installation_id}"
     )
     install_key = format_secret_name(BBDC_SECRET_PREFIX, installation_id)
@@ -202,8 +205,8 @@ def get_default_branch(
         except httpx.HTTPStatusError as e:
             if e.response.status_code != 404:
                 raise
-            print(
-                f"WARNING: Default branch endpoint returned 404 for {project_key}/{repo_slug}"
+            logger.warning(
+                f"Default branch endpoint returned 404 for {project_key}/{repo_slug}"
             )
 
         # Validate the default branch exists by listing branches
@@ -216,8 +219,8 @@ def get_default_branch(
 
             if not branches:
                 # Empty repo - no branches means no commits
-                print(
-                    f"WARNING: No branches found for {project_key}/{repo_slug} - repo appears empty"
+                logger.warning(
+                    f"No branches found for {project_key}/{repo_slug} - repo appears empty"
                 )
                 return None
 
@@ -226,31 +229,31 @@ def get_default_branch(
                 for b in branches:
                     if b.get("displayId") == default_branch:
                         return default_branch
-                print(
-                    f"WARNING: Default branch '{default_branch}' not found in branches list"
+                logger.warning(
+                    f"Default branch '{default_branch}' not found in branches list"
                 )
 
             # Look for branch with isDefault flag
             for b in branches:
                 if b.get("isDefault"):
                     actual_default = b.get("displayId")
-                    print(f"Using isDefault branch: {actual_default}")
+                    logger.info(f"Using isDefault branch: {actual_default}")
                     return actual_default
 
             # Fall back to first branch if it has commits
             first_branch = branches[0].get("displayId")
             if branches[0].get("latestCommit"):
-                print(f"No default found, using first branch: {first_branch}")
+                logger.info(f"No default found, using first branch: {first_branch}")
                 return first_branch
 
             # Branch exists but has no commits
-            print(
-                f"WARNING: Branch {first_branch} exists but has no commits for {project_key}/{repo_slug}"
+            logger.warning(
+                f"Branch {first_branch} exists but has no commits for {project_key}/{repo_slug}"
             )
             return None
 
         except httpx.HTTPStatusError as e:
-            print(f"ERROR: Failed to list branches: {e}")
+            logger.error(f"Failed to list branches: {e}")
             return None
 
 
@@ -301,25 +304,25 @@ def get_latest_commit_on_branch(
             # Fallback: use default branch or first available branch
             for b in branches:
                 if b.get("isDefault"):
-                    print(
+                    logger.info(
                         f"Using default branch {b.get('displayId')} instead of {branch}"
                     )
                     return b.get("latestCommit")
 
             if branches:
-                print(
+                logger.info(
                     f"Using first available branch {branches[0].get('displayId')} instead of {branch}"
                 )
                 return branches[0].get("latestCommit")
 
             # Repository is likely empty (no commits yet)
-            print(
+            logger.info(
                 f"No branches found for {project_key}/{repo_slug} - repository may be empty"
             )
             return None
 
     except httpx.HTTPStatusError as e:
-        print(f"ERROR: Failed to get latest commit on {branch}: {e}")
+        logger.error(f"Failed to get latest commit on {branch}: {e}")
         raise
 
 
@@ -343,7 +346,7 @@ def download_repo(
         ca_bundle_path: Path to CA bundle for SSL verification
         disable_ssl_verify: If True, skip SSL verification (for testing only)
     """
-    print(
+    logger.info(
         f"Cloning Bitbucket DC repository {project_key}/{repo_slug} at commit {commit}"
     )
 
@@ -355,8 +358,8 @@ def download_repo(
         # Set up environment for SSL handling
         env = os.environ.copy()
         if disable_ssl_verify:
-            print(
-                "WARNING: SSL verification disabled for git clone. "
+            logger.warning(
+                "SSL verification disabled for git clone. "
                 "This should only be used for development/testing."
             )
             env["GIT_SSL_NO_VERIFY"] = "true"
@@ -366,7 +369,7 @@ def download_repo(
         try:
             # Clone with Bearer auth via http.extraHeader
             # This is required for Bitbucket DC Project/Repository Access Tokens
-            print("DEBUG: Cloning repository...")
+            logger.debug("Cloning repository...")
             clone_cmd = [
                 "git",
                 "-c",
@@ -386,16 +389,16 @@ def download_repo(
             )
 
             if clone_result.returncode != 0:
-                print(f"ERROR: Clone failed: {clone_result.stderr}")
+                logger.error(f"Clone failed: {clone_result.stderr}")
                 raise BitbucketDCError(
                     f"Failed to clone repository: {clone_result.stderr}"
                 )
 
-            print("DEBUG: Repository cloned successfully")
+            logger.debug("Repository cloned successfully")
 
             # Checkout specific commit or HEAD if no commit specified
             if commit:
-                print(f"DEBUG: Checking out commit {commit}...")
+                logger.debug(f"Checking out commit {commit}...")
                 checkout_result = subprocess.run(
                     ["git", "checkout", commit],
                     cwd=str(repo_path),
@@ -405,8 +408,8 @@ def download_repo(
                 )
 
                 if checkout_result.returncode != 0:
-                    print(
-                        f"DEBUG: Could not checkout commit {commit}, fetching all commits..."
+                    logger.debug(
+                        f"Could not checkout commit {commit}, fetching all commits..."
                     )
                     subprocess.run(
                         ["git", "fetch", "--unshallow"],
@@ -427,11 +430,11 @@ def download_repo(
                     if checkout_result.returncode != 0:
                         raise BitbucketDCError(f"Failed to checkout commit {commit}")
 
-                print(f"DEBUG: Successfully checked out commit {commit}")
+                logger.debug(f"Successfully checked out commit {commit}")
             else:
                 # No specific commit, checkout the default branch
                 # After --no-checkout clone, use `git checkout` with no args to checkout default branch
-                print("DEBUG: No commit specified, checking out default branch...")
+                logger.debug("No commit specified, checking out default branch...")
                 checkout_result = subprocess.run(
                     ["git", "checkout"],
                     cwd=str(repo_path),
@@ -457,8 +460,8 @@ def download_repo(
                     if head_result.returncode == 0
                     else "unknown"
                 )
-                print(
-                    f"DEBUG: Successfully checked out default branch (HEAD: {head_sha})"
+                logger.debug(
+                    f"Successfully checked out default branch (HEAD: {head_sha})"
                 )
 
             # Remove .git directory
@@ -468,7 +471,7 @@ def download_repo(
 
             # Create ZIP archive
             zip_path = Path(temp_dir) / f"{repo_slug}.zip"
-            print("DEBUG: Creating ZIP archive...")
+            logger.debug("Creating ZIP archive...")
 
             with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for file_path in repo_path.rglob("*"):
@@ -479,13 +482,13 @@ def download_repo(
             with open(zip_path, "rb") as f:
                 zip_content = f.read()
 
-            print(f"DEBUG: Archive created. Size: {len(zip_content)} bytes")
+            logger.debug(f"Archive created. Size: {len(zip_content)} bytes")
             return zip_content
 
         except subprocess.TimeoutExpired:
             raise BitbucketDCError("Git clone operation timed out")
         except OSError as e:
-            print(f"ERROR: File system error during repository download: {e!s}")
+            logger.error(f"File system error during repository download: {e!s}")
             raise BitbucketDCError(f"File system error: {e!s}")
 
 
@@ -645,15 +648,17 @@ def _get_repo_commit(
     )
     if not branch:
         # No branch means empty repo with no commits
-        print(f"No branch available for {project_key}/{repo_slug} - repo is empty")
+        logger.info(
+            f"No branch available for {project_key}/{repo_slug} - repo is empty"
+        )
         return None
 
-    print(f"No commit specified, fetching latest commit on branch {branch}...")
+    logger.info(f"No commit specified, fetching latest commit on branch {branch}...")
     commit = get_latest_commit_on_branch(
         instance_url, project_key, repo_slug, branch, access_token, verify
     )
     if commit:
-        print(f"Using commit {commit}")
+        logger.info(f"Using commit {commit}")
     return commit
 
 
@@ -700,11 +705,11 @@ def _handle_push_version(
                 session.add(new_version)
                 return new_version.id
             if version.status == VersionStatus.GENERATING:
-                print(f"Generation in progress for {repo_name}, ignoring push")
+                logger.warning(f"Generation in progress for {repo_name}, ignoring push")
                 return None
 
     if versions and versions[0].status == VersionStatus.CONNECTING:
-        print(f"Version already connecting for {repo_name}")
+        logger.info(f"Version already connecting for {repo_name}")
         return None
 
     return None
@@ -744,7 +749,7 @@ def _create_new_asset(
     session.add(version)
 
     _create_git_provider_grants(session, primary_asset.id, org_id)
-    print(f"Created primary asset and version for {repo_name}:{commit}")
+    logger.info(f"Created primary asset and version for {repo_name}:{commit}")
 
     return primary_asset.id, version.id
 
@@ -756,13 +761,13 @@ def _prepare_repo_context(repo: dict[str, Any]) -> dict[str, Any] | None:
     installation_id = info["installation_id"]
 
     if not installation_id:
-        print(f"WARNING: Missing installation_id for repo {repo_name}")
+        logger.warning(f"Missing installation_id for repo {repo_name}")
         return None
 
     try:
         secrets = fetch_secrets(installation_id)
     except (AccessTokenError, OSError) as e:
-        print(f"ERROR: Failed to fetch secrets: {e}")
+        logger.error(f"Failed to fetch secrets: {e}")
         return None
 
     instance_url = secrets.get("instance_url") or info["metadata"].get("instance_url")
@@ -770,7 +775,7 @@ def _prepare_repo_context(repo: dict[str, Any]) -> dict[str, Any] | None:
     project_key = info["project_key"]
 
     if not repo_id or not repo_name or not project_key or not instance_url:
-        print(f"WARNING: Missing required repo data: {repo}")
+        logger.warning(f"Missing required repo data: {repo}")
         return None
 
     return {
@@ -812,8 +817,8 @@ def _persist_version_in_db(
                     .options(selectinload(PrimaryAsset.versions))
                 ).first()
                 if not primary_asset:
-                    print(
-                        f"WARNING: Primary asset not found for {repo_name}, org: {org_id}"
+                    logger.warning(
+                        f"Primary asset not found for {repo_name}, org: {org_id}"
                     )
                     return None
                 version_id = _handle_push_version(
@@ -827,7 +832,7 @@ def _persist_version_in_db(
                 session, org_id, repo_name, repo_id, installation_id, commit, vcs_info
             )
     except IntegrityError:
-        print(f"ERROR: Failed to create primary asset for {repo_name}:{commit}")
+        logger.error(f"Failed to create primary asset for {repo_name}:{commit}")
         return None
 
 
@@ -860,14 +865,14 @@ def _download_and_upload_to_s3(
         ctx["ca_bundle_path"],
         ctx["disable_ssl_verify"],
     )
-    print(f"Repository downloaded. Size: {len(zip_content)} bytes")
+    logger.info(f"Repository downloaded. Size: {len(zip_content)} bytes")
 
     org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
     upload_key = (
         f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{ctx['repo_name']}.zip"
     )
     upload_to_s3_with_metadata(zip_content, codebase_metadata, upload_key)
-    print(f"Repository {ctx['repo_name']} uploaded to {upload_key}")
+    logger.info(f"Repository {ctx['repo_name']} uploaded to {upload_key}")
 
 
 def download_and_upload_repo(
@@ -888,7 +893,7 @@ def download_and_upload_repo(
         ctx["verify"],
     )
     if not commit:
-        print(
+        logger.warning(
             f"Repository {ctx['repo_name']} appears to be empty (no commits). Skipping."
         )
         return ctx["repo_name"]
@@ -904,7 +909,7 @@ def download_and_upload_repo(
             ctx["verify"],
         )
     except (httpx.HTTPError, OSError) as e:
-        print(f"WARNING: Failed to fetch VCS info: {e}")
+        logger.warning(f"Failed to fetch VCS info: {e}")
         vcs_info = None
 
     result = _persist_version_in_db(
@@ -1042,7 +1047,7 @@ def decline_pull_request(
         state = pr_data.get("state", "").upper()
 
         if state in ["MERGED", "DECLINED"]:
-            print(f"Pull request #{pr_id} is already {state.lower()}")
+            logger.info(f"Pull request #{pr_id} is already {state.lower()}")
             return
 
         version = pr_data.get("version", 0)
@@ -1054,7 +1059,7 @@ def decline_pull_request(
 
         try:
             response.raise_for_status()
-            print(f"Declined pull request #{pr_id}")
+            logger.info(f"Declined pull request #{pr_id}")
         except httpx.HTTPStatusError as e:
             error_detail = ""
             try:
@@ -1063,7 +1068,7 @@ def decline_pull_request(
             except (ValueError, KeyError):
                 error_detail = f" - {e.response.text}"
 
-            print(f"ERROR: Failed to decline pull request #{pr_id}: {e}{error_detail}")
+            logger.error(f"Failed to decline pull request #{pr_id}: {e}{error_detail}")
             raise
 
 
@@ -1119,11 +1124,11 @@ def create_pull_request(
             response.raise_for_status()
             result = response.json()
             pr_link = result.get("links", {}).get("self", [{}])[0].get("href", "")
-            print(f"Pull request created successfully: {pr_link}")
+            logger.info(f"Pull request created successfully: {pr_link}")
             return result
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 409:
-                print("Pull request already exists for this branch")
+                logger.info("Pull request already exists for this branch")
                 return None
             error_detail = ""
             try:
@@ -1132,7 +1137,7 @@ def create_pull_request(
             except (ValueError, KeyError):
                 error_detail = f" - {e.response.text}"
 
-            print(f"ERROR: Failed to create pull request: {e}{error_detail}")
+            logger.error(f"Failed to create pull request: {e}{error_detail}")
             raise
 
 
@@ -1155,12 +1160,12 @@ def create_pull_request_with_bot_cleanup(
     except (AccessTokenError, NotImplementedError):
         verify = True
     except (httpx.HTTPError, OSError) as e:
-        print(
-            f"WARNING: Failed to fetch secrets for {instance_url}, using default SSL: {e}"
+        logger.warning(
+            f"Failed to fetch secrets for {instance_url}, using default SSL: {e}"
         )
         verify = True
 
-    print("DEBUG: Checking for existing bot pull requests...")
+    logger.debug("Checking for existing bot pull requests...")
 
     try:
         existing_prs = list_pull_requests(
@@ -1202,19 +1207,19 @@ def create_pull_request_with_bot_cleanup(
                                 access_token,
                                 verify=verify,
                             )
-                            print(
+                            logger.info(
                                 f"Closed existing bot PR #{pr_id} from branch {source_branch}"
                             )
                         except httpx.HTTPStatusError as close_error:
-                            print(
-                                f"WARNING: Could not close PR #{pr_id}: {close_error}"
+                            logger.warning(
+                                f"Could not close PR #{pr_id}: {close_error}"
                             )
 
                 except httpx.HTTPStatusError as e:
-                    print(f"WARNING: Error checking PR #{pr.get('id', 'unknown')}: {e}")
+                    logger.warning(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
 
     except httpx.HTTPStatusError as e:
-        print(f"WARNING: Error listing pull requests: {e}")
+        logger.warning(f"Error listing pull requests: {e}")
 
     # Create new pull request
     create_pull_request(

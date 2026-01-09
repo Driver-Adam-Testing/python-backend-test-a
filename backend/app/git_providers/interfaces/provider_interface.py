@@ -166,3 +166,18 @@ class GitProviderInterface(ABC):
         Returns:
             Dict containing webhook details (id, url, active, created_at, etc.)
         """
+
+    @abstractmethod
+    def deregister_webhook(
+        self,
+        installation: GitProviderAppInstallation,
+        webhook_id: str,
+    ) -> None:
+        """Deregister a webhook by ID.
+
+        Provider handles scope lookup internally using installation metadata.
+
+        Args:
+            installation: The installation the webhook belongs to
+            webhook_id: The webhook ID to deregister
+        """

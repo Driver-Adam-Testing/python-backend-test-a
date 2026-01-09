@@ -324,10 +324,9 @@ class GitProviderService:
         installation_id: str,
         triggers: list[str] | None = None,
     ) -> dict:
-        """Register a webhook for a Bitbucket DC installation.
+        """Register a webhook for an installation.
 
-        Auto-discovers the scope (project or repository) by querying
-        the Bitbucket DC API with the installation's token.
+        Provider handles scope discovery internally.
 
         Args:
             session: Database session
@@ -337,7 +336,7 @@ class GitProviderService:
             triggers: Optional list of triggers (defaults to push and merge events)
 
         Returns:
-            Webhook registration result with id, callback_url, scope info, etc.
+            Webhook registration result with id, callback_url, etc.
         """
         installation = git_provider_app_installation_by_id(session, installation_id)
         if (
@@ -357,11 +356,6 @@ class GitProviderService:
 
         provider = self.get_provider(installation.git_provider_app)
 
-        # Discover scope from token
-        scope = provider.discover_token_scope(
-            installation
-        )  # BUG HERE: this function is not defined in the interface.
-
         # Build webhook config
         callback_url = f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook"
         default_triggers = ["repo:refs_changed", "pr:merged"]
@@ -372,28 +366,21 @@ class GitProviderService:
             description="Driver AI Webhook",
         )
 
-        # Register webhook
-        result = provider.register_webhook(installation, config, scope)
-
-        # Add scope info to result
-        result["project_key"] = scope.get("project_key")
-        result["repo_slug"] = scope.get("repo_slug")
+        # Register webhook - provider handles scope discovery internally
+        result = provider.register_webhook(installation, config)
 
         # Save webhook state in installation metadata
+        # Provider already persists scope info; service only tracks registration state
         metadata = dict(installation.misc_metadata or {})
         metadata["webhook_registered"] = True
-        metadata["webhook_id"] = result.get("id")
-        metadata["webhook_scope_type"] = scope.get("type")
+        metadata["webhook_id"] = result["id"]
         installation.misc_metadata = metadata
         flag_modified(installation, "misc_metadata")
         session.add(installation)
         session.commit()
         session.refresh(installation)
 
-        logger.info(
-            f"Registered webhook for installation {installation_id}: "
-            f"scope={scope['type']}, project={scope.get('project_key')}"
-        )
+        logger.info(f"Registered webhook for installation {installation_id}")
 
         return result
 
@@ -404,9 +391,9 @@ class GitProviderService:
         app_id: str,
         installation_id: str,
     ) -> dict:
-        """Deregister a webhook for a Bitbucket DC installation.
+        """Deregister a webhook for an installation.
 
-        Uses stored webhook_id and scope from installation metadata.
+        Provider handles scope lookup internally using installation metadata.
 
         Args:
             session: Database session
@@ -435,29 +422,21 @@ class GitProviderService:
 
         metadata = installation.misc_metadata or {}
         webhook_id = metadata.get("webhook_id")
-        if not webhook_id:
+        if webhook_id is None:
             raise ValueError("No webhook registered for this installation")
 
-        # Build scope from metadata
-        scope = {
-            "type": metadata.get("webhook_scope_type"),
-            "project_key": metadata.get("project_key"),
-            "repo_slug": metadata.get("repo_slug"),
-        }
-
-        # If scope info not in metadata, discover it
-        if not scope["type"] or not scope["project_key"]:
-            provider = self.get_provider(installation.git_provider_app)
-            scope = provider.discover_token_scope(installation)
-
+        # Provider handles scope lookup internally from installation metadata
         provider = self.get_provider(installation.git_provider_app)
-        provider.deregister_webhook(installation, webhook_id, scope)
+        provider.deregister_webhook(installation, str(webhook_id))
 
         # Update metadata to mark webhook as deregistered
         metadata = dict(installation.misc_metadata or {})
         metadata["webhook_registered"] = False
         metadata.pop("webhook_id", None)
+        # Clean up provider-specific webhook metadata
         metadata.pop("webhook_scope_type", None)
+        metadata.pop("webhook_project_key", None)
+        metadata.pop("webhook_repo_slug", None)
         installation.misc_metadata = metadata
         flag_modified(installation, "misc_metadata")
         session.add(installation)

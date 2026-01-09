@@ -33,6 +33,7 @@ from shared.interfaces.hatchet_interfaces import (
     HandleGithubEventsInput,
     HandleGitlabEventsInput,
 )
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import select
 
 from app.api.auth import UserToken
@@ -220,17 +221,11 @@ def register_webhook(
             status_code=status.HTTP_201_CREATED,
             content=result,
         )
-    except KeyError as e:
-        logger.error(f"Missing metadata for webhook registration: {e}")
+    except (KeyError, ValueError, SQLAlchemyError) as e:
+        logger.exception(f"Webhook registration failed: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Installation metadata missing '{e.args[0]}'",
-        )
-    except ValueError as e:
-        logger.error(f"Webhook registration failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error during webhook registration.",
         )
 
 
@@ -256,17 +251,11 @@ def deregister_webhook(
             status_code=status.HTTP_200_OK,
             content=result,
         )
-    except KeyError as e:
-        logger.error(f"Missing metadata for webhook deregistration: {e}")
+    except (KeyError, ValueError, SQLAlchemyError) as e:
+        logger.exception(f"Webhook deregistration failed: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Installation metadata missing '{e.args[0]}'",
-        )
-    except ValueError as e:
-        logger.error(f"Webhook deregistration failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error during webhook deregistration.",
         )
 
 

@@ -103,11 +103,7 @@ def fetch_access_token(installation_id: str) -> tuple[str, str]:
     )
     install_key = format_secret_name(BBDC_SECRET_PREFIX, installation_id)
     secrets_manager = AWSSecretManagementStrategy(
-        AWSClientConfig(
-            region_name=os.environ["AWS_REGION"],
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        )
+        AWSClientConfig(region_name=os.environ["AWS_REGION"])
     )
     secret_value = secrets_manager.read_secret(install_key)
     if not secret_value:
@@ -128,11 +124,7 @@ def fetch_secrets(installation_id: str) -> dict[str, Any]:
     """Instance URL in returned dict can be overridden via BITBUCKET_DC_INSTANCE_URL env var."""
     install_key = format_secret_name(BBDC_SECRET_PREFIX, installation_id)
     secrets_manager = AWSSecretManagementStrategy(
-        AWSClientConfig(
-            region_name=os.environ["AWS_REGION"],
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        )
+        AWSClientConfig(region_name=os.environ["AWS_REGION"])
     )
     secret_value = secrets_manager.read_secret(install_key)
     if not secret_value:

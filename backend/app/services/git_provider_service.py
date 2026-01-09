@@ -1,6 +1,7 @@
 import logging
 from typing import Any, ClassVar
 
+import requests
 from botocore.exceptions import ClientError
 from database.models import (
     GitProviderApp,
@@ -377,7 +378,29 @@ class GitProviderService:
         installation.misc_metadata = metadata
         flag_modified(installation, "misc_metadata")
         session.add(installation)
-        session.commit()
+
+        try:
+            session.commit()
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to commit webhook metadata: {e}")
+            session.rollback()
+            # Attempt to clean up the orphaned webhook in Bitbucket DC
+            try:
+                provider.deregister_webhook(installation, str(result["id"]))
+                logger.info(
+                    f"Cleaned up orphaned webhook {result['id']} after commit failure"
+                )
+            except (
+                requests.RequestException,
+                NotImplementedError,
+                ValueError,
+            ) as cleanup_error:
+                logger.error(
+                    f"Failed to clean up orphaned webhook {result['id']}: {cleanup_error}. "
+                    f"Manual cleanup may be required in Bitbucket DC."
+                )
+            raise
+
         session.refresh(installation)
 
         logger.info(f"Registered webhook for installation {installation_id}")
@@ -430,6 +453,8 @@ class GitProviderService:
         provider.deregister_webhook(installation, str(webhook_id))
 
         # Update metadata to mark webhook as deregistered
+        # Note: If commit fails here, the webhook is already deleted from Bitbucket DC
+        # but our metadata will be stale. This is logged but we re-raise to inform the caller.
         metadata = dict(installation.misc_metadata or {})
         metadata["webhook_registered"] = False
         metadata.pop("webhook_id", None)
@@ -440,7 +465,18 @@ class GitProviderService:
         installation.misc_metadata = metadata
         flag_modified(installation, "misc_metadata")
         session.add(installation)
-        session.commit()
+
+        try:
+            session.commit()
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Failed to commit webhook deregistration metadata: {e}. "
+                f"Webhook {webhook_id} was already deleted from Bitbucket DC. "
+                f"Metadata may be inconsistent until next successful operation."
+            )
+            session.rollback()
+            raise
+
         session.refresh(installation)
 
         logger.info(f"Deregistered webhook for installation {installation_id}")

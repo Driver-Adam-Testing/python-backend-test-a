@@ -914,7 +914,7 @@ class BitbucketDCProvider(GitProviderInterface):
             try:
                 api.delete_project_webhook(
                     project_key=project_key,
-                    webhook_id=webhook_id,
+                    webhook_id=int(webhook_id),
                     access_token=access_token,
                 )
             except Exception as e:
@@ -931,7 +931,7 @@ class BitbucketDCProvider(GitProviderInterface):
                 api.delete_repository_webhook(
                     project_key=project_key,
                     repo_slug=repo_slug,
-                    webhook_id=webhook_id,
+                    webhook_id=int(webhook_id),
                     access_token=access_token,
                 )
             except Exception as e:

@@ -1,11 +1,13 @@
 import logging
 from typing import Any, ClassVar
 
+from botocore.exceptions import ClientError
 from database.models import (
     GitProviderApp,
     GitProviderAppInstallation,
     GitProviderKind,
 )
+from pydantic import ValidationError
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -59,7 +61,6 @@ class GitProviderService:
         self.secrets_manager = AWSSecretManagementStrategy(aws_config)
 
     def get_provider(self, app: GitProviderApp) -> GitProviderInterface:
-        """Get provider instance for a git provider app"""
         provider_class = self.PROVIDERS.get(app.provider_kind)
         if not provider_class:
             raise ValueError(f"Unsupported provider kind: {app.provider_kind}")
@@ -71,9 +72,8 @@ class GitProviderService:
     #     return self.get_provider(installation.git_provider_app)
 
     # App Management
-    # ✅
+
     def create_app(self, session: Session, app_data: dict[str, Any]) -> GitProviderApp:
-        """Create a new git provider app"""
         app = GitProviderApp(**app_data)
 
         if app.provider_kind in [GitProviderKind.BITBUCKET]:
@@ -102,7 +102,6 @@ class GitProviderService:
         organization_id: str,
         provider_kind: GitProviderKind | None = None,
     ) -> list[GitProviderApp]:
-        """List git provider apps for an organization"""
         apps = git_provider_apps_by_org_id(session, organization_id)
 
         if provider_kind:
@@ -113,11 +112,9 @@ class GitProviderService:
     def list_app_installations(
         self, session: Session, organization_id: str, app_id: str
     ) -> list[GitProviderAppInstallation]:
-        """List git provider apps for an organization"""
         return git_provider_app_installation_by_org_id(session, organization_id, app_id)
 
     def delete_app(self, session: Session, organization_id: str, app_id: str) -> None:
-        """Delete a git provider app and all installations"""
         app = git_provider_app_by_id(session, organization_id, app_id)
         provider = self.get_provider(app)
 
@@ -163,7 +160,14 @@ class GitProviderService:
             raise
 
         session.refresh(installation)
-        provider.store_secrets(installation, token_data)
+
+        try:
+            provider.store_secrets(installation, token_data)
+        except (ClientError, ValidationError, ValueError) as e:
+            logger.error(f"Failed to store secrets, removing installation record: {e}")
+            session.delete(installation)
+            session.commit()
+            raise
 
         logger.info(f"Installed access token for app {app_id}: {installation.id}")
         return installation
@@ -247,8 +251,6 @@ class GitProviderService:
     def get_webhook_info(
         self, session: Session, organization_id: str, app_id: str, installation_id: str
     ) -> WebhookInfo:
-        """Get webhook configuration info"""
-
         installation = git_provider_app_installation_by_id(session, installation_id)
         if (
             not installation
@@ -479,6 +481,7 @@ class GitProviderService:
             logger.error(f"Error during revocation cleanup: {e}")
 
     # Webhook Event Handling
+
     def handle_webhook_event(
         self,
         session: Session,
@@ -487,8 +490,6 @@ class GitProviderService:
         body: dict,
         raw_body: bytes | None = None,
     ) -> dict:
-        """Handle webhook event by routing to appropriate provider"""
-
         app_install = git_provider_app_installation_by_id(session, installation_id)
         if not app_install:
             logger.error(f"Installation not found for ID {installation_id}")

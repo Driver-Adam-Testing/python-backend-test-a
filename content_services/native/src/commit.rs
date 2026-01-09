@@ -145,9 +145,6 @@ fn process_single_commit(
     let commit_date = commit_dt
         .map(|dt| dt.format("%Y-%m-%d").to_string())
         .unwrap_or_default();
-    let commit_year_month = commit_dt
-        .map(|dt| dt.format("%Y-%m").to_string())
-        .unwrap_or_else(|| "unknown".to_string());
     let (commit_year, commit_month, commit_day) = commit_dt
         .map(|dt| (dt.format("%Y").to_string().parse().unwrap_or(0),
                    dt.format("%m").to_string().parse().unwrap_or(0),
@@ -468,8 +465,7 @@ pub fn process_commits_parallel(
     let results: Vec<Result<(Vec<HashMap<String, PyValue>>, Vec<HashMap<String, PyValue>>), AnalyticsError>> = pool.install(|| {
         commits
             .par_iter()
-            .enumerate()
-            .map(|(idx, commit_input)| {
+            .map(|commit_input| {
                 // Thread-local repository
                 thread_local! {
                     static REPO: RefCell<Option<Repository>> = RefCell::new(None);

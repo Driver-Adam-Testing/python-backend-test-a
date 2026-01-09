@@ -12,8 +12,17 @@ use pyo3::types::{PyDict, PySet};
 use rayon::prelude::*;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+
+/// Macro to log to stderr with immediate flush for containerized environments.
+macro_rules! log_flush {
+    ($($arg:tt)*) => {{
+        eprintln!($($arg)*);
+        let _ = std::io::stderr().flush();
+    }};
+}
 
 /// Input for commit processing, passed from Python.
 #[pyclass]
@@ -484,7 +493,7 @@ pub fn process_commits_parallel(
             .collect();
         let skipped = before - filtered.len();
         if skipped > 0 {
-            eprintln!(
+            log_flush!(
                 "[rust-commits] Resuming from checkpoint: skipping {} already-processed commits",
                 skipped
             );
@@ -494,13 +503,13 @@ pub fn process_commits_parallel(
 
     let total = commits_to_process.len();
     if total == 0 {
-        eprintln!("[rust-commits] No commits to process (all already in checkpoint)");
+        log_flush!("[rust-commits] No commits to process (all already in checkpoint)");
         return Ok((Vec::new(), Vec::new()));
     }
 
     let workers = num_workers.unwrap_or(4);
 
-    eprintln!(
+    log_flush!(
         "[rust-commits] Starting commit processing for {} commits with {} workers",
         total, workers
     );
@@ -531,7 +540,7 @@ pub fn process_commits_parallel(
         .collect();
     let num_batches = batches.len();
 
-    eprintln!(
+    log_flush!(
         "[rust-commits] Processing {} commits in {} batches of up to {} commits each",
         total, num_batches, BATCH_SIZE
     );
@@ -586,7 +595,7 @@ pub fn process_commits_parallel(
                         let global_count = total_processed + count;
                         let rate = global_count as f64 / elapsed;
                         let pct = (global_count as f64 / total as f64) * 100.0;
-                        eprintln!(
+                        log_flush!(
                             "[rust-commits] Progress: {}/{} commits ({:.1}%) - {:.0} commits/sec",
                             global_count, total, pct, rate
                         );
@@ -615,7 +624,7 @@ pub fn process_commits_parallel(
                 Err(e) => {
                     batch_errors += 1;
                     if batch_errors <= 5 {
-                        eprintln!("[rust-commits] Error processing commit: {}", e);
+                        log_flush!("[rust-commits] Error processing commit: {}", e);
                     }
                 }
             }
@@ -627,7 +636,7 @@ pub fn process_commits_parallel(
         // Call checkpoint callback after each batch
         if let Some(ref callback) = checkpoint_callback {
             let batch_shas_py: Vec<&str> = batch_shas.iter().map(|s| s.as_str()).collect();
-            eprintln!(
+            log_flush!(
                 "[rust-commits] Batch {}/{} complete: {} commits, {} records, {} file changes - calling checkpoint",
                 batch_idx + 1, num_batches, batch_size, batch_commits.len(), batch_file_changes.len()
             );
@@ -651,16 +660,16 @@ pub fn process_commits_parallel(
     // Final progress reporting
     let elapsed = start_time.elapsed().as_secs_f64();
     let rate = total as f64 / elapsed;
-    eprintln!(
+    log_flush!(
         "[rust-commits] Processed {} commits in {:.2}s ({:.0} commits/sec)",
         total, elapsed, rate
     );
 
     if total_errors > 0 {
-        eprintln!("[rust-commits] Total errors: {}", total_errors);
+        log_flush!("[rust-commits] Total errors: {}", total_errors);
     }
 
-    eprintln!(
+    log_flush!(
         "[rust-commits] Complete: {} commit records, {} file changes",
         all_commits.len(),
         all_file_changes.len()

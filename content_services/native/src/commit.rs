@@ -8,10 +8,11 @@ use crate::filters::FileFilter;
 use chrono::{DateTime, TimeZone, Utc};
 use git2::{DiffOptions, Oid, Repository};
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PySet};
 use rayon::prelude::*;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 /// Input for commit processing, passed from Python.
@@ -428,9 +429,29 @@ fn hashmap_to_pydict(py: Python<'_>, map: HashMap<String, PyValue>) -> PyObject 
     dict.into()
 }
 
+/// Default batch size for commit processing with checkpointing
+const BATCH_SIZE: usize = 10000;
+
 /// Process commits in parallel and return (commit_records, file_changes).
 ///
 /// Uses thread-local repository handles to avoid opening a new repo per commit.
+/// Supports checkpointing for fault tolerance on large repositories.
+///
+/// # Arguments
+///
+/// * `repo_path` - Path to git repository
+/// * `commits` - List of CommitInput with SHA, branches, and pre-computed tree sizes
+/// * `codebase_id` - UUID of the codebase
+/// * `collected_at_ts` - Collection timestamp as Unix float
+/// * `include_file_changes` - Whether to extract file-level changes
+/// * `skip_shas` - Optional set of SHAs to skip (already processed from checkpoint)
+/// * `checkpoint_callback` - Optional Python callable for periodic checkpoints.
+///                           Called with (batch_shas, commit_records, file_changes) after each batch.
+/// * `num_workers` - Optional number of parallel workers (default: 4)
+///
+/// # Returns
+///
+/// Tuple of (commit_records, file_changes) where each is a list of dicts.
 pub fn process_commits_parallel(
     py: Python<'_>,
     repo_path: &str,
@@ -438,9 +459,45 @@ pub fn process_commits_parallel(
     codebase_id: &str,
     collected_at_ts: f64,
     include_file_changes: bool,
+    skip_shas: Option<&PySet>,
+    checkpoint_callback: Option<PyObject>,
     num_workers: Option<usize>,
 ) -> PyResult<(Vec<PyObject>, Vec<PyObject>)> {
-    let total = commits.len();
+    // Build skip set from Python set
+    let skip_set: HashSet<String> = if let Some(py_set) = skip_shas {
+        py_set
+            .iter()
+            .filter_map(|item| item.extract::<String>().ok())
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
+    // Filter out already-processed commits
+    let commits_to_process: Vec<CommitInput> = if skip_set.is_empty() {
+        commits
+    } else {
+        let before = commits.len();
+        let filtered: Vec<CommitInput> = commits
+            .into_iter()
+            .filter(|c| !skip_set.contains(&c.sha))
+            .collect();
+        let skipped = before - filtered.len();
+        if skipped > 0 {
+            eprintln!(
+                "[rust-commits] Resuming from checkpoint: skipping {} already-processed commits",
+                skipped
+            );
+        }
+        filtered
+    };
+
+    let total = commits_to_process.len();
+    if total == 0 {
+        eprintln!("[rust-commits] No commits to process (all already in checkpoint)");
+        return Ok((Vec::new(), Vec::new()));
+    }
+
     let workers = num_workers.unwrap_or(4).min(8);
 
     eprintln!(
@@ -456,42 +513,142 @@ pub fn process_commits_parallel(
 
     // Shared filter (read-only, safe to share)
     let filter = Arc::new(FileFilter::new());
-    let repo_path = repo_path.to_string();
-    let codebase_id = codebase_id.to_string();
+    let repo_path_string = repo_path.to_string();
+    let codebase_id_string = codebase_id.to_string();
 
     let start_time = std::time::Instant::now();
 
-    // Process commits in parallel
-    let results: Vec<Result<(Vec<HashMap<String, PyValue>>, Vec<HashMap<String, PyValue>>), AnalyticsError>> = pool.install(|| {
-        commits
-            .par_iter()
-            .map(|commit_input| {
-                // Thread-local repository
-                thread_local! {
-                    static REPO: RefCell<Option<Repository>> = RefCell::new(None);
-                }
+    // Accumulate all results
+    let mut all_commits: Vec<PyObject> = Vec::new();
+    let mut all_file_changes: Vec<PyObject> = Vec::new();
+    let mut total_errors = 0;
+    let mut total_processed = 0;
 
-                REPO.with(|repo_cell| {
-                    let mut repo_opt = repo_cell.borrow_mut();
-                    if repo_opt.is_none() {
-                        *repo_opt = Some(Repository::open(&repo_path)?);
+    // Process in batches for checkpointing
+    let batches: Vec<Vec<CommitInput>> = commits_to_process
+        .chunks(BATCH_SIZE)
+        .map(|chunk| chunk.to_vec())
+        .collect();
+    let num_batches = batches.len();
+
+    eprintln!(
+        "[rust-commits] Processing {} commits in {} batches of up to {} commits each",
+        total, num_batches, BATCH_SIZE
+    );
+
+    for (batch_idx, batch) in batches.into_iter().enumerate() {
+        let batch_size = batch.len();
+        let batch_shas: Vec<String> = batch.iter().map(|c| c.sha.clone()).collect();
+
+        // Atomic counter for progress tracking within batch
+        let processed_count = Arc::new(AtomicUsize::new(0));
+        let log_interval = 5000;
+
+        // Clone for closure
+        let repo_path_clone = repo_path_string.clone();
+        let codebase_id_clone = codebase_id_string.clone();
+        let filter_clone = Arc::clone(&filter);
+
+        // Process this batch in parallel
+        let results: Vec<Result<(Vec<HashMap<String, PyValue>>, Vec<HashMap<String, PyValue>>), AnalyticsError>> = pool.install(|| {
+            let processed_count = Arc::clone(&processed_count);
+            batch
+                .par_iter()
+                .map(move |commit_input| {
+                    let processed_count = Arc::clone(&processed_count);
+
+                    // Thread-local repository
+                    thread_local! {
+                        static REPO: RefCell<Option<Repository>> = RefCell::new(None);
                     }
-                    let repo = repo_opt.as_ref().unwrap();
 
-                    process_single_commit(
-                        repo,
-                        commit_input,
-                        &codebase_id,
-                        collected_at_ts,
-                        include_file_changes,
-                        &filter,
-                    )
+                    let result = REPO.with(|repo_cell| {
+                        let mut repo_opt = repo_cell.borrow_mut();
+                        if repo_opt.is_none() {
+                            *repo_opt = Some(Repository::open(&repo_path_clone)?);
+                        }
+                        let repo = repo_opt.as_ref().unwrap();
+
+                        process_single_commit(
+                            repo,
+                            commit_input,
+                            &codebase_id_clone,
+                            collected_at_ts,
+                            include_file_changes,
+                            &filter_clone,
+                        )
+                    });
+
+                    // Progress tracking with periodic logging
+                    let count = processed_count.fetch_add(1, Ordering::Relaxed) + 1;
+                    if count % log_interval == 0 || count == batch_size {
+                        let elapsed = start_time.elapsed().as_secs_f64();
+                        let global_count = total_processed + count;
+                        let rate = global_count as f64 / elapsed;
+                        let pct = (global_count as f64 / total as f64) * 100.0;
+                        eprintln!(
+                            "[rust-commits] Progress: {}/{} commits ({:.1}%) - {:.0} commits/sec",
+                            global_count, total, pct, rate
+                        );
+                    }
+
+                    result
                 })
-            })
-            .collect()
-    });
+                .collect()
+        });
 
-    // Progress reporting
+        // Process batch results
+        let mut batch_commits: Vec<PyObject> = Vec::new();
+        let mut batch_file_changes: Vec<PyObject> = Vec::new();
+        let mut batch_errors = 0;
+
+        for result in results {
+            match result {
+                Ok((commit_records, file_changes)) => {
+                    for record in commit_records {
+                        batch_commits.push(hashmap_to_pydict(py, record));
+                    }
+                    for fc in file_changes {
+                        batch_file_changes.push(hashmap_to_pydict(py, fc));
+                    }
+                }
+                Err(e) => {
+                    batch_errors += 1;
+                    if batch_errors <= 5 {
+                        eprintln!("[rust-commits] Error processing commit: {}", e);
+                    }
+                }
+            }
+        }
+
+        total_processed += batch_size;
+        total_errors += batch_errors;
+
+        // Call checkpoint callback after each batch
+        if let Some(ref callback) = checkpoint_callback {
+            let batch_shas_py: Vec<&str> = batch_shas.iter().map(|s| s.as_str()).collect();
+            eprintln!(
+                "[rust-commits] Batch {}/{} complete: {} commits, {} records, {} file changes - calling checkpoint",
+                batch_idx + 1, num_batches, batch_size, batch_commits.len(), batch_file_changes.len()
+            );
+
+            // Call Python callback with (batch_shas, commit_records, file_changes)
+            callback.call1(
+                py,
+                (
+                    batch_shas_py,
+                    batch_commits.clone(),
+                    batch_file_changes.clone(),
+                ),
+            )?;
+        }
+
+        // Accumulate results
+        all_commits.extend(batch_commits);
+        all_file_changes.extend(batch_file_changes);
+    }
+
+    // Final progress reporting
     let elapsed = start_time.elapsed().as_secs_f64();
     let rate = total as f64 / elapsed;
     eprintln!(
@@ -499,32 +656,8 @@ pub fn process_commits_parallel(
         total, elapsed, rate
     );
 
-    // Flatten results
-    let mut all_commits: Vec<PyObject> = Vec::new();
-    let mut all_file_changes: Vec<PyObject> = Vec::new();
-    let mut errors = 0;
-
-    for result in results {
-        match result {
-            Ok((commit_records, file_changes)) => {
-                for record in commit_records {
-                    all_commits.push(hashmap_to_pydict(py, record));
-                }
-                for fc in file_changes {
-                    all_file_changes.push(hashmap_to_pydict(py, fc));
-                }
-            }
-            Err(e) => {
-                errors += 1;
-                if errors <= 5 {
-                    eprintln!("[rust-commits] Error processing commit: {}", e);
-                }
-            }
-        }
-    }
-
-    if errors > 0 {
-        eprintln!("[rust-commits] Total errors: {}", errors);
+    if total_errors > 0 {
+        eprintln!("[rust-commits] Total errors: {}", total_errors);
     }
 
     eprintln!(

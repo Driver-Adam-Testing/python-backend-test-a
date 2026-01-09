@@ -432,6 +432,10 @@ fn get_language_from_path(file_path: &str) -> Option<String> {
 /// This function processes commits using thread-local repository handles
 /// to avoid the overhead of opening a new repo per commit.
 ///
+/// Supports checkpointing for fault tolerance on large repositories.
+/// Processes commits in batches of 10,000 and calls checkpoint_callback
+/// after each batch completes.
+///
 /// # Arguments
 ///
 /// * `repo_path` - Path to git repository
@@ -439,13 +443,16 @@ fn get_language_from_path(file_path: &str) -> Option<String> {
 /// * `codebase_id` - UUID of the codebase
 /// * `collected_at_ts` - Collection timestamp as Unix float
 /// * `include_file_changes` - Whether to extract file-level changes
+/// * `skip_shas` - Optional set of SHAs to skip (already processed from checkpoint)
+/// * `checkpoint_callback` - Optional Python callable for periodic checkpoints.
+///                           Called with (batch_shas, commit_records, file_changes) after each batch.
 /// * `num_workers` - Optional number of parallel workers (default: 4)
 ///
 /// # Returns
 ///
 /// Tuple of (commit_records, file_changes) where each is a list of dicts.
 #[pyfunction]
-#[pyo3(signature = (repo_path, commits, codebase_id, collected_at_ts, include_file_changes=false, num_workers=None))]
+#[pyo3(signature = (repo_path, commits, codebase_id, collected_at_ts, include_file_changes=false, skip_shas=None, checkpoint_callback=None, num_workers=None))]
 fn process_commits_parallel(
     py: Python<'_>,
     repo_path: &str,
@@ -453,6 +460,8 @@ fn process_commits_parallel(
     codebase_id: &str,
     collected_at_ts: f64,
     include_file_changes: bool,
+    skip_shas: Option<&pyo3::types::PySet>,
+    checkpoint_callback: Option<PyObject>,
     num_workers: Option<usize>,
 ) -> PyResult<(Vec<PyObject>, Vec<PyObject>)> {
     commit::process_commits_parallel(
@@ -462,6 +471,8 @@ fn process_commits_parallel(
         codebase_id,
         collected_at_ts,
         include_file_changes,
+        skip_shas,
+        checkpoint_callback,
         num_workers,
     )
 }

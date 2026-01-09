@@ -111,7 +111,7 @@ class TestCommitProcessingParity:
             codebase_id,
             collected_at.timestamp(),
             False,  # include_file_changes
-            1,  # workers
+            num_workers=1,
         )
 
         # Run Python implementation
@@ -216,7 +216,7 @@ class TestCommitProcessingParity:
             codebase_id,
             collected_at.timestamp(),
             True,  # include_file_changes
-            1,
+            num_workers=1,
         )
         rust_file_changes = _convert_rust_file_changes(rust_file_changes_raw)
 
@@ -286,7 +286,7 @@ class TestCommitProcessingParity:
             "test-codebase",
             datetime.now(UTC).timestamp(),
             False,
-            1,
+            num_workers=1,
         )
 
         # Should have 3 records (one per branch)
@@ -329,7 +329,7 @@ class TestCommitProcessingParity:
             "test-codebase",
             datetime.now(UTC).timestamp(),
             False,
-            1,
+            num_workers=1,
         )
 
         assert len(rust_commits) == 1
@@ -387,7 +387,7 @@ class TestCommitProcessingParity:
             "test-codebase",
             datetime.now(UTC).timestamp(),
             False,
-            1,
+            num_workers=1,
         )
 
         assert len(rust_commits) == 1
@@ -444,7 +444,7 @@ class TestCommitProcessingParity:
                 "test-codebase",
                 datetime.now(UTC).timestamp(),
                 False,
-                1,
+                num_workers=1,
             )
 
             actual = rust_commits[0]["commit_size_category"]
@@ -488,7 +488,7 @@ class TestCommitProcessingParity:
             "test-codebase",
             datetime.now(UTC).timestamp(),
             False,
-            1,
+            num_workers=1,
         )
 
         record = rust_commits[0]
@@ -566,7 +566,7 @@ class TestCommitProcessingPerformance:
             codebase_id,
             collected_at.timestamp(),
             False,
-            4,
+            num_workers=4,
         )
         rust_time = time.perf_counter() - start
 

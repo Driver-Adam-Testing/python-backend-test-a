@@ -1135,11 +1135,19 @@ class AnalyticsPipeline:
                     last_processed_index=data["last_processed_index"],
                     last_processed_sha=data["last_processed_sha"],
                     tree_size_cache=data["tree_size_cache"],
+                    # Commit processing checkpoint fields (may be empty during tree size phase)
+                    processed_commit_shas=data.get("processed_commit_shas", set()),
+                    commit_records=data.get("commit_records", []),
+                    file_change_records=data.get("file_change_records", []),
                 )
                 upload_checkpoint(checkpoint, bucket)
-                logger.debug(
-                    f"Checkpoint saved: {checkpoint.commits_processed}/{checkpoint.commits_total}"
+
+                # Log progress for both phases
+                tree_progress = f"{checkpoint.commits_processed}/{checkpoint.commits_total} tree sizes"
+                commit_progress = (
+                    f"{len(checkpoint.processed_commit_shas)} commits processed"
                 )
+                logger.debug(f"Checkpoint saved: {tree_progress}, {commit_progress}")
             except Exception as e:
                 # Non-fatal - extraction can continue without checkpoint
                 logger.warning(f"Failed to save checkpoint: {e}")

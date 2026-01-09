@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Increment this when checkpoint schema changes
-CHECKPOINT_VERSION = "1.0"
+CHECKPOINT_VERSION = "1.1"
 
 
 class ExtractionCheckpoint(BaseModel):
@@ -41,7 +41,7 @@ class ExtractionCheckpoint(BaseModel):
     started_at: datetime
     last_updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
-    # Progress tracking
+    # Progress tracking (tree size phase)
     commits_total: int
     commits_processed: int
     last_processed_index: int
@@ -49,6 +49,14 @@ class ExtractionCheckpoint(BaseModel):
 
     # Tree size cache from Rust (SHA -> (bytes, lines))
     tree_size_cache: dict[str, tuple[int, int]]
+
+    # Commit processing checkpoint (Phase 2)
+    # Set of commit SHAs that have been fully processed
+    processed_commit_shas: set[str] = Field(default_factory=set)
+    # Accumulated commit records from processed batches
+    commit_records: list[dict] = Field(default_factory=list)
+    # Accumulated file changes from processed batches
+    file_change_records: list[dict] = Field(default_factory=list)
 
 
 def validate_checkpoint_version(checkpoint_data: dict) -> bool:

@@ -202,8 +202,43 @@ def extract_commits(
 
         logger.info(f"Processing {total} commits with {workers} parallel workers")
 
+        # Get checkpoint data for commit processing resume
+        skip_shas: set[str] | None = None
+        initial_commits: list[dict] = []
+        initial_file_changes: list[dict] = []
+        if checkpoint and checkpoint.processed_commit_shas:
+            skip_shas = checkpoint.processed_commit_shas
+            initial_commits = checkpoint.commit_records or []
+            initial_file_changes = checkpoint.file_change_records or []
+            logger.info(
+                f"Resuming commit processing with {len(skip_shas)} already-processed commits"
+            )
+
+        # Create commit processing checkpoint callback if main callback provided
+        commit_checkpoint_callback = None
+        if checkpoint_callback:
+
+            def commit_checkpoint_callback(data: dict) -> None:
+                """Merge commit processing checkpoint with tree size checkpoint."""
+                # Build combined checkpoint data
+                combined_data = {
+                    "codebase_id": codebase_id,
+                    "commits_total": len(commits_topo),
+                    "commits_processed": len(commits_topo),  # Tree sizes done
+                    "last_processed_index": len(commits_topo) - 1,
+                    "last_processed_sha": str(commits_topo[-1].id)
+                    if commits_topo
+                    else "",
+                    "tree_size_cache": tree_size_cache,
+                    # Commit processing checkpoint fields
+                    "processed_commit_shas": data["processed_commit_shas"],
+                    "commit_records": data["commit_records"],
+                    "file_change_records": data["file_change_records"],
+                }
+                checkpoint_callback(combined_data)
+
         # Process commits in parallel using thread pool
-        all_commits, all_file_changes = _process_commits_parallel(
+        new_commits, new_file_changes = _process_commits_parallel(
             repo_path=repo.path,
             commit_shas=commit_shas,
             codebase_id=codebase_id,
@@ -213,7 +248,13 @@ def extract_commits(
             include_file_changes=include_file_changes,
             tree_size_cache=tree_size_cache,
             workers=workers,
+            skip_shas=skip_shas,
+            checkpoint_callback=commit_checkpoint_callback,
         )
+
+        # Combine with initial results from checkpoint
+        all_commits = initial_commits + new_commits
+        all_file_changes = initial_file_changes + new_file_changes
 
         logger.info(f"Successfully extracted {len(all_commits)} commit records")
         if include_file_changes:
@@ -244,12 +285,16 @@ def _process_commits_parallel(
     include_file_changes: bool,
     tree_size_cache: dict[str, tuple[int, int]],
     workers: int,
+    skip_shas: set[str] | None = None,
+    checkpoint_callback: "Callable[[dict], None] | None" = None,
 ) -> tuple[list[dict], list[dict]]:
     """
     Process commits in parallel using native Rust extension or Python fallback.
 
     Uses native Rust extension when available (much faster for large repos),
     falls back to Python ThreadPoolExecutor if not installed.
+
+    Supports checkpointing for fault tolerance on large repositories.
 
     Args:
         repo_path: Path to the git repository
@@ -261,6 +306,8 @@ def _process_commits_parallel(
         include_file_changes: Whether to extract file-level changes
         tree_size_cache: Pre-computed tree sizes (read-only, shared)
         workers: Number of parallel workers
+        skip_shas: Set of SHAs to skip (already processed from checkpoint)
+        checkpoint_callback: Callback for checkpointing after each batch
 
     Returns:
         Tuple of (all_commits, all_file_changes)
@@ -281,13 +328,47 @@ def _process_commits_parallel(
             tree_bytes, tree_lines = tree_size_cache.get(sha, (0, 0))
             commit_inputs.append(CommitInput(sha, branches, tree_bytes, tree_lines))
 
-        # Call native Rust implementation
+        # Create Rust callback wrapper if checkpoint callback provided
+        rust_callback = None
+        if checkpoint_callback:
+            # Track accumulated results across batches for checkpoint
+            accumulated_shas: set[str] = set(skip_shas) if skip_shas else set()
+            accumulated_commits: list[dict] = []
+            accumulated_file_changes: list[dict] = []
+
+            def rust_callback(
+                batch_shas: list[str],
+                batch_commits: list[dict],
+                batch_file_changes: list[dict],
+            ) -> None:
+                """Transform Rust batch callback to checkpoint format."""
+                # Accumulate results
+                accumulated_shas.update(batch_shas)
+                # Convert and accumulate commits
+                converted_commits = _convert_rust_commits(batch_commits)
+                accumulated_commits.extend(converted_commits)
+                # Convert and accumulate file changes
+                converted_file_changes = _convert_rust_file_changes(batch_file_changes)
+                accumulated_file_changes.extend(converted_file_changes)
+
+                # Build checkpoint data
+                checkpoint_data = {
+                    "codebase_id": codebase_id,
+                    "processed_commit_shas": accumulated_shas.copy(),
+                    "commit_records": accumulated_commits.copy(),
+                    "file_change_records": accumulated_file_changes.copy(),
+                }
+                checkpoint_callback(checkpoint_data)
+
+        # Call native Rust implementation with checkpoint support
         rust_commits, rust_file_changes = native_process(
             repo_path,
             commit_inputs,
             codebase_id,
             collected_at.timestamp(),
             include_file_changes,
+            set(skip_shas) if skip_shas else None,
+            rust_callback,
             workers,
         )
 

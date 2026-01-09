@@ -258,7 +258,7 @@ def make_codebase_tags(
     return tags
 
 
-async def export_tech_docs_to_zip(
+def export_tech_docs_to_zip(
     version_id: uuid.UUID,
     install_id: str | None = None,
 ) -> None:
@@ -403,7 +403,7 @@ async def export_tech_docs_to_zip(
                 print("PRing exported docs")
                 from shared.inspector.onboarding.push_bot import push_docs
 
-                await push_docs(version_id)
+                push_docs(version_id)
             else:
                 # TODO: better handling of install_id rather than attaching to S3 metadata
                 print("Unable to PR - install id is not available")

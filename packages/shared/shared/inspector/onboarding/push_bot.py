@@ -1,9 +1,12 @@
+import logging
 import os
 import re
 import subprocess
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 
 def extract_values_from_presigned_url(url: str) -> dict:
@@ -32,11 +35,16 @@ def run(
 
     result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
     if result.stdout:
-        print(result.stdout)
+        logger.info(f"stdout: {result.stdout}")
     if result.stderr:
-        print(result.stderr)
+        if result.returncode != 0:
+            logger.error(f"stderr: {result.stderr}")
+        else:
+            logger.warning(f"stderr: {result.stderr}")
     if check and result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, cmd)
+        raise subprocess.CalledProcessError(
+            result.returncode, cmd, result.stdout, result.stderr
+        )
     return result
 
 
@@ -59,17 +67,21 @@ def run_git_with_bearer_auth(
     ]
     result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     if result.stdout:
-        print(result.stdout)
+        logger.info(f"stdout: {result.stdout}")
     if result.stderr:
-        print(result.stderr)
+        if result.returncode != 0:
+            logger.error(f"stderr: {result.stderr}")
+        else:
+            logger.warning(f"stderr: {result.stderr}")
     if check and result.returncode != 0:
+        sanitized_cmd = " ".join(cmd[:3] + ["..."] + args)
         raise subprocess.CalledProcessError(
-            result.returncode, " ".join(cmd[:3] + ["..."] + args)
+            result.returncode, sanitized_cmd, result.stdout, result.stderr
         )
     return result
 
 
-async def push_docs(version_id: uuid.UUID) -> None:
+def push_docs(version_id: uuid.UUID) -> None:
     # import boto3
     import hashlib
     import shutil
@@ -89,12 +101,12 @@ async def push_docs(version_id: uuid.UUID) -> None:
         unpack_archive_to_finalized_path,
     )
     from shared.inspector.utils.db import (
-        get_version_by_id,
         git_provider_app_installation_by_id,
+        sync_get_version_by_id,
     )
     from sqlmodel import Session, select
 
-    version = await get_version_by_id(version_id)
+    version = sync_get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
     tracked_branch = version.primary_asset.vcs_tracked_branch
     repo_id = version.primary_asset.repository_id
@@ -223,7 +235,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             # NOTE: only need to do this because previous iteration of export landed
             # directly in `driver_docs`. Once we start exporting other content,
             # we'll need a different approach.
-            print(f"Removing existing driver_docs directory: {driver_docs_path}")
+            logger.info(f"Removing existing driver_docs directory: {driver_docs_path}")
             shutil.rmtree(driver_docs_path)
 
         dst_path = repo_dir / "driver_docs" / repo_name
@@ -236,7 +248,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
         diff = run("git diff --cached --quiet", cwd=repo_dir, check=False)
         if diff.returncode == 0:
-            print("✅ No changes to commit.")
+            logger.info("No changes to commit")
             return
 
         run(f'git commit -m "{COMMIT_MESSAGE}"', cwd=repo_dir)
@@ -249,7 +261,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             )
         else:
             run(f"git push --force {clone_url} {branch}", cwd=repo_dir)
-        print(f"✅ Pushed `{target_dir}` to `{branch}`")
+        logger.info(f"Pushed {target_dir} to {branch}")
 
         # Create pull request based on provider
         if provider == PrimaryAssetProvider.GITHUB:
@@ -291,7 +303,7 @@ def sync_directory(src: str, dest: str) -> None:
     if os.path.exists(dest):
         shutil.rmtree(dest)
     shutil.copytree(src, dest)
-    print(f"✅ Synced `{src}` to `{dest}`")
+    logger.info(f"Synced {src} to {dest}")
 
 
 def download_file_from_s3(
@@ -303,13 +315,12 @@ def download_file_from_s3(
     s3 = boto3.client("s3")
     response = s3.head_object(Bucket=bucket_name, Key=object_key)
 
-    # Extract and print metadata
     metadata = response.get("Metadata", {})
-    print(metadata)
-    # Download the ZIP file
+    logger.info(f"S3 object metadata: {metadata}")
     s3.download_file(bucket_name, object_key, local_file_path)
-
-    print(f"Downloaded {object_key} from bucket {bucket_name} to {local_file_path}")
+    logger.info(
+        f"Downloaded {object_key} from bucket {bucket_name} to {local_file_path}"
+    )
     return metadata
 
 

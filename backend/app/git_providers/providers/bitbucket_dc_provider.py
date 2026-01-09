@@ -183,26 +183,34 @@ class BitbucketDCProvider(GitProviderInterface):
             APP_INSTALL_BBDC_HTTP_NAME_PREFIX, str(installation.id)
         )
 
-        # Fetch existing secrets to preserve webhook secret
+        # Fetch existing secrets to preserve webhook secret and token metadata
         existing_secrets = self.secrets_manager.read_secret(secret_key)
         if not existing_secrets or "secret_token" not in existing_secrets:
             raise ValueError(
                 f"No existing webhook secret found for installation {installation.id}"
             )
 
-        webhook_secret = existing_secrets["secret_token"]
+        # Start with existing secrets to preserve token_type, project_key, repo_slug
+        updated_secrets = dict(existing_secrets)
 
-        secret_value = json.dumps(
-            {
-                "token": dc_token.token,
-                "instance_url": dc_token.instance_url,
-                "secret_token": webhook_secret,
-                "ca_bundle_path": dc_token.ca_bundle_path,
-                "disable_ssl_verify": dc_token.disable_ssl_verify,
-            }
-        )
+        # Update with new token data (only overwrite fields that are provided)
+        updated_secrets["token"] = dc_token.token
+        updated_secrets["instance_url"] = dc_token.instance_url
+        updated_secrets["ca_bundle_path"] = dc_token.ca_bundle_path
+        updated_secrets["disable_ssl_verify"] = dc_token.disable_ssl_verify
 
-        self.secrets_manager.write_secret(secret_key, secret_value)
+        # Update token_type only if explicitly provided in token_data (check original dict,
+        # not parsed model, since model has a default value)
+        if "token_type" in token_data:
+            updated_secrets["token_type"] = dc_token.token_type.value
+
+        # Update scope fields only if explicitly provided in token_data
+        if "project_key" in token_data:
+            updated_secrets["project_key"] = dc_token.project_key
+        if "repo_slug" in token_data:
+            updated_secrets["repo_slug"] = dc_token.repo_slug
+
+        self.secrets_manager.write_secret(secret_key, json.dumps(updated_secrets))
         logger.info(
             f"Updated HTTP Access Token for Bitbucket DC installation {installation.id}"
         )

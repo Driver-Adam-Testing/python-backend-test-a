@@ -167,6 +167,55 @@ class TestCheckpointValidation:
 
         assert validate_checkpoint_version(checkpoint_data) is False
 
+    def test_tree_size_cache_validation_with_valid_data(self):
+        """Valid tree_size_cache should pass validation."""
+        from analytics.checkpoint import _validate_tree_size_cache
+
+        valid_cache = {
+            "sha1": (100, 50),
+            "sha2": (200, 100),
+            "sha3": [300, 150],  # Lists should also be accepted
+        }
+        assert _validate_tree_size_cache(valid_cache) is True
+
+    def test_tree_size_cache_validation_with_string_values(self):
+        """tree_size_cache with string values should still pass (coercible to int)."""
+        from analytics.checkpoint import _validate_tree_size_cache
+
+        # Numeric strings are coercible to int
+        cache_with_strings = {
+            "sha1": ("100", "50"),
+            "sha2": ("200", "100"),
+        }
+        assert _validate_tree_size_cache(cache_with_strings) is True
+
+    def test_tree_size_cache_validation_with_non_numeric_strings(self):
+        """tree_size_cache with non-numeric strings should fail validation."""
+        from analytics.checkpoint import _validate_tree_size_cache
+
+        invalid_cache = {
+            "sha1": ("not_a_number", "50"),
+        }
+        assert _validate_tree_size_cache(invalid_cache) is False
+
+    def test_tree_size_cache_validation_with_wrong_structure(self):
+        """tree_size_cache with wrong structure should fail validation."""
+        from analytics.checkpoint import _validate_tree_size_cache
+
+        # Single value instead of tuple
+        invalid_cache = {"sha1": 100}
+        assert _validate_tree_size_cache(invalid_cache) is False
+
+        # Tuple with wrong length
+        invalid_cache = {"sha1": (100, 50, 25)}
+        assert _validate_tree_size_cache(invalid_cache) is False
+
+    def test_tree_size_cache_validation_empty_cache(self):
+        """Empty tree_size_cache should pass validation."""
+        from analytics.checkpoint import _validate_tree_size_cache
+
+        assert _validate_tree_size_cache({}) is True
+
 
 class TestCheckpointS3Storage:
     """Tests for S3 checkpoint upload/download."""

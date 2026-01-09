@@ -338,7 +338,19 @@ def _process_commits_parallel(
         commit_inputs = []
         for sha in commit_shas:
             branches = commit_to_branches.get(sha, [])
-            tree_bytes, tree_lines = tree_size_cache.get(sha, (0, 0))
+            tree_size = tree_size_cache.get(sha, (0, 0))
+            # Defensive conversion: ensure tree_bytes and tree_lines are integers
+            # This handles edge cases where JSON deserialization might produce
+            # unexpected types (e.g., strings from malformed checkpoints)
+            try:
+                tree_bytes = int(tree_size[0])
+                tree_lines = int(tree_size[1])
+            except (TypeError, ValueError, IndexError) as e:
+                logger.warning(
+                    f"Invalid tree_size for {sha[:8]}: {tree_size!r} ({type(tree_size).__name__}), "
+                    f"using defaults. Error: {e}"
+                )
+                tree_bytes, tree_lines = 0, 0
             commit_inputs.append(CommitInput(sha, branches, tree_bytes, tree_lines))
 
         # Create Rust callback wrapper if checkpoint callback provided

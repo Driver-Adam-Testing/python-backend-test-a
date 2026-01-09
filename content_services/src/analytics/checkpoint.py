@@ -141,6 +141,40 @@ def upload_checkpoint(
     )
 
 
+def _validate_tree_size_cache(tree_size_cache: dict[str, tuple[int, int]]) -> bool:
+    """Validate tree_size_cache has proper types.
+
+    Args:
+        tree_size_cache: Cache to validate
+
+    Returns:
+        True if valid, False if corrupted
+    """
+    if not tree_size_cache:
+        return True
+
+    # Sample a few entries to validate types
+    sample_keys = list(tree_size_cache.keys())[:10]
+    for key in sample_keys:
+        value = tree_size_cache[key]
+        if not isinstance(value, tuple | list) or len(value) != 2:
+            logger.warning(
+                f"Invalid tree_size_cache entry for {key}: {value!r} "
+                f"(expected tuple of 2 ints)"
+            )
+            return False
+        try:
+            int(value[0])
+            int(value[1])
+        except (TypeError, ValueError) as e:
+            logger.warning(
+                f"Invalid tree_size_cache value types for {key}: {value!r} "
+                f"(elements must be convertible to int): {e}"
+            )
+            return False
+    return True
+
+
 def download_checkpoint(
     bucket: str,
     codebase_id: str,
@@ -172,8 +206,18 @@ def download_checkpoint(
             return None
 
         checkpoint = ExtractionCheckpoint.model_validate_json(body)
+
+        # Validate tree_size_cache types (defensive check for corrupted data)
+        if not _validate_tree_size_cache(checkpoint.tree_size_cache):
+            logger.warning(
+                "Discarding checkpoint due to corrupted tree_size_cache data"
+            )
+            return None
+
         logger.info(
-            f"Downloaded checkpoint: {checkpoint.commits_processed}/{checkpoint.commits_total} commits"
+            f"Downloaded checkpoint: {checkpoint.commits_processed}/{checkpoint.commits_total} commits, "
+            f"{len(checkpoint.tree_size_cache)} tree sizes, "
+            f"{len(checkpoint.processed_commit_shas)} processed commits"
         )
         return checkpoint
 

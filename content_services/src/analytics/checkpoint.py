@@ -2,20 +2,18 @@
 
 This module provides:
 - ExtractionCheckpoint: Pydantic model for checkpoint state
-- S3 upload/download functions
-- Local file cache functions
-- Validation logic
+- S3 upload/download/delete functions
+- Validation logic for checkpoint compatibility
 """
 
 import json
 import logging
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     import pygit2
@@ -51,10 +49,6 @@ class ExtractionCheckpoint(BaseModel):
 
     # Tree size cache from Rust (SHA -> (bytes, lines))
     tree_size_cache: dict[str, tuple[int, int]]
-
-    model_config = ConfigDict(
-        # Pydantic V2 handles datetime serialization automatically with ISO format
-    )
 
 
 def validate_checkpoint_version(checkpoint_data: dict) -> bool:
@@ -204,43 +198,3 @@ def delete_checkpoint(
     key = _get_checkpoint_key(codebase_id)
     logger.info(f"Deleting checkpoint at s3://{bucket}/{key}")
     s3_client.delete_object(Bucket=bucket, Key=key)
-
-
-# Local File Cache Functions
-
-
-def write_local_checkpoint(
-    checkpoint: ExtractionCheckpoint,
-    path: Path,
-) -> None:
-    """Write checkpoint to local file.
-
-    Args:
-        checkpoint: Checkpoint to write
-        path: Local file path
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(checkpoint.model_dump_json())
-    logger.debug(f"Wrote local checkpoint to {path}")
-
-
-def read_local_checkpoint(path: Path) -> ExtractionCheckpoint | None:
-    """Read checkpoint from local file.
-
-    Args:
-        path: Local file path
-
-    Returns:
-        ExtractionCheckpoint if found and valid, None otherwise
-    """
-    if not path.exists():
-        return None
-
-    try:
-        data = json.loads(path.read_text())
-        if not validate_checkpoint_version(data):
-            return None
-        return ExtractionCheckpoint.model_validate(data)
-    except (json.JSONDecodeError, ValueError) as e:
-        logger.warning(f"Local checkpoint corrupted: {e}")
-        return None

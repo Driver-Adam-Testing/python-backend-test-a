@@ -1122,9 +1122,6 @@ class AnalyticsPipeline:
         Returns:
             Callback function for extract_commits
         """
-        from datetime import datetime
-
-        # Track when extraction started for checkpoint metadata
         extraction_started = datetime.now(UTC)
 
         def checkpoint_callback(data: dict) -> None:

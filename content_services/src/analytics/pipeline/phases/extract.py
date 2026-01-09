@@ -82,15 +82,17 @@ def get_parallel_workers() -> int:
     """
     Get number of parallel workers for commit processing.
 
+    Default is cpu_count - 1 to leave one core for system overhead.
     Configurable via ANALYTICS_PARALLEL_WORKERS environment variable.
-    Default is 4, max is 6 to leave headroom for other tasks on shared workers.
     """
-    default = 4
-    max_allowed = 6
+    cpu_count = os.cpu_count() or 4
+    default = max(1, cpu_count - 1)
 
     try:
-        configured = int(os.environ.get("ANALYTICS_PARALLEL_WORKERS", default))
-        return max(1, min(configured, max_allowed))
+        env_value = os.environ.get("ANALYTICS_PARALLEL_WORKERS")
+        if env_value is not None:
+            return max(1, int(env_value))
+        return default
     except (ValueError, TypeError):
         return default
 

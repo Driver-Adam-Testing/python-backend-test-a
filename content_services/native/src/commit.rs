@@ -498,7 +498,7 @@ pub fn process_commits_parallel(
         return Ok((Vec::new(), Vec::new()));
     }
 
-    let workers = num_workers.unwrap_or(4).min(8);
+    let workers = num_workers.unwrap_or(4);
 
     eprintln!(
         "[rust-commits] Starting commit processing for {} commits with {} workers",

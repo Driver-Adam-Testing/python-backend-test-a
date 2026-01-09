@@ -32,7 +32,7 @@ RUN poetry config virtualenvs.create false && \
  poetry install --no-root --no-interaction --no-ansi
 
 # Build Rust native extension for fast commit processing (3-5x speedup)
-RUN cd /app/native && maturin develop --release
+RUN cd /app/native && maturin build --release && pip install target/wheels/*.whl
 
 COPY content_services/start.sh /start.sh
 RUN chmod +x /start.sh

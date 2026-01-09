@@ -79,7 +79,7 @@ class BackendStack(Stack):
                 aws_region=self.cdkenv.region,
                 aws_account=self.cdkenv.account,
                 cpu_size=8192,
-                mem_size=65536,
+                mem_size=61440,
                 min_instance=1,
                 workflow_set_name=HatchetWorkerType.ANALYTICS.value,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",

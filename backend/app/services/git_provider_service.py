@@ -1,7 +1,7 @@
 import logging
 from typing import Any, ClassVar
 
-import requests
+import httpx
 from botocore.exceptions import ClientError
 from database.models import (
     GitProviderApp,
@@ -391,7 +391,8 @@ class GitProviderService:
                     f"Cleaned up orphaned webhook {result['id']} after commit failure"
                 )
             except (
-                requests.RequestException,
+                httpx.HTTPStatusError,
+                httpx.RequestError,
                 NotImplementedError,
                 ValueError,
             ) as cleanup_error:

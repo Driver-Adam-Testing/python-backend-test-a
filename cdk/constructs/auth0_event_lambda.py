@@ -60,6 +60,10 @@ class Auth0EventLambda(Construct):
             scope, parameter_name="/baseline/infra/v2/route53/hostedZoneName"
         )
 
+        lambda_concurrent_executions = None
+        if settings.IS_PRODUCTION_ACCOUNT == "true":
+            lambda_concurrent_executions = 10
+
         # Create Lambda function
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -86,7 +90,7 @@ class Auth0EventLambda(Construct):
                 poetry_include_hashes=False,
                 asset_excludes=[".venv", "tests/", ".pytest*"],
             ),
-            reserved_concurrent_executions=10,
+            reserved_concurrent_executions=lambda_concurrent_executions,
             timeout=Duration.seconds(60),
         )
 

@@ -406,6 +406,7 @@ def _process_commits_parallel(
             include_file_changes,
             tree_size_cache,
             workers,
+            skip_shas=skip_shas,
         )
 
 
@@ -419,13 +420,22 @@ def _process_commits_parallel_python(
     include_file_changes: bool,
     tree_size_cache: dict[str, tuple[int, int]],
     workers: int,
+    skip_shas: set[str] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """
     Python fallback for commit processing using ThreadPoolExecutor.
 
     Each worker thread creates its own pygit2.Repository instance for thread safety.
     Results are collected and flattened in the original order.
+
+    Args:
+        skip_shas: Set of SHAs to skip (already processed from checkpoint)
     """
+    # Filter out already-processed commits from checkpoint
+    if skip_shas:
+        commit_shas = [sha for sha in commit_shas if sha not in skip_shas]
+        logger.info(f"Skipping {len(skip_shas)} already-processed commits")
+
     total = len(commit_shas)
 
     def process_single_commit(commit_sha: str) -> tuple[list[dict], list[dict]]:
@@ -1231,20 +1241,33 @@ def _calculate_tree_sizes_incremental(
 
     except ImportError:
         logger.info("Native extension not available, using Python implementation")
-        return _calculate_tree_sizes_python(repo, commits)
+        return _calculate_tree_sizes_python(
+            repo, commits, initial_results=initial_results
+        )
 
 
 def _calculate_tree_sizes_python(
     repo: pygit2.Repository,
     commits: list[pygit2.Commit],
+    initial_results: dict[str, tuple[int, int]] | None = None,
 ) -> dict[str, tuple[int, int]]:
     """
     Python fallback for tree size calculation using incremental delta approach.
 
     Instead of walking the entire tree for each commit (~1000 files), we
     calculate the delta from the parent commit (~2-5 files changed).
+
+    Args:
+        initial_results: Pre-computed tree sizes from checkpoint to resume from
     """
-    tree_sizes: dict[str, tuple[int, int]] = {}
+    # Initialize with checkpoint data if available
+    tree_sizes: dict[str, tuple[int, int]] = (
+        dict(initial_results) if initial_results else {}
+    )
+    if initial_results:
+        logger.info(
+            f"Resuming tree size calculation with {len(initial_results)} cached entries"
+        )
     blob_lines_cache: dict[str, int] = {}
     blob_bytes_cache: dict[str, int] = {}  # Cache blob sizes to avoid redundant lookups
     hex_cache: dict[str, bool] = {}  # Cache hex detection results by blob OID

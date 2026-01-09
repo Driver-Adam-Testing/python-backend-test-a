@@ -16,6 +16,55 @@ import pygit2
 logger = logging.getLogger(__name__)
 
 
+def _convert_rust_commits(rust_commits: list[dict]) -> list[dict]:
+    """
+    Convert Rust commit output to Python types expected by PyArrow.
+
+    Rust returns ISO strings for timestamps, but PyArrow schema expects
+    Python datetime/date objects.
+    """
+    converted = []
+    for commit in rust_commits:
+        c = dict(commit)  # Make a copy
+
+        # Convert timestamp strings to datetime objects
+        if isinstance(c.get("committed_at"), str):
+            c["committed_at"] = datetime.fromisoformat(
+                c["committed_at"].replace("Z", "+00:00")
+            )
+        if isinstance(c.get("collected_at"), str):
+            c["collected_at"] = datetime.fromisoformat(
+                c["collected_at"].replace("Z", "+00:00")
+            )
+
+        # Convert date string to date object
+        if isinstance(c.get("commit_date"), str):
+            c["commit_date"] = date.fromisoformat(c["commit_date"])
+
+        converted.append(c)
+
+    return converted
+
+
+def _convert_rust_file_changes(rust_file_changes: list[dict]) -> list[dict]:
+    """
+    Convert Rust file change output to Python types expected by PyArrow.
+
+    Rust returns date as string, but PyArrow schema expects date object.
+    """
+    converted = []
+    for fc in rust_file_changes:
+        f = dict(fc)  # Make a copy
+
+        # Convert date string to date object
+        if isinstance(f.get("commit_date"), str):
+            f["commit_date"] = date.fromisoformat(f["commit_date"])
+
+        converted.append(f)
+
+    return converted
+
+
 def get_parallel_workers() -> int:
     """
     Get number of parallel workers for commit processing.
@@ -169,10 +218,10 @@ def _process_commits_parallel(
     workers: int,
 ) -> tuple[list[dict], list[dict]]:
     """
-    Process commits in parallel using a thread pool.
+    Process commits in parallel using native Rust extension or Python fallback.
 
-    Each worker thread creates its own pygit2.Repository instance for thread safety.
-    Results are collected and flattened in the original order.
+    Uses native Rust extension when available (much faster for large repos),
+    falls back to Python ThreadPoolExecutor if not installed.
 
     Args:
         repo_path: Path to the git repository
@@ -187,6 +236,72 @@ def _process_commits_parallel(
 
     Returns:
         Tuple of (all_commits, all_file_changes)
+    """
+    total = len(commit_shas)
+
+    # Try native Rust extension first (much faster)
+    try:
+        from analytics_native import CommitInput
+        from analytics_native import process_commits_parallel as native_process
+
+        logger.info(f"Using native Rust commit processing for {total} commits")
+
+        # Build CommitInput list with pre-computed tree sizes
+        commit_inputs = []
+        for sha in commit_shas:
+            branches = commit_to_branches.get(sha, [])
+            tree_bytes, tree_lines = tree_size_cache.get(sha, (0, 0))
+            commit_inputs.append(CommitInput(sha, branches, tree_bytes, tree_lines))
+
+        # Call native Rust implementation
+        rust_commits, rust_file_changes = native_process(
+            repo_path,
+            commit_inputs,
+            codebase_id,
+            collected_at.timestamp(),
+            include_file_changes,
+            workers,
+        )
+
+        # Convert Rust output (ISO strings) to Python datetime/date objects
+        # PyArrow schema expects datetime objects, not strings
+        all_commits = _convert_rust_commits(rust_commits)
+        all_file_changes = _convert_rust_file_changes(rust_file_changes)
+
+        logger.info(f"Native commit processing complete: {len(all_commits)} records")
+        return all_commits, all_file_changes
+
+    except ImportError:
+        logger.info("Native extension not available, using Python implementation")
+        return _process_commits_parallel_python(
+            repo_path,
+            commit_shas,
+            codebase_id,
+            commit_to_branches,
+            collected_at,
+            include_patches,
+            include_file_changes,
+            tree_size_cache,
+            workers,
+        )
+
+
+def _process_commits_parallel_python(
+    repo_path: str,
+    commit_shas: list[str],
+    codebase_id: str,
+    commit_to_branches: dict[str, list[str]],
+    collected_at: datetime,
+    include_patches: bool,
+    include_file_changes: bool,
+    tree_size_cache: dict[str, tuple[int, int]],
+    workers: int,
+) -> tuple[list[dict], list[dict]]:
+    """
+    Python fallback for commit processing using ThreadPoolExecutor.
+
+    Each worker thread creates its own pygit2.Repository instance for thread safety.
+    Results are collected and flattened in the original order.
     """
     total = len(commit_shas)
 
@@ -902,8 +1017,14 @@ def _calculate_tree_sizes_incremental(
     """
     Calculate tree sizes for all commits using incremental delta approach.
 
-    Instead of walking the entire tree for each commit (~1000 files), we
-    calculate the delta from the parent commit (~2-5 files changed).
+    Uses native Rust extension when available (much faster for large repos),
+    falls back to Python incremental approach if not installed.
+
+    The incremental approach calculates:
+        tree_size(commit) = tree_size(parent) + delta(parent, commit)
+
+    This is O(commits x avg_files_changed) instead of O(commits x tree_size),
+    which provides massive speedups for large repositories.
 
     Args:
         repo: pygit2.Repository instance
@@ -916,11 +1037,6 @@ def _calculate_tree_sizes_incremental(
     Returns:
         Dict mapping commit_sha to (tree_bytes, tree_lines)
     """
-    tree_sizes: dict[str, tuple[int, int]] = {}
-    blob_lines_cache: dict[str, int] = {}
-    blob_bytes_cache: dict[str, int] = {}  # Cache blob sizes to avoid redundant lookups
-    hex_cache: dict[str, bool] = {}  # Cache hex detection results by blob OID
-
     # Use pre-sorted commits if provided, otherwise sort internally
     if commits_topo is not None:
         commits = commits_topo
@@ -928,7 +1044,52 @@ def _calculate_tree_sizes_incremental(
         commits = _get_commits_topological(repo, commit_shas)
     else:
         # Neither provided - nothing to process
-        return tree_sizes
+        return {}
+
+    total = len(commits)
+
+    # Try native Rust incremental extension (much faster for large repos)
+    try:
+        from analytics_native import (
+            CommitWithParent,
+        )
+        from analytics_native import (
+            calculate_tree_sizes_incremental as native_incremental,
+        )
+
+        workers = get_parallel_workers()
+        logger.info(f"Using native Rust incremental extension for {total} commits")
+
+        # Build commit list with parent info for incremental calculation
+        commit_list = []
+        for commit in commits:
+            sha = str(commit.id)
+            parent_sha = str(commit.parents[0].id) if commit.parents else None
+            commit_list.append(CommitWithParent(sha, parent_sha))
+
+        result = native_incremental(repo.path, commit_list, workers)
+        logger.info(f"Native incremental calculation complete: {len(result)} commits")
+        return result
+
+    except ImportError:
+        logger.info("Native extension not available, using Python implementation")
+        return _calculate_tree_sizes_python(repo, commits)
+
+
+def _calculate_tree_sizes_python(
+    repo: pygit2.Repository,
+    commits: list[pygit2.Commit],
+) -> dict[str, tuple[int, int]]:
+    """
+    Python fallback for tree size calculation using incremental delta approach.
+
+    Instead of walking the entire tree for each commit (~1000 files), we
+    calculate the delta from the parent commit (~2-5 files changed).
+    """
+    tree_sizes: dict[str, tuple[int, int]] = {}
+    blob_lines_cache: dict[str, int] = {}
+    blob_bytes_cache: dict[str, int] = {}  # Cache blob sizes to avoid redundant lookups
+    hex_cache: dict[str, bool] = {}  # Cache hex detection results by blob OID
 
     total = len(commits)
 

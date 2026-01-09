@@ -78,23 +78,76 @@ def _convert_rust_file_changes(rust_file_changes: list[dict]) -> list[dict]:
     return converted
 
 
+def _get_container_cpu_count() -> int | None:
+    """Detect CPU limit in containerized environments (Docker, Fargate, K8s).
+
+    Returns:
+        Number of CPUs allocated to container, or None if not in a container
+        or unable to detect.
+    """
+    # Try cgroup v2 first (modern Linux, including AWS Fargate)
+    try:
+        with open("/sys/fs/cgroup/cpu.max") as f:
+            content = f.read().strip()
+            # Format: "quota period" e.g., "800000 100000" for 8 CPUs
+            # or "max 100000" for unlimited
+            parts = content.split()
+            if parts[0] != "max":
+                quota = int(parts[0])
+                period = int(parts[1])
+                return max(1, quota // period)
+    except (FileNotFoundError, ValueError, IndexError):
+        pass
+
+    # Try cgroup v1 (older systems)
+    try:
+        with open("/sys/fs/cgroup/cpu/cpu.cfs_quota_us") as f:
+            quota = int(f.read().strip())
+        with open("/sys/fs/cgroup/cpu/cpu.cfs_period_us") as f:
+            period = int(f.read().strip())
+        if quota > 0:
+            return max(1, quota // period)
+    except (FileNotFoundError, ValueError):
+        pass
+
+    return None
+
+
 def get_parallel_workers() -> int:
     """
     Get number of parallel workers for commit processing.
 
-    Default is cpu_count - 1 to leave one core for system overhead.
-    Configurable via ANALYTICS_PARALLEL_WORKERS environment variable.
+    Detection order:
+    1. ANALYTICS_PARALLEL_WORKERS environment variable (explicit override)
+    2. Container CPU limit (cgroups) - 1
+    3. os.cpu_count() - 1 (fallback for non-containerized)
     """
-    cpu_count = os.cpu_count() or 4
-    default = max(1, cpu_count - 1)
-
+    # Check for explicit override first
     try:
         env_value = os.environ.get("ANALYTICS_PARALLEL_WORKERS")
         if env_value is not None:
-            return max(1, int(env_value))
-        return default
+            workers = max(1, int(env_value))
+            logger.info(
+                f"Using {workers} workers from ANALYTICS_PARALLEL_WORKERS env var"
+            )
+            return workers
     except (ValueError, TypeError):
-        return default
+        pass
+
+    # Try container-aware detection
+    container_cpus = _get_container_cpu_count()
+    if container_cpus is not None:
+        workers = max(1, container_cpus - 1)
+        logger.info(
+            f"Detected container with {container_cpus} CPUs, using {workers} workers"
+        )
+        return workers
+
+    # Fallback to os.cpu_count()
+    cpu_count = os.cpu_count() or 4
+    workers = max(1, cpu_count - 1)
+    logger.info(f"Using {workers} workers (from os.cpu_count()={cpu_count})")
+    return workers
 
 
 @dataclass

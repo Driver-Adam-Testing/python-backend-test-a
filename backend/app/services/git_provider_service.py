@@ -356,7 +356,9 @@ class GitProviderService:
         provider = self.get_provider(installation.git_provider_app)
 
         # Discover scope from token
-        scope = provider.discover_token_scope(installation)
+        scope = provider.discover_token_scope(
+            installation
+        )  # BUG HERE: this function is not defined in the interface.
 
         # Build webhook config
         callback_url = f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook"

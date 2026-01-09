@@ -210,6 +210,10 @@ impl CommitWithParent {
 ///
 /// * `repo_path` - Path to the git repository
 /// * `commits` - List of CommitWithParent in topological order (oldest first)
+/// * `initial_results` - Optional: pre-populated results for resume from checkpoint
+/// * `checkpoint_callback` - Optional: Python callable for periodic checkpoints.
+///                           Called with (index, results_dict) at intervals.
+/// * `checkpoint_interval_secs` - Checkpoint frequency in seconds (default: 30.0)
 /// * `num_workers` - Optional number of parallel workers (currently unused,
 ///                   incremental processing is sequential due to parent dependency)
 ///
@@ -225,10 +229,14 @@ impl CommitWithParent {
 /// - A commit cannot be found
 /// - A parent commit is not yet processed (wrong topological order)
 #[pyfunction]
-#[pyo3(signature = (repo_path, commits, num_workers=None))]
+#[pyo3(signature = (repo_path, commits, initial_results=None, checkpoint_callback=None, checkpoint_interval_secs=None, num_workers=None))]
 fn calculate_tree_sizes_incremental(
+    py: Python<'_>,
     repo_path: &str,
     commits: Vec<CommitWithParent>,
+    initial_results: Option<HashMap<String, (u64, u64)>>,
+    checkpoint_callback: Option<PyObject>,
+    checkpoint_interval_secs: Option<f64>,
     num_workers: Option<usize>,
 ) -> PyResult<HashMap<String, (u64, u64)>> {
     // Configure thread pool (for any parallel operations within delta calc)
@@ -238,14 +246,30 @@ fn calculate_tree_sizes_incremental(
     let filter = FileFilter::new();
     // Estimate ~10 unique blobs per commit on average
     let cache = new_shared_cache_with_capacity(commits.len() * 10);
-    let mut results: HashMap<String, (u64, u64)> = HashMap::with_capacity(commits.len());
+
+    // Initialize from checkpoint if resuming
+    let mut results: HashMap<String, (u64, u64)> = initial_results
+        .unwrap_or_else(|| HashMap::with_capacity(commits.len()));
+    let start_index = results.len();
 
     let total = commits.len();
     let start_time = std::time::Instant::now();
-    eprintln!(
-        "[rust-incremental] Starting incremental tree size calculation for {} commits",
-        total
-    );
+
+    // Checkpoint timing
+    let checkpoint_interval = checkpoint_interval_secs.unwrap_or(30.0);
+    let mut last_checkpoint = std::time::Instant::now();
+
+    if start_index > 0 {
+        eprintln!(
+            "[rust-incremental] Resuming from checkpoint: {}/{} commits already processed",
+            start_index, total
+        );
+    } else {
+        eprintln!(
+            "[rust-incremental] Starting incremental tree size calculation for {} commits",
+            total
+        );
+    }
 
     // Open repo once (we'll reuse it for all commits)
     let repo = git2::Repository::open(repo_path).map_err(|e| {
@@ -257,6 +281,11 @@ fn calculate_tree_sizes_incremental(
 
     // Process commits in topological order (sequential due to parent dependency)
     for (idx, commit_info) in commits.iter().enumerate() {
+        // Skip if already in results (from checkpoint or duplicate)
+        if results.contains_key(&commit_info.sha) {
+            continue;
+        }
+
         let oid = git2::Oid::from_str(&commit_info.sha).map_err(|e| {
             pyo3::exceptions::PyRuntimeError::new_err(format!(
                 "Invalid SHA {}: {}",
@@ -338,16 +367,23 @@ fn calculate_tree_sizes_incremental(
 
         results.insert(commit_info.sha.clone(), size);
 
+        // Checkpoint callback - call if enough time has elapsed
+        if let Some(ref callback) = checkpoint_callback {
+            if last_checkpoint.elapsed().as_secs_f64() >= checkpoint_interval {
+                let results_clone = results.clone();
+                callback.call1(py, (idx, results_clone))?;
+                last_checkpoint = std::time::Instant::now();
+            }
+        }
+
         // Progress logging every 1000 commits or at key milestones
         let processed = idx + 1;
-        if processed % 1000 == 0 || processed == total || processed == 1 || processed == 10 || processed == 100 {
+        if processed % 1000 == 0 || processed == total || processed == start_index + 1 || processed == 10 || processed == 100 {
             let elapsed = start_time.elapsed().as_secs_f64();
-            let rate = processed as f64 / elapsed;
-            let eta = if rate > 0.0 {
-                (total - processed) as f64 / rate
-            } else {
-                0.0
-            };
+            let commits_this_run = processed.saturating_sub(start_index);
+            let rate = if elapsed > 0.0 { commits_this_run as f64 / elapsed } else { 0.0 };
+            let remaining = total - processed;
+            let eta = if rate > 0.0 { remaining as f64 / rate } else { 0.0 };
             eprintln!(
                 "[rust-incremental] Progress: {}/{} ({:.1}%) | {:.0} commits/sec | ETA: {:.0}s | tree_size: ({}, {})",
                 processed, total,
@@ -361,9 +397,11 @@ fn calculate_tree_sizes_incremental(
 
     let elapsed = start_time.elapsed().as_secs_f64();
     let (cache_bytes, cache_lines) = cache.stats();
+    let commits_processed = total.saturating_sub(start_index);
+    let rate = if elapsed > 0.0 { commits_processed as f64 / elapsed } else { 0.0 };
     eprintln!(
         "[rust-incremental] Complete: {} commits in {:.2}s ({:.0} commits/sec)",
-        total, elapsed, total as f64 / elapsed
+        commits_processed, elapsed, rate
     );
     eprintln!(
         "[rust-incremental] Stats: {} root commits (full walk), {} delta commits | Cache: {} bytes, {} lines",

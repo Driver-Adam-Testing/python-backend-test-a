@@ -10,8 +10,14 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pygit2
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from analytics.checkpoint import ExtractionCheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +110,9 @@ def extract_commits(
     include_patches: bool = True,
     since_sha: str | None = None,
     include_file_changes: bool = False,
+    checkpoint: "ExtractionCheckpoint | None" = None,
+    checkpoint_callback: "Callable[[dict], None] | None" = None,
+    checkpoint_interval_secs: float = 30.0,
 ) -> ExtractResult:
     """
     Extract commits from repository.
@@ -115,6 +124,9 @@ def extract_commits(
         include_patches: Whether to include patch data for SLOC
         since_sha: Only extract commits after this SHA (for incremental updates)
         include_file_changes: Whether to extract file-level changes (for cold storage)
+        checkpoint: Optional checkpoint to resume from
+        checkpoint_callback: Optional callback for checkpoint data (called at intervals)
+        checkpoint_interval_secs: How often to call checkpoint callback (default 30s)
 
     Returns:
         ExtractResult with commit data and optionally file changes
@@ -157,8 +169,24 @@ def extract_commits(
         # Pre-calculate tree sizes using incremental method (much faster)
         # Pass pre-sorted commits to avoid duplicate graph walk
         logger.info("Pre-calculating tree sizes (incremental)...")
+
+        # Use checkpoint's cached tree sizes if resuming
+        initial_results = None
+        if checkpoint and checkpoint.tree_size_cache:
+            initial_results = checkpoint.tree_size_cache
+            logger.info(
+                f"Resuming with {len(initial_results)} cached tree sizes "
+                f"from checkpoint (commit {checkpoint.last_processed_index + 1}/{checkpoint.commits_total})"
+            )
+
         tree_size_cache = _calculate_tree_sizes_incremental(
-            repo, commit_shas=None, commits_topo=commits_topo
+            repo,
+            commit_shas=None,
+            commits_topo=commits_topo,
+            initial_results=initial_results,
+            checkpoint_callback=checkpoint_callback,
+            checkpoint_interval_secs=checkpoint_interval_secs,
+            codebase_id=codebase_id,
         )
         logger.info(f"Calculated tree sizes for {len(tree_size_cache)} commits")
 
@@ -1013,6 +1041,10 @@ def _calculate_tree_sizes_incremental(
     repo: pygit2.Repository,
     commit_shas: set[str] | None = None,
     commits_topo: list[pygit2.Commit] | None = None,
+    initial_results: dict[str, tuple[int, int]] | None = None,
+    checkpoint_callback: "Callable[[dict], None] | None" = None,
+    checkpoint_interval_secs: float = 30.0,
+    codebase_id: str | None = None,
 ) -> dict[str, tuple[int, int]]:
     """
     Calculate tree sizes for all commits using incremental delta approach.
@@ -1030,6 +1062,10 @@ def _calculate_tree_sizes_incremental(
         repo: pygit2.Repository instance
         commit_shas: Set of commit SHAs to process (legacy, will sort internally)
         commits_topo: Pre-sorted commits in topological order (optimized path)
+        initial_results: Pre-computed tree sizes to resume from (checkpoint)
+        checkpoint_callback: Called at intervals with checkpoint data
+        checkpoint_interval_secs: How often to call checkpoint callback (default 30s)
+        codebase_id: Codebase ID for checkpoint metadata
 
     Note: Either commit_shas OR commits_topo should be provided, not both.
     If commits_topo is provided, it takes precedence and avoids the graph walk.
@@ -1067,7 +1103,34 @@ def _calculate_tree_sizes_incremental(
             parent_sha = str(commit.parents[0].id) if commit.parents else None
             commit_list.append(CommitWithParent(sha, parent_sha))
 
-        result = native_incremental(repo.path, commit_list, workers)
+        # Create wrapper callback to transform Rust callback data to Python format
+        rust_callback = None
+        if checkpoint_callback:
+
+            def rust_callback(index: int, results: dict[str, tuple[int, int]]) -> None:
+                """Transform Rust callback data to checkpoint format."""
+                # Get the SHA of the commit at this index
+                last_sha = commit_list[index].sha if index < len(commit_list) else ""
+                checkpoint_data = {
+                    "codebase_id": codebase_id,
+                    "commits_total": total,
+                    "commits_processed": index + 1,
+                    "last_processed_index": index,
+                    "last_processed_sha": last_sha,
+                    "tree_size_cache": results,
+                }
+                checkpoint_callback(checkpoint_data)
+
+        result = native_incremental(
+            repo.path,
+            commit_list,
+            initial_results=initial_results,
+            checkpoint_callback=rust_callback,
+            checkpoint_interval_secs=checkpoint_interval_secs
+            if checkpoint_callback
+            else None,
+            num_workers=workers,
+        )
         logger.info(f"Native incremental calculation complete: {len(result)} commits")
         return result
 

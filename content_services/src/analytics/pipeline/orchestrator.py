@@ -16,9 +16,20 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pygit2
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 from analytics.aggregation.engine import AggregationEngine
+from analytics.checkpoint import (
+    ExtractionCheckpoint,
+    delete_checkpoint,
+    download_checkpoint,
+    upload_checkpoint,
+    validate_checkpoint,
+)
 from analytics.export.exporter import DriverJSONExporter
 from analytics.storage.hot_storage import HotStorage
 from analytics.storage.parquet_storage import ParquetStorage
@@ -237,6 +248,9 @@ class PipelineContext:
     deleted_branches: list[dict] = field(default_factory=list)
     previous_branches_data: dict | None = None  # Previous branches.json content
 
+    # Extraction checkpoint (for fault tolerance)
+    extraction_checkpoint: ExtractionCheckpoint | None = None
+
     # Timing
     start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -445,6 +459,17 @@ class AnalyticsPipeline:
                 [ctx.repo.head.shorthand] if not ctx.repo.head_is_unborn else ["main"]
             )
 
+        # Download and validate extraction checkpoint for fault tolerance
+        bucket = org_id_to_hash(ctx.input.organization_id)
+        extraction_checkpoint = self._get_extraction_checkpoint(
+            bucket, ctx.input.codebase_id, ctx.repo
+        )
+
+        # Create checkpoint callback for S3 upload
+        checkpoint_callback = self._create_checkpoint_callback(
+            bucket, ctx.input.codebase_id
+        )
+
         result = extract_commits(
             repo=ctx.repo,
             codebase_id=ctx.input.codebase_id,
@@ -452,10 +477,21 @@ class AnalyticsPipeline:
             include_patches=ctx.config.include_patches,
             since_sha=ctx.since_sha,  # For incremental updates
             include_file_changes=True,  # Always extract file-level changes
+            checkpoint=extraction_checkpoint,
+            checkpoint_callback=checkpoint_callback,
+            checkpoint_interval_secs=30.0,  # Upload checkpoint every 30 seconds
         )
 
         if not result.success:
             raise RuntimeError(f"Extract failed: {result.error}")
+
+        # Extraction succeeded - delete checkpoint
+        try:
+            delete_checkpoint(bucket, ctx.input.codebase_id)
+            logger.info("Deleted extraction checkpoint after successful completion")
+        except Exception as e:
+            # Non-fatal - checkpoint will be overwritten on next run
+            logger.warning(f"Failed to delete checkpoint: {e}")
 
         # Store file changes in cold storage if available
         if result.file_changes and ctx.cold_storage:
@@ -1035,6 +1071,83 @@ class AnalyticsPipeline:
             total_commits = ctx.extract_result.total_commits
 
         return latest_sha, latest_date, total_commits
+
+    def _get_extraction_checkpoint(
+        self, bucket: str, codebase_id: str, repo: pygit2.Repository
+    ) -> ExtractionCheckpoint | None:
+        """Download and validate extraction checkpoint for fault tolerance.
+
+        Args:
+            bucket: S3 bucket name
+            codebase_id: Codebase UUID
+            repo: pygit2.Repository instance
+
+        Returns:
+            Valid ExtractionCheckpoint or None if no valid checkpoint exists
+        """
+        checkpoint = download_checkpoint(bucket, codebase_id)
+
+        if checkpoint is None:
+            logger.info("No extraction checkpoint found, starting fresh")
+            return None
+
+        # Validate checkpoint against repository
+        if not validate_checkpoint(repo, checkpoint):
+            logger.warning(
+                "Extraction checkpoint invalid (commit no longer exists), discarding"
+            )
+            # Delete invalid checkpoint
+            try:
+                delete_checkpoint(bucket, codebase_id)
+            except Exception as e:
+                logger.warning(f"Failed to delete invalid checkpoint: {e}")
+            return None
+
+        logger.info(
+            f"Resuming extraction from checkpoint: "
+            f"{checkpoint.commits_processed}/{checkpoint.commits_total} commits "
+            f"(last SHA: {checkpoint.last_processed_sha[:8]})"
+        )
+        return checkpoint
+
+    def _create_checkpoint_callback(
+        self, bucket: str, codebase_id: str
+    ) -> "Callable[[dict], None]":
+        """Create a checkpoint callback that uploads to S3.
+
+        Args:
+            bucket: S3 bucket name
+            codebase_id: Codebase UUID
+
+        Returns:
+            Callback function for extract_commits
+        """
+        from datetime import datetime
+
+        # Track when extraction started for checkpoint metadata
+        extraction_started = datetime.now(UTC)
+
+        def checkpoint_callback(data: dict) -> None:
+            """Upload checkpoint to S3."""
+            try:
+                checkpoint = ExtractionCheckpoint(
+                    codebase_id=codebase_id,
+                    started_at=extraction_started,
+                    commits_total=data["commits_total"],
+                    commits_processed=data["commits_processed"],
+                    last_processed_index=data["last_processed_index"],
+                    last_processed_sha=data["last_processed_sha"],
+                    tree_size_cache=data["tree_size_cache"],
+                )
+                upload_checkpoint(checkpoint, bucket)
+                logger.debug(
+                    f"Checkpoint saved: {checkpoint.commits_processed}/{checkpoint.commits_total}"
+                )
+            except Exception as e:
+                # Non-fatal - extraction can continue without checkpoint
+                logger.warning(f"Failed to save checkpoint: {e}")
+
+        return checkpoint_callback
 
     def _count_contributors(self, ctx: PipelineContext) -> int:
         """Count unique contributors from extracted commits."""

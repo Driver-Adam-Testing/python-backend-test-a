@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
 # libgit2-dev is required for pygit2 (analytics service)
 # build-essential and Rust are required for analytics_native extension
 RUN apt-get update && \
- apt-get install -y curl nano ripgrep ghostscript git libgit2-dev build-essential && \
+ apt-get install -y curl nano ripgrep ghostscript git libgit2-dev build-essential libssl-dev pkg-config && \
  curl -sSL https://install.python-poetry.org | python3 - && \
  ln -s /root/.local/bin/poetry /usr/local/bin/poetry && \
  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \

@@ -128,8 +128,8 @@ fn process_delta(
                 *added_lines += lines as i64;
             }
         }
-        Delta::Renamed | Delta::Copied => {
-            // Handle path changes that might cross analyzability boundary
+        Delta::Renamed => {
+            // Rename: file moved, tree size only changes if analyzability boundary crossed
             let old_path = delta
                 .old_file()
                 .path()
@@ -148,12 +148,11 @@ fn process_delta(
                 .map(|p| filter.is_analyzable(p))
                 .unwrap_or(false);
 
-            // Only matters if analyzability changed or content changed
             let old_oid = delta.old_file().id();
             let new_oid = delta.new_file().id();
 
             if old_oid != new_oid {
-                // Content also changed during rename/copy
+                // Content also changed during rename
                 if old_analyzable {
                     let (bytes, lines) = get_blob_size(repo, old_oid, filter, cache);
                     *added_bytes -= bytes as i64;
@@ -178,7 +177,25 @@ fn process_delta(
                     *added_lines -= lines as i64;
                 }
             }
-            // If both analyzable and same content, no change to totals
+            // If both analyzable and same content, no change to totals (file just moved)
+        }
+        Delta::Copied => {
+            // Copy: new file added to tree, always increases tree size if analyzable
+            let new_path = delta
+                .new_file()
+                .path()
+                .map(|p| p.to_string_lossy().to_string());
+
+            let new_analyzable = new_path
+                .as_ref()
+                .map(|p| filter.is_analyzable(p))
+                .unwrap_or(false);
+
+            if new_analyzable {
+                let (bytes, lines) = get_blob_size(repo, delta.new_file().id(), filter, cache);
+                *added_bytes += bytes as i64;
+                *added_lines += lines as i64;
+            }
         }
         _ => {
             // Ignore other delta types (Unmodified, Typechange, etc.)

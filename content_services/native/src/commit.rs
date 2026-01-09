@@ -143,27 +143,23 @@ fn process_single_commit(
     let message_truncated: String = message.chars().take(1000).collect();
     let message_length = message.len() as i32;
 
-    // Get timestamp
+    // Get timestamp - use Unix epoch (1970-01-01) as fallback for invalid timestamps
+    // to avoid empty strings that fail Parquet schema validation
     let commit_time = commit.time();
     let commit_ts = commit_time.seconds();
-    let commit_dt = Utc.timestamp_opt(commit_ts, 0).single();
+    let epoch = Utc.timestamp_opt(0, 0).unwrap();
+    let commit_dt = Utc.timestamp_opt(commit_ts, 0).single().unwrap_or(epoch);
 
     // Format timestamps
-    let committed_at = commit_dt
-        .map(|dt| dt.to_rfc3339())
-        .unwrap_or_default();
-    let commit_date = commit_dt
-        .map(|dt| dt.format("%Y-%m-%d").to_string())
-        .unwrap_or_default();
-    let (commit_year, commit_month, commit_day) = commit_dt
-        .map(|dt| (dt.format("%Y").to_string().parse().unwrap_or(0),
-                   dt.format("%m").to_string().parse().unwrap_or(0),
-                   dt.format("%d").to_string().parse().unwrap_or(0)))
-        .unwrap_or((0, 0, 0));
+    let committed_at = commit_dt.to_rfc3339();
+    let commit_date = commit_dt.format("%Y-%m-%d").to_string();
+    let commit_year: i64 = commit_dt.format("%Y").to_string().parse().unwrap_or(1970);
+    let commit_month: i64 = commit_dt.format("%m").to_string().parse().unwrap_or(1);
+    let commit_day: i64 = commit_dt.format("%d").to_string().parse().unwrap_or(1);
 
     let collected_at = DateTime::from_timestamp(collected_at_ts as i64, 0)
-        .map(|dt| dt.to_rfc3339())
-        .unwrap_or_default();
+        .unwrap_or(epoch)
+        .to_rfc3339();
 
     // Parent info
     let parent_count = commit.parent_count() as i32;
@@ -606,14 +602,17 @@ pub fn process_commits_parallel(
                 .collect()
         });
 
-        // Process batch results
+        // Process batch results - track successful SHAs separately from attempted
         let mut batch_commits: Vec<PyObject> = Vec::new();
         let mut batch_file_changes: Vec<PyObject> = Vec::new();
+        let mut successful_shas: Vec<String> = Vec::new();
         let mut batch_errors = 0;
 
-        for result in results {
+        for (idx, result) in results.into_iter().enumerate() {
             match result {
                 Ok((commit_records, file_changes)) => {
+                    // Track this SHA as successfully processed
+                    successful_shas.push(batch_shas[idx].clone());
                     for record in commit_records {
                         batch_commits.push(hashmap_to_pydict(py, record));
                     }
@@ -624,7 +623,7 @@ pub fn process_commits_parallel(
                 Err(e) => {
                     batch_errors += 1;
                     if batch_errors <= 5 {
-                        log_flush!("[rust-commits] Error processing commit: {}", e);
+                        log_flush!("[rust-commits] Error processing commit {}: {}", batch_shas[idx], e);
                     }
                 }
             }
@@ -633,19 +632,20 @@ pub fn process_commits_parallel(
         total_processed += batch_size;
         total_errors += batch_errors;
 
-        // Call checkpoint callback after each batch
+        // Call checkpoint callback after each batch with only successful SHAs
+        // (failed commits should be retried on resume, not permanently skipped)
         if let Some(ref callback) = checkpoint_callback {
-            let batch_shas_py: Vec<&str> = batch_shas.iter().map(|s| s.as_str()).collect();
+            let successful_shas_py: Vec<&str> = successful_shas.iter().map(|s| s.as_str()).collect();
             log_flush!(
-                "[rust-commits] Batch {}/{} complete: {} commits, {} records, {} file changes - calling checkpoint",
-                batch_idx + 1, num_batches, batch_size, batch_commits.len(), batch_file_changes.len()
+                "[rust-commits] Batch {}/{} complete: {} commits ({} successful), {} records, {} file changes - calling checkpoint",
+                batch_idx + 1, num_batches, batch_size, successful_shas.len(), batch_commits.len(), batch_file_changes.len()
             );
 
-            // Call Python callback with (batch_shas, commit_records, file_changes)
+            // Call Python callback with (successful_shas, commit_records, file_changes)
             callback.call1(
                 py,
                 (
-                    batch_shas_py,
+                    successful_shas_py,
                     batch_commits.clone(),
                     batch_file_changes.clone(),
                 ),

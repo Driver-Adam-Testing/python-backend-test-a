@@ -220,8 +220,13 @@ def extract_commits(
         initial_file_changes: list[dict] = []
         if checkpoint and checkpoint.processed_commit_shas:
             skip_shas = checkpoint.processed_commit_shas
-            initial_commits = checkpoint.commit_records or []
-            initial_file_changes = checkpoint.file_change_records or []
+            # Convert checkpoint ISO strings back to datetime/date objects
+            # (Pydantic JSON serialization converts datetime to strings, but list[dict]
+            # doesn't have type hints to convert back automatically)
+            initial_commits = _convert_rust_commits(checkpoint.commit_records or [])
+            initial_file_changes = _convert_rust_file_changes(
+                checkpoint.file_change_records or []
+            )
             logger.info(
                 f"Resuming commit processing with {len(skip_shas)} already-processed commits"
             )
@@ -1347,11 +1352,15 @@ def _calculate_tree_sizes_python(
             continue
 
         # Incremental: calculate delta from parent
+        # Use max(0) to guard against negative values from delta calculation errors
         parent_bytes, parent_lines = tree_sizes[parent_sha]
         delta_bytes, delta_lines = _calculate_delta(
             repo, parent, commit, blob_lines_cache, blob_bytes_cache, hex_cache
         )
-        tree_sizes[sha] = (parent_bytes + delta_bytes, parent_lines + delta_lines)
+        tree_sizes[sha] = (
+            max(0, parent_bytes + delta_bytes),
+            max(0, parent_lines + delta_lines),
+        )
 
         if (i + 1) % 5000 == 0 or (i + 1) == total:
             logger.info(f"Tree sizes: {i + 1}/{total} commits processed")

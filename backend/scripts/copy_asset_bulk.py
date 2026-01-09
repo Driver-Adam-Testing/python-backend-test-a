@@ -18,15 +18,17 @@ import os
 import sys
 from uuid import UUID
 
-from database.models import InspectorRun, Node, PrimaryAsset, Version
-from sqlmodel import Session, create_engine, select
-
-from driver_db.database.models import (
+from database.models import (
     ChunkAndEmbedding,
     DerivedContent,
+    InspectorRun,
+    Node,
     NodeKind,
+    PrimaryAsset,
     PrimaryAssetKind,
+    Version,
 )
+from sqlmodel import Session, create_engine, select
 
 
 class BulkAssetCopier:

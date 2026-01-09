@@ -41,4 +41,4 @@ fi
 # If you want to test multiple workers, reload needs to be disabled
 # exec uvicorn --host $HOST --port $PORT --log-level $LOG_LEVEL --workers 10 "$APP_MODULE"
 
-exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL --reload-dir /packages --reload-dir /driver_db "$APP_MODULE"
+exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL --reload-dir /packages --reload-dir /packages/driver_db "$APP_MODULE"

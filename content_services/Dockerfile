@@ -17,7 +17,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY driver_db /driver_db
+COPY packages/driver_db /packages/driver_db
 COPY packages /packages
 COPY content_services /app
 COPY backend/scripts/ /app/scripts/

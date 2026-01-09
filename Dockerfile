@@ -17,7 +17,7 @@ RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
 RUN poetry config virtualenvs.create false
 
 # Copy the driver-db package first
-COPY driver_db /driver_db
+COPY packages/driver_db /packages/driver_db
 COPY packages /packages
 
 # Copy pyproject.toml and poetry.lock first for better caching
@@ -48,7 +48,7 @@ COPY backend/tests-start.sh /app/
 COPY backend/app /app/app
 
 # Copy the setEnv.sh if using the deployment repo
-COPY setEnv.sh* / 
+COPY setEnv.sh* /
 
 # Install tiktoken encodings for single-tenant envs without internet access
 RUN poetry run python -c "import tiktoken; tiktoken.encoding_for_model('gpt-4'); tiktoken.encoding_for_model('gpt-4.1')"

@@ -361,11 +361,15 @@ def _process_commits_parallel(
         # Create Rust callback wrapper if checkpoint callback provided
         rust_callback = None
         if checkpoint_callback:
+            import time
+
             # Track accumulated results across batches for checkpoint
             # Initialize with prior checkpoint data to preserve across restarts
             accumulated_shas: set[str] = set(skip_shas) if skip_shas else set()
             accumulated_commits: list[dict] = list(initial_commits or [])
             accumulated_file_changes: list[dict] = list(initial_file_changes or [])
+            commit_start_time = time.time()
+            initial_count = len(accumulated_shas)
 
             def rust_callback(
                 batch_shas: list[str],
@@ -373,6 +377,7 @@ def _process_commits_parallel(
                 batch_file_changes: list[dict],
             ) -> None:
                 """Transform Rust batch callback to checkpoint format."""
+                nonlocal commit_start_time, initial_count
                 # Accumulate results
                 accumulated_shas.update(batch_shas)
                 # Convert and accumulate commits
@@ -381,6 +386,19 @@ def _process_commits_parallel(
                 # Convert and accumulate file changes
                 converted_file_changes = _convert_rust_file_changes(batch_file_changes)
                 accumulated_file_changes.extend(converted_file_changes)
+
+                # Log progress
+                processed = len(accumulated_shas)
+                new_processed = processed - initial_count
+                pct = (processed / total) * 100
+                elapsed = time.time() - commit_start_time
+                rate = new_processed / elapsed if elapsed > 0 else 0
+                remaining = total - processed
+                eta = remaining / rate if rate > 0 else 0
+                logger.info(
+                    f"Commit processing progress: {processed}/{total} ({pct:.1f}%) | "
+                    f"{rate:.0f} commits/sec | ETA: {eta:.0f}s"
+                )
 
                 # Build checkpoint data
                 checkpoint_data = {
@@ -1228,9 +1246,25 @@ def _calculate_tree_sizes_incremental(
         # Create wrapper callback to transform Rust callback data to Python format
         rust_callback = None
         if checkpoint_callback:
+            import time
+
+            callback_start_time = time.time()
 
             def rust_callback(index: int, results: dict[str, tuple[int, int]]) -> None:
                 """Transform Rust callback data to checkpoint format."""
+                nonlocal callback_start_time
+                # Log progress
+                processed = index + 1
+                pct = (processed / total) * 100
+                elapsed = time.time() - callback_start_time
+                rate = processed / elapsed if elapsed > 0 else 0
+                remaining = total - processed
+                eta = remaining / rate if rate > 0 else 0
+                logger.info(
+                    f"Tree size progress: {processed}/{total} ({pct:.1f}%) | "
+                    f"{rate:.0f} commits/sec | ETA: {eta:.0f}s"
+                )
+
                 # Get the SHA of the commit at this index
                 last_sha = commit_list[index].sha if index < len(commit_list) else ""
                 checkpoint_data = {

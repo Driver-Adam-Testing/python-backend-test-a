@@ -76,11 +76,15 @@ analytics_workflow_set = [
 
 def main() -> None:
     worker_type = HatchetWorkerType(os.environ["WORKFLOW_SET_NAME"])
-    workflows = (
-        heavy_workflow_set
-        if worker_type == HatchetWorkerType.HEAVY
-        else base_workflow_set
-    )
+    match worker_type:
+        case HatchetWorkerType.ANALYTICS:
+            workflows = analytics_workflow_set
+        case HatchetWorkerType.HEAVY:
+            workflows = heavy_workflow_set
+        case HatchetWorkerType.BASE:
+            workflows = base_workflow_set
+        case _:
+            raise ValueError(f"Unknown worker type: {worker_type}")
     worker = hatchet.worker(
         f"{worker_type}-worker",
         slots=250,

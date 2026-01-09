@@ -6,12 +6,17 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install system dependencies and Poetry
 # libgit2-dev is required for pygit2 (analytics service)
+# build-essential and Rust are required for analytics_native extension
 RUN apt-get update && \
- apt-get install -y curl nano ripgrep ghostscript git libgit2-dev && \
+ apt-get install -y curl nano ripgrep ghostscript git libgit2-dev build-essential && \
  curl -sSL https://install.python-poetry.org | python3 - && \
  ln -s /root/.local/bin/poetry /usr/local/bin/poetry && \
+ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
  apt-get clean && \
- rm -rf /var/lib/apt/lists/\*
+ rm -rf /var/lib/apt/lists/*
+
+# Add Rust to PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
 
  RUN python -m pip install --upgrade pip setuptools wheel
 
@@ -25,6 +30,9 @@ COPY content_services/src/inspector/uctags-2024.10.02-linux-x86_64/bin/ctags /ct
 
 RUN poetry config virtualenvs.create false && \
  poetry install --no-root --no-interaction --no-ansi
+
+# Build Rust native extension for fast commit processing (3-5x speedup)
+RUN cd /app/native && maturin develop --release
 
 COPY content_services/start.sh /start.sh
 RUN chmod +x /start.sh

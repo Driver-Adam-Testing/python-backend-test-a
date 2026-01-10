@@ -16,8 +16,10 @@ import pygit2
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from typing import Any
 
     from analytics.checkpoint import ExtractionCheckpoint
+    from analytics.storage.chunk_storage import ChunkStorage
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +100,88 @@ def get_parallel_workers() -> int:
 
     logger.info("Using 7 workers (default)")
     return 7
+
+
+def create_chunk_callback(
+    s3_client: "Any",
+    bucket: str,
+    codebase_id: str,
+    checkpoint_callback: "Callable[[dict], None] | None" = None,
+    initial_commit_chunk_count: int = 0,
+    initial_file_change_chunk_count: int = 0,
+    initial_processed_shas: set[str] | None = None,
+) -> tuple["Callable[[list[str], list[dict], list[dict]], None]", "ChunkStorage"]:
+    """Create a chunk callback for incremental S3 writes during extraction.
+
+    This replaces the in-memory accumulation approach that caused OOM on large repos.
+    Instead of accumulating all records in Python lists, each batch is written
+    directly to S3 as a Parquet chunk.
+
+    Args:
+        s3_client: boto3 S3 client
+        bucket: S3 bucket name
+        codebase_id: Codebase identifier
+        checkpoint_callback: Optional callback for checkpoint updates
+        initial_commit_chunk_count: Resume from this commit chunk index
+        initial_file_change_chunk_count: Resume from this file change chunk index
+        initial_processed_shas: Set of already-processed SHAs from checkpoint
+
+    Returns:
+        Tuple of (callback_function, ChunkStorage instance)
+    """
+    from analytics.storage.chunk_storage import ChunkStorage
+
+    storage = ChunkStorage(s3_client, bucket, codebase_id)
+
+    # Mutable state for tracking across batches
+    commit_chunk_index = initial_commit_chunk_count
+    file_change_chunk_index = initial_file_change_chunk_count
+    processed_shas: set[str] = (
+        set(initial_processed_shas) if initial_processed_shas else set()
+    )
+
+    def chunk_callback(
+        batch_shas: list[str],
+        batch_commits: list[dict],
+        batch_file_changes: list[dict],
+    ) -> None:
+        """Write batch to S3 chunks instead of accumulating in memory.
+
+        Args:
+            batch_shas: List of commit SHAs processed in this batch
+            batch_commits: List of commit records (already converted to Python types)
+            batch_file_changes: List of file change records
+        """
+        nonlocal commit_chunk_index, file_change_chunk_index
+
+        # Skip empty batches
+        if not batch_commits and not batch_file_changes:
+            return
+
+        # Write commits chunk if any
+        if batch_commits:
+            storage.write_commit_chunk(batch_commits, commit_chunk_index)
+            commit_chunk_index += 1
+
+        # Write file changes chunk if any
+        if batch_file_changes:
+            storage.write_file_change_chunk(batch_file_changes, file_change_chunk_index)
+            file_change_chunk_index += 1
+
+        # Update processed SHAs
+        processed_shas.update(batch_shas)
+
+        # Call checkpoint callback if provided (v2.0 format: chunk counts, no records)
+        if checkpoint_callback:
+            checkpoint_data = {
+                "processed_commit_shas": processed_shas.copy(),
+                "commit_chunk_count": commit_chunk_index,
+                "file_change_chunk_count": file_change_chunk_index,
+                # Note: commit_records and file_change_records are NOT included (v2.0)
+            }
+            checkpoint_callback(checkpoint_data)
+
+    return chunk_callback, storage
 
 
 @dataclass

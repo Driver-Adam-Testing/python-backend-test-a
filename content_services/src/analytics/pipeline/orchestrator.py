@@ -16,7 +16,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pygit2
 
@@ -31,6 +31,7 @@ from analytics.checkpoint import (
     validate_checkpoint,
 )
 from analytics.export.exporter import DriverJSONExporter
+from analytics.storage.chunk_merger import ChunkMerger
 from analytics.storage.hot_storage import HotStorage
 from analytics.storage.parquet_storage import ParquetStorage
 from pydantic import BaseModel
@@ -45,6 +46,118 @@ from .phases.clone import (
 from .phases.extract import ExtractResult, extract_commits
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Chunk Merge Functions (v2.0 Memory Optimization)
+# ============================================================================
+
+
+def merge_chunks_to_storage(
+    chunks_dir: Path,
+    output_path: Path,
+    data_type: str,
+    order_by: str | None = None,
+    partition_by: str | None = None,
+) -> None:
+    """Merge Parquet chunks to final storage using DuckDB streaming.
+
+    This function uses DuckDB to efficiently merge multiple Parquet chunks
+    into a single output file or partitioned directory without loading
+    all data into memory.
+
+    Args:
+        chunks_dir: Directory containing chunk files (*.parquet)
+        output_path: Output path (file for commits, directory for file_changes)
+        data_type: "commits" or "file_changes"
+        order_by: Column to order by (for commits)
+        partition_by: Column to partition by (for file_changes)
+    """
+    chunk_pattern = str(chunks_dir / "*.parquet")
+
+    # Check if any chunks exist
+    chunk_files = list(chunks_dir.glob("*.parquet"))
+    if not chunk_files:
+        logger.warning(f"No chunks found in {chunks_dir}")
+        return
+
+    merger = ChunkMerger()
+    try:
+        if data_type == "commits":
+            merger.merge_commits(
+                chunk_pattern=chunk_pattern,
+                output_path=str(output_path),
+                order_by=order_by,
+            )
+            logger.info(f"Merged {len(chunk_files)} commit chunks to {output_path}")
+        elif data_type == "file_changes":
+            merger.merge_file_changes(
+                chunk_pattern=chunk_pattern,
+                output_dir=str(output_path),
+                partition_by=partition_by or "commit_year_month",
+            )
+            logger.info(
+                f"Merged {len(chunk_files)} file change chunks to {output_path}"
+            )
+        else:
+            raise ValueError(f"Unknown data_type: {data_type}")
+    finally:
+        merger.close()
+
+
+def download_chunks_to_local(
+    s3_client: Any,
+    bucket: str,
+    codebase_id: str,
+    chunk_type: str,
+    local_dir: Path,
+) -> Path:
+    """Download S3 chunks to local temp directory for merging.
+
+    Args:
+        s3_client: boto3 S3 client
+        bucket: S3 bucket name
+        codebase_id: Codebase identifier
+        chunk_type: "commits" or "file_changes"
+        local_dir: Local directory to download to
+
+    Returns:
+        Path to directory containing downloaded chunks
+    """
+    from analytics.storage.chunk_storage import ChunkStorage
+
+    storage = ChunkStorage(s3_client, bucket, codebase_id)
+
+    # Get list of chunks
+    if chunk_type == "commits":
+        chunk_keys = storage.list_commit_chunks()
+    elif chunk_type == "file_changes":
+        chunk_keys = storage.list_file_change_chunks()
+    else:
+        raise ValueError(f"Unknown chunk_type: {chunk_type}")
+
+    if not chunk_keys:
+        logger.warning(f"No {chunk_type} chunks found for {codebase_id}")
+        return local_dir / chunk_type
+
+    # Create local directory
+    local_chunks_dir = local_dir / chunk_type
+    local_chunks_dir.mkdir(parents=True, exist_ok=True)
+
+    # Download each chunk
+    for key in chunk_keys:
+        filename = Path(key).name
+        local_path = local_chunks_dir / filename
+
+        with open(local_path, "wb") as f:
+            s3_client.download_fileobj(bucket, key, f)
+
+        logger.debug(f"Downloaded {key} to {local_path}")
+
+    logger.info(
+        f"Downloaded {len(chunk_keys)} {chunk_type} chunks to {local_chunks_dir}"
+    )
+    return local_chunks_dir
 
 
 # ============================================================================

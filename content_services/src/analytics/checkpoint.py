@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Increment this when checkpoint schema changes
-CHECKPOINT_VERSION = "1.1"
+CHECKPOINT_VERSION = "2.0"
 
 
 class ExtractionCheckpoint(BaseModel):
@@ -29,6 +29,11 @@ class ExtractionCheckpoint(BaseModel):
 
     This model captures the state needed to resume extraction
     after a failure or timeout.
+
+    v2.0 changes:
+    - Removed commit_records and file_change_records (caused OOM on large repos)
+    - Added commit_chunk_count and file_change_chunk_count for chunk-based storage
+    - Records are now written incrementally to S3 Parquet chunks during extraction
     """
 
     # Schema version for compatibility
@@ -53,10 +58,10 @@ class ExtractionCheckpoint(BaseModel):
     # Commit processing checkpoint (Phase 2)
     # Set of commit SHAs that have been fully processed
     processed_commit_shas: set[str] = Field(default_factory=set)
-    # Accumulated commit records from processed batches
-    commit_records: list[dict] = Field(default_factory=list)
-    # Accumulated file changes from processed batches
-    file_change_records: list[dict] = Field(default_factory=list)
+    # Number of commit chunks written to S3 (v2.0)
+    commit_chunk_count: int = 0
+    # Number of file change chunks written to S3 (v2.0)
+    file_change_chunk_count: int = 0
 
 
 def validate_checkpoint_version(checkpoint_data: dict) -> bool:

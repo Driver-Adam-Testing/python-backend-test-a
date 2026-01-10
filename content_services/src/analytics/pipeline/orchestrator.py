@@ -689,10 +689,13 @@ class AnalyticsPipeline:
             if list(commit_chunks_dir.glob("*.parquet")):
                 if ctx.warm_storage:
                     # Merge to warm storage location
+                    # Path must match ParquetStorage.read_commits expectations:
+                    # storage_root / codebase_id / "warm" / "commits.parquet"
                     output_path = (
                         ctx.warm_storage.base_path
-                        / "commits"
-                        / f"{ctx.input.codebase_id}.parquet"
+                        / ctx.input.codebase_id
+                        / "warm"
+                        / "commits.parquet"
                     )
                     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -718,10 +721,13 @@ class AnalyticsPipeline:
             if list(file_change_chunks_dir.glob("*.parquet")):
                 if ctx.cold_storage:
                     # Merge to cold storage location (partitioned by commit_year_month)
+                    # Path must match ParquetStorage.read_file_changes expectations:
+                    # storage_root / codebase_id / "cold" / "file_changes_partitioned"
                     output_dir = (
                         ctx.cold_storage.base_path
-                        / "file_changes"
                         / ctx.input.codebase_id
+                        / "cold"
+                        / "file_changes_partitioned"
                     )
                     output_dir.mkdir(parents=True, exist_ok=True)
 

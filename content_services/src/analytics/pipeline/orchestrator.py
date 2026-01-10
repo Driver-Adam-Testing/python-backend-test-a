@@ -982,9 +982,7 @@ class AnalyticsPipeline:
             "generated_at": "ISO timestamp"
         }
         """
-        import json
         import tempfile
-        from datetime import datetime
 
         import boto3
 
@@ -1048,9 +1046,7 @@ class AnalyticsPipeline:
             "generated_at": "ISO timestamp"
         }
         """
-        import json
         import tempfile
-        from datetime import datetime
 
         import boto3
 
@@ -1247,8 +1243,6 @@ class AnalyticsPipeline:
         Returns:
             Checkpoint data dict or None if not found
         """
-        import json
-
         import boto3
         from botocore.exceptions import ClientError
 
@@ -1306,7 +1300,9 @@ class AnalyticsPipeline:
 
         # Find the latest commit by date
         commits = ctx.extract_result.commits
-        latest_commit = max(commits, key=lambda c: c.get("committed_at", datetime.min))
+        # Use timezone-aware min datetime for comparison with UTC-aware committed_at
+        min_datetime = datetime.min.replace(tzinfo=UTC)
+        latest_commit = max(commits, key=lambda c: c.get("committed_at", min_datetime))
 
         latest_sha = latest_commit.get("commit_sha")
         latest_date = latest_commit.get("committed_at")

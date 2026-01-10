@@ -610,7 +610,6 @@ class AnalyticsPipeline:
             s3_client=s3_client,
             bucket=bucket,
             codebase_id=ctx.input.codebase_id,
-            checkpoint_callback=checkpoint_callback,
             initial_commit_chunk_count=initial_commit_chunk_count,
             initial_file_change_chunk_count=initial_file_change_chunk_count,
             initial_processed_shas=initial_processed_shas,

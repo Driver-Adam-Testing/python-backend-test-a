@@ -106,11 +106,10 @@ def create_chunk_callback(
     s3_client: "Any",
     bucket: str,
     codebase_id: str,
-    checkpoint_callback: "Callable[[dict], None] | None" = None,
     initial_commit_chunk_count: int = 0,
     initial_file_change_chunk_count: int = 0,
     initial_processed_shas: set[str] | None = None,
-) -> tuple["Callable[[list[str], list[dict], list[dict]], None]", "ChunkStorage"]:
+) -> tuple["Callable[[list[str], list[dict], list[dict]], dict]", "ChunkStorage"]:
     """Create a chunk callback for incremental S3 writes during extraction.
 
     This replaces the in-memory accumulation approach that caused OOM on large repos.
@@ -121,13 +120,13 @@ def create_chunk_callback(
         s3_client: boto3 S3 client
         bucket: S3 bucket name
         codebase_id: Codebase identifier
-        checkpoint_callback: Optional callback for checkpoint updates
         initial_commit_chunk_count: Resume from this commit chunk index
         initial_file_change_chunk_count: Resume from this file change chunk index
         initial_processed_shas: Set of already-processed SHAs from checkpoint
 
     Returns:
         Tuple of (callback_function, ChunkStorage instance)
+        The callback returns a dict with current chunk state for checkpointing.
     """
     from analytics.storage.chunk_storage import ChunkStorage
 
@@ -144,19 +143,21 @@ def create_chunk_callback(
         batch_shas: list[str],
         batch_commits: list[dict],
         batch_file_changes: list[dict],
-    ) -> None:
+    ) -> dict:
         """Write batch to S3 chunks instead of accumulating in memory.
 
         Args:
             batch_shas: List of commit SHAs processed in this batch
             batch_commits: List of commit records (already converted to Python types)
             batch_file_changes: List of file change records
+
+        Returns:
+            Dict with current chunk state for checkpointing:
+            - commit_chunk_count: Current commit chunk index
+            - file_change_chunk_count: Current file change chunk index
+            - processed_commit_shas: Set of all processed commit SHAs
         """
         nonlocal commit_chunk_index, file_change_chunk_index
-
-        # Skip empty batches
-        if not batch_commits and not batch_file_changes:
-            return
 
         # Write commits chunk if any
         if batch_commits:
@@ -168,18 +169,16 @@ def create_chunk_callback(
             storage.write_file_change_chunk(batch_file_changes, file_change_chunk_index)
             file_change_chunk_index += 1
 
-        # Update processed SHAs
-        processed_shas.update(batch_shas)
+        # Update processed SHAs for any batch with commits
+        if batch_shas:
+            processed_shas.update(batch_shas)
 
-        # Call checkpoint callback if provided (v2.0 format: chunk counts, no records)
-        if checkpoint_callback:
-            checkpoint_data = {
-                "processed_commit_shas": processed_shas.copy(),
-                "commit_chunk_count": commit_chunk_index,
-                "file_change_chunk_count": file_change_chunk_index,
-                # Note: commit_records and file_change_records are NOT included (v2.0)
-            }
-            checkpoint_callback(checkpoint_data)
+        # Return current state for checkpoint callback to use
+        return {
+            "commit_chunk_count": commit_chunk_index,
+            "file_change_chunk_count": file_change_chunk_index,
+            "processed_commit_shas": processed_shas.copy(),
+        }
 
     return chunk_callback, storage
 
@@ -481,8 +480,10 @@ def _process_commits_parallel(
                 converted_file_changes = _convert_rust_file_changes(batch_file_changes)
 
                 # v2.0: If batch_callback provided, write to S3 chunks instead of memory
+                # batch_callback returns chunk state for checkpointing
+                chunk_state = None
                 if batch_callback:
-                    batch_callback(
+                    chunk_state = batch_callback(
                         batch_shas, converted_commits, converted_file_changes
                     )
                 else:
@@ -496,7 +497,7 @@ def _process_commits_parallel(
                 # Log progress
                 processed = len(accumulated_shas)
                 new_processed = processed - initial_count
-                pct = (processed / total) * 100
+                pct = (processed / total) * 100 if total > 0 else 0
                 elapsed = time.time() - commit_start_time
                 rate = new_processed / elapsed if elapsed > 0 else 0
                 remaining = total - processed
@@ -507,16 +508,26 @@ def _process_commits_parallel(
                 )
 
                 # Call checkpoint callback if provided (for fault tolerance)
-                # v2.0: Skip when batch_callback is provided - it handles checkpointing
-                # with correct chunk counts. Calling here with zeros would overwrite
-                # the correct values and cause data loss on resume.
-                if checkpoint_callback and not batch_callback:
+                if checkpoint_callback:
+                    # Build checkpoint data with chunk state from batch_callback (v2.0)
+                    # or use accumulated state for v1.x mode
+                    if chunk_state:
+                        processed_shas = chunk_state.get(
+                            "processed_commit_shas", accumulated_shas.copy()
+                        )
+                        commit_chunks = chunk_state.get("commit_chunk_count", 0)
+                        file_chunks = chunk_state.get("file_change_chunk_count", 0)
+                    else:
+                        processed_shas = accumulated_shas.copy()
+                        commit_chunks = 0
+                        file_chunks = 0
+
                     checkpoint_callback(
                         {
                             "codebase_id": codebase_id,
-                            "processed_commit_shas": accumulated_shas.copy(),
-                            "commit_chunk_count": 0,
-                            "file_change_chunk_count": 0,
+                            "processed_commit_shas": processed_shas,
+                            "commit_chunk_count": commit_chunks,
+                            "file_change_chunk_count": file_chunks,
                         }
                     )
 

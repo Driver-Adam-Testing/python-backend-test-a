@@ -136,13 +136,13 @@ def download_chunks_to_local(
     else:
         raise ValueError(f"Unknown chunk_type: {chunk_type}")
 
-    if not chunk_keys:
-        logger.warning(f"No {chunk_type} chunks found for {codebase_id}")
-        return local_dir / chunk_type
-
-    # Create local directory
+    # Create local directory (even if no chunks, so glob() works in Python 3.12+)
     local_chunks_dir = local_dir / chunk_type
     local_chunks_dir.mkdir(parents=True, exist_ok=True)
+
+    if not chunk_keys:
+        logger.warning(f"No {chunk_type} chunks found for {codebase_id}")
+        return local_chunks_dir
 
     # Download each chunk
     for key in chunk_keys:

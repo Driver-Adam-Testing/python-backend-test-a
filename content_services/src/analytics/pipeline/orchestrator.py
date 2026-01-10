@@ -1248,10 +1248,10 @@ class AnalyticsPipeline:
                     last_processed_index=data["last_processed_index"],
                     last_processed_sha=data["last_processed_sha"],
                     tree_size_cache=data["tree_size_cache"],
-                    # Commit processing checkpoint fields (may be empty during tree size phase)
+                    # v2.0: Commit processing uses chunk counts, not in-memory records
                     processed_commit_shas=data.get("processed_commit_shas", set()),
-                    commit_records=data.get("commit_records", []),
-                    file_change_records=data.get("file_change_records", []),
+                    commit_chunk_count=data.get("commit_chunk_count", 0),
+                    file_change_chunk_count=data.get("file_change_chunk_count", 0),
                 )
                 upload_checkpoint(checkpoint, bucket)
 

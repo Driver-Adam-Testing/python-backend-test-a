@@ -304,13 +304,9 @@ def extract_commits(
         initial_file_changes: list[dict] = []
         if checkpoint and checkpoint.processed_commit_shas:
             skip_shas = checkpoint.processed_commit_shas
-            # Convert checkpoint ISO strings back to datetime/date objects
-            # (Pydantic JSON serialization converts datetime to strings, but list[dict]
-            # doesn't have type hints to convert back automatically)
-            initial_commits = _convert_rust_commits(checkpoint.commit_records or [])
-            initial_file_changes = _convert_rust_file_changes(
-                checkpoint.file_change_records or []
-            )
+            # v2.0: Records are stored in S3 chunks, not in checkpoint
+            # On resume, we skip already-processed commits and continue writing new chunks
+            # The chunks will be merged at the end of extraction
             logger.info(
                 f"Resuming commit processing with {len(skip_shas)} already-processed commits"
             )
@@ -321,7 +317,7 @@ def extract_commits(
 
             def commit_checkpoint_callback(data: dict) -> None:
                 """Merge commit processing checkpoint with tree size checkpoint."""
-                # Build combined checkpoint data
+                # Build combined checkpoint data (v2.0: no commit_records/file_change_records)
                 combined_data = {
                     "codebase_id": codebase_id,
                     "commits_total": len(commits_topo),
@@ -331,10 +327,10 @@ def extract_commits(
                     if commits_topo
                     else "",
                     "tree_size_cache": tree_size_cache,
-                    # Commit processing checkpoint fields
+                    # v2.0: Commit processing uses chunk counts, not in-memory records
                     "processed_commit_shas": data["processed_commit_shas"],
-                    "commit_records": data["commit_records"],
-                    "file_change_records": data["file_change_records"],
+                    "commit_chunk_count": data.get("commit_chunk_count", 0),
+                    "file_change_chunk_count": data.get("file_change_chunk_count", 0),
                 }
                 checkpoint_callback(combined_data)
 
@@ -489,12 +485,14 @@ def _process_commits_parallel(
                     f"{rate:.0f} commits/sec | ETA: {eta:.0f}s"
                 )
 
-                # Build checkpoint data
+                # Build checkpoint data (v2.0: chunk counts, not in-memory records)
+                # Note: Records are still accumulated in memory for return value,
+                # but not stored in checkpoint to avoid OOM on large repos
                 checkpoint_data = {
                     "codebase_id": codebase_id,
                     "processed_commit_shas": accumulated_shas.copy(),
-                    "commit_records": accumulated_commits.copy(),
-                    "file_change_records": accumulated_file_changes.copy(),
+                    "commit_chunk_count": 0,  # v2.0: chunks not used in this path yet
+                    "file_change_chunk_count": 0,
                 }
                 checkpoint_callback(checkpoint_data)
 
@@ -894,6 +892,7 @@ def _extract_file_changes(
                 "commit_sha": commit_sha,
                 "file_path": file_path,
                 "commit_date": commit_date,
+                "commit_year_month": commit_date.strftime("%Y-%m"),
                 "change_type": change_type,
                 "previous_path": old_path if change_type == "renamed" else None,
                 "additions_lines": additions,

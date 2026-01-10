@@ -209,6 +209,7 @@ def extract_commits(
     checkpoint: "ExtractionCheckpoint | None" = None,
     checkpoint_callback: "Callable[[dict], None] | None" = None,
     checkpoint_interval_secs: float = 30.0,
+    batch_callback: "Callable[[list[str], list[dict], list[dict]], None] | None" = None,
 ) -> ExtractResult:
     """
     Extract commits from repository.
@@ -223,9 +224,14 @@ def extract_commits(
         checkpoint: Optional checkpoint to resume from
         checkpoint_callback: Optional callback for checkpoint data (called at intervals)
         checkpoint_interval_secs: How often to call checkpoint callback (default 30s)
+        batch_callback: v2.0 callback for writing batches to S3 chunks. When provided,
+            records are written to S3 instead of accumulated in memory, preventing OOM
+            on large repositories. Signature: (batch_shas, batch_commits, batch_file_changes)
 
     Returns:
-        ExtractResult with commit data and optionally file changes
+        ExtractResult with commit data and optionally file changes.
+        When batch_callback is provided (v2.0 mode), commits/file_changes are empty
+        since records are written to S3 chunks via the callback.
     """
     logger.info(f"Extracting commits for codebase {codebase_id}")
 
@@ -349,6 +355,7 @@ def extract_commits(
             checkpoint_callback=commit_checkpoint_callback,
             initial_commits=initial_commits,
             initial_file_changes=initial_file_changes,
+            batch_callback=batch_callback,
         )
 
         # Combine with initial results from checkpoint
@@ -388,6 +395,7 @@ def _process_commits_parallel(
     checkpoint_callback: "Callable[[dict], None] | None" = None,
     initial_commits: list[dict] | None = None,
     initial_file_changes: list[dict] | None = None,
+    batch_callback: "Callable[[list[str], list[dict], list[dict]], None] | None" = None,
 ) -> tuple[list[dict], list[dict]]:
     """
     Process commits in parallel using native Rust extension or Python fallback.
@@ -396,6 +404,9 @@ def _process_commits_parallel(
     falls back to Python ThreadPoolExecutor if not installed.
 
     Supports checkpointing for fault tolerance on large repositories.
+
+    v2.0: If batch_callback is provided, each batch is passed to the callback
+    (e.g., for writing to S3 chunks) instead of accumulating in memory.
 
     Args:
         repo_path: Path to the git repository
@@ -443,16 +454,21 @@ def _process_commits_parallel(
                 tree_bytes, tree_lines = 0, 0
             commit_inputs.append(CommitInput(sha, branches, tree_bytes, tree_lines))
 
-        # Create Rust callback wrapper if checkpoint callback provided
+        # Create Rust callback wrapper if checkpoint callback or batch_callback provided
         rust_callback = None
-        if checkpoint_callback:
+        if checkpoint_callback or batch_callback:
             import time
 
             # Track accumulated results across batches for checkpoint
             # Initialize with prior checkpoint data to preserve across restarts
             accumulated_shas: set[str] = set(skip_shas) if skip_shas else set()
-            accumulated_commits: list[dict] = list(initial_commits or [])
-            accumulated_file_changes: list[dict] = list(initial_file_changes or [])
+            # Only accumulate in memory if NOT using batch_callback (v1.x mode)
+            accumulated_commits: list[dict] = (
+                list(initial_commits or []) if not batch_callback else []
+            )
+            accumulated_file_changes: list[dict] = (
+                list(initial_file_changes or []) if not batch_callback else []
+            )
             commit_start_time = time.time()
             initial_count = len(accumulated_shas)
 
@@ -461,16 +477,25 @@ def _process_commits_parallel(
                 batch_commits: list[dict],
                 batch_file_changes: list[dict],
             ) -> None:
-                """Transform Rust batch callback to checkpoint format."""
+                """Transform Rust batch callback to checkpoint format or S3 chunk writes."""
                 nonlocal commit_start_time, initial_count
-                # Accumulate results
-                accumulated_shas.update(batch_shas)
-                # Convert and accumulate commits
+
+                # Convert Rust output to Python types
                 converted_commits = _convert_rust_commits(batch_commits)
-                accumulated_commits.extend(converted_commits)
-                # Convert and accumulate file changes
                 converted_file_changes = _convert_rust_file_changes(batch_file_changes)
-                accumulated_file_changes.extend(converted_file_changes)
+
+                # v2.0: If batch_callback provided, write to S3 chunks instead of memory
+                if batch_callback:
+                    batch_callback(
+                        batch_shas, converted_commits, converted_file_changes
+                    )
+                else:
+                    # v1.x mode: Accumulate in memory
+                    accumulated_commits.extend(converted_commits)
+                    accumulated_file_changes.extend(converted_file_changes)
+
+                # Always track processed SHAs for checkpoint/progress
+                accumulated_shas.update(batch_shas)
 
                 # Log progress
                 processed = len(accumulated_shas)
@@ -485,16 +510,17 @@ def _process_commits_parallel(
                     f"{rate:.0f} commits/sec | ETA: {eta:.0f}s"
                 )
 
-                # Build checkpoint data (v2.0: chunk counts, not in-memory records)
-                # Note: Records are still accumulated in memory for return value,
-                # but not stored in checkpoint to avoid OOM on large repos
-                checkpoint_data = {
-                    "codebase_id": codebase_id,
-                    "processed_commit_shas": accumulated_shas.copy(),
-                    "commit_chunk_count": 0,  # v2.0: chunks not used in this path yet
-                    "file_change_chunk_count": 0,
-                }
-                checkpoint_callback(checkpoint_data)
+                # Call checkpoint callback if provided (for fault tolerance)
+                if checkpoint_callback:
+                    checkpoint_callback(
+                        {
+                            "codebase_id": codebase_id,
+                            "processed_commit_shas": accumulated_shas.copy(),
+                            # v2.0: chunk counts are managed by batch_callback
+                            "commit_chunk_count": 0,
+                            "file_change_chunk_count": 0,
+                        }
+                    )
 
         # Call native Rust implementation with checkpoint support
         rust_commits, rust_file_changes = native_process(
@@ -508,7 +534,15 @@ def _process_commits_parallel(
             workers,
         )
 
-        # Convert Rust output (ISO strings) to Python datetime/date objects
+        # v2.0: When batch_callback is provided, all records are written to S3 chunks
+        # via the callback. Return empty lists as records aren't accumulated in memory.
+        if batch_callback:
+            logger.info(
+                "Native commit processing complete (v2.0 chunks mode - records in S3)"
+            )
+            return [], []
+
+        # v1.x mode: Convert Rust output (ISO strings) to Python datetime/date objects
         # PyArrow schema expects datetime objects, not strings
         all_commits = _convert_rust_commits(rust_commits)
         all_file_changes = _convert_rust_file_changes(rust_file_changes)

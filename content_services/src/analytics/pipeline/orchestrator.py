@@ -43,7 +43,7 @@ from .phases.clone import (
     cleanup_repository,
     clone_repository,
 )
-from .phases.extract import ExtractResult, extract_commits
+from .phases.extract import ExtractResult, create_chunk_callback, extract_commits
 
 logger = logging.getLogger(__name__)
 
@@ -558,7 +558,13 @@ class AnalyticsPipeline:
         logger.info(f"Clone complete: {ctx.repo_path}")
 
     def _phase_extract(self, ctx: PipelineContext) -> None:
-        """Phase 2: Extract commits."""
+        """Phase 2: Extract commits.
+
+        v2.0 Memory Optimization:
+        - Uses chunk callback to write records to S3 as Parquet chunks during extraction
+        - Prevents OOM on large repositories by avoiding in-memory accumulation
+        - After extraction, chunks are downloaded, merged via DuckDB streaming, and cleaned up
+        """
         logger.info("Phase 2: Extracting commits...")
 
         if not ctx.repo:
@@ -583,6 +589,33 @@ class AnalyticsPipeline:
             bucket, ctx.input.codebase_id
         )
 
+        # v2.0: Create chunk callback for memory-efficient extraction
+        # This writes records directly to S3 as Parquet chunks instead of accumulating in memory
+        import boto3
+
+        s3_client = boto3.client("s3")
+
+        # Get initial chunk counts from checkpoint if resuming
+        initial_commit_chunk_count = 0
+        initial_file_change_chunk_count = 0
+        initial_processed_shas: set[str] | None = None
+        if extraction_checkpoint:
+            initial_commit_chunk_count = extraction_checkpoint.commit_chunk_count
+            initial_file_change_chunk_count = (
+                extraction_checkpoint.file_change_chunk_count
+            )
+            initial_processed_shas = extraction_checkpoint.processed_commit_shas
+
+        batch_callback, chunk_storage = create_chunk_callback(
+            s3_client=s3_client,
+            bucket=bucket,
+            codebase_id=ctx.input.codebase_id,
+            checkpoint_callback=checkpoint_callback,
+            initial_commit_chunk_count=initial_commit_chunk_count,
+            initial_file_change_chunk_count=initial_file_change_chunk_count,
+            initial_processed_shas=initial_processed_shas,
+        )
+
         result = extract_commits(
             repo=ctx.repo,
             codebase_id=ctx.input.codebase_id,
@@ -593,10 +626,15 @@ class AnalyticsPipeline:
             checkpoint=extraction_checkpoint,
             checkpoint_callback=checkpoint_callback,
             checkpoint_interval_secs=30.0,  # Upload checkpoint every 30 seconds
+            batch_callback=batch_callback,  # v2.0: Write to S3 chunks
         )
 
         if not result.success:
             raise RuntimeError(f"Extract failed: {result.error}")
+
+        # v2.0: Merge chunks from S3 to local storage
+        logger.info("Phase 2b: Merging S3 chunks to storage...")
+        self._merge_chunks_to_storage(ctx, s3_client, bucket, chunk_storage)
 
         # Extraction succeeded - delete checkpoint
         try:
@@ -606,23 +644,104 @@ class AnalyticsPipeline:
             # Non-fatal - checkpoint will be overwritten on next run
             logger.warning(f"Failed to delete checkpoint: {e}")
 
-        # Store file changes in cold storage if available
-        if result.file_changes and ctx.cold_storage:
-            ctx.cold_storage.write_file_changes(
-                codebase_id=ctx.input.codebase_id,
-                file_changes=result.file_changes,
-                partition_by_date=True,
-            )
-            logger.info(
-                f"Stored {len(result.file_changes)} file changes in cold storage"
-            )
-
         ctx.extract_result = result
 
         mode_info = f" (since {ctx.since_sha[:8]})" if ctx.since_sha else ""
-        logger.info(
-            f"Extracted {result.total_commits} unique commits ({len(result.commits)} records){mode_info}"
-        )
+        logger.info(f"Extraction complete{mode_info}")
+
+    def _merge_chunks_to_storage(
+        self,
+        ctx: PipelineContext,
+        s3_client: Any,
+        bucket: str,
+        chunk_storage: Any,
+    ) -> None:
+        """Merge S3 chunks to local storage using DuckDB streaming.
+
+        v2.0 Memory Optimization:
+        1. Download commit chunks from S3 to local temp directory
+        2. Merge commit chunks using DuckDB streaming to warm storage
+        3. Download file change chunks from S3 to local temp directory
+        4. Merge file change chunks using DuckDB streaming to cold storage
+        5. Clean up S3 chunks after successful merge
+
+        Args:
+            ctx: Pipeline context
+            s3_client: boto3 S3 client
+            bucket: S3 bucket name
+            chunk_storage: ChunkStorage instance for cleanup
+        """
+        import tempfile
+
+        # Create temp directory for chunk downloads
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+
+            # Merge commit chunks to warm storage
+            commit_chunks_dir = download_chunks_to_local(
+                s3_client=s3_client,
+                bucket=bucket,
+                codebase_id=ctx.input.codebase_id,
+                chunk_type="commits",
+                local_dir=temp_path,
+            )
+
+            if list(commit_chunks_dir.glob("*.parquet")):
+                if ctx.warm_storage:
+                    # Merge to warm storage location
+                    output_path = (
+                        ctx.warm_storage.base_path
+                        / "commits"
+                        / f"{ctx.input.codebase_id}.parquet"
+                    )
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    merge_chunks_to_storage(
+                        chunks_dir=commit_chunks_dir,
+                        output_path=output_path,
+                        data_type="commits",
+                        order_by="committed_at",
+                    )
+                    logger.info(f"Merged commit chunks to {output_path}")
+            else:
+                logger.info("No commit chunks to merge")
+
+            # Merge file change chunks to cold storage
+            file_change_chunks_dir = download_chunks_to_local(
+                s3_client=s3_client,
+                bucket=bucket,
+                codebase_id=ctx.input.codebase_id,
+                chunk_type="file_changes",
+                local_dir=temp_path,
+            )
+
+            if list(file_change_chunks_dir.glob("*.parquet")):
+                if ctx.cold_storage:
+                    # Merge to cold storage location (partitioned by commit_year_month)
+                    output_dir = (
+                        ctx.cold_storage.base_path
+                        / "file_changes"
+                        / ctx.input.codebase_id
+                    )
+                    output_dir.mkdir(parents=True, exist_ok=True)
+
+                    merge_chunks_to_storage(
+                        chunks_dir=file_change_chunks_dir,
+                        output_path=output_dir,
+                        data_type="file_changes",
+                        partition_by="commit_year_month",
+                    )
+                    logger.info(f"Merged file change chunks to {output_dir}")
+            else:
+                logger.info("No file change chunks to merge")
+
+        # Clean up S3 chunks after successful merge
+        try:
+            chunk_storage.delete_all_chunks()
+            logger.info("Cleaned up S3 chunks after successful merge")
+        except Exception as e:
+            # Non-fatal - chunks will be cleaned up on next run
+            logger.warning(f"Failed to clean up S3 chunks: {e}")
 
     def _phase_branches(self, ctx: PipelineContext) -> None:
         """Phase 3: Discover branches."""
@@ -645,13 +764,19 @@ class AnalyticsPipeline:
         )
 
     def _phase_store(self, ctx: PipelineContext) -> None:
-        """Phase 4: Store data in warm/cold storage."""
+        """Phase 4: Store data in warm/cold storage.
+
+        Note: In v2.0 mode (with batch_callback), commits and file_changes are written
+        to warm/cold storage during _merge_chunks_to_storage in Phase 2b. This phase
+        only runs for v1.x mode (tests, fallback) where extract_result.commits is populated.
+        """
         logger.info("Phase 4: Storing data...")
 
         if not ctx.extract_result or not ctx.warm_storage:
             return
 
-        # Store commits in warm storage
+        # v1.x mode only: Store commits in warm storage
+        # (In v2.0 mode, commits are empty - already written in Phase 2b merge)
         commits = ctx.extract_result.commits
         if commits:
             if ctx.input.incremental and ctx.since_sha:
@@ -665,7 +790,16 @@ class AnalyticsPipeline:
                 ctx.warm_storage.write_commits(ctx.input.codebase_id, commits)
                 logger.info(f"Stored {len(commits)} commit records in warm storage")
 
-        # TODO: Store file changes in cold storage
+        # v1.x mode only: Store file changes in cold storage
+        # (In v2.0 mode, file_changes are empty - already written in Phase 2b merge)
+        file_changes = ctx.extract_result.file_changes
+        if file_changes and ctx.cold_storage:
+            ctx.cold_storage.write_file_changes(
+                codebase_id=ctx.input.codebase_id,
+                file_changes=file_changes,
+                partition_by_date=True,
+            )
+            logger.info(f"Stored {len(file_changes)} file changes in cold storage")
 
         logger.info("Data storage complete")
 

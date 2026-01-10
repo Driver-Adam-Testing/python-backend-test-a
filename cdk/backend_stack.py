@@ -70,6 +70,23 @@ class BackendStack(Stack):
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
             ),
         )
+        self.analyticshatchetworker = HatchetWorker(
+            self,
+            "HatchetAnalyticsWorker",
+            HatchetWorkerParams(
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
+                metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account,
+                cpu_size=8192,
+                mem_size=61440,
+                min_instance=1,
+                workflow_set_name=HatchetWorkerType.ANALYTICS.value,
+                is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
+                dropzone_bucket=self.backend.dropzone_bucket
+            ),
+        )
+
         self.heavyhatchetworker = HatchetWorker(
             self,
             "HatchetHeavyWorker",

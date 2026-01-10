@@ -40,6 +40,11 @@ class ParquetStorage:
         self.storage_root.mkdir(parents=True, exist_ok=True)
         logger.debug(f"Initialized ParquetStorage at {self.storage_root}")
 
+    @property
+    def base_path(self) -> Path:
+        """Alias for storage_root for API consistency."""
+        return self.storage_root
+
     def _get_path(self, layer: str, table: str, codebase_id: str) -> Path:
         """Get path for a Parquet file.
 

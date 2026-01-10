@@ -146,6 +146,33 @@ class ChunkStorage:
         """
         return self._list_chunks("file_changes")
 
+    def _list_s3_objects(self, prefix: str) -> list[str]:
+        """List all S3 objects under a prefix with pagination.
+
+        Args:
+            prefix: S3 prefix to list objects under
+
+        Returns:
+            List of S3 keys (unsorted)
+        """
+        keys = []
+        continuation_token = None
+        while True:
+            kwargs = {"Bucket": self.bucket, "Prefix": prefix}
+            if continuation_token:
+                kwargs["ContinuationToken"] = continuation_token
+
+            response = self.s3_client.list_objects_v2(**kwargs)
+
+            if "Contents" in response:
+                keys.extend(obj["Key"] for obj in response["Contents"])
+
+            if not response.get("IsTruncated"):
+                break
+            continuation_token = response.get("NextContinuationToken")
+
+        return keys
+
     def _list_chunks(self, chunk_type: str) -> list[str]:
         """List chunks of a specific type with pagination handling.
 
@@ -156,25 +183,7 @@ class ChunkStorage:
             Sorted list of S3 keys
         """
         prefix = f"{self.base_prefix}/{chunk_type}/"
-        keys = []
-
-        continuation_token = None
-        while True:
-            kwargs = {"Bucket": self.bucket, "Prefix": prefix}
-            if continuation_token:
-                kwargs["ContinuationToken"] = continuation_token
-
-            response = self.s3_client.list_objects_v2(**kwargs)
-
-            if "Contents" in response:
-                keys.extend(obj["Key"] for obj in response["Contents"])
-
-            if response.get("IsTruncated"):
-                continuation_token = response.get("NextContinuationToken")
-            else:
-                break
-
-        return sorted(keys)
+        return sorted(self._list_s3_objects(prefix))
 
     def delete_all_chunks(self) -> None:
         """Delete all chunks for this codebase.
@@ -182,25 +191,7 @@ class ChunkStorage:
         Handles pagination for listing and batching for deletion
         (S3 DeleteObjects has a 1000 object limit).
         """
-        prefix = self.get_chunks_prefix()
-
-        # List all chunk keys
-        keys = []
-        continuation_token = None
-        while True:
-            kwargs = {"Bucket": self.bucket, "Prefix": prefix}
-            if continuation_token:
-                kwargs["ContinuationToken"] = continuation_token
-
-            response = self.s3_client.list_objects_v2(**kwargs)
-
-            if "Contents" in response:
-                keys.extend(obj["Key"] for obj in response["Contents"])
-
-            if response.get("IsTruncated"):
-                continuation_token = response.get("NextContinuationToken")
-            else:
-                break
+        keys = self._list_s3_objects(self.get_chunks_prefix())
 
         if not keys:
             logger.debug(f"No chunks to delete for {self.codebase_id}")

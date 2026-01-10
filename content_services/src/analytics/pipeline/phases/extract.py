@@ -7,7 +7,7 @@ This phase collects commit metadata and calculates SLOC metrics.
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -192,11 +192,7 @@ class ExtractResult:
     commits: list[dict]
     total_commits: int
     error: str | None = None
-    file_changes: list[dict] | None = None
-
-    def __post_init__(self) -> None:
-        if self.file_changes is None:
-            self.file_changes = []
+    file_changes: list[dict] = field(default_factory=list)
 
 
 def extract_commits(
@@ -511,12 +507,14 @@ def _process_commits_parallel(
                 )
 
                 # Call checkpoint callback if provided (for fault tolerance)
-                if checkpoint_callback:
+                # v2.0: Skip when batch_callback is provided - it handles checkpointing
+                # with correct chunk counts. Calling here with zeros would overwrite
+                # the correct values and cause data loss on resume.
+                if checkpoint_callback and not batch_callback:
                     checkpoint_callback(
                         {
                             "codebase_id": codebase_id,
                             "processed_commit_shas": accumulated_shas.copy(),
-                            # v2.0: chunk counts are managed by batch_callback
                             "commit_chunk_count": 0,
                             "file_change_chunk_count": 0,
                         }
@@ -671,31 +669,6 @@ def _get_all_branch_names(repo: pygit2.Repository) -> list[str]:
     return sorted(branch_names)
 
 
-def _get_commits_in_branch(repo: pygit2.Repository, branch_name: str) -> set[str]:
-    """Get all commit SHAs in a branch."""
-    # Try to get branch reference (local first, then remote)
-    branch_ref = None
-    if branch_name in repo.branches.local:
-        branch_ref = repo.branches[branch_name]
-    elif f"origin/{branch_name}" in repo.branches.remote:
-        branch_ref = repo.branches[f"origin/{branch_name}"]
-    else:
-        logger.warning(f"Branch not found: {branch_name}")
-        return set()
-
-    # Walk commits in branch
-    commit_shas = set()
-    try:
-        for commit in repo.walk(
-            branch_ref.target, pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_TIME
-        ):
-            commit_shas.add(str(commit.id))
-    except Exception as e:
-        logger.warning(f"Error walking branch {branch_name}: {e}")
-
-    return commit_shas
-
-
 def _collect_commits_and_branches(
     repo: pygit2.Repository,
     branch_names: list[str],
@@ -705,12 +678,8 @@ def _collect_commits_and_branches(
     1. All commits in topological order (parents before children)
     2. Mapping from commit SHA to list of branches containing it
 
-    This replaces both:
-    - _get_commits_in_branch loop (Walk #1)
-    - _get_commits_topological (Walk #2)
-
-    Reduces commit graph traversal from O(2 * branches * commits)
-    to O(branches * commits) with better cache locality.
+    This single-pass approach reduces commit graph traversal complexity
+    and provides better cache locality.
 
     Additionally, the returned commit_to_branches dict enables O(1) branch lookup
     instead of O(branches) per commit.

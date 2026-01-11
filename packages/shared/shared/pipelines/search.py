@@ -5,12 +5,13 @@ from uuid import UUID
 from database.db import get_session
 from database.models import (
     ChunkAndEmbedding,
-    ContentKind,
     DerivedContent,
     Node,
     PrimaryAsset,
     Version,
+    VersionNode,
 )
+from database.models_enums import ContentKind
 from rank_bm25 import BM25Okapi
 from sqlalchemy import Select
 from sqlalchemy.orm import aliased, selectinload
@@ -96,7 +97,7 @@ def overall_score(
 
 def create_filtered_chunk_statement(
     organization_id: str,
-    node_ids: list[UUID] | None = None,
+    version_node_ids: list[UUID] | None = None,
     content_kinds: list[ContentKind] | None = None,
     embedded_query: list | None = None,
 ) -> Select:
@@ -104,11 +105,10 @@ def create_filtered_chunk_statement(
     Create the base SQL statement for filtering relevant ChunkAndEmbedding records.
 
     :param organization_id: The organization in which we want to search.
-    :param node_ids: Optional list of node UUIDs to further filter.
+    :param version_node_ids: Optional list of VersionNode UUIDs to further filter.
     :param embedded_query: If provided, includes the L2 distance from the query vector.
     :return: The SQLAlchemy Select statement.
     """
-    NodeAlias = aliased(Node)
 
     # Start with a statement that selects (ChunkAndEmbedding, <semantic_score>).
     if embedded_query is not None:
@@ -126,27 +126,30 @@ def create_filtered_chunk_statement(
         .options(
             selectinload(ChunkAndEmbedding.content)
             .selectinload(DerivedContent.node)
-            .selectinload(Node.version)
+            .selectinload(Node.version_nodes)
+            .selectinload(VersionNode.version)
         )
-        .join(DerivedContent)
-        .join(Node)
-        .join(Version)
-        .join(PrimaryAsset)
+        .join(DerivedContent, ChunkAndEmbedding.content_id == DerivedContent.id)
+        .join(Node, DerivedContent.node_id == Node.id)
+        .join(VersionNode, VersionNode.node_id == Node.id)
+        .join(Version, VersionNode.version_id == Version.id)
+        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
         .where(PrimaryAsset.organization_id == organization_id)
     )
 
     if content_kinds:
         stmt = stmt.where(DerivedContent.content_kind.in_(content_kinds))
 
-    if node_ids:
-        # Example usage: This allows searching within a node and all its sub-paths.
+    if version_node_ids:
+        # Filter by specific VersionNode IDs and their sub-paths
+        VersionNodeAlias = aliased(VersionNode)
         stmt = stmt.join(
-            NodeAlias,
+            VersionNodeAlias,
             and_(
-                NodeAlias.version_id == Node.version_id,
-                Node.relative_path.like(NodeAlias.relative_path + "%"),
+                VersionNodeAlias.version_id == VersionNode.version_id,
+                VersionNode.relative_path.like(VersionNodeAlias.relative_path + "%"),
             ),
-        ).where(NodeAlias.id.in_(node_ids))
+        ).where(VersionNodeAlias.id.in_(version_node_ids))
 
     return stmt
 
@@ -197,7 +200,7 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
     # Create filtered statement that includes semantic scores
     stmt = create_filtered_chunk_statement(
         organization_id=input.organization_id,
-        node_ids=input.node_ids,
+        version_node_ids=input.version_node_ids,
         embedded_query=embedded_query,
         content_kinds=input.content_kinds,
     ).order_by(asc("semantic_score"))
@@ -214,12 +217,13 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
     # Convert DB results to SearchResults
     search_results = []
     for chunk, score in results:
+        version_node = chunk.content.node.version_nodes[0]
         metadata = {
             "chunk_number": chunk.chunk_number,
         }
         version_display_name = (
-            chunk.content.node.version.vcs_hash
-            if chunk.content.node.version.vcs_hash
+            version_node.version.vcs_hash
+            if version_node.version.vcs_hash
             else "Unversioned"
         )
         search_results.append(
@@ -227,10 +231,10 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
                 content=chunk.text,
                 score=overall_score(semantic_score=score),
                 metadata=metadata,
-                relative_path=chunk.content.node.relative_path,
+                relative_path=version_node.relative_path,
                 version_display_name=version_display_name,
-                version_id=chunk.content.node.version_id,
-                node_id=chunk.content.node_id,
+                version_id=version_node.version_id,
+                version_node_id=chunk.content.node_id,
             )
         )
 
@@ -256,7 +260,7 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
     # Create statement without semantic score
     stmt = create_filtered_chunk_statement(
         organization_id=input.organization_id,
-        node_ids=input.node_ids,
+        version_node_ids=input.version_node_ids,
         content_kinds=input.content_kinds,
     ).where(ChunkAndEmbedding.__ts_vector__.match(input.query))
     session.exec(text("SET hnsw.ef_search=400;"))
@@ -265,19 +269,23 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
         return SearchResults(results=[])
 
     # Prepare texts for BM25
-    texts_for_bm25 = [f"{c.text} {c.content.node.relative_path}" for c, _ in db_results]
+    texts_for_bm25 = [
+        f"{c.text} {c.content.node.version_nodes[0].relative_path}"
+        for c, _ in db_results
+    ]
     bm25_scores = get_bm25_scores(input.query, texts_for_bm25)
 
     # Convert DB results to SearchResults
     search_results = []
     for (chunk, _), bm25_score in zip(db_results, bm25_scores):
+        version_node = chunk.content.node.version_nodes[0]
         metadata = {
-            "version_id": chunk.content.node.version_id,
+            "version_id": version_node.version_id,
             "chunk_number": chunk.chunk_number,
         }
         version_display_name = (
-            chunk.content.node.version.vcs_hash
-            if chunk.content.node.version.vcs_hash
+            version_node.version.vcs_hash
+            if version_node.version.vcs_hash
             else "Unversioned"
         )
         search_results.append(
@@ -285,10 +293,10 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
                 content=chunk.text,
                 score=overall_score(bm25_score=bm25_score),
                 metadata=metadata,
-                relative_path=chunk.content.node.relative_path,
+                relative_path=version_node.relative_path,
                 version_display_name=version_display_name,
-                version_id=chunk.content.node.version_id,
-                node_id=chunk.content.node_id,
+                version_id=version_node.version_id,
+                version_node_id=chunk.content.node_id,
             )
         )
 
@@ -325,7 +333,7 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
     stmt_semantic = (
         create_filtered_chunk_statement(
             organization_id=input.organization_id,
-            node_ids=input.node_ids,
+            version_node_ids=input.version_node_ids,
             embedded_query=embedded_query,
             content_kinds=input.content_kinds,
         )
@@ -337,7 +345,9 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
     # 2. Run lexical search (TS vector)
     stmt_lexical = (
         create_filtered_chunk_statement(
-            organization_id=input.organization_id, node_ids=input.node_ids
+            organization_id=input.organization_id,
+            version_node_ids=input.version_node_ids,
+            content_kinds=input.content_kinds,
         )
         .where(ChunkAndEmbedding.__ts_vector__.match(input.query))
         .limit(2 * input.limit)
@@ -363,7 +373,7 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
 
     # 4. Compute BM25 on combined results
     texts_for_bm25 = [
-        f"{chunk.text} {chunk.content.node.relative_path}"
+        f"{chunk.text} {chunk.content.node.version_nodes[0].relative_path}"
         for chunk, _ in combined_chunks
     ]
     bm25_scores = get_bm25_scores(input.query, texts_for_bm25)
@@ -380,6 +390,8 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
         token_count = int(len(chunk.text.split()) / CHARS_PER_TOKEN_APPROXIMATION)
         accumulated_tokens += token_count
 
+        version_node = chunk.content.node.version_nodes[0]
+
         metadata = {
             "chunk_number": chunk.chunk_number,
         }
@@ -389,18 +401,18 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
             semantic_score=sem_score, bm25_score=bm25_scores[i]
         )
         version_display_name = (
-            chunk.content.node.version.vcs_hash
-            if chunk.content.node.version.vcs_hash
+            version_node.version.vcs_hash
+            if version_node.version.vcs_hash
             else "Unversioned"
         )
         search_results.append(
             SearchResult(
                 content=chunk.text,
                 score=hybrid_score,
-                relative_path=chunk.content.node.relative_path,
+                relative_path=version_node.relative_path,
                 version_display_name=version_display_name,
-                version_id=chunk.content.node.version_id,
-                node_id=chunk.content.node_id,
+                version_id=version_node.version_id,
+                version_node_id=chunk.content.node_id,
                 metadata=metadata,
             )
         )

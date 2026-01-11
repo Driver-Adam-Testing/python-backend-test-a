@@ -5,6 +5,7 @@ WORKDIR /app/
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
@@ -29,6 +30,10 @@ ENV PYTHONPATH=/app
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
 
+RUN apt-get purge -y --auto-remove build-essential curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install start scripts
 COPY backend/scripts/start-reload.sh /start-reload.sh
 COPY backend/scripts/start.sh /start.sh
@@ -42,9 +47,11 @@ COPY backend/prestart.sh /app/
 COPY backend/tests-start.sh /app/
 COPY backend/app /app/app
 
-RUN apt-get purge -y --auto-remove build-essential curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the setEnv.sh if using the deployment repo
+COPY setEnv.sh* / 
+
+# Install tiktoken encodings for single-tenant envs without internet access
+RUN poetry run python -c "import tiktoken; tiktoken.encoding_for_model('gpt-4'); tiktoken.encoding_for_model('gpt-4.1')"
 
 # Capture Git info at build time
 ARG GIT_COMMIT

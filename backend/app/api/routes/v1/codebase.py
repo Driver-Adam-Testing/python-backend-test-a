@@ -1,12 +1,12 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-import modal
 from database.models import PrimaryAsset, UsageEventType, Version
 from database.models_enums import PrimaryAssetKind, VersionStatus
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, Query
+from hatchet_sdk import Hatchet
 from pydantic import BaseModel
+from shared.interfaces.hatchet_interfaces import InspectorInput
 from shared.interfaces.usage.event_metadata import (
     UsageEventMetadata,
     UsageMetric,
@@ -18,18 +18,13 @@ from shared.usage.utils import bytes_to_sloc
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
-from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
-from app.core.config import settings
+from app.authorization.fastapi import enforce_asset_action
 from app.schemas.codebase_schema import (
-    CodebaseAnalysisRequest,
-    CodebaseAnalysisResponse,
-    CodebaseAnalysisResult,
     CodebaseGenerationRequest,
     CodebaseGenerationResponse,
-    CodebaseOnboardRequest,
 )
-from app.services.codebase_service import CodebaseService
 
 router = APIRouter()
 
@@ -50,7 +45,6 @@ class CodebaseVersionsResponse(BaseModel):
 @router.get(
     "/{codebase_id}/versions",
     summary="Get available codebase versions",
-    dependencies=[ContentReadonlyPermission],
 )
 def get_codebase_versions(
     session: CurrentSession,
@@ -59,6 +53,10 @@ def get_codebase_versions(
     limit: int = Query(default=10, gt=0),
     offset: int = Query(default=0, ge=0),
 ) -> CodebaseVersionsResponse:
+    enforce_asset_action(
+        db=session, user=user, asset_id=codebase_id, action_key="codebase.view_versions"
+    )
+
     # Find the primary asset that represents the codebase
     primary_asset_id = codebase_id  # URL MISNOMER
     primary_asset = session.exec(
@@ -71,8 +69,6 @@ def get_codebase_versions(
 
     if not primary_asset:
         # If not found, raise an error
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Codebase not found")
 
     # Query versions associated with this primary asset
@@ -107,23 +103,8 @@ def get_codebase_versions(
 
 
 @router.post(
-    "/analysis",
-    summary="Execute codebase analysis",
-    dependencies=[ContentEditorPermission],
-)
-def exec_codebase_analysis(
-    user: UserToken,
-    request: CodebaseAnalysisRequest,
-) -> CodebaseAnalysisResponse:
-    return CodebaseService.execute_codebase_analysis(
-        user.organization_id, request.download_url
-    )
-
-
-@router.post(
     "/generate",
     summary="Execute codebase generation",
-    dependencies=[ContentEditorPermission],
 )
 def exec_codebase_generation(
     session: CurrentSession,
@@ -139,11 +120,21 @@ def exec_codebase_generation(
             PrimaryAsset.organization_id == user.organization_id,
         )
         .options(
-            selectinload(Version.root_node),
+            selectinload(Version.root_version_node),
             selectinload(Version.primary_asset),
         )
     )
     result = session.exec(query).all()
+
+    primary_asset_ids = {v.primary_asset_id for v in result}
+    for primary_asset_id in primary_asset_ids:
+        enforce_asset_action(
+            db=session,
+            user=user,
+            asset_id=primary_asset_id,
+            action_key="codebase.generate_tech_docs",
+        )
+
     if len(result) != len(request.version_ids):
         # Only proceed if all versions are able to be processed
         raise HTTPException(
@@ -153,7 +144,7 @@ def exec_codebase_generation(
     total_codebase_size_in_bytes = 0
     for version in result:
         metadata = (
-            version.root_node.misc_metadata
+            version.root_version_node.misc_metadata
         )  # TODO: is this loaded as a dict? Or string?
         total_codebase_size_in_bytes += metadata["analyzable_bytes"]
     usage_balance = UsageService(session).get_usage_balance(user.organization_id)
@@ -170,7 +161,7 @@ def exec_codebase_generation(
             content_name=version.primary_asset.display_name,
             version_id=str(version.id),
         )
-        metadata = version.root_node.misc_metadata
+        metadata = version.root_version_node.misc_metadata
         codebase_size_in_bytes = metadata["analyzable_bytes"]
         with LLMUsageSession(
             user.organization_id, user.user_id, session_meta
@@ -199,60 +190,12 @@ def exec_codebase_generation(
         session.add(version)
         session.commit()
 
-    inspect_db = modal.Function.lookup(
-        "inspector-v2", "inspect_db", environment_name=settings.MODAL_ENVIRONMENT
+    hatchet = Hatchet()
+    inspector_task = hatchet.stubs.task(
+        name="inspector-workflow",
+        input_validator=InspectorInput,
     )
+
     for version in result:
-        inspect_db.spawn(version.id)
+        inspector_task.run_no_wait(InspectorInput(version_id=str(version.id)))
     return CodebaseGenerationResponse(call_id="1234")
-
-
-@router.get(
-    "/analysis/{call_id}",
-    summary="Get codebase analysis results",
-    dependencies=[ContentEditorPermission],
-)
-def get_codebase_analysis(
-    call_id: str,
-) -> CodebaseAnalysisResult:
-    analysis_response = CodebaseService.get_codebase_analysis_results(call_id)
-    if analysis_response.status in ["error", "expired"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
-        )
-
-    return analysis_response
-
-
-@router.post(
-    "/onboard",
-    summary="Trigger codebase onboarding",
-    dependencies=[ContentEditorPermission],
-)
-def trigger_codebase_onboarding(
-    session: CurrentSession,
-    user: UserToken,
-    request: CodebaseOnboardRequest,
-) -> JSONResponse:
-    analysis = CodebaseService.get_codebase_analysis_results(request.call_id)
-
-    if analysis.status != "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
-        )
-
-    analyzable_sloc = analysis.result.analyzable_sloc
-
-    available_usage = UsageService(session).get_usage_balance(user.organization_id)
-
-    if analyzable_sloc > available_usage.balance:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
-        )
-
-    CodebaseService.trigger_codebase_onboarding(
-        user.organization_id, request.codebase_object_key
-    )
-    return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
-    )

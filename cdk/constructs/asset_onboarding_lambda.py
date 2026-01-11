@@ -2,6 +2,9 @@ from dataclasses import dataclass
 
 from aws_cdk import (
     Duration,
+    aws_cloudwatch,
+    aws_cloudwatch_actions,
+    aws_ec2,
     aws_iam,
     aws_lambda,
     aws_lambda_event_sources,
@@ -14,6 +17,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from cdk.settings import settings
+
 
 @dataclass
 class AssetOnboardingLambdaParams:
@@ -23,6 +28,8 @@ class AssetOnboardingLambdaParams:
     auth0_audience: str
     dropzone_bucket: aws_s3.Bucket
     use_legacy_dropzone: bool
+    vpc: aws_ec2.IVpc
+    is_private_deploy: bool
 
 
 class AssetOnboardingLambda(Construct):
@@ -31,41 +38,50 @@ class AssetOnboardingLambda(Construct):
     ) -> None:
         super().__init__(scope, id)
 
-        client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
-        client_secret_secret = aws_secretsmanager.Secret(scope, "ClientSecretSecret")
+        deployment_secrets = aws_secretsmanager.Secret.from_secret_name_v2(
+            self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
+        )
 
-        sentry_secret_name = aws_ssm.StringParameter.value_from_lookup(
-            scope,
-            parameter_name="/baseline/infra/v2/pythonBackend/sentryCredentialName",
-        )
-        sentry_secret = aws_secretsmanager.Secret.from_secret_name_v2(
-            scope, "SentrySecret", secret_name=sentry_secret_name
-        )
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "AssetOnboardingLambdaPy",
-            entry="content_services/onboarding_event_handler",
+            entry="lambdas/onboarding_event_handler",
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             index="src/main.py",
             environment={
                 "ENVIRONMENT": params.environment,
                 "LOG_LEVEL": "INFO",
-                "CLIENT_ID_SECRET": client_id_secret.secret_name,
-                "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
+                "CLIENT_ID_SECRET": settings.ONBOARDING_LAMDBA_CLIENT_ID,
+                "CLIENT_SECRET_SECRET": deployment_secrets.secret_name,
                 "API_URL": params.api_url,
                 "AUTH0_AUDIENCE": params.auth0_audience,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
-                "SENTRY_DSN": sentry_secret.secret_value_from_json("SENTRY_DSN").unsafe_unwrap(),
+                # Optional settings need fixed since they seem to get set 
+                # in all the envs and cause problems. Disabling for now.
+                # "SENTRY_DSN": "FIXME"
+                # if params.is_private_deploy
+                # else settings.SENTRY_DSN,
+                "IS_PRIVATE_DEPLOY": str(params.is_private_deploy),
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]
             ),
             timeout=Duration.seconds(15),
+            vpc=params.vpc,
+            vpc_subnets=aws_ec2.SubnetSelection(subnet_group_name="Private"),
         )
-        client_secret_secret.grant_read(lambda_function)
-        client_id_secret.grant_read(lambda_function)
+        deployment_secrets.grant_read(lambda_function)
+
+        if params.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self,
+                "FirewallCertSecret",
+                secret_name="/network-firewall/ca-certificate",
+            )
+            firewall_cert_secret.grant_read(lambda_function)
+
         params.dropzone_bucket.grant_read(lambda_function)
 
         sns_topic = aws_sns.Topic(scope, "CodeOnboardingTopic")
@@ -80,14 +96,33 @@ class AssetOnboardingLambda(Construct):
         lambda_function.role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
-        legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
-            scope,
-            "LegacyDropzoneBucket",
-            bucket_name=f"{params.environment}-codebase-dropzone",
-        )
-        legacy_dropzone_bucket.add_event_notification(
+        params.dropzone_bucket.add_event_notification(
             aws_s3.EventType.OBJECT_TAGGING_PUT,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="assets/"),
         )
-        legacy_dropzone_bucket.grant_read(lambda_function)
+        params.dropzone_bucket.grant_read(lambda_function)
+
+        # Lambda Error Rate Alarm
+        alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(
+            self, "/infrastructure/alarms/topic-arn"
+        )
+        alarm_topic = aws_sns.Topic.from_topic_arn(
+            self, "InfrastructureAlarmsTopic", alarm_topic_arn
+        )
+        alarm_action = aws_cloudwatch_actions.SnsAction(alarm_topic)
+
+        error_rate_alarm = aws_cloudwatch.Alarm(
+            self,
+            "AssetOnboardingLambdaErrorAlarm",
+            alarm_description=f"[{params.environment}] Asset Onboarding Lambda errors > 5 in 5 minutes",
+            metric=lambda_function.metric_errors(
+                statistic="Sum",
+                period=Duration.minutes(5),
+            ),
+            threshold=5,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.NOT_BREACHING,
+        )
+        error_rate_alarm.add_alarm_action(alarm_action)

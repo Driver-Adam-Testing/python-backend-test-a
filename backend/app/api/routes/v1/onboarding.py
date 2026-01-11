@@ -1,15 +1,18 @@
 import uuid
 
-import modal
 from database.models import Version
 from database.models_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter
+from hatchet_sdk import Hatchet
 from pydantic import BaseModel
+from shared.interfaces.hatchet_interfaces import (
+    PDFProcessingInput,
+    RunCodebaseConnectionInput,
+)
 from sqlalchemy.orm.exc import NoResultFound
 
 from app.api.auth import M2MToken
 from app.api.session import CurrentSession
-from app.core.config import settings
 
 router = APIRouter()
 
@@ -58,37 +61,39 @@ def trigger_asset_connection(
             f"GuardDuty found something. Version {trigger_body.version_id} set to CONNECTION_FAILED."
         )
 
+    hatchet = Hatchet()
     match trigger_body.params.asset_kind:
         case PrimaryAssetKind.CODEBASE:
-            run_codebase_connection = modal.Function.lookup(
-                "inspector-v2",
-                "run_codebase_connection",
-                environment_name=settings.MODAL_ENVIRONMENT,
+            run_codebase_connection_task = hatchet.stubs.task(
+                name="run-codebase-connection-workflow",
+                input_validator=RunCodebaseConnectionInput,
+            )
+            call = run_codebase_connection_task.run_no_wait(
+                RunCodebaseConnectionInput(
+                    presigned_url=trigger_body.params.download_url,
+                    provisional_codebase_name=trigger_body.params.asset_name,
+                    org_id=trigger_body.params.org_id,
+                    version_id=str(trigger_body.version_id),
+                    provider=trigger_body.params.provider,
+                )
             )
 
-            call = run_codebase_connection.spawn(
-                presigned_url=trigger_body.params.download_url,
-                provisional_codebase_name=trigger_body.params.asset_name,
-                org_id=trigger_body.params.org_id,
-                version_id=trigger_body.version_id,
-                provider=trigger_body.params.provider,
-            )
         case PrimaryAssetKind.FILE:
-            create_and_embed_pdf_summaries = modal.Function.lookup(
-                "pdf-summary-embedding",
-                "create_and_embed_pdf_summaries",
-                # TODO: this line is not need once we deploy to production.
-                environment_name=settings.MODAL_ENVIRONMENT,
+            pdf_processing_task = hatchet.stubs.task(
+                name="pdf-processing-workflow",
+                input_validator=PDFProcessingInput,
             )
-            call = create_and_embed_pdf_summaries.spawn(
-                trigger_body.params.download_url,
-                trigger_body.version_id,
-                trigger_body.params.asset_name,
-                trigger_body.params.org_id,
+            call = pdf_processing_task.run_no_wait(
+                PDFProcessingInput(
+                    presigned_url=trigger_body.params.download_url,
+                    version_id=str(trigger_body.version_id),
+                    asset_name=trigger_body.params.asset_name,
+                    org_id=trigger_body.params.org_id,
+                )
             )
         case _:
             raise Exception(
                 f"Asset kind {trigger_body.params.asset_kind} not supported for connection."
             )
 
-    return AssetConnection(status="OK", call_id=call.object_id)
+    return AssetConnection(status="OK", call_id=str(call.workflow_run_id))

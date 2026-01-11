@@ -130,6 +130,7 @@ class DownloadContentResponse(BaseModel):
     download_url: str
     content_name: str
     status: str
+    primary_asset_id: UUID
 
 
 class TagResult(BaseModel):

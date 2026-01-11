@@ -14,9 +14,7 @@ class AWSSecretManagementStrategy:
         session = boto3.session.Session()
         self.client = session.client(
             service_name="secretsmanager",
-            region_name=self.config.region_name,
-            aws_access_key_id=self.config.aws_access_key_id,
-            aws_secret_access_key=self.config.aws_secret_access_key,
+            region_name=self.config.region_name
         )
 
     def write_secret(self, secret_name: str, secret_value: str) -> None:

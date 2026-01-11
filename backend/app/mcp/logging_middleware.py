@@ -9,7 +9,7 @@ from fastmcp.server.middleware import Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult  # noqa: TCH002
 from pydantic import BaseModel, ValidationError
 
-from app.mcp.auth_middleware import get_organization_id, get_user, get_user_id
+from app.mcp.oauth_auth import get_user_from_token
 
 
 class _McpComponentType(StrEnum):
@@ -89,7 +89,7 @@ class McpLoggingMiddleware(Middleware):
         self._logger.propagate = False
 
     async def on_call_tool(self, ctx: MiddlewareContext, call_next: any) -> any:
-        user = get_user(ctx.fastmcp_context)
+        user = get_user_from_token()
 
         log_data = _McpLogData(
             component_name=ctx.message.name,
@@ -97,10 +97,10 @@ class McpLoggingMiddleware(Middleware):
             params=ctx.message.arguments,
             payload=None,
             error_message=None,
-            org_id=get_organization_id(ctx.fastmcp_context),
-            org_name=user["org_name"],
-            user_id=get_user_id(ctx.fastmcp_context),
-            user_email=user["user_email"],
+            org_id=user.organization_id,
+            org_name=user.organization_display_name or "",
+            user_id=user.user_id,
+            user_email=user.email or "",
         )
 
         try:
@@ -141,7 +141,7 @@ class McpLoggingMiddleware(Middleware):
         return tool_result
 
     async def on_get_prompt(self, ctx: MiddlewareContext, call_next: any) -> any:
-        user = get_user(ctx.fastmcp_context)
+        user = get_user_from_token()
 
         log_data = _McpLogData(
             component_name=ctx.message.name,
@@ -149,10 +149,10 @@ class McpLoggingMiddleware(Middleware):
             params=None,
             payload=None,
             error_message=None,
-            org_id=get_organization_id(ctx.fastmcp_context),
-            org_name=user["org_name"],
-            user_id=get_user_id(ctx.fastmcp_context),
-            user_email=user["user_email"],
+            org_id=user.organization_id,
+            org_name=user.organization_display_name or "",
+            user_id=user.user_id,
+            user_email=user.email or "",
         )
 
         self._logger.info("Prompt requested", extra=log_data.model_dump())

@@ -17,6 +17,7 @@ from aws_cdk import (
     aws_events_targets as targets,
 )
 from constructs import Construct
+from cdk.settings import settings
 
 
 class MetricsLambdaParams:
@@ -26,11 +27,11 @@ class MetricsLambdaParams:
         self,
         environment: str,
         database_url: str | None = None,
-        cloudwatch_alarm_arn: str | None = None,
+        is_private_deploy: bool = False,
     ) -> None:
         self.environment = environment
         self.database_url = database_url
-        self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
+        self.is_private_deploy = is_private_deploy
 
 
 class MetricsLambda(Construct):
@@ -43,6 +44,12 @@ class MetricsLambda(Construct):
         )
         vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
         driver_db_path = os.path.abspath("driver_db")
+        alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(self, '/infrastructure/alarms/topic-arn')
+        alarm_topic = aws_sns.Topic.from_topic_arn(self, 'InfrastructureAlarmsTopic', alarm_topic_arn)
+
+        lambda_concurrent_executions = None
+        if settings.IS_PRODUCTION_ACCOUNT == "true":
+            lambda_concurrent_executions = 10
 
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -59,16 +66,27 @@ class MetricsLambda(Construct):
                 "LOG_LEVEL": "INFO",
                 "DATABASE_URL": params.database_url or "",
                 "DATABASE_URL_SECRET_NAME": database_url_secret.secret_name,
+                "IS_PRIVATE_DEPLOY": "true" if params.is_private_deploy else "false",
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"],
-                volumes=[{"containerPath": "/driver_db", "hostPath": driver_db_path}],
+                volumes=[
+                    {"containerPath": "/driver_db", "hostPath": driver_db_path},
+                ],
             ),
-            reserved_concurrent_executions=10,
+            reserved_concurrent_executions=lambda_concurrent_executions,
             timeout=Duration.seconds(60),
         )
         database_url_secret.grant_read(self.lambda_function)
+
+        # Grant permission to read firewall certificate for private deployments
+        if params.is_private_deploy:
+            firewall_cert_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+                self, "FirewallCertSecret", secret_name="/network-firewall/ca-certificate"
+            )
+            firewall_cert_secret.grant_read(self.lambda_function)
+
         event_target = targets.LambdaFunction(
             self.lambda_function,
         )
@@ -86,51 +104,34 @@ class MetricsLambda(Construct):
             targets=[event_target],
             event_pattern=aws_events.EventPattern(source=["metrics.client"]),
         )
-
-        if params.environment in ["development", "staging", "production","pms"]:
-            self.metric_dlq_alarm = aws_cloudwatch.Alarm(
-                self,
-                "MetricDLQAlarm",
-                alarm_description=f"[{params.environment}] Metrics Undelivered In DLQ",
-                metric=self.metrics_dlq.metric_approximate_number_of_messages_visible(),
-                threshold=1,
-                evaluation_periods=1,
-                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-            )
-            self.metric_message_age_alarm = aws_cloudwatch.Alarm(
-                self,
-                "MetricMessageAgeAlarm",
-                alarm_description=f"[{params.environment}] Metrics DLQ Message Age > 2 hours Alarm",
-                metric=self.metrics_dlq.metric_approximate_age_of_oldest_message(),
-                threshold=7200,  # Seconds, = 2 hours
-                evaluation_periods=1,
-                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-            )
-            self.lambda_error_rate_alarm = aws_cloudwatch.Alarm(
-                self,
-                "MetricLambdaErrorAlarm",
-                alarm_description=f"[{params.environment}] Metrics Lambda Errors > 5 over last 5 minutes",
-                metric=self.lambda_function.metric_errors(),
-                threshold=5,
-                evaluation_periods=1,
-                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
-            )
-
-        if params.cloudwatch_alarm_arn:
-            notification_action = aws_cloudwatch_actions.SnsAction(
-                aws_sns.Topic.from_topic_arn(
-                    id="NotifySupportTopic",
-                    topic_arn=params.cloudwatch_alarm_arn,
-                    scope=self,
-                )
-            )
-            self.metric_dlq_alarm.add_alarm_action(notification_action)
-            self.metric_message_age_alarm.add_alarm_action(notification_action)
-            self.lambda_error_rate_alarm.add_alarm_action(notification_action)
-        else:
-            print(
-                f"*** NO CW DLQ ALARM CONFIGURED FOR MetricAlarm in {params.environment} ***"
-            )
+        
+        self.metric_dlq_alarm = aws_cloudwatch.Alarm(
+            self,
+            "MetricDLQAlarm",
+            alarm_description=f"[{params.environment}] Metrics Undelivered In DLQ",
+            metric=self.metrics_dlq.metric_approximate_number_of_messages_visible(),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+        )
+        self.metric_message_age_alarm = aws_cloudwatch.Alarm(
+            self,
+            "MetricMessageAgeAlarm",
+            alarm_description=f"[{params.environment}] Metrics DLQ Message Age > 2 hours Alarm",
+            metric=self.metrics_dlq.metric_approximate_age_of_oldest_message(),
+            threshold=7200,  # Seconds, = 2 hours
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+        )
+        self.lambda_error_rate_alarm = aws_cloudwatch.Alarm(
+            self,
+            "MetricLambdaErrorAlarm",
+            alarm_description=f"[{params.environment}] Metrics Lambda Errors > 5 over last 5 minutes",
+            metric=self.lambda_function.metric_errors(),
+            threshold=5,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+        )

@@ -20,96 +20,28 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event_name == 'workflow_run')
     name: Deploy to Dev Environment
-    runs-on: self-hosted
-    #Use if self-hosted no longer is up
-    #runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     environment: development
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-          cache: "npm"
-      - run: npm ci
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-      - name: Install dependencies without virtualenv
-        run: poetry install --no-root
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ vars.AWS_CICD_ROLE }}
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Build, tag, and push python backend image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: python-backend
-          IMAGE_TAG: latest
+      - name: Trigger deployment repo workflow
         run: |
-          docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      - name: CDK Deploy
-        env:
-          DEPLOYMENT_ENVIRONMENT: development
-        run: poetry run npx cdk deploy --require-approval never --outputs-file ./cdk-outputs.json
-      - name: Parse CDK Outputs
-        id: parse_outputs
-        run: |
-          ECS_CLUSTER_ARN=$(jq -r '.. | objects | to_entries[] | select(.key | startswith("ApiBackendEcsClusterArn")) | .value' cdk-outputs.json)
-          echo "cluster_arn=$ECS_CLUSTER_ARN" >> $GITHUB_OUTPUT
-          ECS_SERVICE_ARN=$(jq -r '.. | objects | to_entries[] | select(.key | startswith("ApiBackendEcsServiceArn")) | .value' cdk-outputs.json)
-          echo "service_arn=$ECS_SERVICE_ARN" >> $GITHUB_OUTPUT
-      - name: Force new ECS deployment
-        run: aws ecs update-service --cluster ${{ steps.parse_outputs.outputs.cluster_arn }} --service ${{ steps.parse_outputs.outputs.service_arn }} --force-new-deployment
-      - id: InspectorModalDeploy
-        name: Deploy Inspector
-        uses: ./.github/actions/modal-deploy
-        with:
-          working-directory: content_services/inspector
-          package-name: Inspector
-          modal-token-id: ${{ secrets.MODAL_TOKEN_ID }}
-          modal-token-secret: ${{ secrets.MODAL_TOKEN_SECRET }}
-          modal-env: ${{ vars.MODAL_ENV }}
-      - name: Deploy PDF Preprocessing
-        working-directory: content_services/pdf_preprocessing
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          MODAL_ENV: ${{ vars.MODAL_ENV }}
-        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-      - name: Deploy Agent
-        working-directory: content_services/agent
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          MODAL_ENV: ${{ vars.MODAL_ENV }}
-        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-      - name: Deploy Mermaid Validator
-        working-directory: content_services/mermaid_validator
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          MODAL_ENV: ${{ vars.MODAL_ENV }}
-        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-      - name: Deploy Autodocs
-        working-directory: content_services/autodocs
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          MODAL_ENV: ${{ vars.MODAL_ENV }}
-        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-      - name: Deploy Generation
-        working-directory: content_services/generation
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          MODAL_ENV: ${{ vars.MODAL_ENV }}
-        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+          set -e
+
+          # Make the request and capture HTTP status code
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.DEP_REPO_WORKFLOW_DISPATH_TOKEN }}" \
+            https://api.github.com/repos/driver-ai/deployment/actions/workflows/develop.yaml/dispatches \
+            -d '{"ref":"develop"}')
+
+          echo "HTTP status: $STATUS"
+
+          # Expect 204 No Content
+          if [ "$STATUS" -ne 204 ]; then
+            echo "❌ Failed to trigger workflow. Expected 204 but got $STATUS"
+            exit 1
+          fi
+
+          echo "✅ Successfully triggered workflow."

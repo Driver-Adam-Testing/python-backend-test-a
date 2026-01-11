@@ -13,13 +13,10 @@ def org_id_to_hash(organization_id: str) -> str:
 
 
 class AWSS3Client:
-    def __init__(self, aws_config: AWSClientConfig) -> None:
+    def __init__(self, aws_config: AWSClientConfig | None = None) -> None:
         self.aws_config = aws_config
         self.s3_client = boto3.client(
             "s3",
-            region_name=self.aws_config.region_name,
-            aws_access_key_id=self.aws_config.aws_access_key_id,
-            aws_secret_access_key=self.aws_config.aws_secret_access_key,
         )
 
     def create_bucket_if_dne(self, bucket_name: str) -> None:

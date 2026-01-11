@@ -3,11 +3,12 @@ name = "app"
 version = "0.1.0"
 description = ""
 authors = ["Admin <admin@example.com>"]
+packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-uvicorn = { extras = ["standard"], version = "^0.24.0.post1" }
-fastapi = "^0.115.4"
+uvicorn = {extras = ["standard"], version = "^0.38.0"}
+fastapi = "^0.120.0"
 python-multipart = "^0.0.20"
 tenacity = "^8.2.3"
 pydantic = ">2.0"
@@ -30,12 +31,14 @@ tiktoken = "^0.12.0"
 pypandoc-binary = "^1.14"
 python-gitlab = "^5.6.0"
 pyjwt = "^2.10.1"
-email-validator = "^2.1.0.post1"
 sentry-sdk = { version = "^2.22.0", extras = ["fastapi"] }
 cachetools = "^6.0.0"
 httpx = "^0.28.1"
-fastmcp = "^2.10.6"
 disposable-email-domains = "^0.0.132"
+truststore = "^0.10.4"
+hatchet-sdk = "^1.21.5"
+fastmcp = "^2.13.3"
+py-key-value-aio = {extras = ["redis"], version = "^0.3.0"}
 
 
 [tool.poetry.group.dev.dependencies]
@@ -46,6 +49,7 @@ pre-commit = "^3.6.2"
 pytest-mock = "^3.12.0"
 fastapi-cli = "^0.0.4"
 pytest-asyncio = "<1.0"
+testcontainers = {extras = ["postgres"], version = "^4.13.2"}
 
 
 [build-system]
@@ -57,7 +61,10 @@ strict = true
 exclude = ["venv", "alembic"]
 
 [tool.pytest.ini_options]
-markers = ["unit"]
+markers = [
+    "unit: Unit tests with mocked dependencies (default)",
+    "integration: Integration tests with real database (in-memory SQLite)"
+]
 addopts = "--cov --cov-report=term-missing --cov-report=xml:coverage/coverage.xml"
 
 [tool.coverage]

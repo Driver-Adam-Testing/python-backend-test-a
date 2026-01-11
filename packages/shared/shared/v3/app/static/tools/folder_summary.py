@@ -1,5 +1,6 @@
 from database.db import get_session
-from database.models import ContentKind, DerivedContent
+from database.models import DerivedContent
+from database.models_enums import ContentKind
 from shared.v3.globals.glossary import (
     REFERENCE,
     REFERENCE_CONTENT,
@@ -42,12 +43,19 @@ class FolderSummaryTool(LlmTool):
         a Reference so the assistant can cite it later.
         """
         with get_session() as session:
-            # Nodes in scope are pre filtered by datasource.
+            version_node_lookup = {
+                vn.node_id: vn for vn in self.datasource.version_nodes
+            }
+
+            matching_node_ids = [
+                vn.node_id
+                for vn in self.datasource.version_nodes
+                if vn.relative_path.endswith(self.folder_path)
+            ]
 
             # Pull derived content for the target folder in one shot.
             rows = session.exec(
                 select(DerivedContent)
-                .join(DerivedContent.node)
                 .filter(
                     DerivedContent.content_kind.in_(
                         [
@@ -55,8 +63,7 @@ class FolderSummaryTool(LlmTool):
                             ContentKind.TOP_LEVEL_LONG_DESCRIPTION,
                         ]
                     ),
-                    DerivedContent.node_id.in_([n.id for n in self.datasource.nodes]),
-                    DerivedContent.node.relative_path.endswith(self.folder_path),
+                    DerivedContent.node_id.in_(matching_node_ids),
                 )
                 .all()
             )
@@ -65,17 +72,22 @@ class FolderSummaryTool(LlmTool):
                 return
 
             for dc in rows:
-                node = dc.node
+                version_node = version_node_lookup.get(dc.node_id)
+                if not version_node:
+                    continue
+
                 version_display_name = (
-                    node.version.vcs_hash if node.version.vcs_hash else "Unversioned"
+                    version_node.version.vcs_hash
+                    if version_node.version.vcs_hash
+                    else "Unversioned"
                 )
                 ref = Reference(
                     content=dc.content,
                     score=0.0,
-                    relative_path=node.relative_path,
+                    relative_path=version_node.relative_path,
                     version_display_name=version_display_name,
-                    version_id=node.version_id,
-                    node_id=node.id,
+                    version_id=version_node.version_id,
+                    node_id=dc.node_id,
                     chunk_id=None,
                     chunk_number=None,
                     metadata={"content_type": dc.content_kind},

@@ -41,7 +41,7 @@ class MetricsLambda(Construct):
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
         vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
-        driver_db_path = os.path.abspath("../driver_db")
+        driver_db_path = os.path.abspath("../packages/driver_db")
         print(f"Driver DB path: {driver_db_path}")
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -62,7 +62,7 @@ class MetricsLambda(Construct):
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"],
-                volumes=[{"containerPath": "/driver_db", "hostPath": driver_db_path}],
+                volumes=[{"containerPath": "/packages/driver_db", "hostPath": driver_db_path}],
             ),
             reserved_concurrent_executions=10,
             timeout=Duration.seconds(60),

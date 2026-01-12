@@ -13,7 +13,7 @@ openai = "1.99.1"
 tiktoken = "^0.12.0"
 tqdm = "^4.66.4"
 boto3 = "^1.34.141"
-database = {path = "../driver_db", develop = true}
+database = {path = "../packages/driver_db", develop = true}
 pydantic = {extras = ["email"], version = "^2.12.4"}
 pydantic-settings = "^2.3.3"
 pymupdf = "^1.25.5"

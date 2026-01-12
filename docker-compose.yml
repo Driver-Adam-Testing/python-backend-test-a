@@ -15,7 +15,7 @@ services:
   #  db-initializer:
   #    image: db-init
   #    build:
-  #      context: ./driver_db
+  #      context: ./packages/driver_db
   #    depends_on:
   #      - db
   #    env_file:
@@ -35,7 +35,7 @@ services:
       - "4000:4000"
     volumes:
       - ./backend/:/app
-      - ./driver_db/:/driver_db
+      - ./packages/driver_db/:/packages/driver_db
       - ./packages/:/packages
     build:
       dockerfile: ./Dockerfile

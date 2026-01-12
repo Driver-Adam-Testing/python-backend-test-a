@@ -4,25 +4,25 @@ version = "0.1.0"
 description = ""
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "markdown>=3.6",
+    "markdown>=3.6,<4.0.0",
     "database",
-    "tiktoken>=0.12.0",
-    "anthropic>=0.31.2",
-    "boto3>=1.34.149",
-    "pymupdf>=1.24.9",
-    "tabula-py>=2.9.3",
-    "rank-bm25>=0.2.2",
+    "tiktoken>=0.12.0,<0.13.0",
+    "anthropic>=0.31.2,<0.32.0",
+    "boto3>=1.34.149,<2.0.0",
+    "pymupdf>=1.24.9,<2.0.0",
+    "tabula-py>=2.9.3,<3.0.0",
+    "rank-bm25>=0.2.2,<0.3.0",
     "openai==1.99.1",
-    "modal>=1.0.4",
-    "pydantic[email]>=2.11.7",
-    "auth0-python>=4.7.1",
-    "httpx>=0.28.1",
+    "modal>=1.0.4,<2.0.0",
+    "pydantic[email]>=2.11.7,<3.0.0",
+    "auth0-python>=4.7.1,<5.0.0",
+    "httpx>=0.28.1,<0.29.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "pytest>=8.2.2",
-    "pytest-asyncio>=0.24.0",
+    "pytest>=8.2.2,<9.0.0",
+    "pytest-asyncio>=0.24.0,<0.25.0",
 ]
 
 [build-system]
@@ -42,7 +42,3 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
 database = { path = "../driver_db", develop = true }
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
-pytest-asyncio = "^0.24.0"

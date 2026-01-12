@@ -1,20 +1,38 @@
+[project]
+name = "auth0-event-processor"
+version = "0.1.0"
+description = "Lambda function to process Auth0 webhook events from SQS"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "aws-secretsmanager-caching>=1.1.3",
+    "boto3>=1.40.52",
+    "hatchet-sdk>=1.21.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [tool.poetry]
 name = "auth0-event-processor"
 version = "0.1.0"
 description = "Lambda function to process Auth0 webhook events from SQS"
 authors = ["Driver AI"]
 readme = "README.md"
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-aws-secretsmanager-caching = "^1.1.3"
-boto3 = "^1.40.52"
-hatchet-sdk = "^1.21.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 pytest-cov = "^4.1.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

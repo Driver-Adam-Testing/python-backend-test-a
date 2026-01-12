@@ -1,6 +1,7 @@
 import os
 
 from aws_cdk import (
+    DockerImage,
     Duration,
     aws_cloudwatch,
     aws_cloudwatch_actions,
@@ -71,6 +72,11 @@ class MetricsLambda(Construct):
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"],
+                image=DockerImage.from_build(
+                    path=".",
+                    file="Dockerfile.lambda-bundler",
+                    platform="linux/amd64",
+                ),
                 volumes=[
                     {"containerPath": "/packages/driver_db", "hostPath": driver_db_path},
                 ],

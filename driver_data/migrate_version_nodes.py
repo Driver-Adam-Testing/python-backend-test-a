@@ -29,7 +29,7 @@ app = modal.App("version-node-migration")
 # Modal image with dependencies
 migration_image = (
     modal.Image.debian_slim(python_version="3.12")
-    .add_local_dir(local_path="../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(local_path="../packages/driver_db", remote_path="/driver_db", copy=True)
     .pip_install(
         [
             "boto3",

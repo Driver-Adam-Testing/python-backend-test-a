@@ -41,6 +41,7 @@ class BackendParams:
         aws_region: str,
         aws_account: str,
         allowed_aws_account: str,
+        allowed_privatelink_regions: list[str] | None = None,
         is_private_deploy: bool = False,
     ) -> None:
         self.cors_origins = cors_origins
@@ -52,6 +53,7 @@ class BackendParams:
         self.aws_account = aws_account
         self.is_private_deploy = is_private_deploy
         self.allowed_aws_account = allowed_aws_account
+        self.allowed_privatelink_regions = allowed_privatelink_regions or []
 
 
 class Backend(Construct):
@@ -180,7 +182,7 @@ class Backend(Construct):
             self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
         )
 
-        secret_fields = settings.SECRECTS_KEYS.split(",")
+        secret_fields = [key.strip() for key in settings.SECRECTS_KEYS.split(",")]
 
         secrets_map = {
             k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
@@ -356,12 +358,18 @@ class Backend(Construct):
                         target_groups=[privatelink_nlb_target_group]
                     ),
                 )
+                endpoint_service_kwargs = {
+                    "vpc_endpoint_service_load_balancers": [privatelink_nlb],
+                    "acceptance_required": False,
+                    "allowed_principals": allowed_principals,
+                }
+                if params.allowed_privatelink_regions:
+                    endpoint_service_kwargs["allowed_regions"] = params.allowed_privatelink_regions
+
                 self.endpoint_service = aws_ec2.VpcEndpointService(
                     self,
                     "PrivateLinkApiEndpointService",
-                    vpc_endpoint_service_load_balancers=[privatelink_nlb],
-                    acceptance_required=False,
-                    allowed_principals=allowed_principals,
+                    **endpoint_service_kwargs,
                 )
 
                 # Configure private DNS with automatic domain verification

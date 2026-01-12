@@ -114,7 +114,8 @@ class HatchetWorker(Construct):
             self, "hatchet_secret", secret_name="hatchet/appliance/credentials"
         )
 
-        secret_fields = settings.SECRECTS_KEYS.split(",")
+        secret_fields = [key.strip() for key in settings.SECRECTS_KEYS.split(",")]
+
         secrets_map = {
             k: aws_ecs.Secret.from_secrets_manager(deployment_secrets, field=k)
             for k in secret_fields

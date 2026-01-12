@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from aws_cdk import (
+    DockerImage,
     Duration,
     aws_cloudwatch,
     aws_cloudwatch_actions,
@@ -66,7 +67,13 @@ class AssetOnboardingLambda(Construct):
                 "IS_PRIVATE_DEPLOY": str(params.is_private_deploy),
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
-                asset_excludes=[".venv", ".env", "tests/", ".pytest*"]
+                platform="linux/amd64",
+                asset_excludes=[".venv", ".env", "tests/", ".pytest*"],
+                image=DockerImage.from_build(
+                    path=".",
+                    file="Dockerfile.lambda-bundler",
+                    platform="linux/amd64",
+                ),
             ),
             timeout=Duration.seconds(15),
             vpc=params.vpc,

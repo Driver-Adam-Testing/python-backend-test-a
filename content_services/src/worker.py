@@ -4,6 +4,7 @@ import truststore
 import truststore._api as tapi
 from hatchet_client import hatchet
 from worker_config import HatchetWorkerType
+from workflows.analytics_workflow import analytics_task
 from workflows.auth0_sync_workflow import (
     auth0_sync_task,
     process_auth0_event_task,
@@ -45,6 +46,7 @@ except ImportError:
 heavy_workflow_set = [
     pdf_processing_task,
     inspector_task,
+    analytics_task,
     tech_doc_task,
     folder_doc_task,
     symbol_doc_task,

@@ -48,7 +48,9 @@ class Settings:
     SECRECTS_KEYS:str
     # add more as needed...
     IS_PRIVATE_DEPLOY:str
+    IS_PRODUCTION_ACCOUNT:str
     ALLOWED_AWS_ACCOUNT:str
+    ALLOWED_PRIVATELINK_REGIONS:str
     MCP_AUTH0_CLIENT_ID:str
     MCP_AUTH0_AUDIENCE:str
 
@@ -67,10 +69,12 @@ class Settings:
             else:
                 setattr(self, name, val)
         # --- CONDITIONAL REQUIREMENT LOGIC ---
-        # If NOT private deploy, override ALLOWED_AWS_ACCOUNT and ensure it's not considered missing.
+        # If NOT private deploy, override ALLOWED_AWS_ACCOUNT and ALLOWED_PRIVATELINK_REGIONS
+        # and ensure they're not considered missing.
         if getattr(self, "IS_PRIVATE_DEPLOY", "").lower() != "true":
             self.ALLOWED_AWS_ACCOUNT = ""
-            missing = [m for m in missing if m != "ALLOWED_AWS_ACCOUNT"]
+            self.ALLOWED_PRIVATELINK_REGIONS = ""
+            missing = [m for m in missing if m not in ["ALLOWED_AWS_ACCOUNT", "ALLOWED_PRIVATELINK_REGIONS"]]
 
         if missing:
             raise EnvironmentError(

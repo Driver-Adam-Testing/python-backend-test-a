@@ -1,3 +1,61 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = ""
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "uvicorn[standard]>=0.38.0,<0.39.0",
+    "fastapi>=0.120.0,<0.121.0",
+    "python-multipart>=0.0.20,<0.0.21",
+    "tenacity>=8.2.3,<9.0.0",
+    "pydantic>2.0",
+    "gunicorn>=23.0.0,<24.0.0",
+    "bcrypt==4.0.1",
+    "pydantic-settings>=2.2.1,<3.0.0",
+    "database",
+    "shared",
+    # Pinned: newer versions break custom ID scalar in app/api/routes/legacy/scalars.py
+    # ("Redefinition of reserved type 'ID'" error). See if we can rename our scalar or update usage.
+    "strawberry-graphql[fastapi]==0.262.6",
+    "auth0-python>=4.7.1,<5.0.0",
+    "boto3>=1.34.114,<2.0.0",
+    "moto>=5.0.9,<6.0.0",
+    "aws-cdk-lib>=2.144.0,<3.0.0",
+    "constructs>=10.3.0,<11.0.0",
+    "tiktoken>=0.12.0,<0.13.0",
+    "pypandoc-binary>=1.14,<2.0.0",
+    "python-gitlab>=5.6.0,<6.0.0",
+    "pyjwt>=2.10.1,<3.0.0",
+    "sentry-sdk[fastapi]>=2.22.0,<3.0.0",
+    "cachetools>=6.0.0,<7.0.0",
+    "httpx>=0.28.1,<0.29.0",
+    "disposable-email-domains>=0.0.132,<0.0.133",
+    "truststore>=0.10.4,<0.11.0",
+    "hatchet-sdk>=1.21.5,<2.0.0",
+    "fastmcp>=2.13.3,<3.0.0",
+    "py-key-value-aio[redis]>=0.3.0,<0.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0,<9.0.0",
+    "pytest-cov>=4.1.0,<5.0.0",
+    "mypy>=1.8.0,<2.0.0",
+    "pre-commit>=3.6.2,<4.0.0",
+    "pytest-mock>=3.12.0,<4.0.0",
+    "fastapi-cli>=0.0.4,<0.0.5",
+    "pytest-asyncio<1.0",
+    "testcontainers[postgres]>=4.13.2,<5.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+database = { workspace = true }
+shared = { workspace = true }
+
 [tool.poetry]
 name = "app"
 version = "0.1.0"
@@ -7,54 +65,8 @@ packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-uvicorn = {extras = ["standard"], version = "^0.38.0"}
-fastapi = "^0.118.2"
-python-multipart = "^0.0.20"
-tenacity = "^8.2.3"
-pydantic = ">2.0"
-
-#TODO: Do we need gunicorn?
-gunicorn = "^23.0.0"
-
-# Pin bcrypt until passlib supports the latest
-bcrypt = "4.0.1"
-pydantic-settings = "^2.2.1"
-database = { path = "../driver_db", develop = true }
+database = { path = "../packages/driver_db", develop = true }
 shared = { path = "../packages/shared", develop = true }
-strawberry-graphql = { extras = ["fastapi"], version = "^0.262.6" }
-auth0-python = "^4.7.1"
-boto3 = "^1.34.114"
-moto = "^5.0.9"
-aws-cdk-lib = "^2.144.0"
-constructs = "^10.3.0"
-tiktoken = "^0.12.0"
-pypandoc-binary = "^1.14"
-python-gitlab = "^5.6.0"
-pyjwt = "^2.10.1"
-sentry-sdk = { version = "^2.22.0", extras = ["fastapi"] }
-cachetools = "^6.0.0"
-httpx = "^0.28.1"
-disposable-email-domains = "^0.0.132"
-truststore = "^0.10.4"
-hatchet-sdk = "^1.21.5"
-fastmcp = "^2.13.3"
-py-key-value-aio = {extras = ["redis"], version = "^0.3.0"}
-
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.3"
-pytest-cov = "^4.1.0"
-mypy = "^1.8.0"
-pre-commit = "^3.6.2"
-pytest-mock = "^3.12.0"
-fastapi-cli = "^0.0.4"
-pytest-asyncio = "<1.0"
-testcontainers = {extras = ["postgres"], version = "^4.13.2"}
-
-
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
 
 [tool.mypy]
 strict = true

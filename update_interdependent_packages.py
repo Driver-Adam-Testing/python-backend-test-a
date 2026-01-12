@@ -34,20 +34,38 @@ def locate_pyproject_files(root_dir: str) -> list[Path]:
 
 def extract_project_info(pyproject_path: Path) -> tuple[str, list[str]]:
     data = toml.load(pyproject_path)
-    project_name = (
-        data.get("tool", {}).get("poetry", {}).get("name", pyproject_path.parent.name)
-    )
-    try:
-        project_name = data["tool"]["poetry"]["name"]
-    except KeyError as e:
-        raise KeyError("Project name not found in pyproject.toml") from e
-    try:
-        dependencies = data["tool"]["poetry"]["dependencies"]
-    except KeyError as e:
-        raise KeyError("Dependencies not found in pyproject.toml") from e
 
-    dependencies = [dep for dep in dependencies if dep.lower() != "python"]
-    return project_name, dependencies
+    # Get project name - prefer PEP 621, fall back to Poetry
+    project_name = data.get("project", {}).get("name")
+    if not project_name:
+        project_name = data.get("tool", {}).get("poetry", {}).get("name")
+    if not project_name:
+        raise KeyError(f"Project name not found in {pyproject_path}")
+
+    # Get dependencies from both sections
+    dependencies: set[str] = set()
+
+    # PEP 621 dependencies (list of strings like "boto3>=1.0" or "database")
+    pep621_deps = data.get("project", {}).get("dependencies", [])
+    for dep in pep621_deps:
+        # Extract package name from PEP 508 string
+        dep_name = (
+            dep.split("[")[0]
+            .split(">")[0]
+            .split("<")[0]
+            .split("=")[0]
+            .split("!")[0]
+            .strip()
+        )
+        dependencies.add(dep_name)
+
+    # Poetry dependencies (dict of name -> version)
+    poetry_deps = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
+    for dep_name in poetry_deps:
+        if dep_name.lower() != "python":
+            dependencies.add(dep_name)
+
+    return project_name, list(dependencies)
 
 
 def create_dependency_graph(

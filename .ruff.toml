@@ -46,4 +46,9 @@ unfixable = [
 
 [lint.per-file-ignores]
 # Ignore N999 errors specifically for Alembic migration files.
-"driver_db/database/alembic/versions/*.py" = ["N999"]
+"packages/driver_db/database/alembic/versions/*.py" = ["N999"]
+# Ignore type annotation requirements in test files
+"**/tests/**/*.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "E402", "SIM102", "SIM117"]
+"**/*_test.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "E402"]
+"**/test_*.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "E402"]
+"**/conftest.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "E402"]

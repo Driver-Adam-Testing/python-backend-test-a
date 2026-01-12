@@ -38,7 +38,7 @@ updates:
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
-    directory: "/driver_db"
+    directory: "/packages/driver_db"
     schedule:
       interval: "weekly"
       day: "wednesday"

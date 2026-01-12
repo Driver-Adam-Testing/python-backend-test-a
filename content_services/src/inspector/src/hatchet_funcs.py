@@ -180,8 +180,7 @@ def make_tech_doc(
         raise_hard_errors=raise_hard_errors,
     )
     print(f"Tech docs created for ({node})")
-    output = {"success": file_docs_successful, "file_doc": file_doc, "node": node}
-    put_tech_doc_output_cache(f"{version_id}:{node.root_rel_path}", output)
+    return {"success": file_docs_successful, "file_doc": file_doc, "node": node}
 
 
 def make_symbol_docs(

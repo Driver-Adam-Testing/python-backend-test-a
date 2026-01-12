@@ -53,6 +53,8 @@ _symbol_table_cache = TTLCache()
 _top_level_cache = TTLCache()
 _tags_cache = TTLCache()
 _diff_content_cache = TTLCache()
+_source_code_cache = TTLCache()
+_tech_doc_output_cache = TTLCache()
 
 
 # Public API - keeps existing interface intact
@@ -104,10 +106,33 @@ def delete_diff_content_cache(key: str) -> None:
     _diff_content_cache.delete(key)
 
 
+def put_source_code_cache(key: str, value: str, ttl_seconds: int = 28800) -> str:
+    return _source_code_cache.put(key, value, ttl_seconds)
+
+
+def get_source_code_cache(key: str) -> str:
+    return _source_code_cache.get(key)
+
+
+def delete_source_code_cache(key: str) -> None:
+    _source_code_cache.delete(key)
+
+
+def put_tech_doc_output_cache(key: str, value: dict, ttl_seconds: int = 28800) -> str:
+    return _tech_doc_output_cache.put(key, value, ttl_seconds)
+
+
+def get_tech_doc_output_cache(key: str) -> dict:
+    return _tech_doc_output_cache.get(key)
+
+
+def delete_tech_doc_output_cache(key: str) -> None:
+    _tech_doc_output_cache.delete(key)
+
+
 def make_tech_doc(
     node: LiteNode,
     codebase_name: str,
-    source_code: str,
     version_id: str,
 ) -> tuple[bool, dict, LiteNode]:
     import os
@@ -139,6 +164,7 @@ def make_tech_doc(
             version_id=version_id,
         )
         put_symbol_table_cache(version_id, full_symbol_table)
+    source_code = get_source_code_cache(f"{version_id}:{node.root_rel_path}")
     reified_symbols = full_symbol_table.get(node.root_rel_path, None)
 
     file_docs_successful, file_doc = comprehend_file_top_down(
@@ -154,7 +180,8 @@ def make_tech_doc(
         raise_hard_errors=raise_hard_errors,
     )
     print(f"Tech docs created for ({node})")
-    return {"success": file_docs_successful, "file_doc": file_doc, "node": node}
+    output = {"success": file_docs_successful, "file_doc": file_doc, "node": node}
+    put_tech_doc_output_cache(f"{version_id}:{node.root_rel_path}", output)
 
 
 def make_symbol_docs(

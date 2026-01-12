@@ -23,6 +23,7 @@ from inspector.src.hatchet_funcs import (
     make_symbol_docs,
     make_tech_doc,
     make_toplevel_tech_docs,
+    put_tech_doc_output_cache,
 )
 from pydantic import BaseModel
 from shared.inspector.utils.dag import LiteNode, NodeKind
@@ -34,7 +35,6 @@ from shared.inspector.utils.synthesis.deep_context import (
 class TechDocInput(BaseModel):
     node: LiteNode
     codebase_name: str
-    source_code: str
     version_id: str
 
 
@@ -196,12 +196,14 @@ def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
     tech_docs = make_tech_doc(
         node,
         input.codebase_name,
-        input.source_code,
         input.version_id,
     )
     cleaned_tech_docs = remove_null_unicode_character(data=tech_docs)
+    put_tech_doc_output_cache(
+        f"{input.version_id}:{node.root_rel_path}", cleaned_tech_docs
+    )
     print("executed tech doc task")
-    return cleaned_tech_docs
+    return {"success": True}
 
 
 @hatchet.task(

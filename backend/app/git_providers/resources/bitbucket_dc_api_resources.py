@@ -322,13 +322,13 @@ class BitbucketDCAPIResources:
 
     def _build_webhook_payload(self, config: dict[str, Any]) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "name": config.get("description", "Driver AI Webhook"),
+            "name": config["description"],
             "url": config["url"],
-            "active": config.get("active", True),
+            "active": True,
             "events": config["events"],
             "configuration": {},
         }
-        if config.get("secret"):
+        if "secret" in config:
             payload["configuration"]["secret"] = config["secret"]
         return payload
 

@@ -201,7 +201,7 @@ def get_app_installation_webhook_info(
 
 @router.post(
     "/app/{application_id}/installations/{installation_id}/webhook/register",
-    summary="Register a webhook for Bitbucket DC installation.",
+    summary="Register a webhook for the git provider installation.",
 )
 def register_webhook(
     session: CurrentSession,
@@ -231,7 +231,7 @@ def register_webhook(
 
 @router.delete(
     "/app/{application_id}/installations/{installation_id}/webhook/register",
-    summary="Deregister a webhook for Bitbucket DC installation.",
+    summary="Deregister a webhook for the git provider installation.",
 )
 def deregister_webhook(
     session: CurrentSession,

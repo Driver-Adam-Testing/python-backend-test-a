@@ -1135,4 +1135,4 @@ dev = ["hypothesis", "mypy", "pre-commit", "pytest", "pytest-cov", "pytest-mock"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "00107f82afcfa2e861509cc187fcef0bac80dbe729fca6e689a62131cf522fab"
+content-hash = "c03abf327220e865cd1b853d87c497c8b0ea68430c3c236d9dc5e03fc584d7b9"

@@ -50,7 +50,7 @@ By default, the dependencies are managed with [Poetry](https://python-poetry.org
 From `./backend/` you can install all the dependencies with:
 
 ```console
-$ poetry install
+$ poetry install --no-root
 ```
 
 Then you can start a shell session with the new environment with:

@@ -277,7 +277,7 @@ wheels = [
 [[package]]
 name = "auth0-event-processor"
 version = "0.1.0"
-source = { editable = "lambdas/auth0_event_processor" }
+source = { virtual = "lambdas/auth0_event_processor" }
 dependencies = [
     { name = "aws-secretsmanager-caching" },
     { name = "boto3" },
@@ -1898,7 +1898,7 @@ wheels = [
 [[package]]
 name = "metrics-handler"
 version = "0.1.0"
-source = { editable = "lambdas/metrics_handler" }
+source = { virtual = "lambdas/metrics_handler" }
 dependencies = [
     { name = "aws-secretsmanager-caching" },
     { name = "boto3" },
@@ -2138,7 +2138,7 @@ wheels = [
 [[package]]
 name = "onboarding-event-handler"
 version = "0.1.0"
-source = { editable = "lambdas/onboarding_event_handler" }
+source = { virtual = "lambdas/onboarding_event_handler" }
 dependencies = [
     { name = "aws-secretsmanager-caching" },
     { name = "boto3" },

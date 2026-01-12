@@ -33,7 +33,15 @@ from workflows.inspector_functions import (
     toplevel_doc_task,
 )
 
-from .hatchet_funcs import put_symbol_table_cache, put_tags_cache, put_top_level_cache
+from .hatchet_funcs import (
+    delete_source_code_cache,
+    delete_tech_doc_output_cache,
+    get_tech_doc_output_cache,
+    put_source_code_cache,
+    put_symbol_table_cache,
+    put_tags_cache,
+    put_top_level_cache,
+)
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
@@ -288,17 +296,24 @@ class FileTechDocTask(Task):
                 .replace("\\u0000", "")
                 .replace("\x00", "")
             )  # Apparently the \\u0000 and \x00 is an issue with hatchet
+            put_source_code_cache(
+                f"{self.version_id}:{self.node.root_rel_path}", cleaned_source
+            )
             tech_doc_input = TechDocInput(
                 node=self.node,
                 codebase_name=self.codebase_name,
-                source_code=cleaned_source,
                 version_id=self.version_id,
             )
-            task_result = await tech_doc_task.aio_run(
+            await tech_doc_task.aio_run(
                 tech_doc_input, options=TriggerWorkflowOptions(sticky=True)
             )
-            success = task_result["success"]
-            docs = task_result["file_doc"]
+            tech_doc_output = get_tech_doc_output_cache(
+                f"{self.version_id}:{self.node.root_rel_path}"
+            )
+            delete_source_code_cache(f"{self.version_id}:{self.node.root_rel_path}")
+            delete_tech_doc_output_cache(f"{self.version_id}:{self.node.root_rel_path}")
+            success = tech_doc_output["success"]
+            docs = tech_doc_output["file_doc"]
 
         return TaskResult(
             data={

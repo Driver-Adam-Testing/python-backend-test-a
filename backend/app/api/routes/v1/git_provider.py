@@ -322,7 +322,6 @@ def update_git_provider_group_access_token(
             new_gat.model_dump(by_alias=True),
         )
     except GitProviderAccessTokenError:
-        logger.exception("Error updating token")
         raise HTTPException(status_code=500, detail="Invalid token")
 
     return JSONResponse(

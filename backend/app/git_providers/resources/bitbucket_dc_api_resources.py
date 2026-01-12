@@ -1,8 +1,10 @@
 import logging
 import ssl
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
+from app.core.config import settings
 from app.git_providers.utils.errors import GitProviderAccessTokenError
 from tenacity import (
     retry,
@@ -44,6 +46,11 @@ class BitbucketDCAPIResources:
 
         # Configure SSL context for self-signed certificates
         if disable_ssl_verify:
+            if not settings.ALLOW_INSECURE_SSL_BITBUCKET_DC:
+                raise ValueError(
+                    "SSL verification cannot be disabled. Set ALLOW_INSECURE_SSL_BITBUCKET_DC=true "
+                    "environment variable to allow insecure SSL for on-premise deployments."
+                )
             logger.warning(
                 "SSL verification disabled for Bitbucket DC API. "
                 "This should only be used for development/testing."
@@ -91,11 +98,13 @@ class BitbucketDCAPIResources:
                 raise ValueError("Could not determine current user from token")
 
         except httpx.ConnectError as e:
-            raise ValueError(f"Connection error: Unable to reach {self.base_url}. {e}")
+            raise ValueError(
+                f"Connection error: Unable to reach {self.base_url}"
+            ) from e
         except httpx.TimeoutException as e:
-            raise ValueError(f"Timeout reaching {self.base_url}: {e}")
+            raise ValueError(f"Timeout reaching {self.base_url}") from e
         except httpx.HTTPStatusError as e:
-            raise ValueError(f"HTTP error getting current user: {e}")
+            raise ValueError("HTTP error getting current user") from e
 
     def validate_token(self, access_token: str) -> tuple[bool, str]:
         """Validates by attempting to list repositories with Bearer auth."""
@@ -162,9 +171,7 @@ class BitbucketDCAPIResources:
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                logger.error("Authentication failed with HTTP Access Token")
-                raise GitProviderAccessTokenError("Invalid HTTP access token")
-            logger.error(f"HTTP error listing repositories: {e}")
+                raise GitProviderAccessTokenError("Invalid HTTP access token") from e
             raise
 
     @_retry_transient
@@ -188,7 +195,7 @@ class BitbucketDCAPIResources:
             if e.response.status_code == 404:
                 return None
             if e.response.status_code == 401:
-                raise GitProviderAccessTokenError("Invalid access token")
+                raise GitProviderAccessTokenError("Invalid access token") from e
             raise
 
     @_retry_transient
@@ -272,7 +279,7 @@ class BitbucketDCAPIResources:
                 return response.json()
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Failed to get commit {commit_id}: {e}")
+            e.add_note(f"Failed to get commit {commit_id}")
             raise
 
     def list_branches(
@@ -310,7 +317,7 @@ class BitbucketDCAPIResources:
             return branches
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Failed to list branches: {e}")
+            e.add_note("Failed to list branches")
             raise
 
     def _build_webhook_payload(self, config: dict[str, Any]) -> dict[str, Any]:
@@ -346,9 +353,7 @@ class BitbucketDCAPIResources:
                 response.raise_for_status()
                 return response.json()
         except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Failed to create webhook: {e.response.status_code} - {e.response.text}"
-            )
+            e.add_note("Failed to create repository webhook")
             raise
 
     @_retry_transient
@@ -372,9 +377,7 @@ class BitbucketDCAPIResources:
                 response.raise_for_status()
                 return response.json()
         except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Failed to create project webhook: {e.response.status_code} - {e.response.text}"
-            )
+            e.add_note("Failed to create project webhook")
             raise
 
     def delete_repository_webhook(
@@ -392,9 +395,7 @@ class BitbucketDCAPIResources:
                 response = client.delete(url, headers=headers)
                 response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Failed to delete webhook: {e.response.status_code} - {e.response.text}"
-            )
+            e.add_note("Failed to delete repository webhook")
             raise
 
     def delete_project_webhook(
@@ -411,9 +412,7 @@ class BitbucketDCAPIResources:
                 response = client.delete(url, headers=headers)
                 response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Failed to delete project webhook: {e.response.status_code} - {e.response.text}"
-            )
+            e.add_note("Failed to delete project webhook")
             raise
 
     def build_clone_url(
@@ -422,8 +421,6 @@ class BitbucketDCAPIResources:
         repo_slug: str,
     ) -> str:
         """Token must be passed via git header: git clone -c http.extraHeader='Authorization: Bearer TOKEN'"""
-        from urllib.parse import urlparse
-
         parsed = urlparse(self.base_url)
         host = parsed.netloc
         scheme = parsed.scheme

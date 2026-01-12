@@ -6,6 +6,7 @@ import secrets
 from typing import Any, ClassVar
 
 from app.git_providers.core.config import GitProviderConfig
+from app.git_providers.core.config_loader import load_provider_config
 from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
     WebhookConfig,
@@ -66,10 +67,29 @@ class BitbucketDCProvider(GitProviderInterface):
         ca_bundle_path: str | None = None,
         disable_ssl_verify: bool = False,
     ) -> BitbucketDCAPIResources:
-        return BitbucketDCAPIResources(
+        if not self.api_resources:
+            self.api_resources = BitbucketDCAPIResources(
+                base_url=base_url,
+                ca_bundle_path=ca_bundle_path,
+                disable_ssl_verify=disable_ssl_verify,
+            )
+
+        return self.api_resources
+
+    def _get_api_from_secrets(
+        self,
+        secrets: dict[str, Any],
+        fallback_base_url: str | None = None,
+    ) -> BitbucketDCAPIResources:
+        """Extract SSL config and instance URL from secrets to create API resources."""
+        base_url = secrets.get("instance_url") or fallback_base_url
+        if not base_url:
+            raise ValueError("instance_url is required in secrets or fallback_base_url")
+
+        return self._get_api_resources(
             base_url=base_url,
-            ca_bundle_path=ca_bundle_path,
-            disable_ssl_verify=disable_ssl_verify,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
         )
 
     @classmethod
@@ -77,8 +97,6 @@ class BitbucketDCProvider(GitProviderInterface):
         cls, app: GitProviderApp, aws_config: AWSClientConfig
     ) -> "BitbucketDCProvider":
         """Create BitbucketDCProvider from app configuration."""
-        from app.git_providers.core.config_loader import load_provider_config
-
         secrets_manager = AWSSecretManagementStrategy(aws_config)
         config = load_provider_config(app, client_secret=None)
 
@@ -93,27 +111,15 @@ class BitbucketDCProvider(GitProviderInterface):
             if not token:
                 return False, "Token is required"
 
-            # Get instance_url from token_data or app config
-            instance_url = token_data.get("instance_url") or self.config.base_url
-            if not instance_url:
-                return False, "Instance URL is required"
-
-            # Get optional SSL settings
-            ca_bundle_path = token_data.get("ca_bundle_path")
-            disable_ssl_verify = token_data.get("disable_ssl_verify", False)
-
-            api = self._get_api_resources(
-                base_url=instance_url,
-                ca_bundle_path=ca_bundle_path,
-                disable_ssl_verify=disable_ssl_verify,
+            api = self._get_api_from_secrets(
+                token_data, fallback_base_url=self.config.base_url
             )
-
-            # Store instance_url back in token_data for later use
-            token_data["instance_url"] = instance_url
 
             # Validate token using Bearer auth (no username needed)
             is_valid, message = api.validate_token(token)
             return (is_valid, None) if is_valid else (False, message)
+        except ValueError as e:
+            return False, str(e)
 
         except Exception as e:
             logger.error(f"Token validation failed: {e}")
@@ -248,18 +254,13 @@ class BitbucketDCProvider(GitProviderInterface):
 
         secrets = self.fetch_secrets(installation)
         access_token = secrets["token"]
-        instance_url = secrets["instance_url"]
-
-        api = self._get_api_resources(
-            base_url=instance_url,
-            ca_bundle_path=secrets.get("ca_bundle_path"),
-            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-        )
+        instance_url = installation.git_provider_app.base_url
+        api = self._get_api_from_secrets(secrets)
 
         try:
             repos_data = api.list_repositories(access_token)
         except Exception as e:
-            logger.error(f"API call to list repositories failed: {e}")
+            e.add_note("API call to list repositories failed.")
             raise
 
         repos = []
@@ -432,11 +433,7 @@ class BitbucketDCProvider(GitProviderInterface):
             )
             return None
 
-        api = self._get_api_resources(
-            base_url=secrets["instance_url"],
-            ca_bundle_path=secrets.get("ca_bundle_path"),
-            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-        )
+        api = self._get_api_from_secrets(secrets)
 
         return {
             "secrets": secrets,
@@ -667,11 +664,7 @@ class BitbucketDCProvider(GitProviderInterface):
         secrets = self.fetch_secrets(installation)
         token_type = installation.misc_metadata["kind"]
 
-        api = self._get_api_resources(
-            base_url=secrets["instance_url"],
-            ca_bundle_path=secrets.get("ca_bundle_path"),
-            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-        )
+        api = self._get_api_from_secrets(secrets)
 
         repos = api.list_repositories(secrets["token"], limit=1)
 
@@ -718,15 +711,10 @@ class BitbucketDCProvider(GitProviderInterface):
 
         secrets = self.fetch_secrets(installation)
         access_token = secrets["token"]
-        instance_url = secrets["instance_url"]
         token_type = secrets.get("token_type", "project_access_token")
         secret_token = config.secret_token or secrets.get("secret_token")
 
-        api = self._get_api_resources(
-            base_url=instance_url,
-            ca_bundle_path=secrets.get("ca_bundle_path"),
-            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-        )
+        api = self._get_api_from_secrets(secrets)
 
         # Auto-discover scope if not provided
         if scope is None:
@@ -835,7 +823,7 @@ class BitbucketDCProvider(GitProviderInterface):
                 access_token=access_token,
             )
         except Exception as e:
-            logger.error(f"API call to create project webhook failed: {e}")
+            e.add_note("API call to create project webhook failed")
             raise
 
         logger.info(
@@ -867,7 +855,7 @@ class BitbucketDCProvider(GitProviderInterface):
                 access_token=access_token,
             )
         except Exception as e:
-            logger.error(f"API call to create repository webhook failed: {e}")
+            e.add_note("API call to create repository webhook failed")
             raise
 
         logger.info(
@@ -890,13 +878,8 @@ class BitbucketDCProvider(GitProviderInterface):
 
         secrets = self.fetch_secrets(installation)
         access_token = secrets["token"]
-        instance_url = secrets["instance_url"]
 
-        api = self._get_api_resources(
-            base_url=instance_url,
-            ca_bundle_path=secrets.get("ca_bundle_path"),
-            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-        )
+        api = self._get_api_from_secrets(secrets)
 
         # Read scope from installation metadata (persisted during registration)
         metadata = installation.misc_metadata or {}
@@ -918,7 +901,7 @@ class BitbucketDCProvider(GitProviderInterface):
                     access_token=access_token,
                 )
             except Exception as e:
-                logger.error(f"API call to delete project webhook failed: {e}")
+                e.add_note("API call to delete project webhook failed")
                 raise
             logger.info(f"Deleted project webhook {webhook_id} for {project_key}")
 
@@ -935,7 +918,7 @@ class BitbucketDCProvider(GitProviderInterface):
                     access_token=access_token,
                 )
             except Exception as e:
-                logger.error(f"API call to delete repository webhook failed: {e}")
+                e.add_note("API call to delete repository webhook failed")
                 raise
             logger.info(
                 f"Deleted repo webhook {webhook_id} for {project_key}/{repo_slug}"

@@ -26,7 +26,9 @@ class WebhookEventContext:
     installation_id: str
     organization_id: str
     session: Session
-    raw_body: bytes | None = None  # Raw request body for HMAC signature verification
+    raw_body: bytes | None = (
+        None  # Raw request body for HMAC signature verification. TODO: Revisit design.
+    )
 
 
 class GitProviderInterface(ABC):
@@ -128,7 +130,7 @@ class GitProviderInterface(ABC):
         headers: dict[str, Any],
         payload: dict[str, Any],
         webhook_event_ctx: WebhookEventContext,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any]:  # TODO: Revisit return concrete type.
         """Handle incoming webhook events
 
         Args:

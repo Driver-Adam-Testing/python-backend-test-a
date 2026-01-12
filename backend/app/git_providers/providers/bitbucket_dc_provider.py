@@ -104,7 +104,7 @@ class BitbucketDCProvider(GitProviderInterface):
 
     def validate_access_token(
         self, token_data: dict[str, Any]
-    ) -> tuple[bool, str | None]:
+    ) -> tuple[bool, str | None]:  # TODO: Revisit with a pydantic model.
         """Validate token using Bearer auth (no username needed for Project/Repository tokens)."""
         try:
             token = token_data.get("token")
@@ -134,7 +134,7 @@ class BitbucketDCProvider(GitProviderInterface):
             "kind": dc_token.token_type.value,  # project_access_token or repository_access_token
             "name": dc_token.name,
             "instance_url": dc_token.instance_url,
-        }
+        }  # TODO: Revisit with a pydantic model.
 
         # Store scope information based on token type
         if dc_token.project_key:
@@ -511,7 +511,9 @@ class BitbucketDCProvider(GitProviderInterface):
             )
             if result:
                 return result
-            message = {"message": result} if isinstance(result, str) else message
+            message = (
+                {"message": result} if isinstance(result, str) else message
+            )  # TODO: Remove dead code.
 
         return message
 
@@ -801,11 +803,11 @@ class BitbucketDCProvider(GitProviderInterface):
         self,
         api: BitbucketDCAPIResources,
         scope: dict[str, str] | None,
-        token_type: str,
+        token_type: str,  # TODO: Revisit type.
         webhook_config: dict[str, Any],
         access_token: str,
         installation_id: Any,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any]:  # T
         if token_type == "repository_access_token":
             raise ValueError(
                 "Repository access tokens cannot create project-level webhooks. "

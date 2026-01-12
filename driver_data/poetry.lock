@@ -575,7 +575,7 @@ psycopg2-binary = ">=2.9.9"
 pydantic-settings = ">=2.2.1"
 sqlalchemy-utils = ">=0.41.2"
 sqlmodel = ">=0.0.21"
-strawberry-graphql = {version = ">=0.262.6", extras = ["fastapi"]}
+strawberry-graphql = {version = "0.262.6", extras = ["fastapi"]}
 
 [package.extras]
 dev = ["mypy (>=1.8.0)", "pre-commit (>=3.6.2)", "pytest (>=7.4.3)", "pytest-cov (>=4.1.0)"]

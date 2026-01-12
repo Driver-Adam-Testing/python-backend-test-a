@@ -8,7 +8,8 @@ dependencies = [
     "sqlmodel>=0.0.21",
     "pydantic-settings>=2.2.1",
     "pgvector>=0.2.5",
-    "strawberry-graphql[fastapi]>=0.262.6",
+    # Pinned: see backend/pyproject.toml for details
+    "strawberry-graphql[fastapi]==0.262.6",
     "psycopg2-binary>=2.9.9",
     "asyncpg>=0.29.0",
     "sqlalchemy-utils>=0.41.2",

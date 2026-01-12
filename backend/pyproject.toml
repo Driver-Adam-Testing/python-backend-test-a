@@ -14,7 +14,9 @@ dependencies = [
     "pydantic-settings>=2.2.1",
     "database",
     "shared",
-    "strawberry-graphql[fastapi]>=0.262.6",
+    # Pinned: newer versions break custom ID scalar in app/api/routes/legacy/scalars.py
+    # ("Redefinition of reserved type 'ID'" error). See if we can rename our scalar or update usage.
+    "strawberry-graphql[fastapi]==0.262.6",
     "auth0-python>=4.7.1",
     "boto3>=1.34.114",
     "moto>=5.0.9",

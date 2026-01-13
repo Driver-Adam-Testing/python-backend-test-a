@@ -156,10 +156,6 @@ class BitbucketDCTokenData(BaseModel):
         default=TokenType.PROJECT_ACCESS_TOKEN,
         description="Type of token (project_access_token or repository_access_token)",
     )
-    instance_url: str = Field(
-        ...,
-        description="Bitbucket DC instance URL (e.g., https://bitbucket.company.com)",
-    )
     # For repository tokens, store the project/repo scope
     project_key: str | None = Field(
         None,

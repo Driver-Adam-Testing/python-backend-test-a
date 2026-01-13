@@ -76,22 +76,6 @@ class BitbucketDCProvider(GitProviderInterface):
 
         return self.api_resources
 
-    def _get_api_from_secrets(
-        self,
-        secrets: dict[str, Any],
-        fallback_base_url: str | None = None,
-    ) -> BitbucketDCAPIResources:
-        """Extract SSL config and instance URL from secrets to create API resources."""
-        base_url = secrets.get("instance_url") or fallback_base_url
-        if not base_url:
-            raise ValueError("instance_url is required in secrets or fallback_base_url")
-
-        return self._get_api_resources(
-            base_url=base_url,
-            ca_bundle_path=secrets.get("ca_bundle_path"),
-            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
-        )
-
     @classmethod
     def from_config(
         cls, app: GitProviderApp, aws_config: AWSClientConfig
@@ -111,8 +95,14 @@ class BitbucketDCProvider(GitProviderInterface):
             if not token:
                 return False, "Token is required"
 
-            api = self._get_api_from_secrets(
-                token_data, fallback_base_url=self.config.base_url
+            base_url = token_data.get("instance_url") or self.config.base_url
+            if not base_url:
+                return False, "instance_url is required"
+
+            api = self._get_api_resources(
+                base_url=base_url,
+                ca_bundle_path=token_data.get("ca_bundle_path"),
+                disable_ssl_verify=token_data.get("disable_ssl_verify", False),
             )
 
             # Validate token using Bearer auth (no username needed)
@@ -133,7 +123,6 @@ class BitbucketDCProvider(GitProviderInterface):
         metadata = {
             "kind": dc_token.token_type.value,  # project_access_token or repository_access_token
             "name": dc_token.name,
-            "instance_url": dc_token.instance_url,
         }  # TODO: Revisit with a pydantic model.
 
         # Store scope information based on token type
@@ -163,7 +152,6 @@ class BitbucketDCProvider(GitProviderInterface):
         secret_data = {
             "token": dc_token.token,
             "token_type": dc_token.token_type.value,
-            "instance_url": dc_token.instance_url,
             "secret_token": webhook_secret,
             "ca_bundle_path": dc_token.ca_bundle_path,
             "disable_ssl_verify": dc_token.disable_ssl_verify,
@@ -201,7 +189,6 @@ class BitbucketDCProvider(GitProviderInterface):
 
         # Update with new token data (only overwrite fields that are provided)
         updated_secrets["token"] = dc_token.token
-        updated_secrets["instance_url"] = dc_token.instance_url
         updated_secrets["ca_bundle_path"] = dc_token.ca_bundle_path
         updated_secrets["disable_ssl_verify"] = dc_token.disable_ssl_verify
 
@@ -255,7 +242,11 @@ class BitbucketDCProvider(GitProviderInterface):
         secrets = self.fetch_secrets(installation)
         access_token = secrets["token"]
         instance_url = installation.git_provider_app.base_url
-        api = self._get_api_from_secrets(secrets)
+        api = self._get_api_resources(
+            base_url=instance_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
 
         try:
             repos_data = api.list_repositories(access_token)
@@ -389,10 +380,19 @@ class BitbucketDCProvider(GitProviderInterface):
         installation_id = webhook_event_ctx.installation_id
         organization_id = webhook_event_ctx.organization_id
 
+        installation = webhook_event_ctx.session.get(
+            GitProviderAppInstallation, installation_id
+        )
+        if not installation:
+            logger.error(f"Installation not found: {installation_id}")
+            return {"message": "Failed to process push event: installation not found"}
+
         repo_info = self._extract_repo_info(payload.get("repository", {}))
         changes = payload.get("changes", [])
 
-        context = self._build_push_context(installation_id)
+        context = self._build_push_context(
+            installation_id, installation.git_provider_app.base_url
+        )
         if not context:
             return {"message": "Failed to process push event: missing access token"}
 
@@ -424,7 +424,9 @@ class BitbucketDCProvider(GitProviderInterface):
             "repo_id": repository.get("id"),
         }
 
-    def _build_push_context(self, installation_id: str) -> dict[str, Any] | None:
+    def _build_push_context(
+        self, installation_id: str, base_url: str
+    ) -> dict[str, Any] | None:
         try:
             secrets = self.fetch_secrets_by_id(installation_id)
         except Exception as e:
@@ -433,13 +435,17 @@ class BitbucketDCProvider(GitProviderInterface):
             )
             return None
 
-        api = self._get_api_from_secrets(secrets)
+        api = self._get_api_resources(
+            base_url=base_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
 
         return {
             "secrets": secrets,
             "api": api,
             "access_token": secrets["token"],
-            "instance_url": secrets["instance_url"],
+            "instance_url": base_url,
         }
 
     def _resolve_tracked_branch(
@@ -580,6 +586,15 @@ class BitbucketDCProvider(GitProviderInterface):
         installation_id = webhook_event_ctx.installation_id
         organization_id = webhook_event_ctx.organization_id
 
+        installation = webhook_event_ctx.session.get(
+            GitProviderAppInstallation, installation_id
+        )
+        if not installation:
+            logger.error(f"Installation not found: {installation_id}")
+            return {
+                "message": "Failed to process PR merged event: installation not found"
+            }
+
         pull_request = payload.get("pullRequest", {})
         to_ref = pull_request.get("toRef", {})
         repo_info = self._extract_repo_info(to_ref.get("repository", {}))
@@ -590,12 +605,7 @@ class BitbucketDCProvider(GitProviderInterface):
             logger.warning("PR merged event missing merge commit ID")
             return {"message": "PR merged event ignored: no merge commit"}
 
-        try:
-            secrets = self.fetch_secrets_by_id(installation_id)
-            instance_url = secrets["instance_url"]
-        except Exception as e:
-            logger.error(f"Failed to fetch access token: {e}")
-            return {"message": "Failed to process PR merged event"}
+        instance_url = installation.git_provider_app.base_url
 
         tracked_branch = get_tracked_branch_or_none(
             session=webhook_event_ctx.session,
@@ -666,7 +676,11 @@ class BitbucketDCProvider(GitProviderInterface):
         secrets = self.fetch_secrets(installation)
         token_type = installation.misc_metadata["kind"]
 
-        api = self._get_api_from_secrets(secrets)
+        api = self._get_api_resources(
+            base_url=installation.git_provider_app.base_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
 
         repos = api.list_repositories(secrets["token"], limit=1)
 
@@ -716,7 +730,11 @@ class BitbucketDCProvider(GitProviderInterface):
         token_type = secrets.get("token_type", "project_access_token")
         secret_token = config.secret_token or secrets.get("secret_token")
 
-        api = self._get_api_from_secrets(secrets)
+        api = self._get_api_resources(
+            base_url=installation.git_provider_app.base_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
 
         # Auto-discover scope if not provided
         if scope is None:
@@ -881,7 +899,11 @@ class BitbucketDCProvider(GitProviderInterface):
         secrets = self.fetch_secrets(installation)
         access_token = secrets["token"]
 
-        api = self._get_api_from_secrets(secrets)
+        api = self._get_api_resources(
+            base_url=installation.git_provider_app.base_url,
+            ca_bundle_path=secrets.get("ca_bundle_path"),
+            disable_ssl_verify=secrets.get("disable_ssl_verify", False),
+        )
 
         # Read scope from installation metadata (persisted during registration)
         metadata = installation.misc_metadata or {}

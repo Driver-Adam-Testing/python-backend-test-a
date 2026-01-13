@@ -6,7 +6,6 @@ from typing import Any
 
 from shared.inspector.inspection.files import comprehend_file_top_down
 from shared.inspector.utils.dag import LiteNode
-from shared.inspector.utils.io import download_symbol_table_from_s3_with_cache
 
 
 class TTLCache:
@@ -135,8 +134,6 @@ def make_tech_doc(
     codebase_name: str,
     version_id: str,
 ) -> tuple[bool, dict, LiteNode]:
-    import os
-
     from shared.agent.chat_openai import ChatOpenAI
 
     print(f"Processing tech docs ({node})")
@@ -148,22 +145,8 @@ def make_tech_doc(
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
-    try:
-        full_symbol_table = get_symbol_table_cache(version_id)
-    except KeyError:
-        # Fallback to loading from S3 if not in cache and adding back to cache
-        import boto3
+    full_symbol_table = get_symbol_table_cache(version_id)
 
-        s3_client = boto3.client(
-            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
-        )
-        bucket_name = os.environ.get("INSPECTOR_BUCKET_NAME")
-        full_symbol_table = download_symbol_table_from_s3_with_cache(
-            s3_client,
-            bucket_name=bucket_name,
-            version_id=version_id,
-        )
-        put_symbol_table_cache(version_id, full_symbol_table)
     source_code = get_source_code_cache(f"{version_id}:{node.root_rel_path}")
     reified_symbols = full_symbol_table.get(node.root_rel_path, None)
 

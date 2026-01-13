@@ -110,7 +110,6 @@ class BitbucketDCAPIResources:
         """Validates by attempting to list repositories with Bearer auth."""
         try:
             headers = {"Authorization": f"Bearer {access_token}"}
-            # Try to list repos with limit=1 to validate the token
             url = f"{self.api_base}/repos"
 
             with httpx.Client(verify=self.verify, timeout=30.0) as client:
@@ -125,12 +124,8 @@ class BitbucketDCAPIResources:
                 else:
                     return False, f"Unexpected error: {response.status_code}"
 
-        except httpx.ConnectError as e:
-            return False, f"Connection error: Unable to reach {self.base_url}. {e}"
-        except httpx.TimeoutException as e:
-            return False, f"Timeout validating token: {e}"
-        except httpx.HTTPStatusError as e:
-            return False, f"HTTP error: {e}"
+        except httpx.HTTPError as e:
+            return False, f"Connection error: {e}"
 
     @_retry_transient
     def list_repositories(

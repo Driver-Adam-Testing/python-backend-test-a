@@ -293,6 +293,7 @@ def push_docs(version_id: uuid.UUID) -> None:
                 access_token,
                 branch,
                 commit_slug,
+                install_id,
                 tracked_branch,
             )
 

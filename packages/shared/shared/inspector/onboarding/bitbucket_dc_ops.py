@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -155,14 +155,7 @@ def build_clone_url(
     project_key: str,
     repo_slug: str,
 ) -> str:
-    """Build clone URL for Bitbucket Data Center (without embedded credentials).
-
-    For Bitbucket DC HTTP Access Tokens (Project/Repository tokens), credentials
-    must be passed via git header, not embedded in URL.
-    Format: https://{host}/scm/{project}/{slug}.git
-
-    The token is passed separately via: git clone -c http.extraHeader='Authorization: Bearer TOKEN'
-    """
+    """Credentials must be passed via git header, not embedded in URL."""
     parsed = urlparse(instance_url)
     host = parsed.netloc
     scheme = parsed.scheme
@@ -177,11 +170,7 @@ def get_default_branch(
     access_token: str,
     verify: bool | ssl.SSLContext = True,
 ) -> str | None:
-    """Get default branch for repository.
-
-    Returns None if repository has no commits (empty repo).
-    First tries the /default-branch endpoint, then validates the branch exists.
-    """
+    """Returns None if repository is empty (no commits)."""
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -249,6 +238,23 @@ def get_default_branch(
             return None
 
 
+def _find_branch_commit(branches: list[dict[str, Any]], branch: str) -> str | None:
+    """Find commit SHA for exact branch match."""
+    for b in branches:
+        if b["displayId"] == branch:
+            return b["latestCommit"]
+    return None
+
+
+def _find_default_branch_commit(branches: list[dict[str, Any]]) -> str | None:
+    """Find commit SHA for default branch."""
+    for b in branches:
+        if b.get("isDefault"):
+            logger.info(f"Using default branch {b['displayId']}")
+            return b["latestCommit"]
+    return None
+
+
 @NETWORK_RETRY
 def get_latest_commit_on_branch(
     instance_url: str,
@@ -258,64 +264,139 @@ def get_latest_commit_on_branch(
     access_token: str,
     verify: bool | ssl.SSLContext = True,
 ) -> str | None:
-    """Get the latest commit SHA on a branch.
-
-    Returns None if the repository has no commits (empty repo).
-    """
+    """Returns None if repository is empty (no commits)."""
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/branches"
 
     try:
         with httpx.Client(verify=verify, timeout=30.0) as client:
-            # First try with filter
             response = client.get(
                 url, headers=headers, params={"filterText": branch, "limit": 10}
             )
             response.raise_for_status()
-            data = response.json()
-            branches = data.get("values", [])
+            branches = response.json().get("values", [])
 
-            # Find the exact branch match
-            for b in branches:
-                if b.get("displayId") == branch:
-                    return b.get("latestCommit")
+            commit = _find_branch_commit(branches, branch)
+            if commit:
+                return commit
 
-            # If no match with filter, try listing all branches
             if not branches:
                 response = client.get(url, headers=headers, params={"limit": 100})
                 response.raise_for_status()
-                data = response.json()
-                branches = data.get("values", [])
+                branches = response.json().get("values", [])
 
-            # Find the exact branch match
-            for b in branches:
-                if b.get("displayId") == branch:
-                    return b.get("latestCommit")
+            commit = _find_branch_commit(branches, branch)
+            if commit:
+                return commit
 
-            # Fallback: use default branch or first available branch
-            for b in branches:
-                if b.get("isDefault"):
-                    logger.info(
-                        f"Using default branch {b.get('displayId')} instead of {branch}"
-                    )
-                    return b.get("latestCommit")
+            commit = _find_default_branch_commit(branches)
+            if commit:
+                return commit
 
             if branches:
-                logger.info(
-                    f"Using first available branch {branches[0].get('displayId')} instead of {branch}"
-                )
-                return branches[0].get("latestCommit")
+                logger.info(f"Using first available branch {branches[0]['displayId']}")
+                return branches[0]["latestCommit"]
 
-            # Repository is likely empty (no commits yet)
-            logger.info(
-                f"No branches found for {project_key}/{repo_slug} - repository may be empty"
-            )
+            logger.info(f"No branches found for {project_key}/{repo_slug}")
             return None
 
     except httpx.HTTPStatusError as e:
         logger.error(f"Failed to get latest commit on {branch}: {e}")
         raise
+
+
+def _configure_git_ssl_env(
+    ca_bundle_path: str | None, disable_ssl_verify: bool
+) -> dict[str, str]:
+    """Configure environment variables for git SSL handling."""
+    env = os.environ.copy()
+    if disable_ssl_verify:
+        logger.warning("SSL verification disabled for git clone.")
+        env["GIT_SSL_NO_VERIFY"] = "true"
+    elif ca_bundle_path:
+        env["GIT_SSL_CAINFO"] = ca_bundle_path
+    return env
+
+
+def _clone_repository(
+    clone_url: str, repo_path: Path, access_token: str, env: dict[str, str]
+) -> None:
+    """Clone repository with Bearer authentication."""
+    clone_cmd = [
+        "git",
+        "-c",
+        f"http.extraHeader=Authorization: Bearer {access_token}",
+        "clone",
+        "--no-checkout",
+        clone_url,
+        str(repo_path),
+    ]
+    result = subprocess.run(
+        clone_cmd, capture_output=True, text=True, timeout=300, env=env
+    )
+    if result.returncode != 0:
+        raise BitbucketDCError(f"Failed to clone repository: {result.stderr}")
+
+
+def _checkout_commit(repo_path: Path, commit: str | None, env: dict[str, str]) -> None:
+    """Checkout specific commit or default branch."""
+    if not commit:
+        result = subprocess.run(
+            ["git", "checkout"],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if result.returncode != 0:
+            raise BitbucketDCError(
+                f"Failed to checkout default branch: {result.stderr}"
+            )
+        return
+
+    result = subprocess.run(
+        ["git", "checkout", commit],
+        cwd=str(repo_path),
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    if result.returncode != 0:
+        subprocess.run(
+            ["git", "fetch", "--unshallow"],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        result = subprocess.run(
+            ["git", "checkout", commit],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if result.returncode != 0:
+            raise BitbucketDCError(f"Failed to checkout commit {commit}")
+
+
+def _create_zip_archive(repo_path: Path, repo_slug: str, temp_dir: str) -> bytes:
+    """Create ZIP archive of repository contents."""
+    git_dir = repo_path / ".git"
+    if git_dir.exists():
+        shutil.rmtree(git_dir)
+
+    zip_path = Path(temp_dir) / f"{repo_slug}.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file_path in repo_path.rglob("*"):
+            if file_path.is_file():
+                arcname = file_path.relative_to(repo_path)
+                zipf.write(file_path, arcname)
+
+    with open(zip_path, "rb") as f:
+        return f.read()
 
 
 def download_repo(
@@ -327,160 +408,23 @@ def download_repo(
     ca_bundle_path: str | None = None,
     disable_ssl_verify: bool = False,
 ) -> bytes:
-    """Clone repo and return ZIP content. Uses Bearer auth via git http.extraHeader.
-
-    Args:
-        instance_url: Bitbucket DC instance URL
-        project_key: Project key
-        repo_slug: Repository slug
-        commit: Commit SHA to checkout
-        access_token: HTTP Access Token (Project or Repository Access Token)
-        ca_bundle_path: Path to CA bundle for SSL verification
-        disable_ssl_verify: If True, skip SSL verification (for testing only)
-    """
+    """Clone repo and return ZIP content using Bearer auth."""
     logger.info(
         f"Cloning Bitbucket DC repository {project_key}/{repo_slug} at commit {commit}"
     )
 
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_path = Path(temp_dir) / repo_slug
-
         clone_url = build_clone_url(instance_url, project_key, repo_slug)
-
-        # Set up environment for SSL handling
-        env = os.environ.copy()
-        if disable_ssl_verify:
-            logger.warning(
-                "SSL verification disabled for git clone. "
-                "This should only be used for development/testing."
-            )
-            env["GIT_SSL_NO_VERIFY"] = "true"
-        elif ca_bundle_path:
-            env["GIT_SSL_CAINFO"] = ca_bundle_path
+        env = _configure_git_ssl_env(ca_bundle_path, disable_ssl_verify)
 
         try:
-            # Clone with Bearer auth via http.extraHeader
-            # This is required for Bitbucket DC Project/Repository Access Tokens
-            logger.debug("Cloning repository...")
-            clone_cmd = [
-                "git",
-                "-c",
-                f"http.extraHeader=Authorization: Bearer {access_token}",
-                "clone",
-                "--no-checkout",
-                clone_url,
-                str(repo_path),
-            ]
-
-            clone_result = subprocess.run(
-                clone_cmd,
-                capture_output=True,
-                text=True,
-                timeout=300,
-                env=env,
-            )
-
-            if clone_result.returncode != 0:
-                logger.error(f"Clone failed: {clone_result.stderr}")
-                raise BitbucketDCError(
-                    f"Failed to clone repository: {clone_result.stderr}"
-                )
-
-            logger.debug("Repository cloned successfully")
-
-            # Checkout specific commit or HEAD if no commit specified
-            if commit:
-                logger.debug(f"Checking out commit {commit}...")
-                checkout_result = subprocess.run(
-                    ["git", "checkout", commit],
-                    cwd=str(repo_path),
-                    capture_output=True,
-                    text=True,
-                    env=env,
-                )
-
-                if checkout_result.returncode != 0:
-                    logger.debug(
-                        f"Could not checkout commit {commit}, fetching all commits..."
-                    )
-                    subprocess.run(
-                        ["git", "fetch", "--unshallow"],
-                        cwd=str(repo_path),
-                        capture_output=True,
-                        text=True,
-                        env=env,
-                    )
-
-                    checkout_result = subprocess.run(
-                        ["git", "checkout", commit],
-                        cwd=str(repo_path),
-                        capture_output=True,
-                        text=True,
-                        env=env,
-                    )
-
-                    if checkout_result.returncode != 0:
-                        raise BitbucketDCError(f"Failed to checkout commit {commit}")
-
-                logger.debug(f"Successfully checked out commit {commit}")
-            else:
-                # No specific commit, checkout the default branch
-                # After --no-checkout clone, use `git checkout` with no args to checkout default branch
-                logger.debug("No commit specified, checking out default branch...")
-                checkout_result = subprocess.run(
-                    ["git", "checkout"],
-                    cwd=str(repo_path),
-                    capture_output=True,
-                    text=True,
-                    env=env,
-                )
-                if checkout_result.returncode != 0:
-                    raise BitbucketDCError(
-                        f"Failed to checkout default branch: {checkout_result.stderr}"
-                    )
-
-                # Get the HEAD commit SHA for logging
-                head_result = subprocess.run(
-                    ["git", "rev-parse", "HEAD"],
-                    cwd=str(repo_path),
-                    capture_output=True,
-                    text=True,
-                    env=env,
-                )
-                head_sha = (
-                    head_result.stdout.strip()
-                    if head_result.returncode == 0
-                    else "unknown"
-                )
-                logger.debug(
-                    f"Successfully checked out default branch (HEAD: {head_sha})"
-                )
-
-            # Remove .git directory
-            git_dir = repo_path / ".git"
-            if git_dir.exists():
-                shutil.rmtree(git_dir)
-
-            # Create ZIP archive
-            zip_path = Path(temp_dir) / f"{repo_slug}.zip"
-            logger.debug("Creating ZIP archive...")
-
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for file_path in repo_path.rglob("*"):
-                    if file_path.is_file():
-                        arcname = file_path.relative_to(repo_path)
-                        zipf.write(file_path, arcname)
-
-            with open(zip_path, "rb") as f:
-                zip_content = f.read()
-
-            logger.debug(f"Archive created. Size: {len(zip_content)} bytes")
-            return zip_content
-
+            _clone_repository(clone_url, repo_path, access_token, env)
+            _checkout_commit(repo_path, commit, env)
+            return _create_zip_archive(repo_path, repo_slug, temp_dir)
         except subprocess.TimeoutExpired:
             raise BitbucketDCError("Git clone operation timed out")
         except OSError as e:
-            logger.error(f"File system error during repository download: {e!s}")
             raise BitbucketDCError(f"File system error: {e!s}")
 
 
@@ -756,12 +700,7 @@ def _prepare_repo_context(repo: dict[str, Any]) -> dict[str, Any] | None:
         logger.warning(f"Missing installation_id for repo {repo_name}")
         return None
 
-    try:
-        secrets = fetch_secrets(installation_id)
-    except (AccessTokenError, OSError) as e:
-        logger.error(f"Failed to fetch secrets: {e}")
-        return None
-
+    secrets = fetch_secrets(installation_id)
     instance_url = secrets.get("instance_url") or info["metadata"].get("instance_url")
     repo_id = info["repo_id"]
     project_key = info["project_key"]
@@ -890,19 +829,15 @@ def download_and_upload_repo(
         )
         return ctx["repo_name"]
 
-    try:
-        vcs_info = fetch_vcs_info(
-            ctx["instance_url"],
-            ctx["project_key"],
-            ctx["repo_slug"],
-            access_token,
-            commit,
-            ctx["tracked_branch"],
-            ctx["verify"],
-        )
-    except (httpx.HTTPError, OSError) as e:
-        logger.warning(f"Failed to fetch VCS info: {e}")
-        vcs_info = None
+    vcs_info = fetch_vcs_info(
+        ctx["instance_url"],
+        ctx["project_key"],
+        ctx["repo_slug"],
+        access_token,
+        commit,
+        ctx["tracked_branch"],
+        ctx["verify"],
+    )
 
     result = _persist_version_in_db(
         org_id,
@@ -928,11 +863,7 @@ def get_repo_clone_info_from_id(
     project_key: str,
     repo_slug: str,
 ) -> tuple[str, str]:
-    """Get repository clone URL and full name.
-
-    Note: The clone URL does not contain credentials. For Bitbucket DC,
-    Bearer auth must be passed via git http.extraHeader.
-    """
+    """Returns (clone_url, full_name). Clone URL requires Bearer auth via git http.extraHeader."""
     clone_url = build_clone_url(instance_url, project_key, repo_slug)
     full_name = f"{project_key}/{repo_slug}"
     return clone_url, full_name
@@ -949,10 +880,9 @@ def list_pull_requests(
     project_key: str,
     repo_slug: str,
     access_token: str,
-    state: str = "OPEN",
+    state: Literal["OPEN", "MERGED", "DECLINED", "ALL"] = "OPEN",
     verify: bool | ssl.SSLContext = True,
 ) -> list[dict[str, Any]]:
-    """State filter: OPEN, MERGED, DECLINED, or ALL."""
     api_base = f"{instance_url.rstrip('/')}/rest/api/1.0"
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"{api_base}/projects/{project_key}/repos/{repo_slug}/pull-requests"
@@ -1133,6 +1063,55 @@ def create_pull_request(
             raise
 
 
+def _decline_bot_pull_requests(
+    instance_url: str,
+    project_key: str,
+    repo_slug: str,
+    access_token: str,
+    verify: bool | ssl.SSLContext,
+) -> None:
+    """Decline all open PRs from docs_* branches created by the bot."""
+    bot_email = "bot@driverai.com"
+
+    existing_prs = list_pull_requests(
+        instance_url, project_key, repo_slug, access_token, state="OPEN", verify=verify
+    )
+    errors: list[Exception] = []
+
+    for pr in existing_prs:
+        source_branch = pr["fromRef"]["displayId"]
+        if not source_branch.startswith("docs_"):
+            continue
+
+        try:
+            pr_id = pr["id"]
+            commits = get_pull_request_commits(
+                instance_url, project_key, repo_slug, pr_id, access_token, verify=verify
+            )
+
+            is_bot_pr = any(
+                bot_email in commit["author"]["emailAddress"] for commit in commits
+            )
+
+            if is_bot_pr:
+                decline_pull_request(
+                    instance_url,
+                    project_key,
+                    repo_slug,
+                    pr_id,
+                    access_token,
+                    verify=verify,
+                )
+                logger.info(
+                    f"Closed existing bot PR #{pr_id} from branch {source_branch}"
+                )
+        except Exception as e:
+            errors.append(e)
+
+    if errors:
+        raise ExceptionGroup("Failed to decline some bot PRs", errors)
+
+
 def create_pull_request_with_bot_cleanup(
     instance_url: str,
     project_key: str,
@@ -1140,80 +1119,16 @@ def create_pull_request_with_bot_cleanup(
     access_token: str,
     branch: str,
     commit_slug: str,
+    installation_id: str,
     tracked_branch: str | None = None,
 ) -> None:
-    """Create a pull request and close any existing bot PRs from docs_* branches."""
-    bot_email = "bot@driverai.com"
+    """Create PR and decline existing bot PRs from docs_* branches."""
+    secrets = fetch_secrets(installation_id)
+    verify = _get_ssl_context(secrets)
 
-    # Get SSL context from secrets if available
-    try:
-        secrets = fetch_secrets_by_installation_url(instance_url)
-        verify = _get_ssl_context(secrets)
-    except (AccessTokenError, NotImplementedError):
-        verify = True
-    except (httpx.HTTPError, OSError) as e:
-        logger.warning(
-            f"Failed to fetch secrets for {instance_url}, using default SSL: {e}"
-        )
-        verify = True
-
-    logger.debug("Checking for existing bot pull requests...")
-
-    try:
-        existing_prs = list_pull_requests(
-            instance_url,
-            project_key,
-            repo_slug,
-            access_token,
-            state="OPEN",
-            verify=verify,
-        )
-
-        for pr in existing_prs:
-            source_branch = pr.get("fromRef", {}).get("displayId", "")
-
-            if source_branch.startswith("docs_"):
-                try:
-                    pr_id = pr["id"]
-                    commits = get_pull_request_commits(
-                        instance_url,
-                        project_key,
-                        repo_slug,
-                        pr_id,
-                        access_token,
-                        verify=verify,
-                    )
-
-                    is_bot_pr = any(
-                        bot_email in commit.get("author", {}).get("emailAddress", "")
-                        for commit in commits
-                    )
-
-                    if is_bot_pr:
-                        try:
-                            decline_pull_request(
-                                instance_url,
-                                project_key,
-                                repo_slug,
-                                pr_id,
-                                access_token,
-                                verify=verify,
-                            )
-                            logger.info(
-                                f"Closed existing bot PR #{pr_id} from branch {source_branch}"
-                            )
-                        except httpx.HTTPStatusError as close_error:
-                            logger.warning(
-                                f"Could not close PR #{pr_id}: {close_error}"
-                            )
-
-                except httpx.HTTPStatusError as e:
-                    logger.warning(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
-
-    except httpx.HTTPStatusError as e:
-        logger.warning(f"Error listing pull requests: {e}")
-
-    # Create new pull request
+    _decline_bot_pull_requests(
+        instance_url, project_key, repo_slug, access_token, verify
+    )
     create_pull_request(
         instance_url,
         project_key,
@@ -1223,14 +1138,4 @@ def create_pull_request_with_bot_cleanup(
         commit_slug,
         tracked_branch,
         verify=verify,
-    )
-
-
-def fetch_secrets_by_installation_url(instance_url: str) -> dict[str, Any]:
-    """Fallback for when we don't have installation_id but have the URL.
-
-    TODO: Implement lookup by instance URL or remove this function.
-    """
-    raise NotImplementedError(
-        "fetch_secrets_by_installation_url not yet implemented - pass installation_id instead"
     )

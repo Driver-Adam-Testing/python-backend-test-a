@@ -97,7 +97,7 @@ class BitbucketDCProvider(GitProviderInterface):
 
             base_url = self.config.base_url
             if not base_url:
-                return False, "instance_url is required"
+                return False, "base_url is required"
 
             api = self._get_api_resources(
                 base_url=base_url,
@@ -241,9 +241,9 @@ class BitbucketDCProvider(GitProviderInterface):
 
         secrets = self.fetch_secrets(installation)
         access_token = secrets["token"]
-        instance_url = installation.git_provider_app.base_url
+        base_url = installation.git_provider_app.base_url
         api = self._get_api_resources(
-            base_url=instance_url,
+            base_url=base_url,
             ca_bundle_path=secrets.get("ca_bundle_path"),
             disable_ssl_verify=secrets.get("disable_ssl_verify", False),
         )
@@ -296,7 +296,7 @@ class BitbucketDCProvider(GitProviderInterface):
                         .get("href")
                         if repo.get("links", {}).get("clone")
                         else None,
-                        "instance_url": instance_url,
+                        "instance_url": base_url,
                     },
                 )
             )
@@ -445,7 +445,7 @@ class BitbucketDCProvider(GitProviderInterface):
             "secrets": secrets,
             "api": api,
             "access_token": secrets["token"],
-            "instance_url": base_url,
+            "base_url": base_url,
         }
 
     def _resolve_tracked_branch(
@@ -547,7 +547,7 @@ class BitbucketDCProvider(GitProviderInterface):
                 change.get("toHash"),
                 tracked_branch,
                 repo_info,
-                context["instance_url"],
+                context["base_url"],
                 installation_id,
             )
         ]
@@ -561,7 +561,7 @@ class BitbucketDCProvider(GitProviderInterface):
         commit_hash: str | None,
         tracked_branch: str,
         repo_info: dict[str, Any],
-        instance_url: str,
+        base_url: str,
         installation_id: str,
     ) -> dict[str, Any]:
         return {
@@ -576,7 +576,7 @@ class BitbucketDCProvider(GitProviderInterface):
                 "id": repo_info["repo_id"],
                 "project_key": repo_info["project_key"],
                 "slug": repo_info["repo_slug"],
-                "instance_url": instance_url,
+                "instance_url": base_url,
             },
         }
 
@@ -605,7 +605,7 @@ class BitbucketDCProvider(GitProviderInterface):
             logger.warning("PR merged event missing merge commit ID")
             return {"message": "PR merged event ignored: no merge commit"}
 
-            instance_url = installation.git_provider_app.base_url
+        base_url = installation.git_provider_app.base_url
 
         tracked_branch = get_tracked_branch_or_none(
             session=webhook_event_ctx.session,
@@ -628,7 +628,7 @@ class BitbucketDCProvider(GitProviderInterface):
 
         repos_pushed = [
             self._build_repo_pushed_entry(
-                merge_commit, target_branch, repo_info, instance_url, installation_id
+                merge_commit, target_branch, repo_info, base_url, installation_id
             )
         ]
         self._dispatch_bitbucket_dc_event(

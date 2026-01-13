@@ -134,6 +134,7 @@ def connect_repos_for_installation_task(
         expression="'run-codebase-connection-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
+    schedule_timeout=timedelta(hours=1),
 )
 def run_codebase_connection_task(
     input: RunCodebaseConnectionInput, ctx: Context

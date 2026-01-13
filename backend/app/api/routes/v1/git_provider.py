@@ -153,13 +153,14 @@ def get_app_installation(
 @router.post(
     "/app/{application_id}/token",
     summary="Add access token to the app.",
+    response_model=GitProviderAppInstallation,
 )
 def add_access_token(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
     gat: AccessTokenData,
-) -> JSONResponse:
+) -> GitProviderAppInstallation:
     enforce_org_action(session, current_user, "vcs.manage")
     try:
         install = provider_service.install_access_token(
@@ -172,10 +173,7 @@ def add_access_token(
     if not install:
         raise HTTPException(status_code=404, detail="Installation not found.")
 
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"message": "Token added."},
-    )
+    return install
 
 
 @router.get(
@@ -304,6 +302,7 @@ def get_repositories_by_installation_id(
 
 @router.put(
     "/app/{application_id}/repos/{installation_id}/token",
+    response_model=GitProviderAppInstallation,
 )
 def update_git_provider_group_access_token(
     session: CurrentSession,
@@ -311,10 +310,10 @@ def update_git_provider_group_access_token(
     application_id: str,
     installation_id: str,
     new_gat: AccessTokenData,
-) -> JSONResponse:
+) -> GitProviderAppInstallation:
     enforce_org_action(session, current_user, "vcs.manage")
     try:
-        provider_service.update_access_token(
+        install = provider_service.update_access_token(
             session,
             current_user.organization_id,
             application_id,
@@ -324,10 +323,7 @@ def update_git_provider_group_access_token(
     except GitProviderAccessTokenError:
         raise HTTPException(status_code=500, detail="Invalid token")
 
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"message": "Token updated."},
-    )
+    return install
 
 
 @router.post(

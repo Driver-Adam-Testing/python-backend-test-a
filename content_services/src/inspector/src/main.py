@@ -133,6 +133,10 @@ async def inspect_db(
     try:
         # Get the Version and check if it has previous_version_id
         version = await get_version_by_id(version_id)
+
+        if version.status == VersionStatus.GENERATION_ERROR:
+            set_codebase_status(version_id, VersionStatus.GENERATING)
+
         org_id = version.primary_asset.organization_id
         org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 

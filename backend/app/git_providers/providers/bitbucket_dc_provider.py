@@ -95,7 +95,7 @@ class BitbucketDCProvider(GitProviderInterface):
             if not token:
                 return False, "Token is required"
 
-            base_url = token_data.get("instance_url") or self.config.base_url
+            base_url = self.config.base_url
             if not base_url:
                 return False, "instance_url is required"
 
@@ -605,7 +605,7 @@ class BitbucketDCProvider(GitProviderInterface):
             logger.warning("PR merged event missing merge commit ID")
             return {"message": "PR merged event ignored: no merge commit"}
 
-        instance_url = installation.git_provider_app.base_url
+            instance_url = installation.git_provider_app.base_url
 
         tracked_branch = get_tracked_branch_or_none(
             session=webhook_event_ctx.session,

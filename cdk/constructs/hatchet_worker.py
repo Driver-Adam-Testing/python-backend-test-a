@@ -32,6 +32,7 @@ class HatchetWorkerParams:
         mem_size: int,
         min_instance: int,
         workflow_set_name: str,
+        stop_timeout_seconds: int = 120,
     ) -> None:
         self.environment = environment
         self.aws_region = aws_region
@@ -43,6 +44,7 @@ class HatchetWorkerParams:
         self.mem_size = mem_size
         self.min_instance = min_instance
         self.workflow_set_name = workflow_set_name
+        self.stop_timeout_seconds = stop_timeout_seconds
     
 
 
@@ -91,8 +93,7 @@ class HatchetWorker(Construct):
             "PROJECT_NAME": "DriverAI Hatchet Worker",
             "ENVIRONMENT": params.environment,
             "AWS_REGION": params.aws_region,
-            "ECS_CONTAINER_STOP_TIMEOUT": "2s",
-            "HATCHET_CLIENT_HOST_PORT" : f"hatchet.private.{hosted_zone.zone_name}:7077",
+            "HATCHET_CLIENT_HOST_PORT": f"hatchet.private.{hosted_zone.zone_name}:7077",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
             "HATCHET_CLIENT_GRPC_MAX_RECV_MESSAGE_LENGTH": "100000000",
@@ -137,7 +138,7 @@ class HatchetWorker(Construct):
             "HatchetWorkerContainer",
             image=aws_ecs.ContainerImage.from_ecr_repository(
                 aws_ecr.Repository.from_repository_name(
-                    self, "HatchetWorkerRepo", "hatchet-worker" 
+                    self, "HatchetWorkerRepo", "hatchet-worker"
                 ),
                 tag="latest",
             ),
@@ -147,6 +148,7 @@ class HatchetWorker(Construct):
                 stream_prefix="python-worker",
                 log_retention=aws_logs.RetentionDays.ONE_YEAR,
             ),
+            stop_timeout=Duration.seconds(params.stop_timeout_seconds),
         )
         # Optional: a port for metrics/debugging
         # worker_container.add_port_mappings(aws_ecs.PortMapping(container_port=9000))

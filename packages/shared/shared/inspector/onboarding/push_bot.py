@@ -59,12 +59,12 @@ def push_docs(version_id: uuid.UUID) -> None:
         unpack_archive_to_finalized_path,
     )
     from shared.inspector.utils.db import (
-        get_version_by_id,
+        get_version_by_id_sync,
         git_provider_app_installation_by_id,
     )
     from sqlmodel import Session, select
 
-    version = await get_version_by_id(version_id)
+    version = get_version_by_id_sync(version_id)
     primary_asset_id = version.primary_asset.id
     tracked_branch = version.primary_asset.vcs_tracked_branch
     repo_id = version.primary_asset.repository_id

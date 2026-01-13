@@ -21,13 +21,15 @@ _OPENAI_RATE_LIMITERS: weakref.WeakKeyDictionary[
     asyncio.AbstractEventLoop, AsyncLimiter
 ] = weakref.WeakKeyDictionary()
 CHUNK_SIZE_LIMIT = 96_000
+MAX_CONCURRENT_OPENAI_REQUESTS = 200
+MAX_OPENAI_REQUESTS_PER_SECOND = 50
 
 
 def _get_semaphore() -> asyncio.Semaphore:
     """Get or create a semaphore for the current event loop."""
     loop = asyncio.get_running_loop()
     if loop not in _OPENAI_SEMS:
-        _OPENAI_SEMS[loop] = asyncio.Semaphore(300)
+        _OPENAI_SEMS[loop] = asyncio.Semaphore(MAX_CONCURRENT_OPENAI_REQUESTS)
     return _OPENAI_SEMS[loop]
 
 
@@ -35,7 +37,7 @@ def _get_rate_limiter() -> AsyncLimiter:
     """Get or create a rate limiter for the current event loop."""
     loop = asyncio.get_running_loop()
     if loop not in _OPENAI_RATE_LIMITERS:
-        _OPENAI_RATE_LIMITERS[loop] = AsyncLimiter(100, 1)
+        _OPENAI_RATE_LIMITERS[loop] = AsyncLimiter(MAX_OPENAI_REQUESTS_PER_SECOND, 1)
     return _OPENAI_RATE_LIMITERS[loop]
 
 

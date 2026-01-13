@@ -1,6 +1,7 @@
 import logging
 import os
 import signal
+import sys
 
 import truststore
 import truststore._api as tapi
@@ -35,6 +36,11 @@ from workflows.onboarding_workflows import (
 )
 from workflows.pdf_processing_workflow import pdf_processing_task
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
+)
 logger = logging.getLogger(__name__)
 
 truststore.inject_into_ssl()

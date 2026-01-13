@@ -68,10 +68,6 @@ class GitProviderService:
 
         return provider_class.from_config(app, self.aws_config)
 
-    # def _get_provider_for_installation(self, installation: GitProviderAppInstallation) -> GitProviderInterface:
-    #     """Get provider instance for an installation"""
-    #     return self.get_provider(installation.git_provider_app)
-
     # App Management
 
     def create_app(self, session: Session, app_data: dict[str, Any]) -> GitProviderApp:
@@ -139,7 +135,7 @@ class GitProviderService:
         session: Session,
         organization_id: str,
         app_id: str,
-        token_data: dict[str, Any],
+        token_data: dict[str, Any],  # TODO: define concrete type
     ) -> GitProviderAppInstallation:
         app = git_provider_app_by_id(session, organization_id, app_id)
         provider = self.get_provider(app)
@@ -179,7 +175,7 @@ class GitProviderService:
         organization_id: str,
         app_id: str,
         installation_id: str,
-        token_data: dict[str, Any],
+        token_data: dict[str, Any],  # TODO: define concrete type
     ) -> GitProviderAppInstallation:
         installation = git_provider_app_installation_by_id(session, installation_id)
         if (

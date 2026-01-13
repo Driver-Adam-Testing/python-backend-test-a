@@ -332,7 +332,7 @@ class BitbucketDCAPIResources:
         self,
         project_key: str,
         repo_slug: str,
-        config: dict[str, Any],
+        config: dict[str, Any],  # TODO: Use WebhookConfig. This requires more updates.
         access_token: str,
     ) -> dict[str, Any]:
         url = f"{self.api_base}/projects/{project_key}/repos/{repo_slug}/webhooks"

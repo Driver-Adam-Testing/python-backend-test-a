@@ -551,6 +551,7 @@ async def inspect_files(
                     task_name=f"FolderTechDoc {node.root_rel_path}",
                     child_docs_tasks=child_doc_tasks,
                     codebase_name=codebase_name,
+                    version_id=str(version_id),
                     db_version_node_id=db_version_node_id,
                     previous_content=previous_contents,
                     deduped_node_task=node_id_to_folder_task[node_id],
@@ -562,6 +563,7 @@ async def inspect_files(
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
+                version_id=str(version_id),
                 db_version_node_id=db_version_node_id,
                 previous_content=previous_contents,
             )

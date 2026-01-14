@@ -54,6 +54,7 @@ _tags_cache = TTLCache()
 _diff_content_cache = TTLCache()
 _source_code_cache = TTLCache()
 _tech_doc_output_cache = TTLCache()
+_folder_child_nodes_to_docs_cache = TTLCache()
 
 
 # Public API - keeps existing interface intact
@@ -127,6 +128,20 @@ def get_tech_doc_output_cache(key: str) -> dict:
 
 def delete_tech_doc_output_cache(key: str) -> None:
     _tech_doc_output_cache.delete(key)
+
+
+def put_folder_child_nodes_to_docs_cache(
+    key: str, value: dict, ttl_seconds: int = 28800
+) -> str:
+    return _folder_child_nodes_to_docs_cache.put(key, value, ttl_seconds)
+
+
+def get_folder_child_nodes_to_docs_cache(key: str) -> dict:
+    return _folder_child_nodes_to_docs_cache.get(key)
+
+
+def delete_folder_child_nodes_to_docs_cache(key: str) -> None:
+    _folder_child_nodes_to_docs_cache.delete(key)
 
 
 def make_tech_doc(

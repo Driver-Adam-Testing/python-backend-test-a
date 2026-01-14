@@ -16,6 +16,7 @@ from inspector.src.hatchet_funcs import (
     delete_top_level_cache,
     export_tech_docs_to_zip,
     get_diff_content_cache,
+    get_folder_child_nodes_to_docs_cache,
     get_tags_cache,
     get_top_level_cache,
     make_codebase_tags,
@@ -41,7 +42,7 @@ class TechDocInput(BaseModel):
 class FolderDocInput(BaseModel):
     node: LiteNode
     codebase_name: str
-    child_nodes_to_docs: list[tuple[LiteNode, dict]]
+    version_id: str
     previous_content: dict[str, str] | None
 
 
@@ -55,7 +56,6 @@ class SymbolDocInput(BaseModel):
 class TopLevelDocInput(BaseModel):
     codebase_name: str
     version_node_id: str
-    # nodes_to_docs: list[tuple[LiteNode, dict]]
 
 
 class DeepContextDocsInput(BaseModel):
@@ -72,7 +72,6 @@ class ExportDocsInput(BaseModel):
 
 class CodebaseTagsInput(BaseModel):
     codebase_name: str
-    # nodes_to_docs: list[tuple[LiteNode, dict]]
     version_node_id: str
     content_kinds: set
 
@@ -214,6 +213,7 @@ def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
         expression="'folder-doc-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
+    sticky=StickyStrategy.HARD,
 )
 def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
     print("starting folder doc task")
@@ -228,17 +228,9 @@ def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
         status=node_status,
     )
     print(node.root_rel_path.name)
-    child_nodes_to_docs = {}
-    for child_node, doc in input.child_nodes_to_docs:
-        child_node_kind = NodeKind(child_node["kind"])
-        child_node_root_rel_path = Path(child_node["root_rel_path"])
-        child_node_status = child_node["status"]
-        child_node = LiteNode(
-            kind=child_node_kind,
-            root_rel_path=child_node_root_rel_path,
-            status=child_node_status,
-        )
-        child_nodes_to_docs[child_node] = doc
+    child_nodes_to_docs = get_folder_child_nodes_to_docs_cache(
+        f"{input.version_id}:{node.root_rel_path}"
+    )
     folder_docs = make_folder_tech_doc(
         input.codebase_name,
         node,
@@ -246,8 +238,11 @@ def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
         input.previous_content,
     )
     cleaned_folder_docs = remove_null_unicode_character(data=folder_docs)
+    put_tech_doc_output_cache(
+        f"{input.version_id}:{node.root_rel_path}", cleaned_folder_docs
+    )
     print("executed folder doc task")
-    return cleaned_folder_docs
+    return {"success": True}
 
 
 @hatchet.task(

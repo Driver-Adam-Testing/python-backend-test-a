@@ -1126,16 +1126,17 @@ class EmbeddingTask(Task):
             )
             print(f"Embedded {len(chunks)} chunks for '{self.task_name}'")
 
-            async with database_sem, AsyncSession(async_engine) as session:  # noqa: SIM117
-                async with session.begin():
-                    for cid in ids:
-                        delete_statement = delete(ChunkAndEmbedding).where(
-                            ChunkAndEmbedding.content_id == cid
-                        )
-                        await session.exec(delete_statement)
-                    session.add_all(chunks)
-                    await session.commit()
-            print(f"Saved {len(chunks)} for {self.task_name} to database")
+            if chunks:
+                async with database_sem, AsyncSession(async_engine) as session:  # noqa: SIM117
+                    async with session.begin():
+                        for cid in ids:
+                            delete_statement = delete(ChunkAndEmbedding).where(
+                                ChunkAndEmbedding.content_id == cid
+                            )
+                            await session.exec(delete_statement)
+                        session.add_all(chunks)
+                        await session.commit()
+                print(f"Saved {len(chunks)} for {self.task_name} to database")
 
         # Chunk, embed, and write source code if provided
         # TODO it's super hacky to embed source code directly like this.
@@ -1152,17 +1153,18 @@ class EmbeddingTask(Task):
                 [{}],
             )
 
-            async with database_sem, AsyncSession(async_engine) as session:  # noqa: SIM117
-                async with session.begin():
-                    delete_statement = delete(ChunkAndEmbedding).where(
-                        ChunkAndEmbedding.content_id == source_code_dc_id
-                    )
-                    await session.exec(delete_statement)
-                    session.add_all(sc_chunks)
-                    await session.commit()
-            print(
-                f"Saved {len(sc_chunks)} chunks of source code for task '{self.task_name}' to database"
-            )
+            if sc_chunks:
+                async with database_sem, AsyncSession(async_engine) as session:  # noqa: SIM117
+                    async with session.begin():
+                        delete_statement = delete(ChunkAndEmbedding).where(
+                            ChunkAndEmbedding.content_id == source_code_dc_id
+                        )
+                        await session.exec(delete_statement)
+                        session.add_all(sc_chunks)
+                        await session.commit()
+                print(
+                    f"Saved {len(sc_chunks)} chunks of source code for task '{self.task_name}' to database"
+                )
 
         return {}
 
@@ -1188,7 +1190,13 @@ class EmbeddingTask(Task):
 
             split_documents = split_text(content)
             async with embed_sem:
-                embeds = await async_batch_embed_text([d.text for d in split_documents])
+                try:
+                    embeds = await async_batch_embed_text(
+                        [d.text for d in split_documents]
+                    )
+                except Exception as e:
+                    print(f"Error embedding content id {content_id}: {e}")
+                    return []
             chunks.extend(
                 [
                     ChunkAndEmbedding(

@@ -29,12 +29,17 @@ from workflows.inspector_workflow import inspector_task
 from workflows.onboarding_workflows import (
     connect_repos_for_installation_task,
     handle_azure_devops_events_task,
+    handle_bitbucket_dc_events_task,
     handle_bitbucket_events_task,
     handle_github_events_task,
     handle_gitlab_events_task,
     run_codebase_connection_task,
 )
 from workflows.pdf_processing_workflow import pdf_processing_task
+
+# Suppress noisy HTTP/AWS library loggers before basicConfig
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("botocore").setLevel(logging.WARNING)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,6 +79,7 @@ base_workflow_set = [
     scheduled_auth0_sync_task,
     handle_github_events_task,
     handle_azure_devops_events_task,
+    handle_bitbucket_dc_events_task,
     handle_bitbucket_events_task,
     handle_gitlab_events_task,
     connect_repos_for_installation_task,

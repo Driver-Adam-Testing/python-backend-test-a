@@ -1,6 +1,7 @@
 import os
 
 from aws_cdk import (
+    DockerImage,
     Duration,
     aws_cloudwatch,
     aws_cloudwatch_actions,
@@ -43,7 +44,7 @@ class MetricsLambda(Construct):
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
         vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
-        driver_db_path = os.path.abspath("driver_db")
+        driver_db_path = os.path.abspath("packages/driver_db")
         alarm_topic_arn = aws_ssm.StringParameter.value_for_string_parameter(self, '/infrastructure/alarms/topic-arn')
         alarm_topic = aws_sns.Topic.from_topic_arn(self, 'InfrastructureAlarmsTopic', alarm_topic_arn)
 
@@ -71,8 +72,13 @@ class MetricsLambda(Construct):
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"],
+                image=DockerImage.from_build(
+                    path=".",
+                    file="Dockerfile.lambda-bundler",
+                    platform="linux/amd64",
+                ),
                 volumes=[
-                    {"containerPath": "/driver_db", "hostPath": driver_db_path},
+                    {"containerPath": "/packages/driver_db", "hostPath": driver_db_path},
                 ],
             ),
             reserved_concurrent_executions=lambda_concurrent_executions,

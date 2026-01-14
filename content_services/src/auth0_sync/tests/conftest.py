@@ -54,7 +54,7 @@ def run_alembic_migrations(db_url: str) -> None:
     """Run Alembic migrations against the given database URL."""
     # Find the alembic.ini in driver_db
     driver_db_path = (
-        Path(__file__).resolve().parent.parent.parent.parent / "driver_db" / "database"
+        Path(__file__).resolve().parent.parent.parent.parent / "packages" / "driver_db" / "database"
     )
     alembic_ini_path = driver_db_path / "alembic.ini"
 

@@ -29,7 +29,7 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
         return (await session.exec(statement)).one()
 
 
-def get_version_by_id_sync(version_id: uuid.UUID) -> Version:
+def sync_get_version_by_id(version_id: uuid.UUID) -> Version:
     from database.db import engine
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select

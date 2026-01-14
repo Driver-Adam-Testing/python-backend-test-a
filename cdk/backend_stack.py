@@ -84,7 +84,7 @@ class BackendStack(Stack):
                 workflow_set_name=HatchetWorkerType.ANALYTICS.value,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
                 dropzone_bucket=self.backend.dropzone_bucket,
-                stop_timeout_seconds=300,
+                stop_timeout_seconds=119,
             ),
         )
 
@@ -102,7 +102,7 @@ class BackendStack(Stack):
                 workflow_set_name=HatchetWorkerType.HEAVY.value,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
                 dropzone_bucket=self.backend.dropzone_bucket,
-                stop_timeout_seconds=300,
+                stop_timeout_seconds=119,
             ),
         )
 
@@ -120,7 +120,7 @@ class BackendStack(Stack):
                 workflow_set_name=HatchetWorkerType.BASE.value,
                 is_private_deploy=settings.IS_PRIVATE_DEPLOY.lower() == "true",
                 dropzone_bucket=self.backend.dropzone_bucket,
-                stop_timeout_seconds=120,
+                stop_timeout_seconds=119,
             ),
         )
         self.scimserver = SCIMServer(

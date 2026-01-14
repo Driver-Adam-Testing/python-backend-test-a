@@ -237,8 +237,11 @@ def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
         input.previous_content,
     )
     cleaned_folder_docs = remove_null_unicode_character(data=folder_docs)
+    put_tech_doc_output_cache(
+        f"{input.version_id}:{node.root_rel_path}", cleaned_folder_docs
+    )
     print("executed folder doc task")
-    return cleaned_folder_docs
+    return {"success": True}
 
 
 @hatchet.task(

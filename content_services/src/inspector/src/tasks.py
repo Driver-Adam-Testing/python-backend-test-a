@@ -130,7 +130,11 @@ class FolderTechDocTask(Task):
                 version_id=self.version_id,
                 previous_content=previous_content,
             )
-            docs = await folder_doc_task.aio_run(folder_doc_input)
+            await folder_doc_task.aio_run(folder_doc_input)
+            docs = get_tech_doc_output_cache(
+                f"{self.version_id}:{self.node.root_rel_path}"
+            )
+            delete_tech_doc_output_cache(f"{self.version_id}:{self.node.root_rel_path}")
             delete_folder_child_nodes_to_docs_cache(
                 f"{self.version_id}:{self.node.root_rel_path}"
             )

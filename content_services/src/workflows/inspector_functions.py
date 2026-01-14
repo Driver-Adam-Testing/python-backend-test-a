@@ -213,6 +213,7 @@ def tech_doc_task(input: TechDocInput, ctx: Context) -> dict[str, str]:
         expression="'folder-doc-workflow'",  # NOTE: must be a string literal to be evaluated as a constant task name
         limit_strategy=ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     ),
+    sticky=StickyStrategy.HARD,
 )
 def folder_doc_task(input: FolderDocInput, ctx: Context) -> dict[str, str]:
     print("starting folder doc task")

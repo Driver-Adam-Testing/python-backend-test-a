@@ -130,7 +130,9 @@ class FolderTechDocTask(Task):
                 version_id=self.version_id,
                 previous_content=previous_content,
             )
-            await folder_doc_task.aio_run(folder_doc_input)
+            await folder_doc_task.aio_run(
+                folder_doc_input, options=TriggerWorkflowOptions(sticky=True)
+            )
             docs = get_tech_doc_output_cache(
                 f"{self.version_id}:{self.node.root_rel_path}"
             )

@@ -93,6 +93,7 @@ def create_mcp_oauth_provider() -> Auth0Provider:
         base_url=mcp_full_url,
         client_storage=storage,
         jwt_signing_key=settings.MCP_JWT_SIGNING_KEY,
+        required_scopes=["openid", "profile", "email", "offline_access"],
     )
 
     return auth

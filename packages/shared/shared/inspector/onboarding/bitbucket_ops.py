@@ -338,15 +338,16 @@ def download_and_upload_repo(
     # Prefer slug from metadata, fallback to name-based slug
     repo_slug = metadata.get("slug") or repo.get("slug")
 
-    # Robustness: try to extract from full_name if missing or potentially incorrect
+    # Fallback: extract from full_name only if values are missing
+    # Only fill in missing values to avoid masking upstream data issues
     full_name = metadata.get("full_name") or repo.get("full_name")
     if full_name and "/" in full_name:
-        parts = full_name.split("/")
-        # If workspace looks like a display name (contains spaces or doesn't match full_name)
-        # or if repo_slug was calculated from a display name
-        if not workspace or workspace != parts[0]:
+        parts = full_name.split("/", 1)  # Split only once for safety
+        if not workspace:
+            logger.warning(f"Missing workspace, extracted from full_name: {parts[0]}")
             workspace = parts[0]
-        if not repo_slug or repo_slug != parts[1]:
+        if not repo_slug:
+            logger.warning(f"Missing repo_slug, extracted from full_name: {parts[1]}")
             repo_slug = parts[1]
 
     if not repo_slug and repo_name:

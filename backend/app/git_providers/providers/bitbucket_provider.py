@@ -395,7 +395,7 @@ class BitbucketProvider(GitProviderInterface):
         # Extract repository info
         repo_name = repository.get("name")
         repo_id = repository.get("uuid")
-        workspace = repository["workspace"]["name"]
+        workspace = repository["workspace"]["slug"]
         full_name = repository.get("full_name")
         repo_slug = repository.get("slug", repo_name)  # Use name as fallback
 
@@ -463,7 +463,7 @@ class BitbucketProvider(GitProviderInterface):
                                 "id": repo_id,  # Add the repo UUID to metadata
                                 "uuid": repo_id,  # Also add as uuid for compatibility
                                 "workspace": workspace,
-                                "slug": repo_name,
+                                "slug": repo_slug,
                             },
                             "installation_id": installation_id,
                             "latest_commit": {

@@ -175,7 +175,7 @@ class BitbucketProvider(GitProviderInterface):
                     GitRepository(
                         provider_name=str(installation.git_provider_app.provider_kind),
                         provider_kind=installation.git_provider_app.provider_kind,
-                        org=repo["workspace"]["name"],
+                        org=repo["workspace"]["slug"],
                         installation_id=str(installation.id),
                         repo_name=repo["name"],
                         last_updated=repo.get("updated_on"),
@@ -183,7 +183,7 @@ class BitbucketProvider(GitProviderInterface):
                         latest_commit=None,  # To be fetched on-demand
                         metadata={
                             "id": repo["uuid"],  # Store repo ID in metadata
-                            "workspace": repo["workspace"]["name"],
+                            "workspace": repo["workspace"]["slug"],
                             "slug": repo["slug"],
                             "project_key": repo.get("project", {}).get("key"),
                             "project_name": repo.get("project", {}).get("name"),

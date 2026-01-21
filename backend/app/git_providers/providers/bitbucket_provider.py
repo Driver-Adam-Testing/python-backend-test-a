@@ -397,7 +397,12 @@ class BitbucketProvider(GitProviderInterface):
         repo_id = repository.get("uuid")
         workspace = repository["workspace"]["slug"]
         full_name = repository.get("full_name")
-        repo_slug = repository.get("slug", repo_name)  # Use name as fallback
+        # Extract slug from full_name since webhook payloads don't include repository.slug
+        repo_slug = repository.get("slug")
+        if not repo_slug and full_name and "/" in full_name:
+            repo_slug = full_name.split("/", 1)[1]
+        if not repo_slug:
+            repo_slug = repo_name  # Last resort fallback
 
         message = {"message": ""}
 

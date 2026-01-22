@@ -252,7 +252,7 @@ class Backend(Construct):
             domain_name=api_domain_name,
             task_image_options=task_options,
             task_subnets=aws_ec2.SubnetSelection(subnet_group_name="Private"),
-            health_check_grace_period=Duration.seconds(120),
+            health_check_grace_period=Duration.seconds(60),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(
                 enable=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()),
                 rollback=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()),

@@ -371,7 +371,9 @@ class DriverDocsContent(BaseModel):
             )
             toposort = TopologicalSorter(dag)
 
-            root_short_paragraph = content[codebase_name].short_paragraph_description
+            root_short_paragraph = content[
+                relative_path.rstrip("/")
+            ].short_paragraph_description
             for k in content:
                 if content[k].source is not None:
                     try:
